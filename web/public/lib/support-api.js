@@ -12,7 +12,7 @@
  */
 
 // GitHub repo for support issues
-const GITHUB_REPO = "antonycc/submit.diyaccounting.co.uk";
+const GITHUB_REPO = "support-at-diyaccounting/submit.diyaccounting.co.uk";
 
 /**
  * Get the API base URL from the page configuration

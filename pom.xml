@@ -10,7 +10,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/antonycc/submit.diyaccounting.co.uk</url>
+            <url>https://maven.pkg.github.com/support-at-diyaccounting/submit.diyaccounting.co.uk</url>
         </repository>
     </distributionManagement>
 
@@ -268,7 +268,7 @@
                 <version>3.1.4</version>
                 <configuration>
                     <repositoryId>github</repositoryId>
-                    <url>https://maven.pkg.github.com/antonycc/submit.diyaccounting.co.uk</url>
+                    <url>https://maven.pkg.github.com/support-at-diyaccounting/submit.diyaccounting.co.uk</url>
                 </configuration>
             </plugin>
             <plugin>

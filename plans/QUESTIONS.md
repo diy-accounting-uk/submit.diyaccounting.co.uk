@@ -21,7 +21,7 @@ Grouped by theme rather than issue number so related decisions can be made toget
 - **Q576.2** — Merch product set + brand collateral preferences?
 - **Q576.3** — Merch geographic scope — UK-only, EU, worldwide?
 - **Q576.4** — Print-on-demand vendor preference (Teemill UK vs Printful)?
-- **Q646.2** — `battery-pack` promotion: into this repo's `packages/` or spawn `antonycc/battery-pack` repo now?
+- **Q646.2** — `battery-pack` promotion: into this repo's `packages/` or spawn `support-at-diyaccounting/battery-pack` repo now?
 - **Q646.4** — `battery-pack` feeds into MCP (#648) or metric-son (#645) as a distribution/packaging model — any intended coupling?
 - **Q645.1** — `metric-son` packaging: this repo's `packages/` first, extract later, or standalone repo now?
 - **Q645.2** — Which funnels are highest priority for `metric-son` instrumentation?

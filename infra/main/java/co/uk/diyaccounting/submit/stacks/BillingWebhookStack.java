@@ -129,10 +129,10 @@ public class BillingWebhookStack extends Stack {
 
         // Tags
         Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "BillingWebhookStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");

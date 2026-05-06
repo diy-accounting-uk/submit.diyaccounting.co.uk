@@ -1,6 +1,6 @@
 # PLAN_ISSUES_DELIVERY — phased grouping and Copilot recommendations
 
-Covers the 23 open issues on `antonycc/submit.diyaccounting.co.uk` as of 2026-04-22.
+Covers the 23 open issues on `support-at-diyaccounting/submit.diyaccounting.co.uk` as of 2026-04-22.
 
 Per-issue plans live under `plans/issues/PLAN_ISSUE_<n>_<slug>.md`. Open questions are aggregated in `plans/QUESTIONS.md`.
 

@@ -105,7 +105,7 @@
 
 ### 8. CI/CD Security: SOLID ⭐⭐⭐⭐
 - **OIDC authentication**: No long-lived AWS credentials in GitHub -- short-lived tokens via OIDC
-- **Repository-scoped trust**: Each account trusts only its deploying repository (e.g., submit-prod trusts only `antonycc/submit.diyaccounting.co.uk`)
+- **Repository-scoped trust**: Each account trusts only its deploying repository (e.g., submit-prod trusts only `support-at-diyaccounting/submit.diyaccounting.co.uk`)
 - **Role chain**: OIDC token -> github-actions-role -> deployment-role -> CloudFormation (least privilege at each step)
 - **Cross-account DNS delegation**: `root-route53-record-delegate` IAM role in management account for DNS record creation, scoped to Route53 only
 
