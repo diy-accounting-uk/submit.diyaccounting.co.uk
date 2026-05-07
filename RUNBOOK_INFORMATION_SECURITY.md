@@ -191,7 +191,7 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 | Secret | Purpose | Last Updated | Notes |
 |--------|---------|--------------|-------|
-| `NGROK_AUTH_TOKEN` | Local tunnel for OAuth callbacks | 2025-07-24 | Rotate if compromised |
+| `NGROK_AUTHTOKEN` | Local tunnel for OAuth callbacks | 2025-07-24 | Rotate if compromised |
 | `PERSONAL_ACCESS_TOKEN` | GitHub API for workflow automation | 2026-01-17 | Rotate quarterly recommended |
 | `RELEASE_PAT` | GitHub release creation | 2026-01-10 | Rotate quarterly recommended |
 | `SUPPORT_ISSUE_PAT` | GitHub issue management | 2026-01-17 | Rotate quarterly recommended |

@@ -296,7 +296,7 @@ jobs:
       runProxyBehaviourTests: ${{ needs.params.outputs.runProxyBehaviourTests }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
 
   npm-unit-test-coverage:
     name: 'npm unit test with coverage'
