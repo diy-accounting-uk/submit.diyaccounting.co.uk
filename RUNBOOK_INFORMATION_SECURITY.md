@@ -410,7 +410,7 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 | submit-prod | 972912397388 | Yes | User data, HMRC tokens, subscription data |
 | submit-backup | 914216784828 | Backup copies | Read-only vault, no application code |
 
-**Key principle**: Gateway and spreadsheets are managed by their own repositories (`support-at-diyaccounting/www.diyaccounting.co.uk` and `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` respectively). Incident handling for those sites is outside this runbook's scope.
+**Key principle**: Gateway and spreadsheets are managed by their own repositories (`diy-accounting-uk/www.diyaccounting.co.uk` and `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` respectively). Incident handling for those sites is outside this runbook's scope.
 
 **First step in any incident**: Identify which account is affected. Use IAM Identity Center SSO portal (`https://d-9c67480c02.awsapps.com/start/`) to access any account's console. Use AWS CLI SSO profiles (`aws --profile submit-prod ...`, `aws --profile submit-ci ...`, etc.) for programmatic investigation.
 
@@ -554,7 +554,7 @@ fields @timestamp, @message
 
 ## 10. Public Repository Security
 
-All four repositories are **public on GitHub**. The security model is "secure by design" -- no security through obscurity. This section covers the submit repository (`support-at-diyaccounting/submit.diyaccounting.co.uk`). Gateway (`support-at-diyaccounting/www.diyaccounting.co.uk`), spreadsheets (`support-at-diyaccounting/spreadsheets.diyaccounting.co.uk`), and root (`support-at-diyaccounting/root.diyaccounting.co.uk`) follow the same principle.
+All four repositories are **public on GitHub**. The security model is "secure by design" -- no security through obscurity. This section covers the submit repository (`diy-accounting-uk/submit.diyaccounting.co.uk`). Gateway (`diy-accounting-uk/www.diyaccounting.co.uk`), spreadsheets (`diy-accounting-uk/spreadsheets.diyaccounting.co.uk`), and root (`diy-accounting-uk/root.diyaccounting.co.uk`) follow the same principle.
 
 ### 10.1 What Is Public (By Design)
 
@@ -639,11 +639,11 @@ Each account's OIDC provider trusts only its own repository:
 
 | Account | OIDC Trust |
 |---------|-----------|
-| management (887764105431) | `repo:support-at-diyaccounting/root.diyaccounting.co.uk:*` |
-| gateway (283165661847) | `repo:support-at-diyaccounting/www.diyaccounting.co.uk:*` |
-| spreadsheets (064390746177) | `repo:support-at-diyaccounting/spreadsheets.diyaccounting.co.uk:*` |
-| submit-ci (367191799875) | `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*` |
-| submit-prod (972912397388) | `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*` |
+| management (887764105431) | `repo:diy-accounting-uk/root.diyaccounting.co.uk:*` |
+| gateway (283165661847) | `repo:diy-accounting-uk/www.diyaccounting.co.uk:*` |
+| spreadsheets (064390746177) | `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*` |
+| submit-ci (367191799875) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
+| submit-prod (972912397388) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
 
 ---
 

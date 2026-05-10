@@ -224,7 +224,7 @@ Created per deployment by `deploy.yml`:
 | PublishStack | S3 static file deployment |
 | OpsStack | CloudWatch dashboard |
 
-**Note:** Gateway and spreadsheets stacks have been moved to their own repositories (`support-at-diyaccounting/www.diyaccounting.co.uk` and `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` respectively).
+**Note:** Gateway and spreadsheets stacks have been moved to their own repositories (`diy-accounting-uk/www.diyaccounting.co.uk` and `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` respectively).
 
 **Read the CDK stack files in `infra/main/java/co/uk/diyaccounting/submit/stacks/` for details.**
 
@@ -284,7 +284,7 @@ sudo apt-get install -y nodejs
 sudo apt-get install -y openjdk-21-jdk
 
 # Clone and install
-git clone https://github.com/support-at-diyaccounting/submit.diyaccounting.co.uk.git
+git clone https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 npm install
 

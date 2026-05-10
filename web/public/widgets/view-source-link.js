@@ -15,7 +15,7 @@
         const versionText = await versionResponse.text();
         const commitHash = versionText.trim();
         if (commitHash) {
-          const githubUrl = `https://github.com/support-at-diyaccounting/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${window.location.pathname}`;
+          const githubUrl = `https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/${commitHash}/web/public/${window.location.pathname}`;
           const viewSourceLink = document.getElementById("viewSourceLink");
           if (viewSourceLink) {
             viewSourceLink.href = githubUrl;

@@ -104,9 +104,9 @@ public class PublishStack extends Stack {
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName());
         Tags.of(this).add("Application", "submit");
-        Tags.of(this).add("CostCenter", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@support-at-diyaccounting/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "PublishStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");

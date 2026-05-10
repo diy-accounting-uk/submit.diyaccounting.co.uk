@@ -83,7 +83,7 @@ Outside the 3-day window: unknown. Possible that other users were affected silen
 
 UserId is obfuscated to `b662…` above per instruction. No email, name, or IP is reproduced in this report.
 
-## 6. Why the synthetic tests did not fail (https://github.com/support-at-diyaccounting/submit.diyaccounting.co.uk/actions/runs/24794955567)
+## 6. Why the synthetic tests did not fail (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs/24794955567)
 
 `.github/workflows/synthetic-test.yml` schedules a single hard-coded test suite per hour:
 

@@ -5,14 +5,14 @@
 **Project**: DIY Accounting Submit - HMRC VAT MTD Application
 **Review Scope**: Comprehensive OWASP Top 10 (2021) assessment
 **Target Branch**: stats
-**Architecture**: Multi-account (6 AWS accounts, 4 GitHub repositories)  
+**Architecture**: Multi-account (6 AWS accounts, 4 GitHub repositories)
 
 ---
 
 ## 🎯 Overall Assessment
 
-**STATUS**: ✅ **PRODUCTION READY**  
-**RISK LEVEL**: **LOW**  
+**STATUS**: ✅ **PRODUCTION READY**
+**RISK LEVEL**: **LOW**
 **BLOCKERS**: **NONE**
 
 ---
@@ -46,7 +46,7 @@
 - **Headers**: HSTS, X-Frame-Options, X-Content-Type-Options all present
 - **Protection**: Mitigates XSS, clickjacking, MIME confusion
 
-**Files**: 
+**Files**:
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java`
 - `app/bin/server.js`
 
@@ -105,7 +105,7 @@
 
 ### 8. CI/CD Security: SOLID ⭐⭐⭐⭐
 - **OIDC authentication**: No long-lived AWS credentials in GitHub -- short-lived tokens via OIDC
-- **Repository-scoped trust**: Each account trusts only its deploying repository (e.g., submit-prod trusts only `support-at-diyaccounting/submit.diyaccounting.co.uk`)
+- **Repository-scoped trust**: Each account trusts only its deploying repository (e.g., submit-prod trusts only `diy-accounting-uk/submit.diyaccounting.co.uk`)
 - **Role chain**: OIDC token -> github-actions-role -> deployment-role -> CloudFormation (least privilege at each step)
 - **Cross-account DNS delegation**: `root-route53-record-delegate` IAM role in management account for DNS record creation, scoped to Route53 only
 
@@ -120,17 +120,17 @@
 ## 🔧 Actions Completed During Review
 
 ### 1. ✅ Fixed npm Vulnerability
-**Package**: `diff` (DoS vulnerability CVE: GHSA-73rr-hh4g-fpgx)  
-**Action**: Updated from 5.2.0 to 5.2.2  
-**Result**: 0 vulnerabilities remaining  
+**Package**: `diff` (DoS vulnerability CVE: GHSA-73rr-hh4g-fpgx)
+**Action**: Updated from 5.2.0 to 5.2.2
+**Result**: 0 vulnerabilities remaining
 
 ### 2. ✅ Verified OAuth Security
-**Finding**: State and nonce validation already comprehensively implemented  
-**Status**: No action needed - implementation is exemplary  
+**Finding**: State and nonce validation already comprehensively implemented
+**Status**: No action needed - implementation is exemplary
 
 ### 3. ✅ Verified CSP Headers
-**Finding**: CSP already implemented in both CloudFront and Express server  
-**Status**: No action needed - comprehensive coverage  
+**Finding**: CSP already implemented in both CloudFront and Express server
+**Status**: No action needed - comprehensive coverage
 
 ### 4. ✅ Code Review
 - Reviewed 50+ security-sensitive files

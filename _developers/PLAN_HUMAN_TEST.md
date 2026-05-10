@@ -302,7 +302,7 @@ Monitor the Telegram ops channel for:
 
 When you find something wrong, record:
 
-https://github.com/support-at-diyaccounting/submit.diyaccounting.co.uk/issues/new?template=support.md
+https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/new?template=support.md
 
 ```
 **Section**: (which section number)

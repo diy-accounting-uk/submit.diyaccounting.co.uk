@@ -37,11 +37,11 @@ AWS Organization Root (887764105431) ── Management
 
 | Account | ID | Purpose | Repository | Contains |
 |---------|-----|---------|------------|----------|
-| **management** | 887764105431 | Organization administration | `support-at-diyaccounting/root.diyaccounting.co.uk` | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
-| **gateway** | 283165661847 | Gateway static site | `support-at-diyaccounting/www.diyaccounting.co.uk` | CloudFront, S3, CloudFront Functions (redirects) |
-| **spreadsheets** | 064390746177 | Spreadsheets static site | `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` | CloudFront, S3, package hosting |
-| **submit-ci** | 367191799875 | Submit CI/CD testing | `support-at-diyaccounting/submit.diyaccounting.co.uk` | Full submit stack with test data, HMRC sandbox |
-| **submit-prod** | 972912397388 | Submit production | `support-at-diyaccounting/submit.diyaccounting.co.uk` | Full submit stack with live data, HMRC production |
+| **management** | 887764105431 | Organization administration | `diy-accounting-uk/root.diyaccounting.co.uk` | IAM Identity Center, Organizations, Route53, consolidated billing, root DNS, holding page |
+| **gateway** | 283165661847 | Gateway static site | `diy-accounting-uk/www.diyaccounting.co.uk` | CloudFront, S3, CloudFront Functions (redirects) |
+| **spreadsheets** | 064390746177 | Spreadsheets static site | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` | CloudFront, S3, package hosting |
+| **submit-ci** | 367191799875 | Submit CI/CD testing | `diy-accounting-uk/submit.diyaccounting.co.uk` | Full submit stack with test data, HMRC sandbox |
+| **submit-prod** | 972912397388 | Submit production | `diy-accounting-uk/submit.diyaccounting.co.uk` | Full submit stack with live data, HMRC production |
 | **submit-backup** | 914216784828 | Backup isolation | — | Cross-account backup vault (planned) |
 
 ### 1.3 Why This Topology
@@ -264,11 +264,11 @@ Each account's OIDC trust is scoped to its own repository:
 
 | Account | OIDC Trust |
 |---------|-----------|
-| management (887764105431) | `repo:support-at-diyaccounting/root.diyaccounting.co.uk:*` |
-| gateway (283165661847) | `repo:support-at-diyaccounting/www.diyaccounting.co.uk:*` |
-| spreadsheets (064390746177) | `repo:support-at-diyaccounting/spreadsheets.diyaccounting.co.uk:*` |
-| submit-ci (367191799875) | `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*` |
-| submit-prod (972912397388) | `repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*` |
+| management (887764105431) | `repo:diy-accounting-uk/root.diyaccounting.co.uk:*` |
+| gateway (283165661847) | `repo:diy-accounting-uk/www.diyaccounting.co.uk:*` |
+| spreadsheets (064390746177) | `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*` |
+| submit-ci (367191799875) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
+| submit-prod (972912397388) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
 
 ### 4.3 Network Security
 
@@ -366,10 +366,10 @@ Each site is deployed from its own repository:
 
 | Site | Repository | Workflow | Target Account |
 |------|-----------|----------|----------------|
-| submit.diyaccounting.co.uk | `support-at-diyaccounting/submit.diyaccounting.co.uk` | `deploy.yml` | submit-ci (367191799875) / submit-prod (972912397388) |
-| diyaccounting.co.uk (gateway) | `support-at-diyaccounting/www.diyaccounting.co.uk` | `deploy.yml` | gateway (283165661847) |
-| spreadsheets.diyaccounting.co.uk | `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` | `deploy.yml` | spreadsheets (064390746177) |
-| Root DNS + holding page | `support-at-diyaccounting/root.diyaccounting.co.uk` | `deploy.yml` | management (887764105431) |
+| submit.diyaccounting.co.uk | `diy-accounting-uk/submit.diyaccounting.co.uk` | `deploy.yml` | submit-ci (367191799875) / submit-prod (972912397388) |
+| diyaccounting.co.uk (gateway) | `diy-accounting-uk/www.diyaccounting.co.uk` | `deploy.yml` | gateway (283165661847) |
+| spreadsheets.diyaccounting.co.uk | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` | `deploy.yml` | spreadsheets (064390746177) |
+| Root DNS + holding page | `diy-accounting-uk/root.diyaccounting.co.uk` | `deploy.yml` | management (887764105431) |
 
 ---
 
@@ -429,9 +429,9 @@ Gateway and spreadsheets CDK stacks are in their own repositories:
 
 | CDK App | Repository | Purpose |
 |---------|-----------|---------|
-| Gateway | `support-at-diyaccounting/www.diyaccounting.co.uk` | S3 + CloudFront + CloudFront Function redirects |
-| Spreadsheets | `support-at-diyaccounting/spreadsheets.diyaccounting.co.uk` | S3 + CloudFront + package hosting |
-| Root DNS | `support-at-diyaccounting/root.diyaccounting.co.uk` | Route53 alias records + holding page |
+| Gateway | `diy-accounting-uk/www.diyaccounting.co.uk` | S3 + CloudFront + CloudFront Function redirects |
+| Spreadsheets | `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` | S3 + CloudFront + package hosting |
+| Root DNS | `diy-accounting-uk/root.diyaccounting.co.uk` | Route53 alias records + holding page |
 
 ### 10.2 Stack Naming
 

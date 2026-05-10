@@ -16,7 +16,7 @@ This section reflects what actually happens with the current code and scripts. I
 
 2) Clone and install
 ```bash
-git clone git@github.com:support-at-diyaccounting/submit.diyaccounting.co.uk.git
+git clone git@github.com:diy-accounting-uk/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 npm install
 npm run playwright:install
@@ -144,7 +144,7 @@ Notes:
 
 ```bash
 
-git clone git@github.com:support-at-diyaccounting/submit.diyaccounting.co.uk.git
+git clone git@github.com:diy-accounting-uk/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 ```
 
@@ -235,7 +235,7 @@ NEEDS UPDATING
 
 ```
 Skip to content
-support-at-diyaccounting
+diy-accounting-uk
 submit.diyaccounting.co.uk
 Repository navigation
 Code
@@ -253,7 +253,7 @@ Security
  (46)
 Insights
 Settings
-Settings: support-at-diyaccounting/submit.diyaccounting.co.uk
+Settings: diy-accounting-uk/submit.diyaccounting.co.uk
 Access
 Code and automation
 Security
@@ -387,7 +387,7 @@ Do not share my personal information
 
 ```
 Skip to content
-support-at-diyaccounting
+diy-accounting-uk
 submit.diyaccounting.co.uk
 Repository navigation
 Code
@@ -405,7 +405,7 @@ Security
  (46)
 Insights
 Settings
-Settings: support-at-diyaccounting/submit.diyaccounting.co.uk
+Settings: diy-accounting-uk/submit.diyaccounting.co.uk
 Access
 Code and automation
 Security
@@ -521,7 +521,7 @@ cat <<'EOF' > submit-github-actions-trust-policy.json
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                 },
                 "StringLike": {
-                    "token.actions.githubusercontent.com:sub": "repo:support-at-diyaccounting/submit.diyaccounting.co.uk:*"
+                    "token.actions.githubusercontent.com:sub": "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*"
                 }
             }
         }

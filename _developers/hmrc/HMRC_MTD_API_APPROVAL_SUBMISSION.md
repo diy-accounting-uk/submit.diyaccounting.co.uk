@@ -2,7 +2,7 @@
 
 **Application**: DIY Accounting Submit
 **URL**: https://submit.diyaccounting.co.uk
-**Repository**: https://github.com/support-at-diyaccounting/submit.diyaccounting.co.uk
+**Repository**: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk
 **Document Date**: 24 January 2026
 **Version**: 1.2.0
 

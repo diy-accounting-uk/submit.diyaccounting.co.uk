@@ -129,7 +129,7 @@ public class AccountStack extends Stack {
 
         @Value.Default
         default String githubRepo() {
-            return "support-at-diyaccounting/submit.diyaccounting.co.uk";
+            return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
         @Value.Default
