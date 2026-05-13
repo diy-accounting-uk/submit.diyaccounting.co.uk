@@ -113,7 +113,7 @@ on:
     #   | filter @message like /Init Duration/
     # Scheduled runs execute the matrix in params.normalise
     # (see behaviour-test-suites-json). Edit that step to add/remove suites.
-    - cron: '57 * * * *'
+    - cron: '57 */4 * * *'
 
 permissions:
   id-token: write

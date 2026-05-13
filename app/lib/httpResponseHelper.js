@@ -272,6 +272,12 @@ export function extractUserFromAuthorizerContext(event) {
   const ctx = authz.jwt?.claims ?? authz.lambda ?? authz;
 
   if (ctx && ctx.sub) {
+    // Plumb userSub through the async context so downstream observability
+    // (activity events → telegram routing) can route customer-journey events
+    // to the LIVE channel even when the caller doesn't pass `actor` explicitly.
+    if (context.getStore()) {
+      context.set("userSub", ctx.sub);
+    }
     return {
       sub: ctx.sub,
       username: ctx["cognito:username"] || ctx.username || ctx.sub,

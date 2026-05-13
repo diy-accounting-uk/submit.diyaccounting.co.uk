@@ -30,7 +30,12 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
   }
 
   const requestId = context.get("requestId") || null;
-  const effectiveActor = actor || (requestId?.startsWith("test_") ? "test-user" : "unknown");
+  const userSub = context.get("userSub") || null;
+  // Fail-safe routing: customer-journey events whose actor was never explicitly set
+  // should still reach the LIVE telegram channel rather than silently going to TEST.
+  // The forwarder routes `customer` to LIVE; only `test_`-prefixed requestIds route to TEST.
+  const effectiveActor = actor || (requestId?.startsWith("test_") ? "test-user" : "customer");
+  const effectiveFlow = flow || (userSub ? "user-journey" : "unknown");
 
   try {
     await ebClient.send(
@@ -45,7 +50,7 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
               site,
               summary,
               actor: effectiveActor,
-              flow: flow || "unknown",
+              flow: effectiveFlow,
               timestamp: new Date().toISOString(),
               ...(requestId ? { requestId } : {}),
               ...detail,

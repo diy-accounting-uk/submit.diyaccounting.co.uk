@@ -168,6 +168,15 @@ public class OpsStack extends Stack {
                 .displayName("DIY Accounting Submit - Operational Alerts")
                 .build();
 
+        this.alertTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .principals(List.of(new ServicePrincipal("cloudwatch.amazonaws.com")))
+                .actions(List.of("sns:Publish"))
+                .resources(List.of(this.alertTopic.getTopicArn()))
+                .conditions(Map.of(
+                        "StringEquals", Map.of("aws:SourceAccount", Stack.of(this).getAccount())))
+                .build());
+
         if (props.alertEmail() != null && !props.alertEmail().isBlank()) {
             this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));
             infof("Added email subscription for alerts: %s", props.alertEmail());

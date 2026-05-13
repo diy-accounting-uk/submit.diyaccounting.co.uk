@@ -294,6 +294,51 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual(vatReturn);
   });
+
+  test("poll after successful retrieval returns persisted result without re-resolving periodKey", async () => {
+    const persistedVatReturn = { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 };
+
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      if (cmd instanceof lib.PutCommand) return {};
+      if (cmd instanceof lib.DeleteCommand) return {};
+      if (cmd instanceof lib.GetCommand) {
+        if (cmd.input?.TableName === process.env.HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME) {
+          return {
+            Item: {
+              hashedSub: "any",
+              requestId: "poll-get-after-success",
+              status: "completed",
+              data: {
+                vatReturn: persistedVatReturn,
+                hmrcResponse: { ok: true, status: 200, statusText: "OK", headers: {} },
+                periodKey: TEST_PERIOD_KEY,
+              },
+            },
+          };
+        }
+        return { Item: null };
+      }
+      return {};
+    });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
+      headers: {
+        "authorization": "Bearer test-token",
+        "x-initial-request": "false",
+        "x-request-id": "poll-get-after-success",
+      },
+      requestId: "poll-get-after-success",
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(persistedVatReturn);
+
+    expect(mockGetVatObligations).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
 
 import { workerHandler as hmrcVatReturnGetWorker } from "@app/functions/hmrc/hmrcVatReturnGet.js";
