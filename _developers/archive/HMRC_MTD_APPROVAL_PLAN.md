@@ -420,7 +420,7 @@ The `behaviour-test-submit-vat` job in `deploy.yml` runs tests with a local HTTP
   env:
     HMRC_ACCOUNT: sandbox
     HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-    NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+    NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
 ```
 
 **To emulate MFA in proxy mode**:

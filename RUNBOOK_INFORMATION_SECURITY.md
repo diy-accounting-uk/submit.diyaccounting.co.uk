@@ -191,7 +191,7 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 | Secret | Purpose | Last Updated | Notes |
 |--------|---------|--------------|-------|
-| `NGROK_AUTH_TOKEN` | Local tunnel for OAuth callbacks | 2025-07-24 | Rotate if compromised |
+| `NGROK_AUTHTOKEN` | Local tunnel for OAuth callbacks | 2025-07-24 | Rotate if compromised |
 | `PERSONAL_ACCESS_TOKEN` | GitHub API for workflow automation | 2026-01-17 | Rotate quarterly recommended |
 | `RELEASE_PAT` | GitHub release creation | 2026-01-10 | Rotate quarterly recommended |
 | `SUPPORT_ISSUE_PAT` | GitHub issue management | 2026-01-17 | Rotate quarterly recommended |
@@ -410,7 +410,7 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 | submit-prod | 972912397388 | Yes | User data, HMRC tokens, subscription data |
 | submit-backup | 914216784828 | Backup copies | Read-only vault, no application code |
 
-**Key principle**: Gateway and spreadsheets are managed by their own repositories (`antonycc/www.diyaccounting.co.uk` and `antonycc/diy-accounting` respectively). Incident handling for those sites is outside this runbook's scope.
+**Key principle**: Gateway and spreadsheets are managed by their own repositories (`diy-accounting-uk/www.diyaccounting.co.uk` and `diy-accounting-uk/spreadsheets.diyaccounting.co.uk` respectively). Incident handling for those sites is outside this runbook's scope.
 
 **First step in any incident**: Identify which account is affected. Use IAM Identity Center SSO portal (`https://d-9c67480c02.awsapps.com/start/`) to access any account's console. Use AWS CLI SSO profiles (`aws --profile submit-prod ...`, `aws --profile submit-ci ...`, etc.) for programmatic investigation.
 
@@ -554,7 +554,7 @@ fields @timestamp, @message
 
 ## 10. Public Repository Security
 
-All four repositories are **public on GitHub**. The security model is "secure by design" -- no security through obscurity. This section covers the submit repository (`antonycc/submit.diyaccounting.co.uk`). Gateway (`antonycc/www.diyaccounting.co.uk`), spreadsheets (`antonycc/diy-accounting`), and root (`antonycc/root.diyaccounting.co.uk`) follow the same principle.
+All four repositories are **public on GitHub**. The security model is "secure by design" -- no security through obscurity. This section covers the submit repository (`diy-accounting-uk/submit.diyaccounting.co.uk`). Gateway (`diy-accounting-uk/www.diyaccounting.co.uk`), spreadsheets (`diy-accounting-uk/spreadsheets.diyaccounting.co.uk`), and root (`diy-accounting-uk/root.diyaccounting.co.uk`) follow the same principle.
 
 ### 10.1 What Is Public (By Design)
 
@@ -639,11 +639,11 @@ Each account's OIDC provider trusts only its own repository:
 
 | Account | OIDC Trust |
 |---------|-----------|
-| management (887764105431) | `repo:antonycc/root.diyaccounting.co.uk:*` |
-| gateway (283165661847) | `repo:antonycc/www.diyaccounting.co.uk:*` |
-| spreadsheets (064390746177) | `repo:antonycc/diy-accounting:*` |
-| submit-ci (367191799875) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
-| submit-prod (972912397388) | `repo:antonycc/submit.diyaccounting.co.uk:*` |
+| management (887764105431) | `repo:diy-accounting-uk/root.diyaccounting.co.uk:*` |
+| gateway (283165661847) | `repo:diy-accounting-uk/www.diyaccounting.co.uk:*` |
+| spreadsheets (064390746177) | `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*` |
+| submit-ci (367191799875) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
+| submit-prod (972912397388) | `repo:diy-accounting-uk/submit.diyaccounting.co.uk:*` |
 
 ---
 

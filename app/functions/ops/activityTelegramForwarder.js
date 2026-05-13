@@ -87,7 +87,10 @@ export function resolveTargetChatIds(detail, chatConfig) {
     return chatConfig.ops ? [chatConfig.ops] : [];
   }
 
-  // User journey events → test or live based on actor
+  // User-journey events → live or test based on actor.
+  // `customer` is the live default (publishActivityEvent fills it in for non-test_
+  // requestIds when no explicit actor is set), so anonymous customer journeys reach
+  // the LIVE telegram channel instead of silently being misrouted to TEST.
   if (actor === "customer" || actor === "visitor") {
     return chatConfig.live ? [chatConfig.live] : [];
   }

@@ -144,10 +144,10 @@ public class OpsStack extends Stack {
 
         // Apply cost allocation tags for all resources in this stack
         Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "OpsStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
@@ -167,6 +167,15 @@ public class OpsStack extends Stack {
                 .topicName(props.resourceNamePrefix() + "-ops-alerts")
                 .displayName("DIY Accounting Submit - Operational Alerts")
                 .build();
+
+        this.alertTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .principals(List.of(new ServicePrincipal("cloudwatch.amazonaws.com")))
+                .actions(List.of("sns:Publish"))
+                .resources(List.of(this.alertTopic.getTopicArn()))
+                .conditions(Map.of(
+                        "StringEquals", Map.of("aws:SourceAccount", Stack.of(this).getAccount())))
+                .build());
 
         if (props.alertEmail() != null && !props.alertEmail().isBlank()) {
             this.alertTopic.addSubscription(new EmailSubscription(props.alertEmail()));

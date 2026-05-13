@@ -1,7 +1,7 @@
 # Campaign Passes, Referral System & Commission Plan
 
 > **Source**: Sections 6 & 7 of `_developers/backlog/PLAN_PASSES_V2-PART-2.md`
-> **GitHub Issue**: [#560](https://github.com/antonycc/submit.diyaccounting.co.uk/issues/560)
+> **GitHub Issue**: [#560](https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/560)
 > **Prerequisite**: Pass infrastructure (Phases 1-5) is complete and deployed
 > **Prerequisite**: `PLAN_RESIDENT_VAT_ROLLOUT.md` is complete — resident-vat is the primary subscription
 

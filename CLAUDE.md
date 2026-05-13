@@ -467,7 +467,7 @@ This repository also deploys the spreadsheets sibling site via a dedicated workf
 |------|----------|--------|
 | spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | `web/spreadsheets.diyaccounting.co.uk/` |
 
-Gateway (diyaccounting.co.uk) is managed by `antonycc/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `antonycc/root.diyaccounting.co.uk`.
+Gateway (diyaccounting.co.uk) is managed by `diy-accounting-uk/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `diy-accounting-uk/root.diyaccounting.co.uk`.
 
 Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 

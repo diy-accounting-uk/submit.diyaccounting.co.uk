@@ -112,10 +112,10 @@ public class SimulatorStack extends Stack {
 
         // Apply cost allocation tags
         Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("DeploymentName", props.deploymentName());
         Tags.of(this).add("Stack", "SimulatorStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");

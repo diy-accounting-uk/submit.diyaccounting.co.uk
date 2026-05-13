@@ -16,7 +16,7 @@ This section reflects what actually happens with the current code and scripts. I
 
 2) Clone and install
 ```bash
-git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
+git clone git@github.com:diy-accounting-uk/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 npm install
 npm run playwright:install
@@ -144,7 +144,7 @@ Notes:
 
 ```bash
 
-git clone git@github.com:antonycc/submit.diyaccounting.co.uk.git
+git clone git@github.com:diy-accounting-uk/submit.diyaccounting.co.uk.git
 cd submit.diyaccounting.co.uk
 ```
 
@@ -235,7 +235,7 @@ NEEDS UPDATING
 
 ```
 Skip to content
-antonycc
+diy-accounting-uk
 submit.diyaccounting.co.uk
 Repository navigation
 Code
@@ -253,7 +253,7 @@ Security
  (46)
 Insights
 Settings
-Settings: antonycc/submit.diyaccounting.co.uk
+Settings: diy-accounting-uk/submit.diyaccounting.co.uk
 Access
 Code and automation
 Security
@@ -387,7 +387,7 @@ Do not share my personal information
 
 ```
 Skip to content
-antonycc
+diy-accounting-uk
 submit.diyaccounting.co.uk
 Repository navigation
 Code
@@ -405,7 +405,7 @@ Security
  (46)
 Insights
 Settings
-Settings: antonycc/submit.diyaccounting.co.uk
+Settings: diy-accounting-uk/submit.diyaccounting.co.uk
 Access
 Code and automation
 Security
@@ -448,7 +448,7 @@ HMRC_CLIENT_SECRET
 7 months ago
 HMRC_SANDBOX_CLIENT_SECRET
 3 weeks ago
-NGROK_AUTH_TOKEN
+NGROK_AUTHTOKEN
 7 months ago
 PERSONAL_ACCESS_TOKEN
 last week
@@ -521,7 +521,7 @@ cat <<'EOF' > submit-github-actions-trust-policy.json
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                 },
                 "StringLike": {
-                    "token.actions.githubusercontent.com:sub": "repo:antonycc/submit.diyaccounting.co.uk:*"
+                    "token.actions.githubusercontent.com:sub": "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*"
                 }
             }
         }

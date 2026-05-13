@@ -360,7 +360,7 @@ Safer alternatives to try first:
 - Try a different browser
 - Clear cookies just for submit.diyaccounting.co.uk
 
-If issues persist after clearing data, [open a support issue on GitHub](https://github.com/antonycc/submit.diyaccounting.co.uk/issues).
+If issues persist after clearing data, [open a support issue on GitHub](https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues).
 """
 keywords = ["clear", "browser", "cache", "cookies", "not working", "stuck", "frozen", "reset"]
 priority = 20

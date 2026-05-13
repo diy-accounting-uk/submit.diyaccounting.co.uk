@@ -46,8 +46,6 @@ on:
         required: false
       NGROK_AUTHTOKEN:
         required: false
-      NGROK_AUTH_TOKEN:
-        required: false
 
   push:
     branches:
@@ -499,7 +497,7 @@ jobs:
     name: 'simulator - submitVatBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -533,7 +531,7 @@ jobs:
     name: 'simulator - postVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -567,7 +565,7 @@ jobs:
     name: 'simulator - getVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -601,7 +599,7 @@ jobs:
     name: 'simulator - getVatObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -635,7 +633,7 @@ jobs:
     name: 'simulator - fraudPreventionHeadersBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -669,7 +667,7 @@ jobs:
     name: 'simulator - complianceBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -703,7 +701,7 @@ jobs:
     name: 'simulator - vatValidationBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -737,7 +735,7 @@ jobs:
     name: 'simulator - vatSchemesBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -771,7 +769,7 @@ jobs:
     name: 'simulator - authBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -805,7 +803,7 @@ jobs:
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -839,7 +837,7 @@ jobs:
     name: 'simulator - helpBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -873,7 +871,7 @@ jobs:
     name: 'simulator - passRedemptionBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -907,7 +905,7 @@ jobs:
     name: 'simulator - tokenEnforcementBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -941,7 +939,7 @@ jobs:
     name: 'simulator - paymentBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -975,7 +973,7 @@ jobs:
     name: 'simulator - simulatorBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -1009,7 +1007,7 @@ jobs:
     name: 'simulator - generatePassActivityBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.58.1-jammy
+      image: mcr.microsoft.com/playwright:v1.59.1-jammy
     needs:
       - names
     steps:
@@ -1076,8 +1074,7 @@ jobs:
         env:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          # workflow_call receives NGROK_AUTHTOKEN from caller; direct triggers use repository secret NGROK_AUTH_TOKEN
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN || secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}

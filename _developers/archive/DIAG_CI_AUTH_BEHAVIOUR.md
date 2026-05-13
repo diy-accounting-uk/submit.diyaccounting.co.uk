@@ -21,7 +21,7 @@ The CI behaviour tests (`authBehaviour-ci`, `submitVatBehaviour-ci`) were failin
 
 ### Issue 2: AWS CLI Not Available in Playwright Container
 - **Symptom**: `aws: command not found` in CI
-- **Root cause**: The Playwright Docker container (`mcr.microsoft.com/playwright:v1.58.1-jammy`) doesn't include AWS CLI, pip3, or unzip
+- **Root cause**: The Playwright Docker container (`mcr.microsoft.com/playwright:v1.59.1-jammy`) doesn't include AWS CLI, pip3, or unzip
 - **Fix**: Created `scripts/create-cognito-test-user.js` using AWS SDK (already in npm dependencies)
 - **Workflow updated**: `.github/workflows/synthetic-test.yml` now calls Node.js script instead of bash
 

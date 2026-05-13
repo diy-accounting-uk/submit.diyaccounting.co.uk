@@ -83,14 +83,17 @@ class SubmitApplicationCdkResourceTest {
         // "bundles-table"): bundleGet(1) + bundlePost ingest+worker(2) + bundleDelete ingest+worker(2)
         // = 5 expected. The per-Lambda assertion below is the primary guard; the count is
         // informational.
-        long bundleGetUpdateItemPolicies = countIamPoliciesWithUpdateItemOnBundlesTable(accountStackTemplate, "bundle-get");
+        long bundleGetUpdateItemPolicies =
+                countIamPoliciesWithUpdateItemOnBundlesTable(accountStackTemplate, "bundle-get");
         if (bundleGetUpdateItemPolicies < 1) {
             dumpIamPolicies(accountStackTemplate);
             throw new AssertionFailedError("bundleGet Lambda role is missing dynamodb:UpdateItem on the bundles table. "
                     + "Check AccountStack.java grantReadWriteData for bundleGetLambda — "
                     + "this was the root cause of the 2026-04 production incident.");
         }
-        infof("IAM guard: bundleGet has %d policies with UpdateItem on bundles table (expected >= 1)", bundleGetUpdateItemPolicies);
+        infof(
+                "IAM guard: bundleGet has %d policies with UpdateItem on bundles table (expected >= 1)",
+                bundleGetUpdateItemPolicies);
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
         // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
@@ -242,8 +245,9 @@ class SubmitApplicationCdkResourceTest {
     @SuppressWarnings("unchecked")
     private static boolean statementTargetsBundlesTable(Map<String, Object> statement) {
         Object resource = statement.get("Resource");
-        List<Object> resources =
-                resource instanceof List<?> ? (List<Object>) resource : resource == null ? List.of() : List.of(resource);
+        List<Object> resources = resource instanceof List<?>
+                ? (List<Object>) resource
+                : resource == null ? List.of() : List.of(resource);
         for (Object r : resources) {
             if (resourceRefersToBundlesTable(r)) return true;
         }

@@ -123,8 +123,8 @@ public class BackupStack extends Stack {
 
         // Apply cost allocation tags
         Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@antonycc/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@antonycc/submit.diyaccounting.co.uk");
+        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
+        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
         Tags.of(this).add("Stack", "BackupStack");
         Tags.of(this).add("ManagedBy", "aws-cdk");
 

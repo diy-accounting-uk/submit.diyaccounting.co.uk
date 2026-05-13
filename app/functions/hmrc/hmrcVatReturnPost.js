@@ -317,84 +317,94 @@ export async function ingestHandler(event) {
     });
   }
 
-  // Resolve periodKey from obligations using the period date range
-  logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vatNumber });
-  try {
-    const { obligations, hmrcResponse } = await getVatObligations(
-      vatNumber,
-      hmrcAccessToken,
-      govClientHeaders,
-      govTestScenarioHeader,
-      hmrcAccount,
-      { from: periodStart, to: periodEnd, status: "O" },
-      userSub,
-      runFraudPreventionHeaderValidation,
-      requestId,
-      traceparent,
-      correlationId,
-    );
-
-    if (!hmrcResponse.ok) {
-      logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
-      return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
-    }
-
-    // obligations is the full HMRC response body containing { obligations: [...] }
-    const obligationsArray = obligations?.obligations || [];
-    let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
-
-    // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
-    // use the first available open obligation instead of erroring
-    if (!resolvedPeriodKey && allowSandboxObligations) {
-      const openObligations = obligationsArray.filter((o) => o.status === "O");
-      if (openObligations.length > 0) {
-        const year = periodStart.substring(2, 4); // Get last two digits of year
-        const rawPeriodKey = openObligations[0].periodKey;
-        const last2DigitsOfPeriodKey = rawPeriodKey.substring(2, 4);
-        resolvedPeriodKey = `${year}${last2DigitsOfPeriodKey}`;
-        logger.info({
-          message: "allowSandboxObligations: Using first available open obligation with the requested year injected",
-          requestedPeriod: { periodStart, periodEnd },
-          rawPeriodKey: rawPeriodKey,
-          usedObligation: resolvedPeriodKey,
-        });
-      } else {
-        // No open obligations at all so generate one using the 2 digits year and quarter from the requested periodStart
-        const year = periodStart.substring(2, 4); // Get last two digits of year
-        const month = parseInt(periodStart.substring(5, 7), 10); // Get month as integer
-        const quarter = Math.floor((month - 1) / 3) + 1; // Calculate quarter (1-4)
-        resolvedPeriodKey = `A${year}${quarter}`; // Format as 'AYYQ'
-        logger.info({
-          message: "allowSandboxObligations: No open obligations found, generating periodKey from periodStart",
-          requestedPeriod: { periodStart, periodEnd },
-          usedObligation: resolvedPeriodKey,
-        });
-      }
-    }
-
-    if (!resolvedPeriodKey) {
-      logger.error({
-        message: "No matching obligation found for date range",
-        periodStart,
-        periodEnd,
-        obligations: obligationsArray,
-        allowSandboxObligations,
-      });
-      return buildValidationError(request, [`No open VAT obligation found for period ${periodStart} to ${periodEnd}`], responseHeaders);
-    }
-
-    normalizedPeriodKey = resolvedPeriodKey.toUpperCase();
-    logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
-  } catch (error) {
-    logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: `Failed to resolve period key: ${error.message}`,
-    });
+  // Detect poll vs initial request, and look up any persisted async record before doing
+  // any work that depends on live HMRC state (periodKey resolution, token consumption).
+  // After a successful submission HMRC flips the obligation status O→F, so re-resolving
+  // the periodKey on a poll would 404 and surface a spurious error to the customer.
+  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
+  let persistedRequest = null;
+  if (!isInitialRequest) {
+    persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
   }
 
-  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
+  if (!persistedRequest) {
+    // Resolve periodKey from obligations using the period date range
+    logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vatNumber });
+    try {
+      const { obligations, hmrcResponse } = await getVatObligations(
+        vatNumber,
+        hmrcAccessToken,
+        govClientHeaders,
+        govTestScenarioHeader,
+        hmrcAccount,
+        { from: periodStart, to: periodEnd, status: "O" },
+        userSub,
+        runFraudPreventionHeaderValidation,
+        requestId,
+        traceparent,
+        correlationId,
+      );
+
+      if (!hmrcResponse.ok) {
+        logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
+        return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
+      }
+
+      // obligations is the full HMRC response body containing { obligations: [...] }
+      const obligationsArray = obligations?.obligations || [];
+      let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
+
+      // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
+      // use the first available open obligation instead of erroring
+      if (!resolvedPeriodKey && allowSandboxObligations) {
+        const openObligations = obligationsArray.filter((o) => o.status === "O");
+        if (openObligations.length > 0) {
+          const year = periodStart.substring(2, 4); // Get last two digits of year
+          const rawPeriodKey = openObligations[0].periodKey;
+          const last2DigitsOfPeriodKey = rawPeriodKey.substring(2, 4);
+          resolvedPeriodKey = `${year}${last2DigitsOfPeriodKey}`;
+          logger.info({
+            message: "allowSandboxObligations: Using first available open obligation with the requested year injected",
+            requestedPeriod: { periodStart, periodEnd },
+            rawPeriodKey: rawPeriodKey,
+            usedObligation: resolvedPeriodKey,
+          });
+        } else {
+          // No open obligations at all so generate one using the 2 digits year and quarter from the requested periodStart
+          const year = periodStart.substring(2, 4); // Get last two digits of year
+          const month = parseInt(periodStart.substring(5, 7), 10); // Get month as integer
+          const quarter = Math.floor((month - 1) / 3) + 1; // Calculate quarter (1-4)
+          resolvedPeriodKey = `A${year}${quarter}`; // Format as 'AYYQ'
+          logger.info({
+            message: "allowSandboxObligations: No open obligations found, generating periodKey from periodStart",
+            requestedPeriod: { periodStart, periodEnd },
+            usedObligation: resolvedPeriodKey,
+          });
+        }
+      }
+
+      if (!resolvedPeriodKey) {
+        logger.error({
+          message: "No matching obligation found for date range",
+          periodStart,
+          periodEnd,
+          obligations: obligationsArray,
+          allowSandboxObligations,
+        });
+        return buildValidationError(request, [`No open VAT obligation found for period ${periodStart} to ${periodEnd}`], responseHeaders);
+      }
+
+      normalizedPeriodKey = resolvedPeriodKey.toUpperCase();
+      logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
+    } catch (error) {
+      logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `Failed to resolve period key: ${error.message}`,
+      });
+    }
+  }
 
   // Token enforcement: consume 1 token for VAT submission (the "value action") — initial request only
   if (isInitialRequest) {
@@ -442,11 +452,6 @@ export async function ingestHandler(event) {
     traceparent,
     correlationId,
   };
-  let persistedRequest = null;
-  if (!isInitialRequest) {
-    persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
-  }
-
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
 
   let result = null;
