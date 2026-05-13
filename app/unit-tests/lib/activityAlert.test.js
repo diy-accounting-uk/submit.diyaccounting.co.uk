@@ -174,7 +174,7 @@ describe("lib/activityAlert", () => {
       expect(detail.actor).toBe("customer");
     });
 
-    test("defaults actor to unknown when no requestId prefix and no explicit actor", async () => {
+    test("defaults actor to customer when no requestId prefix and no explicit actor (fail-safe → LIVE)", async () => {
       process.env.ACTIVITY_BUS_NAME = "test-bus";
       await context.run(new Map(), async () => {
         context.set("requestId", "normal-request-id");
@@ -182,16 +182,40 @@ describe("lib/activityAlert", () => {
       });
 
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
-      expect(detail.actor).toBe("unknown");
+      expect(detail.actor).toBe("customer");
     });
 
-    test("omits requestId from detail when not in context", async () => {
+    test("defaults flow to user-journey when userSub is in context", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "normal-request-id");
+        context.set("userSub", "b6b252d4-9001-708e-7778-1264e34ac341");
+        await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.actor).toBe("customer");
+      expect(detail.flow).toBe("user-journey");
+    });
+
+    test("defaults flow to unknown when no userSub in context", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await context.run(new Map(), async () => {
+        context.set("requestId", "normal-request-id");
+        await publishActivityEvent({ event: "login", summary: "Login" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.flow).toBe("unknown");
+    });
+
+    test("omits requestId from detail when not in context (still defaults to customer)", async () => {
       process.env.ACTIVITY_BUS_NAME = "test-bus";
       await publishActivityEvent({ event: "login", summary: "Login" });
 
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.requestId).toBeUndefined();
-      expect(detail.actor).toBe("unknown");
+      expect(detail.actor).toBe("customer");
     });
   });
 });

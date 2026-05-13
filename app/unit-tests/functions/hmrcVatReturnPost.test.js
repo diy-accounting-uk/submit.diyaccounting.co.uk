@@ -303,4 +303,65 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     expect(body.userMessage).toContain("already been submitted");
     expect(body.actionAdvice).toContain("contact HMRC");
   });
+
+  test("poll after successful submission returns persisted result without re-resolving periodKey", async () => {
+    // Background: HMRC flips obligation status O→F right after submission, so re-resolving
+    // the periodKey on a poll would 404 and surface a phantom "Failed to resolve period key"
+    // error to the customer. The handler must short-circuit on polls with a persisted record.
+    const persistedReceipt = {
+      formBundleNumber: "096056627239",
+      processingDate: "2026-05-11T14:01:01.000Z",
+      paymentIndicator: "BANK",
+    };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) return { Items: [], Count: 0 };
+      if (cmd instanceof MockPutCommand) return {};
+      if (cmd instanceof MockUpdateCommand) return {};
+      if (cmd instanceof MockGetCommand) {
+        // Return a persisted "completed" record for the async-request lookup.
+        if (cmd.input?.TableName === process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME) {
+          return {
+            Item: {
+              hashedSub: "any",
+              requestId: "poll-after-success",
+              status: "completed",
+              data: {
+                receipt: persistedReceipt,
+                hmrcResponse: { ok: true, status: 200, statusText: "OK", headers: {} },
+                hmrcResponseBody: persistedReceipt,
+                periodKey: "26A1",
+                receiptId: "2026-05-11T14:01:01.000Z-096056627239",
+              },
+            },
+          };
+        }
+        return { Item: null };
+      }
+      return {};
+    });
+
+    const event = buildHmrcEvent({
+      headers: { "x-initial-request": "false", "x-request-id": "poll-after-success" },
+      requestId: "poll-after-success",
+      body: {
+        vatNumber: "860611051",
+        periodStart: "2026-02-01",
+        periodEnd: "2026-04-30",
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.receipt).toEqual(persistedReceipt);
+    expect(body.receiptId).toBe("2026-05-11T14:01:01.000Z-096056627239");
+
+    // Critical: obligations endpoint must NOT be called on a poll with a persisted record.
+    expect(mockGetVatObligations).not.toHaveBeenCalled();
+    // And no HMRC POST should be issued.
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
