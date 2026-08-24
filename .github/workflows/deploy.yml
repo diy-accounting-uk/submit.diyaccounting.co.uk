@@ -197,7 +197,7 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -307,10 +307,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -339,7 +339,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-java@v5
         with:
@@ -441,10 +441,10 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -738,11 +738,11 @@ jobs:
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -842,11 +842,11 @@ jobs:
 
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -1030,10 +1030,10 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -1082,7 +1082,7 @@ jobs:
 
       - name: Cache Maven build output
         if: steps.download-maven-api.outcome != 'success'
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
@@ -1219,10 +1219,10 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -1412,7 +1412,7 @@ jobs:
 
       - name: Cache Maven build output
         if: ${{ steps.download-maven-publish.outcome != 'success' && (needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true') }}
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
@@ -1500,7 +1500,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -1582,10 +1582,10 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -2146,10 +2146,10 @@ jobs:
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
