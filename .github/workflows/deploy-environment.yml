@@ -43,12 +43,15 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1Stack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/HoldingStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       # Simulator source code
       - 'web/public-simulator/**'
+      # Holding page source
+      - 'web/holding/**'
       # Shared utilities and entry point
       - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
@@ -404,6 +407,25 @@ jobs:
       pull-requests: read
     with:
       stackName: ${{ needs.names.outputs.environment-name }}-env-EcrUE1Stack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
+  deploy-holding:
+    name: deploy holding
+    needs:
+      - names
+      - create-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-HoldingStack
       force-stack-deployment: 'true'
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}
