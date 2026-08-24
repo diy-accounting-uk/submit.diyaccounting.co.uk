@@ -447,7 +447,10 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Build base image
         run: |
@@ -743,7 +746,10 @@ jobs:
 
       - name: Node dependencies
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -844,7 +850,10 @@ jobs:
 
       - name: Node dependencies
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -1027,7 +1036,10 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - uses: actions/setup-java@v5
         with:
@@ -1213,7 +1225,10 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - uses: actions/setup-java@v5
         with:

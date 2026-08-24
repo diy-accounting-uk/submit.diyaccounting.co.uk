@@ -520,7 +520,10 @@ jobs:
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
       - name: Node dependencies
-        run: npm ci
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
