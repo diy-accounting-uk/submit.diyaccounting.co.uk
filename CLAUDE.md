@@ -41,6 +41,14 @@
 - `.junie/guidelines.md` - Junie (testing & iteration focus)
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
 
+## Skills
+
+Skills live at `.claude/skills/<name>/SKILL.md`, each with a root symlink (`SKILL_<NAME>.md`) for
+convenience — gitignored, recreate with `ln -s` if missing.
+
+- `.claude/skills/plain-prose/SKILL.md` — writing rules for plain, human prose; follow this for all human-facing text (docs, comments, chat)
+- `.claude/skills/do-next/SKILL.md` — dispatch `NEXT.md`'s open items as worktree-isolated sub-agents
+
 ## Permission Handling
 
 See `../CLAUDE.md` for full rules. Common permissions for submit work: git operations, GitHub CLI (`gh`), shell commands (`npm`, `mvnw`, `aws`), external API calls.
