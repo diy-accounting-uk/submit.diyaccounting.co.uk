@@ -22,6 +22,7 @@ This document consolidates all security, privacy, and data protection procedures
 10. [Public Repository Security](#10-public-repository-security)
 11. [Console Access and AWS CLI](#11-console-access-and-aws-cli)
 12. [Backup and Restore](#12-backup-and-restore)
+13. [Holding Failover](#13-holding-failover)
 
 ---
 
@@ -682,6 +683,114 @@ IaC repeatability is proven: submit-prod (972912397388) was deployed from scratc
 **Recovery equation**: Salt + Backups + Code = Full recovery from total loss.
 
 For detailed backup architecture, table inventory, cross-account backup plans, and restore testing procedures, see `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md`.
+
+---
+
+## 13. Holding Failover
+
+Procedure for moving live submit.diyaccounting.co.uk traffic onto a maintenance page and back.
+
+### 13.1 What the holding page is
+
+`HoldingStack`, one per account:
+
+| Environment | Account | Stack | Holding domain | `OriginFor` tag | Live domains it takes over |
+|---|---|---|---|---|---|
+| prod | submit-prod (972912397388) | `prod-env-HoldingStack` | `holding.submit.diyaccounting.co.uk` | `holding.submit.diyaccounting.co.uk` | `submit.diyaccounting.co.uk`, `prod-submit.diyaccounting.co.uk` |
+| ci | submit-ci (367191799875) | `ci-env-HoldingStack` | `ci-holding.submit.diyaccounting.co.uk` | `ci-holding.submit.diyaccounting.co.uk` | `ci-submit.diyaccounting.co.uk` |
+
+The page is titled "Maintenance – submit.diyaccounting.co.uk" with the heading "We'll be right
+back". Every response carries a `Server: DIY-Accounting` header. A 403 or 404 on the distribution
+also renders the holding page, so deep links fail over cleanly instead of showing an S3 error.
+
+The certificate is imported by ARN — two certificates, one per account, because ci and prod run in
+separate AWS accounts. Each is issued once by dispatching `request-holding-cert.yml` with
+`environment-name: ci` or `environment-name: prod` — a bootstrap step, not a per-failover step.
+That workflow requests the certificate in the target account, assumes the management account's
+Route53 delegate role to write the DNS validation records, waits for validation, then prints the
+certificate ARN to store as the environment-scoped repository variable
+`SUBMIT_HOLDING_CERTIFICATE_ARN`. Until that variable is set for an environment,
+`deploy-environment.yml` skips the holding stack deployment for it entirely.
+
+### 13.2 When to fail over
+
+Fail over when the site returns 5xx for more than five minutes, a deploy has left the origin
+broken and rolling forward is not immediate, there is an active attack, or an AWS regional
+incident is affecting the origin. Do not fail over for a slow site or a single failing route — the
+holding page replaces the whole site, not one path.
+
+### 13.3 Who authorises
+
+The operator. There is no standing delegation — nobody dispatches `set-origins.yml` without the
+operator's direct instruction.
+
+### 13.4 How to fail over
+
+Dispatch `set-origins.yml` on this repo:
+
+- `domain-source`: `holding`
+- `environment-name`: `ci` or `prod`
+
+This points the apex domain (`submit.diyaccounting.co.uk` for prod) at the holding distribution:
+it finds whichever CloudFront distribution currently holds that alias, strips it from that
+distribution, waits for the change to deploy, adds the alias to the holding distribution instead,
+waits again, then UPSERTs the apex A/AAAA records to alias the holding distribution's CloudFront
+domain name. No DNS TTL wait is involved — the alias record change is what a resolver sees on its
+next lookup.
+
+### 13.5 Expected time to take effect
+
+10 to 20 minutes, dominated by the `aws cloudfront wait distribution-deployed` calls. Treat this
+as an observed range and correct it after the first real exercise.
+
+### 13.6 How to fail back
+
+Dispatch `set-origins.yml` again with `domain-source: last-known-good` and the same
+`environment-name`. This reads `/submit/<env>/last-known-good-deployment` from SSM Parameter
+Store — the deployment name submit's own `deploy.yml` records after every green smoke test — and
+points the apex domain back at that deployment's CloudFront distribution, the same way a normal
+deploy would.
+
+Confirm the apex alias is back on the expected deployment's distribution:
+
+```bash
+aws cloudfront get-distribution --id <deployment-distribution-id> \
+  --query 'Distribution.DistributionConfig.Aliases.Items'
+```
+
+### 13.7 How to verify while failed over
+
+```bash
+curl -sI https://submit.diyaccounting.co.uk/
+```
+
+Expect `200`, a `Server: DIY-Accounting` header, and a body that is the holding page, not the live
+site.
+
+### 13.8 Rehearsal
+
+Exercise the `ci` environment twice a year. Never rehearse against `prod`.
+
+### 13.9 Deploying while failed over
+
+There is no guard against this, and unlike gateway and spreadsheets it does not fail loudly — it
+succeeds and quietly undoes the failover. Every run of this repo's own `deploy.yml` ends with a
+`set-origins` job that unconditionally points the apex domain at the newly deployed distribution,
+using the same alias-move mechanism as `set-origins.yml` itself. If that job runs while the site is
+failed over, it moves the apex alias straight off the holding distribution and onto the new
+deployment, whether or not the underlying problem that caused the failover is fixed. Before
+merging or dispatching a deploy while a failover is live, restore first
+(`set-origins.yml` with `domain-source: last-known-good`), confirm the apex alias is back where
+expected, then deploy.
+
+### 13.10 Certificate coverage for new domains
+
+Failover adds the live apex domain as an alias to the holding distribution, and CloudFront refuses
+an alias the distribution's certificate does not cover. If a new live domain is added to this
+site, it must be added to the holding certificate's subject alternative names before it can ever
+be failed over. Re-run `request-holding-cert.yml` for the affected environment with the expanded
+SAN list, wait for validation, and update the `SUBMIT_HOLDING_CERTIFICATE_ARN` variable for that
+environment with the new ARN before relying on failover for that domain.
 
 ---
 
