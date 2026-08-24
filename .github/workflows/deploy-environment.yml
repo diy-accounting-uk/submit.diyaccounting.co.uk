@@ -43,7 +43,6 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityUE1Stack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java'
-      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ApexStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
@@ -410,25 +409,6 @@ jobs:
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
 
-  deploy-apex:
-    name: deploy apex
-    needs:
-      - names
-      - create-secrets
-    uses: ./.github/workflows/deploy-cdk-stack.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-      pages: write
-      pull-requests: read
-    with:
-      stackName: ${{ needs.names.outputs.environment-name }}-env-ApexStack
-      force-stack-deployment: 'true'
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.environment-name }}
-      cdk-application: 'environment'
-
   verify-certificate:
     name: 'verify certificate'
     needs:
@@ -505,7 +485,6 @@ jobs:
       - params
       - names
       - create-secrets
-      - deploy-apex
       - verify-certificate
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}

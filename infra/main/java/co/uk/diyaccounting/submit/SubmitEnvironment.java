@@ -10,7 +10,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 import co.uk.diyaccounting.submit.stacks.ActivityStack;
-import co.uk.diyaccounting.submit.stacks.ApexStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
@@ -34,7 +33,6 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
     public final IdentityStack identityStack;
-    public final ApexStack apexStack;
     public final SimulatorStack simulatorStack;
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
@@ -53,7 +51,6 @@ public class SubmitEnvironment {
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
-        public String holdingDocRootPath;
         public String googleClientId;
         public String googleClientSecretArn;
         public String securityServicesEnabled;
@@ -127,8 +124,6 @@ public class SubmitEnvironment {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
-        var holdingDocRootPath =
-                envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
         var securityServicesEnabled =
                 Boolean.parseBoolean(envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
@@ -274,24 +269,6 @@ public class SubmitEnvironment {
                                         : certificateArn)
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
-                        .build());
-
-        this.apexStack = new ApexStack(
-                app,
-                sharedNames.apexStackId,
-                ApexStack.ApexStackProps.builder()
-                        .env(usEast1Env)
-                        .crossRegionReferences(false)
-                        .envName(envName)
-                        .deploymentName(envName)
-                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .cloudTrailEnabled(cloudTrailEnabled)
-                        .sharedNames(sharedNames)
-                        .hostedZoneName(appProps.hostedZoneName)
-                        .hostedZoneId(appProps.hostedZoneId)
-                        .certificateArn(certificateArn)
-                        .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                        .holdingDocRootPath(holdingDocRootPath)
                         .build());
 
         // Create SimulatorStack for public demo simulator (only if the code path exists)
