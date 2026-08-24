@@ -164,14 +164,18 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     // IMPORTANT: After enabling native auth on Cognito, the Hosted UI may take extra
     // time to reflect the changes. We use a longer timeout (30s) and retry logic to
     // handle this propagation delay.
-    const maxAttempts = 3;
+    // Cognito's Hosted UI is intermittently slow to render the form (red deploy
+    // runs on 2026-07-11/12 and 2026-08-24 all failed here with the domain
+    // healthy). Escalate the wait per attempt rather than failing fast.
+    const maxAttempts = 6;
     const baseTimeout = 15000;
     let formFound = false;
 
     for (let attempt = 1; attempt <= maxAttempts && !formFound; attempt++) {
+      const attemptTimeout = baseTimeout * Math.min(attempt, 3);
       try {
-        console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts})...`);
-        await page.waitForSelector('input[name="username"]', { state: "attached", timeout: baseTimeout });
+        console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts}, timeout ${attemptTimeout}ms)...`);
+        await page.waitForSelector('input[name="username"]', { state: "attached", timeout: attemptTimeout });
         await page.waitForSelector('input[name="password"]', { state: "attached", timeout: 5000 });
         formFound = true;
         console.log(`Hosted UI form fields found in DOM`);
@@ -184,7 +188,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
         console.log(`Form not found, refreshing page and retrying...`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png` });
         await page.reload({ waitUntil: "networkidle" });
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(2000 * attempt);
       }
     }
 
