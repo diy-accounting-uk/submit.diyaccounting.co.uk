@@ -100,6 +100,15 @@ env:
 
 jobs:
 
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
   lint-workflows:
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
@@ -518,9 +527,10 @@ jobs:
     name: 'simulator - submitVatBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -552,9 +562,10 @@ jobs:
     name: 'simulator - postVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -586,9 +597,10 @@ jobs:
     name: 'simulator - getVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -620,9 +632,10 @@ jobs:
     name: 'simulator - getVatObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -654,9 +667,10 @@ jobs:
     name: 'simulator - fraudPreventionHeadersBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -688,9 +702,10 @@ jobs:
     name: 'simulator - complianceBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -722,9 +737,10 @@ jobs:
     name: 'simulator - vatValidationBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -756,9 +772,10 @@ jobs:
     name: 'simulator - vatSchemesBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -790,9 +807,10 @@ jobs:
     name: 'simulator - authBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -824,9 +842,10 @@ jobs:
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -858,9 +877,10 @@ jobs:
     name: 'simulator - helpBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -892,9 +912,10 @@ jobs:
     name: 'simulator - passRedemptionBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -926,9 +947,10 @@ jobs:
     name: 'simulator - tokenEnforcementBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -960,9 +982,10 @@ jobs:
     name: 'simulator - paymentBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -994,9 +1017,10 @@ jobs:
     name: 'simulator - simulatorBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1028,9 +1052,10 @@ jobs:
     name: 'simulator - generatePassActivityBehaviour'
     runs-on: ubuntu-24.04
     container:
-      image: mcr.microsoft.com/playwright:v1.59.1-jammy
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
       - names
+      - playwright-version
     steps:
       - name: Checkout
         uses: actions/checkout@v7

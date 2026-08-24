@@ -64,6 +64,15 @@ env:
 
 jobs:
 
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
   params:
     runs-on: ubuntu-24.04
     steps:
@@ -667,8 +676,9 @@ jobs:
       - names
       - update-lambdas
       - sync-web-assets
+      - playwright-version
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.59.1-jammy
+    container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
