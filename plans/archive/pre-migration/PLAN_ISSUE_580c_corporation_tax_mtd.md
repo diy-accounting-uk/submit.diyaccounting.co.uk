@@ -1,8 +1,8 @@
 # PLAN: Issue #580c — HMRC Corporation Tax MTD
 
 > Split from #580 on 2026-04-22 (user confirmed Q580.1 direction).
-> Parent plan: `plans/issues/PLAN_ISSUE_580_limited_company_endpoints.md`.
-> Siblings: #580a (CH reads, covered by the parent plan), #580b (CH filings, `PLAN_ISSUE_580b_companies_house_filings.md`).
+> Parent plan: `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` (pre-migration #580, now issue #15).
+> Siblings: #580a (CH reads, covered by the parent plan), #580b (CH filings, `plans/archive/pre-migration/PLAN_ISSUE_580b_companies_house_filings.md`).
 
 ## Elaboration
 
