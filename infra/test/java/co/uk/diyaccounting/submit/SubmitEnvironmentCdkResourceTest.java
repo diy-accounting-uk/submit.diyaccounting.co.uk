@@ -29,14 +29,13 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
     @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
-    @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1"),
 })
 class SubmitEnvironmentCdkResourceTest {
 
     @Test
-    void shouldCreateApexStackWithResources() throws IOException {
+    void shouldCreateEnvironmentStacksWithResources() throws IOException {
         // 1) Load the CDK context from cdk-environment/cdk.json
         Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
         Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
@@ -61,10 +60,6 @@ class SubmitEnvironmentCdkResourceTest {
         // 3) Build the environment and synth
         var env = new SubmitEnvironment(app, appProps);
         app.synth();
-
-        // 4) Make sure core resources exist on the Apex stack
-        // Template.fromStack(env.apexStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
-        // Template.fromStack(env.apexStack).resourceCountIs("AWS::Route53::RecordSet", 1);
 
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);

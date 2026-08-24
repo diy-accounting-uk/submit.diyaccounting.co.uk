@@ -65,7 +65,6 @@ public class SubmitSharedNames {
     public String envDomainName;
     public String publicDomainName;
     public String cognitoDomainName;
-    public String holdingDomainName;
     public String simulatorDomainName;
     public String billingDomainName;
     public String baseUrl;
@@ -89,13 +88,10 @@ public class SubmitSharedNames {
     public String bundleCapacityTableName;
     public String activityBusName;
     public String subscriptionsTableName;
-    public String holdingBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
     public String distributionAccessLogGroupName;
-    public String distributionAccessLogDeliveryHoldingSourceName;
     public String distributionAccessLogDeliveryOriginSourceName;
-    public String distributionAccessLogDeliveryHoldingDestinationName;
     public String distributionAccessLogDeliveryOriginDestinationName;
     public String ew2SelfDestructLogGroupName;
     public String ue1SelfDestructLogGroupName;
@@ -106,7 +102,6 @@ public class SubmitSharedNames {
     public String observabilityUE1StackId;
     public String dataStackId;
     public String identityStackId;
-    public String apexStackId;
     public String backupStackId;
     public String activityStackId;
     public String simulatorStackId;
@@ -430,7 +425,6 @@ public class SubmitSharedNames {
             this.publicDomainName = this.envDomainName;
         }
         this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
-        this.holdingDomainName = "%s-holding.%s".formatted(props.envName, props.hostedZoneName);
         this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
         this.billingDomainName = "%s-billing.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
@@ -451,7 +445,6 @@ public class SubmitSharedNames {
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
-        this.apexStackId = "%s-env-ApexStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
         this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
@@ -495,11 +488,7 @@ public class SubmitSharedNames {
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
-        this.distributionAccessLogDeliveryHoldingSourceName =
-                "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryOriginSourceName = "%s-orig-dist-l-src".formatted(props.deploymentName); // x
-        this.distributionAccessLogDeliveryHoldingDestinationName =
-                "%s-holding-logs-dest".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryOriginDestinationName = "%s-orig-l-dst".formatted(props.deploymentName); // x
 
         this.ew2SelfDestructLogGroupName =
@@ -521,8 +510,6 @@ public class SubmitSharedNames {
         this.publishStackId = "%s-app-PublishStack".formatted(props.deploymentName);
 
         this.trailName = "%s-trail".formatted(this.envResourceNamePrefix);
-        this.holdingBucketName =
-                convertDotSeparatedToDashSeparated("%s-holding-us-east-1".formatted(this.envResourceNamePrefix));
         this.originBucketName =
                 convertDotSeparatedToDashSeparated("%s-origin-us-east-1".formatted(this.appResourceNamePrefix));
         this.originAccessLogBucketName = "%s-origin-access-logs".formatted(this.appResourceNamePrefix);

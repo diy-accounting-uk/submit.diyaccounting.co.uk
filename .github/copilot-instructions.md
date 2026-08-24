@@ -171,7 +171,6 @@ The infrastructure is divided into **two CDK applications**:
 1. **Environment Stacks** (`cdk-environment/`): Long-lived, shared resources
    - ObservabilityStack (CloudWatch RUM, logs, alarms)
    - DataStack (DynamoDB tables)
-   - ApexStack (Route53 DNS)
    - IdentityStack (Cognito user pool)
    - Deployed by: `deploy-environment.yml` workflow
 
