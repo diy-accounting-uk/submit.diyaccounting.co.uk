@@ -126,6 +126,15 @@ env:
 
 jobs:
 
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
   params:
     runs-on: ubuntu-24.04
     steps:
@@ -263,8 +272,9 @@ jobs:
     needs:
       - params
       - names
+      - playwright-version
     runs-on: ubuntu-24.04
-    container: mcr.microsoft.com/playwright:v1.59.1-jammy
+    container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     # Match version number with @playwright/test in package.json with: https://mcr.microsoft.com/en-us/artifact/mar/playwright/tags
     # and extension with ubuntu distribution e.g. https://releases.ubuntu.com/jammy/
     environment: ${{ needs.params.outputs.github-environment }}
