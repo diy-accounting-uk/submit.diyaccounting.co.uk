@@ -114,6 +114,18 @@ jobs:
         uses: ./.github/actions/get-names
         with:
           environment-name: ${{ needs.params.outputs.environment-name }}
+      - name: Check whether the holding certificate has been issued
+        id: holding-certificate
+        env:
+          HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${HOLDING_CERTIFICATE_ARN:-}" ]; then
+            echo "holding-certificate-set=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "SUBMIT_HOLDING_CERTIFICATE_ARN is unset; skipping the holding stack deployment"
+            echo "holding-certificate-set=false" | tee -a "$GITHUB_OUTPUT"
+          fi
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -123,6 +135,7 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+      holding-certificate-set: ${{ steps.holding-certificate.outputs.holding-certificate-set }}
 
   create-secrets:
     name: create secrets
@@ -414,6 +427,7 @@ jobs:
 
   deploy-holding:
     name: deploy holding
+    if: ${{ needs.names.outputs.holding-certificate-set == 'true' }}
     needs:
       - names
       - create-secrets
