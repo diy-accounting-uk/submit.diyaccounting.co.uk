@@ -1,12 +1,12 @@
-# PLAN: Issue #719 — Data theft detection
+# PLAN: Issue #10 (pre-migration #719) — Data theft detection
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/719
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/10
 > Original body: (empty)
-> Existing plans: **`_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md`** (shared with #720 scan detection), plus `REPORT_SECURITY_REVIEW.md` and `PII_AND_SENSITIVE_DATA.md` in the archive.
+> Existing plans: **`_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md`** (shared with #9 scan detection), plus `REPORT_SECURITY_REVIEW.md` and `PII_AND_SENSITIVE_DATA.md` in the archive.
 
 ## Elaboration
 
-Sibling to #720 but higher-stakes: detection for signs of unauthorised bulk access to customer data (VAT submissions, HMRC receipts, bundle/pass records, Cognito user attributes, subscription metadata). Threat model:
+Sibling to #9 but higher-stakes: detection for signs of unauthorised bulk access to customer data (VAT submissions, HMRC receipts, bundle/pass records, Cognito user attributes, subscription metadata). Threat model:
 
 1. **Insider threat** — an AWS IAM principal (human or compromised OIDC role) performs mass reads on `prod-env-receipts`, `prod-env-bundles`, or the salt secret.
 2. **Credential leak** — a compromised JWT/Cognito session is used from unusual locations to hit `/api/v1/bundle`, `/api/v1/hmrc/receipt`, etc., at abnormal volume.
@@ -26,7 +26,7 @@ Signals we can tap:
 ## Likely source files to change
 
 - `infra/main/java/.../stacks/ObservabilityStack.java` — add a CloudTrail data-event trail for the customer-data DynamoDB tables and the salt secret.
-- `infra/main/java/.../stacks/SecurityDetectionStack.java` (new, shared with #720) — CloudWatch Insights + metric filters + alarms.
+- `infra/main/java/.../stacks/SecurityDetectionStack.java` (new, shared with #9) — CloudWatch Insights + metric filters + alarms.
 - `app/functions/ops/securityAnomalyDetect*.js` — new Lambda(s) running on EventBridge schedule (every 5 min) that run Insights queries on the trail logs and emit detection events.
 - `app/functions/auth/customAuthorizer.js` — extend to log geolocation (from CloudFront `cloudfront-viewer-country`) and flag country changes within a session.
 - `app/data/dynamoDbBundleRepository.js` and `dynamoDbReceiptsRepository.js` — structured logging of every read with `{ operation, tableName, countItems, userId }` (we may partly have this) so metric filters can count.
@@ -71,9 +71,9 @@ Ship CloudTrail to an external SIEM. Higher cost; more capable. Deferred until i
 
 ## Questions (for QUESTIONS.md)
 
-- Q719.1: Priority relative to #720? (Recommendation: work them together — same stack.)
-- Q719.2: CloudTrail data events cost at our volume — acceptable? (Estimate requires CloudTrail Pricing Calculator inputs: ~1–5M data events/month → ~$1–5/month. Small.)
-- Q719.3: Mid-session country-change — force re-auth (friction) or just alert? Paying subscribers travelling abroad may otherwise be locked out.
+- Q10.1: Priority relative to #9? (Recommendation: work them together — same stack.)
+- Q10.2: CloudTrail data events cost at our volume — acceptable? (Estimate requires CloudTrail Pricing Calculator inputs: ~1–5M data events/month → ~$1–5/month. Small.)
+- Q10.3: Mid-session country-change — force re-auth (friction) or just alert? Paying subscribers travelling abroad may otherwise be locked out.
 
 ## Good fit for Copilot?
 

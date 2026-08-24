@@ -1,6 +1,6 @@
-# PLAN: Issue #736 — Telegram channel shows login event but not logout
+# PLAN: Issue #7 (pre-migration #736) — Telegram channel shows login event but not logout
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/736
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/7
 > Original body: (empty)
 > Existing plans: `_developers/archive/PLAN_TELEGRAM_ALERTING.md`, `PLAN_GOOGLE_LOGOUT.md` (logout mechanics).
 
@@ -59,9 +59,9 @@ Cognito supports a post-confirmation Lambda trigger but not a native post-logout
 
 ## Questions (for QUESTIONS.md)
 
-- Q736.1: Any PII concern with sending the hashedSub-prefix to Telegram on logout, or should logout be userless (just a count)?
-- Q736.2: Do we also want `user.login.failed` events on the Telegram channel for security awareness, or is that noise?
+- Q7.1: Any PII concern with sending the hashedSub-prefix to Telegram on logout, or should logout be userless (just a count)?
+- Q7.2: Do we also want `user.login.failed` events on the Telegram channel for security awareness, or is that noise?
 
 ## Good fit for Copilot?
 
-Yes — well-scoped. Needs: hook in `auth-status.js`, Lambda enum extension, forwarder mapping, tests. Assign after Q736.1 answered.
+Yes — well-scoped. Needs: hook in `auth-status.js`, Lambda enum extension, forwarder mapping, tests. Assign after Q7.1 answered.

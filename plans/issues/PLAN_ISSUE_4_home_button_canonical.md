@@ -1,6 +1,6 @@
-# PLAN: Issue #745 — Home button should be without `index.html`
+# PLAN: Issue #4 (pre-migration #745) — Home button should be without `index.html`
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/745
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/4
 > Original body: (empty)
 > Existing plans: none specific; related to navigation consistency.
 
@@ -60,8 +60,8 @@ Keep the HTML as-is but 301-redirect requests for `/index.html` to `/`. Reduces 
 
 ## Questions (for QUESTIONS.md)
 
-- Q745.1: Should the redirect in `auth-status.js` include the environment path-prefix on the simulator (`/sim/`), i.e. `/sim/` vs `/`? Current code switches on `window.location.pathname.startsWith("/sim/")`. I'll preserve that behaviour unless you want the simulator to go to `/` too.
-- Q745.2: Is now a good time to extract the nav into a shared partial (Alternative A)? It would simplify this issue and several others (#737, #740).
+- Q4.1: Should the redirect in `auth-status.js` include the environment path-prefix on the simulator (`/sim/`), i.e. `/sim/` vs `/`? Current code switches on `window.location.pathname.startsWith("/sim/")`. I'll preserve that behaviour unless you want the simulator to go to `/` too.
+- Q4.2: Is now a good time to extract the nav into a shared partial (Alternative A)? It would simplify this issue and several others (#6, #5).
 
 ## Good fit for Copilot?
 

@@ -1,12 +1,12 @@
-# PLAN: Issue #580 — Limited company: split tracker
+# PLAN: Issue #15 (pre-migration #580) — Limited company: split tracker
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/580
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/15
 > Original body: (empty)
-> **Scope decision 2026-04-22 (Q580.1): split into three discrete issues**, because "limited company" overloads three very different surfaces with different lead times.
-> Proposed children (to be created as new GitHub issues):
-> - **#580a — Companies House reads** (fast, available now). Covered below as the deliverable under the original #580 number; consider closing #580 after splitting and tracking the read work under this plan.
-> - **#580b — Companies House filings** (weeks of accreditation before code). See `plans/issues/PLAN_ISSUE_580b_companies_house_filings.md`.
-> - **#580c — HMRC Corporation Tax MTD** (no production API yet). See `plans/issues/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
+> **Scope decision 2026-04-22 (Q15.1, pre-migration Q580.1): split into three discrete issues**, because "limited company" overloads three very different surfaces with different lead times.
+> Proposed children (pre-migration #580a/#580b/#580c; not recreated as their own issues in the post-migration renumbering):
+> - **#580a — Companies House reads** (fast, available now). Covered below as the deliverable under this plan.
+> - **#580b — Companies House filings** (weeks of accreditation before code, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580b_companies_house_filings.md`.
+> - **#580c — HMRC Corporation Tax MTD** (no production API yet, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
 >
 > Existing plans: none specific in `_developers/`. Related: `_developers/backlog/self-employed-api-operations.md` (pattern to follow).
 > External: HMRC's Corporation Tax (CT) MTD is still pre-mandate (as of 2026 knowledge cutoff); Companies House filing is the other strand.
@@ -79,11 +79,11 @@ Split this issue into two: #580a Companies House, #580b HMRC CT. Recommendation:
 
 ## Questions (for QUESTIONS.md)
 
-- Q580.1: **Which "limited company" endpoints?** HMRC Corporation Tax (pre-mandate, no production API), Companies House reads (available now), or Companies House filings (requires accreditation)? This is the key blocker.
-- Q580.2: Are we willing to apply for Companies House filing accreditation (manual process, documentation)?
-- Q580.3: Bundle pricing for limited-company access — new bundle `resident-company`, or fold into existing `resident-pro`?
-- Q580.4: Would a Companies House integration actually help DIY Accounting's existing users (who are VAT / ITSA focused), or is this a new market entirely?
+- Q15.1: **Which "limited company" endpoints?** HMRC Corporation Tax (pre-mandate, no production API), Companies House reads (available now), or Companies House filings (requires accreditation)? This is the key blocker.
+- Q15.2: Are we willing to apply for Companies House filing accreditation (manual process, documentation)?
+- Q15.3: Bundle pricing for limited-company access — new bundle `resident-company`, or fold into existing `resident-pro`?
+- Q15.4: Would a Companies House integration actually help DIY Accounting's existing users (who are VAT / ITSA focused), or is this a new market entirely?
 
 ## Good fit for Copilot?
 
-Blocked on Q580.1. Once product direction chosen, each Lambda is Copilot-friendly (parallel to the HMRC VAT/self-employed work).
+Blocked on Q15.1. Once product direction chosen, each Lambda is Copilot-friendly (parallel to the HMRC VAT/self-employed work).

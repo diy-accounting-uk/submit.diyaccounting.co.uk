@@ -1,6 +1,6 @@
-# PLAN: Issue #707 — Unify sandbox/test/live/developer mode naming under "synthetic"
+# PLAN: Issue #12 (pre-migration #707) — Unify sandbox/test/live/developer mode naming under "synthetic"
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/707
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/12
 > Original body: "unify this: sandbox/test/live mode/developer mode options… 'synthetic' matches workflow, otherwise quite unique, variables can match vendor naming"
 > Existing plans:
 > - **`_developers/archive/PLAN_SYNTHETIC_NAMING_ALIGNMENT.md`** (authoritative design — keeps `sandbox` where it's a vendor contract term like HMRC, uses `synthetic` for our own controls)
@@ -79,9 +79,9 @@ Write a "these all mean the same thing" doc, don't rename. Cheapest; does not re
 
 ## Questions (for QUESTIONS.md)
 
-- Q707.1: Keep `sandbox` in the sessionStorage key `hmrcAccount=sandbox` (vendor contract) or align with the rename? (Recommendation: keep — it's HMRC's word.)
-- ~~Q707.2: UI copy~~ — **answered 2026-04-22: "Developer mode" wins** for the public-facing label (user-familiar). Code normalises to `synthetic` everywhere internally. Result: UI strings stay as "Developer mode" / "Developer options"; every code identifier, env var (except the HMRC vendor `sandbox` terms), DynamoDB field, and test name uses `synthetic`.
-- Q707.3: Migration window for `testPass` shim — 30 or 90 days?
+- Q12.1: Keep `sandbox` in the sessionStorage key `hmrcAccount=sandbox` (vendor contract) or align with the rename? (Recommendation: keep — it's HMRC's word.)
+- ~~Q12.2: UI copy~~ — **answered 2026-04-22: "Developer mode" wins** for the public-facing label (user-familiar). Code normalises to `synthetic` everywhere internally. Result: UI strings stay as "Developer mode" / "Developer options"; every code identifier, env var (except the HMRC vendor `sandbox` terms), DynamoDB field, and test name uses `synthetic`.
+- Q12.3: Migration window for `testPass` shim — 30 or 90 days?
 
 ## Good fit for Copilot?
 

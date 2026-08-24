@@ -1,6 +1,6 @@
-# PLAN: Issue #579 — Implement self-employed endpoints
+# PLAN: Issue #16 (pre-migration #579) — Implement self-employed endpoints
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/579
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/16
 > Original body: (empty)
 > Existing plans:
 > - **`_developers/backlog/self-employed-api-operations.md`** (56 lines — authoritative design for MTD ITSA Self-Employment API v5.0)
@@ -92,11 +92,11 @@ Some accountancy-data vendors (FreeAgent, Xero) expose pre-normalised self-emplo
 
 ## Questions (for QUESTIONS.md)
 
-- Q579.1: Confirm MTD ITSA mandate date and income threshold — still April 2026 / £20k? Check HMRC's current public announcement.
-- Q579.2: OpenAPI client generation (Alt A) or hand-rolled? (Recommendation: generate, because the API is large.)
-- Q579.3: Token cost per self-employment submission — same 1 token as VAT, or different?
-- Q579.4: Do we also implement the business-details API (list businesses for a NINO), or require users to enter their businessId manually?
-- Q579.5: Which bundles unlock self-employment? Current catalogue says `basic` / `legacy` — should a new `resident-itsa` bundle be created for ITSA-specific pricing?
+- Q16.1: Confirm MTD ITSA mandate date and income threshold — still April 2026 / £20k? Check HMRC's current public announcement.
+- Q16.2: OpenAPI client generation (Alt A) or hand-rolled? (Recommendation: generate, because the API is large.)
+- Q16.3: Token cost per self-employment submission — same 1 token as VAT, or different?
+- Q16.4: Do we also implement the business-details API (list businesses for a NINO), or require users to enter their businessId manually?
+- Q16.5: Which bundles unlock self-employment? Current catalogue says `basic` / `legacy` — should a new `resident-itsa` bundle be created for ITSA-specific pricing?
 
 ## Good fit for Copilot?
 

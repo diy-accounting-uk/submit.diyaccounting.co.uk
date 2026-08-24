@@ -1,6 +1,6 @@
-# PLAN: Issue #703 — Multi-URL Lighthouse
+# PLAN: Issue #13 (pre-migration #703) — Multi-URL Lighthouse
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/703
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/13
 > Original body: expand Lighthouse to run against every sitemap URL, not just home. Two candidate approaches: custom script iterating `sitemap.xml`, or `@lhci/cli` (Lighthouse CI) which supports multi-URL natively.
 > Existing plans: `_developers/backlog/IMPLEMENTATION_PLAN_PRODUCTION_HARDENING.md` mentions weekly compliance.
 
@@ -78,11 +78,11 @@ Run specialist SEO tools. Out of scope.
 
 ## Questions (for QUESTIONS.md)
 
-- Q703.1: Thresholds — are 80/95/95/95 acceptable, or would you prefer tighter (e.g. 90/95/95/95 for Perf)?
-- Q703.2: Run weekly (existing cadence) or every PR? (PR-level is more expensive but catches regressions sooner.)
-- Q703.3: Run against `prod`, `ci`, or both? (Recommendation: `prod` weekly + `ci` on each PR against the diff-affected pages only.)
-- Q703.4: Should the sitemap generator itself be automated (derive from file listing) so adding a page doesn't require a second sitemap edit?
+- Q13.1: Thresholds — are 80/95/95/95 acceptable, or would you prefer tighter (e.g. 90/95/95/95 for Perf)?
+- Q13.2: Run weekly (existing cadence) or every PR? (PR-level is more expensive but catches regressions sooner.)
+- Q13.3: Run against `prod`, `ci`, or both? (Recommendation: `prod` weekly + `ci` on each PR against the diff-affected pages only.)
+- Q13.4: Should the sitemap generator itself be automated (derive from file listing) so adding a page doesn't require a second sitemap edit?
 
 ## Good fit for Copilot?
 
-Yes — entirely. Bounded workflow YAML + config + small script. Assign after Q703.1 and Q703.2 are answered.
+Yes — entirely. Bounded workflow YAML + config + small script. Assign after Q13.1 and Q13.2 are answered.

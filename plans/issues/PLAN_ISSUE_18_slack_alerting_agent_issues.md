@@ -1,8 +1,8 @@
-# PLAN: Issue #572 — Telegram alerting extensions + agent-raised GitHub issues
+# PLAN: Issue #18 (pre-migration #572) — Telegram alerting extensions + agent-raised GitHub issues
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/572
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/18
 > Original body: (empty) — title "Alerting and monitoring in Slack with issue notifications and agents raising and assigning issues"
-> **Scope decision 2026-04-22 (Q572.1): no Slack. Keep Telegram as the existing channel; deliver the "agents raising GitHub issues" feature directly via SNS→Lambda→GitHub API, no chat platform in the middle.**
+> **Scope decision 2026-04-22 (Q18.1): no Slack. Keep Telegram as the existing channel; deliver the "agents raising GitHub issues" feature directly via SNS→Lambda→GitHub API, no chat platform in the middle.**
 > Existing plans:
 > - `_developers/archive/PLAN_TELEGRAM_ALERTING.md` (existing channel — keep)
 > - `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` (1905 lines — what we alarm on)
@@ -10,7 +10,7 @@
 
 ## Elaboration
 
-The title mentioned Slack, but per 2026-04-22 decision (Q572.1) Slack is out of scope for now. What remains from the issue's intent:
+The title mentioned Slack, but per 2026-04-22 decision (Q18.1) Slack is out of scope for now. What remains from the issue's intent:
 
 1. ~~**Slack as an alerting channel**~~ — **dropped.** Telegram stays as the primary alert channel.
 2. ~~**Issue notifications in Slack**~~ — **dropped** (was going to be zero-code via the official GitHub Slack app).
@@ -26,7 +26,7 @@ Optional extras worth considering alongside:
 - `app/functions/ops/activityTelegramForwarder.js` — extend event-kind map with `issue.auto_raised` (one-line message with a link to the issue).
 - `infra/main/java/.../stacks/OpsStack.java` — wire `gitHubIssueRaiser` into SNS.
 - `infra/main/java/.../stacks/AlertingStack.java` (if it exists, else embed in OpsStack) — centralise SNS topics; ensure alarms publish to a single `alarms` topic that fans out to both Telegram (via the existing forwarder subscription) and gitHubIssueRaiser.
-- Secrets: a GitHub App private key stored in Secrets Manager (preferred over PAT per Q572.2 recommendation).
+- Secrets: a GitHub App private key stored in Secrets Manager (preferred over PAT per Q18.2 recommendation).
 - `_developers/backlog/SLACK_INTEGRATION_PLAN.md` — mark as shelved; reference this plan as the replacement direction.
 
 ## Likely tests to change/add
@@ -70,10 +70,10 @@ Instead of a Lambda calling the GitHub API, have CloudWatch alarms trigger a `wo
 
 ## Questions (for QUESTIONS.md)
 
-- ~~Q572.1: Slack workspace~~ — **answered 2026-04-22: no Slack, keep Telegram only.**
-- Q572.2: GitHub PAT vs GitHub App for the issue-raiser? (Recommendation: App — revocable, scoped, no human account dependency.)
-- Q572.3: Routing rules for which alarms auto-raise issues — draft the initial matrix and confirm which assignee(s) should own which alarms.
-- ~~Q572.4: Retire Telegram~~ — **moot: Telegram is the channel.**
+- ~~Q18.1: Slack workspace~~ — **answered 2026-04-22: no Slack, keep Telegram only.**
+- Q18.2: GitHub PAT vs GitHub App for the issue-raiser? (Recommendation: App — revocable, scoped, no human account dependency.)
+- Q18.3: Routing rules for which alarms auto-raise issues — draft the initial matrix and confirm which assignee(s) should own which alarms.
+- ~~Q18.4: Retire Telegram~~ — **moot: Telegram is the channel.**
 
 ## Good fit for Copilot?
 

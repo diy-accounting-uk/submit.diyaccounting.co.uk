@@ -1,6 +1,6 @@
-# PLAN: Issue #576 — DIY Merch
+# PLAN: Issue #17 (pre-migration #576) — DIY Merch
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/576
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/17
 > Original body: (empty)
 > Existing plans: none. Related: existing Stripe integration for subscriptions (`app/functions/billing/*`).
 
@@ -81,10 +81,10 @@ No paid sale; merch is a redemption reward. Adds engineering to redeem via token
 
 ## Questions (for QUESTIONS.md)
 
-- Q576.1: Path A (storefront link) vs Path B (integrated) vs Path C (reward-only, free for ambassadors)? (Recommendation: A first.)
-- Q576.2: Product set to start — T-shirt, mug, sticker? Any brand-collateral preferences (colours, slogan)?
-- Q576.3: Geographic scope — UK-only, EU, worldwide?
-- Q576.4: Print-on-demand vendor preference? (Teemill is UK-based + eco-branded — aligns with small-business narrative. Printful is US-based with UK fulfilment.)
+- Q17.1: Path A (storefront link) vs Path B (integrated) vs Path C (reward-only, free for ambassadors)? (Recommendation: A first.)
+- Q17.2: Product set to start — T-shirt, mug, sticker? Any brand-collateral preferences (colours, slogan)?
+- Q17.3: Geographic scope — UK-only, EU, worldwide?
+- Q17.4: Print-on-demand vendor preference? (Teemill is UK-based + eco-branded — aligns with small-business narrative. Printful is US-based with UK fulfilment.)
 
 ## Good fit for Copilot?
 

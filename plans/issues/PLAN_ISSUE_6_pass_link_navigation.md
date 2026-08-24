@@ -1,6 +1,6 @@
-# PLAN: Issue #737 — Pass link navigation
+# PLAN: Issue #6 (pre-migration #737) — Pass link navigation
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/737
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/6
 > Original body: "Activities page enables the obligation query - yes but if using the link directly, requires going into activities then back into the bundles to register the tokens"
 > Existing plans: `_developers/archive/PLAN_GENERATE_PASS_ACTIVITY.md`, `PLAN_PASSES_V2.md` (passes UX), `PLAN_TOKENS_BUNDLES_UX.md`.
 
@@ -63,9 +63,9 @@ Instead of a silent second navigation, the activity page on a pass parameter bri
 
 ## Questions (for QUESTIONS.md)
 
-- Q737.1: Do we want the redemption to happen automatically on any page, or only when the user explicitly arrives at a bundle/pass page? (Security-wise, redeeming silently on a random page is fine — the pass is the auth token for that one-shot action — but it might surprise users. Recommendation: yes, auto-redeem anywhere.)
-- Q737.2: Should the `then=<originalUrl>` query param be supported, so `/bundles.html?pass=X&then=/hmrc/vat/vatObligations.html` still works for legacy shared links?
+- Q6.1: Do we want the redemption to happen automatically on any page, or only when the user explicitly arrives at a bundle/pass page? (Security-wise, redeeming silently on a random page is fine — the pass is the auth token for that one-shot action — but it might surprise users. Recommendation: yes, auto-redeem anywhere.)
+- Q6.2: Should the `then=<originalUrl>` query param be supported, so `/bundles.html?pass=X&then=/hmrc/vat/vatObligations.html` still works for legacy shared links?
 
 ## Good fit for Copilot?
 
-Yes — the extraction + test is mechanical once the design is agreed. Assign after Q737.1 is answered.
+Yes — the extraction + test is mechanical once the design is agreed. Assign after Q6.1 is answered.

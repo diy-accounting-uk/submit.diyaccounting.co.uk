@@ -1,6 +1,6 @@
-# PLAN: Issue #740 — "Manage subscription" button not visible on mobile
+# PLAN: Issue #5 (pre-migration #740) — "Manage subscription" button not visible on mobile
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/740
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/5
 > Original body: screenshot only (511×315 PNG showing a mobile viewport with the button missing or cut off).
 > Existing plans: `_developers/archive/PLAN_BILLING_HARDENING.md`, `PLAN_PAYMENT_LIFECYCLE.md`, `PLAN_PAYMENT_INTEGRATION.md` cover billing flow; no mobile-specific plan.
 
@@ -24,7 +24,7 @@ Without the button, a paying subscriber cannot cancel, update their card, or dow
 
 - **New Playwright mobile viewport test** in `behaviour-tests/bundles.behaviour.test.js` or a new `billingMobile.behaviour.test.js`: set viewport to `375×667` (iPhone SE) and `390×844` (iPhone 14); navigate to `/bundles.html` as a paying user; assert the Manage subscription button is `isVisible({ timeout: 5000 })`.
 - **Browser test** under `web/browser-tests/` for a snapshot of `bundles.html` at a mobile width to catch future regressions.
-- Update the weekly compliance workflow to add a mobile Lighthouse/Pa11y run (overlaps with #703).
+- Update the weekly compliance workflow to add a mobile Lighthouse/Pa11y run (overlaps with #13).
 
 ## Likely docs to change
 
@@ -59,8 +59,8 @@ Put the button in the logged-in user dropdown in the header (next to Sign out). 
 
 ## Questions (for QUESTIONS.md)
 
-- Q740.1: Screenshot link — can you confirm the exact mobile OS/browser where you captured this? Specifically, is this iOS Safari or Android Chrome? (Changes which viewport tests I run.)
-- Q740.2: Should this be in the header user menu as well (Alternative B)? That doubles the discoverability.
+- Q5.1: Screenshot link — can you confirm the exact mobile OS/browser where you captured this? Specifically, is this iOS Safari or Android Chrome? (Changes which viewport tests I run.)
+- Q5.2: Should this be in the header user menu as well (Alternative B)? That doubles the discoverability.
 
 ## Good fit for Copilot?
 

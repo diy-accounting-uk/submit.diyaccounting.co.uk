@@ -1,12 +1,12 @@
-# PLAN: Issue #720 — Scan detection
+# PLAN: Issue #9 (pre-migration #720) — Scan detection
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/720
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/9
 > Original body: (empty)
 > Existing plans: **`_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md`** (619 lines — covers scan and data-theft detection together).
 
 ## Elaboration
 
-"Scan detection" is the first of two security observability uplifts requested (the sibling is #719 "Data theft detection"). The existing `PLAN_SECURITY_DETECTION_UPLIFT.md` is the authoritative design; this issue tracks the operational rollout. The goal: detect automated scanning/probing of the submit estate (WAF miss + 404 spikes + predictable-path guessing + unusual user-agent patterns) quickly enough to respond (block IP at WAF, rate-limit, or escalate).
+"Scan detection" is the first of two security observability uplifts requested (the sibling is #10 "Data theft detection"). The existing `PLAN_SECURITY_DETECTION_UPLIFT.md` is the authoritative design; this issue tracks the operational rollout. The goal: detect automated scanning/probing of the submit estate (WAF miss + 404 spikes + predictable-path guessing + unusual user-agent patterns) quickly enough to respond (block IP at WAF, rate-limit, or escalate).
 
 Detection signals we already have or need:
 
@@ -71,9 +71,9 @@ Turn on GuardDuty with the WAF add-on. Expensive at our volume, returns findings
 
 ## Questions (for QUESTIONS.md)
 
-- Q720.1: Which channel should detection events go to — Telegram, Slack (per #572), or both?
-- Q720.2: Do we block IPs automatically on threshold, or alert-only (human-in-the-loop)? (Recommendation: alert-only initially.)
-- Q720.3: Is there a budget envelope for CloudWatch Logs Insights queries / additional Lambdas? Phase 3 adds a scheduled Lambda running every ~1 min.
+- Q9.1: Which channel should detection events go to — Telegram, Slack (per #18), or both?
+- Q9.2: Do we block IPs automatically on threshold, or alert-only (human-in-the-loop)? (Recommendation: alert-only initially.)
+- Q9.3: Is there a budget envelope for CloudWatch Logs Insights queries / additional Lambdas? Phase 3 adds a scheduled Lambda running every ~1 min.
 
 ## Good fit for Copilot?
 

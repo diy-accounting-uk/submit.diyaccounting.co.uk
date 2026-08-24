@@ -1,6 +1,6 @@
-# PLAN: Issue #634 — Other social providers (Apple, Microsoft)
+# PLAN: Issue #14 (pre-migration #634) — Other social providers (Apple, Microsoft)
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/634
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/14
 > Original body: (empty)
 > Existing plans: none specific; related to `_developers/archive/PLAN_COGNITO_HOSTED_UI_NATIVE_AUTH_TOGGLE.md` and the existing Google Cognito integration.
 
@@ -77,10 +77,10 @@ Apple has higher setup cost (Dev Program fee). But iOS is common in the UK small
 
 ## Questions (for QUESTIONS.md)
 
-- Q634.1: Apple Developer Program — do we have one, or will we set one up? (Required before any work lands.)
-- Q634.2: Microsoft — single-tenant or `common` (multi-tenant, any Microsoft user)? (Recommendation: `common`.)
-- Q634.3: Is there a marketing / segmentation case for prioritising one over the other?
-- Q634.4: Do we want Facebook as well (Cognito supports it natively)? The brand case is weaker but setup is cheapest of all.
+- Q14.1: Apple Developer Program — do we have one, or will we set one up? (Required before any work lands.)
+- Q14.2: Microsoft — single-tenant or `common` (multi-tenant, any Microsoft user)? (Recommendation: `common`.)
+- Q14.3: Is there a marketing / segmentation case for prioritising one over the other?
+- Q14.4: Do we want Facebook as well (Cognito supports it natively)? The brand case is weaker but setup is cheapest of all.
 
 ## Good fit for Copilot?
 

@@ -1,8 +1,8 @@
-# PLAN: Issue #735 — "Packed" mobile UI
+# PLAN: Issue #8 (pre-migration #735) — "Packed" mobile UI
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/735
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/8
 > Original body: screenshot only (641×781 PNG); title "Can get slightly 'Packed' on mobile UI".
-> Existing plans: none mobile-specific; overlaps with #740 (manage subscription button) and #745 (home button) in the broader "mobile UX audit" theme.
+> Existing plans: none mobile-specific; overlaps with #5 (manage subscription button) and #4 (home button) in the broader "mobile UX audit" theme.
 
 ## Elaboration
 
@@ -62,8 +62,8 @@ E.g. add Pico.css or Tailwind just for mobile breakpoints. Heavier dependency fo
 
 ## Questions (for QUESTIONS.md)
 
-- Q735.1: Which page does the screenshot show? (Looks like `/bundles.html` from the shapes, but hard to tell.) Please confirm so the audit starts there.
-- Q735.2: Is a hamburger menu acceptable for the nav below 640px, or do you want all links always visible?
+- Q8.1: Which page does the screenshot show? (Looks like `/bundles.html` from the shapes, but hard to tell.) Please confirm so the audit starts there.
+- Q8.2: Is a hamburger menu acceptable for the nav below 640px, or do you want all links always visible?
 
 ## Good fit for Copilot?
 

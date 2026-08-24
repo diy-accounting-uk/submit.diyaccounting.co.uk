@@ -1,6 +1,6 @@
-# PLAN: Issue #746 — Retire link tree
+# PLAN: Issue #3 (pre-migration #746) — Retire link tree
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/746
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/3
 > Original body: `https://linktr.ee/diyaccounting`
 > Existing plans: none found in `_developers/`
 > Related: `www.diyaccounting.co.uk` and `diy-accounting` repos (sibling sites) may also reference the Linktree.
@@ -60,9 +60,9 @@ Host `/links.html` on `submit.diyaccounting.co.uk` rather than the gateway. Cons
 
 ## Questions (for QUESTIONS.md)
 
-- Q746.1: Who controls the Linktree account credentials today? Needed to update / delete.
-- Q746.2: Do we want a single `/links` page, or direct-to-home? (Recommendation: `/links` on the gateway.)
-- Q746.3: Are there printed/physical assets (business cards, A5 flyers) that still print the `linktr.ee` URL? If yes, leave a redirect in place until those assets are exhausted.
+- Q3.1: Who controls the Linktree account credentials today? Needed to update / delete.
+- Q3.2: Do we want a single `/links` page, or direct-to-home? (Recommendation: `/links` on the gateway.)
+- Q3.3: Are there printed/physical assets (business cards, A5 flyers) that still print the `linktr.ee` URL? If yes, leave a redirect in place until those assets are exhausted.
 
 ## Good fit for Copilot?
 

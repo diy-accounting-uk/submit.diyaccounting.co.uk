@@ -1,6 +1,6 @@
-# PLAN: Issue #425 — Implement optional VAT endpoints
+# PLAN: Issue #19 (pre-migration #425) — Implement optional VAT endpoints
 
-> Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/425
+> Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/19
 > Original body: "Implement optional endpoints — GET /organisations/vat/{vrn}/returns/{periodKey} (view return), /liabilities, /payments, /penalties. Add Playwright tests using Gov-Test-Scenario values. Providing these enhances customer experience and may speed up approval."
 > Existing plans:
 > - **`_developers/backlog/vat-api-operations.md`** (133 lines — authoritative design, includes a 2025-10-31 progress note: OAuth for `vatObligations.html` + `viewVatReturn.html` already done)
@@ -91,10 +91,10 @@ Ship smaller PRs. Recommended if HMRC approval deadline pressure demands it.
 
 ## Questions (for QUESTIONS.md)
 
-- Q425.1: Entitlement gating — reuse `vat-obligations`, or introduce a fine-grained `vat-view` activity?
-- Q425.2: Do we need the `POST /organisations/vat/{vrn}/payments` (make a payment) endpoint too? (Not in this issue but sometimes requested.)
-- Q425.3: OpenAPI client generation vs hand-rolled? (Recommendation: hand-rolled for parity with existing code; file a follow-up for generation later.)
+- Q19.1: Entitlement gating — reuse `vat-obligations`, or introduce a fine-grained `vat-view` activity?
+- Q19.2: Do we need the `POST /organisations/vat/{vrn}/payments` (make a payment) endpoint too? (Not in this issue but sometimes requested.)
+- Q19.3: OpenAPI client generation vs hand-rolled? (Recommendation: hand-rolled for parity with existing code; file a follow-up for generation later.)
 
 ## Good fit for Copilot?
 
-Yes — highly structured, pattern-matches existing Lambdas. Assign after Q425.1 answered.
+Yes — highly structured, pattern-matches existing Lambdas. Assign after Q19.1 answered.
