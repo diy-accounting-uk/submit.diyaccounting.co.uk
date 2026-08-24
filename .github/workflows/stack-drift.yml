@@ -253,7 +253,8 @@ jobs:
           echo "--- Environment Stacks (us-east-1) ---"
           for STACK in \
             "${ENV_NAME}-env-ObservabilityUE1Stack" \
-            "${ENV_NAME}-env-EcrUE1Stack"; do
+            "${ENV_NAME}-env-EcrUE1Stack" \
+            "${ENV_NAME}-env-HoldingStack"; do
             detect_drift "$STACK" "us-east-1"
           done
 
