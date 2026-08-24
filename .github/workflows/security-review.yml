@@ -42,7 +42,7 @@ jobs:
     steps:
       - name: Check for open security review issues
         id: check
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const skipIfOpen = '${{ env.SKIP_IF_OPEN }}' === 'true';
@@ -84,11 +84,11 @@ jobs:
       issue_url: ${{ steps.create.outputs.issue_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Create security review issue
         id: create
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           TARGET_BRANCH: ${{ env.TARGET_BRANCH }}
           WORKFLOW_NAME: ${{ github.workflow }}
@@ -205,7 +205,7 @@ jobs:
       issues: write
     steps:
       - name: Assign issue to Copilot
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |
