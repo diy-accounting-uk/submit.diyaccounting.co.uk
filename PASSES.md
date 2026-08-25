@@ -17,6 +17,10 @@ The system uses a three-tier model:
 
 ## How It Works
 
+Bundles marked `enable = "always"` in the catalogue (currently `day-guest`) are self-service: an
+authenticated user clicks "Request" on the bundles page and gets the bundle immediately, no pass
+needed. The steps below cover bundles that are pass-gated (`enable = "on-pass"`).
+
 1. An admin generates a pass via GitHub Actions (`generate-pass.yml`) or the pass admin API
 2. The pass is a four-word code (e.g. `tiger-happy-mountain-silver`) with a URL and QR code
 3. User visits the URL or enters the code on the bundles page
@@ -31,7 +35,6 @@ Defined in `submit.passes.toml`. Each pass type is a template with defaults.
 | Pass Type | Bundle Granted | Max Uses | Validity | Email Required | Payment |
 |-----------|---------------|----------|----------|---------------|---------|
 | `day-guest-test-pass` | day-guest | 1 | 1 day | No | Free (admin, sandbox) |
-| `day-guest-pass` | day-guest | 1 | 1 day | No | Free (admin, production) |
 | `invited-guest` | invited-guest | 1 | 1 month | Yes | Free (admin) |
 | `resident-guest` | resident-guest | 1 | Unlimited | Yes | Free (admin) |
 | `resident-pro-comp` | resident-pro-comp | 1 | 1 year | Yes | Free (admin) |
@@ -58,7 +61,7 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 | Bundle | Level | Tokens | Refresh | Timeout | Allocation | Unlocked By |
 |--------|-------|--------|---------|---------|------------|-------------|
 | `default` | - | - | - | - | Automatic | All authenticated users |
-| `day-guest` | Guest | 3 | None | 1 day | On-Request | day-guest-test-pass, day-guest-pass, digital-pass, physical-pass |
+| `day-guest` | Guest | 3 | None | 1 day | On-Request | None — self-service (`enable = "always"`); day-guest-test-pass, digital-pass, physical-pass optional |
 | `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, campaign |
 | `resident-guest` | Guest | 3 | Monthly | Unlimited | On-Email-Match | resident-guest |
 | `resident-pro-comp` | Pro | 100 | Monthly | Unlimited | On-Email-Match | resident-pro-comp |
@@ -69,7 +72,7 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 - **Tokens**: Credits consumed by metered activities. Only VAT submission costs tokens (1 per submission). Viewing obligations and returns is free.
 - **Token refresh**: Bundles with `tokenRefreshInterval` replenish tokens periodically (lazy evaluation on API call).
 - **Timeout**: How long the bundle stays active after allocation. `day-guest` expires after 1 day; `resident-guest` never expires.
-- **Capacity cap**: `day-guest` has a global cap (0 in closed beta, 10 in public beta) limiting concurrent allocations across all users.
+- **Capacity cap**: `day-guest` has a global cap of 100 limiting concurrent allocations across all users.
 
 ## Activities
 
@@ -236,9 +239,9 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 |----------|---------|
 | `.github/workflows/generate-pass.yml` | Generate passes via GitHub Actions |
 
-## Current Status (Closed Beta)
+## Current Status (Public Beta)
 
-- `day-guest` requires a pass (`enable = "on-pass"`) with capacity cap = 0
+- `day-guest` is self-service (`enable = "always"`) with a global capacity cap of 100
 - `resident-pro` requires a pass then subscription (`allocation = "on-pass-on-subscription"`)
 - All pass generation is admin-only via GitHub Actions
 - User-issued passes (campaign, digital, physical) are defined but Phase 6 is deferred
@@ -264,9 +267,9 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 
 ### To reach Public Beta
 
-1. Set `day-guest` `enable = "always"` and `cap = 10`
-2. Remove `listedInEnvironments` restrictions
-3. Requires production HMRC credentials validated by a trial user
+1. ~~Set `day-guest` `enable = "always"` and `cap = 10`~~ — Done (cap is 100)
+2. ~~Remove `listedInEnvironments` restrictions~~ — Done
+3. ~~Requires production HMRC credentials validated by a trial user~~ — Done (granted March 2026)
 
 ### To reach Launch
 
