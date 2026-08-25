@@ -335,6 +335,7 @@
       "globby": "^11.1.0"
     },
     "structured-data-testing-tool": {
+      "babel-polyfill": "npm:core-js@^3.50.0",
       "nth-check": "^2.0.1",
       "validator": "^13.15.21",
       "cheerio": {
