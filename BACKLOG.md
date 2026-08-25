@@ -29,6 +29,7 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 | 7 | Tag receipts and activity events with actor class (customer / test / synthetic); emit business metrics on submission success, failure, and signup; add failure-path activity event in `hmrcVatReturnPost.js` | AWS audit | M | Insight [DE: ingestion]. Unblocks "how many customers filed this month", which no current data can answer. Foundation for everything in W2. |
 | 8 | Route WAF alarm state changes to Telegram (us-east-1 EventBridge rule or SNS forward) | AWS audit, EdgeStack TODO | S | Trust. Three attack-detection alarms currently reach nobody. |
 | 9 | Fix dead GitHub discussion link in the support auto-reply | Shutler email | S | Hygiene. Every support contact sees a broken link today. |
+| 9a | Widen the support autoresponder's sender filter: it replies to automated notifications, not just people — eight replies to AWS SNS subscription-confirmation emails on 2026-08-25 alone, each bouncing at an amazonses address, same defect class as the recorded GitHub-notification bounces | Workspace session, mail-mirror verification | S | Hygiene. One filter fix stops a standing stream of bounce noise in the support mailbox and prevents the autoresponder confirming SNS subscriptions nobody asked for. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
