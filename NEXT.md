@@ -9,6 +9,13 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
 reasoning.
 
+**In flight — batch 1 (integration branch `claude/next-batch-1`, coordinator merges and
+pushes):** three sub-agents in isolated worktrees. `claude/batch1-cdk-observability` carries
+B8, B26, and B2's vault-name fix; `claude/batch1-web-links` carries B4a, B9, B31's link items
+(#3, #4), and B6's error-display half; `claude/batch1-activity-events` carries B7. A fourth
+agent is splitting non-NEXT backlog rows into precursor/remainder pairs directly in
+`BACKLOG.md`.
+
 - [ ] **(B2) Fix the backup verifier and re-enable PITR.** Fix the doubled `-env` vault name in
   `verify-backups.yml`, then restore point-in-time recovery on all 11 prod tables (the
   `KindCdk.ensureTable` custom resource dropped it). `_developers/backlog/PLAN_BACKUP_STRATEGY.md`
