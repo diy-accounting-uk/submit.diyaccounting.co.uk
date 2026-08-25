@@ -72,7 +72,6 @@ The `OpenApiGenerator.java` has been completely refactored to introspect the CDK
 | Path Pattern | Tag | Security | Description |
 |-------------|-----|----------|-------------|
 | `/cognito/*` | Authentication | None | Public auth endpoints |
-| `/hmrc/authUrl` | HMRC | CognitoAuth | HMRC OAuth initiation |
 | `/hmrc/token` | HMRC | CognitoAuth | HMRC token exchange |
 | `/hmrc/vat/return` | HMRC | HmrcAuth | VAT submission (requires HMRC token) |
 | `/hmrc/receipt` | HMRC | CognitoAuth | Receipt management |

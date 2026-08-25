@@ -18,7 +18,6 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
     <!--script async src="../../prefetch/prefetch-hmrc-vat-obligation-head.js"></script-->
   </head>
   <body>
@@ -220,13 +219,6 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script>
-      (async function () {
-        try {
-          await window.loadEnv();
-        } catch (err) {
-          console.warn("Failed to load environment:", err);
-        }
-      })();
       // Global variables
       let obligationsData = null;
       let searchCriteriaHidden = false;
@@ -483,16 +475,8 @@
             const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:vat";
 
             // Get OAuth URL with catalogue-driven scope
-            let authResponseUrl;
-            if (window.__env && window.authUrlBuilder) {
-              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
-              console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
-            } else {
-              // Get OAuth URL from API (fallback)
-              const authResponse = await getAuthUrl(state, "hmrc", oauthScope);
-              authResponseUrl = authResponse.authUrl;
-              console.log("Using server-side HMRC Auth URL:", authResponseUrl);
-            }
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+            console.log("Generated HMRC Auth URL:", authResponseUrl);
 
             showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
 
@@ -572,8 +556,6 @@
           }
         }
       }
-
-      // getAuthUrl is provided globally by submit.js (now supports optional scope)
 
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");

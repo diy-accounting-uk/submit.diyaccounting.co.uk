@@ -147,15 +147,6 @@
     </footer>
 
     <script src="lib/env-loader.js"></script>
-    <script>
-      (async function () {
-        try {
-          await window.loadEnv();
-        } catch (e) {
-          console.warn("Failed to load environment:", e);
-        }
-      })();
-    </script>
     <script type="module" src="submit.js"></script>
     <script src="developer-mode.js"></script>
     <script src="lib/request-cache.js"></script>

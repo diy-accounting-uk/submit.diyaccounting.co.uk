@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
+const envLoaderPath = path.join(process.cwd(), "web/public/lib/env-loader.js");
+const authUrlBuilderPath = path.join(process.cwd(), "web/public/lib/auth-url-builder.js");
+
 // Helper to load and evaluate a script in a mock browser environment
 function evaluateScript(filePath, context) {
   const content = fs.readFileSync(filePath, "utf-8");
@@ -10,8 +13,35 @@ function evaluateScript(filePath, context) {
   wrapper(context, global.fetch, global.Headers, context.localStorage, context.sessionStorage, context.console);
 }
 
-describe("Auth URL Generation (Phase 2)", () => {
+const envFile = `
+# This is a comment
+COGNITO_CLIENT_ID=client123
+COGNITO_BASE_URI=https://auth.example.com/
+HMRC_CLIENT_ID=hmrc-live-id
+HMRC_BASE_URI=https://api.service.hmrc.gov.uk/
+HMRC_SANDBOX_CLIENT_ID=hmrc-sandbox-id
+HMRC_SANDBOX_BASE_URI=https://test-api.service.hmrc.gov.uk
+DIY_SUBMIT_BASE_URL=https://submit.example.com/
+`;
+
+describe("Auth URL Generation", () => {
   let mockWindow;
+
+  function respondWithEnv({ delayMs = 0 } = {}) {
+    global.fetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          const respond = () => resolve({ ok: true, text: () => Promise.resolve(envFile) });
+          if (delayMs > 0) setTimeout(respond, delayMs);
+          else respond();
+        }),
+    );
+  }
+
+  function loadScripts() {
+    evaluateScript(envLoaderPath, mockWindow);
+    evaluateScript(authUrlBuilderPath, mockWindow);
+  }
 
   beforeEach(() => {
     mockWindow = {
@@ -23,7 +53,6 @@ describe("Auth URL Generation (Phase 2)", () => {
         warn: vi.fn(),
         error: vi.fn(),
       },
-      __env: null,
     };
 
     global.fetch = vi.fn();
@@ -37,65 +66,76 @@ describe("Auth URL Generation (Phase 2)", () => {
       }
     };
     vi.stubGlobal("Headers", global.Headers);
-
-    // Load scripts
-    evaluateScript(path.join(process.cwd(), "web/public/lib/env-loader.js"), mockWindow);
-    evaluateScript(path.join(process.cwd(), "web/public/lib/auth-url-builder.js"), mockWindow);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("env-loader parses .env file correctly", async () => {
-    const mockEnvContent = `
-# This is a comment
-COGNITO_CLIENT_ID=test-client-id
-COGNITO_BASE_URI=https://auth.example.com
-HMRC_CLIENT_ID=hmrc-id
-DIY_SUBMIT_BASE_URL=https://submit.example.com/
-    `;
+  it("env-loader fetches /submit.env on load and resolves envReady with the parsed values", async () => {
+    respondWithEnv();
+    loadScripts();
 
-    global.fetch.mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve(mockEnvContent),
-    });
+    expect(global.fetch).toHaveBeenCalledWith("/submit.env", { cache: "no-store" });
 
-    await mockWindow.loadEnv();
-
-    expect(mockWindow.__env).toEqual({
-      COGNITO_CLIENT_ID: "test-client-id",
-      COGNITO_BASE_URI: "https://auth.example.com",
-      HMRC_CLIENT_ID: "hmrc-id",
+    await expect(mockWindow.envReady).resolves.toEqual({
+      COGNITO_CLIENT_ID: "client123",
+      COGNITO_BASE_URI: "https://auth.example.com/",
+      HMRC_CLIENT_ID: "hmrc-live-id",
+      HMRC_BASE_URI: "https://api.service.hmrc.gov.uk/",
+      HMRC_SANDBOX_CLIENT_ID: "hmrc-sandbox-id",
+      HMRC_SANDBOX_BASE_URI: "https://test-api.service.hmrc.gov.uk",
       DIY_SUBMIT_BASE_URL: "https://submit.example.com/",
     });
   });
 
-  it("buildCognitoAuthUrl generates correct URL", () => {
-    mockWindow.__env = {
-      COGNITO_CLIENT_ID: "client123",
-      COGNITO_BASE_URI: "https://auth.example.com/",
-      DIY_SUBMIT_BASE_URL: "https://submit.example.com",
-    };
+  it("env-loader rejects envReady when /submit.env is not served", async () => {
+    global.fetch.mockResolvedValue({ ok: false });
+    loadScripts();
 
-    const state = "xyz789";
-    const url = mockWindow.authUrlBuilder.buildCognitoAuthUrl(state);
+    await expect(mockWindow.envReady).rejects.toThrow("Failed to load /submit.env");
+  });
+
+  it("buildCognitoAuthUrl generates correct URL", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const url = await mockWindow.authUrlBuilder.buildCognitoAuthUrl("xyz789", "nonce456");
 
     expect(url).toContain("https://auth.example.com/oauth2/authorize");
     expect(url).toContain("client_id=client123");
     expect(url).toContain("state=xyz789");
+    expect(url).toContain("nonce=nonce456");
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/auth/loginWithCognitoCallback.html"));
   });
 
-  it("buildHmrcAuthUrl generates correct URL for live", () => {
-    mockWindow.__env = {
-      HMRC_CLIENT_ID: "hmrc-live-id",
-      HMRC_BASE_URI: "https://api.service.hmrc.gov.uk/",
-      DIY_SUBMIT_BASE_URL: "https://submit.example.com/",
-    };
+  it("buildCognitoAuthUrl waits for a slow /submit.env instead of failing", async () => {
+    respondWithEnv({ delayMs: 500 });
+    loadScripts();
 
-    const state = "abc123";
-    const url = mockWindow.authUrlBuilder.buildHmrcAuthUrl(state, "read:vat", "live");
+    // Build the URL immediately, as a user clicking sign-in before the fetch lands does
+    const urlPromise = mockWindow.authUrlBuilder.buildCognitoAuthUrl("slow-state", "slow-nonce");
+
+    await expect(urlPromise).resolves.toContain("https://auth.example.com/oauth2/authorize");
+    await expect(urlPromise).resolves.toContain("client_id=client123");
+    await expect(urlPromise).resolves.toContain("state=slow-state");
+  });
+
+  it("buildHmrcAuthUrl waits for a slow /submit.env instead of failing", async () => {
+    respondWithEnv({ delayMs: 500 });
+    loadScripts();
+
+    const urlPromise = mockWindow.authUrlBuilder.buildHmrcAuthUrl("slow-state", "read:vat", "live");
+
+    await expect(urlPromise).resolves.toContain("https://api.service.hmrc.gov.uk/oauth/authorize");
+    await expect(urlPromise).resolves.toContain("client_id=hmrc-live-id");
+  });
+
+  it("buildHmrcAuthUrl generates correct URL for live", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("abc123", "read:vat", "live");
 
     expect(url).toContain("https://api.service.hmrc.gov.uk/oauth/authorize");
     expect(url).toContain("client_id=hmrc-live-id");
@@ -104,15 +144,11 @@ DIY_SUBMIT_BASE_URL=https://submit.example.com/
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/activities/submitVatCallback.html"));
   });
 
-  it("buildHmrcAuthUrl generates correct URL for sandbox", () => {
-    mockWindow.__env = {
-      HMRC_SANDBOX_CLIENT_ID: "hmrc-sandbox-id",
-      HMRC_SANDBOX_BASE_URI: "https://test-api.service.hmrc.gov.uk",
-      DIY_SUBMIT_BASE_URL: "https://submit.example.com",
-    };
+  it("buildHmrcAuthUrl generates correct URL for sandbox", async () => {
+    respondWithEnv();
+    loadScripts();
 
-    const state = "def456";
-    const url = mockWindow.authUrlBuilder.buildHmrcAuthUrl(state, "write:vat", "sandbox");
+    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("def456", "write:vat", "sandbox");
 
     expect(url).toContain("https://test-api.service.hmrc.gov.uk/oauth/authorize");
     expect(url).toContain("client_id=hmrc-sandbox-id");

@@ -26,7 +26,7 @@ import {
 } from "./lib/utils/correlation-utils.js";
 
 // Services layer
-import { checkAuthStatus, checkTokenExpiry, ensureSession, getAuthUrl } from "./lib/services/auth-service.js";
+import { checkAuthStatus, checkTokenExpiry, ensureSession } from "./lib/services/auth-service.js";
 import { authorizedFetch, fetchWithIdToken, handle403Error, executeAsyncRequestPolling } from "./lib/services/api-client.js";
 import { submitVat, getGovClientHeaders, getClientIP, getIPViaWebRTC } from "./lib/services/hmrc-service.js";
 import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCatalogText } from "./lib/services/catalog-service.js";
@@ -299,7 +299,6 @@ if (typeof window !== "undefined") {
   window.checkAuthStatus = checkAuthStatus;
   window.checkTokenExpiry = checkTokenExpiry;
   window.ensureSession = ensureSession;
-  window.getAuthUrl = getAuthUrl;
 
   // API client
   window.authorizedFetch = authorizedFetch;
@@ -386,7 +385,6 @@ export {
   checkAuthStatus,
   checkTokenExpiry,
   ensureSession,
-  getAuthUrl,
   // API client
   authorizedFetch,
   fetchWithIdToken,

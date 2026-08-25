@@ -5,9 +5,8 @@
 (function () {
   "use strict";
 
-  function buildCognitoAuthUrl(state, nonce, scope = "openid profile email") {
-    const env = window.__env;
-    if (!env) throw new Error("Environment not loaded");
+  async function buildCognitoAuthUrl(state, nonce, scope = "openid profile email") {
+    const env = await window.envReady;
 
     const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/auth/loginWithCognitoCallback.html";
 
@@ -28,9 +27,8 @@
     return url;
   }
 
-  function buildHmrcAuthUrl(state, scope = "write:vat read:vat", account = "live") {
-    const env = window.__env;
-    if (!env) throw new Error("Environment not loaded");
+  async function buildHmrcAuthUrl(state, scope = "write:vat read:vat", account = "live") {
+    const env = await window.envReady;
 
     const sandbox = account.toLowerCase() === "sandbox";
 

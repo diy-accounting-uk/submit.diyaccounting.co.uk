@@ -98,10 +98,10 @@ public class OpenApiGenerator {
                 "This API is protected by Amazon Cognito. To use the API:\n\n"
                         + "1. **Via Website**: If you are logged into the DIY Accounting Submit website, you can access the Swagger UI directly and API calls will use your existing session cookies.\n\n"
                         + "2. **External Access**: \n"
-                        + "   - First obtain a Cognito access token by calling `/api/v1/cognito/authUrl` to get the login URL\n"
-                        + "   - Complete the OAuth flow to get an access token\n"
+                        + "   - First complete the Cognito hosted UI OAuth flow to get an authorization code\n"
+                        + "   - Exchange that code for an access token by calling `/api/v1/cognito/token`\n"
                         + "   - Include the token in the `Authorization: Bearer <token>` header\n\n"
-                        + "3. **For HMRC Integration**: Some endpoints require HMRC authorization tokens obtained via `/api/v1/hmrc/authUrl` and `/api/v1/hmrc/token`\n\n"
+                        + "3. **For HMRC Integration**: Some endpoints require HMRC authorization tokens obtained via `/api/v1/hmrc/token`\n\n"
                         + "**Note**: All endpoints require proper CORS headers and are accessible from the same domain as the main application.");
         info.set("x-authentication-guide", authInfo);
 
@@ -354,9 +354,7 @@ public class OpenApiGenerator {
             ObjectNode responses = mapper.createObjectNode();
             ObjectNode response200 = mapper.createObjectNode();
 
-            if (path.equals("/cognito/authUrl")) {
-                response200.put("description", "Authentication URL returned successfully");
-            } else if (path.equals("/cognito/token")) {
+            if (path.equals("/cognito/token")) {
                 response200.put("description", "Token exchanged successfully");
             }
 
@@ -445,7 +443,6 @@ public class OpenApiGenerator {
      */
     private static String getHmrcResponseDescription(String path, String method) {
         return switch (path) {
-            case "/hmrc/authUrl" -> "HMRC authentication URL returned successfully";
             case "/hmrc/token" -> "HMRC token exchanged successfully";
             case "/hmrc/vat/return" -> "VAT return submitted successfully";
             case "/hmrc/receipt" ->

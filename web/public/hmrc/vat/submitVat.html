@@ -19,7 +19,6 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <!--script async src="../../prefetch/prefetch-hmrc-authurl-head.js"></script-->
     <!--script async src="../../prefetch/prefetch-hmrc-vat-return-head.js"></script-->
     <!--script async src="../../prefetch/prefetch-hmrc-receipt-head.js"></script-->
   </head>
@@ -402,14 +401,6 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script>
-      (async function () {
-        try {
-          await window.loadEnv();
-        } catch (err) {
-          console.warn("Failed to load environment:", err);
-        }
-      })();
-
       // Obligation formatting utilities (inline version for non-module context)
       const ObligationUtils = {
         formatObligationForDisplay(obligation) {
@@ -771,16 +762,8 @@
             const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:vat read:vat";
 
             // Get OAuth URL
-            let authResponseUrl;
-            if (window.__env && window.authUrlBuilder) {
-              authResponseUrl = window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
-              console.log("Using client-side generated HMRC Auth URL:", authResponseUrl);
-            } else {
-              // Get OAuth URL from API (fallback)
-              const authResponse = await getAuthUrl(state, "hmrc");
-              authResponseUrl = authResponse.authUrl;
-              console.log("Using server-side HMRC Auth URL:", authResponseUrl);
-            }
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+            console.log("Generated HMRC Auth URL:", authResponseUrl);
 
             sessionStorage.setItem("currentActivity", location.pathname);
             console.log("Current activity set to:", location.pathname);

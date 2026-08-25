@@ -179,7 +179,7 @@
   }
 
   // Logout function
-  function logout(e) {
+  async function logout(e) {
     // Prevent the <a> default action — without this, updateLoginStatus() changes
     // the href from "#" to "../auth/login.html" and the browser's default <a> click
     // navigation races with (and overrides) the Cognito redirect below.
@@ -218,8 +218,8 @@
     }
 
     // Redirect to Cognito logout endpoint to invalidate session
-    const env = window.__env;
-    if (env && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
+    const env = await window.envReady;
+    if (env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
       const logoutUri = window.location.origin + "/auth/signed-out.html";
       const logoutUrl =
         env.COGNITO_BASE_URI.replace(/\/$/, "") +
