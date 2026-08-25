@@ -29,8 +29,11 @@ PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_REGION:-eu-west-2}"
 
 # GitHub configuration - update these for your repository
-GITHUB_ORG="${GITHUB_ORG:-diyaccounting}"
+GITHUB_ORG="${GITHUB_ORG:-diy-accounting-uk}"
 GITHUB_REPO="${GITHUB_REPO:-submit.diyaccounting.co.uk}"
+# Repositories allowed to assume the actions role. The root repo is always included:
+# its deploy workflow reads CloudFormation outputs from every service account.
+GITHUB_REPOS="${GITHUB_REPOS:-$GITHUB_REPO,root.diyaccounting.co.uk}"
 
 if [ -z "$ENV_NAME" ] || [ -z "$ACCOUNT_ID" ]; then
     log_error "Usage: $0 <environment-name> <account-id>"
@@ -86,10 +89,15 @@ ACTIONS_ROLE_NAME="github-actions-role"
 ACTIONS_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${ACTIONS_ROLE_NAME}"
 
 # Generate trust policy
+# Render the sub list as a JSON array so several repositories can assume the role
+GITHUB_REPO_SUBS=$(printf '%s\n' "$GITHUB_REPOS" | tr ',' '\n' | while IFS= read -r r; do
+    [ -n "$r" ] && printf '"repo:%s/%s:*",' "$GITHUB_ORG" "$r"
+done | sed 's/,$//')
+GITHUB_REPO_SUBS="[$GITHUB_REPO_SUBS]"
+
 ACTIONS_TRUST_POLICY=$(cat "$TRUST_POLICIES_DIR/github-actions-trust.json" | \
-    sed "s/\${ACCOUNT_ID}/$ACCOUNT_ID/g" | \
-    sed "s/\${GITHUB_ORG}/$GITHUB_ORG/g" | \
-    sed "s/\${GITHUB_REPO}/$GITHUB_REPO/g")
+    sed "s|\${ACCOUNT_ID}|$ACCOUNT_ID|g" | \
+    sed "s|\${GITHUB_REPO_SUBS}|$GITHUB_REPO_SUBS|g")
 
 # Check if role exists
 if aws iam get-role --role-name "$ACTIONS_ROLE_NAME" --profile "$PROFILE" 2>/dev/null; then
