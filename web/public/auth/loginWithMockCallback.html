@@ -18,7 +18,7 @@
     <header>
       <div class="header-nav">
         <div class="header-left">
-          <a href="../index.html" title="Home" class="home-link">
+          <a href="/" title="Home" class="home-link">
             <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
             </svg>
@@ -47,7 +47,7 @@
       <div class="form-container" style="text-align: center">
         <h2 id="welcomeHeading">Welcome</h2>
         <p>Return home.</p>
-        <button type="button" class="btn" onclick="window.location.href = '../index.html'">Home</button>
+        <button type="button" class="btn" onclick="window.location.href = '/'">Home</button>
       </div>
     </main>
 
@@ -216,7 +216,7 @@
           window.history.replaceState({}, document.title, window.location.pathname);
 
           // Redirect to bundles page or home
-          window.location.href = "../index.html";
+          window.location.href = "/";
         } catch (error) {
           console.error("Authentication callback error:", error);
           showStatus(`Authentication failed: ${error.message}`, "error");

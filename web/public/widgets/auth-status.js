@@ -169,7 +169,7 @@
       const currentPage = window.location.pathname.split("/").pop();
       if (currentPage === "login.html") {
         loginLinkElement.textContent = "Home";
-        loginLinkElement.href = "../index.html";
+        loginLinkElement.href = "/";
       } else {
         loginLinkElement.textContent = "Log in";
         loginLinkElement.href = "../auth/login.html";
@@ -213,7 +213,7 @@
     // (demo credentials are re-injected on each page load)
     if (document.documentElement.dataset.simulator === "true") {
       const pathPrefix = window.location.pathname.startsWith("/sim/") ? "/sim/" : "/";
-      window.location.href = window.location.origin + pathPrefix + "index.html";
+      window.location.href = window.location.origin + pathPrefix;
       return;
     }
 
