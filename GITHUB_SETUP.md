@@ -79,7 +79,7 @@ Different values per environment.
 | `GOOGLE_CLIENT_SECRET` | `aws --profile submit-ci secretsmanager get-secret-value --secret-id ci/submit/google/client_secret` | `aws --profile submit-prod secretsmanager get-secret-value --secret-id prod/submit/google/client_secret` |
 | Stripe credentials (4 secrets per env) | see **Stripe credentials — the four dimensions** below | same |
 | `TELEGRAM_BOT_TOKEN` | from your local `.env` — same value both envs | same |
-| `NGROK_AUTHTOKEN` and `NGROK_AUTH_TOKEN` | from your local `.env` — workflows reference both names; set both to the same value | same |
+| `NGROK_AUTHTOKEN` | from your local `.env` — same value both envs | same |
 
 `GITHUB_TOKEN` is automatic; do not set it.
 
