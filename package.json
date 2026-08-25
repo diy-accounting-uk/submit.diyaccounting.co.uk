@@ -278,7 +278,7 @@
     "@microsoft/eslint-formatter-sarif": "^3.1.0",
     "@ngrok/ngrok": "^1.7.0",
     "@playwright/test": "^1.62.1",
-    "@vitest/coverage-v8": "3.2.7",
+    "@vitest/coverage-v8": "4.1.11",
     "aws-cdk": "^2.1138.0",
     "aws-sdk-client-mock": "^4.1.0",
     "bcryptjs": "^3.0.3",
@@ -303,13 +303,13 @@
     "pa11y": "^9.1.1",
     "pa11y-ci": "^4.1.0",
     "prettier": "^3.8.3",
-    "retire": "^5.4.2",
+    "retire": "^5.7.0",
     "robots-parser": "^3.0.1",
     "structured-data-testing-tool": "^4.5.0",
     "supertest": "^7.2.2",
     "toml": "^4.1.1",
     "ts-api-utils": "^2.5.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=24.0.0"
@@ -330,6 +330,9 @@
       "bfj": {
         "jsonpath": "npm:jsonpath-plus@^10.3.0"
       }
+    },
+    "pa11y-ci": {
+      "globby": "^11.1.0"
     },
     "structured-data-testing-tool": {
       "nth-check": "^2.0.1",
