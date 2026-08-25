@@ -393,6 +393,15 @@ public class OpsStack extends Stack {
                         ManagedPolicy.fromAwsManagedPolicyName("CloudWatchSyntheticsFullAccess")))
                 .build();
         canaryBucket.grantReadWrite(canaryRole);
+        // PutMetricData has no resource-level scoping; the namespace condition is the least-privilege form.
+        // Without this grant the canary runs but cannot publish SuccessPercent, and the health/api alarms
+        // (treatMissingData BREACHING) stay in ALARM on missing data.
+        canaryRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cloudwatch:PutMetricData"))
+                .resources(List.of("*"))
+                .conditions(Map.of("StringEquals", Map.of("cloudwatch:namespace", "CloudWatchSynthetics")))
+                .build());
 
         // Health Check Canary - use short suffix to maximize prefix uniqueness
         String healthCanaryName = truncateCanaryName(deploymentPrefix + "-hlth");
@@ -579,7 +588,7 @@ public class OpsStack extends Stack {
                 // Step 2: Check API returns 401 for unauthenticated request (proves API is up)
                 log.info('Step 2: Checking API auth enforcement...');
                 try {
-                    const apiResponse = await makeRequest(baseUrl + 'api/v1/bundles');
+                    const apiResponse = await makeRequest(baseUrl + 'api/v1/bundle');
                     if (apiResponse.status !== 401 && apiResponse.status !== 403) {
                         throw new Error(`API returned unexpected status ${apiResponse.status}`);
                     }
