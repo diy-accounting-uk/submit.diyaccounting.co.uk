@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  async function loadEnv() {
+  async function fetchEnv() {
     const response = await fetch("/submit.env", { cache: "no-store" });
     if (!response.ok) {
       throw new Error("Failed to load /submit.env");
@@ -25,8 +25,13 @@
       env[key] = value;
     }
 
-    window.__env = env;
+    return env;
   }
 
-  window.loadEnv = loadEnv;
+  // Start the fetch as soon as this script is parsed and publish the promise, so that
+  // consumers await the environment instead of sampling a global and losing the race.
+  const envReady = fetchEnv();
+  envReady.catch((err) => console.warn("Failed to load environment:", err));
+
+  window.envReady = envReady;
 })();

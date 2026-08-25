@@ -127,10 +127,6 @@ describe("VAT Flow Frontend JavaScript", () => {
       get: () => window.generateRandomState,
       configurable: true,
     });
-    Object.defineProperty(global, "getAuthUrl", {
-      get: () => window.getAuthUrl,
-      configurable: true,
-    });
     Object.defineProperty(global, "submitVat", {
       get: () => window.submitVat,
       configurable: true,
@@ -288,36 +284,6 @@ describe("VAT Flow Frontend JavaScript", () => {
   });
 
   describe("API Functions", () => {
-    test("getAuthUrl should make correct API call", async () => {
-      const mockResponse = { authUrl: "https://test.com/authUrl" };
-      fetchMock.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      const result = await window.getAuthUrl("test-state");
-
-      // New implementation adds a correlation header via fetchWithId
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/v1/hmrc/authUrl?state=test-state",
-        expect.objectContaining({ headers: expect.anything() }),
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    test("getAuthUrl should throw error on failed response", async () => {
-      const mockResponse = { statusText: "Bad Request" };
-      fetchMock.mockResolvedValueOnce({
-        ok: false,
-        statusText: "Bad Request",
-        json: () => Promise.resolve(mockResponse),
-      });
-
-      await expect(window.getAuthUrl("test-state")).rejects.toThrow(
-        'Failed to get auth URL. Remote call failed: GET /api/v1/hmrc/authUrl?state=test-state - Status: undefined Bad Request - Body: {"statusText":"Bad Request"}',
-      );
-    });
-
     test("submitVat should make correct API call with period dates and 9-box data", async () => {
       const govHeaders = buildGovClientTestHeaders();
 

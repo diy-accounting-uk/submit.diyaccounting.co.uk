@@ -13,7 +13,7 @@ vi.mock("../data/dynamoDbHmrcApiRequestRepository.js", () => ({
   putHmrcApiRequest: vi.fn().mockResolvedValue(undefined),
 }));
 
-describe("System: Cognito Auth Flow (authUrl + token)", () => {
+describe("System: Cognito token exchange", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     Object.assign(process.env, setupTestEnv());

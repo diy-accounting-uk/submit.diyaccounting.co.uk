@@ -190,34 +190,9 @@ export async function ensureSession({ minTTLms = 30000, force = false } = {}) {
   }
 }
 
-/**
- * Get OAuth authorization URL from backend
- * @param {string} state - OAuth state parameter
- * @param {string} provider - OAuth provider (default "hmrc")
- * @param {string} scope - OAuth scope (optional)
- * @returns {Promise<object>} Auth URL response
- */
-export async function getAuthUrl(state, provider = "hmrc", scope = undefined) {
-  let url = `/api/v1/${provider}/authUrl?state=${encodeURIComponent(state)}`;
-  if (scope) url += `&scope=${encodeURIComponent(scope)}`;
-  console.log(`Getting auth URL. Remote call initiated: GET ${url}`);
-
-  const response = await fetchWithId(url);
-  const responseJson = await response.json();
-  if (!response.ok) {
-    const message = `Failed to get auth URL. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
-  }
-
-  console.log(`Got auth URL. Remote call completed successfully: GET ${url}`, responseJson);
-  return responseJson;
-}
-
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.checkAuthStatus = checkAuthStatus;
   window.checkTokenExpiry = checkTokenExpiry;
   window.ensureSession = ensureSession;
-  window.getAuthUrl = getAuthUrl;
 }

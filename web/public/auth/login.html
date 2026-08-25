@@ -19,7 +19,6 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
     <!-- HEAD-prefetch to help mitigate API cold starts for this page's calls -->
-    <!--script async src="../prefetch/prefetch-cognito-authurl-head.js"></script-->
     <!--script async src="../prefetch/prefetch-cognito-token-head.js"></script-->
   </head>
   <body>
@@ -103,14 +102,6 @@
     <script src="../widgets/auth-status.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script>
-      (async function () {
-        try {
-          await window.loadEnv();
-        } catch (err) {
-          console.warn("Failed to load environment:", err);
-        }
-      })();
-
       // Login with Google via Cognito
       async function loginWithCognito() {
         console.log("Initiating login with Google via Cognito");
@@ -134,15 +125,16 @@
         sessionStorage.setItem("cognito_oauth_nonce", nonce);
 
         let authResponseUrl;
-        if (window.__env && window.authUrlBuilder) {
-          authResponseUrl = window.authUrlBuilder.buildCognitoAuthUrl(state, nonce);
-          console.log("Using client-side generated Cognito Auth URL:", authResponseUrl);
-        } else {
-          // Get OAuth URL from API (fallback)
-          const authResponse = await getAuthUrl(state, "cognito");
-          authResponseUrl = authResponse.authUrl;
-          console.log("Using server-side Cognito Auth URL:", authResponseUrl);
+        try {
+          authResponseUrl = await window.authUrlBuilder.buildCognitoAuthUrl(state, nonce);
+        } catch (err) {
+          console.error("Failed to build Cognito auth URL:", err);
+          if (typeof window.showStatus === "function") {
+            window.showStatus("Sign-in is unavailable because the site configuration failed to load. Please reload the page.", "error");
+          }
+          return;
         }
+        console.log("Generated Cognito Auth URL:", authResponseUrl);
 
         console.log("Redirecting to Cognito OAuth URL");
         try {

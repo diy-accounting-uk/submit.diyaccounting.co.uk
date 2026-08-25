@@ -32,19 +32,6 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
   test.beforeEach(async ({ page }) => {
     // Mock API endpoints directly with Playwright
-    await page.route("/api/v1/hmrc/authUrl", async (route) => {
-      const request = route.request();
-      const url = new URL(request.url());
-      const state = url.searchParams.get("state");
-      const authUrl = `https://test-api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=test-client&redirect_uri=http://localhost:3000/&scope=write:vat+read:vat&state=${state}`;
-
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ authUrl }),
-      });
-    });
-
     await page.route("/api/v1/mock/token", async (route) => {
       const request = route.request();
       const body = JSON.parse(request.postData() || "{}");
