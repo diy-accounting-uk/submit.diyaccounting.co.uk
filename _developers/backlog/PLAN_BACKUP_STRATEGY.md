@@ -92,6 +92,20 @@ backups is tracked anywhere else, and nothing here is in flight.
 69 runs since 2026-05-07, so the daily red tells nobody anything. Fixing it restores the signal
 before anything is changed that the signal should verify.
 
+**1b. The `onDelete` gap is the structural cause, and it is wider than backups.** Seven
+`AwsCustomResource` builders create resources CloudFormation never deletes: both paths in
+`Route53AliasUpsert`, and `KindCdk`'s log group, bucket, table, GSI and TTL helpers. Each wires
+`onCreate` and `onUpdate` only.
+
+Three symptoms trace to it. `prod-holding.diyaccounting.co.uk` outlived the stack that made it and
+resolved to a deleted distribution. Every log group survives its stack. And the one that matters
+here: the tables are built by `ensureTable`, so **there is no `Table` construct to carry
+`.pointInTimeRecovery(true)`** — which is precisely why the prop added in `99dadc4e` vanished in
+`31559ee8` and why step 2 below is a design decision rather than a one-line change.
+
+Fixing the builders is a prerequisite for a clean answer to step 2, not a separate tidy-up. It is
+recorded here because this is where its consequence bites hardest; it is not tracked anywhere else.
+
 **2. Decide how PITR gets back on.** Not a one-line prop. Commit `31559ee8` (2026-01-18) moved all
 tables from CDK `Table` constructs to `KindCdk.ensureTable`, an `AwsCustomResource` wrapping a raw
 `createTable` with no PITR parameter, which is what dropped the `pointInTimeRecovery(true)` added
