@@ -22,7 +22,18 @@ agent is splitting non-NEXT backlog rows into precursor/remainder pairs directly
   is the plan of record. Gates the approved TypeScript CDK migration.
 - [ ] **(B4a) Add an "HMRC recognised" link to submit.diyaccounting.co.uk.** Point at the official
   finder (tax.service.gov.uk/making-tax-digital-software, "search DIY Accounting" — no per-product
-  permalink exists).
+  permalink exists). In flight: batch 1 web branch.
+- [ ] **(B4b) Correct the "HMRC Recognised (applied for, pending)" copy on about.html.**
+  Recognition was granted March 2026 and the finder listing published May 2026; the site
+  understates it and contradicts the free-flag request drafted for HMRC. Lands with B4a.
+  In flight: batch 1 web branch. Send the free-flag email only after this deploys.
+- [ ] **(B4c) Make the free route discoverable.** Split the pass-code sentence out of the Free
+  Guest Tier block on about.html, state the 100-allocation day-guest cap, and say on help.html
+  and guide.html how to start free. In flight: batch 1 web branch.
+- [ ] **(B31a) Retire the stale day-guest pass documentation.** Catalogue comment block and
+  commented-out duplicate in `web/public/submit.catalogue.toml`, PASSES.md pass-gated framing
+  (drop `day-guest-pass`, keep `day-guest-test-pass`), REPORT_REPOSITORY_CONTENTS.md line 39.
+  In flight: batch 1 web branch.
 - [ ] **(B5) Clear the stack-drift failure.** The weekly `stack-drift` workflow has been red for
   3+ months. Identify the drifted stacks, reconcile, and raise a tracking issue.
 - [ ] **(B6) Fix VAT obligation matching and the vanishing error message.** A valid quarter failed
