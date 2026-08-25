@@ -19,6 +19,7 @@ import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Expiration;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -26,6 +27,7 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.DistributionAttributes;
 import software.amazon.awscdk.services.cloudfront.IDistribution;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
@@ -197,15 +199,18 @@ public class PublishStack extends Stack {
             infof("No build number provided, skipping submit.build-number.txt generation");
         }
 
-        // Lookup Log Group for web deployment
-        // ILogGroup webDeploymentLogGroup = LogGroup.fromLogGroupArn(
-        //        this,
-        //        props.resourceNamePrefix() + "-ImportedWebDeploymentLogGroup",
-        //        "arn:aws:logs:%s:%s:log-group:%s"
-        //                .formatted(
-        //                        Objects.requireNonNull(props.getEnv()).getRegion(),
-        //                        props.getEnv().getAccount(),
-        //                        props.sharedNames().webDeploymentLogGroupName));
+        // BucketDeployment provisions its S3-sync Lambda as a stack-scoped singleton with a
+        // CloudFormation-assigned function name, so we cannot predict its default
+        // /aws/lambda/<function-name> log group ahead of deploy. Create an explicit log group instead and
+        // pass it via .logGroup(): CDK wires this into the function's Advanced Logging Controls
+        // (LoggingConfig.LogGroup), which routes the function's logs to this exact log group regardless of
+        // the function's actual generated name.
+        LogGroup webDeploymentLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-DocRootToWebOriginDeploymentLogGroup")
+                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-web-deployment")
+                .retention(RetentionDays.ONE_DAY)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
@@ -271,8 +276,7 @@ public class PublishStack extends Stack {
                         "/simulator.html",
                         "/developer-mode.js"))
                 .retainOnDelete(true)
-                // .logGroup(webDeploymentLogGroup)
-                .logRetention(RetentionDays.ONE_DAY)
+                .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
                 .memoryLimit(1024)

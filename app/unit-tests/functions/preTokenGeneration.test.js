@@ -6,8 +6,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Mock the AWS SDK before importing the handler
 const mockSend = vi.fn();
 vi.mock("@aws-sdk/client-cognito-identity-provider", () => ({
-  CognitoIdentityProviderClient: vi.fn(() => ({ send: mockSend })),
-  AdminGetUserCommand: vi.fn((params) => ({ input: params })),
+  CognitoIdentityProviderClient: vi.fn(function () {
+    return { send: mockSend };
+  }),
+  AdminGetUserCommand: vi.fn(function (params) {
+    return { input: params };
+  }),
 }));
 
 const { handler } = await import("@app/functions/auth/preTokenGeneration/index.js");
