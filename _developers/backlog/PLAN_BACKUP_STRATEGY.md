@@ -81,6 +81,38 @@ With PITR off on all 11 prod tables, that argument currently has nothing behind 
 
 ---
 
+## What to do, in order
+
+Everything below is verified. This section is the whole backlog for backups — nothing about
+backups is tracked anywhere else, and nothing here is in flight.
+
+**1. Fix the vault-name bug in `verify-backups.yml`.** One line. `ENV_PREFIX` is already
+`prod-env`, so `VAULT_NAME="${ENV_PREFIX}-env-primary-vault"` at line 156 asks for
+`prod-env-env-primary-vault`. Drop the extra `-env`. Do this first: the workflow has failed all
+69 runs since 2026-05-07, so the daily red tells nobody anything. Fixing it restores the signal
+before anything is changed that the signal should verify.
+
+**2. Decide how PITR gets back on.** Not a one-line prop. Commit `31559ee8` (2026-01-18) moved all
+tables from CDK `Table` constructs to `KindCdk.ensureTable`, an `AwsCustomResource` wrapping a raw
+`createTable` with no PITR parameter, which is what dropped the `pointInTimeRecovery(true)` added
+nine days earlier in `99dadc4e`. `ensureTable` also no-ops against an existing table, so a
+parameter added there would never reach the live ones. Either add an explicit
+`updateContinuousBackups` custom-resource call, or move these tables back to `Table` constructs.
+Both are real changes; pick deliberately.
+
+**3. Widen backup coverage beyond three tables.** The `prod-env-critical-tables` selection names
+receipts, bundles and hmrc-api-requests by ARN. The other eight have no PITR, no snapshots and no
+cross-account copy. `prod-env-passes` holds 7,515 items against receipts' 4,642 — the larger table
+is the unprotected one, and its TTL is disabled too.
+
+**4. Decide whether the `submit-backup` account is real.** Account 914216784828 holds zero backup
+vaults. Until it holds something, the workspace `CLAUDE.md` claim of cross-account copies does not
+describe anything that exists.
+
+**5. Reconcile `CLAUDE.md` with whatever is decided.** It states that data protection comes from
+PITR and cross-account copies rather than `RemovalPolicy.RETAIN`, and that is the stated reason
+every stack uses `DESTROY`. Either the protection catches up with the claim, or the claim changes.
+
 ## Current State Assessment
 
 ### What Exists Today
