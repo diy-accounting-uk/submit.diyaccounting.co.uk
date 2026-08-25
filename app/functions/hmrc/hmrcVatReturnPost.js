@@ -582,7 +582,7 @@ export async function ingestHandler(event) {
         if (payload.userSub && formBundleNumber) {
           const timestamp = new Date().toISOString();
           receiptId = `${timestamp}-${formBundleNumber}`;
-          await putReceipt(payload.userSub, receiptId, receipt);
+          await putReceipt(payload.userSub, receiptId, receipt, resolveActorClass());
           resultData.receiptId = receiptId;
         }
 
@@ -758,7 +758,7 @@ export async function workerHandler(event) {
       if (userSub && formBundleNumber) {
         const timestamp = new Date().toISOString();
         receiptId = `${timestamp}-${formBundleNumber}`;
-        await putReceipt(userSub, receiptId, receipt);
+        await putReceipt(userSub, receiptId, receipt, resolveActorClass());
         result.receiptId = receiptId;
       }
 

@@ -102,6 +102,13 @@ function metricCalls(metricName) {
   return mockEmitMetric.mock.calls.filter((call) => call[0].metricName === metricName);
 }
 
+async function storedReceiptItems() {
+  const lib = await import("@aws-sdk/lib-dynamodb");
+  return mockSend.mock.calls
+    .filter((call) => call[0] instanceof lib.PutCommand && call[0].input.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME)
+    .map((call) => call[0].input.Item);
+}
+
 describe("hmrcVatReturnPost activity events and business metrics", () => {
   beforeAll(async () => {
     // The vendor IP lookup runs once per module, so settle it before any test queues
@@ -211,6 +218,28 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
 
     expect(failureEventsWithCategory("internal-error")).toHaveLength(1);
     expect(metricCalls("VatSubmissionFailure")).toHaveLength(1);
+  });
+
+  test("the stored receipt records the filer as a customer", async () => {
+    mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent());
+
+    const receipts = await storedReceiptItems();
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0].actor).toBe("customer");
+    expect(receipts[0].receipt).toBeDefined();
+    expect(receipts[0].hashedSub).toBeDefined();
+  });
+
+  test("the stored receipt records a test submission as test-user", async () => {
+    mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }));
+
+    const receipts = await storedReceiptItems();
+    expect(receipts).toHaveLength(1);
+    expect(receipts[0].actor).toBe("test-user");
   });
 
   test("a test run is classified as test-user on both the event and the metric", async () => {
