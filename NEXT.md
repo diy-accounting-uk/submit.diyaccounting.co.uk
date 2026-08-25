@@ -10,11 +10,13 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning.
 
 **In flight — batch 1 (integration branch `claude/next-batch-1`, coordinator merges and
-pushes):** three sub-agents in isolated worktrees. `claude/batch1-cdk-observability` carries
-B8, B26, and B2's vault-name fix; `claude/batch1-web-links` carries B4a, B9, B31's link items
-(#3, #4), and B6's error-display half; `claude/batch1-activity-events` carries B7. A fourth
-agent is splitting non-NEXT backlog rows into precursor/remainder pairs directly in
-`BACKLOG.md`.
+pushes):** CODE COMPLETE and merged to the integration branch: B8, B26's implemented slice,
+B2's vault-name fix (CDK stream, `./mvnw clean verify` green); B7 (activity events stream,
+979 tests green). Still working: the web stream (B4a, B4b, B4c, B6 display half, B9, B31
+link items, B31a, B31b — operator decided the simulator matches production gating). B26
+remainder: HMRC error rate, cert expiry, JWT filter, PITR-disabled, and API Gateway 429
+alarms were skipped for named structural reasons (each needs metric emission or prop
+plumbing that does not exist yet) — see the batch PR description when it opens.
 
 - [ ] **(B2) Fix the backup verifier and re-enable PITR.** Fix the doubled `-env` vault name in
   `verify-backups.yml`, then restore point-in-time recovery on all 11 prod tables (the
@@ -30,6 +32,9 @@ agent is splitting non-NEXT backlog rows into precursor/remainder pairs directly
 - [ ] **(B4c) Make the free route discoverable.** Split the pass-code sentence out of the Free
   Guest Tier block on about.html, state the 100-allocation day-guest cap, and say on help.html
   and guide.html how to start free. In flight: batch 1 web branch.
+- [ ] **(B31b) Align the simulator's day-guest gating with production.** Operator decision
+  2026-08-25: `enable = "always"`, TODO removed — fix at the generator, never edit
+  `web/public-simulator` directly. In flight: batch 1 web branch.
 - [ ] **(B31a) Retire the stale day-guest pass documentation.** Catalogue comment block and
   commented-out duplicate in `web/public/submit.catalogue.toml`, PASSES.md pass-gated framing
   (drop `day-guest-pass`, keep `day-guest-test-pass`), REPORT_REPOSITORY_CONTENTS.md line 39.
