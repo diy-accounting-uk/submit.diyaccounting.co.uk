@@ -19,8 +19,17 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
-import { classifyActor, classifyFlow, maskEmail, maskVrn, publishActivityEvent } from "@app/lib/activityAlert.js";
+import {
+  classifyActor,
+  classifyFlow,
+  maskEmail,
+  maskVrn,
+  publishActivityEvent,
+  publishActivityFailureEvent,
+  resolveActorClass,
+} from "@app/lib/activityAlert.js";
 import { context } from "@app/lib/logger.js";
+import { initializeSalt, hashSub } from "@app/services/subHasher.js";
 
 describe("lib/activityAlert", () => {
   describe("classifyActor", () => {
@@ -216,6 +225,122 @@ describe("lib/activityAlert", () => {
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.requestId).toBeUndefined();
       expect(detail.actor).toBe("customer");
+    });
+  });
+
+  describe("resolveActorClass", () => {
+    test("returns the explicit actor when one is supplied", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "test_abc-123");
+        expect(resolveActorClass("synthetic")).toBe("synthetic");
+      });
+    });
+
+    test("returns test-user for a test_ prefixed requestId", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "test_abc-123");
+        expect(resolveActorClass()).toBe("test-user");
+      });
+    });
+
+    test("returns customer for any other requestId", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "abc-123");
+        expect(resolveActorClass()).toBe("customer");
+      });
+      expect(resolveActorClass()).toBe("customer");
+    });
+  });
+
+  describe("publishActivityFailureEvent", () => {
+    const originalEnv = process.env.ACTIVITY_BUS_NAME;
+
+    beforeEach(() => {
+      mockSend.mockClear();
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+    });
+
+    afterEach(() => {
+      if (originalEnv === undefined) {
+        delete process.env.ACTIVITY_BUS_NAME;
+      } else {
+        process.env.ACTIVITY_BUS_NAME = originalEnv;
+      }
+    });
+
+    test("marks the event as a failure and carries the failure category", async () => {
+      await publishActivityFailureEvent({
+        event: "vat-return-failed",
+        summary: "VAT return rejected by HMRC",
+        failure: "hmrc-rejected",
+        detail: { hmrcStatus: 400 },
+      });
+
+      const entry = mockSend.mock.calls[0][0].input.Entries[0];
+      expect(entry.DetailType).toBe("ActivityEvent");
+      const detail = JSON.parse(entry.Detail);
+      expect(detail.event).toBe("vat-return-failed");
+      expect(detail.outcome).toBe("failure");
+      expect(detail.failure).toBe("hmrc-rejected");
+      expect(detail.hmrcStatus).toBe(400);
+    });
+
+    test("carries the hashed sub and never the raw sub", async () => {
+      process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+      await initializeSalt();
+
+      await publishActivityFailureEvent({
+        event: "vat-return-failed",
+        summary: "VAT return failed unexpectedly",
+        failure: "internal-error",
+        userSub: "user-sub-abc",
+      });
+
+      const rawDetail = mockSend.mock.calls[0][0].input.Entries[0].Detail;
+      expect(rawDetail).not.toContain("user-sub-abc");
+      expect(JSON.parse(rawDetail).hashedSub).toBe(hashSub("user-sub-abc"));
+    });
+
+    test("falls back to the userSub in context when none is passed", async () => {
+      process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+      await initializeSalt();
+
+      await context.run(new Map(), async () => {
+        context.set("userSub", "context-sub");
+        await publishActivityFailureEvent({
+          event: "vat-return-failed",
+          summary: "VAT return failed unexpectedly",
+          failure: "internal-error",
+        });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.hashedSub).toBe(hashSub("context-sub"));
+    });
+
+    test("omits the hashed sub when no sub is available", async () => {
+      await publishActivityFailureEvent({
+        event: "vat-return-failed",
+        summary: "VAT return blocked: no entitlement",
+        failure: "access-denied",
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.hashedSub).toBeUndefined();
+    });
+
+    test("routes to test-user when the requestId marks a test run", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "test_run-1");
+        await publishActivityFailureEvent({
+          event: "vat-return-failed",
+          summary: "VAT return rejected by HMRC",
+          failure: "hmrc-rejected",
+        });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.actor).toBe("test-user");
     });
   });
 });

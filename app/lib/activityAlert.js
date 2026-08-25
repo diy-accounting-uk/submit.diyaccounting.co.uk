@@ -5,6 +5,7 @@
 
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { createLogger, context } from "./logger.js";
+import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 
 const logger = createLogger({ source: "app/lib/activityAlert.js" });
 
@@ -31,10 +32,7 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
 
   const requestId = context.get("requestId") || null;
   const userSub = context.get("userSub") || null;
-  // Fail-safe routing: customer-journey events whose actor was never explicitly set
-  // should still reach the LIVE telegram channel rather than silently going to TEST.
-  // The forwarder routes `customer` to LIVE; only `test_`-prefixed requestIds route to TEST.
-  const effectiveActor = actor || (requestId?.startsWith("test_") ? "test-user" : "customer");
+  const effectiveActor = resolveActorClass(actor);
   const effectiveFlow = flow || (userSub ? "user-journey" : "unknown");
 
   try {
@@ -63,6 +61,75 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
   } catch (err) {
     logger.warn({ message: "Failed to publish activity event", event, error: err.message });
   }
+}
+
+/**
+ * Resolve the actor class for the current invocation.
+ *
+ * Fail-safe routing: customer-journey work whose actor was never explicitly set
+ * should still reach the LIVE telegram channel rather than silently going to TEST.
+ * The forwarder routes `customer` to LIVE; only `test_`-prefixed requestIds route to TEST.
+ *
+ * This is the single source of the actor class, so activity events, receipt items
+ * and business metrics all agree on whether a submission came from a real customer.
+ *
+ * @param {string} [explicitActor] - Overrides the derived class when supplied
+ * @returns {"customer"|"test-user"|"synthetic"|"system"}
+ */
+export function resolveActorClass(explicitActor) {
+  if (explicitActor) return explicitActor;
+  const requestId = context.get("requestId") || null;
+  return requestId?.startsWith("test_") ? "test-user" : "customer";
+}
+
+/**
+ * Hash a user sub for inclusion in an activity event, matching the hash stored
+ * alongside customer records. Returns null when the sub or the salt is unavailable.
+ *
+ * @param {string} [userSub]
+ * @returns {string|null}
+ */
+function hashSubForEvent(userSub) {
+  if (!userSub || !isSaltInitialized()) return null;
+  try {
+    return hashSub(userSub);
+  } catch (err) {
+    logger.warn({ message: "Could not hash user sub for activity event", error: err.message });
+    return null;
+  }
+}
+
+/**
+ * Publish an activity event for a customer-facing operation that failed.
+ *
+ * Carries the failure category and the hashed user sub so a failed journey can be
+ * traced back to its records. Never carries PII, VRNs or raw upstream payloads.
+ *
+ * @param {Object} params
+ * @param {string} params.event - Event name (e.g. "vat-return-failed")
+ * @param {string} [params.site]
+ * @param {string} params.summary - Human-readable summary for alerting
+ * @param {string} params.failure - Failure category (e.g. "auth-expired", "hmrc-rejected")
+ * @param {string} [params.userSub] - Raw sub; hashed before it reaches the event
+ * @param {string} [params.actor]
+ * @param {string} [params.flow]
+ * @param {Object} [params.detail] - Additional non-identifying detail fields
+ */
+export async function publishActivityFailureEvent({ event, site = "submit", summary, failure, userSub, actor, flow, detail = {} }) {
+  const hashedSub = hashSubForEvent(userSub || context.get("userSub"));
+  await publishActivityEvent({
+    event,
+    site,
+    summary,
+    actor,
+    flow,
+    detail: {
+      outcome: "failure",
+      failure,
+      ...(hashedSub ? { hashedSub } : {}),
+      ...detail,
+    },
+  });
 }
 
 /**
