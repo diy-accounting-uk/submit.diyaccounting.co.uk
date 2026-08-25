@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -93,8 +92,7 @@ class SubmitEnvironmentCdkResourceTest {
         JsonNode ctxNode = root.path("context");
 
         Map<String, Object> ctx = new HashMap<>();
-        for (Iterator<Map.Entry<String, JsonNode>> it = ctxNode.fields(); it.hasNext(); ) {
-            Map.Entry<String, JsonNode> e = it.next();
+        for (Map.Entry<String, JsonNode> e : ctxNode.properties()) {
             ctx.put(e.getKey(), e.getValue().asText());
         }
         return ctx;

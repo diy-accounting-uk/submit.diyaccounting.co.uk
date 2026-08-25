@@ -339,10 +339,10 @@ public class SubmitApplication {
                         .buildNumber(buildNumber)
                         .regionalCertificateArn(regionalCertificateArn)
                         .build());
-        this.apiStack.addDependency(accountStack);
-        this.apiStack.addDependency(hmrcStack);
-        this.apiStack.addDependency(authStack);
-        this.apiStack.addDependency(billingStack);
+        this.apiStack.addStackDependency(accountStack);
+        this.apiStack.addStackDependency(hmrcStack);
+        this.apiStack.addStackDependency(authStack);
+        this.apiStack.addStackDependency(billingStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");

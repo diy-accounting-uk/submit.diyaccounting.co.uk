@@ -322,7 +322,7 @@ public class HoldingStack extends Stack {
                         .build());
 
         // *** CRITICAL: enforce creation order so source exists before delivery ***
-        cfLogsDelivery.addDependency(cfLogsSource);
+        cfLogsDelivery.addResourceDependency(cfLogsSource);
 
         // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront
         Route53AliasUpsert.upsertAliasToCloudFront(
