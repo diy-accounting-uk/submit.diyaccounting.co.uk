@@ -40,14 +40,14 @@ test.describe("Navigation Browser Tests", () => {
       await expect(page.locator("#dynamicActivities")).toHaveCount(1);
     });
 
-    test("home and Activities links point at / rather than index.html", async ({ page }) => {
+    test("home and Activities links resolve to the directory, not index.html", async ({ page }) => {
       await page.setContent(indexHtmlContent, {
         baseURL: "http://localhost:3000",
         waitUntil: "domcontentloaded",
       });
 
-      await expect(page.locator("a.home-link")).toHaveAttribute("href", "/");
-      await expect(page.locator("nav.main-nav a:has-text('Activities')")).toHaveAttribute("href", "/");
+      await expect(page.locator("a.home-link")).toHaveAttribute("href", "./");
+      await expect(page.locator("nav.main-nav a:has-text('Activities')")).toHaveAttribute("href", "./");
     });
   });
 

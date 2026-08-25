@@ -169,7 +169,7 @@
       const currentPage = window.location.pathname.split("/").pop();
       if (currentPage === "login.html") {
         loginLinkElement.textContent = "Home";
-        loginLinkElement.href = "/";
+        loginLinkElement.href = "../";
       } else {
         loginLinkElement.textContent = "Log in";
         loginLinkElement.href = "../auth/login.html";
