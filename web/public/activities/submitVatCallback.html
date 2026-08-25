@@ -78,6 +78,7 @@
 
       async function handleOAuthCallback() {
         const code = getValidatedAuthorisationCode();
+        let succeeded = false;
 
         if (!code) {
           console.error("No valid authorization code found in URL parameters.");
@@ -95,16 +96,36 @@
             // Clean up session storage
             sessionStorage.removeItem("oauth_state");
             sessionStorage.setItem("hmrcAccessToken", accessToken);
+            succeeded = true;
           } catch (error) {
             console.error("Submission error:", error);
             showStatus(`Submission failed: ${error.message}`, "error");
           } finally {
-            //hideLoading();
+            hideLoading();
           }
         }
 
-        // Check currentActivity in localStorage and re-direct if needed
-        checkCurrentActivityAndRedirect();
+        // Only carry on to the pending activity automatically when the token exchange
+        // succeeded. On failure, stay on this page so the error message stays visible
+        // instead of being wiped out by an immediate redirect.
+        if (succeeded) {
+          checkCurrentActivityAndRedirect();
+        } else {
+          offerReturnToActivity();
+        }
+      }
+
+      // On failure, point the existing "Return home" button back at the pending
+      // activity instead, so the user can dismiss the error and retry.
+      function offerReturnToActivity() {
+        const currentActivity = sessionStorage.getItem("currentActivity");
+        const navigationBtn = document.getElementById("navigationBtn");
+        if (currentActivity && navigationBtn) {
+          navigationBtn.textContent = "Back to VAT submission";
+          navigationBtn.onclick = () => {
+            window.location.href = currentActivity;
+          };
+        }
       }
 
       function getValidatedAuthorisationCode() {
