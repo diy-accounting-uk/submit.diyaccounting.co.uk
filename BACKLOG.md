@@ -79,6 +79,7 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 | 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
 | 40 | Refactor batch: PLAN_REDUCE items, TODO inventory refresh, mode-naming cleanup (#12) | PLAN_REDUCE, TODO_INVENTORY, issue #12 | S/M | Hygiene. Good filler for sub-agents between larger dispatches. |
 | 41 | Doc hygiene: archive the two stale "in progress" plans that shipped, fix the dangling NEXT.md reference, close out PLAN_FLAGGED | Repo review | S | Hygiene. Stale plans mislead every future session. |
+| 42 | Rust transpile experiment: keep the JS repo as the source (annotated where needed) and generate a Rust build in the pipeline | Operator, this session | L | Exploratory. Possible payoffs are Lambda cold start, memory, and compute cost; the honest read is that at ~30 users the AWS bill is ~$100/month and none of it is compute-bound, so this earns its place as a learning project or a future scale lever, not near-term product work. Sequence after the TypeScript migration (#33) settles what the source of truth is, and prove it on one hot Lambda (hmrc-vat-return-post) before widening. |
 
 ## Why this order
 
