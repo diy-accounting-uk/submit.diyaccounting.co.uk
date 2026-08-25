@@ -36,7 +36,7 @@ This document provides a high-level overview of the `submit.diyaccounting.co.uk`
 - **VAT Obligations**: Retrieve and display VAT obligations
 - **Receipt Storage**: Store and retrieve HMRC submission receipts
 - **Bundle/Entitlement System**: User subscription management with catalogue-driven bundles
-- **Passes**: Invitation code system using four-word passphrases for bundle access
+- **Passes**: Four-word passphrase invitation codes that unlock the bundles that need one; other bundles are self-service or admin-granted
 - **Token Enforcement**: Metered HMRC API usage per bundle (1 token per VAT submission)
 - **Bundle Capacity**: Global cap enforcement with atomic counters and EventBridge reconciliation
 - **Simulator Mode**: Fully self-contained local development with mocked OAuth2 and HMRC APIs
