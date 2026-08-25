@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
@@ -306,8 +305,7 @@ class SubmitApplicationCdkResourceTest {
         JsonNode ctxNode = root.path("context");
 
         Map<String, Object> ctx = new HashMap<>();
-        for (Iterator<Map.Entry<String, JsonNode>> it = ctxNode.fields(); it.hasNext(); ) {
-            Map.Entry<String, JsonNode> e = it.next();
+        for (Map.Entry<String, JsonNode> e : ctxNode.properties()) {
             // CDK context values are Objects; in your case they’re strings
             ctx.put(e.getKey(), e.getValue().asText());
         }
