@@ -1,0 +1,130 @@
+name: request holding cert
+run-name: "request holding cert for ${{ inputs.environment-name }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        type: choice
+        description: 'Environment to issue the holding certificate for'
+        required: true
+        options:
+          - 'ci'
+          - 'prod'
+        default: 'ci'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: 'us-east-1'
+  ROUTE53_DELEGATE_ROLE_ARN: 'arn:aws:iam::887764105431:role/root-route53-record-delegate'
+
+jobs:
+
+  request:
+    name: 'request holding certificate'
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Request certificate
+        id: request
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          set -euo pipefail
+          # Failover adds the live names as aliases to the holding distribution, and CloudFront
+          # rejects an alias the certificate does not cover, so the live names are SANs here.
+          if [ "${ENVIRONMENT_NAME?}" = "prod" ]; then
+            DOMAIN_NAME="holding.submit.diyaccounting.co.uk"
+            SUBJECT_ALTERNATIVE_NAMES="submit.diyaccounting.co.uk prod-submit.diyaccounting.co.uk"
+          else
+            DOMAIN_NAME="ci-holding.submit.diyaccounting.co.uk"
+            SUBJECT_ALTERNATIVE_NAMES="ci-submit.diyaccounting.co.uk"
+          fi
+          # shellcheck disable=SC2086
+          CERT_ARN=$(aws acm request-certificate \
+            --domain-name "${DOMAIN_NAME?}" \
+            --subject-alternative-names ${SUBJECT_ALTERNATIVE_NAMES?} \
+            --validation-method DNS \
+            --region "${AWS_REGION?}" \
+            --query CertificateArn \
+            --output text)
+          echo "cert-arn=${CERT_ARN?}" | tee -a "$GITHUB_OUTPUT"
+          # The certificate covers the domain name plus every SAN
+          EXPECTED_RECORDS=$(( 1 + $(echo "${SUBJECT_ALTERNATIVE_NAMES?}" | wc -w) ))
+          echo "expected-records=${EXPECTED_RECORDS?}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Write validation records into the management zone
+        env:
+          CERT_ARN: ${{ steps.request.outputs.cert-arn }}
+          EXPECTED_RECORDS: ${{ steps.request.outputs.expected-records }}
+          HOSTED_ZONE_ID: ${{ vars.ROOT_HOSTED_ZONE_ID }}
+        run: |
+          set -euo pipefail
+          # ACM populates ResourceRecord asynchronously; reading it straight after
+          # request-certificate intermittently yields empty CNAMEs, so poll until every name has one.
+          for _ in $(seq 1 30); do
+            aws acm describe-certificate \
+              --certificate-arn "${CERT_ARN?}" \
+              --region "${AWS_REGION?}" \
+              --query 'Certificate.DomainValidationOptions[].ResourceRecord' \
+              --output json > /tmp/validation.json
+            FOUND=$(jq 'map(select(. != null)) | length' /tmp/validation.json)
+            echo "Validation records available: ${FOUND} of ${EXPECTED_RECORDS?}"
+            [ "${FOUND}" = "${EXPECTED_RECORDS?}" ] && break
+            sleep 10
+          done
+          if [ "$(jq 'map(select(. != null)) | length' /tmp/validation.json)" != "${EXPECTED_RECORDS?}" ]; then
+            echo "Error: ACM did not publish all ${EXPECTED_RECORDS?} validation records" >&2
+            exit 1
+          fi
+          cat /tmp/validation.json
+
+          CREDS=$(aws sts assume-role \
+            --role-arn "${ROUTE53_DELEGATE_ROLE_ARN?}" \
+            --role-session-name submit-holding-cert)
+          AWS_ACCESS_KEY_ID=$(echo "$CREDS" | jq -r .Credentials.AccessKeyId)
+          AWS_SECRET_ACCESS_KEY=$(echo "$CREDS" | jq -r .Credentials.SecretAccessKey)
+          AWS_SESSION_TOKEN=$(echo "$CREDS" | jq -r .Credentials.SessionToken)
+          export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+
+          CHANGES=$(jq '[.[] | {Action: "UPSERT", ResourceRecordSet: {
+              Name: .Name, Type: .Type, TTL: 300, ResourceRecords: [{Value: .Value}]}}] | unique' /tmp/validation.json)
+          aws route53 change-resource-record-sets \
+            --hosted-zone-id "${HOSTED_ZONE_ID?}" \
+            --change-batch "$(jq -n --argjson c "$CHANGES" '{Comment: "ACM validation", Changes: $c}')"
+
+      - name: Wait for validation
+        env:
+          CERT_ARN: ${{ steps.request.outputs.cert-arn }}
+        run: |
+          set -euo pipefail
+          aws acm wait certificate-validated \
+            --certificate-arn "${CERT_ARN?}" \
+            --region "${AWS_REGION?}"
+          echo "Store this ARN as SUBMIT_HOLDING_CERTIFICATE_ARN for the ${{ inputs.environment-name }} environment:"
+          echo "${CERT_ARN?}"

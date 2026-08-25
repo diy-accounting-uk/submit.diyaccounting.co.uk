@@ -29,6 +29,7 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "CLOUD_TRAIL_ENABLED", value = "true"),
     @SetEnvironmentVariable(key = "ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", value = "1"),
     @SetEnvironmentVariable(key = "DYNAMODB_RETAIN_RECEIPTS_TABLE", value = "false"),
+    @SetEnvironmentVariable(key = "HOLDING_DOC_ROOT_PATH", value = "./web/holding"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_ACCOUNT", value = "111111111111"),
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "us-east-1"),
 })
@@ -51,6 +52,9 @@ class SubmitEnvironmentCdkResourceTest {
         ctx.put(
                 "certificateArn",
                 "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "holdingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
 
         App app = new App(AppProps.builder().context(ctx).build());
 
@@ -60,6 +64,10 @@ class SubmitEnvironmentCdkResourceTest {
         // 3) Build the environment and synth
         var env = new SubmitEnvironment(app, appProps);
         app.synth();
+
+        // 4) The holding stack serves one page from one bucket behind one distribution
+        Template.fromStack(env.holdingStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+        Template.fromStack(env.holdingStack).resourceCountIs("AWS::S3::Bucket", 1);
 
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);

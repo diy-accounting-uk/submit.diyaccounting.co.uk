@@ -5,11 +5,12 @@ on:
     inputs:
       domain-source:
         type: choice
-        description: 'Source of domain to set origins for e.g. branch-based or the holding page'
+        description: 'Source of domain to set origins for e.g. branch-based, the holding page, or the last known good deployment'
         required: false
         options:
           - 'branch'
           - 'holding'
+          - 'last-known-good'
         default: 'branch'
       hosted-zone-id:
         type: string
@@ -91,6 +92,7 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+      prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
 
   set-origins:
     name: 'set origins'
@@ -127,10 +129,36 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Resolve the origin domain from the requested domain source
+        id: origin-domain
+        env:
+          DOMAIN_SOURCE: ${{ inputs.domain-source }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          HOLDING_DOMAIN: ${{ needs.names.outputs.holding-domain }}
+          BASE_DOMAIN: ${{ needs.names.outputs.base-domain }}
+        run: |
+          set -euo pipefail
+          case "${DOMAIN_SOURCE?}" in
+            holding)
+              ORIGIN_DOMAIN="${HOLDING_DOMAIN?}"
+              ;;
+            last-known-good)
+              LAST_KNOWN_GOOD=$(aws ssm get-parameter \
+                --name "/submit/${ENVIRONMENT_NAME?}/last-known-good-deployment" \
+                --query "Parameter.Value" \
+                --output text)
+              ORIGIN_DOMAIN="${LAST_KNOWN_GOOD?}.submit.diyaccounting.co.uk"
+              ;;
+            *)
+              ORIGIN_DOMAIN="${BASE_DOMAIN?}"
+              ;;
+          esac
+          echo "origin-domain=${ORIGIN_DOMAIN?}" | tee -a "$GITHUB_OUTPUT"
+
       - name: Look up the CloudFront distribution ID if not provided based on the ORIGIN_DOMAIN matching the tag named "OriginFor"
         id: lookup-cf
         env:
-          ORIGIN_DOMAIN: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          ORIGIN_DOMAIN: ${{ steps.origin-domain.outputs.origin-domain }}
           INPUT_CLOUDFRONT_DISTRIBUTION_ID: ${{ github.event.inputs.cloudfront-distribution-id || '' }}
         run: |
           CLOUDFRONT_DISTRIBUTION_ID="${INPUT_CLOUDFRONT_DISTRIBUTION_ID}"
@@ -153,11 +181,16 @@ jobs:
           fi
           echo "CLOUDFRONT_DISTRIBUTION_ID=$CLOUDFRONT_DISTRIBUTION_ID" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Alias apex domain to holding or base domain
+      - name: Alias apex domain to the resolved origin domain
         uses: ./.github/actions/set-origins
         with:
-          origin-domain: ${{ inputs.domain-source == 'holding' && needs.names.outputs.holding-domain || needs.names.outputs.base-domain }}
+          origin-domain: ${{ steps.origin-domain.outputs.origin-domain }}
           apex-domain: ${{ needs.names.outputs.apex-domain }}
+          prod-apex-alias: ${{ needs.names.outputs.prod-apex-alias }}
           aws-account-id: ${{ vars.SUBMIT_ACCOUNT_ID }}
           hosted-zone-id: ${{ github.event.inputs.hosted-zone-id }}
           cloudfront-distribution-id: ${{ steps.lookup-cf.outputs.CLOUDFRONT_DISTRIBUTION_ID }}
+          route53-actions-role-arn: ${{ vars.ROOT_ACTIONS_ROLE_ARN }}
+          route53-deploy-role-arn: ${{ vars.ROOT_DEPLOY_ROLE_ARN }}
+          restore-actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          restore-deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}

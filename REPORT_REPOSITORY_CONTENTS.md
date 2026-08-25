@@ -203,6 +203,7 @@ Created once per environment by `deploy-environment.yml`:
 | DataStack | DynamoDB tables (Bundles, Passes, BundleCapacity, Receipts, HMRC API Requests) |
 | EcrStack | ECR repositories (eu-west-2 and us-east-1) |
 | ActivityStack | Activity/subscription management |
+| HoldingStack | S3 bucket and CloudFront for the holding page |
 | SimulatorStack | S3 bucket and CloudFront for simulator site |
 | IdentityStack | Cognito user pool |
 | BackupStack | Cross-account backup configuration |
@@ -482,6 +483,7 @@ Lightweight mock server for local development:
 |------|---------|
 | `public/` | Static website files served by S3/CloudFront |
 | `public-simulator/` | Simulator variant (copy of public with simulator-specific overrides) |
+| `holding/` | Holding page (maintenance mode) |
 | `unit-tests/` | Vitest frontend unit tests |
 | `browser-tests/` | Playwright browser tests |
 

@@ -172,6 +172,7 @@ The infrastructure is divided into **two CDK applications**:
    - ObservabilityStack (CloudWatch RUM, logs, alarms)
    - DataStack (DynamoDB tables)
    - IdentityStack (Cognito user pool)
+   - HoldingStack (maintenance page CloudFront)
    - Deployed by: `deploy-environment.yml` workflow
 
 2. **Application Stacks** (`cdk-application/`): Per-deployment resources

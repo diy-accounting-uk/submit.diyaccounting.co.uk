@@ -14,6 +14,7 @@ import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
+import co.uk.diyaccounting.submit.stacks.HoldingStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
@@ -33,6 +34,7 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
     public final IdentityStack identityStack;
+    public final HoldingStack holdingStack;
     public final SimulatorStack simulatorStack;
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
@@ -51,10 +53,12 @@ public class SubmitEnvironment {
         public String cloudTrailEnabled;
         public String cloudTrailLogGroupPrefix;
         public String cloudTrailLogGroupRetentionPeriodDays;
+        public String holdingDocRootPath;
         public String googleClientId;
         public String googleClientSecretArn;
         public String securityServicesEnabled;
         public String authCertificateArn;
+        public String holdingCertificateArn;
         public String simulatorCertificateArn;
         public String simulatorCodePath;
         public String regionalCertificateArn;
@@ -129,6 +133,10 @@ public class SubmitEnvironment {
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var authCertificateArn =
                 envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
+        var holdingCertificateArn = envOr(
+                "HOLDING_CERTIFICATE_ARN", appProps.holdingCertificateArn, "(from holdingCertificateArn in cdk.json)");
+        var holdingDocRootPath =
+                envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
         var simulatorCertificateArn = envOr(
                 "SIMULATOR_CERTIFICATE_ARN",
                 appProps.simulatorCertificateArn,
@@ -270,6 +278,35 @@ public class SubmitEnvironment {
                         .googleClientId(appProps.googleClientId)
                         .googleClientSecretArn(googleClientSecretArn)
                         .build());
+
+        // Create HoldingStack serving the maintenance page a failover points the live aliases at
+        if (holdingCertificateArn != null
+                && !holdingCertificateArn.isBlank()
+                && !holdingCertificateArn.startsWith("(from")) {
+            infof(
+                    "Synthesizing stack %s for deployment %s to environment %s",
+                    sharedNames.holdingStackId, deploymentName, envName);
+            this.holdingStack = new HoldingStack(
+                    app,
+                    sharedNames.holdingStackId,
+                    HoldingStack.HoldingStackProps.builder()
+                            .env(usEast1Env)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .deploymentName(envName)
+                            .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .sharedNames(sharedNames)
+                            .hostedZoneName(appProps.hostedZoneName)
+                            .hostedZoneId(appProps.hostedZoneId)
+                            .certificateArn(holdingCertificateArn)
+                            .holdingDocRootPath(holdingDocRootPath)
+                            .build());
+        } else {
+            warnf(
+                    "Skipping HoldingStack synthesis: HOLDING_CERTIFICATE_ARN not set (issue it with request-holding-cert.yml)");
+            this.holdingStack = null;
+        }
 
         // Create SimulatorStack for public demo simulator (only if the code path exists)
         var simulatorCodePath = envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");

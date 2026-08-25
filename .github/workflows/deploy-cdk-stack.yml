@@ -398,5 +398,6 @@ jobs:
           HTTP_API_URL: ${{ steps.lookup.outputs.http-api-url || needs.params.outputs['http-api-url'] }}
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}
 
       - run: cat cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json | jq '.'

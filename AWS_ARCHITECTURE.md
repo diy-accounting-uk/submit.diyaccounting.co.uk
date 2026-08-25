@@ -449,7 +449,7 @@ Gateway and spreadsheets CDK stacks are in their own repositories:
 | Route 53 | Global | management (887764105431) | DNS for all sites |
 | CloudFront | Global | gateway (283165661847) | Gateway CDN |
 | CloudFront | Global | spreadsheets (064390746177) | Spreadsheets CDN |
-| CloudFront | Global | submit-prod (972912397388) / submit-ci (367191799875) | Submit CDN |
+| CloudFront | Global | submit-prod (972912397388) / submit-ci (367191799875) | Submit CDN + holding page |
 | ACM | us-east-1 | Each workload account | SSL certificates (DNS validated via management Route53) |
 | WAF | us-east-1 | submit-prod (972912397388) / submit-ci (367191799875) | Web firewall |
 | API Gateway | eu-west-2 | submit-prod (972912397388) / submit-ci (367191799875) | HTTP API v2 |
