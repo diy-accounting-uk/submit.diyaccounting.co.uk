@@ -235,7 +235,7 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
-        this.backupStack.addDependency(this.dataStack);
+        this.backupStack.addStackDependency(this.dataStack);
 
         // Create ActivityStack with the shared EventBridge bus
         infof(
