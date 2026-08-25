@@ -24,6 +24,63 @@ launch
 
 ---
 
+## Current State (verified 2026-08-25)
+
+All 11 `prod-env-*` DynamoDB tables have point-in-time recovery (PITR) switched off. AWS Backup
+covers 3 of the 11 tables. The `submit-backup` account (914216784828) holds zero backup vaults.
+The daily check meant to catch this has failed every run since it started.
+
+| Table | Approx. items | PITR | AWS Backup plan |
+|---|---|---|---|
+| prod-env-receipts | 4,642 | Disabled | Yes |
+| prod-env-bundles | 292 | Disabled | Yes |
+| prod-env-hmrc-api-requests | 457 | Disabled | Yes |
+| prod-env-passes | 7,515 | Disabled | No |
+| prod-env-subscriptions | 172 | Disabled | No |
+| prod-env-bundle-capacity | 1 | Disabled | No |
+| prod-env-bundle-post-async-requests | 0 | Disabled | No |
+| prod-env-bundle-delete-async-requests | 0 | Disabled | No |
+| prod-env-hmrc-vat-return-post-async-requests | 0 | Disabled | No |
+| prod-env-hmrc-vat-return-get-async-requests | 0 | Disabled | No |
+| prod-env-hmrc-vat-obligation-get-async-requests | 0 | Disabled | No |
+
+`prod-env-passes` holds more rows than `prod-env-receipts` and has no PITR, no AWS Backup
+coverage, and TTL disabled. It has no recovery path at all.
+
+The 11 `ci-env-*` tables in the submit-ci account also have PITR disabled. CI does have its own
+AWS Backup plan and vault (`ci-env-primary-vault`, 162 recovery points), so the 3-of-11 coverage
+gap is the same shape as prod.
+
+This account is the destination the multi-account phase below depends on.
+
+**Why PITR is off.** Commit `99dadc4e` (2026-01-10) added PITR using CDK `Table` constructs.
+Commit `31559ee8` (2026-01-18), nine days later, replaced all 11 tables with
+`KindCdk.ensureTable()`, an `AwsCustomResource` that calls the DynamoDB `createTable` API
+directly and does nothing if the table already exists. That custom resource takes no PITR
+parameter and has no update path to a live table. Turning PITR on again needs either a new
+custom-resource call (an `updateContinuousBackups` call, for example) or moving these tables back
+onto real CDK `Table` constructs. It is no longer the one-line `.pointInTimeRecovery(true)` this
+document originally proposed in section 1.1 below. The custom resource also has no `onDelete`
+handler, so a stack teardown never deletes the underlying table either. The removal-policy
+checklist item further down is moot for the same reason.
+
+**Why the daily check hasn't stopped this.** `.github/workflows/verify-backups.yml` has run 69
+times since 2026-05-07 and failed every time. It correctly reports `DISABLED` for the three
+tables it checks, in every run. It also reports the backup vault "not found." That part is a
+naming bug, not a real gap. See "The verify-backups check is broken" further down.
+
+The phase checklist later in this document still ticks off several PITR and DR items. Those
+checkmarks recorded intent from January 2026, before the `ensureTable` refactor undid the PITR
+part of it. The checklist has been corrected to match what's actually deployed.
+
+The workspace `CLAUDE.md` states that data protection comes from backups, specifically 35-day
+PITR, and not from CloudFormation `RemovalPolicy.RETAIN`. That is why every stack uses `DESTROY`.
+With PITR off on all 11 prod tables, that argument currently has nothing behind it for 8 of the
+11 tables, and only an AWS Backup local vault (not PITR, and not cross-account) behind the other
+3.
+
+---
+
 ## Current State Assessment
 
 ### What Exists Today
@@ -203,7 +260,14 @@ code changes to retarget the deployment.
 
 ### 1.1 Enable Point-in-Time Recovery (PITR)
 
-**File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java`
+**Not done.** This was implemented in commit `99dadc4e` (2026-01-10) and removed nine days later
+in commit `31559ee8`, when all 11 tables in `DataStack.java` moved from CDK `Table` constructs to
+`KindCdk.ensureTable()`, an `AwsCustomResource` wrapping a raw `createTable` call. The snippet
+below shows the CDK `Table.Builder` approach this document originally proposed. It no longer
+matches `DataStack.java`, which builds every table through `ensureTable()` instead. See "Current
+State" above for what re-enabling PITR now requires.
+
+**File**: `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java` (superseded snippet)
 
 Update each critical table:
 
@@ -899,6 +963,10 @@ echo "4. Verify application functionality"
 
 **Script**: `scripts/restore-dynamodb-pitr.sh`
 
+This script checks PITR status before restoring and exits if it finds `DISABLED`. It will not
+work on any prod or ci table today; see "Current State" above. It becomes usable again once
+PITR is re-enabled on the target table.
+
 ```bash
 #!/bin/bash
 # SPDX-License-Identifier: AGPL-3.0-only
@@ -1040,6 +1108,32 @@ dashboardRows.add(List.of(
 ---
 
 ## GitHub Actions Integration
+
+### The verify-backups check is broken
+
+The vault-not-found result this workflow reports is a naming bug, not a real gap. Line 83 sets
+`ENV_PREFIX=prod-env`. Line 156 then builds:
+
+```
+VAULT_NAME="${{ env.ENV_PREFIX }}-env-primary-vault"
+```
+
+That produces `prod-env-env-primary-vault`, with "env" appearing twice. No vault has ever existed
+under that name. The real vault, `prod-env-primary-vault`, exists, holds 162 recovery points, and
+has been running its daily plan for the three tables `prod-env-critical-tables` selects.
+
+`aws backup describe-backup-vault` for a name that doesn't exist returns `AccessDeniedException`,
+not `ResourceNotFoundException`. This was confirmed by running the same call as an account
+administrator against both the doubled name and a made-up one. Line 161 pipes that error to
+`/dev/null`, so the workflow can't tell a bad name from a real permissions gap. Fixing the vault
+check needs two changes: drop the extra `-env` from line 156, and confirm the role the workflow
+assumes carries `backup:DescribeBackupVault` and `backup:ListBackupJobs` explicitly. A search of
+the OIDC deploy role setup and `BackupStack.java` found no such grant, though the doubled name
+alone explains every failure seen so far.
+
+The PITR check does not need fixing. It has correctly reported `DISABLED` on every one of the 69
+runs since the workflow started on 2026-05-07. It has been telling the truth about the real gap
+the whole time. Nobody was reading a check that has never once gone green.
 
 ### Workflow: Verify Backups
 
@@ -1213,20 +1307,24 @@ jobs:
 
 ### Phase 1: Local Backups (within deployment account)
 
-- [x] Enable PITR on receiptsTable in DataStack.java
-- [x] Enable PITR on bundlesTable in DataStack.java
-- [x] Enable PITR on hmrcApiRequestsTable in DataStack.java
-- [x] Set RETAIN removal policy for prod tables
-- [x] Create BackupStack.java with local vault (no cross-region)
-- [x] Create S3 bucket for exports (in BackupStack)
-- [x] Add BackupStack to SubmitEnvironment.java
-- [ ] Deploy to CI environment and verify
-- [ ] Deploy to PROD environment
-- [ ] Verify backup jobs execute (AWS console)
+- [ ] Enable PITR on receiptsTable: removed by the `ensureTable` refactor (`31559ee8`), currently DISABLED in prod and ci
+- [ ] Enable PITR on bundlesTable: same, currently DISABLED
+- [ ] Enable PITR on hmrcApiRequestsTable: same, currently DISABLED
+- [ ] Set RETAIN removal policy for prod tables: moot, since `ensureTable`'s custom resource has no removal policy and no `onDelete`, so CDK never deletes these tables either way
+- [x] Create BackupStack.java with local vault (no cross-region): verified deployed in both accounts (`prod-env-primary-vault`, `ci-env-primary-vault`, 162 recovery points each)
+- [x] Create S3 bucket for exports (in BackupStack): verified present in prod
+- [x] Add BackupStack to SubmitEnvironment.java: verified, backup plans run daily in both accounts
+- [x] Deploy to CI environment and verify: done; PITR is still off on ci-env tables, same gap as prod
+- [x] Deploy to PROD environment: done
+- [x] Verify backup jobs execute (AWS console): confirmed: both vaults show 162 recovery points, only the 3 selected tables each
+
+**Coverage gap, not a deployment gap.** Only `prod-env-critical-tables` (receipts, bundles,
+hmrc-api-requests) is in the backup selection. The other 8 tables, including `prod-env-passes`
+(7,515 items, more than receipts), have no PITR, no AWS Backup coverage, and no export.
 
 ### Phase 2: Multi-Account Strategy
 
-- [ ] Create dedicated backup AWS account
+- [x] Create dedicated backup AWS account: `submit-backup` (914216784828) exists but holds zero backup vaults
 - [x] Create setup-backup-account.yml workflow
 - [ ] Run setup-backup-account workflow (requires backup account)
 - [ ] Configure cross-account KMS access
@@ -1240,7 +1338,7 @@ jobs:
 - [ ] Add no-recent-backup alarm to OpsStack
 - [ ] Add backup metrics to ObservabilityStack dashboard
 - [ ] Test alarm notifications
-- [x] Create verify-backups.yml workflow
+- [x] Create verify-backups.yml workflow: deployed, but its vault check has a naming bug; see "The verify-backups check is broken" above
 - [ ] Create export-dynamodb.yml workflow
 
 ### Phase 4: Disaster Recovery
@@ -1270,7 +1368,11 @@ jobs:
 
 ## Compliance Mapping
 
-| HMRC Requirement | Solution |
+This table describes the design intent, not current status. See "Current State" at the top of
+this document for what's actually deployed: PITR is off on all 11 prod tables, there is no
+cross-region backup, and Object Lock is not configured anywhere.
+
+| HMRC Requirement | Intended solution |
 |-----------------|----------|
 | 7-year VAT record retention | Monthly backups with 7-year retention |
 | Data integrity | PITR enables point-in-time recovery |
