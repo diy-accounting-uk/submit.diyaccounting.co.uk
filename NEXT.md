@@ -9,14 +9,11 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
 reasoning.
 
-**In flight — batch 1 (integration branch `claude/next-batch-1`, coordinator merges and
-pushes):** CODE COMPLETE and merged to the integration branch: B8, B26's implemented slice,
-B2's vault-name fix (CDK stream, `./mvnw clean verify` green); B7 (activity events stream,
-979 tests green). Still working: the web stream (B4a, B4b, B4c, B6 display half, B9, B31
-link items, B31a, B31b — operator decided the simulator matches production gating). B26
-remainder: HMRC error rate, cert expiry, JWT filter, PITR-disabled, and API Gateway 429
-alarms were skipped for named structural reasons (each needs metric emission or prop
-plumbing that does not exist yet) — see the batch PR description when it opens.
+**Batch 1 is code complete: PR #42 awaits review and merge.** It carries B4a, B4b, B4c,
+B6's display half, B7, B8, B31a, B2's vault-name slice, B26's implemented slice, and
+issue #4. On merge and deploy: remove those items below, then send the HMRC free-flag
+email (it waits on B4b reaching production). B31b closed as a no-op: the simulator file
+was a stale gitignored build artifact; regeneration already matches production.
 
 - [ ] **(B2) Fix the backup verifier and re-enable PITR.** Fix the doubled `-env` vault name in
   `verify-backups.yml`, then restore point-in-time recovery on all 11 prod tables (the
@@ -32,25 +29,28 @@ plumbing that does not exist yet) — see the batch PR description when it opens
 - [ ] **(B4c) Make the free route discoverable.** Split the pass-code sentence out of the Free
   Guest Tier block on about.html, state the 100-allocation day-guest cap, and say on help.html
   and guide.html how to start free. In flight: batch 1 web branch.
-- [ ] **(B31b) Align the simulator's day-guest gating with production.** Operator decision
-  2026-08-25: `enable = "always"`, TODO removed — fix at the generator, never edit
-  `web/public-simulator` directly. In flight: batch 1 web branch.
 - [ ] **(B31a) Retire the stale day-guest pass documentation.** Catalogue comment block and
   commented-out duplicate in `web/public/submit.catalogue.toml`, PASSES.md pass-gated framing
   (drop `day-guest-pass`, keep `day-guest-test-pass`), REPORT_REPOSITORY_CONTENTS.md line 39.
   In flight: batch 1 web branch.
 - [ ] **(B5) Clear the stack-drift failure.** The weekly `stack-drift` workflow has been red for
   3+ months. Identify the drifted stacks, reconcile, and raise a tracking issue.
-- [ ] **(B6) Fix VAT obligation matching and the vanishing error message.** A valid quarter failed
-  to match an open HMRC obligation while the submission actually succeeded, and the on-screen
-  error disappears before it can be read (customer evidence, 2026-05-11).
+- [ ] **(B6) Fix VAT obligation matching.** A valid quarter failed to match an open HMRC
+  obligation while the submission actually succeeded (customer evidence, 2026-05-11). Needs
+  diagnosis against real HMRC obligation shapes. The vanishing-error half is fixed in PR #42:
+  the callback page redirected even on failure, wiping the message.
 - [ ] **(B7) Make usage measurable.** Tag receipts and activity events with actor class
   (customer / test / synthetic), publish an activity event on the `hmrcVatReturnPost` failure
   path (success-only today), and emit submissions/signups business metrics.
 - [ ] **(B8) Route the us-east-1 WAF alarms.** The three WAF alarms have no notification path;
   the alarm-state-change rule exists only in eu-west-2. `EdgeStack.java` carries the deferred
   wiring comment.
-- [ ] **(B9) Fix the dead GitHub discussion link in the support auto-reply.**
+- [ ] **(B9) Fix the dead GitHub link in the support@ Gmail auto-reply.** Not a repo file: the
+  auto-reply is configured on the mailbox itself and points at
+  `github.com/antonycc/diy-accounting/discussions` (dead; no diy-accounting-uk repo has
+  Discussions enabled). Operator action in Gmail settings — point it at
+  `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues` or another live page.
+  Pair with B9a (the autoresponder also replies to automated SNS/GitHub notifications).
 - [ ] **(B17) Produce the three demo videos.** Validate the existing Playwright capture test and
   publish the output. `PLAN_DEMO_VIDEOS.md` is the plan of record.
 - [ ] **(B19) Finish GA4.** Cookie consent banner, mark purchase/begin_checkout as conversions,
@@ -63,8 +63,9 @@ plumbing that does not exist yet) — see the batch PR description when it opens
 - [ ] **(B29) Remove the legacy CDK ECR repo in the old management account.** 4,253 images,
   ~$8.50/month, serves nothing since the prod migration. Mutating change in account 887764105431:
   needs explicit operator approval before any write.
-- [ ] **(B31) Small UI batch: issues #3, #4, #5, #6, #7, #8.** Link cleanups, mobile visibility,
-  pass navigation, logout event.
+- [ ] **(B31) Small UI batch, remainder: issues #5, #6, #7, #8.** Mobile visibility, pass
+  navigation, logout event. (#4 is in PR #42; #3 has no occurrences in this repo — its
+  linktr.ee references live in www.diyaccounting.co.uk.)
 
 - [ ] **Automation restarted 2026-08-24 — watch the first scheduled runs.** Remainders:
   (a) `verify-backups` last actually ran 2026-07-13 and FAILED — confirm the next run passes;
