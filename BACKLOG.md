@@ -13,6 +13,20 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
+## Live status (2026-08-26)
+
+Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
+truthfully on its own.
+
+- **In flight, batch 2** (five agents, integration branch `claude/next-batch-2`): 2, 5, 6,
+  14a (CloudFront half), 15a, 17, 19 (banner half), 25a (code), 26, 28a, 30a, and 31's #5,
+  #6, #8 plus the #7 logout event.
+- **Queued on NEXT.md, operator-bound**: 4 (send the drafted email after deploy), 9 and 9a
+  (Gmail settings), 29 (awaiting write approval), 14a's GA4/Stripe halves, 19's console
+  halves.
+- **Shipped in PR #42, deploy in progress**: 4a, 4b, 4c, 7, 8, 31a, 31b, and the first
+  slices of 2 and 26. Rows removed once the deploy is verified.
+
 ## Tier 1: do next
 
 | # | Item | Source | Effort | Value |

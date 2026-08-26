@@ -9,11 +9,30 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
 reasoning.
 
-**Batch 1 is code complete: PR #42 awaits review and merge.** It carries B4a, B4b, B4c,
-B6's display half, B7, B8, B31a, B2's vault-name slice, B26's implemented slice, and
-issue #4. On merge and deploy: remove those items below, then send the HMRC free-flag
-email (it waits on B4b reaching production). B31b closed as a no-op: the simulator file
-was a stale gitignored build artifact; regeneration already matches production.
+**Batch 1 merged (PR #42); prod deploy in progress.** On deploy verification: remove
+B4a/B4b/B4c/B7/B8/B31a below, then the operator sends the HMRC free-flag email.
+
+**In flight — batch 2 (integration branch `claude/next-batch-2`, coordinator merges and
+pushes; agent worktrees under `.claude/worktrees/`):** five sub-agents.
+`claude/batch2-data-protection` carries B2 (PITR), B25a (backup vault code), B28a (IAM
+grants). `claude/batch2-observability` carries B26 remainder, B14a's CloudFront-logging
+half, B30a, and B5's drift detection. `claude/batch2-web-ui` carries B31's #5/#6/#8,
+B19's consent banner, B15a. `claude/batch2-app-flow` carries B6 (obligation matching)
+and #7's logout event. `claude/batch2-demo-videos` carries B17. B29 stays with the
+coordinator pending operator approval; B14a's GA4/Stripe halves and B19's console
+halves are operator console actions.
+
+- [ ] **(B14a) Turn the analytics source exports on.** CloudFront standard logging (CDK, in
+  flight batch 2); GA4 data export and a scheduled Stripe report are operator console actions.
+  History cannot be backfilled.
+- [ ] **(B15a) Correct the four `campaign-pass` values in `submit.passes.toml`.** In flight:
+  batch 2 web branch.
+- [ ] **(B25a) Provision the empty backup vault in `submit-backup`.** Code in flight (batch 2);
+  the first deploy into account 914216784828 needs operator approval.
+- [ ] **(B28a) Replace blanket `grantReadData` with per-table, per-action grants.** In flight:
+  batch 2 data-protection branch.
+- [ ] **(B30a) Cut canary cadence to the cheapest safe interval.** In flight: batch 2
+  observability branch, with the alarm-evaluation math checked.
 
 - [ ] **(B2) Fix the backup verifier and re-enable PITR.** Fix the doubled `-env` vault name in
   `verify-backups.yml`, then restore point-in-time recovery on all 11 prod tables (the
