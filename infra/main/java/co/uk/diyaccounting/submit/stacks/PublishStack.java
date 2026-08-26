@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.nio.file.Files;
@@ -27,8 +28,7 @@ import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.cloudfront.Distribution;
 import software.amazon.awscdk.services.cloudfront.DistributionAttributes;
 import software.amazon.awscdk.services.cloudfront.IDistribution;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.s3.assets.AssetOptions;
@@ -205,12 +205,14 @@ public class PublishStack extends Stack {
         // pass it via .logGroup(): CDK wires this into the function's Advanced Logging Controls
         // (LoggingConfig.LogGroup), which routes the function's logs to this exact log group regardless of
         // the function's actual generated name.
-        LogGroup webDeploymentLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-DocRootToWebOriginDeploymentLogGroup")
-                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-web-deployment")
-                .retention(RetentionDays.ONE_DAY)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // Created idempotently: the Lambda auto-recreates this log group the moment it writes a
+        // line, so after a rollback the group exists physically while absent from stack state,
+        // and a plain LogGroup resource then fails change-set validation with AlreadyExists.
+        ILogGroup webDeploymentLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-DocRootToWebOriginDeploymentLogGroup",
+                        "/aws/lambda/" + props.resourceNamePrefix() + "-web-deployment")
+                .logGroup();
 
         // Deploy the web website files to the web website bucket and invalidate distribution
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
