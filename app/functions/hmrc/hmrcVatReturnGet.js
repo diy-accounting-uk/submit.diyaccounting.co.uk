@@ -29,7 +29,7 @@ import {
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { findPeriodKeyByDateRange } from "../../lib/obligationFormatter.js";
+import { findObligationByDateRange, obligationLookupWindow, describeObligationPeriod } from "../../lib/obligationFormatter.js";
 import { getVatObligations } from "./hmrcVatObligationGet.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -247,17 +247,15 @@ export async function ingestHandler(event) {
     if (!normalizedPeriodKey) {
       logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vrn });
       try {
-        // In sandbox mode with allowSandboxObligations, query ALL obligations (no status filter)
-        // so we can find the period key even if the obligation hasn't been marked as fulfilled yet.
-        // In production, only query fulfilled obligations.
-        const obligationStatus = allowSandboxObligations ? undefined : "F";
+        // Query every obligation in the window, whatever its status: an obligation still marked
+        // open tells the customer their return has not been filed yet, which beats a bare miss.
         const { obligations, hmrcResponse } = await getVatObligations(
           vrn,
           hmrcAccessToken,
           govClientHeaders,
           null, // Don't pass test scenario to obligations - apply only to the VAT return GET
           hmrcAccount,
-          { from: periodStart, to: periodEnd, ...(obligationStatus && { status: obligationStatus }) },
+          obligationLookupWindow(periodStart, periodEnd),
           userSub,
           runFraudPreventionHeaderValidation,
           requestId,
@@ -272,7 +270,8 @@ export async function ingestHandler(event) {
 
         // obligations is the full HMRC response body containing { obligations: [...] }
         const obligationsArray = obligations?.obligations || [];
-        let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
+        const matchedObligation = findObligationByDateRange(obligationsArray, periodStart, periodEnd);
+        let resolvedPeriodKey = matchedObligation?.status === "F" ? matchedObligation.periodKey : null;
 
         // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
         // use the first available fulfilled obligation instead of erroring
@@ -296,7 +295,15 @@ export async function ingestHandler(event) {
             obligations: obligationsArray,
             allowSandboxObligations,
           });
-          return buildValidationError(request, [`No fulfilled VAT return found for period ${periodStart} to ${periodEnd}`], responseHeaders);
+          const stillOpen = matchedObligation?.status === "O";
+          const detail = stillOpen
+            ? ` HMRC still shows ${describeObligationPeriod(matchedObligation)} as open, so no return has been filed for it yet.`
+            : "";
+          return buildValidationError(
+            request,
+            [`No submitted VAT return found for period ${periodStart} to ${periodEnd}.${detail}`],
+            responseHeaders,
+          );
         }
 
         normalizedPeriodKey = resolvedPeriodKey.toUpperCase();

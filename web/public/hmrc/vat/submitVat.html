@@ -979,6 +979,10 @@
               "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
             );
           }
+          // Handle a period HMRC has already accepted — say so plainly instead of dumping the response
+          if (responseJson?.reason === "obligation_already_fulfilled") {
+            throw new Error(`${responseJson.userMessage} ${responseJson.actionAdvice}`.trim());
+          }
           // Handle HMRC scope insufficient — clear token and advise re-authorization
           if (responseJson?.error?.reason === "hmrc_scope_insufficient") {
             console.warn("HMRC scope insufficient, clearing token for re-authorization");
