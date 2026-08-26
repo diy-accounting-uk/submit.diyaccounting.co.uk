@@ -34,7 +34,7 @@ export async function goToHomePage(page, screenshotPath = defaultScreenshotPath)
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-page.png` });
     await expect(page.locator(".home-link")).toBeVisible({ timeout: 10000 });
     await Promise.all([
-      page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, ".home-link", "Home icon", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-goto-home.png` });
@@ -50,7 +50,7 @@ export async function goToHomePageUsingMainNav(page, screenshotPath = defaultScr
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-goto-home-nav.png` });
     await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible({ timeout: 10000 });
     await Promise.all([
-      page.waitForURL(/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
+      page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, "nav.main-nav a:has-text('Activities')", "Clicking Activities in main navigation", { screenshotPath }),
     ]);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-goto-home.png` });

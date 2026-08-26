@@ -169,7 +169,7 @@ app.get("/auth/login-mock-addon.js", (req, res) => {
 
   if (authProvider === "mock" || authProvider === "simulator") {
     // Serve the actual addon file in mock/simulator environments
-    res.sendFile(path.join(__dirname, "../../web/public/auth/login-mock-addon.js"));
+    res.sendFile(path.join(__dirname, "../../web/public/auth/login-mock-addon.js"), { dotfiles: "allow" });
   } else {
     // Return empty script for non-mock environments (ci, prod)
     res.setHeader("Content-Type", "application/javascript");
@@ -195,7 +195,7 @@ if (fs.existsSync(simulatorPublicPath)) {
   app.use("/sim", express.static(simulatorPublicPath, { dotfiles: "allow" }));
   // SPA fallback for /sim/ routes
   app.get("/sim/{*path}", (req, res) => {
-    res.sendFile(path.join(simulatorPublicPath, "index.html"));
+    res.sendFile(path.join(simulatorPublicPath, "index.html"), { dotfiles: "allow" });
   });
 }
 
@@ -232,7 +232,7 @@ billingWebhookPostApiEndpoint(app);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "../../web/public/index.html"));
+  res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
 
 const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;

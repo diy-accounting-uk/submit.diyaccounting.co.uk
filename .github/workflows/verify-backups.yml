@@ -153,7 +153,7 @@ jobs:
           echo "=============================================="
           echo ""
 
-          VAULT_NAME="${{ env.ENV_PREFIX }}-env-primary-vault"
+          VAULT_NAME="${{ env.ENV_PREFIX }}-primary-vault"
           echo "Checking vault: $VAULT_NAME"
           echo ""
 
@@ -192,7 +192,7 @@ jobs:
           # List backup jobs
           JOBS=$(aws backup list-backup-jobs \
             --by-created-after "$SINCE" \
-            --by-backup-vault-name "${{ env.ENV_PREFIX }}-env-primary-vault" \
+            --by-backup-vault-name "${{ env.ENV_PREFIX }}-primary-vault" \
             --region ${{ env.AWS_REGION }} \
             --query 'BackupJobs[*].{JobId:BackupJobId,Status:State,Resource:ResourceType,Created:CreationDate}' \
             --output json 2>/dev/null || echo "[]")

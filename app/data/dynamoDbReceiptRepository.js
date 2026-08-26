@@ -20,8 +20,10 @@ function getTableName() {
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - Unique receipt identifier (timestamp-formBundleNumber)
  * @param {object} receipt - The receipt data to store
+ * @param {string} actor - Actor class of the filer ("customer", "test-user", "synthetic"),
+ *   so real filings can be counted apart from CI and behaviour-test submissions
  */
-export async function putReceipt(userSub, receiptId, receipt) {
+export async function putReceipt(userSub, receiptId, receipt, actor) {
   logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -36,6 +38,7 @@ export async function putReceipt(userSub, receiptId, receipt) {
       hashedSub,
       receiptId,
       receipt,
+      actor,
       saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };

@@ -41,12 +41,45 @@ import {
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
+import { emitMetric } from "../../lib/emfMetrics.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
+
+const BUSINESS_METRICS_NAMESPACE = "Submit/Business";
+
+function emitSubmissionMetric(metricName, actor) {
+  emitMetric({ namespace: BUSINESS_METRICS_NAMESPACE, metricName, dimensions: { Actor: actor } });
+}
+
+/**
+ * Record a failed VAT filing attempt: one business metric and one activity event.
+ *
+ * A failed filing is a customer-facing incident, so every meaningful failure path
+ * reports itself the same way the success path does. The event carries the failure
+ * category and the hashed sub only — no VRN, no customer details, no HMRC payloads.
+ *
+ * @param {Object} params
+ * @param {string} params.failure - Failure category
+ * @param {string} params.summary - Human-readable summary for alerting
+ * @param {string} [params.userSub]
+ * @param {Object} [params.detail] - Additional non-identifying detail fields
+ */
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+  const actor = resolveActorClass();
+  emitSubmissionMetric("VatSubmissionFailure", actor);
+  await publishActivityFailureEvent({
+    event: "vat-return-failed",
+    summary,
+    failure,
+    userSub,
+    actor,
+    detail,
+  });
+}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -251,6 +284,7 @@ export async function ingestHandler(event) {
     // Note: Tracing headers (x-request-id, traceparent) are available via context
     // but not currently included in 403 error responses. The request URL is passed
     // for logging purposes. See httpResponseHelper.js for response header handling.
+    await recordSubmissionFailure({ failure: "access-denied", summary: "VAT return blocked: no entitlement" });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
@@ -296,6 +330,11 @@ export async function ingestHandler(event) {
   try {
     validateHmrcAccessToken(hmrcAccessToken);
   } catch (err) {
+    await recordSubmissionFailure({
+      failure: "auth-expired",
+      summary: "VAT return rejected: HMRC authorisation invalid",
+      userSub,
+    });
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
       return http401UnauthorizedResponse({
@@ -347,6 +386,12 @@ export async function ingestHandler(event) {
 
       if (!hmrcResponse.ok) {
         logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
+        await recordSubmissionFailure({
+          failure: "obligation-lookup-failed",
+          summary: "VAT return blocked: could not read obligations from HMRC",
+          userSub,
+          detail: { hmrcStatus: hmrcResponse.status },
+        });
         return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
       }
 
@@ -391,6 +436,11 @@ export async function ingestHandler(event) {
           obligations: obligationsArray,
           allowSandboxObligations,
         });
+        await recordSubmissionFailure({
+          failure: "obligation-not-matched",
+          summary: "VAT return blocked: no open obligation for the requested period",
+          userSub,
+        });
         return buildValidationError(request, [`No open VAT obligation found for period ${periodStart} to ${periodEnd}`], responseHeaders);
       }
 
@@ -398,6 +448,11 @@ export async function ingestHandler(event) {
       logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
     } catch (error) {
       logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "VAT return failed while resolving the obligation period",
+        userSub,
+      });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -416,6 +471,11 @@ export async function ingestHandler(event) {
       const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
       if (!tokenResult.consumed) {
         logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+        await recordSubmissionFailure({
+          failure: "tokens-exhausted",
+          summary: "VAT return blocked: submission allowance used up",
+          userSub,
+        });
         return http403ForbiddenResponse({
           request,
           headers: responseHeaders,
@@ -426,6 +486,11 @@ export async function ingestHandler(event) {
       logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
     } catch (error) {
       logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "VAT return failed while checking the submission allowance",
+        userSub,
+      });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -517,7 +582,7 @@ export async function ingestHandler(event) {
         if (payload.userSub && formBundleNumber) {
           const timestamp = new Date().toISOString();
           receiptId = `${timestamp}-${formBundleNumber}`;
-          await putReceipt(payload.userSub, receiptId, receipt);
+          await putReceipt(payload.userSub, receiptId, receipt, resolveActorClass());
           resultData.receiptId = receiptId;
         }
 
@@ -553,6 +618,11 @@ export async function ingestHandler(event) {
       result = error.data;
     } else {
       logger.error({ message: "Unexpected error during VAT submission", error: error.message, stack: error.stack });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "VAT return failed unexpectedly",
+        userSub,
+      });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -688,7 +758,7 @@ export async function workerHandler(event) {
       if (userSub && formBundleNumber) {
         const timestamp = new Date().toISOString();
         receiptId = `${timestamp}-${formBundleNumber}`;
-        await putReceipt(userSub, receiptId, receipt);
+        await putReceipt(userSub, receiptId, receipt, resolveActorClass());
         result.receiptId = receiptId;
       }
 
@@ -715,6 +785,11 @@ export async function workerHandler(event) {
         messageId: record.messageId,
         userSub,
         requestId,
+      });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "VAT return failed in the background worker",
+        userSub,
       });
       if (userSub && requestId) {
         await asyncApiServices.error({
@@ -829,10 +904,20 @@ export async function submitVat(
     hmrcResponseBody = httpResult.hmrcResponseBody;
   }
 
+  const actor = resolveActorClass();
   if (hmrcResponse.ok) {
+    emitSubmissionMetric("VatSubmissionSuccess", actor);
     await publishActivityEvent({
       event: "vat-return-submitted",
       summary: "VAT return submitted",
+      actor,
+    });
+  } else {
+    await recordSubmissionFailure({
+      failure: "hmrc-rejected",
+      summary: "VAT return rejected by HMRC",
+      userSub: auditForUserSub,
+      detail: { hmrcStatus: hmrcResponse.status },
     });
   }
 

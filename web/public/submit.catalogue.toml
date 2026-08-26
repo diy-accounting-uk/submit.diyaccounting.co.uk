@@ -4,7 +4,7 @@ version = "1.1.0"
 # ==============================
 # Bundle ID          → Unlocked by pass types                                      → Payment required?
 # default            → (automatic, no pass needed)                                 → No
-# day-guest          → day-guest-test-pass, day-guest-pass, digital-pass, physical-pass → No (admin passes) / 10 tokens (user-issued passes, Phase 6)
+# day-guest          → self-service, no pass needed (enable = "always")               → No
 # invited-guest      → invited-guest, campaign                                     → No (admin passes) / 10 tokens (campaign, Phase 6)
 # resident-guest     → resident-guest                                              → No (admin-issued, email-restricted)
 # resident-pro-comp  → resident-pro-comp                                           → No (admin-issued, email-restricted)
@@ -23,8 +23,10 @@ enable = "never"
 allocation = "automatic"
 
 # day-guest: Short-term HMRC access
-# Unlocked by: day-guest-test-pass (sandbox), day-guest-pass (production), digital-pass (user, 10 tokens), physical-pass (user, 10 tokens)
-# Payment: None for admin-issued passes; 10 tokens to issue digital/physical passes (Phase 6)
+# Self-service: enable = "always" grants this bundle to any authenticated user on request,
+# no pass needed. Capped at 100 concurrent allocations across all users (see cap below).
+# day-guest-test-pass, digital-pass, physical-pass still exist for testing/priority access.
+# Payment: None
 # Tokens: 3 granted (enough for 3 VAT submissions), no refresh (single use period)
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
@@ -32,7 +34,6 @@ id = "day-guest"
 name = "Day Guest"
 levelName = "Guest"
 enable = "always"
-#enable = "always"
 hidden = false
 # hidden
 # ======

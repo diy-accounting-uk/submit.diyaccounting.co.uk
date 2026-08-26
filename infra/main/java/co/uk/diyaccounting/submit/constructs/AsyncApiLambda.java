@@ -8,9 +8,11 @@ package co.uk.diyaccounting.submit.constructs;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import java.util.List;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
@@ -50,6 +52,7 @@ public class AsyncApiLambda extends ApiLambda {
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("SQS DLQ for " + props.ingestFunctionName() + " has items")
                 .build();
 
@@ -116,7 +119,21 @@ public class AsyncApiLambda extends ApiLambda {
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Worker Lambda errors for " + this.workerLambda.getFunctionName())
+                .build();
+
+        // Message age alarm: a message stuck in the queue for >= 30 minutes indicates
+        // the worker is stalled or backed up.
+        Alarm.Builder.create(scope, props.idPrefix() + "-QueueMessageAgeAlarm")
+                .alarmName(this.queue.getQueueName() + "-message-age")
+                .metric(this.queue.metricApproximateAgeOfOldestMessage())
+                .threshold(Duration.minutes(30).toSeconds())
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription(
+                        "SQS message age >= 30 minutes for queue " + this.queue.getQueueName() + " (worker stalled)")
                 .build();
 
         // Grant API Lambda permission to send messages to the queue

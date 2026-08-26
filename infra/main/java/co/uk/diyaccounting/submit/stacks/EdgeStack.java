@@ -54,6 +54,10 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.events.EventBus;
+import software.amazon.awscdk.services.events.EventPattern;
+import software.amazon.awscdk.services.events.IEventBus;
+import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
@@ -260,9 +264,9 @@ public class EdgeStack extends Stack {
         // ============================================================================
         // WAF Security Alarms - Phase 1.2
         // ============================================================================
-        // Note: These alarms are created in us-east-1 (CloudFront region).
-        // To receive SNS notifications, manually configure alarm actions in the AWS Console
-        // or use cross-region SNS topic subscription.
+        // Note: These alarms are created in us-east-1 (CloudFront region). Alarm state
+        // changes are forwarded to the eu-west-2 default event bus below, where OpsStack's
+        // AlarmStateChangeRule picks them up and routes them to the Telegram forwarder.
 
         // Rate Limit Rule alarm - indicates potential DDoS or automated abuse
         Alarm rateLimitAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-RateLimitAlarm")
@@ -326,6 +330,32 @@ public class EdgeStack extends Stack {
                 .build();
 
         infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
+
+        // ============================================================================
+        // Cross-Region Alarm Forwarding to OpsStack (eu-west-2)
+        // ============================================================================
+        // CloudWatch alarm state-change events are regional, so the WAF alarms above
+        // (us-east-1, required for CloudFront) never reach OpsStack's AlarmStateChangeRule
+        // (eu-west-2 default bus). This rule forwards them across the account's default
+        // event bus in eu-west-2, where that existing rule forwards to the Telegram Lambda.
+        // The targets.EventBus construct creates the IAM role EventBridge needs to put
+        // events onto the cross-region bus.
+        IEventBus opsDefaultBus = EventBus.fromEventBusArn(
+                this,
+                props.resourceNamePrefix() + "-OpsDefaultBus",
+                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/default");
+
+        Rule.Builder.create(this, props.resourceNamePrefix() + "-WafAlarmForwardRule")
+                .ruleName(props.resourceNamePrefix() + "-waf-alarm-forward")
+                .description("Forward CloudWatch alarm state changes to the eu-west-2 default event bus for Telegram alerting")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.cloudwatch"))
+                        .detailType(List.of("CloudWatch Alarm State Change"))
+                        .build())
+                .targets(List.of(new software.amazon.awscdk.services.events.targets.EventBus(opsDefaultBus)))
+                .build();
+
+        infof("Created cross-region rule forwarding WAF alarm state changes to eu-west-2 default bus");
 
         // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
         // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
