@@ -229,9 +229,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
   test("reports the period as already filed when HMRC has fulfilled it since the last attempt", async () => {
     mockGetVatObligations.mockResolvedValue({
       obligations: {
-        obligations: [
-          { periodKey: TEST_PERIOD_KEY, start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F", received: "2017-08-05" },
-        ],
+        obligations: [{ periodKey: TEST_PERIOD_KEY, start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F", received: "2017-08-05" }],
       },
       hmrcResponse: { ok: true, status: 200 },
     });

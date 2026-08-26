@@ -282,6 +282,13 @@ export async function submitVat(vatNumber, vatData, accessToken, govClientHeader
   });
   const responseJson = await response.json();
   if (!response.ok) {
+    // A period HMRC has already accepted is a specific, actionable answer — say it plainly
+    // instead of showing the customer the raw response.
+    if (responseJson?.reason === "obligation_already_fulfilled") {
+      const message = `${responseJson.userMessage} ${responseJson.actionAdvice}`.trim();
+      console.warn(message);
+      throw new Error(message);
+    }
     const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
     throw new Error(message);

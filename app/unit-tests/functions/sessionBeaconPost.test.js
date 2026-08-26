@@ -65,7 +65,9 @@ describe("sessionBeaconPost ingestHandler", () => {
   });
 
   it("ignores a beacon from a crawler", async () => {
-    const response = await ingestHandler(buildBeaconEvent({ event: "logout", email: "customer@gmail.com" }, { "user-agent": "Googlebot/2.1" }));
+    const response = await ingestHandler(
+      buildBeaconEvent({ event: "logout", email: "customer@gmail.com" }, { "user-agent": "Googlebot/2.1" }),
+    );
 
     expect(response.statusCode).toBe(200);
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();
