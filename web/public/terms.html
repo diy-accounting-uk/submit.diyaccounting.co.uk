@@ -24,6 +24,10 @@
     <link rel="stylesheet" href="./submit.css" />
     <style>
       main {
+        /* #mainContent (submit.css) makes main a flex item of body, so
+           auto margins on the cross axis size it to fit its content
+           instead of centering it — an explicit width restores that. */
+        width: 100%;
         max-width: 900px;
         margin: 2rem auto;
         padding: 0 1rem;
