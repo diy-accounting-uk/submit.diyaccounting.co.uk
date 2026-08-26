@@ -18,9 +18,11 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **In flight, batch 2** (five agents, integration branch `claude/next-batch-2`): 2, 5, 6,
-  14a (CloudFront half), 15a, 17, 19 (banner half), 25a (code), 26, 28a, 30a, and 31's #5,
-  #6, #8 plus the #7 logout event.
+- **Live in prod (batch 2, verified 2026-08-26)**: PITR enabled on all 11 tables, the
+  obligation-matching fix, mobile UI (#5/#6/#7/#8 closed), consent banner, new alarms,
+  CloudFront logging, drift filter (issue #43), IAM narrowing, campaign-pass config, and
+  the demo-capture fixes; their rows are removed. Remaining slices live on: 19 (console
+  halves), 25 (vault deploy awaits operator approval; code is merged).
 - **Queued on NEXT.md, operator-bound**: 4 (send the drafted email after deploy), 9 and 9a
   (Gmail settings), 14a's GA4/Stripe halves, 19's console halves. 29 is done: repo deleted
   with operator approval, 2026-08-26.
@@ -31,10 +33,7 @@ truthfully on its own.
 
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
-| 2 | Fix `verify-backups.yml` vault-name bug, then re-enable PITR on all 11 prod tables (fix the `KindCdk.ensureTable` onDelete/PITR gap or return to CDK `Table`) | Issue #11, PLAN_BACKUP_STRATEGY | S then L | Existential. Seven-year HMRC receipts with no point-in-time recovery. The verifier has correctly reported this 69 runs in a row. |
 | 4 | Email HMRC (SDST/Sam Evans thread) to add the "free version" flag to our software-finder listing | Market survey | S | Revenue. Our target customer filters by "free version" and currently never sees us. One email. |
-| 5 | Investigate and clear the 3-month-old `stack-drift` failure; raise a tracking issue | CI audit (no existing issue) | M | Trust. Weekly red for three months with no owner; drift means CloudFormation no longer describes prod. |
-| 6 | Fix VAT obligation/period-key matching (valid quarter rejected; HMRC accepted the return while the app showed an error) and make error messages persist on screen | Shutler emails, 2026-05-11 | M | Existential-adjacent. The core journey told our first real customer his accepted filing had failed. Worst possible trust failure for a filing service. |
 | 9 | Fix dead GitHub discussion link in the support auto-reply | Shutler email | S | Hygiene. Every support contact sees a broken link today. |
 | 9a | Widen the support autoresponder's sender filter: it replies to automated notifications, not just people — eight replies to AWS SNS subscription-confirmation emails on 2026-08-25 alone, each bouncing at an amazonses address, same defect class as the recorded GitHub-notification bounces | Workspace session, mail-mirror verification | S | Hygiene. One filter fix stops a standing stream of bounce noise in the support mailbox and prevents the autoresponder confirming SNS subscriptions nobody asked for. |
 
@@ -50,12 +49,9 @@ truthfully on its own.
 | 13 | Usage data pipeline: Firehose from activity events/DynamoDB streams to partitioned Parquet on S3, Glue catalog + data quality, Athena, dashboard | Strategy, AWS audit | L | Insight [DE: streams, lake storage, cataloguing, quality, analysis]. The core CV/certification project, and the business's reporting backbone. |
 | 13a | Firehose spike on one stream: activity events to date-partitioned S3, queried with Athena. No Glue quality rules, no dashboard, one table | Split from #13 | S | Insight [DE: streams]. The repo has no Firehose, Glue or Athena code at all, so #13 is greenfield. One table proves the delivery, IAM and cost shape before the lake design is committed. |
 | 14 | Scheduled ingestion jobs: GA4 export, Stripe reconciliation, CloudFront logs, orchestrated with Step Functions/EventBridge | Strategy | M | Insight [DE: orchestration, batch ingestion]. Completes the platform; revenue and funnel land in one queryable place. |
-| 14a | Turn the source exports on now: GA4 data export, CloudFront standard logging, a scheduled Stripe report | Split from #14 | S | Insight. History cannot be backfilled. Every week these stay off is a week of funnel data the pipeline will never be able to query. |
 | 15 | Referral and campaign pass system (specced, zero code; prerequisite met) | PLAN_CAMPAIGN_AND_REFERRALS | M | Revenue. The only designed acquisition mechanism beyond the HMRC listing. After #7, its effect is measurable. |
-| 15a | Correct the four wrong `campaign-pass` values in `submit.passes.toml` (bundleId to `invited-guest`, P3D, maxUses 1, cost 3) | Split from #15 | S | Revenue. Config only, no infrastructure. The referral build reads these values, so wrong ones would be inherited by everything built on top. |
 | 16 | Tighten spreadsheet-to-Submit pairing: file a VAT return from a DIY spreadsheet without re-keying (CSV/digital-link import) | Market survey positioning | M | Revenue. Our one edge bridging-only rivals cannot copy. Also the MTD digital-links story HMRC wants. |
 | 16a | Define the CSV contract: column names and their mapping to the nine VAT boxes, published as a fixture both repos test against | Split from #16 | S | Revenue. The interface spans two repos, so it is the part that cannot be changed cheaply later. Submit has an export path today and no import path, so the contract has to be written before either side builds. |
-| 17 | Demo videos: validate the capture test, produce the three journey videos | PLAN_DEMO_VIDEOS | S | Revenue. Cheap conversion asset; infrastructure already exists. |
 | 18 | Fix the spreadsheets VATQtr1 dropdown (wrong-year figures) | Clavier emails (spreadsheets repo) | M | Existential-adjacent. A correctness bug that could put last year's numbers in a customer's VAT return. |
 | 19 | GA4 leftovers: conversions, old stream retirement, cookie consent banner | PLAN_GA4 | S | Insight. Small, finishes an almost-done plan. |
 
@@ -77,15 +73,10 @@ truthfully on its own.
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
 | 25 | Cross-account backups: provision the `submit-backup` vault, copy jobs, monthly restore test | Issue #11, PLAN_CROSS_ACCOUNT_BACKUPS | L | Existential, second layer. Depends on #2, and the proven restore is the gate for the approved CDK TypeScript migration (#33). |
-| 25a | Provision the empty vault in `submit-backup`: KMS key, vault, and the cross-account access policy. No copy jobs yet | Split from #25 | S | Existential, second layer. The backup account holds no resources at all today. This is the one part of #25 that does not wait on #2, and the copy jobs cannot be written until the destination exists. |
-| 26 | Missing alarms batch: HMRC error rate, cert expiry, SQS age, JWT errors, PITR-disabled; plus the worker-alarm `treatMissingData` one-liner | ALARM_VALIDATION_STRATEGY, AWS audit | M | Trust. The audit's confirmed gaps, specs already written. |
 | 27 | WCAG 2.2 AA audit, ICO checklist, annual pen test | PLAN_SECURITY_DETECTION_UPLIFT phase 4 | M/L | Trust. HMRC Terms of Use commitments made in the recognition questionnaires; ITSA recognition will re-ask. |
 | 27a | Get quotes and book the third-party pen test; name the designated responsible individual | Split from #27 | S | Trust. The only part of #27 with an external lead time and a budget decision. The automated WCAG and ZAP scans already exist and pass, so the manual audit can be sized once a date is fixed. |
 | 28 | Scan detection (#9), data-theft detection (#10), DynamoDB IAM tightening from `grantReadData` | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
-| 28a | Replace the blanket `grantReadData` on customer tables with per-table, per-action grants | Split from #28 | S | Trust. Narrows the exfiltration surface now, and cuts down what the detection rules in #28 have to watch for. Independent of the CloudTrail work. |
 | 30 | Alarm-count audit (123 per deployment) and canary cadence review | Cost analysis | M | Hygiene. Largest recurring CloudWatch line; worthwhile after #26 settles what should exist. |
-| 30a | Cut the canary run frequency to the lowest cadence that still catches an outage inside the alerting window | Split from #30 | S | Hygiene. A config value with an immediate monthly saving, and it does not depend on #26 settling which alarms should exist. |
-| 31 | Small UI batch: issues #3, #4, #5, #6, #7, #8 (links, mobile visibility, pass navigation, logout event) | Issues #3 to #8 | S each | Hygiene. Real user-facing rough edges; good sub-agent batch work. |
 | 32 | Optional VAT endpoints: liabilities, payments, penalties (#19); entitlement gating on read endpoints | Issue #19, vat-api-operations | M | Revenue, minor. Completes the listed feature set; useful, not urgent. |
 | 32a | Cut pipeline run times: ci deploys hit ~30 minutes, prod ~50 | Operator, this session | M | Hygiene, compounding. Every iteration in every workstream pays this tax. Profile the deploy workflow stages, parallelise stacks, cache Docker/Maven layers, and lean on the existing lean-deploy path for app-only changes. The TypeScript migration (#33) is a chance to rebuild the pipeline shape rather than port it. |
 | 32b | Apply the specced `requireActivity()` gating to the obligations and view-return endpoints, and check `prod-env-hmrc-api-requests` for whether anyone uses them | Split from #32 (32a is an unrelated item) | S | Trust, then revenue. Two read endpoints are live and ungated today. The usage numbers also say whether three more read-only pages are worth building at all. |

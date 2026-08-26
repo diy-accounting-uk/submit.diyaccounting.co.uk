@@ -9,57 +9,28 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
 reasoning.
 
-**Batch 1 is live in prod (deployment prod-26b125b, verified 2026-08-26).** The operator
-sends the HMRC free-flag email now that the site states recognition correctly.
+**Batches 1 and 2 are live in prod (deployment prod-7f188b7, verified 2026-08-26).**
+PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift
+findings live in issue #43.
 
-**Batch 2 is code complete: PR #44 awaits review and merge.** It carries B2 (PITR), B5
-(drift filter; findings in issue #43), B6 (obligation matching root-caused and fixed),
-B14a's CloudFront half, B15a, B17's capture fixes (videos delivered), B19's banner half,
-B25a (vault code — first deploy into 914216784828 still needs operator approval), B26,
-B28a, B30a (alarm-math instead of cadence cut), and issues #5/#6/#7/#8. On merge and
-deploy verification: remove those items below. Still operator-bound: B4 send, B9/B9a
-Gmail, B14a GA4/Stripe halves, B19 console halves, demo-video hosting/voiceover.
-
-- [ ] **(B14a) Turn the analytics source exports on.** CloudFront standard logging (CDK, in
-  flight batch 2); GA4 data export and a scheduled Stripe report are operator console actions.
-  History cannot be backfilled.
-- [ ] **(B15a) Correct the four `campaign-pass` values in `submit.passes.toml`.** In flight:
-  batch 2 web branch.
-- [ ] **(B25a) Provision the empty backup vault in `submit-backup`.** Code in flight (batch 2);
-  the first deploy into account 914216784828 needs operator approval.
-- [ ] **(B28a) Replace blanket `grantReadData` with per-table, per-action grants.** In flight:
-  batch 2 data-protection branch.
-- [ ] **(B30a) Cut canary cadence to the cheapest safe interval.** In flight: batch 2
-  observability branch, with the alarm-evaluation math checked.
-
-- [ ] **(B2) Fix the backup verifier and re-enable PITR.** Fix the doubled `-env` vault name in
-  `verify-backups.yml`, then restore point-in-time recovery on all 11 prod tables (the
-  `KindCdk.ensureTable` custom resource dropped it). `_developers/backlog/PLAN_BACKUP_STRATEGY.md`
-  is the plan of record. Gates the approved TypeScript CDK migration.
-- [ ] **(B5) Clear the stack-drift failure.** The weekly `stack-drift` workflow has been red for
-  3+ months. Identify the drifted stacks, reconcile, and raise a tracking issue.
-- [ ] **(B6) Fix VAT obligation matching.** A valid quarter failed to match an open HMRC
-  obligation while the submission actually succeeded (customer evidence, 2026-05-11). Needs
-  diagnosis against real HMRC obligation shapes. The vanishing-error half is fixed in PR #42:
-  the callback page redirected even on failure, wiping the message.
-- [ ] **(B9) Fix the dead GitHub link in the support@ Gmail auto-reply.** Not a repo file: the
-  auto-reply is configured on the mailbox itself and points at
-  `github.com/antonycc/diy-accounting/discussions` (dead; no diy-accounting-uk repo has
-  Discussions enabled). Operator action in Gmail settings — point it at
-  `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues` or another live page.
-  Pair with B9a (the autoresponder also replies to automated SNS/GitHub notifications).
-- [ ] **(B17) Produce the three demo videos.** Validate the existing Playwright capture test and
-  publish the output. `PLAN_DEMO_VIDEOS.md` is the plan of record.
-- [ ] **(B19) Finish GA4.** Cookie consent banner, mark purchase/begin_checkout as conversions,
-  retire the old stream and the stale Google Ads remarketing tag. `PLAN_GA4.md` is the plan of
-  record.
-- [ ] **(B26) Missing-alarms batch.** Add the specced alarms (HMRC error rate, cert expiry, SQS
-  age, JWT errors, PITR-disabled) and set `treatMissingData(NOT_BREACHING)` on the worker-error
-  alarms stuck in INSUFFICIENT_DATA. `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` has the
-  specs.
-- [ ] **(B31) Small UI batch, remainder: issues #5, #6, #7, #8.** Mobile visibility, pass
-  navigation, logout event. (#4 is in PR #42; #3 has no occurrences in this repo — its
-  linktr.ee references live in www.diyaccounting.co.uk.)
+- [ ] **Deploy the cross-account backup vault (B25).** Code is merged; account
+  914216784828 is bootstrapped by the first local deploy (operator-approved commands are
+  with the coordinator). Follow-up: create `backup-github-actions-role` so
+  `setup-backup-account.yml` runs unattended; then copy jobs and the restore test — which
+  gates the TypeScript migration (B33).
+- [ ] **(B4) Send the HMRC free-flag email.** Drafted in Gmail; the site now states
+  recognition correctly. Operator action.
+- [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
+  `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`) and the sender
+  filter that replies to SNS/GitHub notifications. Operator action in Gmail settings.
+- [ ] **(B14a/B19 console halves) Turn on GA4 export and a scheduled Stripe report; mark
+  GA4 conversions; retire the old stream and stale remarketing tag.** Operator console
+  actions. CloudFront logging is already live. History cannot be backfilled.
+- [ ] **(B17 remainder) Decide demo-video voiceover and hosting.** The three cuts are
+  delivered; capture is repeatable.
+- [ ] **Watch the first post-fix scheduled runs.** Tomorrow's `verify-backups` is the
+  first with the corrected vault name and PITR on; Monday's `stack-drift` is the first
+  with the noise filter. Both should go green — investigate if not.
 
 - [ ] **Automation restarted 2026-08-24 — watch the first scheduled runs.** Remainders:
   (a) `verify-backups` last actually ran 2026-07-13 and FAILED — confirm the next run passes;
