@@ -12,15 +12,13 @@ reasoning.
 **Batch 1 is live in prod (deployment prod-26b125b, verified 2026-08-26).** The operator
 sends the HMRC free-flag email now that the site states recognition correctly.
 
-**In flight — batch 2 (integration branch `claude/next-batch-2`, coordinator merges and
-pushes; agent worktrees under `.claude/worktrees/`):** five sub-agents.
-`claude/batch2-data-protection` carries B2 (PITR), B25a (backup vault code), B28a (IAM
-grants). `claude/batch2-observability` carries B26 remainder, B14a's CloudFront-logging
-half, B30a, and B5's drift detection. `claude/batch2-web-ui` carries B31's #5/#6/#8,
-B19's consent banner, B15a. `claude/batch2-app-flow` carries B6 (obligation matching)
-and #7's logout event. `claude/batch2-demo-videos` carries B17. B29 stays with the
-coordinator pending operator approval; B14a's GA4/Stripe halves and B19's console
-halves are operator console actions.
+**Batch 2 is code complete: PR #44 awaits review and merge.** It carries B2 (PITR), B5
+(drift filter; findings in issue #43), B6 (obligation matching root-caused and fixed),
+B14a's CloudFront half, B15a, B17's capture fixes (videos delivered), B19's banner half,
+B25a (vault code — first deploy into 914216784828 still needs operator approval), B26,
+B28a, B30a (alarm-math instead of cadence cut), and issues #5/#6/#7/#8. On merge and
+deploy verification: remove those items below. Still operator-bound: B4 send, B9/B9a
+Gmail, B14a GA4/Stripe halves, B19 console halves, demo-video hosting/voiceover.
 
 - [ ] **(B14a) Turn the analytics source exports on.** CloudFront standard logging (CDK, in
   flight batch 2); GA4 data export and a scheduled Stripe report are operator console actions.
