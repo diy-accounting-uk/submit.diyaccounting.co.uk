@@ -197,8 +197,8 @@ public class BillingWebhookStack extends Stack {
                 webhookFunction.getNode().getId());
 
         // Grant DynamoDB access
-        subscriptionsTable.grantReadWriteData(webhookFunction);
-        bundlesTable.grantReadWriteData(webhookFunction);
+        subscriptionsTable.grant(webhookFunction, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem");
+        bundlesTable.grant(webhookFunction, "dynamodb:PutItem", "dynamodb:UpdateItem");
 
         // Grant sub hash salt access
         SubHashSaltHelper.grantSaltAccess(webhookFunction, region, account, props.envName());

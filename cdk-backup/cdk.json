@@ -1,0 +1,11 @@
+{
+  "app": "java -jar ../target/submit-backup.jar",
+  "output": "../cdk-submit-backup.out",
+  "context": {
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/core:newStyleStackSynthesis": true,
+    "@aws-cdk/core:stackRelativeExports": true,
+    "vaultName": "submit-cross-account-vault",
+    "sourceBackupRoleArns": "arn:aws:iam::972912397388:role/prod-env-backup-role,arn:aws:iam::367191799875:role/ci-env-backup-role"
+  }
+}

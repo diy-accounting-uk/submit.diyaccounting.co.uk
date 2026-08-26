@@ -77,11 +77,11 @@ public class DataStack extends Stack {
         super(scope, id, stackProps);
 
         // Tables use ensureTable() for idempotent creation - deployments succeed whether table exists or not.
-        // Note: PITR/TTL must be enabled manually on pre-existing tables if not already configured.
-        // Data protection comes from PITR backups, not CloudFormation RETAIN.
+        // ensureTable turns on point-in-time recovery for every table, including tables that already
+        // exist, so data protection comes from a 35-day PITR window rather than CloudFormation RETAIN.
 
         // Receipts table for storing VAT submission receipts
-        // CRITICAL: 7-year HMRC retention requirement - enable PITR manually if table pre-exists
+        // CRITICAL: 7-year HMRC retention requirement
         this.receiptsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-ReceiptsTable",
@@ -225,8 +225,8 @@ public class DataStack extends Stack {
 
         // Bundle capacity counter table for tracking global cap enforcement
         // PK-only table (no sort key) - counters are looked up by bundleId.
-        // Reconciliation Lambda overwrites with correct count every 5 minutes.
-        // No PITR needed - reconciliation rebuilds from source of truth (bundles table).
+        // Reconciliation Lambda overwrites with correct count every 5 minutes, so the bundles table
+        // is the source of truth if this one is ever lost.
         this.bundleCapacityTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundleCapacityTable",
