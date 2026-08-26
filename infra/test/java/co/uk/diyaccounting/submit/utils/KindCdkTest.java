@@ -32,4 +32,25 @@ class KindCdkTest {
         // Also ensure Template can synth without errors
         Template.fromStack(stack);
     }
+
+    @Test
+    void ensureTableTurnsOnPointInTimeRecovery() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+
+        KindCdk.ensureTable(stack, "Widgets", "test-env-widgets", "pk", "sk");
+
+        Template template = Template.fromStack(stack);
+
+        // One custom resource creates the table, a second turns PITR on. CreateTable takes no PITR
+        // parameter and no-ops against a table that already exists, so the second call is what
+        // reaches live tables.
+        template.resourceCountIs("Custom::AWS", 2);
+        template.hasResourceProperties(
+                "Custom::AWS",
+                Map.of(
+                        "Create",
+                        software.amazon.awscdk.assertions.Match.stringLikeRegexp(
+                                ".*updateContinuousBackups.*PointInTimeRecoveryEnabled.*")));
+    }
 }

@@ -158,9 +158,12 @@ public class KindCdk {
     }
 
     /**
-     * Creates a DynamoDB table idempotently using AwsCustomResource.
+     * Creates a DynamoDB table idempotently using AwsCustomResource, with point-in-time recovery on.
      * Uses CreateTable API with ignoreErrorCodesMatching("ResourceInUseException")
      * so deployments succeed whether the table exists or not.
+     *
+     * <p>CreateTable takes no PITR parameter and does nothing at all when the table already exists,
+     * so PITR is a second call. See {@link #ensurePointInTimeRecovery}.
      *
      * @param stack The stack to create the table in
      * @param id The construct ID prefix
@@ -199,7 +202,7 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceInUseException")
                 .build();
 
-        AwsCustomResource.Builder.create(stack, id + "-EnsureTable")
+        AwsCustomResource ensureTableResource = AwsCustomResource.Builder.create(stack, id + "-EnsureTable")
                 .onCreate(createTableCall)
                 .onUpdate(createTableCall)
                 .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
@@ -209,7 +212,54 @@ public class KindCdk {
                         .build())))
                 .build();
 
+        ensurePointInTimeRecovery(stack, id, tableName, ensureTableResource);
+
         return Table.fromTableName(stack, id + "-Table", tableName);
+    }
+
+    /**
+     * Turns on point-in-time recovery for a table, giving a 35-day continuous recovery window.
+     *
+     * <p>UpdateContinuousBackups is the only API that sets PITR — CreateTable has no parameter for
+     * it — and it is idempotent, so it is safe against a table that already has PITR on. It reaches
+     * live tables that CreateTable skips, which is what makes it work on the existing prod and CI
+     * tables rather than only on new ones.
+     *
+     * <p>Errors are deliberately not ignored. A table that is still CREATING rejects this call, and
+     * a deployment that failed loudly there is better than one that silently leaves a table with no
+     * recovery window. The dependency on the CreateTable resource orders the two calls.
+     *
+     * @param stack The stack holding the table
+     * @param id The construct ID prefix, matching the one passed to ensureTable
+     * @param tableName The name of the table
+     * @param ensureTableResource The CreateTable custom resource this call must follow
+     */
+    private static void ensurePointInTimeRecovery(
+            Stack stack, String id, String tableName, AwsCustomResource ensureTableResource) {
+        Map<String, Object> updateContinuousBackupsParams = Map.of(
+                "TableName",
+                tableName,
+                "PointInTimeRecoverySpecification",
+                Map.of("PointInTimeRecoveryEnabled", true));
+
+        AwsSdkCall updateContinuousBackupsCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("updateContinuousBackups")
+                .parameters(updateContinuousBackupsParams)
+                .physicalResourceId(PhysicalResourceId.of(tableName + "-pitr"))
+                .build();
+
+        AwsCustomResource ensurePitrResource = AwsCustomResource.Builder.create(stack, id + "-EnsurePITR")
+                .onCreate(updateContinuousBackupsCall)
+                .onUpdate(updateContinuousBackupsCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateContinuousBackups", "dynamodb:DescribeContinuousBackups"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+
+        ensurePitrResource.getNode().addDependency(ensureTableResource);
     }
 
     /**
