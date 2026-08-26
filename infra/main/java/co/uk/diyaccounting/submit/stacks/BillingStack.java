@@ -203,7 +203,7 @@ public class BillingStack extends Stack {
         this.billingCheckoutPostLambda = billingCheckoutPostApiLambda.ingestLambda;
         this.billingCheckoutPostLambdaLogGroup = billingCheckoutPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingCheckoutPostLambdaProps);
-        subscriptionsTable.grantReadWriteData(this.billingCheckoutPostLambda);
+        // No subscriptions grant: checkout creates a Stripe session; the webhook records the result.
         bundlesTable.grant(this.billingCheckoutPostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.billingCheckoutPostLambda, region, account, props.envName());
         this.billingCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -284,7 +284,7 @@ public class BillingStack extends Stack {
         this.billingPortalGetLambda = billingPortalGetApiLambda.ingestLambda;
         this.billingPortalGetLambdaLogGroup = billingPortalGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingPortalGetLambdaProps);
-        subscriptionsTable.grantReadData(this.billingPortalGetLambda);
+        // No subscriptions grant: the portal link is built from the bundle's Stripe customer id.
         bundlesTable.grant(this.billingPortalGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.billingPortalGetLambda, region, account, props.envName());
         this.billingPortalGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -355,8 +355,7 @@ public class BillingStack extends Stack {
         this.billingRecoverPostLambda = billingRecoverPostApiLambda.ingestLambda;
         this.billingRecoverPostLambdaLogGroup = billingRecoverPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingRecoverPostLambdaProps);
-        subscriptionsTable.grantReadWriteData(this.billingRecoverPostLambda);
-        bundlesTable.grantReadWriteData(this.billingRecoverPostLambda);
+        // No table grants: the recover handler returns 501. It gets them when it does something.
         SubHashSaltHelper.grantSaltAccess(this.billingRecoverPostLambda, region, account, props.envName());
         this.billingRecoverPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)

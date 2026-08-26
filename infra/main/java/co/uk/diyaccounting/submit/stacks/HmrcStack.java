@@ -206,11 +206,7 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for HMRC exchange token with ingestHandler %s",
                 this.hmrcTokenPostLambda.getNode().getId(), props.sharedNames().hmrcTokenPostIngestLambdaHandler);
 
-        // Grant the exchange token Lambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.hmrcTokenPostLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
+        // No bundles grant: the HMRC token exchange writes an audit record and reads no bundle.
 
         // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
         hmrcApiRequestsTable.grant(this.hmrcTokenPostLambda, "dynamodb:PutItem");
@@ -542,12 +538,7 @@ public class HmrcStack extends Stack {
                 "Created Lambda %s for my receipts retrieval with ingestHandler %s",
                 this.receiptGetLambda.getNode().getId(), props.sharedNames().receiptGetIngestLambdaHandler);
 
-        // Grant the MyReceiptsLambda permission to access DynamoDB Bundles Table
-        bundlesTable.grantReadData(this.receiptGetLambda);
-        infof(
-                "Granted DynamoDB permissions to %s for Bundles Table %s",
-                this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
-
+        // No bundles grant: receipt retrieval reads receipts only.
         // A single receipt is fetched by key; the listing queries the user's partition.
         receiptsTable.grant(this.receiptGetLambda, "dynamodb:GetItem", "dynamodb:Query");
 
