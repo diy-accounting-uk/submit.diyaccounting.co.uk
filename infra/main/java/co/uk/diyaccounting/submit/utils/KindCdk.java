@@ -39,8 +39,7 @@ public class KindCdk {
     public static String getContextValueString(Construct scope, String contextKey, String defaultValue) {
         var contextValue = scope.getNode().tryGetContext(contextKey);
         String defaultedValue;
-        String source;
-        if (StringUtils.isNotBlank(contextValue.toString())) {
+        if (contextValue != null && StringUtils.isNotBlank(contextValue.toString())) {
             defaultedValue = contextValue.toString();
             infof("%s=%s (source: CDK context)", contextKey, defaultedValue);
         } else {
