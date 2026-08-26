@@ -178,6 +178,49 @@
     }
   }
 
+  // Read the identity provider Cognito recorded in the ID token, so a logout reads
+  // the same way its login did ("via Google").
+  function readIdentityProvider() {
+    try {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return "";
+      let encoded = idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      while (encoded.length % 4 !== 0) encoded += "=";
+      const payload = JSON.parse(atob(encoded));
+      // Cognito sends the identities claim as a JSON string for federated users
+      const identities = typeof payload.identities === "string" ? JSON.parse(payload.identities) : payload.identities;
+      return (Array.isArray(identities) && identities[0] && identities[0].providerName) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  // Tell the activity bus the user is leaving. Sent before storage is cleared and as a
+  // beacon, because the next line of logout() navigates away to Cognito.
+  function sendLogoutBeacon() {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
+      if (!userInfo) return;
+      const body = JSON.stringify({
+        event: "logout",
+        email: userInfo.email || "",
+        provider: readIdentityProvider(),
+      });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon("/api/session/beacon", new Blob([body], { type: "application/json" }));
+        return;
+      }
+      fetch("/api/session/beacon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+        keepalive: true,
+      });
+    } catch {
+      // beacon failures are expected (ad blockers, offline)
+    }
+  }
+
   // Logout function
   async function logout(e) {
     // Prevent the <a> default action — without this, updateLoginStatus() changes
@@ -186,6 +229,8 @@
     if (e && e.preventDefault) e.preventDefault();
 
     console.log("Logging out user");
+
+    sendLogoutBeacon();
 
     // Clear Cognito tokens and user info from localStorage
     localStorage.removeItem("cognitoAccessToken");
