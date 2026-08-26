@@ -11,6 +11,7 @@ import {
   buildValidationError,
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
+  http409ConflictResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -29,7 +30,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { findPeriodKeyByDateRange } from "../../lib/obligationFormatter.js";
+import { findObligationByDateRange, obligationLookupWindow, describeObligationPeriod } from "../../lib/obligationFormatter.js";
 import { getVatObligations } from "./hmrcVatObligationGet.js";
 import {
   detectRequestFormat,
@@ -253,6 +254,155 @@ export function extractAndValidateParameters(event, errorMessages) {
   };
 }
 
+/**
+ * Sandbox escape hatch: HMRC's sandbox hands out obligations that have nothing to do with the
+ * dates a tester types, so a period key is derived from whatever open obligation is on offer.
+ * Never reached against the live HMRC account.
+ */
+function periodKeyFromAnySandboxObligation(obligations, periodStart) {
+  const year = periodStart.substring(2, 4);
+  const openObligations = obligations.filter((o) => o.status === "O");
+  if (openObligations.length > 0) {
+    const rawPeriodKey = openObligations[0].periodKey;
+    const periodKey = `${year}${rawPeriodKey.substring(2, 4)}`;
+    logger.info({
+      message: "allowSandboxObligations: Using first available open obligation with the requested year injected",
+      requestedPeriod: { periodStart },
+      rawPeriodKey,
+      usedObligation: periodKey,
+    });
+    return periodKey;
+  }
+  const month = parseInt(periodStart.substring(5, 7), 10);
+  const quarter = Math.floor((month - 1) / 3) + 1;
+  const periodKey = `A${year}${quarter}`;
+  logger.info({
+    message: "allowSandboxObligations: No open obligations found, generating periodKey from periodStart",
+    requestedPeriod: { periodStart },
+    usedObligation: periodKey,
+  });
+  return periodKey;
+}
+
+/**
+ * Resolve the opaque HMRC period key for the period the customer entered.
+ *
+ * Returns `{ periodKey }` when a period can be filed, or `{ response }` carrying the HTTP
+ * response to send back — the period is already filed, matches nothing HMRC knows about, or
+ * the obligations call failed.
+ */
+async function resolvePeriodKeyFromObligations({
+  request,
+  responseHeaders,
+  vatNumber,
+  periodStart,
+  periodEnd,
+  hmrcAccessToken,
+  govClientHeaders,
+  govTestScenarioHeader,
+  hmrcAccount,
+  allowSandboxObligations,
+  userSub,
+  runFraudPreventionHeaderValidation,
+  requestId,
+  traceparent,
+  correlationId,
+}) {
+  logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vatNumber });
+
+  const { obligations, hmrcResponse } = await getVatObligations(
+    vatNumber,
+    hmrcAccessToken,
+    govClientHeaders,
+    govTestScenarioHeader,
+    hmrcAccount,
+    // No status filter: a period already filed comes back as fulfilled, and telling the
+    // customer that is far more use than reporting no open obligation.
+    obligationLookupWindow(periodStart, periodEnd),
+    userSub,
+    runFraudPreventionHeaderValidation,
+    requestId,
+    traceparent,
+    correlationId,
+  );
+
+  if (!hmrcResponse.ok) {
+    logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
+    await recordSubmissionFailure({
+      failure: "obligation-lookup-failed",
+      summary: "VAT return blocked: could not read obligations from HMRC",
+      userSub,
+      detail: { hmrcStatus: hmrcResponse.status },
+    });
+    return {
+      response: buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders),
+    };
+  }
+
+  // obligations is the full HMRC response body containing { obligations: [...] }
+  const obligationsArray = obligations?.obligations || [];
+  const matchedObligation = findObligationByDateRange(obligationsArray, periodStart, periodEnd);
+
+  if (matchedObligation?.status === "O") {
+    return { periodKey: matchedObligation.periodKey };
+  }
+  if (allowSandboxObligations) {
+    return { periodKey: periodKeyFromAnySandboxObligation(obligationsArray, periodStart) };
+  }
+
+  if (matchedObligation?.status === "F") {
+    const period = describeObligationPeriod(matchedObligation);
+    logger.warn({
+      message: "Requested period has already been filed at HMRC",
+      periodStart,
+      periodEnd,
+      received: matchedObligation.received,
+    });
+    await recordSubmissionFailure({
+      failure: "obligation-already-fulfilled",
+      summary: "VAT return blocked: period already filed at HMRC",
+      userSub,
+      detail: { received: matchedObligation.received },
+    });
+    const receivedOn = matchedObligation.received
+      ? ` HMRC received it on ${new Date(matchedObligation.received).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`
+      : "";
+    return {
+      response: http409ConflictResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: `The VAT period ${period} has already been submitted to HMRC.`,
+        error: {
+          reason: "obligation_already_fulfilled",
+          userMessage: `The VAT period ${period} has already been submitted to HMRC, so it cannot be submitted again.${receivedOn}`,
+          actionAdvice: "Your receipt is on the receipts page. To change a submitted return, contact HMRC.",
+          periodStart,
+          periodEnd,
+          received: matchedObligation.received,
+        },
+      }),
+    };
+  }
+
+  const openPeriods = obligationsArray.filter((o) => o.status === "O").map(describeObligationPeriod);
+  logger.error({ message: "No matching obligation found for date range", periodStart, periodEnd, obligations: obligationsArray });
+  await recordSubmissionFailure({
+    failure: "obligation-not-matched",
+    summary: "VAT return blocked: no open obligation for the requested period",
+    userSub,
+  });
+  const openPeriodsAdvice = openPeriods.length
+    ? ` HMRC is expecting a return for: ${openPeriods.join("; ")}.`
+    : " HMRC is not expecting a return for any period near those dates.";
+  return {
+    response: buildValidationError(
+      request,
+      [`No open VAT obligation found for period ${periodStart} to ${periodEnd}.${openPeriodsAdvice}`],
+      responseHeaders,
+    ),
+  };
+}
+
 // HTTP request/response, aware Lambda ingestHandler function
 // TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
@@ -367,84 +517,28 @@ export async function ingestHandler(event) {
   }
 
   if (!persistedRequest) {
-    // Resolve periodKey from obligations using the period date range
-    logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vatNumber });
     try {
-      const { obligations, hmrcResponse } = await getVatObligations(
+      const resolution = await resolvePeriodKeyFromObligations({
+        request,
+        responseHeaders,
         vatNumber,
+        periodStart,
+        periodEnd,
         hmrcAccessToken,
         govClientHeaders,
         govTestScenarioHeader,
         hmrcAccount,
-        { from: periodStart, to: periodEnd, status: "O" },
+        allowSandboxObligations,
         userSub,
         runFraudPreventionHeaderValidation,
         requestId,
         traceparent,
         correlationId,
-      );
-
-      if (!hmrcResponse.ok) {
-        logger.error({ message: "Failed to fetch obligations for period resolution", status: hmrcResponse.status });
-        await recordSubmissionFailure({
-          failure: "obligation-lookup-failed",
-          summary: "VAT return blocked: could not read obligations from HMRC",
-          userSub,
-          detail: { hmrcStatus: hmrcResponse.status },
-        });
-        return buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders);
+      });
+      if (resolution.response) {
+        return resolution.response;
       }
-
-      // obligations is the full HMRC response body containing { obligations: [...] }
-      const obligationsArray = obligations?.obligations || [];
-      let resolvedPeriodKey = findPeriodKeyByDateRange(obligationsArray, periodStart, periodEnd);
-
-      // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
-      // use the first available open obligation instead of erroring
-      if (!resolvedPeriodKey && allowSandboxObligations) {
-        const openObligations = obligationsArray.filter((o) => o.status === "O");
-        if (openObligations.length > 0) {
-          const year = periodStart.substring(2, 4); // Get last two digits of year
-          const rawPeriodKey = openObligations[0].periodKey;
-          const last2DigitsOfPeriodKey = rawPeriodKey.substring(2, 4);
-          resolvedPeriodKey = `${year}${last2DigitsOfPeriodKey}`;
-          logger.info({
-            message: "allowSandboxObligations: Using first available open obligation with the requested year injected",
-            requestedPeriod: { periodStart, periodEnd },
-            rawPeriodKey: rawPeriodKey,
-            usedObligation: resolvedPeriodKey,
-          });
-        } else {
-          // No open obligations at all so generate one using the 2 digits year and quarter from the requested periodStart
-          const year = periodStart.substring(2, 4); // Get last two digits of year
-          const month = parseInt(periodStart.substring(5, 7), 10); // Get month as integer
-          const quarter = Math.floor((month - 1) / 3) + 1; // Calculate quarter (1-4)
-          resolvedPeriodKey = `A${year}${quarter}`; // Format as 'AYYQ'
-          logger.info({
-            message: "allowSandboxObligations: No open obligations found, generating periodKey from periodStart",
-            requestedPeriod: { periodStart, periodEnd },
-            usedObligation: resolvedPeriodKey,
-          });
-        }
-      }
-
-      if (!resolvedPeriodKey) {
-        logger.error({
-          message: "No matching obligation found for date range",
-          periodStart,
-          periodEnd,
-          obligations: obligationsArray,
-          allowSandboxObligations,
-        });
-        await recordSubmissionFailure({
-          failure: "obligation-not-matched",
-          summary: "VAT return blocked: no open obligation for the requested period",
-          userSub,
-        });
-        return buildValidationError(request, [`No open VAT obligation found for period ${periodStart} to ${periodEnd}`], responseHeaders);
-      }
-
-      normalizedPeriodKey = resolvedPeriodKey.toUpperCase();
+      normalizedPeriodKey = resolution.periodKey.toUpperCase();
       logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
     } catch (error) {
       logger.error({ message: "Error resolving periodKey from obligations", error: error.message });

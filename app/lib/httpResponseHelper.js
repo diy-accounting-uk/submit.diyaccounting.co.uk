@@ -69,6 +69,21 @@ export function http403ForbiddenResponse({ request, headers, message, error }) {
   });
 }
 
+export function http409ConflictResponse({ request, headers, message, error }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  return httpResponse({
+    statusCode: 409,
+    request,
+    headers: merged,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http404NotFoundResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
