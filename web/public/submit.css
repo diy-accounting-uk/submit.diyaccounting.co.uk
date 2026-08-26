@@ -162,6 +162,10 @@ button:focus {
 html,
 body {
   height: 100%;
+  /* The header's decorative background (header::after) extends past the
+     viewport edge by design (left/right: -5%) before its rotateX transform;
+     clip that instead of letting it add real horizontal scroll room. */
+  overflow-x: hidden;
 }
 
 body {
@@ -491,6 +495,11 @@ header::after {
   flex: 1;
   display: flex;
   flex-direction: column;
+  /* Without this, a flex item's default min-width is its content's
+     min-content size — a wide table or long word inside #mainContent
+     would otherwise force the whole column (and every sibling in it)
+     wider than the viewport instead of wrapping/scrolling in place. */
+  min-width: 0;
 }
 
 /* ============================================
@@ -917,16 +926,31 @@ footer {
 
   .header-nav {
     flex-direction: row;
+    flex-wrap: wrap;
+    row-gap: 0.5em;
     justify-content: space-between;
   }
 
   .auth-section {
-    gap: 0.5em;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.4em;
+    row-gap: 0.3em;
   }
 
   .login-link {
     padding: 0.4em 0.8em;
     font-size: 0.9em;
+  }
+
+  /* Plain content tables (privacy.html, terms.html) have no fixed layout,
+     so a narrow-viewport table with a few sentences per cell overflows the
+     page. Scroll the table itself instead of the whole page. */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
   }
 }
 
