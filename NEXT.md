@@ -79,9 +79,6 @@ halves are operator console actions.
   age, JWT errors, PITR-disabled) and set `treatMissingData(NOT_BREACHING)` on the worker-error
   alarms stuck in INSUFFICIENT_DATA. `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` has the
   specs.
-- [ ] **(B29) Remove the legacy CDK ECR repo in the old management account.** 4,253 images,
-  ~$8.50/month, serves nothing since the prod migration. Mutating change in account 887764105431:
-  needs explicit operator approval before any write.
 - [ ] **(B31) Small UI batch, remainder: issues #5, #6, #7, #8.** Mobile visibility, pass
   navigation, logout event. (#4 is in PR #42; #3 has no occurrences in this repo — its
   linktr.ee references live in www.diyaccounting.co.uk.)

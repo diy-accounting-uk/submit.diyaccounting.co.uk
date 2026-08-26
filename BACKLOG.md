@@ -22,8 +22,8 @@ truthfully on its own.
   14a (CloudFront half), 15a, 17, 19 (banner half), 25a (code), 26, 28a, 30a, and 31's #5,
   #6, #8 plus the #7 logout event.
 - **Queued on NEXT.md, operator-bound**: 4 (send the drafted email after deploy), 9 and 9a
-  (Gmail settings), 29 (awaiting write approval), 14a's GA4/Stripe halves, 19's console
-  halves.
+  (Gmail settings), 14a's GA4/Stripe halves, 19's console halves. 29 is done: repo deleted
+  with operator approval, 2026-08-26.
 - **Shipped in PR #42, deploy in progress**: 4a, 4b, 4c, 7, 8, 31a, 31b, and the first
   slices of 2 and 26. Rows removed once the deploy is verified.
 
@@ -88,7 +88,6 @@ truthfully on its own.
 | 27a | Get quotes and book the third-party pen test; name the designated responsible individual | Split from #27 | S | Trust. The only part of #27 with an external lead time and a budget decision. The automated WCAG and ZAP scans already exist and pass, so the manual audit can be sized once a date is fixed. |
 | 28 | Scan detection (#9), data-theft detection (#10), DynamoDB IAM tightening from `grantReadData` | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
 | 28a | Replace the blanket `grantReadData` on customer tables with per-table, per-action grants | Split from #28 | S | Trust. Narrows the exfiltration surface now, and cuts down what the detection rules in #28 have to watch for. Independent of the CloudTrail work. |
-| 29 | Legacy ECR repo in the old management account: lifecycle rule or delete (4,253 images, ~$8.50/month, serves nothing) | Cost analysis | S | Hygiene. The one confirmed standing cost leak. Needs an approved write in the management account. |
 | 30 | Alarm-count audit (123 per deployment) and canary cadence review | Cost analysis | M | Hygiene. Largest recurring CloudWatch line; worthwhile after #26 settles what should exist. |
 | 30a | Cut the canary run frequency to the lowest cadence that still catches an outage inside the alerting window | Split from #30 | S | Hygiene. A config value with an immediate monthly saving, and it does not depend on #26 settling which alarms should exist. |
 | 31 | Small UI batch: issues #3, #4, #5, #6, #7, #8 (links, mobile visibility, pass navigation, logout event) | Issues #3 to #8 | S each | Hygiene. Real user-facing rough edges; good sub-agent batch work. |
