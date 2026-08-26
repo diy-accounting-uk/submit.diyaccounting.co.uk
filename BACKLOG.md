@@ -21,9 +21,10 @@ truthfully on its own.
 - **Nothing is in flight.** Batches 1 and 2 are live in prod (deployment prod-7f188b7);
   PITR is ENABLED on all 11 tables and the cross-account vault is LIVE in 914216784828.
 - **Operator-bound**: 4 (send the drafted email — now unblocked), 9 and 9a (Gmail
-  settings), 17a (YouTube upload), 19's console half.
-- **Queued for the next batch**: 25 (vault wiring remainder), 17a's embed half, and the
-  Tier 2 spikes (10a, 13a) when the operator says go.
+  settings), 17a (demo-video redo — Claude Code excluded by operator directive), 19's
+  console half.
+- **Queued for the next batch**: 25 (vault wiring remainder) and the Tier 2 spikes (10a,
+  13a) when the operator says go.
 
 ## Tier 1: do next
 
@@ -48,7 +49,7 @@ truthfully on its own.
 | 15 | Referral and campaign pass system (specced, zero code; prerequisite met) | PLAN_CAMPAIGN_AND_REFERRALS | M | Revenue. The only designed acquisition mechanism beyond the HMRC listing. After #7, its effect is measurable. |
 | 16 | Tighten spreadsheet-to-Submit pairing: file a VAT return from a DIY spreadsheet without re-keying (CSV/digital-link import) | Market survey positioning | M | Revenue. Our one edge bridging-only rivals cannot copy. Also the MTD digital-links story HMRC wants. |
 | 16a | Define the CSV contract: column names and their mapping to the nine VAT boxes, published as a fixture both repos test against | Split from #16 | S | Revenue. The interface spans two repos, so it is the part that cannot be changed cheaply later. Submit has an export path today and no import path, so the contract has to be written before either side builds. |
-| 17a | Publish the demo videos: operator uploads the three delivered cuts to a YouTube channel, then the site embeds them on guide/about pages once video IDs exist. Capture is repeatable; silent v1, captions can follow | B17 remainder, operator decision 2026-08-26 | S | Revenue. The conversion asset exists; only publication stands between it and visitors. |
+| 17a | Demo videos: redo properly and publish. The first attempt failed — the capture recorded the simulator rather than the main site, and the cuts are mostly blank and not shareable. Operator-owned: per operator directive 2026-08-26, Claude Code is not to work this item. | Operator directive 2026-08-26 | M | Revenue. A usable walkthrough of the real product is still worth having; the failed attempt is not it. |
 | 18 | Fix the spreadsheets VATQtr1 dropdown (wrong-year figures) | Clavier emails (spreadsheets repo) | M | Existential-adjacent. A correctness bug that could put last year's numbers in a customer's VAT return. |
 | 19 | Analytics console work (operator): GA4 data export on, scheduled Stripe report, mark conversions, retire the old stream and stale remarketing tag. The consent banner and CloudFront logging halves shipped in batch 2 | PLAN_GA4; 14a remainder | S | Insight. Small, finishes an almost-done plan. |
 

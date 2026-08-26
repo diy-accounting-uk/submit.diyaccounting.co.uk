@@ -28,11 +28,6 @@ findings live in issue #43.
 - [ ] **(B14a/B19 console halves) Turn on GA4 export and a scheduled Stripe report; mark
   GA4 conversions; retire the old stream and stale remarketing tag.** Operator console
   actions. CloudFront logging is already live. History cannot be backfilled.
-- [ ] **(B17 remainder) Publish the demo videos via YouTube.** Operator decision
-  2026-08-26: upload the three delivered cuts to an operator-owned YouTube channel, then
-  the site embeds them (guide/about pages) — the embed work is queued for the next batch
-  once the operator supplies the video IDs. Silent cuts are fine for v1; captions can
-  follow.
 - [ ] **Watch the first post-fix scheduled runs.** Tomorrow's `verify-backups` is the
   first with the corrected vault name and PITR on; Monday's `stack-drift` is the first
   with the noise filter. Both should go green — investigate if not.
