@@ -1,6 +1,6 @@
 # Plan: Capture 3 Demo Page Videos
 
-## Status: PLANNED
+## Status: Phase 1 done. Phase 2 (dimensions, holds) done alongside it. Phase 3 (CI integration) not started.
 
 ## Goal
 
