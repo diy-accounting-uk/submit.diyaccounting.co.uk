@@ -13,11 +13,13 @@ reasoning.
 PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift
 findings live in issue #43.
 
-- [ ] **Deploy the cross-account backup vault (B25).** Code is merged; account
-  914216784828 is bootstrapped by the first local deploy (operator-approved commands are
-  with the coordinator). Follow-up: create `backup-github-actions-role` so
-  `setup-backup-account.yml` runs unattended; then copy jobs and the restore test — which
-  gates the TypeScript migration (B33).
+- [ ] **(B25 remainder) Wire cross-account copy jobs and the restore test.** The vault is
+  LIVE (deployed 2026-08-26 with operator approval: `submit-cross-account-vault` in
+  914216784828, KMS-encrypted, copy-in restricted to the prod/ci backup roles, deletion
+  denied from outside the account). Remaining: point BackupStack's copy jobs at it, add
+  passes/subscriptions to the backup selection, create `backup-github-actions-role` so
+  `setup-backup-account.yml` runs unattended, then the monthly restore test — which gates
+  the TypeScript migration (B33).
 - [ ] **(B4) Send the HMRC free-flag email.** Drafted in Gmail; the site now states
   recognition correctly. Operator action.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
