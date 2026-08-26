@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.grantTableIndexActions;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
@@ -248,8 +249,8 @@ public class AccountStack extends Stack {
 
         // Grant DynamoDB permissions to both API and Worker Lambdas
         // bundleGet performs lazy token refresh (UpdateItem) when a bundle's tokenResetAt has elapsed.
-        bundlesTable.grantReadWriteData(this.bundleGetLambda);
-        bundleCapacityTable.grantReadData(this.bundleGetLambda);
+        bundlesTable.grant(this.bundleGetLambda, "dynamodb:Query", "dynamodb:UpdateItem");
+        bundleCapacityTable.grant(this.bundleGetLambda, "dynamodb:BatchGetItem");
 
         infof(
                 "Granted DynamoDB permissions to %s for Bundles and Bundle Capacity Tables",
@@ -330,9 +331,9 @@ public class AccountStack extends Stack {
                     .build());
 
             // Grant DynamoDB permissions
-            bundlesTable.grantReadWriteData(fn);
-            bundlePostAsyncRequestsTable.grantReadWriteData(fn);
-            bundleCapacityTable.grantReadWriteData(fn);
+            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+            bundlePostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+            bundleCapacityTable.grant(fn, "dynamodb:UpdateItem");
 
             // Grant access to user sub hash salt secret in Secrets Manager
             SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -437,8 +438,8 @@ public class AccountStack extends Stack {
                     .build());
 
             // Grant DynamoDB permissions
-            bundlesTable.grantReadWriteData(fn);
-            bundleDeleteAsyncRequestsTable.grantReadWriteData(fn);
+            bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+            bundleDeleteAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
             // Grant access to user sub hash salt secret in Secrets Manager
             SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -605,7 +606,7 @@ public class AccountStack extends Stack {
         this.passGetLambda = passGetApiLambda.ingestLambda;
         this.passGetLambdaLogGroup = passGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passGetLambdaProps);
-        passesTable.grantReadData(this.passGetLambda);
+        passesTable.grant(this.passGetLambda, "dynamodb:GetItem");
         this.passGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -646,9 +647,11 @@ public class AccountStack extends Stack {
         this.passPostLambda = passPostApiLambda.ingestLambda;
         this.passPostLambdaLogGroup = passPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passPostLambdaProps);
-        passesTable.grantReadWriteData(this.passPostLambda);
-        bundlesTable.grantReadWriteData(this.passPostLambda);
-        bundleCapacityTable.grantReadWriteData(this.passPostLambda);
+        // Redeem is an atomic UpdateItem; when it fails, diagnoseFailure reads the pass back.
+        passesTable.grant(this.passPostLambda, "dynamodb:UpdateItem", "dynamodb:GetItem");
+        // Redeeming a pass grants a bundle, which runs the same bundle writes as bundlePost.
+        bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
+        bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
         this.passPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -688,7 +691,7 @@ public class AccountStack extends Stack {
         this.passAdminPostLambda = passAdminPostApiLambda.ingestLambda;
         this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passAdminPostLambdaProps);
-        passesTable.grantReadWriteData(this.passAdminPostLambda);
+        passesTable.grant(this.passAdminPostLambda, "dynamodb:PutItem");
         this.passAdminPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -731,9 +734,9 @@ public class AccountStack extends Stack {
         this.passGeneratePostLambda = passGeneratePostApiLambda.ingestLambda;
         this.passGeneratePostLambdaLogGroup = passGeneratePostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passGeneratePostLambdaProps);
-        passesTable.grantReadWriteData(this.passGeneratePostLambda);
-        bundlesTable.grantReadWriteData(this.passGeneratePostLambda);
-        bundleCapacityTable.grantReadData(this.passGeneratePostLambda);
+        passesTable.grant(this.passGeneratePostLambda, "dynamodb:PutItem");
+        // Generating a pass spends one of the issuer's tokens: read the bundle, then record the spend.
+        bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passGeneratePostLambda, region, account, props.envName());
         this.passGeneratePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -775,7 +778,10 @@ public class AccountStack extends Stack {
         this.passMyPassesGetLambda = passMyPassesGetApiLambda.ingestLambda;
         this.passMyPassesGetLambdaLogGroup = passMyPassesGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passMyPassesGetLambdaProps);
-        passesTable.grantReadData(this.passMyPassesGetLambda);
+        // Listing a user's own passes queries issuedBy-index, and falls back to a table Scan when
+        // the query fails. The index needs its own grant: an imported table's ARN does not cover it.
+        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query", "dynamodb:Scan");
+        grantTableIndexActions(passesTable, this.passMyPassesGetLambda, "issuedBy-index", "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.passMyPassesGetLambda, region, account, props.envName());
         this.passMyPassesGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -813,8 +819,9 @@ public class AccountStack extends Stack {
                         .build());
         this.bundleCapacityReconcileLambda = reconcileLambda.ingestLambda;
         this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
-        bundlesTable.grantReadData(this.bundleCapacityReconcileLambda);
-        bundleCapacityTable.grantReadWriteData(this.bundleCapacityReconcileLambda);
+        // Reconciliation counts live bundles, which is the one legitimate Scan in the system.
+        bundlesTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:Scan");
+        bundleCapacityTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:PutItem");
         this.bundleCapacityReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))

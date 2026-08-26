@@ -213,7 +213,7 @@ public class HmrcStack extends Stack {
                 this.hmrcTokenPostLambda.getFunctionName(), bundlesTable.getTableName());
 
         // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
-        hmrcApiRequestsTable.grantWriteData(this.hmrcTokenPostLambda);
+        hmrcApiRequestsTable.grant(this.hmrcTokenPostLambda, "dynamodb:PutItem");
 
         // Grant access to HMRC client secret in Secrets Manager
         if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
@@ -321,10 +321,10 @@ public class HmrcStack extends Stack {
         // Read+Write needed: bundle enforcement reads bundles, token enforcement updates tokensConsumed
         List.of(this.hmrcVatReturnPostLambda, submitVatLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grantReadWriteData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    receiptsTable.grantWriteData(fn);
-                    hmrcVatReturnPostAsyncRequestsTable.grantReadWriteData(fn);
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatReturnPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -398,9 +398,9 @@ public class HmrcStack extends Stack {
         // Grant the VAT obligations Lambda and its worker permission to access DynamoDB Bundles Table
         List.of(this.hmrcVatObligationGetLambda, hmrcVatObligationGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatObligationGetAsyncRequestsTable.grantReadWriteData(fn);
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatObligationGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -473,9 +473,9 @@ public class HmrcStack extends Stack {
         // Grant the VAT return retrieval Lambda and its worker permission to access DynamoDB Bundles Table
         List.of(this.hmrcVatReturnGetLambda, hmrcVatReturnGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grantReadData(fn);
-                    hmrcApiRequestsTable.grantWriteData(fn);
-                    hmrcVatReturnGetAsyncRequestsTable.grantReadWriteData(fn);
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatReturnGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -548,9 +548,8 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB permissions to %s for Bundles Table %s",
                 this.receiptGetLambda.getFunctionName(), bundlesTable.getTableName());
 
-        // Grant the LogReceiptLambda and MyReceiptsLambda write and read access respectively to the receipts DynamoDB
-        // table
-        receiptsTable.grantReadData(this.receiptGetLambda);
+        // A single receipt is fetched by key; the listing queries the user's partition.
+        receiptsTable.grant(this.receiptGetLambda, "dynamodb:GetItem", "dynamodb:Query");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());

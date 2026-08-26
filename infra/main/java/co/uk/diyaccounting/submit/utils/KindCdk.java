@@ -20,6 +20,7 @@ import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.iam.IGrantable;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
@@ -259,6 +260,28 @@ public class KindCdk {
                 .build();
 
         ensurePitrResource.getNode().addDependency(ensureTableResource);
+    }
+
+    /**
+     * Grants actions on one global secondary index of a table.
+     *
+     * <p>Tables imported with {@code Table.fromTableName} carry no index metadata, so CDK's own
+     * grant helpers emit the bare table ARN and nothing else. A Query against an index is then
+     * denied however broad the grant looks, because an index has its own ARN. Anything querying an
+     * index needs this alongside its table grant.
+     *
+     * @param table The table owning the index
+     * @param grantee The function that queries the index
+     * @param indexName The name of the global secondary index
+     * @param actions The DynamoDB actions to allow on the index
+     */
+    public static void grantTableIndexActions(
+            ITable table, IGrantable grantee, String indexName, String... actions) {
+        grantee.getGrantPrincipal()
+                .addToPrincipalPolicy(PolicyStatement.Builder.create()
+                        .actions(List.of(actions))
+                        .resources(List.of(table.getTableArn() + "/index/" + indexName))
+                        .build());
     }
 
     /**

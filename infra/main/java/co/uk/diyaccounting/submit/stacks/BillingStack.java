@@ -204,7 +204,7 @@ public class BillingStack extends Stack {
         this.billingCheckoutPostLambdaLogGroup = billingCheckoutPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingCheckoutPostLambdaProps);
         subscriptionsTable.grantReadWriteData(this.billingCheckoutPostLambda);
-        bundlesTable.grantReadData(this.billingCheckoutPostLambda);
+        bundlesTable.grant(this.billingCheckoutPostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.billingCheckoutPostLambda, region, account, props.envName());
         this.billingCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -285,7 +285,7 @@ public class BillingStack extends Stack {
         this.billingPortalGetLambdaLogGroup = billingPortalGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.billingPortalGetLambdaProps);
         subscriptionsTable.grantReadData(this.billingPortalGetLambda);
-        bundlesTable.grantReadData(this.billingPortalGetLambda);
+        bundlesTable.grant(this.billingPortalGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.billingPortalGetLambda, region, account, props.envName());
         this.billingPortalGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
