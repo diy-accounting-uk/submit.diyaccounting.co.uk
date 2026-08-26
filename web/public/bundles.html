@@ -65,6 +65,11 @@
       <div class="form-container" style="text-align: center">
         <h2>Bundles</h2>
 
+        <div id="currentBundlesSection" style="display: none; margin: 1.5em 0 2em; text-align: left">
+          <h3>Your Current Bundles</h3>
+          <div id="currentBundles" style="margin: 1em 0"></div>
+        </div>
+
         <div class="bundles-list" id="catalogBundles"></div>
 
         <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
@@ -101,11 +106,6 @@
           <div style="margin: 1em auto; text-align: center">
             <button type="button" id="feedbackEngagementBtn" class="btn" style="min-width: 180px">I'm willing to share feedback</button>
           </div>
-        </div>
-
-        <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Your Current Bundles</h3>
-          <div id="currentBundles" style="margin: 1em 0"></div>
         </div>
 
         <div id="myGeneratedPasses" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
@@ -748,18 +748,18 @@
             const hasSubscription = fullData?.stripeSubscriptionId;
             const manageBtn = hasSubscription
               ? `<button type="button" class="btn" data-manage-subscription="true" data-bundle-id="${bundleId}"
-                  style="background-color: #17a2b8; border-color: #17a2b8; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
+                  style="background-color: #17a2b8; border-color: #17a2b8; color: white; font-size: 0.8em; padding: 0.15em 0.75em; min-width: unset; width:auto; min-height: 44px; display:inline-flex; align-items:center; justify-content:center;">
                     Manage Subscription
                 </button>`
               : "";
 
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
-              <span style="display:flex; align-items:center; gap:0.75em">
-                <span>${displayName}</span>
+              <span style="display:flex; align-items:center; flex-wrap:wrap; gap:0.75em">
+                <span style="min-width:0">${displayName}</span>
                 ${manageBtn}
                 <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
-                  style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.5em; min-width: unset; width:auto; display:inline-flex; align-items:center;">
+                  style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.75em; min-width: unset; width:auto; min-height: 44px; display:inline-flex; align-items:center; justify-content:center;">
                     Remove
                 </button>
               </span>
@@ -769,6 +769,11 @@
           .join("");
 
         container.innerHTML = bundleCards;
+
+        const section = document.getElementById("currentBundlesSection");
+        if (section) {
+          section.style.display = bundles.length > 0 ? "block" : "none";
+        }
       }
 
       // --- click handler for remove buttons

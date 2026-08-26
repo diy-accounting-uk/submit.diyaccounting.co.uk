@@ -162,6 +162,10 @@ button:focus {
 html,
 body {
   height: 100%;
+  /* The header's decorative background (header::after) extends past the
+     viewport edge by design (left/right: -5%) before its rotateX transform;
+     clip that instead of letting it add real horizontal scroll room. */
+  overflow-x: hidden;
 }
 
 body {
