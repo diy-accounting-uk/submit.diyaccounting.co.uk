@@ -71,7 +71,7 @@ import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCata
   onDomReady(setupWidgets);
 })();
 
-// RUM consent + init
+// Cookie consent (RUM performance monitoring + GA4 analytics) + RUM init
 function hasRumConsent() {
   try {
     return localStorage.getItem("consent.rum") === "granted" || localStorage.getItem("consent.analytics") === "granted";
@@ -81,8 +81,27 @@ function hasRumConsent() {
   }
 }
 
+function hasConsentChoice() {
+  try {
+    return localStorage.getItem("consent.rum") !== null || localStorage.getItem("consent.analytics") !== null;
+  } catch (error) {
+    console.warn("Failed to read consent choice from localStorage:", error);
+    return false;
+  }
+}
+
+function updateAnalyticsConsent(granted) {
+  try {
+    if (typeof window.gtag === "function") {
+      window.gtag("consent", "update", { analytics_storage: granted ? "granted" : "denied" });
+    }
+  } catch (error) {
+    console.warn("Failed to update analytics consent:", error);
+  }
+}
+
 function showConsentBannerIfNeeded() {
-  if (hasRumConsent()) return;
+  if (hasConsentChoice()) return;
   if (document.getElementById("consent-banner")) return;
   const banner = document.createElement("div");
   banner.id = "consent-banner";
@@ -91,29 +110,33 @@ function showConsentBannerIfNeeded() {
   banner.style.cssText =
     "position:fixed;bottom:0;left:0;right:0;background:#ddd;color:#111;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
   banner.innerHTML = `
-    <span>We use minimal analytics to improve performance (CloudWatch RUM). We'll only start after you consent. See our <a href="/privacy.html" style="color:#316497">privacy policy</a>.</span>
+    <span>We use cookies to monitor performance and understand how people use this site. We'll only turn them on if you say yes. See our <a href="/privacy.html" style="color:#316497">privacy policy</a>.</span>
     <div style="display:flex;gap:8px">
-      <button id="consent-accept" class="btn" style="padding:6px 10px">Accept</button>
-      <button id="consent-decline" class="btn" style="padding:6px 10px;background:#555;border-color:#555">Decline</button>
+      <button id="consent-accept" class="btn" style="padding:6px 10px;min-height:44px">Accept</button>
+      <button id="consent-decline" class="btn" style="padding:6px 10px;min-height:44px;background:#555;border-color:#555">Decline</button>
     </div>`;
   document.body.appendChild(banner);
   document.getElementById("consent-accept").onclick = () => {
     try {
       localStorage.setItem("consent.rum", "granted");
+      localStorage.setItem("consent.analytics", "granted");
     } catch (error) {
-      console.warn("Failed to store RUM consent in localStorage:", error);
+      console.warn("Failed to store consent in localStorage:", error);
     }
     document.body.removeChild(banner);
+    updateAnalyticsConsent(true);
     document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
     maybeInitRum();
   };
   document.getElementById("consent-decline").onclick = () => {
     try {
       localStorage.setItem("consent.rum", "declined");
+      localStorage.setItem("consent.analytics", "declined");
     } catch (error) {
-      console.warn("Failed to store RUM consent in localStorage:", error);
+      console.warn("Failed to store consent in localStorage:", error);
     }
     document.body.removeChild(banner);
+    updateAnalyticsConsent(false);
   };
 }
 

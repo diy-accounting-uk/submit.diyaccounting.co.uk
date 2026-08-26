@@ -8,6 +8,15 @@ function gtag() {
   dataLayer.push(arguments);
 }
 gtag("consent", "default", { analytics_storage: "denied" });
+// A returning visitor who already accepted the cookie banner shouldn't have
+// to accept it again on every page — apply their saved choice straight away.
+try {
+  if (localStorage.getItem("consent.analytics") === "granted") {
+    gtag("consent", "update", { analytics_storage: "granted" });
+  }
+} catch (error) {
+  console.warn("Failed to read analytics consent from localStorage:", error);
+}
 gtag("js", new Date());
 gtag("config", "G-T81V5NL5MB");
 
