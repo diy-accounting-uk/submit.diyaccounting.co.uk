@@ -208,6 +208,74 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     expect(body.message).toContain("No open VAT obligation found");
   });
 
+  test("names the periods HMRC is expecting when the requested one does not match", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [{ periodKey: "18A3", start: "2017-07-01", end: "2017-09-30", status: "O" }],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("No open VAT obligation found");
+    expect(body.message).toMatch(/1 Jul 2017 to 30 Sept? 2017/);
+  });
+
+  test("reports the period as already filed when HMRC has fulfilled it since the last attempt", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [{ periodKey: TEST_PERIOD_KEY, start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F", received: "2017-08-05" }],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(409);
+    const body = parseResponseBody(response);
+    expect(body.reason).toBe("obligation_already_fulfilled");
+    expect(body.userMessage).toContain("1 Apr 2017 to 30 Jun 2017");
+    expect(body.userMessage).toContain("already been submitted to HMRC");
+    expect(body.userMessage).toContain("5 Aug 2017");
+    expect(body.actionAdvice).toContain("receipts page");
+
+    // A period HMRC has already accepted must not be sent again.
+    const returnPosts = mockFetch.mock.calls.filter(([url]) => String(url).includes("/returns"));
+    expect(returnPosts).toHaveLength(0);
+  });
+
+  test("matches the obligation when each entered boundary is a day out", async () => {
+    mockObligationsSuccess("18A2", TEST_PERIOD_START, TEST_PERIOD_END);
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2017-08-05T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({
+      body: {
+        vatNumber: "111222333",
+        periodStart: "2017-04-02",
+        periodEnd: "2017-07-01",
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const returnPost = mockFetch.mock.calls.find(([url]) => String(url).includes("/returns"));
+    expect(JSON.parse(returnPost[1].body).periodKey).toBe("18A2");
+  });
+
   test("returns error when obligations API fails", async () => {
     mockObligationsError(500);
 
@@ -251,7 +319,9 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     const callArgs = mockGetVatObligations.mock.calls[0];
     expect(callArgs[0]).toBe("111222333"); // vatNumber
     expect(callArgs[1]).toBe("test-token"); // hmrcAccessToken
-    expect(callArgs[5]).toEqual(expect.objectContaining({ from: TEST_PERIOD_START, to: TEST_PERIOD_END, status: "O" }));
+    // The window is padded either side of the requested period and carries no status filter,
+    // so a period already filed comes back as fulfilled rather than as an empty result.
+    expect(callArgs[5]).toEqual({ from: "2017-03-25", to: "2017-07-07" });
 
     // Verify receipt was persisted to DynamoDB
     const lib = await import("@aws-sdk/lib-dynamodb");

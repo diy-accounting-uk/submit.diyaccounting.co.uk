@@ -422,6 +422,16 @@ public class OpsStack extends Stack {
                 .build();
 
         // Health Check Alarm
+        // Period is 2 hours, not 5 minutes: the canary runs on a canaryIntervalMinutes (51min)
+        // cadence, so a 5-minute period spends most of its life with no datapoint at all, and
+        // treatMissingData(BREACHING) turned that absence into a spurious breach almost every
+        // cycle (verified in prod: alarms flapping between OK and ALARM off "no datapoints
+        // received", not off real canary failures). A 2-hour period comfortably contains at
+        // least one real run regardless of clock-alignment drift, so BREACHING-on-missing-data
+        // now means what it says: the canary has genuinely stopped reporting. Mirrors the
+        // existing githubSyntheticAlarm's 2-hour/1-period shape below. Trade-off: worst-case
+        // detection latency for a real failure rises from a nominal (but not real) ~10 minutes
+        // to just under 2 hours.
         this.healthCheckAlarm = Alarm.Builder.create(this, "HealthAlarm")
                 .alarmName(props.resourceNamePrefix() + "-health-failed")
                 .alarmDescription("Health check canary is failing - application may be down")
@@ -430,10 +440,10 @@ public class OpsStack extends Stack {
                         .metricName("SuccessPercent")
                         .dimensionsMap(Map.of("CanaryName", healthCanaryName))
                         .statistic("Average")
-                        .period(Duration.minutes(5))
+                        .period(Duration.hours(2))
                         .build())
                 .threshold(90)
-                .evaluationPeriods(2)
+                .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.BREACHING)
                 .build();
@@ -459,7 +469,7 @@ public class OpsStack extends Stack {
                 .startAfterCreation(true)
                 .build();
 
-        // API Check Alarm
+        // API Check Alarm - same 2-hour period fix and rationale as HealthAlarm above.
         this.apiCheckAlarm = Alarm.Builder.create(this, "ApiAlarm")
                 .alarmName(props.resourceNamePrefix() + "-api-failed")
                 .alarmDescription("API check canary is failing - API endpoints may be unavailable")
@@ -468,10 +478,10 @@ public class OpsStack extends Stack {
                         .metricName("SuccessPercent")
                         .dimensionsMap(Map.of("CanaryName", apiCanaryName))
                         .statistic("Average")
-                        .period(Duration.minutes(5))
+                        .period(Duration.hours(2))
                         .build())
                 .threshold(90)
-                .evaluationPeriods(2)
+                .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.BREACHING)
                 .build();

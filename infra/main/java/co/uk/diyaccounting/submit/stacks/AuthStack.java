@@ -153,11 +153,7 @@ public class AuthStack extends Stack {
                 "Created Lambda %s for Cognito exchange token with ingestHandler %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostIngestLambdaHandler);
 
-        // Grant Lambdas access to DynamoDB Bundles Table
-        bundlesTable.grantReadWriteData(this.cognitoTokenPostLambda);
-        infof(
-                "Granted Lambda %s read/write access to DynamoDB Table %s",
-                this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().bundlesTableName);
+        // No bundles grant: cognitoTokenPost exchanges a Cognito code for tokens and touches no table.
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.cognitoTokenPostLambda, region, account, props.envName());
@@ -205,11 +201,7 @@ public class AuthStack extends Stack {
                 "Created Custom Authorizer Lambda %s with ingestHandler %s",
                 this.customAuthorizerLambda.getNode().getId(), props.sharedNames().customAuthorizerIngestLambdaHandler);
 
-        // Grant Custom Authorizer Lambda access to DynamoDB Bundles Table
-        bundlesTable.grantReadWriteData(this.customAuthorizerLambda);
-        infof(
-                "Granted Custom Authorizer Lambda %s read/write access to DynamoDB Table %s",
-                this.customAuthorizerLambda.getNode().getId(), props.sharedNames().bundlesTableName);
+        // No bundles grant: the authorizer validates the JWT and loads the salt, and reads no table.
 
         // Grant Custom Authorizer Lambda access to user sub hash salt secret
         SubHashSaltHelper.grantSaltAccess(this.customAuthorizerLambda, region, account, props.envName());

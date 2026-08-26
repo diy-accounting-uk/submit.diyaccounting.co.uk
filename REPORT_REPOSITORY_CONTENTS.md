@@ -652,7 +652,6 @@ Head-injected scripts for early API prefetching:
 | `backup-salts.sh` | Backup hash salt secrets |
 | `restore-dynamodb-pitr.sh` | Restore DynamoDB from PITR |
 | `setup-s3-replication.sh` | Configure S3 replication |
-| `setup-backup-account.sh` | Setup backup AWS account |
 | `dr-restore-from-backup-account.sh` | Disaster recovery restore |
 | `playwright-video-reporter.js` | Playwright video test reporter |
 | `add-bundle.sh` | Add bundle to user account |

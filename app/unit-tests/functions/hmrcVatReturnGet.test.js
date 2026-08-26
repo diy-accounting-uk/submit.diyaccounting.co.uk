@@ -218,7 +218,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
-    expect(body.message).toContain("No fulfilled VAT return found");
+    expect(body.message).toContain("No submitted VAT return found");
   });
 
   test("returns error when obligations API fails", async () => {
@@ -252,11 +252,11 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const response = await hmrcVatReturnGetHandler(event);
     expect(response.statusCode).toBe(200);
 
-    // Verify getVatObligations was called with fulfilled status
+    // The window is padded either side of the requested period and carries no status filter
     expect(mockGetVatObligations).toHaveBeenCalled();
     const callArgs = mockGetVatObligations.mock.calls[0];
     expect(callArgs[0]).toBe("111222333"); // vatNumber
-    expect(callArgs[5]).toEqual(expect.objectContaining({ from: TEST_PERIOD_START, to: TEST_PERIOD_END, status: "F" }));
+    expect(callArgs[5]).toEqual({ from: "2016-12-25", to: "2017-04-07" });
   });
 
   test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {

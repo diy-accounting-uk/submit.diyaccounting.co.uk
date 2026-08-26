@@ -68,6 +68,8 @@ import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
+import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
@@ -331,6 +333,25 @@ public class EdgeStack extends Stack {
 
         infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
 
+        // Certificate expiry alarm - ACM auto-renews but gives no warning if renewal fails.
+        // The cert lives in us-east-1 (required for CloudFront), so this alarm does too; its
+        // state changes are picked up by the WafAlarmForwardRule below like the WAF alarms.
+        Alarm certExpiryAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CertExpiryAlarm")
+                .alarmName(props.resourceNamePrefix() + "-cert-expiring")
+                .alarmDescription("ACM certificate expires within 30 days")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/CertificateManager")
+                        .metricName("DaysToExpiry")
+                        .dimensionsMap(Map.of("CertificateArn", cert.getCertificateArn()))
+                        .statistic("Minimum")
+                        .period(software.amazon.awscdk.Duration.days(1))
+                        .build())
+                .threshold(30)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // ============================================================================
         // Cross-Region Alarm Forwarding to OpsStack (eu-west-2)
         // ============================================================================
@@ -386,6 +407,21 @@ public class EdgeStack extends Stack {
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
                 .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
                 .build();
+        // CloudFront standard logging bucket. History cannot be backfilled, so this needs to be
+        // on before there is traffic worth analyzing, even though nothing consumes the logs yet.
+        // ObjectOwnership.OBJECT_WRITER keeps ACLs enabled: CloudFront's standard logging writes
+        // objects via an ACL grant to the AWS log-delivery account, which needs ACLs on.
+        Bucket cloudFrontLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CfLogsBucket")
+                .encryption(BucketEncryption.S3_MANAGED)
+                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
+                .lifecycleRules(List.of(LifecycleRule.builder()
+                        .expiration(software.amazon.awscdk.Duration.days(90))
+                        .build()))
+                .build();
+
         IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
                 this.originBucket,
                 S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
@@ -548,7 +584,9 @@ public class EdgeStack extends Stack {
                 .domainNames(List.of(props.sharedNames().deploymentDomainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
-                .enableLogging(false)
+                .enableLogging(true)
+                .logBucket(cloudFrontLogsBucket)
+                .logFilePrefix("cf-standard-logs/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
@@ -598,6 +636,8 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());
         cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
         cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
+        cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
+        cfnOutput(this, "CloudFrontLogsBucketName", cloudFrontLogsBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }

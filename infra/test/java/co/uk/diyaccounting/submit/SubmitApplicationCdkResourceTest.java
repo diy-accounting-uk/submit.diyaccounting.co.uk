@@ -74,9 +74,9 @@ class SubmitApplicationCdkResourceTest {
         accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
-        // bundles table (see app/functions/account/bundleGet.js resetTokens). The CDK grant MUST be
-        // grantReadWriteData on bundlesTable. If someone reverts to grantReadData the count here
-        // drops below the expected threshold and the test fails.
+        // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
+        // bundlesTable MUST include dynamodb:UpdateItem. If someone narrows it to reads only, the
+        // count here drops below the expected threshold and the test fails.
         //
         // Policies granting dynamodb:UpdateItem on the bundles table (logical id contains
         // "bundles-table"): bundleGet(1) + bundlePost ingest+worker(2) + bundleDelete ingest+worker(2)
@@ -87,12 +87,25 @@ class SubmitApplicationCdkResourceTest {
         if (bundleGetUpdateItemPolicies < 1) {
             dumpIamPolicies(accountStackTemplate);
             throw new AssertionFailedError("bundleGet Lambda role is missing dynamodb:UpdateItem on the bundles table. "
-                    + "Check AccountStack.java grantReadWriteData for bundleGetLambda — "
-                    + "this was the root cause of the 2026-04 production incident.");
+                    + "Check the bundlesTable grant for bundleGetLambda in AccountStack.java.");
         }
         infof(
                 "IAM guard: bundleGet has %d policies with UpdateItem on bundles table (expected >= 1)",
                 bundleGetUpdateItemPolicies);
+
+        // Scan and BatchGetItem read a whole table at once, so they are the cheapest way to walk off
+        // with customer data. Three functions genuinely use them: capacity reconciliation counts
+        // every bundle, the my-passes listing falls back to a scan when its index query fails, and
+        // bundleGet reads several capacity counters at once. Any other role holding either action
+        // has been granted more than it calls.
+        List<String> rolesThatReadInBulk = List.of("bundle-capacity-reconcile", "pass-my-passes-get", "bundle-get");
+        List<String> unexpectedBulkReaders = findRolesGrantedBulkReads(accountStackTemplate, rolesThatReadInBulk);
+        if (!unexpectedBulkReaders.isEmpty()) {
+            dumpIamPolicies(accountStackTemplate);
+            throw new AssertionFailedError("These roles hold dynamodb:Scan or dynamodb:BatchGetItem without calling "
+                    + "either: " + unexpectedBulkReaders + ". Grant only the actions the function "
+                    + "makes, or add the role here if the bulk read is real.");
+        }
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
         // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
@@ -185,6 +198,44 @@ class SubmitApplicationCdkResourceTest {
      * id contains {@code lambdaSlug} and (b) grant {@code dynamodb:UpdateItem} on a resource whose
      * logical id contains "bundles-table".
      */
+    /**
+     * Returns the roles holding dynamodb:Scan or dynamodb:BatchGetItem, minus the ones expected to.
+     * Role names are reported as the CloudFormation logical id, which carries the Lambda's name.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<String> findRolesGrantedBulkReads(Template template, List<String> rolesThatReadInBulk) {
+        List<String> found = new java.util.ArrayList<>();
+        Map<String, Map<String, Object>> policies = template.findResources("AWS::IAM::Policy");
+        for (Map.Entry<String, Map<String, Object>> entry : policies.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
+            if (props == null) continue;
+            if (!policyGrantsBulkRead(props)) continue;
+            boolean expected = rolesThatReadInBulk.stream()
+                    .anyMatch(slug -> policyAttachesToRoleMatching(props, slug));
+            if (!expected) found.add(entry.getKey());
+        }
+        return found;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean policyGrantsBulkRead(Map<String, Object> policyProps) {
+        Object document = policyProps.get("PolicyDocument");
+        if (!(document instanceof Map)) return false;
+        Object statements = ((Map<String, Object>) document).get("Statement");
+        if (!(statements instanceof List<?>)) return false;
+        for (Object statementObj : (List<Object>) statements) {
+            if (!(statementObj instanceof Map)) continue;
+            Object action = ((Map<String, Object>) statementObj).get("Action");
+            List<Object> actions = action instanceof List<?>
+                    ? (List<Object>) action
+                    : action == null ? List.of() : List.of(action);
+            for (Object a : actions) {
+                if ("dynamodb:Scan".equals(a) || "dynamodb:BatchGetItem".equals(a)) return true;
+            }
+        }
+        return false;
+    }
+
     private static long countIamPoliciesWithUpdateItemOnBundlesTable(Template template, String lambdaSlug) {
         Map<String, Map<String, Object>> policies = template.findResources("AWS::IAM::Policy");
         long matches = 0;

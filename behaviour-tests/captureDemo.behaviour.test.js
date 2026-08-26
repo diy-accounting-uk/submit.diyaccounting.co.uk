@@ -10,7 +10,7 @@
 //   npx dotenv -e .env.simulator -- npx playwright test --project=captureDemo
 
 import { execSync } from "child_process";
-import { test } from "./helpers/playwrightTestWithout.js";
+import { test } from "./helpers/playwrightTestForCapture.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
@@ -39,6 +39,14 @@ const baseUrl = baseUrlRaw ? baseUrlRaw.replace(/\/+$/, "") : "";
 const outputDir = "target/demo-videos";
 
 let httpServer, dynamoDbProcess, httpSimulatorProcess;
+
+// Playwright only finalizes a video once its page/context closes, which happens
+// in the test fixture's teardown after the test function returns - so a video
+// can't be saved to its final name from inside the test itself (that would
+// deadlock waiting for a close that hasn't happened yet). Instead, record the
+// in-progress path per journey and copy the finished file in afterAll, once
+// every test (and its context) has completed.
+const capturedVideos = [];
 
 const IFRAME_FULLSCREEN_CSS = `
   body > *:not(script) { display: none !important; }
@@ -96,6 +104,13 @@ test.describe("Capture Demo Videos", () => {
     if (httpServer) httpServer.kill();
     if (httpSimulatorProcess?.stop) await httpSimulatorProcess.stop();
     if (dynamoDbProcess?.stop) await dynamoDbProcess.stop();
+
+    // Every test's context has closed by now, so each video is fully encoded.
+    for (const { name, videoPath } of capturedVideos) {
+      const destPath = path.join(outputDir, `${name}.webm`);
+      fs.copyFileSync(videoPath, destPath);
+      console.log(`  [${name}] Video saved to: ${destPath}`);
+    }
   });
 
   for (const journey of [
@@ -123,6 +138,9 @@ test.describe("Capture Demo Videos", () => {
       await page.addStyleTag({ content: IFRAME_FULLSCREEN_CSS });
       console.log(`  [${journey.name}] Iframe maximized`);
 
+      // Brief hold on the clean opening frame before automation starts
+      await page.waitForTimeout(1000);
+
       // Start journey via JS (button hidden by CSS but still in DOM)
       await page.evaluate((btnId) => document.querySelector(btnId).click(), journey.buttonId);
       console.log(`  [${journey.name}] Journey started`);
@@ -140,8 +158,7 @@ test.describe("Capture Demo Videos", () => {
       console.log(`  [${journey.name}] Running: "${runningStatus}"`);
 
       if (runningStatus.includes("error")) {
-        console.error(`  [${journey.name}] ERROR: ${runningStatus}`);
-        return;
+        throw new Error(`[${journey.name}] Journey failed to start: ${runningStatus}`);
       }
 
       // Wait for journey completion
@@ -155,19 +172,18 @@ test.describe("Capture Demo Videos", () => {
       );
 
       const finalStatus = await page.locator("#journeyStatusText").textContent();
+      if (finalStatus.includes("error") && !finalStatus.includes(journey.completionText)) {
+        throw new Error(`[${journey.name}] Journey ended with an error: ${finalStatus}`);
+      }
       console.log(`  [${journey.name}] Completed: "${finalStatus}"`);
 
-      // Hold on final frame for 3 seconds
+      // Hold on final frame for 3 seconds so the ending isn't an abrupt cut
       await page.waitForTimeout(3000);
 
-      // Copy video to output directory with meaningful name
+      // Record where the video will land; it's copied to its final name in
+      // afterAll once the context (and therefore the video encoding) has closed.
       const videoPath = await page.video().path();
-      if (videoPath) {
-        const destPath = path.join(outputDir, `${journey.name}.webm`);
-        // Video file will be finalized after context close, so copy in afterAll
-        // For now, record the mapping
-        console.log(`  [${journey.name}] Video will be at: ${videoPath}`);
-      }
+      capturedVideos.push({ name: journey.name, videoPath });
     });
   }
 });

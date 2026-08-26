@@ -190,9 +190,9 @@ tokenCostToIssue = 3
 id = "campaign-pass"
 name = "Campaign Pass"
 description = "Time-limited digital pass for larger campaigns (social media, email, QR sharing)"
-bundleId = "day-guest"
-defaultValidityPeriod = "P7D"
-defaultMaxUses = 1000
+bundleId = "invited-guest"
+defaultValidityPeriod = "P3D"
+defaultMaxUses = 1
 requiresEmailRestriction = false
-tokenCostToIssue = 25
+tokenCostToIssue = 3
 

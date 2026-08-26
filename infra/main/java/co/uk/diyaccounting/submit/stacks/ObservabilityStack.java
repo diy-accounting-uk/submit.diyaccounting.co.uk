@@ -673,6 +673,25 @@ public class ObservabilityStack extends Stack {
                 .alarmDescription("Bundle capacity cap reached >= 1 in 5 minutes")
                 .build();
 
+        // HMRC submission failure alarm, built on the Submit/Business EMF metrics emitted by
+        // hmrcVatReturnPost.js. Scoped to Actor=customer so CI/test-user traffic doesn't page
+        // anyone. No SnsAction: the alarm-state-change rule in OpsStack routes this to Telegram.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-HmrcSubmissionFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-hmrc-submission-failure")
+                .alarmDescription("HMRC VAT submission failed for a customer >= 1 time in 15 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("VatSubmissionFailure")
+                        .dimensionsMap(Map.of("Actor", "customer"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(15))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // Row 6: Lambda Errors across all deployments (was Row 5)
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()

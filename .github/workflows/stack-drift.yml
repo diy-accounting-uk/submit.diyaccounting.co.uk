@@ -215,16 +215,38 @@ jobs:
             echo "  $STACK ($REGION): $DRIFT_STATUS"
 
             if [ "$DRIFT_STATUS" = "DRIFTED" ]; then
-              DRIFTED=1
-              SUMMARY="${SUMMARY}${STACK} (${REGION})  DRIFTED\n"
-
-              # Show drifted resources
-              aws cloudformation describe-stack-resource-drifts \
+              # Three property paths are excluded as structural noise, not configuration
+              # change: Lambda URL CORS AllowHeaders (AWS lowercases them on read-back),
+              # ApiGatewayV2 stage AccessLogSettings DestinationArn (AWS strips the trailing
+              # :*), and CloudFront Aliases (the blue/green promotion moves the live domains
+              # between deployments outside CloudFormation by design).
+              local DRIFT_JSON REAL_COUNT
+              DRIFT_JSON=$(aws cloudformation describe-stack-resource-drifts \
                 --stack-name "$STACK" \
                 --region "$REGION" \
                 --stack-resource-drift-status-filters MODIFIED DELETED \
-                --query 'StackResourceDrifts[].{Resource: LogicalResourceId, Type: ResourceType, Status: StackResourceDriftStatus}' \
-                --output table 2>/dev/null || true
+                --output json 2>/dev/null)
+              REAL_COUNT=$(printf '%s' "$DRIFT_JSON" | jq '[.StackResourceDrifts[]
+                | . as $r
+                | select(
+                    ($r.StackResourceDriftStatus == "DELETED")
+                    or ((($r.PropertyDifferences // []) | map(select(
+                          (
+                            (($r.ResourceType == "AWS::Lambda::Url") and (.PropertyPath | startswith("/Cors/AllowHeaders")))
+                            or (($r.ResourceType == "AWS::ApiGatewayV2::Stage") and (.PropertyPath == "/AccessLogSettings/DestinationArn"))
+                            or (($r.ResourceType == "AWS::CloudFront::Distribution") and (.PropertyPath | startswith("/DistributionConfig/Aliases")))
+                          ) | not
+                        ))) | length) > 0
+                  )
+                ] | length')
+              if [ "${REAL_COUNT:-0}" -gt 0 ]; then
+                DRIFTED=1
+                SUMMARY="${SUMMARY}${STACK} (${REGION})  DRIFTED\n"
+                printf '%s' "$DRIFT_JSON" | jq -r '.StackResourceDrifts[] | "  \(.LogicalResourceId) [\(.ResourceType)] \(.StackResourceDriftStatus)"'
+              else
+                echo "  (drift is excluded-noise only, treating as in sync)"
+                SUMMARY="${SUMMARY}${STACK} (${REGION})  DRIFTED_BENIGN\n"
+              fi
             else
               SUMMARY="${SUMMARY}${STACK} (${REGION})  ${DRIFT_STATUS}\n"
             fi
