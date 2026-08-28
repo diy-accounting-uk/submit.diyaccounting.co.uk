@@ -10,12 +10,17 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
-| wp3-parquet | B13 WP-3 | Sonnet | `../.worktrees/submit-wp3` / `claude/wp3-parquet` (off batch-1) | started |
+| wp3-parquet | B13 WP-3 | Sonnet | merged to `claude/pipeline-batch-2` | code complete, building |
+| wp4-table-changes | B13 WP-4 | Sonnet | `../.worktrees/submit-wp4-table-changes` / `claude/wp4-table-changes` (off batch-2) | started |
+| wp9-stripe | B14 WP-9 | Sonnet | `../.worktrees/submit-wp9-stripe` / `claude/wp9-stripe` (off batch-2) | started |
+| wp11-cloudfront-logs | B14 WP-11 | Sonnet | `../.worktrees/submit-wp11-cloudfront-logs` / `claude/wp11-cloudfront-logs` (off batch-2) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | merged to `claude/pipeline-batch-2` (`../.worktrees/submit-batch2`, off batch-1) | code complete |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
 Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
-`claude/pipeline-batch-1` collects WP-1 and WP-2 for one PR; WP-2 needed two custom
+`claude/pipeline-batch-1` is PR #47; `claude/pipeline-batch-2` (WP-3, WP-8) stacks on it. WP-3 cut
+the single delivery stream over to Parquet under `curated/` with a union view and a synth-date
+cutover, rather than a second parallel prefix; WP-2 needed two custom
 resources per table (CDK forbids `getResponseField` on a call that ignores errors), so
 DataStack's `Custom::AWS` count is 38, not the plan's 34. Next waves in plan
 order: WP-3 and WP-8 after WP-1; WP-4..7 after WP-3; WP-9..11 after WP-8.
