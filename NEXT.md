@@ -13,7 +13,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | wp3-parquet | B13 WP-3 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp4-table-changes | B13 WP-4 | Sonnet | `../.worktrees/submit-wp4-table-changes` / `claude/wp4-table-changes` (off batch-2) | started |
 | wp9-stripe | B14 WP-9 | Sonnet | `../.worktrees/submit-wp9-stripe` / `claude/wp9-stripe` (off batch-2) | started |
-| wp11-cloudfront-logs | B14 WP-11 | Sonnet | `../.worktrees/submit-wp11-cloudfront-logs` / `claude/wp11-cloudfront-logs` (off batch-2) | started |
+| wp11-cloudfront-logs | B14 WP-11 | Sonnet | merged to `claude/pipeline-batch-3` (`../.worktrees/submit-batch3`, off batch-2) | code complete, building |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
@@ -64,7 +64,9 @@ findings live in issue #43.
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
   same queryable place as B13. WP-8 (IngestionStack skeleton: `registerScheduledJob`
   with retries, DLQ and two alarms per job, `deploy-ingestion` job) is code complete on
-  `claude/pipeline-batch-2`. Remaining: WP-9 Stripe, WP-10 GA4, WP-11 CloudFront logs.
+  `claude/pipeline-batch-2`. Remaining: WP-9 Stripe, WP-10 GA4. WP-11 (env access-log bucket, v2 Parquet log
+  delivery per EdgeStack, `cloudfront_requests` table) is on `claude/pipeline-batch-3`;
+  the first deploy after it lands deletes each deployment's old per-deployment log bucket.
   Plan correction pending: WP-8's text says the retry/DLQ shape matches
   `AccountStack.java:832`; that rule has neither, only the Rule + LambdaFunction skeleton.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
