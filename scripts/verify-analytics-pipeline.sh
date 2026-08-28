@@ -72,35 +72,44 @@ if ! aws s3 ls "s3://${LAKE}/curated/activity-events/${PARTITION}/" --recursive 
   exit 1
 fi
 
+# Runs one query to a terminal state and prints its results. Exits non-zero, with the state
+# change reason, on anything other than SUCCEEDED — a view with broken SQL fails here rather
+# than being reported as green.
+run_athena_query() {
+  local query="$1"
+  local query_id state
+
+  query_id="$(aws athena start-query-execution \
+    --region "${REGION}" \
+    --work-group "${WORKGROUP}" \
+    --query-string "${query}" \
+    --query QueryExecutionId --output text)"
+
+  state="RUNNING"
+  for _ in $(seq 1 60); do
+    state="$(aws athena get-query-execution --region "${REGION}" --query-execution-id "${query_id}" \
+      --query 'QueryExecution.Status.State' --output text)"
+    case "${state}" in
+      SUCCEEDED|FAILED|CANCELLED) break ;;
+    esac
+    sleep 2
+  done
+
+  if [ "${state}" != "SUCCEEDED" ]; then
+    echo "FAIL: Athena query ${query_id} ended in state ${state}"
+    aws athena get-query-execution --region "${REGION}" --query-execution-id "${query_id}" \
+      --query 'QueryExecution.Status.StateChangeReason' --output text
+    exit 1
+  fi
+
+  aws athena get-query-results --region "${REGION}" --query-execution-id "${query_id}"
+}
+
 # Step 3: query it back. The projection columns are integers while the S3 path is zero-padded,
 # so the predicate uses unpadded numbers.
 echo ""
 echo "Step 3: querying the event back through Athena"
-QUERY="SELECT event, count(*) AS c FROM ${DATABASE}.activity_events_all WHERE year=$(date -u +%Y) AND month=$(date -u +%-m) AND day=$(date -u +%-d) GROUP BY 1"
-QUERY_ID="$(aws athena start-query-execution \
-  --region "${REGION}" \
-  --work-group "${WORKGROUP}" \
-  --query-string "${QUERY}" \
-  --query QueryExecutionId --output text)"
-
-STATE="RUNNING"
-for _ in $(seq 1 60); do
-  STATE="$(aws athena get-query-execution --region "${REGION}" --query-execution-id "${QUERY_ID}" \
-    --query 'QueryExecution.Status.State' --output text)"
-  case "${STATE}" in
-    SUCCEEDED|FAILED|CANCELLED) break ;;
-  esac
-  sleep 2
-done
-
-if [ "${STATE}" != "SUCCEEDED" ]; then
-  echo "FAIL: Athena query ${QUERY_ID} ended in state ${STATE}"
-  aws athena get-query-execution --region "${REGION}" --query-execution-id "${QUERY_ID}" \
-    --query 'QueryExecution.Status.StateChangeReason' --output text
-  exit 1
-fi
-
-RESULTS="$(aws athena get-query-results --region "${REGION}" --query-execution-id "${QUERY_ID}")"
+RESULTS="$(run_athena_query "SELECT event, count(*) AS c FROM ${DATABASE}.activity_events_all WHERE year=$(date -u +%Y) AND month=$(date -u +%-m) AND day=$(date -u +%-d) GROUP BY 1")"
 echo "${RESULTS}"
 
 if ! printf '%s' "${RESULTS}" | grep -q "pipeline-verification"; then
@@ -109,5 +118,24 @@ if ! printf '%s' "${RESULTS}" | grep -q "pipeline-verification"; then
   exit 1
 fi
 
+# Step 4: run each business-question view once. This is the only real test of view SQL —
+# a view can synth cleanly in CDK and still be invalid Trino, and this catches that.
 echo ""
-echo "PASS: the pipeline-verification event went from EventBridge to Athena."
+echo "Step 4: running each business view"
+VIEWS=(
+  v_active_users_daily
+  v_submissions_daily
+  v_login_to_submission_funnel
+  v_pass_redemptions_daily
+  v_revenue_daily
+  v_hmrc_failures_by_class
+  v_signup_to_first_submission
+  v_traffic_by_country_daily
+)
+for view in "${VIEWS[@]}"; do
+  echo "  ${view}"
+  run_athena_query "SELECT * FROM ${DATABASE}.${view} LIMIT 1" > /dev/null
+done
+
+echo ""
+echo "PASS: the pipeline-verification event went from EventBridge to Athena, and every business view runs."
