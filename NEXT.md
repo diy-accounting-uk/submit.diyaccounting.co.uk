@@ -14,6 +14,10 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | wp4-table-changes | B13 WP-4 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
 | wp9-stripe | B14 WP-9 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
 | wp11-cloudfront-logs | B14 WP-11 | Sonnet | merged to `claude/pipeline-batch-3` (`../.worktrees/submit-batch3`, off batch-2) | code complete, building |
+| wp5-data-quality | B13 WP-5 | Sonnet | `../.worktrees/submit-wp5-data-quality` / `claude/wp5-data-quality` (off batch-3) | started |
+| wp6-views | B13 WP-6 | Sonnet | `../.worktrees/submit-wp6-views` / `claude/wp6-views` (off batch-3) | started |
+| wp7-dashboard | B13 WP-7 | Sonnet | `../.worktrees/submit-wp7-dashboard` / `claude/wp7-dashboard` (off batch-3) | started |
+| wp10-ga4 | B14 WP-10 | Sonnet | `../.worktrees/submit-wp10-ga4` / `claude/wp10-ga4` (off batch-3) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
