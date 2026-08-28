@@ -9,7 +9,9 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | Track | Items | Model | Worktree / branch | Status |
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
-| wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `../.worktrees/submit-wp1` / `claude/wp1-firehose-spike` | started |
+| wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | merged to `claude/pipeline-batch-1` | code complete, building |
+| wp3-parquet | B13 WP-3 | Sonnet | `../.worktrees/submit-wp3` / `claude/wp3-parquet` (off batch-1) | started |
+| wp8-ingestion | B14 WP-8 | Sonnet | `../.worktrees/submit-wp8` / `claude/wp8-ingestion` (off batch-1) | started |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | merged to `claude/pipeline-batch-1` (`../.worktrees/submit-batch1`) | code complete, building |
 
 Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
@@ -39,9 +41,13 @@ findings live in issue #43.
   Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
   actionlint finding (`set -e` plus command substitution), and
   `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** Activity events to date-partitioned S3,
-  queried with Athena. One table, no Glue quality rules, no dashboard. Proves delivery,
-  IAM and cost shape before B13 commits the lake design.
+- [ ] **(B13a) Firehose spike on one stream.** Code complete on `claude/pipeline-batch-1`
+  (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
+  Remaining: PR, ci deploy, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
+  passes, and the measured 14-day event volume written into section 4 of the plan.
+  Surfaced en route: `main` is not Spotless-clean (`spotless:check` binds to `install`,
+  not `verify`; six files drift); `deploy-billing-webhook` lacks `needs: deploy-ecr`;
+  `npx eslint` crashes on `app/lib/activityAlert.js` via `eslint-plugin-sonarjs`.
 - [ ] **(B13) Usage data pipeline.** Firehose from activity events/DynamoDB streams to
   partitioned Parquet on S3, Glue catalog and data quality, Athena, dashboard. Starts
   once B13a has landed. Design surfaced two remainders: `OpsStack` `ActivityEmailProofRule`
