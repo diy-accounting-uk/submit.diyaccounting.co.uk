@@ -31,22 +31,8 @@ export const METRICS_NAMESPACE = "Submit/Analytics";
 const PUT_METRIC_DATA_BATCH_SIZE = 20;
 
 /**
- * One row per view, read for yesterday's date (or the day named by an explicit column). Column
- * names for v_active_users_daily, v_submissions_daily, v_login_to_submission_funnel and
- * v_hmrc_failures_by_class come straight from the SQL sketches in
- * PLAN_USAGE_DATA_PIPELINE.md's WP-6 section. v_pass_redemptions_daily, v_revenue_daily,
- * v_signup_to_first_submission and v_traffic_by_country_daily have no SQL sketch there, only the
- * question they answer, so the columns below (pass_type/issued/redeemed, product/revenue_gbp,
- * signup_day/new_accounts, country/sessions) are this Lambda's side of that contract. The view
- * implementation has to land with matching column names.
- *
- * Submissions, PassesIssued, PassesRedeemed, RevenueGbp and HmrcFailures carry a dimension, so
- * one day's query can produce more than one datum: one per distinct outcome, pass type, product
- * or failure class. Sessions is capped to the top 5 countries by volume in its own query, per the
- * design's "Sessions: Country, top 5 only". The other dimensioned metrics stay within the
- * account's ~20 custom-metric budget because those categories are small and fixed by the product
- * (outcomes, pass types, products, HMRC failure classes), not because anything here enforces a
- * limit on them.
+ * Each definition names a view under infra/main/resources/analytics/views and the columns
+ * it reads from it. The views are the contract: a column renamed there has to be renamed here.
  */
 export const METRIC_DEFINITIONS = [
   {
@@ -82,16 +68,16 @@ export const METRIC_DEFINITIONS = [
   {
     metricName: "PassesIssued",
     unit: "Count",
-    valueColumn: "issued",
-    dimension: { name: "PassType", column: "pass_type" },
-    sql: (day) => `SELECT pass_type, issued FROM v_pass_redemptions_daily WHERE day = DATE '${day}'`,
+    valueColumn: "passes_issued",
+    dimension: { name: "PassType", column: "pass_type_id" },
+    sql: (day) => `SELECT pass_type_id, passes_issued FROM v_pass_redemptions_daily WHERE day = DATE '${day}'`,
   },
   {
     metricName: "PassesRedeemed",
     unit: "Count",
-    valueColumn: "redeemed",
-    dimension: { name: "PassType", column: "pass_type" },
-    sql: (day) => `SELECT pass_type, redeemed FROM v_pass_redemptions_daily WHERE day = DATE '${day}'`,
+    valueColumn: "passes_redeemed",
+    dimension: { name: "PassType", column: "pass_type_id" },
+    sql: (day) => `SELECT pass_type_id, passes_redeemed FROM v_pass_redemptions_daily WHERE day = DATE '${day}'`,
   },
   {
     metricName: "RevenueGbp",

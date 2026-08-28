@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
@@ -654,6 +655,21 @@ public class AnalyticsStack extends Stack {
             tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
             r.getNode().addDependency(stripeTables.chargesTable);
         });
+
+        new AnalyticsDashboard(
+                this,
+                AnalyticsDashboard.AnalyticsDashboardProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .sharedNames(sharedNames)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .build());
 
         // ============================================================================
         // Alarms

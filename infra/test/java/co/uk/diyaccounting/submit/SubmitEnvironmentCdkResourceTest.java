@@ -98,6 +98,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
+        analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 10);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
