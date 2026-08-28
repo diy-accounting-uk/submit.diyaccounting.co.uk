@@ -625,21 +625,8 @@ jobs:
         run: |
           set -euo pipefail
           ORIGIN_DOMAIN="${{ needs.names.outputs.deployment-name }}.submit.diyaccounting.co.uk"
-          echo "Looking up CloudFront distribution with OriginFor tag: ${ORIGIN_DOMAIN}"
-
-          CLOUDFRONT_DISTRIBUTION_ARN=$(aws resourcegroupstaggingapi get-resources \
-            --resource-type-filters cloudfront:distribution \
-            --region us-east-1 \
-            --tag-filters "Key=OriginFor,Values=${ORIGIN_DOMAIN}" \
-            --query 'ResourceTagMappingList[0].ResourceARN' \
-            --output text 2>/dev/null || echo "")
-
-          if [ -z "$CLOUDFRONT_DISTRIBUTION_ARN" ] || [ "$CLOUDFRONT_DISTRIBUTION_ARN" = "None" ]; then
-            echo "ERROR: No CloudFront distribution found with OriginFor tag ${ORIGIN_DOMAIN}" >&2
-            exit 1
-          fi
-          DISTRIBUTION_ID="${CLOUDFRONT_DISTRIBUTION_ARN##*/}"
-          echo "Found CloudFront Distribution ID: ${DISTRIBUTION_ID}"
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          DISTRIBUTION_ID=$(scripts/lookup-cloudfront-distribution.sh "${ORIGIN_DOMAIN}" "${EDGE_STACK}")
 
           echo "Creating invalidation..."
           INVALIDATION_ID=$(aws cloudfront create-invalidation \
