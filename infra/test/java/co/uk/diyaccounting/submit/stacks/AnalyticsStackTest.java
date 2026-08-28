@@ -85,7 +85,7 @@ class AnalyticsStackTest {
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
         // Two Glue tables: the JSON spike table stays queryable, the typed Parquet table is new.
-        analytics.resourceCountIs("AWS::Glue::Table", 2);
+        analytics.resourceCountIs("AWS::Glue::Table", 3);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
