@@ -17,7 +17,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | wp5-data-quality | B13 WP-5 | Sonnet | merged to `claude/pipeline-batch-4` (`../.worktrees/submit-batch4`, off batch-3) | code complete |
 | wp6-views | B13 WP-6 | Sonnet | merged to `claude/pipeline-batch-4` | code complete |
 | wp7-dashboard | B13 WP-7 | Sonnet | merged to `claude/pipeline-batch-4` | code complete |
-| wp10-ga4 | B14 WP-10 | Sonnet | `../.worktrees/submit-wp10-ga4` / `claude/wp10-ga4` (off batch-3) | started |
+| wp10-ga4 | B14 WP-10 | Sonnet | merged to `claude/pipeline-batch-4` | code complete |
 | activity-hashed-sub | B13 WP-6 remainder (missing `hashedSub` on three activity events) | Sonnet | `../.worktrees/submit-hashedsub` / `claude/activity-hashed-sub` (off batch-3) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
@@ -76,7 +76,10 @@ findings live in issue #43.
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
   same queryable place as B13. WP-8 (IngestionStack skeleton: `registerScheduledJob`
   with retries, DLQ and two alarms per job, `deploy-ingestion` job) is code complete on
-  `claude/pipeline-batch-2`. Remaining: WP-10 GA4. WP-9 (nightly Stripe reconciliation, three Glue tables) and WP-11 (env access-log bucket, v2 Parquet log
+  `claude/pipeline-batch-2`. WP-10 (GA4 Data API pull, three Glue tables) is on `claude/pipeline-batch-4`;
+  operator creates the `GA4_SERVICE_ACCOUNT_JSON` GitHub environment secret (ci and prod)
+  from a GCP service-account key and grants that account Viewer on GA4 property 523400333.
+  WP-9 (nightly Stripe reconciliation, three Glue tables) and WP-11 (env access-log bucket, v2 Parquet log
   delivery per EdgeStack, `cloudfront_requests` table) is on `claude/pipeline-batch-3`;
   the first deploy after it lands deletes each deployment's old per-deployment log bucket.
   Plan correction pending: WP-8's text says the retry/DLQ shape matches
