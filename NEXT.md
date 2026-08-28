@@ -18,6 +18,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | wp6-views | B13 WP-6 | Sonnet | merged to `claude/pipeline-batch-4` | code complete |
 | wp7-dashboard | B13 WP-7 | Sonnet | `../.worktrees/submit-wp7-dashboard` / `claude/wp7-dashboard` (off batch-3) | started |
 | wp10-ga4 | B14 WP-10 | Sonnet | `../.worktrees/submit-wp10-ga4` / `claude/wp10-ga4` (off batch-3) | started |
+| activity-hashed-sub | B13 WP-6 remainder (missing `hashedSub` on three activity events) | Sonnet | `../.worktrees/submit-hashedsub` / `claude/activity-hashed-sub` (off batch-3) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
