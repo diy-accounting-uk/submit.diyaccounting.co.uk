@@ -15,7 +15,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | wp9-stripe | B14 WP-9 | Sonnet | `claude/pipeline-batch-3` | code complete, PR #49 (stacked on #48) |
 | wp11-cloudfront-logs | B14 WP-11 | Sonnet | `claude/pipeline-batch-3` | code complete, PR #49 (stacked on #48) |
 | wp5-data-quality | B13 WP-5 | Sonnet | merged to `claude/pipeline-batch-4` (`../.worktrees/submit-batch4`, off batch-3) | code complete |
-| wp6-views | B13 WP-6 | Sonnet | `../.worktrees/submit-wp6-views` / `claude/wp6-views` (off batch-3) | started |
+| wp6-views | B13 WP-6 | Sonnet | merged to `claude/pipeline-batch-4` | code complete |
 | wp7-dashboard | B13 WP-7 | Sonnet | `../.worktrees/submit-wp7-dashboard` / `claude/wp7-dashboard` (off batch-3) | started |
 | wp10-ga4 | B14 WP-10 | Sonnet | `../.worktrees/submit-wp10-ga4` / `claude/wp10-ga4` (off batch-3) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
@@ -66,8 +66,11 @@ findings live in issue #43.
   history dies with each release; WP-11 moves it to the env stack. WP-4 (table change
   records for receipts, bundles, subscriptions, passes with per-table whitelists) is on
   `claude/pipeline-batch-3`; it found the plan's per-table field lists did not match the real
-  item shapes and followed the items. Remaining for B13: WP-5 data quality, WP-6 Athena
-  views, WP-7 dashboard.
+  item shapes and followed the items. Remaining for B13: WP-7 dashboard (in flight), then a fix WP-6 surfaced:
+  `cognitoTokenPost.js:96`, `hmrcVatReturnPost.js:1001` and `sessionBeaconPost.js:64`
+  publish activity events without `hashedSub` (only the failure path attaches it), so
+  `v_active_users_daily`, `v_login_to_submission_funnel` and the `submitters` column of
+  `v_submissions_daily` return nothing until those three calls pass it.
 - [ ] **(B14) Scheduled ingestion jobs.** GA4 export, Stripe reconciliation, CloudFront
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
   same queryable place as B13. WP-8 (IngestionStack skeleton: `registerScheduledJob`
