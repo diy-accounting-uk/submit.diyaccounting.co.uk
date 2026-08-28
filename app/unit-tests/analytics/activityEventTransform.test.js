@@ -15,11 +15,11 @@ function decode(data) {
 
 function envelope(detail, overrides = {}) {
   return {
-    version: "0",
-    id: "11111111-2222-3333-4444-555555555555",
+    "version": "0",
+    "id": "11111111-2222-3333-4444-555555555555",
     "detail-type": "ActivityEvent",
-    source: "diy.submit",
-    time: "2026-08-28T09:15:00Z",
+    "source": "diy.submit",
+    "time": "2026-08-28T09:15:00Z",
     detail,
     ...overrides,
   };

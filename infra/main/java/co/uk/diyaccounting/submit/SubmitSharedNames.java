@@ -483,8 +483,7 @@ public class SubmitSharedNames {
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
         this.analyticsStackId = "%s-env-AnalyticsStack".formatted(props.envName);
-        this.analyticsLakeBucketName =
-                "%s-analytics-lake-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
+        this.analyticsLakeBucketName = "%s-analytics-lake-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.analyticsResultsBucketName =
                 "%s-analytics-results-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.glueDatabaseName = "%s_env_analytics".formatted(props.envName);
@@ -497,8 +496,8 @@ public class SubmitSharedNames {
         this.activityEventTransformLambdaHandler = "app/functions/analytics/activityEventTransform.handler";
         this.activityEventTransformLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.activityEventTransformLambdaFunctionName);
-        this.activityEventTransformProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.activityEventTransformLambdaArn, this.provisionedConcurrencyAliasName);
+        this.activityEventTransformProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.activityEventTransformLambdaArn, this.provisionedConcurrencyAliasName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         // Env-level billing webhook Lambda
