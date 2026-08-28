@@ -21,6 +21,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { fileURLToPath } from "url";
 
 const AWS_ACCOUNT_ID = "887764105431";
 const AWS_REGION = "eu-west-2";
@@ -420,19 +421,16 @@ function syncWebAssets(config) {
 function invalidateCloudFront(config) {
   console.log("=== Step 5: CloudFront Invalidation ===\n");
 
-  // Look up CloudFront distribution via OriginFor tag
   const originDomain = `${config.deploymentName}.submit.diyaccounting.co.uk`;
-  console.log(`Looking up CloudFront distribution with OriginFor tag: ${originDomain}...`);
+  const edgeStackName = `${config.deploymentName}-app-EdgeStack`;
+  const lookupScript = path.join(path.dirname(fileURLToPath(import.meta.url)), "lookup-cloudfront-distribution.sh");
 
   let distributionId;
   try {
-    const arn = runCapture(
-      `aws resourcegroupstaggingapi get-resources --resource-type-filters cloudfront:distribution --region ${AWS_REGION_UE1} --tag-filters "Key=OriginFor,Values=${originDomain}" --query 'ResourceTagMappingList[0].ResourceARN' --output text`,
-    );
-    if (!arn || arn === "None") {
+    distributionId = runCapture(`"${lookupScript}" "${originDomain}" "${edgeStackName}"`);
+    if (!distributionId) {
       throw new Error("No distribution found");
     }
-    distributionId = arn.split("/").pop();
     console.log(`  Found distribution: ${distributionId}`);
   } catch {
     console.error(`ERROR: Could not find CloudFront distribution for ${originDomain}`);
