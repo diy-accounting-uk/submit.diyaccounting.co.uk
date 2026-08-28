@@ -298,8 +298,8 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .stripeSecretKeyArn(stripeSecretKeyArn)
-                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn)
+                        .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 
