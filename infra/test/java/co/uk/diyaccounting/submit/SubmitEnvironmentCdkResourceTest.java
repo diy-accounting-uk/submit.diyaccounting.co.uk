@@ -125,14 +125,15 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // 10) Ingestion stack: the Stripe reconciliation job with its schedule, DLQ and two
-        // alarms. Importing the lake bucket by name creates no bucket of its own.
+        // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
+        // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
+        // of its own.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 1);
-        ingestion.resourceCountIs("AWS::Events::Rule", 1);
-        ingestion.resourceCountIs("AWS::SQS::Queue", 1);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 2);
+        ingestion.resourceCountIs("AWS::Events::Rule", 2);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 2);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
         assertNoUnscopedIamResources(ingestion);
     }
 

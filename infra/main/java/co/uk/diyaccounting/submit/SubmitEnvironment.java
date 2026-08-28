@@ -71,6 +71,8 @@ public class SubmitEnvironment {
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String baseImageTag;
+        public String ga4PropertyId;
+        public String ga4ServiceAccountArn;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -163,6 +165,13 @@ public class SubmitEnvironment {
                 "STRIPE_TEST_WEBHOOK_SECRET_ARN",
                 appProps.stripeTestWebhookSecretArn,
                 "(from stripeTestWebhookSecretArn in cdk.json)");
+        // Not a secret, so cdk.json is the primary source; GA4_PROPERTY_ID still overrides it,
+        // matching every other value in this block.
+        var ga4PropertyId = envOr("GA4_PROPERTY_ID", appProps.ga4PropertyId, "(from ga4PropertyId in cdk.json)");
+        var ga4ServiceAccountArn = envOr(
+                "GA4_SERVICE_ACCOUNT_ARN",
+                appProps.ga4ServiceAccountArn,
+                "(from ga4ServiceAccountArn in cdk.json)");
         // envOr's third argument is only a log label, so the fallback has to be the second one.
         var baseImageTag = envOr(
                 "BASE_IMAGE_TAG",
@@ -298,8 +307,14 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .stripeSecretKeyArn(stripeSecretKeyArn)
-                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn)
+                        // envOr's fallback is nullable (nothing sets these in cdk.json, only the
+                        // .env.* files), and Immutables builder setters reject null outright even
+                        // for a @Value.Default attribute, so every value here needs the same
+                        // guard the BillingWebhookStack wiring below already uses.
+                        .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
+                        .ga4PropertyId(ga4PropertyId != null ? ga4PropertyId : "")
+                        .ga4ServiceAccountArn(ga4ServiceAccountArn != null ? ga4ServiceAccountArn : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 
