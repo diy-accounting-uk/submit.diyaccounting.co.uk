@@ -94,9 +94,10 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 1);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
+        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 3);
+        analytics.resourceCountIs("AWS::Glue::Table", 10);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 2);
         // The lake and the Athena results bucket
@@ -124,12 +125,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // 10) Ingestion stack: the scheduling skeleton only, until a WP-9/10/11 job registers
-        // itself. Importing the lake bucket by name creates no bucket of its own.
+        // 10) Ingestion stack: the Stripe reconciliation job with its schedule, DLQ and two
+        // alarms. Importing the lake bucket by name creates no bucket of its own.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Events::Rule", 0);
-        ingestion.resourceCountIs("AWS::SQS::Queue", 0);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 1);
+        ingestion.resourceCountIs("AWS::Events::Rule", 1);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 1);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 2);
         assertNoUnscopedIamResources(ingestion);
     }
 
