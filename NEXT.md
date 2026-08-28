@@ -11,9 +11,9 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 | wp3-parquet | B13 WP-3 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
-| wp4-table-changes | B13 WP-4 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
-| wp9-stripe | B14 WP-9 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
-| wp11-cloudfront-logs | B14 WP-11 | Sonnet | merged to `claude/pipeline-batch-3` (`../.worktrees/submit-batch3`, off batch-2) | code complete, building |
+| wp4-table-changes | B13 WP-4 | Sonnet | `claude/pipeline-batch-3` | code complete, PR #49 (stacked on #48) |
+| wp9-stripe | B14 WP-9 | Sonnet | `claude/pipeline-batch-3` | code complete, PR #49 (stacked on #48) |
+| wp11-cloudfront-logs | B14 WP-11 | Sonnet | `claude/pipeline-batch-3` | code complete, PR #49 (stacked on #48) |
 | wp5-data-quality | B13 WP-5 | Sonnet | `../.worktrees/submit-wp5-data-quality` / `claude/wp5-data-quality` (off batch-3) | started |
 | wp6-views | B13 WP-6 | Sonnet | `../.worktrees/submit-wp6-views` / `claude/wp6-views` (off batch-3) | started |
 | wp7-dashboard | B13 WP-7 | Sonnet | `../.worktrees/submit-wp7-dashboard` / `claude/wp7-dashboard` (off batch-3) | started |
