@@ -142,7 +142,8 @@ class BusinessViewsTest {
                 var action = statement.get("Action");
                 var actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
                 if (actions.stream().anyMatch(a -> "athena:StartQueryExecution".equals(a))) {
-                    assertEquals(List.of(workGroupArn), statement.get("Resource"));
+                    // CDK renders a single-element Resource list as a bare string, not a list.
+                    assertEquals(workGroupArn, statement.get("Resource"));
                 }
             }
         }
