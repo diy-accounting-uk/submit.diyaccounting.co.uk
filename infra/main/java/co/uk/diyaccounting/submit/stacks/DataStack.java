@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureGlobalSecondaryIndex;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureStream;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTimeToLive;
 
@@ -36,6 +37,10 @@ public class DataStack extends Stack {
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
     public Key saltEncryptionKey;
+
+    // Stream view type shared by every streamed table. NEW_AND_OLD_IMAGES rather than NEW_IMAGE
+    // because deletes and expiries carry their meaning in the old image only.
+    private static final String STREAM_VIEW_TYPE = "NEW_AND_OLD_IMAGES";
 
     @Value.Immutable
     public interface DataStackProps extends StackProps, SubmitStackProps {
@@ -69,6 +74,28 @@ public class DataStack extends Stack {
         }
     }
 
+    /**
+     * Turns on a stream on one of the four tables usage analytics reads from, and wires the stream's
+     * custom resource to depend on the table's, following the pattern used for the passes GSI: without
+     * the dependency, on a fresh stack the stream's UpdateTable call races the table's CreateTable call.
+     *
+     * @param tableConstructIdPrefix The construct ID prefix passed to ensureTable for this table,
+     *     e.g. "{resourceNamePrefix}-Receipts" for a table created with id "{prefix}-ReceiptsTable"
+     * @param tableName The DynamoDB table name
+     * @return The table's latest stream ARN
+     */
+    private String ensureTableStream(String tableConstructIdPrefix, String tableName) {
+        String streamArn = ensureStream(this, tableConstructIdPrefix + "Stream", tableName, STREAM_VIEW_TYPE);
+
+        var ensureTableResource = this.getNode().tryFindChild(tableConstructIdPrefix + "Table-EnsureTable");
+        var ensureStreamResource = this.getNode().tryFindChild(tableConstructIdPrefix + "Stream-EnsureStream");
+        if (ensureTableResource != null && ensureStreamResource != null) {
+            ensureStreamResource.getNode().addDependency(ensureTableResource);
+        }
+
+        return streamArn;
+    }
+
     public DataStack(Construct scope, String id, DataStackProps props) {
         this(scope, id, null, props);
     }
@@ -88,6 +115,8 @@ public class DataStack extends Stack {
                 props.sharedNames().receiptsTableName,
                 "hashedSub",
                 "receiptId");
+        String receiptsStreamArn =
+                ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().receiptsTableName);
         infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
 
         // Bundles table for bundle storage
@@ -99,6 +128,8 @@ public class DataStack extends Stack {
                 "hashedSub",
                 "bundleId");
         ensureTimeToLive(this, props.resourceNamePrefix() + "-BundlesTTL", props.sharedNames().bundlesTableName, "ttl");
+        String bundlesStreamArn =
+                ensureTableStream(props.resourceNamePrefix() + "-Bundles", props.sharedNames().bundlesTableName);
         infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
 
         // Async request tables — 1-hour TTL on "ttl" attribute
@@ -223,6 +254,9 @@ public class DataStack extends Stack {
             passesEnsureGSI.getNode().addDependency(passesEnsureTable);
         }
 
+        String passesStreamArn =
+                ensureTableStream(props.resourceNamePrefix() + "-Passes", props.sharedNames().passesTableName);
+
         // Bundle capacity counter table for tracking global cap enforcement
         // PK-only table (no sort key) - counters are looked up by bundleId.
         // Reconciliation Lambda overwrites with correct count every 5 minutes, so the bundles table
@@ -242,12 +276,16 @@ public class DataStack extends Stack {
                 props.sharedNames().subscriptionsTableName,
                 "pk",
                 null);
+        String subscriptionsStreamArn = ensureTableStream(
+                props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().subscriptionsTableName);
         infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
 
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
+        cfnOutput(this, "ReceiptsTableStreamArn", receiptsStreamArn);
         cfnOutput(this, "BundlesTableName", this.bundlesTable.getTableName());
         cfnOutput(this, "BundlesTableArn", this.bundlesTable.getTableArn());
+        cfnOutput(this, "BundlesTableStreamArn", bundlesStreamArn);
         cfnOutput(this, "BundlePostAsyncRequestsTableName", this.bundlePostAsyncRequestsTable.getTableName());
         cfnOutput(this, "BundlePostAsyncRequestsTableArn", this.bundlePostAsyncRequestsTable.getTableArn());
         cfnOutput(this, "BundleDeleteAsyncRequestsTableName", this.bundleDeleteAsyncRequestsTable.getTableName());
@@ -273,10 +311,12 @@ public class DataStack extends Stack {
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
         cfnOutput(this, "PassesTableName", this.passesTable.getTableName());
         cfnOutput(this, "PassesTableArn", this.passesTable.getTableArn());
+        cfnOutput(this, "PassesTableStreamArn", passesStreamArn);
         cfnOutput(this, "BundleCapacityTableName", this.bundleCapacityTable.getTableName());
         cfnOutput(this, "BundleCapacityTableArn", this.bundleCapacityTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableName", this.subscriptionsTable.getTableName());
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
+        cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).
         // Used by migration 003 to encrypt the passphrase salt as a system#config item.

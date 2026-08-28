@@ -53,4 +53,38 @@ class KindCdkTest {
                         software.amazon.awscdk.assertions.Match.stringLikeRegexp(
                                 ".*updateContinuousBackups.*PointInTimeRecoveryEnabled.*")));
     }
+
+    @Test
+    void ensureStreamEnablesNewAndOldImagesWithTablePhysicalResourceId() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+
+        String streamArn = KindCdk.ensureStream(stack, "Widgets", "test-env-widgets", "NEW_AND_OLD_IMAGES");
+
+        assertNotNull(streamArn);
+
+        Template template = Template.fromStack(stack);
+
+        // One call enables the stream, a second reads back the ARN: getResponseField cannot be
+        // combined with ignoreErrorCodesMatching on the same call, and the enable call must ignore
+        // ValidationException to stay idempotent against an already-streaming table.
+        template.resourceCountIs("Custom::AWS", 2);
+        // Map.of does not preserve key order, so the two StreamSpecification fields and TableName can
+        // appear in either order in the serialized Create string - match each fact independently.
+        template.hasResourceProperties(
+                "Custom::AWS",
+                Map.of(
+                        "Create",
+                        software.amazon.awscdk.assertions.Match.stringLikeRegexp(
+                                ".*updateTable.*\"StreamEnabled\":true.*")));
+        template.hasResourceProperties(
+                "Custom::AWS",
+                Map.of(
+                        "Create",
+                        software.amazon.awscdk.assertions.Match.stringLikeRegexp(
+                                ".*updateTable.*\"StreamViewType\":\"NEW_AND_OLD_IMAGES\".*")));
+        template.hasResourceProperties(
+                "Custom::AWS",
+                Map.of("Create", software.amazon.awscdk.assertions.Match.stringLikeRegexp(".*describeTable.*")));
+    }
 }
