@@ -375,12 +375,19 @@ public class TableChangeDelivery extends Construct {
         firehoseRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"))
-                .resources(List.of("arn:aws:glue:%s:%s:table/%s/%s"
-                        .formatted(
-                                Stack.of(this).getRegion(),
-                                Stack.of(this).getAccount(),
-                                props.glueDatabaseName(),
-                                glueTableName)))
+                .resources(List.of(
+                        "arn:aws:glue:%s:%s:catalog".formatted(Stack.of(this).getRegion(), Stack.of(this).getAccount()),
+                        "arn:aws:glue:%s:%s:database/%s"
+                                .formatted(
+                                        Stack.of(this).getRegion(),
+                                        Stack.of(this).getAccount(),
+                                        props.glueDatabaseName()),
+                        "arn:aws:glue:%s:%s:table/%s/%s"
+                                .formatted(
+                                        Stack.of(this).getRegion(),
+                                        Stack.of(this).getAccount(),
+                                        props.glueDatabaseName(),
+                                        glueTableName)))
                 .build());
 
         var stream = CfnDeliveryStream.Builder.create(this, prefix + "-" + kind + "-Stream")
