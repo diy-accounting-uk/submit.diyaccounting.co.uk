@@ -11,7 +11,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 | wp3-parquet | B13 WP-3 | Sonnet | `../.worktrees/submit-wp3` / `claude/wp3-parquet` (off batch-1) | started |
-| wp8-ingestion | B14 WP-8 | Sonnet | `../.worktrees/submit-wp8` / `claude/wp8-ingestion` (off batch-1) | started |
+| wp8-ingestion | B14 WP-8 | Sonnet | merged to `claude/pipeline-batch-2` (`../.worktrees/submit-batch2`, off batch-1) | code complete |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
 Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
@@ -57,7 +57,11 @@ findings live in issue #43.
   history dies with each release; WP-11 moves it to the env stack.
 - [ ] **(B14) Scheduled ingestion jobs.** GA4 export, Stripe reconciliation, CloudFront
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
-  same queryable place as B13.
+  same queryable place as B13. WP-8 (IngestionStack skeleton: `registerScheduledJob`
+  with retries, DLQ and two alarms per job, `deploy-ingestion` job) is code complete on
+  `claude/pipeline-batch-2`. Remaining: WP-9 Stripe, WP-10 GA4, WP-11 CloudFront logs.
+  Plan correction pending: WP-8's text says the retry/DLQ shape matches
+  `AccountStack.java:832`; that rule has neither, only the Rule + LambdaFunction skeleton.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
   `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`) and the sender
   filter that replies to SNS/GitHub notifications. Operator action in Gmail settings.
