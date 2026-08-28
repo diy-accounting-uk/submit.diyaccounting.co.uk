@@ -8,7 +8,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 
 | Track | Items | Model | Worktree / branch | Status |
 |---|---|---|---|---|
-| backup-wiring | B25 remainder | Opus | `../.worktrees/submit-b25` / `claude/b25-backup-wiring` | started |
+| backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `../.worktrees/submit-wp1` / `claude/wp1-firehose-spike` | started |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `../.worktrees/submit-wp2` / `claude/wp2-dynamodb-streams` | started |
 
@@ -30,7 +30,12 @@ findings live in issue #43.
   denied from outside the account). Remaining: point BackupStack's copy jobs at it, add
   passes/subscriptions to the backup selection, create `backup-github-actions-role` so
   `setup-backup-account.yml` runs unattended, then the monthly restore test — which gates
-  the TypeScript migration (B33).
+  the TypeScript migration (B33). Code is in PR #46. Remaining: merge; operator enables
+  cross-account backup in the management account and bootstraps the backup account from a
+  host shell (`PLAN_CROSS_ACCOUNT_BACKUPS.md`); first `restore-test` run passes both legs.
+  Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
+  actionlint finding (`set -e` plus command substitution), and
+  `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B13a) Firehose spike on one stream.** Activity events to date-partitioned S3,
   queried with Athena. One table, no Glue quality rules, no dashboard. Proves delivery,
   IAM and cost shape before B13 commits the lake design.
