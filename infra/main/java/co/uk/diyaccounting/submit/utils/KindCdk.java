@@ -237,10 +237,7 @@ public class KindCdk {
     private static void ensurePointInTimeRecovery(
             Stack stack, String id, String tableName, AwsCustomResource ensureTableResource) {
         Map<String, Object> updateContinuousBackupsParams = Map.of(
-                "TableName",
-                tableName,
-                "PointInTimeRecoverySpecification",
-                Map.of("PointInTimeRecoveryEnabled", true));
+                "TableName", tableName, "PointInTimeRecoverySpecification", Map.of("PointInTimeRecoveryEnabled", true));
 
         AwsSdkCall updateContinuousBackupsCall = AwsSdkCall.builder()
                 .service("DynamoDB")
@@ -275,8 +272,7 @@ public class KindCdk {
      * @param indexName The name of the global secondary index
      * @param actions The DynamoDB actions to allow on the index
      */
-    public static void grantTableIndexActions(
-            ITable table, IGrantable grantee, String indexName, String... actions) {
+    public static void grantTableIndexActions(ITable table, IGrantable grantee, String indexName, String... actions) {
         grantee.getGrantPrincipal()
                 .addToPrincipalPolicy(PolicyStatement.Builder.create()
                         .actions(List.of(actions))
@@ -372,5 +368,77 @@ public class KindCdk {
                                 + ":table/" + tableName))
                         .build())))
                 .build();
+    }
+
+    /**
+     * Turns on a DynamoDB stream on an existing table idempotently using AwsCustomResource.
+     *
+     * <p>CreateTable takes no StreamSpecification parameter and does nothing at all when the table
+     * already exists, so the stream is a second call, exactly like {@link #ensurePointInTimeRecovery}
+     * and {@link #ensureTimeToLive}. Call this after {@code ensureTable} and wire an explicit
+     * dependency on the table's {@code -EnsureTable} construct, the same way the passes GSI depends
+     * on its table, so the stream update does not race table creation.
+     *
+     * <p>UpdateTable rejects a no-change stream request (re-enabling a stream that already has the
+     * same view type) with ValidationException, so that code is ignored to keep repeat deployments
+     * idempotent.
+     *
+     * <p>The stream ARN comes from a second, read-only DescribeTable call rather than this UpdateTable
+     * call's own response: the CDK custom-resource runtime refuses to combine {@code
+     * getResponseField} with {@code ignoreErrorCodesMatching} on the same call, and the enable call
+     * above must ignore ValidationException to stay idempotent. DescribeTable never errors against a
+     * table that exists, so it can read the field freely; it depends on the enable call so it always
+     * runs after the stream is actually on.
+     *
+     * @param stack The stack holding the table
+     * @param id The construct ID prefix
+     * @param tableName The name of the table to enable a stream on
+     * @param viewType The DynamoDB StreamViewType (e.g. "NEW_AND_OLD_IMAGES")
+     * @return The table's latest stream ARN
+     */
+    public static String ensureStream(Stack stack, String id, String tableName, String viewType) {
+        Map<String, Object> streamSpecification = Map.of("StreamEnabled", true, "StreamViewType", viewType);
+
+        Map<String, Object> updateTableParams =
+                Map.of("TableName", tableName, "StreamSpecification", streamSpecification);
+
+        AwsSdkCall updateTableCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("updateTable")
+                .parameters(updateTableParams)
+                .physicalResourceId(PhysicalResourceId.of(tableName + "-stream"))
+                // ValidationException means the stream is already enabled with this view type - that's fine
+                .ignoreErrorCodesMatching("ValidationException")
+                .build();
+
+        AwsCustomResource ensureStreamResource = AwsCustomResource.Builder.create(stack, id + "-EnsureStream")
+                .onCreate(updateTableCall)
+                .onUpdate(updateTableCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTable"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+
+        AwsSdkCall describeTableCall = AwsSdkCall.builder()
+                .service("DynamoDB")
+                .action("describeTable")
+                .parameters(Map.of("TableName", tableName))
+                .physicalResourceId(PhysicalResourceId.of(tableName + "-stream-arn"))
+                .build();
+
+        AwsCustomResource streamArnResource = AwsCustomResource.Builder.create(stack, id + "-DescribeStream")
+                .onCreate(describeTableCall)
+                .onUpdate(describeTableCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:DescribeTable"))
+                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":table/" + tableName))
+                        .build())))
+                .build();
+        streamArnResource.getNode().addDependency(ensureStreamResource);
+
+        return streamArnResource.getResponseField("Table.LatestStreamArn");
     }
 }
