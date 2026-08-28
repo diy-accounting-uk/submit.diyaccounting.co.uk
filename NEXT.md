@@ -6,23 +6,18 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 
 ## In flight
 
-No sub-agent is running. Everything below is code complete and waits on PR merges, in order:
+No sub-agent is running. PRs #46 (B25) and #47 (pipeline batch 1) are merged. Everything
+else is in one PR:
 
 | PR | Branch | Contents |
 |---|---|---|
-| #46 | `claude/b25-backup-wiring` | B25 remainder (copy jobs, five tables, backup-account roles, restore test) |
-| #47 | `claude/pipeline-batch-1` | WP-1 Firehose spike (B13a), WP-2 DynamoDB streams |
-| #48 | `claude/pipeline-batch-2` (on #47) | WP-3 Parquet cutover, WP-8 ingestion skeleton |
-| #49 | `claude/pipeline-batch-3` (on #48) | WP-4 table change records, WP-9 Stripe, WP-11 CloudFront logs |
-| #50 | `claude/pipeline-batch-4` (on #49) | WP-5 data quality, WP-6 views, WP-7 dashboard, WP-10 GA4, hashedSub fix |
+| #50 | `claude/pipeline-batch-4` (worktree `../.worktrees/submit-batch4`) | WP-3 to WP-11 of `PLAN_USAGE_DATA_PIPELINE.md`, the hashedSub fix, the Firehose Glue grant fix |
 
-Each stacked PR is retargeted to `main` when its base merges. Batch worktrees live under
-`../.worktrees/submit-batch{1..4}` and `submit-b25` until then. Deviations from the plan worth
-knowing at review: WP-3 cut the single delivery stream over to Parquet with a union view and a
-synth-date cutover instead of a second prefix; WP-2 uses two custom resources per table (CDK
-forbids `getResponseField` on a call that ignores errors); WP-11 puts the log delivery in
-`EdgeStack`, the only stack that knows the distribution ARN; WP-4's whitelists follow the real
-item shapes, not the plan's field lists.
+Deviations from the plan worth knowing at review: WP-3 cut the single delivery stream over to
+Parquet with a union view and a synth-date cutover instead of a second prefix; WP-2 uses two
+custom resources per table (CDK forbids `getResponseField` on a call that ignores errors);
+WP-11 puts the log delivery in `EdgeStack`, the only stack that knows the distribution ARN;
+WP-4's whitelists follow the real item shapes, not the plan's field lists.
 
 ## Open items
 
@@ -39,15 +34,15 @@ findings live in issue #43.
   denied from outside the account). Remaining: point BackupStack's copy jobs at it, add
   passes/subscriptions to the backup selection, create `backup-github-actions-role` so
   `setup-backup-account.yml` runs unattended, then the monthly restore test — which gates
-  the TypeScript migration (B33). Code is in PR #46. Remaining: merge; operator enables
+  the TypeScript migration (B33). PR #46 is merged. Remaining: operator enables
   cross-account backup in the management account and bootstraps the backup account from a
   host shell (`PLAN_CROSS_ACCOUNT_BACKUPS.md`); first `restore-test` run passes both legs.
   Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
   actionlint finding (`set -e` plus command substitution), and
   `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** Code complete in PR #47
+- [ ] **(B13a) Firehose spike on one stream.** PR #47 is merged
   (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
-  Remaining: merge, ci deploy, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
+  Remaining: the ci deploy from PR #50, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
   passes, and the measured 14-day event volume written into section 4 of the plan.
   Surfaced en route: `main` is not Spotless-clean (`spotless:check` binds to `install`,
   not `verify`; six files drift); `deploy-billing-webhook` lacks `needs: deploy-ecr`;
@@ -61,11 +56,11 @@ findings live in issue #43.
   history dies with each release; WP-11 moves it to the env stack. WP-4 (table change
   records for receipts, bundles, subscriptions, passes with per-table whitelists) is on
   `claude/pipeline-batch-3`; it found the plan's per-table field lists did not match the real
-  item shapes and followed the items. All B13 packages (WP-2 to WP-7) are code complete across PRs #47 to #50, including the
+  item shapes and followed the items. WP-2 is merged (#47); WP-3 to WP-7 are in PR #50, including the
   `hashedSub` fix WP-6 surfaced. Remaining: merges, ci deploy, the verify script and the views
   returning rows, the data-quality run and metrics publisher succeeding once, the dashboard
   showing data.
-- [ ] **(B14) Scheduled ingestion jobs.** Code complete across PRs #48 to #50: the
+- [ ] **(B14) Scheduled ingestion jobs.** All in PR #50: the
   IngestionStack skeleton (WP-8), nightly Stripe reconciliation (WP-9), GA4 Data API pull
   (WP-10), CloudFront access logs in the catalog (WP-11). Remaining: merges and a ci deploy;
   the operator creates the `GA4_SERVICE_ACCOUNT_JSON` secret in the ci and prod GitHub
