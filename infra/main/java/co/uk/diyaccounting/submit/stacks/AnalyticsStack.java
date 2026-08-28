@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.io.IOException;
 import java.io.InputStream;
@@ -348,6 +349,16 @@ public class AnalyticsStack extends Stack {
                         .description("Usage analytics for " + props.envName())
                         .build())
                 .build();
+
+        new CloudFrontAccessLogs(
+                this,
+                CloudFrontAccessLogs.CloudFrontAccessLogsProps.builder()
+                        .envResourceNamePrefix(prefix)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabase(this.glueDatabase)
+                        .build());
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
