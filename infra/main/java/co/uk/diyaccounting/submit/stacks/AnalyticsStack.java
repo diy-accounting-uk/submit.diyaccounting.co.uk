@@ -232,12 +232,16 @@ public class AnalyticsStack extends Stack {
                 .resources(List.of(transformLambda.ingestLambdaAliasArn))
                 .build());
 
-        // Format conversion resolves the destination schema from Glue at delivery time, so the
-        // role needs read access to the one table it converts against.
+        // Format conversion resolves the destination schema from Glue at delivery time. Glue
+        // authorises table reads against the catalog and database ARNs as well as the table's,
+        // so all three have to be in the statement or the call is denied.
         firehoseRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"))
-                .resources(List.of(glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME)))
+                .resources(List.of(
+                        glueCatalogArn(),
+                        glueDatabaseArn(sharedNames.glueDatabaseName),
+                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME)))
                 .build());
 
         // Buffering at 900s and 128 MiB: Parquet's per-file overhead makes many small files
