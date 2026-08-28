@@ -16,6 +16,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
+import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -391,6 +392,17 @@ public class AnalyticsStack extends Stack {
         stripeTables.balanceTransactionsTable.addResourceDependency(this.glueDatabase);
         stripeTables.chargesTable.addResourceDependency(this.glueDatabase);
         stripeTables.subscriptionsTable.addResourceDependency(this.glueDatabase);
+
+        var ga4Tables = new Ga4Tables(
+                this,
+                Ga4Tables.Ga4TablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 

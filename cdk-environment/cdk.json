@@ -35,6 +35,7 @@
     "proxyBreakerErrorThreshold": "10",
     "proxyBreakerLatencyMs": "5000",
     "proxyBreakerCooldownSeconds": "60",
-    "analyticsParquetCutoverDate": ""
+    "analyticsParquetCutoverDate": "",
+    "ga4PropertyId": "523400333"
   }
 }

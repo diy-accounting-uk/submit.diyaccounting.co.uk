@@ -5,7 +5,9 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -28,8 +30,20 @@ class IngestionStackTest {
         return synthIngestionStack("docs", null, null);
     }
 
+    // Defaults ga4PropertyId to a placeholder value so tests exercising Stripe-only behaviour,
+    // including a "prod" envName, don't trip the blank-property-id-in-prod synth failure below.
+    // Tests that specifically exercise GA4 wiring call the five-argument overload directly.
     private static IngestionStack synthIngestionStack(
             String envName, String stripeSecretKeyArn, String stripeTestSecretKeyArn) {
+        return synthIngestionStack(envName, stripeSecretKeyArn, stripeTestSecretKeyArn, "999000111", null);
+    }
+
+    private static IngestionStack synthIngestionStack(
+            String envName,
+            String stripeSecretKeyArn,
+            String stripeTestSecretKeyArn,
+            String ga4PropertyId,
+            String ga4ServiceAccountArn) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -51,25 +65,34 @@ class IngestionStackTest {
         if (stripeTestSecretKeyArn != null) {
             builder.stripeTestSecretKeyArn(stripeTestSecretKeyArn);
         }
+        if (ga4PropertyId != null) {
+            builder.ga4PropertyId(ga4PropertyId);
+        }
+        if (ga4ServiceAccountArn != null) {
+            builder.ga4ServiceAccountArn(ga4ServiceAccountArn);
+        }
 
         return new IngestionStack(app, "TestIngestionStack-" + envName, builder.build());
     }
 
     @Test
-    void stackWiresOnlyTheStripeReconciliationJobByDefault() {
+    void stackWiresTheStripeAndGa4JobsByDefault() {
         IngestionStack ingestionStack = synthIngestionStack();
         Template template = Template.fromStack(ingestionStack);
 
-        // Importing the lake bucket by name creates no bucket of its own. The one job wired in
-        // the constructor is the Stripe reconciliation Lambda; nothing else self-registers yet.
+        // Importing the lake bucket by name creates no bucket of its own. The constructor wires
+        // two jobs: Stripe reconciliation and the GA4 report pull; nothing else self-registers
+        // yet.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 1);
-        template.resourceCountIs("AWS::Events::Rule", 1);
-        template.resourceCountIs("AWS::SQS::Queue", 1);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+        template.resourceCountIs("AWS::Lambda::Function", 2);
+        template.resourceCountIs("AWS::Events::Rule", 2);
+        template.resourceCountIs("AWS::SQS::Queue", 2);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
 
         template.hasResourceProperties(
                 "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-stripe-reconcile")));
+        template.hasResourceProperties(
+                "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-ga4-report-pull")));
     }
 
     @Test
@@ -193,14 +216,14 @@ class IngestionStackTest {
 
         Template template = Template.fromStack(ingestionStack);
 
-        // One queue, rule and alarm pair pre-exist for the Stripe reconciliation job the
-        // constructor always wires; this test's job adds a second of each.
-        template.resourceCountIs("AWS::SQS::Queue", 2);
+        // Two queues, rules and alarm pairs pre-exist for the Stripe reconciliation and GA4
+        // report pull jobs the constructor always wires; this test's job adds a third of each.
+        template.resourceCountIs("AWS::SQS::Queue", 3);
         template.hasResourceProperties(
                 "AWS::SQS::Queue",
                 Match.objectLike(Map.of("QueueName", "docs-env-test-job-dlq", "MessageRetentionPeriod", 1209600)));
 
-        template.resourceCountIs("AWS::Events::Rule", 2);
+        template.resourceCountIs("AWS::Events::Rule", 3);
         template.hasResourceProperties(
                 "AWS::Events::Rule",
                 Match.objectLike(Map.of(
@@ -215,9 +238,9 @@ class IngestionStackTest {
 
         // All alarms carry no AlarmActions: the account-wide alarm-state-change rule in
         // OpsStack forwards every CloudWatch alarm to Telegram.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        assertTrue(alarms.size() == 4, "expected exactly four alarms");
+        assertTrue(alarms.size() == 6, "expected exactly six alarms");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) alarm.get("Properties");
@@ -241,5 +264,136 @@ class IngestionStackTest {
                         "Namespace", "AWS/SQS",
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "Threshold", 1)));
+    }
+
+    @Test
+    void ga4ReportPullRunsDailyInProdAndWeeklyElsewhere() {
+        Template ciTemplate = Template.fromStack(synthIngestionStack());
+        ciTemplate.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name", "docs-env-ga4-report-pull-schedule",
+                        "ScheduleExpression", "cron(15 3 ? * MON *)")));
+
+        Template prodTemplate = Template.fromStack(synthIngestionStack("prod", null, null));
+        prodTemplate.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name", "docs-env-ga4-report-pull-schedule",
+                        "ScheduleExpression", "cron(15 3 * * ? *)")));
+    }
+
+    @Test
+    void blankGa4PropertyIdFailsSynthInProdButNotElsewhere() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> synthIngestionStack("prod", null, null, null, null),
+                "a blank ga4PropertyId in prod must fail synth, not silently run with no property configured");
+
+        // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
+        // before-the-operator-creates-the-service-account guarantee the design calls for.
+        Template template = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        template.resourceCountIs("AWS::Lambda::Function", 2);
+    }
+
+    @Test
+    void ga4PropertyIdEnvVarIsOmittedWhenBlankAndPresentWhenConfigured() {
+        Template blank = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        var blankFunctions = blank.findResources(
+                "AWS::Lambda::Function",
+                Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
+        assertEquals(1, blankFunctions.size());
+        assertFalse(
+                environmentVariablesOf(blankFunctions).containsKey("GA4_PROPERTY_ID"),
+                "GA4_PROPERTY_ID must not be set when ga4PropertyId is blank");
+
+        Template configured = Template.fromStack(synthIngestionStack("docs", null, null, "523400333", null));
+        configured.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        "docs-env-ga4-report-pull",
+                        "Environment",
+                        Match.objectLike(
+                                Map.of("Variables", Match.objectLike(Map.of("GA4_PROPERTY_ID", "523400333")))))));
+    }
+
+    @Test
+    void ga4ReportPullGetsScopedSecretGrantOnlyWhenArnIsConfigured() {
+        Template unconfigured = Template.fromStack(synthIngestionStack());
+        unconfigured.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action", "secretsmanager:GetSecretValue",
+                                        "Resource", Match.stringLikeRegexp(".*ga4.*"))))))))),
+                0);
+
+        Template configured = Template.fromStack(synthIngestionStack(
+                "docs",
+                null,
+                null,
+                "523400333",
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account"));
+
+        configured.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))));
+    }
+
+    @Test
+    void ga4ReportPullCanOnlyPutObjectsUnderItsOwnLakePrefix() {
+        Template template = Template.fromStack(synthIngestionStack());
+
+        // The bucket is imported by name, so its ARN is an unresolved token: the Resource here
+        // synthesizes as an Fn::Join, not a plain string, hence the manual walk rather than a
+        // Match.stringLikeRegexp against the whole statement.
+        var policies = template.findResources("AWS::IAM::Policy");
+        var found = policies.values().stream().anyMatch(policy -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.get("Properties");
+            @SuppressWarnings("unchecked")
+            var policyDocument = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (List<Map<String, Object>>) policyDocument.get("Statement");
+            return statements.stream()
+                    .anyMatch(statement -> "s3:PutObject".equals(statement.get("Action"))
+                            && endsWithCuratedGa4Wildcard(statement.get("Resource")));
+        });
+
+        assertTrue(found, "expected an s3:PutObject statement scoped to .../curated/ga4/*");
+    }
+
+    private static boolean endsWithCuratedGa4Wildcard(Object resource) {
+        if (resource instanceof String s) {
+            return s.endsWith("/curated/ga4/*");
+        }
+        if (resource instanceof Map<?, ?> map) {
+            var join = (List<?>) map.get("Fn::Join");
+            if (join == null || join.size() < 2) return false;
+            var parts = (List<?>) join.get(1);
+            var last = parts.get(parts.size() - 1);
+            return last instanceof String s && s.endsWith("/curated/ga4/*");
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> environmentVariablesOf(Map<String, Map<String, Object>> functions) {
+        var resource = functions.values().iterator().next();
+        var properties = (Map<String, Object>) resource.get("Properties");
+        var environment = (Map<String, Object>) properties.get("Environment");
+        return (Map<String, Object>) environment.get("Variables");
     }
 }
