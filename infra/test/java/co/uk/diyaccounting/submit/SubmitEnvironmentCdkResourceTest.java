@@ -5,18 +5,23 @@
 
 package co.uk.diyaccounting.submit;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
@@ -86,6 +91,71 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
+
+        // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
+        Template analytics = Template.fromStack(env.analyticsStack);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 1);
+        analytics.resourceCountIs("AWS::Glue::Database", 1);
+        analytics.resourceCountIs("AWS::Glue::Table", 1);
+        analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 1);
+        // The lake and the Athena results bucket
+        analytics.resourceCountIs("AWS::S3::Bucket", 2);
+
+        analytics.hasResourceProperties(
+                "AWS::KinesisFirehose::DeliveryStream",
+                Match.objectLike(Map.of(
+                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "GZIP")))));
+
+        analytics.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "EventBusName",
+                        "test-env-activity-bus",
+                        "EventPattern",
+                        Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
+
+        analytics.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(
+                                Map.of("Parameters", Match.objectLike(Map.of("projection.enabled", "true")))))));
+
+        assertNoUnscopedIamResources(analytics);
+    }
+
+    /**
+     * Fail on any inline IAM policy statement that grants on every resource. X-Ray is the one
+     * exception the CDK Lambda construct forces on us: its actions carry no resource-level
+     * permissions at all, so a wildcard there is the narrowest grant that exists.
+     */
+    private static void assertNoUnscopedIamResources(Template template) {
+        var offenders = new ArrayList<String>();
+        var policies = template.findResources("AWS::IAM::Policy");
+        for (Map.Entry<String, Map<String, Object>> policy : policies.entrySet()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) policy.getValue().get("Properties");
+            if (properties == null) continue;
+            @SuppressWarnings("unchecked")
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            if (document == null) continue;
+            @SuppressWarnings("unchecked")
+            var statements = (List<Map<String, Object>>) document.get("Statement");
+            if (statements == null) continue;
+            for (Map<String, Object> statement : statements) {
+                if (!"*".equals(statement.get("Resource"))) continue;
+                if (isResourceLevelExemptAction(statement.get("Action"))) continue;
+                offenders.add(policy.getKey() + " " + statement.get("Action"));
+            }
+        }
+        assertTrue(offenders.isEmpty(), "IAM statements granting on every resource: " + offenders);
+    }
+
+    private static boolean isResourceLevelExemptAction(Object action) {
+        List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
+        return !actions.isEmpty()
+                && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)
