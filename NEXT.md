@@ -9,7 +9,7 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
 reasoning.
 
-**Batches 1 and 2 are live in prod (deployment prod-7f188b7, verified 2026-08-26).**
+**Batches 1 and 2 are live in prod (deployment prod-af7eab7, verified 2026-08-28).**
 PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift
 findings live in issue #43.
 
@@ -20,24 +20,29 @@ findings live in issue #43.
   passes/subscriptions to the backup selection, create `backup-github-actions-role` so
   `setup-backup-account.yml` runs unattended, then the monthly restore test — which gates
   the TypeScript migration (B33).
-- [ ] **(B4) Send the HMRC free-flag email.** Drafted in Gmail; the site now states
-  recognition correctly. Operator action.
+- [ ] **(B13a) Firehose spike on one stream.** Activity events to date-partitioned S3,
+  queried with Athena. One table, no Glue quality rules, no dashboard. Proves delivery,
+  IAM and cost shape before B13 commits the lake design.
+- [ ] **(B13) Usage data pipeline.** Firehose from activity events/DynamoDB streams to
+  partitioned Parquet on S3, Glue catalog and data quality, Athena, dashboard. Starts
+  once B13a has landed.
+- [ ] **(B14) Scheduled ingestion jobs.** GA4 export, Stripe reconciliation, CloudFront
+  logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
+  same queryable place as B13.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
   `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`) and the sender
   filter that replies to SNS/GitHub notifications. Operator action in Gmail settings.
-- [ ] **(B14a/B19 console halves) Turn on GA4 export and a scheduled Stripe report; mark
-  GA4 conversions; retire the old stream and stale remarketing tag.** Operator console
+- [ ] **(B19) Analytics console work.** Turn on GA4 export and a scheduled Stripe report;
+  mark GA4 conversions; retire the old stream and stale remarketing tag. Operator console
   actions. CloudFront logging is already live. History cannot be backfilled.
-- [ ] **Watch the first post-fix scheduled runs.** Tomorrow's `verify-backups` is the
-  first with the corrected vault name and PITR on; Monday's `stack-drift` is the first
-  with the noise filter. Both should go green — investigate if not.
-
-- [ ] **Automation restarted 2026-08-24 — watch the first scheduled runs.** Remainders:
-  (a) `verify-backups` last actually ran 2026-07-13 and FAILED — confirm the next run passes;
-  (b) re-enabling re-arms the 60-day trap — see the keep-alive uplift in
-  `../STATUS_AUG_24_ALL.md`. (The 2026-07-11/12 deploy failures are diagnosed: deployments
-  succeeded; the post-deploy synthetic tests timed out on Cognito's Hosted UI form two mornings
-  running, then passed 07-13 with no code change — transient upstream, no action.)
+- [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** Daily
+  schedules are firing and `verify-backups` is green (2026-08-27, 2026-08-28) with the
+  corrected vault name and PITR on. Still to see: `stack-drift` on Monday 2026-08-31
+  (first run with the noise filter), `compliance` and `codeql` on Sunday 2026-08-30.
+  Investigate if any is not green.
+- [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
+  without repo activity, which is what stopped automation in July. Nothing guards
+  against a repeat yet.
 
 ## Discipline
 

@@ -13,24 +13,23 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-08-26, after batch 2)
+## Live status (updated 2026-08-28)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **Nothing is in flight.** Batches 1 and 2 are live in prod (deployment prod-7f188b7);
+- **Nothing is in flight.** Batches 1 and 2 are live in prod (deployment prod-af7eab7);
   PITR is ENABLED on all 11 tables and the cross-account vault is LIVE in 914216784828.
-- **Operator-bound**: 4 (send the drafted email — now unblocked), 9 and 9a (Gmail
-  settings), 17a (demo-video redo — Claude Code excluded by operator directive), 19's
-  console half.
-- **Queued for the next batch**: 25 (vault wiring remainder) and the Tier 2 spikes (10a,
-  13a) when the operator says go.
+  Item 4 (HMRC free-flag email) is sent and closed.
+- **Operator-bound**: 9 and 9a (Gmail settings), 17a (demo-video redo — Claude Code
+  excluded by operator directive), 19 (analytics console work).
+- **Queued on NEXT.md**: 25 (vault wiring remainder), 13a then 13 (usage data pipeline),
+  14 (scheduled ingestion). The 10a spike waits for the operator to say go.
 
 ## Tier 1: do next
 
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
-| 4 | Send the drafted HMRC email (SDST/Sam Evans thread) asking for the "free version" flag on our finder listing. Draft sits in Gmail; the site now states recognition correctly, so it is unblocked | Market survey | S | Revenue. Our target customer filters by "free version" and currently never sees us. One email. |
 | 9 | Fix the dead GitHub link in the support@ Gmail auto-reply (a mailbox setting, not repo code — verified; point it at the spreadsheets repo issues page) | Shutler email; batch 1 verification | S | Hygiene. Every support contact sees a broken link today. |
 | 9a | Widen the support autoresponder's sender filter: it replies to automated notifications, not just people — eight replies to AWS SNS subscription-confirmation emails on 2026-08-25 alone, each bouncing at an amazonses address, same defect class as the recorded GitHub-notification bounces | Workspace session, mail-mirror verification | S | Hygiene. One filter fix stops a standing stream of bounce noise in the support mailbox and prevents the autoresponder confirming SNS subscriptions nobody asked for. |
 
