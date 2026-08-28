@@ -120,6 +120,19 @@ public class SubmitSharedNames {
     public String ue1EcrRepositoryName;
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
+    public String analyticsStackId;
+
+    // Analytics lake, catalog and query resources
+    public String analyticsLakeBucketName;
+    public String analyticsResultsBucketName;
+    public String glueDatabaseName;
+    public String athenaWorkGroupName;
+    public String activityEventsDeliveryStreamName;
+    public String activityEventsDeliveryStreamLogGroupName;
+    public String activityEventTransformLambdaFunctionName;
+    public String activityEventTransformLambdaHandler;
+    public String activityEventTransformLambdaArn;
+    public String activityEventTransformProvisionedConcurrencyLambdaAliasArn;
 
     // Env-level billing webhook Lambda
     public String envBillingWebhookLambdaFunctionName;
@@ -469,6 +482,23 @@ public class SubmitSharedNames {
         this.ue1EcrRepositoryName = "%s-ecr-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
+        this.analyticsStackId = "%s-env-AnalyticsStack".formatted(props.envName);
+        this.analyticsLakeBucketName =
+                "%s-analytics-lake-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
+        this.analyticsResultsBucketName =
+                "%s-analytics-results-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
+        this.glueDatabaseName = "%s_env_analytics".formatted(props.envName);
+        this.athenaWorkGroupName = "%s-analytics".formatted(this.envResourceNamePrefix);
+        this.activityEventsDeliveryStreamName = "%s-activity-events".formatted(this.envResourceNamePrefix);
+        this.activityEventsDeliveryStreamLogGroupName =
+                "/aws/kinesisfirehose/%s".formatted(this.activityEventsDeliveryStreamName);
+        this.activityEventTransformLambdaFunctionName =
+                "%s-activity-event-transform".formatted(this.envResourceNamePrefix);
+        this.activityEventTransformLambdaHandler = "app/functions/analytics/activityEventTransform.handler";
+        this.activityEventTransformLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.activityEventTransformLambdaFunctionName);
+        this.activityEventTransformProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.activityEventTransformLambdaArn, this.provisionedConcurrencyAliasName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         // Env-level billing webhook Lambda
