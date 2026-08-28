@@ -123,6 +123,14 @@ class SubmitEnvironmentCdkResourceTest {
                                 Map.of("Parameters", Match.objectLike(Map.of("projection.enabled", "true")))))));
 
         assertNoUnscopedIamResources(analytics);
+
+        // 10) Ingestion stack: the scheduling skeleton only, until a WP-9/10/11 job registers
+        // itself. Importing the lake bucket by name creates no bucket of its own.
+        Template ingestion = Template.fromStack(env.ingestionStack);
+        ingestion.resourceCountIs("AWS::S3::Bucket", 0);
+        ingestion.resourceCountIs("AWS::Events::Rule", 0);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 0);
+        assertNoUnscopedIamResources(ingestion);
     }
 
     /**
