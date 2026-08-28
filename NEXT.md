@@ -9,10 +9,10 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | Track | Items | Model | Worktree / branch | Status |
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
-| wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | merged to `claude/pipeline-batch-1` | code complete, building |
+| wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 | wp3-parquet | B13 WP-3 | Sonnet | `../.worktrees/submit-wp3` / `claude/wp3-parquet` (off batch-1) | started |
 | wp8-ingestion | B14 WP-8 | Sonnet | `../.worktrees/submit-wp8` / `claude/wp8-ingestion` (off batch-1) | started |
-| wp2-dynamodb-streams | B13 WP-2 | Sonnet | merged to `claude/pipeline-batch-1` (`../.worktrees/submit-batch1`) | code complete, building |
+| wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
 Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
 `claude/pipeline-batch-1` collects WP-1 and WP-2 for one PR; WP-2 needed two custom
@@ -41,7 +41,7 @@ findings live in issue #43.
   Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
   actionlint finding (`set -e` plus command substitution), and
   `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** Code complete on `claude/pipeline-batch-1`
+- [ ] **(B13a) Firehose spike on one stream.** Code complete in PR #47
   (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
   Remaining: PR, ci deploy, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
   passes, and the measured 14-day event volume written into section 4 of the plan.
