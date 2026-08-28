@@ -47,6 +47,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       # Analytics Lambda source
@@ -511,6 +512,127 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           BASE_IMAGE_TAG: env-analytics
+
+  deploy-ingestion:
+    name: 'deploy ingestion'
+    needs:
+      - names
+      - create-secrets
+      - deploy-analytics
+      - deploy-ecr
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      # --- Build and push the env-level ingestion image, so this job does not wait on an app deploy ---
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
+      - name: Build env ingestion image (ARM64)
+        run: |
+          docker buildx build \
+            --platform linux/arm64 \
+            --provenance=false \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t "env-ingestion:${{ github.sha }}" \
+            -f Dockerfile .
+
+      - name: Login to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL}"
+        shell: bash
+
+      - name: Tag and push env ingestion image to ECR
+        run: |
+          ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
+          ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
+          ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
+          ENV_IMAGE_TAG="env-ingestion"
+
+          docker tag "env-ingestion:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
+          docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
+          echo "Pushed ${ECR_URI}:${ENV_IMAGE_TAG}"
+        shell: bash
+
+      # --- Deploy CDK stack using the env-level image tag ---
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Deploy Ingestion stack (CDK)
+        run: |
+          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+            && cd cdk-environment \
+            && cat ../.env.${{ needs.names.outputs.environment-name }} \
+            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
+              npx cdk deploy \
+                ${{ needs.names.outputs.environment-name }}-env-IngestionStack \
+                --exclusively \
+                --require-approval never \
+                --ci true \
+                --no-notices \
+                --concurrency 4 \
+                --asset-parallelism \
+                --outputs-file ../cdk-submit-environment.out/cdk-outputs-ingestion.json \
+            && cd .. \
+          ;
+        env:
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          BASE_IMAGE_TAG: env-ingestion
 
   deploy-ecr:
     name: 'deploy ecr'
