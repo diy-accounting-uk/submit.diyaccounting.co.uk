@@ -11,8 +11,8 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 | wp3-parquet | B13 WP-3 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
-| wp4-table-changes | B13 WP-4 | Sonnet | `../.worktrees/submit-wp4-table-changes` / `claude/wp4-table-changes` (off batch-2) | started |
-| wp9-stripe | B14 WP-9 | Sonnet | `../.worktrees/submit-wp9-stripe` / `claude/wp9-stripe` (off batch-2) | started |
+| wp4-table-changes | B13 WP-4 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
+| wp9-stripe | B14 WP-9 | Sonnet | merged to `claude/pipeline-batch-3` | code complete, building |
 | wp11-cloudfront-logs | B14 WP-11 | Sonnet | merged to `claude/pipeline-batch-3` (`../.worktrees/submit-batch3`, off batch-2) | code complete, building |
 | wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
@@ -48,7 +48,7 @@ findings live in issue #43.
   `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B13a) Firehose spike on one stream.** Code complete in PR #47
   (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
-  Remaining: PR, ci deploy, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
+  Remaining: merge, ci deploy, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
   passes, and the measured 14-day event volume written into section 4 of the plan.
   Surfaced en route: `main` is not Spotless-clean (`spotless:check` binds to `install`,
   not `verify`; six files drift); `deploy-billing-webhook` lacks `needs: deploy-ecr`;
@@ -59,12 +59,16 @@ findings live in issue #43.
   emails every activity event via the alert topic (`OpsStack.java:191`), which caps bus
   volume; decide whether it stays before WP-4 adds table change records. The CloudFront
   access-log bucket lives in the per-deployment `EdgeStack` (`EdgeStack.java:414`) so
-  history dies with each release; WP-11 moves it to the env stack.
+  history dies with each release; WP-11 moves it to the env stack. WP-4 (table change
+  records for receipts, bundles, subscriptions, passes with per-table whitelists) is on
+  `claude/pipeline-batch-3`; it found the plan's per-table field lists did not match the real
+  item shapes and followed the items. Remaining for B13: WP-5 data quality, WP-6 Athena
+  views, WP-7 dashboard.
 - [ ] **(B14) Scheduled ingestion jobs.** GA4 export, Stripe reconciliation, CloudFront
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
   same queryable place as B13. WP-8 (IngestionStack skeleton: `registerScheduledJob`
   with retries, DLQ and two alarms per job, `deploy-ingestion` job) is code complete on
-  `claude/pipeline-batch-2`. Remaining: WP-9 Stripe, WP-10 GA4. WP-11 (env access-log bucket, v2 Parquet log
+  `claude/pipeline-batch-2`. Remaining: WP-10 GA4. WP-9 (nightly Stripe reconciliation, three Glue tables) and WP-11 (env access-log bucket, v2 Parquet log
   delivery per EdgeStack, `cloudfront_requests` table) is on `claude/pipeline-batch-3`;
   the first deploy after it lands deletes each deployment's old per-deployment log bucket.
   Plan correction pending: WP-8's text says the retry/DLQ shape matches
