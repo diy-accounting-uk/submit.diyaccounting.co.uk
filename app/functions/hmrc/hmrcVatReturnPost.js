@@ -1005,6 +1005,7 @@ export async function submitVat(
       event: "vat-return-submitted",
       summary: "VAT return submitted",
       actor,
+      userSub: auditForUserSub,
     });
   } else {
     await recordSubmissionFailure({

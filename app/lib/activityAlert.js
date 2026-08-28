@@ -21,9 +21,10 @@ const ebClient = new EventBridgeClient({ region: process.env.AWS_REGION || "eu-w
  * @param {string} params.summary - Human-readable summary for alerting
  * @param {string} [params.actor] - Actor classification
  * @param {string} [params.flow] - Flow classification
+ * @param {string} [params.userSub] - Raw sub of the authenticated user; hashed before it reaches the event, never logged raw
  * @param {Object} [params.detail] - Additional detail fields
  */
-export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, detail = {} }) {
+export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, userSub, detail = {} }) {
   const busName = process.env.ACTIVITY_BUS_NAME;
   if (!busName) {
     logger.info({ message: "ACTIVITY_BUS_NAME not set, skipping activity event", event });
@@ -31,9 +32,10 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
   }
 
   const requestId = context.get("requestId") || null;
-  const userSub = context.get("userSub") || null;
+  const effectiveUserSub = userSub || context.get("userSub") || null;
+  const hashedSub = hashSubForEvent(effectiveUserSub);
   const effectiveActor = resolveActorClass(actor);
-  const effectiveFlow = flow || (userSub ? "user-journey" : "unknown");
+  const effectiveFlow = flow || (effectiveUserSub ? "user-journey" : "unknown");
 
   try {
     await ebClient.send(
@@ -51,6 +53,7 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
               flow: effectiveFlow,
               timestamp: new Date().toISOString(),
               ...(requestId ? { requestId } : {}),
+              ...(hashedSub ? { hashedSub } : {}),
               ...detail,
             }),
           },
@@ -116,17 +119,16 @@ function hashSubForEvent(userSub) {
  * @param {Object} [params.detail] - Additional non-identifying detail fields
  */
 export async function publishActivityFailureEvent({ event, site = "submit", summary, failure, userSub, actor, flow, detail = {} }) {
-  const hashedSub = hashSubForEvent(userSub || context.get("userSub"));
   await publishActivityEvent({
     event,
     site,
     summary,
     actor,
     flow,
+    userSub,
     detail: {
       outcome: "failure",
       failure,
-      ...(hashedSub ? { hashedSub } : {}),
       ...detail,
     },
   });
