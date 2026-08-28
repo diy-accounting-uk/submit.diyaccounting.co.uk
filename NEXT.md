@@ -10,11 +10,11 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
-| wp3-parquet | B13 WP-3 | Sonnet | merged to `claude/pipeline-batch-2` | code complete, building |
+| wp3-parquet | B13 WP-3 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp4-table-changes | B13 WP-4 | Sonnet | `../.worktrees/submit-wp4-table-changes` / `claude/wp4-table-changes` (off batch-2) | started |
 | wp9-stripe | B14 WP-9 | Sonnet | `../.worktrees/submit-wp9-stripe` / `claude/wp9-stripe` (off batch-2) | started |
 | wp11-cloudfront-logs | B14 WP-11 | Sonnet | `../.worktrees/submit-wp11-cloudfront-logs` / `claude/wp11-cloudfront-logs` (off batch-2) | started |
-| wp8-ingestion | B14 WP-8 | Sonnet | merged to `claude/pipeline-batch-2` (`../.worktrees/submit-batch2`, off batch-1) | code complete |
+| wp8-ingestion | B14 WP-8 | Sonnet | `claude/pipeline-batch-2` | code complete, PR #48 (stacked on #47) |
 | wp2-dynamodb-streams | B13 WP-2 | Sonnet | `claude/pipeline-batch-1` | code complete, PR #47 awaiting merge |
 
 Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
