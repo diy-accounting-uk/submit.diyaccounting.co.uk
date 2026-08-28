@@ -103,6 +103,22 @@ public class IngestionStack extends Stack {
             return "";
         }
 
+        // The GA4 property id, from cdk.json's ga4PropertyId context value. Not a secret, so it
+        // travels through the same reflection loader as hostedZoneName rather than an env var.
+        // Defaulted to blank so a caller that has not been updated to pass it yet still compiles;
+        // the constructor below turns a blank value in prod into a synth-time failure instead of
+        // a silently skipped ingestion job.
+        @Value.Default
+        default String ga4PropertyId() {
+            return "";
+        }
+
+        // Same ARN-through-Secrets-Manager pattern as stripeSecretKeyArn.
+        @Value.Default
+        default String ga4ServiceAccountArn() {
+            return "";
+        }
+
         static ImmutableIngestionStackProps.Builder builder() {
             return ImmutableIngestionStackProps.builder();
         }
@@ -224,6 +240,84 @@ public class IngestionStack extends Stack {
                 stripeReconcileLambda,
                 stripeReconcileSchedule,
                 "Pull yesterday's Stripe balance transactions, charges and subscription state into the analytics lake");
+
+        // ============================================================================
+        // GA4 report pull job
+        // ============================================================================
+        // The property id is not a secret, so a mistyped cdk.json key would otherwise silently
+        // keep its blank default (KindCdk.getContextValueString swallows a missing key) and the
+        // job would run forever with GA4_PROPERTY_ID unset. Failing synth in prod turns that into
+        // a build-time error instead of a job that errors nightly into the DLQ.
+        if (isProd && (props.ga4PropertyId() == null || props.ga4PropertyId().isBlank())) {
+            throw new IllegalStateException(
+                    "ga4PropertyId must be set in prod (see ga4PropertyId in cdk-environment/cdk.json)");
+        }
+
+        var ga4ReportPullFunctionName = prefix + "-ga4-report-pull";
+
+        var ga4ReportPullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+        if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
+            ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
+        }
+        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+            ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
+        }
+
+        IRepository ga4ReportPullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-Ga4ReportPull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        var ga4ReportPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4ReportPullFn")
+                .functionName(ga4ReportPullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        ga4ReportPullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/ga4ReportPull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(2))
+                .memorySize(512)
+                .architecture(Architecture.ARM_64)
+                .environment(ga4ReportPullEnv)
+                .build();
+
+        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
+                .build());
+
+        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+            var ga4SecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
+                    ? props.ga4ServiceAccountArn()
+                    : props.ga4ServiceAccountArn() + "-*";
+            ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(ga4SecretArnWithWildcard))
+                    .build());
+        }
+
+        // prod: 03:15 daily, an hour after the Stripe job so the two nightly third-party pulls
+        // do not start at the same minute. ci: 03:15 every Monday, same reasoning as Stripe's.
+        var ga4ReportPullSchedule = isProd
+                ? Schedule.cron(CronOptions.builder().minute("15").hour("3").build())
+                : Schedule.cron(
+                        CronOptions.builder().minute("15").hour("3").weekDay("MON").build());
+
+        registerScheduledJob(
+                "Ga4ReportPull",
+                ga4ReportPullFunctionName,
+                ga4ReportPullLambda,
+                ga4ReportPullSchedule,
+                "Pull yesterday's GA4 traffic, pages and events reports into the analytics lake");
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);
     }
