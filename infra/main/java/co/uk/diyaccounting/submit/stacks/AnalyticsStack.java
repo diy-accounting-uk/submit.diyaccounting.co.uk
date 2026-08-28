@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
@@ -364,7 +365,7 @@ public class AnalyticsStack extends Stack {
                         .glueDatabase(this.glueDatabase)
                         .build());
 
-        new TableChangeDelivery(
+        var tableChangeDelivery = new TableChangeDelivery(
                 this,
                 prefix + "-TableChangeDelivery",
                 TableChangeDelivery.TableChangeDeliveryProps.builder()
@@ -634,6 +635,25 @@ public class AnalyticsStack extends Stack {
         createUnionViewResource.getNode().addDependency(this.workGroup);
         createUnionViewResource.getNode().addDependency(activityEventsTable);
         createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
+
+        var businessViews = new BusinessViews(
+                this,
+                BusinessViews.BusinessViewsProps.builder()
+                        .resourceNamePrefix(prefix)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .resultsBucket(this.resultsBucket)
+                        .build());
+        businessViews.namedQueries.forEach(q -> {
+            q.addResourceDependency(this.workGroup);
+            q.addResourceDependency(this.glueDatabase);
+        });
+        businessViews.viewResources.forEach(r -> {
+            r.getNode().addDependency(this.workGroup);
+            r.getNode().addDependency(createUnionViewResource);
+            tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
+            r.getNode().addDependency(stripeTables.chargesTable);
+        });
 
         // ============================================================================
         // Alarms

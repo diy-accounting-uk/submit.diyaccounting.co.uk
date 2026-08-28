@@ -100,7 +100,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 10);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 2);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 3);
 
