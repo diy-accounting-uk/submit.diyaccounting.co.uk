@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,14 +63,19 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.FunctionUrlAuthType;
 import software.amazon.awscdk.services.lambda.Permission;
+import software.amazon.awscdk.services.logs.CfnDelivery;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestination;
+import software.amazon.awscdk.services.logs.CfnDeliveryDestinationProps;
+import software.amazon.awscdk.services.logs.CfnDeliveryProps;
+import software.amazon.awscdk.services.logs.CfnDeliverySource;
+import software.amazon.awscdk.services.logs.CfnDeliverySourceProps;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
+import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
@@ -368,7 +374,8 @@ public class EdgeStack extends Stack {
 
         Rule.Builder.create(this, props.resourceNamePrefix() + "-WafAlarmForwardRule")
                 .ruleName(props.resourceNamePrefix() + "-waf-alarm-forward")
-                .description("Forward CloudWatch alarm state changes to the eu-west-2 default event bus for Telegram alerting")
+                .description(
+                        "Forward CloudWatch alarm state changes to the eu-west-2 default event bus for Telegram alerting")
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.cloudwatch"))
                         .detailType(List.of("CloudWatch Alarm State Change"))
@@ -409,18 +416,13 @@ public class EdgeStack extends Stack {
                 .build();
         // CloudFront standard logging bucket. History cannot be backfilled, so this needs to be
         // on before there is traffic worth analyzing, even though nothing consumes the logs yet.
-        // ObjectOwnership.OBJECT_WRITER keeps ACLs enabled: CloudFront's standard logging writes
-        // objects via an ACL grant to the AWS log-delivery account, which needs ACLs on.
-        Bucket cloudFrontLogsBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-CfLogsBucket")
-                .encryption(BucketEncryption.S3_MANAGED)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(LifecycleRule.builder()
-                        .expiration(software.amazon.awscdk.Duration.days(90))
-                        .build()))
-                .build();
+        // The bucket itself lives in AnalyticsStack (env-scoped, see CloudFrontAccessLogs) so log
+        // history survives every redeploy of this app stack; this stack only imports it by name
+        // and writes under its own deployment-scoped prefix.
+        IBucket cloudFrontLogsBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-CfLogsBucket",
+                CloudFrontAccessLogs.bucketName(props.sharedNames().envResourceNamePrefix, this.getAccount()));
 
         IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
                 this.originBucket,
@@ -586,7 +588,7 @@ public class EdgeStack extends Stack {
                 .defaultRootObject("index.html")
                 .enableLogging(true)
                 .logBucket(cloudFrontLogsBucket)
-                .logFilePrefix("cf-standard-logs/")
+                .logFilePrefix("cf-standard-logs/" + props.deploymentName() + "/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
@@ -606,6 +608,50 @@ public class EdgeStack extends Stack {
                         .resource("distribution")
                         .resourceName(this.distribution.getDistributionId())
                         .build());
+
+        // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
+        // lake so Athena can query it without a crawler, complementing the classic logBucket()
+        // output above. This is set up here rather than in AnalyticsStack because only this app
+        // stack knows this deployment's distribution ARN; the lake bucket's resource policy
+        // (granted in CloudFrontAccessLogs) accepts writes from every deployment's distribution,
+        // and the Glue table's injected distribution_id partition tells them apart.
+        IBucket analyticsLakeBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
+                props.sharedNames().analyticsLakeBucketName);
+
+        CfnDeliveryDestination cfAccessLogsDestination = new CfnDeliveryDestination(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsDestination",
+                CfnDeliveryDestinationProps.builder()
+                        .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
+                        .deliveryDestinationType("S3")
+                        .destinationResourceArn(analyticsLakeBucket.getBucketArn())
+                        .outputFormat("parquet")
+                        .build());
+
+        String cfAccessLogsSourceName = props.resourceNamePrefix() + "-cf-access-logs-src";
+        CfnDeliverySource cfAccessLogsSource = new CfnDeliverySource(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsSource",
+                CfnDeliverySourceProps.builder()
+                        .name(cfAccessLogsSourceName)
+                        .logType("ACCESS_LOGS") // required for CloudFront
+                        .resourceArn(distributionArn)
+                        .build());
+
+        CfnDelivery cfAccessLogsDelivery = new CfnDelivery(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsDelivery",
+                CfnDeliveryProps.builder()
+                        // *** must exactly match the Name above ***
+                        .deliverySourceName(cfAccessLogsSourceName)
+                        .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
+                        .s3SuffixPath("raw/cloudfront/{DistributionId}/year=!{yyyy}/month=!{MM}/day=!{dd}/")
+                        .s3EnableHiveCompatiblePath(true)
+                        .build());
+        // *** enforce creation order so source exists before delivery ***
+        cfAccessLogsDelivery.addResourceDependency(cfAccessLogsSource);
 
         // Grant CloudFront access to the origin lambdas
         this.distributionInvokeFnUrl = Permission.builder()
