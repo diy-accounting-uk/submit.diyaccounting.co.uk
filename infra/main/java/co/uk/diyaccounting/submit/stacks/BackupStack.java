@@ -19,15 +19,19 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.backup.BackupPlan;
+import software.amazon.awscdk.services.backup.BackupPlanCopyActionProps;
 import software.amazon.awscdk.services.backup.BackupPlanRule;
 import software.amazon.awscdk.services.backup.BackupResource;
 import software.amazon.awscdk.services.backup.BackupSelection;
 import software.amazon.awscdk.services.backup.BackupVault;
 import software.amazon.awscdk.services.backup.BackupVaultEvents;
+import software.amazon.awscdk.services.backup.IBackupVault;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.kms.Key;
@@ -43,12 +47,10 @@ import software.constructs.Construct;
  * BackupStack creates AWS Backup infrastructure for DynamoDB tables.
  *
  * <p>Architecture:
- * - Local backup vault within deployment account (no cross-region)
- * - Daily, weekly, and monthly backup schedules
- * - S3 bucket for DynamoDB exports (shipped to backup account)
- * - Multi-region redundancy handled by dedicated backup account
- *
- * <p>See BACKUP_STRATEGY_PLAN.md for full architecture documentation.
+ * - Local backup vault within the deployment account, holding daily, weekly and monthly recovery points
+ * - Daily and monthly recovery points are copied into the vault in the dedicated backup account, which
+ *   the deployment account can write to but cannot delete from
+ * - S3 bucket for DynamoDB exports
  */
 public class BackupStack extends Stack {
 
@@ -104,6 +106,13 @@ public class BackupStack extends Stack {
         default int complianceRetentionDays() {
             return 2555; // 7 years for HMRC compliance
         }
+
+        /**
+         * ARN of the vault in the backup account that receives copies, e.g.
+         * arn:aws:backup:eu-west-2:914216784828:backup-vault:submit-cross-account-vault. Empty means
+         * recovery points stay in this account only.
+         */
+        java.util.Optional<String> crossAccountBackupVaultArn();
 
         // Alert topic for notifications (optional - configured at application level)
         // Using Optional to properly handle nullable Topic
@@ -198,7 +207,45 @@ public class BackupStack extends Stack {
                 .build();
 
         // ============================================================================
-        // Backup Plan - Daily, Weekly, Monthly (local vault only)
+        // Cross-account copy destination
+        // ============================================================================
+
+        // A copy job runs under this role in this account and writes into a vault owned by the backup
+        // account. That needs permission on both sides: the destination vault's access policy names
+        // this role, and the role itself needs CopyFromBackupVault and CopyIntoBackupVault. The
+        // managed backup policy already carries them, but a custom policy on the role keeps the
+        // dependency visible and survives a swap to a narrower managed policy.
+        IBackupVault crossAccountVault = props.crossAccountBackupVaultArn()
+                .filter(arn -> !arn.isBlank())
+                .map(arn -> {
+                    backupRole.addToPolicy(PolicyStatement.Builder.create()
+                            .sid("CopyRecoveryPointsToBackupAccount")
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("backup:CopyFromBackupVault", "backup:CopyIntoBackupVault"))
+                            .resources(List.of(this.primaryVault.getBackupVaultArn(), arn))
+                            .build());
+
+                    // The copy is re-encrypted with the backup account's key. Its key policy grants
+                    // this role, and a cross-account grant needs the same allow on the identity side.
+                    backupRole.addToPolicy(PolicyStatement.Builder.create()
+                            .sid("UseBackupAccountKeyForCopies")
+                            .effect(Effect.ALLOW)
+                            .actions(List.of(
+                                    "kms:Encrypt",
+                                    "kms:Decrypt",
+                                    "kms:ReEncrypt*",
+                                    "kms:GenerateDataKey*",
+                                    "kms:DescribeKey",
+                                    "kms:CreateGrant"))
+                            .resources(List.of(backupAccountKeyWildcardArn(arn)))
+                            .build());
+
+                    return (IBackupVault) BackupVault.fromBackupVaultArn(this, "CrossAccountVault", arn);
+                })
+                .orElse(null);
+
+        // ============================================================================
+        // Backup Plan - Daily, Weekly, Monthly, copied to the backup account
         // ============================================================================
 
         List<BackupPlanRule> backupRules = new ArrayList<>();
@@ -212,6 +259,7 @@ public class BackupStack extends Stack {
                         .minute("0")
                         .build()))
                 .deleteAfter(Duration.days(props.dailyBackupRetentionDays()))
+                .copyActions(copyToBackupAccount(crossAccountVault, props.dailyBackupRetentionDays()))
                 .startWindow(Duration.hours(1))
                 .completionWindow(Duration.hours(2))
                 .build());
@@ -241,6 +289,7 @@ public class BackupStack extends Stack {
                         .build()))
                 .deleteAfter(Duration.days(props.complianceRetentionDays()))
                 .moveToColdStorageAfter(Duration.days(90))
+                .copyActions(copyToBackupAccount(crossAccountVault, props.complianceRetentionDays()))
                 .startWindow(Duration.hours(1))
                 .completionWindow(Duration.hours(4))
                 .build());
@@ -254,26 +303,14 @@ public class BackupStack extends Stack {
         // Backup Selection - Critical Tables
         // ============================================================================
 
-        ITable receiptsTable = Table.fromTableArn(
-                this,
-                "ImportedReceiptsTable",
-                String.format(
-                        "arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(), this.getAccount(), props.sharedNames().receiptsTableName));
-
-        ITable bundlesTable = Table.fromTableArn(
-                this,
-                "ImportedBundlesTable",
-                String.format(
-                        "arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(), this.getAccount(), props.sharedNames().bundlesTableName));
-
-        ITable hmrcApiRequestsTable = Table.fromTableArn(
-                this,
-                "ImportedHmrcApiRequestsTable",
-                String.format(
-                        "arn:aws:dynamodb:%s:%s:table/%s",
-                        this.getRegion(), this.getAccount(), props.sharedNames().hmrcApiRequestsTableName));
+        ITable receiptsTable =
+                importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
+        ITable bundlesTable = importTable("ImportedBundlesTable", props.sharedNames().bundlesTableName);
+        ITable hmrcApiRequestsTable =
+                importTable("ImportedHmrcApiRequestsTable", props.sharedNames().hmrcApiRequestsTableName);
+        ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().passesTableName);
+        ITable subscriptionsTable =
+                importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
                 .backupPlan(this.backupPlan)
@@ -281,7 +318,9 @@ public class BackupStack extends Stack {
                 .resources(List.of(
                         BackupResource.fromDynamoDbTable(receiptsTable),
                         BackupResource.fromDynamoDbTable(bundlesTable),
-                        BackupResource.fromDynamoDbTable(hmrcApiRequestsTable)))
+                        BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
+                        BackupResource.fromDynamoDbTable(passesTable),
+                        BackupResource.fromDynamoDbTable(subscriptionsTable)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();
 
@@ -293,9 +332,46 @@ public class BackupStack extends Stack {
         cfnOutput(this, "BackupPlanId", this.backupPlan.getBackupPlanId());
         cfnOutput(this, "BackupExportsBucket", this.backupExportsBucket.getBucketName());
         cfnOutput(this, "BackupKmsKeyArn", this.backupKmsKey.getKeyArn());
+        cfnOutput(this, "BackupRoleArn", backupRole.getRoleArn());
+        cfnOutput(
+                this,
+                "CrossAccountCopyVaultArn",
+                props.crossAccountBackupVaultArn().orElse("none"));
 
         infof(
-                "BackupStack %s created successfully for %s (local vault, no cross-region)",
-                this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+                "BackupStack %s created for %s copying to %s",
+                this.getNode().getId(),
+                props.sharedNames().dashedDeploymentDomainName,
+                props.crossAccountBackupVaultArn().orElse("no cross-account vault"));
+    }
+
+    private ITable importTable(String constructId, String tableName) {
+        return Table.fromTableArn(
+                this,
+                constructId,
+                String.format("arn:aws:dynamodb:%s:%s:table/%s", this.getRegion(), this.getAccount(), tableName));
+    }
+
+    /**
+     * Copies stay in warm storage: AWS Backup will not copy a recovery point that has already moved
+     * to a cold tier, so a cold transition on the copy buys nothing and risks the copy failing.
+     */
+    private static List<BackupPlanCopyActionProps> copyToBackupAccount(IBackupVault vault, int retentionDays) {
+        if (vault == null) {
+            return List.of();
+        }
+        return List.of(BackupPlanCopyActionProps.builder()
+                .destinationBackupVault(vault)
+                .deleteAfter(Duration.days(retentionDays))
+                .build());
+    }
+
+    /** Every key in the backup account's region, since the key is created by a stack in that account. */
+    private static String backupAccountKeyWildcardArn(String vaultArn) {
+        String[] parts = vaultArn.split(":");
+        if (parts.length < 6) {
+            throw new IllegalArgumentException("Not a backup vault ARN: " + vaultArn);
+        }
+        return String.format("arn:%s:kms:%s:%s:key/*", parts[1], parts[3], parts[4]);
     }
 }

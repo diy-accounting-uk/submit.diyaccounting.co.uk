@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit;
 import static co.uk.diyaccounting.submit.utils.Kind.envOr;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import co.uk.diyaccounting.submit.stacks.BackupAccountAccessStack;
 import co.uk.diyaccounting.submit.stacks.CrossAccountBackupVaultStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.util.Arrays;
@@ -26,8 +27,10 @@ import software.constructs.Construct;
 public class SubmitBackupAccount {
 
     public static final String DEFAULT_VAULT_NAME = "submit-cross-account-vault";
+    public static final String DEFAULT_GITHUB_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
 
     public final CrossAccountBackupVaultStack crossAccountBackupVaultStack;
+    public final BackupAccountAccessStack backupAccountAccessStack;
 
     public static void main(final String[] args) {
         App app = new App();
@@ -59,6 +62,22 @@ public class SubmitBackupAccount {
                         .vaultName(vaultName)
                         .sourceBackupRoleArns(sourceBackupRoleArns)
                         .build());
+
+        var githubRepository = envOr(
+                "GITHUB_REPOSITORY",
+                KindCdk.getContextValueString(app, "githubRepository", DEFAULT_GITHUB_REPOSITORY),
+                "(from githubRepository in cdk.json)");
+
+        this.backupAccountAccessStack = new BackupAccountAccessStack(
+                app,
+                "backup-BackupAccountAccessStack",
+                BackupAccountAccessStack.BackupAccountAccessStackProps.builder()
+                        .env(primaryEnv)
+                        .githubRepository(githubRepository)
+                        .vaultEncryptionKeyArn(
+                                this.crossAccountBackupVaultStack.vaultEncryptionKey.getKeyArn())
+                        .build());
+        this.backupAccountAccessStack.addDependency(this.crossAccountBackupVaultStack);
     }
 
     /** Reads the comma-separated list of deployment-account backup role ARNs. */
