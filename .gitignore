@@ -345,6 +345,7 @@ fabric.properties
 /behaviour*-results/
 /run-manually*-results/
 /cdk-submit-application.out/
+/cdk-submit-backup.out/
 /cdk-submit-delivery.out/
 /cdk-submit-environment.out/
 /.output.txt
