@@ -1,19 +1,33 @@
 name: setup backup account
 run-name: "Setup backup account ${{ inputs.backup-account-id }}"
 
-# Manual workflow that provisions the submit-backup account with the vault that receives
-# backup copies from the deployment accounts.
+# Provisions the submit-backup account: the vault that receives backup copies from the
+# deployment accounts, and the roles GitHub Actions uses to get in.
 #
 # The backup account holds nothing else. Keeping it separate means losing a deployment
 # account does not lose the backups, which only holds if nothing in a deployment account
 # can reach in and delete them - hence the vault access policy in the stack.
 #
-# Prerequisites:
-# - The backup account exists and has OIDC trust for GitHub Actions
-# - IAM role backup-github-actions-role exists there, with permissions for KMS, AWS Backup and CloudFormation
-# - The account is CDK-bootstrapped in the primary region
+# ONE-TIME BOOTSTRAP (operator, from a host terminal)
 #
-# See _developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md section 6 for the full spec.
+# This workflow assumes backup-github-actions-role, and that role is created by the very
+# stack the workflow deploys, so the first deploy has to come from somewhere else. Run it
+# once by hand with the SSO profile:
+#
+#   aws sso login --sso-session diyaccounting
+#   export AWS_PROFILE=submit-backup
+#   export CDK_DEFAULT_ACCOUNT=914216784828
+#   export CDK_DEFAULT_REGION=eu-west-2
+#   npx cdk bootstrap aws://914216784828/eu-west-2
+#   ./mvnw --errors clean verify -DskipTests -P cdk-backup
+#   cd cdk-backup && npx cdk deploy --all --require-approval never
+#
+# Do not run scripts/aws-accounts/bootstrap-account.sh against the backup account. The CDK
+# app owns the GitHub OIDC provider and both roles there; the script would create a second
+# copy under the same names and the deploy would fail. If it has already been run, delete
+# backup-github-actions-role, backup-deployment-role and the OIDC provider first.
+#
+# After that one deploy, every later change goes through this workflow.
 
 on:
   workflow_dispatch:
@@ -37,6 +51,7 @@ on:
 env:
   JAVA_VERSION: '21'
   BACKUP_ACTIONS_ROLE_ARN: 'arn:aws:iam::${{ inputs.backup-account-id }}:role/backup-github-actions-role'
+  BACKUP_DEPLOY_ROLE_ARN: 'arn:aws:iam::${{ inputs.backup-account-id }}:role/backup-deployment-role'
 
 jobs:
   setup:
@@ -73,7 +88,7 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
-      - name: Configure AWS credentials (backup account)
+      - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ env.BACKUP_ACTIONS_ROLE_ARN }}
@@ -81,6 +96,18 @@ jobs:
           role-chaining: false
           audience: sts.amazonaws.com
           role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume backup account deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.BACKUP_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ inputs.primary-region }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
           retry-max-attempts: 3
 
       - name: Build backup CDK app
@@ -92,25 +119,37 @@ jobs:
       - name: Show planned changes (cdk diff)
         if: inputs.dry-run == true
         working-directory: cdk-backup
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ inputs.backup-account-id }}
+          CDK_DEFAULT_REGION: ${{ inputs.primary-region }}
         run: |
-          npx cdk diff backup-CrossAccountBackupVaultStack --no-notices
+          npx cdk diff --all --no-notices
           echo ""
           echo "Dry run only. Re-run with dry-run unchecked to apply."
 
-      - name: Deploy cross-account backup vault
+      - name: Deploy backup account stacks
         if: inputs.dry-run == false
         working-directory: cdk-backup
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ inputs.backup-account-id }}
+          CDK_DEFAULT_REGION: ${{ inputs.primary-region }}
         run: |
-          npx cdk deploy backup-CrossAccountBackupVaultStack \
+          npx cdk deploy --all \
             --require-approval never \
             --ci true \
             --no-notices \
             --outputs-file ../cdk-submit-backup.out/cdk-outputs-backup.json
 
-      - name: Report vault details
+      - name: Report vault and role details
         if: inputs.dry-run == false
         run: |
-          jq -r '.["backup-CrossAccountBackupVaultStack"]' cdk-submit-backup.out/cdk-outputs-backup.json
-          echo ""
-          echo "Next: set these on the deployment accounts so BackupStack can copy into the vault."
-          echo "See PLAN_CROSS_ACCOUNT_BACKUPS.md section 7 (Phase 3.2)."
+          {
+            echo "### Backup account ${{ inputs.backup-account-id }}"
+            echo ""
+            echo '```json'
+            jq -r '.' cdk-submit-backup.out/cdk-outputs-backup.json
+            echo '```'
+            echo ""
+            echo "The deployment accounts copy into this vault. Their vault ARN comes from"
+            echo "\`crossAccountBackupVaultArn\` in cdk-environment/cdk.json."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
