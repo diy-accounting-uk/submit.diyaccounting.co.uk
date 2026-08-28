@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 import co.uk.diyaccounting.submit.stacks.ActivityStack;
+import co.uk.diyaccounting.submit.stacks.AnalyticsStack;
 import co.uk.diyaccounting.submit.stacks.BackupStack;
 import co.uk.diyaccounting.submit.stacks.BillingWebhookStack;
 import co.uk.diyaccounting.submit.stacks.DataStack;
@@ -33,6 +34,7 @@ public class SubmitEnvironment {
     public final DataStack dataStack;
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
+    public final AnalyticsStack analyticsStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
     public final SimulatorStack simulatorStack;
@@ -160,7 +162,10 @@ public class SubmitEnvironment {
                 "STRIPE_TEST_WEBHOOK_SECRET_ARN",
                 appProps.stripeTestWebhookSecretArn,
                 "(from stripeTestWebhookSecretArn in cdk.json)");
-        var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "latest");
+        // envOr's third argument is only a log label, so the fallback has to be the second one.
+        var baseImageTag = envOr(
+                "BASE_IMAGE_TAG",
+                appProps.baseImageTag == null || appProps.baseImageTag.isBlank() ? "latest" : appProps.baseImageTag);
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -259,6 +264,26 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
+
+        // Create AnalyticsStack with the lake, the catalog and the activity-event delivery stream
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.analyticsStackId, deploymentName, envName);
+        this.analyticsStack = new AnalyticsStack(
+                app,
+                sharedNames.analyticsStackId,
+                AnalyticsStack.AnalyticsStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .build());
+        this.analyticsStack.addStackDependency(this.activityStack);
+        this.analyticsStack.addStackDependency(this.dataStack);
 
         // Create the identity stack before any user-aware services
         infof(
