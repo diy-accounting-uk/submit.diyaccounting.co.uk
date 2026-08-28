@@ -10,9 +10,12 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `claude/b25-backup-wiring` | code complete, PR #46 awaiting merge |
 | wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `../.worktrees/submit-wp1` / `claude/wp1-firehose-spike` | started |
-| wp2-dynamodb-streams | B13 WP-2 | Sonnet | `../.worktrees/submit-wp2` / `claude/wp2-dynamodb-streams` | started |
+| wp2-dynamodb-streams | B13 WP-2 | Sonnet | merged to `claude/pipeline-batch-1` (`../.worktrees/submit-batch1`) | code complete, building |
 
-Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Next waves in plan
+Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Batch branch
+`claude/pipeline-batch-1` collects WP-1 and WP-2 for one PR; WP-2 needed two custom
+resources per table (CDK forbids `getResponseField` on a call that ignores errors), so
+DataStack's `Custom::AWS` count is 38, not the plan's 34. Next waves in plan
 order: WP-3 and WP-8 after WP-1; WP-4..7 after WP-3; WP-9..11 after WP-8.
 
 ## Open items
