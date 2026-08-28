@@ -8,6 +8,8 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -20,9 +22,19 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.ecr.IRepository;
+import software.amazon.awscdk.services.ecr.Repository;
+import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.events.CronOptions;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.DockerImageCode;
+import software.amazon.awscdk.services.lambda.DockerImageFunction;
+import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
@@ -77,6 +89,20 @@ public class IngestionStack extends Stack {
         // instantiation of it.
         String baseImageTag();
 
+        // Same secret the billing Lambdas already read (BillingStack.stripeSecretKeyArn()).
+        // Defaulted to blank rather than made required so a caller that has not been updated to
+        // pass it yet still compiles; the Stripe reconciliation job simply gets no secret grant
+        // and fails at invocation time until the caller is updated.
+        @Value.Default
+        default String stripeSecretKeyArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestSecretKeyArn() {
+            return "";
+        }
+
         static ImmutableIngestionStackProps.Builder builder() {
             return ImmutableIngestionStackProps.builder();
         }
@@ -105,6 +131,99 @@ public class IngestionStack extends Stack {
         // into it.
         this.lakeBucket = Bucket.fromBucketName(this, prefix + "-AnalyticsLake", sharedNames.analyticsLakeBucketName);
         this.glueDatabaseName = sharedNames.glueDatabaseName;
+
+        var isProd = "prod".equals(props.envName());
+        var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
+        var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
+
+        // ============================================================================
+        // Stripe reconciliation job
+        // ============================================================================
+        // A plain DockerImageFunction, not the Lambda construct AnalyticsStack's transform
+        // Lambda uses: that construct creates its own Errors alarm, which would collide with
+        // the one registerScheduledJob adds below for the same function name. This job has no
+        // provisioned concurrency and no alias either, since nothing but the nightly schedule
+        // ever invokes it.
+        var stripeReconcileFunctionName = prefix + "-stripe-reconcile";
+
+        var stripeReconcileEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            stripeReconcileEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            stripeReconcileEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
+
+        IRepository stripeReconcileRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-StripeReconcile-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        var stripeReconcileLambda = DockerImageFunction.Builder.create(this, prefix + "-StripeReconcileFn")
+                .functionName(stripeReconcileFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        stripeReconcileRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/stripeReconcile.handler"))
+                                .build()))
+                .timeout(Duration.minutes(5))
+                .memorySize(512)
+                .architecture(Architecture.ARM_64)
+                .environment(stripeReconcileEnv)
+                .build();
+
+        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/stripe/*"))
+                .build());
+
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
+                    .build());
+        }
+        // Customer ids are hashed before they leave the Lambda, so it needs the same salt every
+        // other hashSub() caller reads.
+        SubHashSaltHelper.grantSaltAccess(stripeReconcileLambda, region, account, props.envName());
+
+        // prod: 02:15 daily. ci: 02:15 every Monday, so the third-party call stays low without
+        // losing weekly coverage of the reconciliation path.
+        var stripeReconcileSchedule = isProd
+                ? Schedule.cron(CronOptions.builder().minute("15").hour("2").build())
+                : Schedule.cron(
+                        CronOptions.builder().minute("15").hour("2").weekDay("MON").build());
+
+        registerScheduledJob(
+                "StripeReconcile",
+                stripeReconcileFunctionName,
+                stripeReconcileLambda,
+                stripeReconcileSchedule,
+                "Pull yesterday's Stripe balance transactions, charges and subscription state into the analytics lake");
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);
     }
