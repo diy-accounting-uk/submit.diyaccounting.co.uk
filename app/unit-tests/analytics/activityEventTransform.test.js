@@ -3,7 +3,7 @@
 
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 
-import { handler, flattenEnvelope } from "../../functions/analytics/activityEventTransform.js";
+import { handler, flattenEnvelope, toParquetTimestamp } from "../../functions/analytics/activityEventTransform.js";
 
 function encode(value) {
   return Buffer.from(typeof value === "string" ? value : JSON.stringify(value), "utf8").toString("base64");
@@ -65,8 +65,8 @@ describe("activityEventTransform", () => {
 
     const row = JSON.parse(text);
     expect(row.event_id).toBe("11111111-2222-3333-4444-555555555555");
-    expect(row.event_ts).toBe("2026-08-28T09:14:58.123Z");
-    expect(row.ingest_ts).toBe("2026-08-28T09:15:00Z");
+    expect(row.event_ts).toBe("2026-08-28 09:14:58.123");
+    expect(row.ingest_ts).toBe("2026-08-28 09:15:00.000");
     expect(row.event).toBe("login");
     expect(row.site).toBe("submit");
     expect(row.actor).toBe("customer");
@@ -151,5 +151,25 @@ describe("activityEventTransform", () => {
     expect(row.event_id).toBe("e1");
     expect(row.event).toBeNull();
     expect(row.detail_json).toBe("{}");
+  });
+
+  test("emits event_ts and ingest_ts in the space-separated form the Parquet SerDe requires", async () => {
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(loginDetail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    const timestampPattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/;
+    expect(row.event_ts).toMatch(timestampPattern);
+    expect(row.ingest_ts).toMatch(timestampPattern);
+  });
+
+  test("toParquetTimestamp reformats ISO-8601 with and without milliseconds", () => {
+    expect(toParquetTimestamp("2026-08-28T09:14:58.123Z")).toBe("2026-08-28 09:14:58.123");
+    expect(toParquetTimestamp("2026-08-28T09:15:00Z")).toBe("2026-08-28 09:15:00.000");
+  });
+
+  test("toParquetTimestamp returns null for missing or unparseable input", () => {
+    expect(toParquetTimestamp(undefined)).toBeNull();
+    expect(toParquetTimestamp(null)).toBeNull();
+    expect(toParquetTimestamp("not a timestamp")).toBeNull();
   });
 });
