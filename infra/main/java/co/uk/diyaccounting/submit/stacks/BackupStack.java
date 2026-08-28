@@ -358,7 +358,7 @@ public class BackupStack extends Stack {
      */
     private static List<BackupPlanCopyActionProps> copyToBackupAccount(IBackupVault vault, int retentionDays) {
         if (vault == null) {
-            return List.of();
+            return null;
         }
         return List.of(BackupPlanCopyActionProps.builder()
                 .destinationBackupVault(vault)
