@@ -96,16 +96,16 @@ class SubmitEnvironmentCdkResourceTest {
         Template analytics = Template.fromStack(env.analyticsStack);
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 1);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 1);
+        analytics.resourceCountIs("AWS::Glue::Table", 2);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 1);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 2);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
         analytics.hasResourceProperties(
                 "AWS::KinesisFirehose::DeliveryStream",
                 Match.objectLike(Map.of(
-                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "GZIP")))));
+                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "UNCOMPRESSED")))));
 
         analytics.hasResourceProperties(
                 "AWS::Events::Rule",

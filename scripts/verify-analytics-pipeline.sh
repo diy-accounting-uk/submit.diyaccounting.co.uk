@@ -18,7 +18,7 @@ set -euo pipefail
 ENV_NAME="${1:-ci}"
 REGION="${AWS_REGION:-eu-west-2}"
 # Firehose buffers for 300s; the extra 30s covers delivery and the S3 write.
-BUFFER_WAIT_SECONDS="${BUFFER_WAIT_SECONDS:-330}"
+BUFFER_WAIT_SECONDS="${BUFFER_WAIT_SECONDS:-930}"
 
 ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 BUS="${ENV_NAME}-env-activity-bus"
@@ -62,8 +62,8 @@ echo "Step 2: waiting ${BUFFER_WAIT_SECONDS}s for the Firehose buffer to flush"
 sleep "${BUFFER_WAIT_SECONDS}"
 
 PARTITION="year=$(date -u +%Y)/month=$(date -u +%m)/day=$(date -u +%d)"
-echo "Listing s3://${LAKE}/raw/activity-events/${PARTITION}/"
-if ! aws s3 ls "s3://${LAKE}/raw/activity-events/${PARTITION}/" --recursive | tee /dev/stderr | grep -q .; then
+echo "Listing s3://${LAKE}/curated/activity-events/${PARTITION}/"
+if ! aws s3 ls "s3://${LAKE}/curated/activity-events/${PARTITION}/" --recursive | tee /dev/stderr | grep -q .; then
   echo ""
   echo "FAIL: nothing landed in today's partition."
   echo "Check the Firehose log group first, a transform Lambda that returns a malformed"
@@ -76,7 +76,7 @@ fi
 # so the predicate uses unpadded numbers.
 echo ""
 echo "Step 3: querying the event back through Athena"
-QUERY="SELECT event, count(*) AS c FROM ${DATABASE}.activity_events_raw WHERE year=$(date -u +%Y) AND month=$(date -u +%-m) AND day=$(date -u +%-d) GROUP BY 1"
+QUERY="SELECT event, count(*) AS c FROM ${DATABASE}.activity_events_all WHERE year=$(date -u +%Y) AND month=$(date -u +%-m) AND day=$(date -u +%-d) GROUP BY 1"
 QUERY_ID="$(aws athena start-query-execution \
   --region "${REGION}" \
   --work-group "${WORKGROUP}" \
