@@ -1,4 +1,4 @@
-# deploy: public-url fix for synthetic test (bump)
+# deploy: public-url fix for synthetic test (bump 01)
 name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
