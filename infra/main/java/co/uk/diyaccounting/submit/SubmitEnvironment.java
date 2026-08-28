@@ -17,6 +17,7 @@ import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
 import co.uk.diyaccounting.submit.stacks.HoldingStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.IngestionStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
@@ -35,6 +36,7 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
     public final AnalyticsStack analyticsStack;
+    public final IngestionStack ingestionStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
     public final SimulatorStack simulatorStack;
@@ -278,6 +280,26 @@ public class SubmitEnvironment {
                         .build());
         this.analyticsStack.addStackDependency(this.activityStack);
         this.analyticsStack.addStackDependency(this.dataStack);
+
+        // Create IngestionStack with the scheduling skeleton the Stripe, GA4 and CloudFront
+        // ingestion jobs plug into
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.ingestionStackId, deploymentName, envName);
+        this.ingestionStack = new IngestionStack(
+                app,
+                sharedNames.ingestionStackId,
+                IngestionStack.IngestionStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .build());
+        this.ingestionStack.addStackDependency(this.analyticsStack);
 
         // Create the identity stack before any user-aware services
         infof(
