@@ -4,14 +4,16 @@ Living handover for this repository. Rules and shape: `../NEXT.md` (DONE or OPEN
 deferred; a bug found fixing item A is A's remainder, not a new item; this file holds ONLY what
 to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` at this root.
 
-## In flight (wave 1, dispatched 2026-08-28)
+## In flight (dispatched 2026-08-28)
 
 | Track | Items | Model | Worktree / branch | Status |
 |---|---|---|---|---|
 | backup-wiring | B25 remainder | Opus | `../.worktrees/submit-b25` / `claude/b25-backup-wiring` | started |
-| pipeline-design | B13a, B13, B14 design → `PLAN_USAGE_DATA_PIPELINE.md` | Opus | `../.worktrees/submit-b13-design` / `claude/b13-pipeline-design` | started |
+| wp1-firehose-spike | B13a (WP-1 of `PLAN_USAGE_DATA_PIPELINE.md`) | Opus | `../.worktrees/submit-wp1` / `claude/wp1-firehose-spike` | started |
+| wp2-dynamodb-streams | B13 WP-2 | Sonnet | `../.worktrees/submit-wp2` / `claude/wp2-dynamodb-streams` | started |
 
-Wave 2 (Sonnet coders for B13a, then B13 and B14) dispatches when pipeline-design lands.
+Landed: pipeline-design → `PLAN_USAGE_DATA_PIPELINE.md` (4ead1ed2). Next waves in plan
+order: WP-3 and WP-8 after WP-1; WP-4..7 after WP-3; WP-9..11 after WP-8.
 
 ## Open items
 
@@ -34,7 +36,11 @@ findings live in issue #43.
   IAM and cost shape before B13 commits the lake design.
 - [ ] **(B13) Usage data pipeline.** Firehose from activity events/DynamoDB streams to
   partitioned Parquet on S3, Glue catalog and data quality, Athena, dashboard. Starts
-  once B13a has landed.
+  once B13a has landed. Design surfaced two remainders: `OpsStack` `ActivityEmailProofRule`
+  emails every activity event via the alert topic (`OpsStack.java:191`), which caps bus
+  volume; decide whether it stays before WP-4 adds table change records. The CloudFront
+  access-log bucket lives in the per-deployment `EdgeStack` (`EdgeStack.java:414`) so
+  history dies with each release; WP-11 moves it to the env stack.
 - [ ] **(B14) Scheduled ingestion jobs.** GA4 export, Stripe reconciliation, CloudFront
   logs, orchestrated with Step Functions/EventBridge. Lands revenue and funnel in the
   same queryable place as B13.
