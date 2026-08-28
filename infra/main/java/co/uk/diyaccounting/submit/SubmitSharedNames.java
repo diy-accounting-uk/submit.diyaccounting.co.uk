@@ -121,6 +121,7 @@ public class SubmitSharedNames {
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
     public String analyticsStackId;
+    public String ingestionStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -483,6 +484,7 @@ public class SubmitSharedNames {
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
         this.analyticsStackId = "%s-env-AnalyticsStack".formatted(props.envName);
+        this.ingestionStackId = "%s-env-IngestionStack".formatted(props.envName);
         this.analyticsLakeBucketName = "%s-analytics-lake-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.analyticsResultsBucketName =
                 "%s-analytics-results-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
