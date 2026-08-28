@@ -4,6 +4,15 @@ Living handover for this repository. Rules and shape: `../NEXT.md` (DONE or OPEN
 deferred; a bug found fixing item A is A's remainder, not a new item; this file holds ONLY what
 to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` at this root.
 
+## In flight (wave 1, dispatched 2026-08-28)
+
+| Track | Items | Model | Worktree / branch | Status |
+|---|---|---|---|---|
+| backup-wiring | B25 remainder | Opus | `../.worktrees/submit-b25` / `claude/b25-backup-wiring` | started |
+| pipeline-design | B13a, B13, B14 design → `PLAN_USAGE_DATA_PIPELINE.md` | Opus | `../.worktrees/submit-b13-design` / `claude/b13-pipeline-design` | started |
+
+Wave 2 (Sonnet coders for B13a, then B13 and B14) dispatches when pipeline-design lands.
+
 ## Open items
 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
