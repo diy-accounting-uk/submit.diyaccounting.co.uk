@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import co.uk.diyaccounting.submit.stacks.BackupAccountAccessStack;
 import co.uk.diyaccounting.submit.stacks.CrossAccountBackupVaultStack;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,66 @@ class SubmitBackupAccountCdkResourceTest {
                                         Match.objectLike(Map.of(
                                                 "Sid", "DenyDeleteFromOutsideBackupAccount",
                                                 "Effect", "Deny")))))))));
+    }
+
+    private static Template synthAccessStack() {
+        App app = new App();
+        var stack = new BackupAccountAccessStack(
+                app,
+                "backup-BackupAccountAccessStack",
+                BackupAccountAccessStack.BackupAccountAccessStackProps.builder()
+                        .env(Environment.builder()
+                                .account("914216784828")
+                                .region("eu-west-2")
+                                .build())
+                        .githubRepository("diy-accounting-uk/submit.diyaccounting.co.uk")
+                        .vaultEncryptionKeyArn(
+                                "arn:aws:kms:eu-west-2:914216784828:key/12345678-1234-1234-1234-123456789012")
+                        .build());
+        return Template.fromStack(stack);
+    }
+
+    @Test
+    void onlyTheSubmitRepositoryCanFederateIntoTheBackupAccount() {
+        Template template = synthAccessStack();
+
+        template.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of(
+                        "RoleName",
+                        "backup-github-actions-role",
+                        "AssumeRolePolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "sts:AssumeRoleWithWebIdentity",
+                                        "Condition",
+                                        Map.of(
+                                                "StringEquals",
+                                                        Map.of(
+                                                                "token.actions.githubusercontent.com:aud",
+                                                                "sts.amazonaws.com"),
+                                                "StringLike",
+                                                        Map.of(
+                                                                "token.actions.githubusercontent.com:sub",
+                                                                "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*")))))))))));
+    }
+
+    @Test
+    void awsBackupHasARoleToRestoreUnder() {
+        Template template = synthAccessStack();
+
+        template.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(Map.of(
+                        "RoleName",
+                        "backup-restore-role",
+                        "AssumeRolePolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Principal", Map.of("Service", "backup.amazonaws.com"))))))))));
     }
 
     @Test
