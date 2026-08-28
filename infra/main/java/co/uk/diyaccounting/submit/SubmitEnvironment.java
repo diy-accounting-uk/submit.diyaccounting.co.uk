@@ -67,6 +67,7 @@ public class SubmitEnvironment {
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String baseImageTag;
+        public String crossAccountBackupVaultArn;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -223,6 +224,10 @@ public class SubmitEnvironment {
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.backupStackId, deploymentName, envName);
+        var crossAccountBackupVaultArn = envOr(
+                "CROSS_ACCOUNT_BACKUP_VAULT_ARN",
+                appProps.crossAccountBackupVaultArn,
+                "(from crossAccountBackupVaultArn in cdk.json)");
         this.backupStack = new BackupStack(
                 app,
                 sharedNames.backupStackId,
@@ -234,6 +239,7 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
+                        .crossAccountBackupVaultArn(java.util.Optional.ofNullable(crossAccountBackupVaultArn))
                         .build());
         this.backupStack.addStackDependency(this.dataStack);
 

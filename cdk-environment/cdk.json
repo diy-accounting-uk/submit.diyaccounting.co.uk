@@ -17,6 +17,7 @@
     "subDomainName": "submit",
     "hostedZoneName": "diyaccounting.co.uk",
     "hostedZoneId": "Z0315522208PWZSSBI9AL",
+    "crossAccountBackupVaultArn": "arn:aws:backup:eu-west-2:914216784828:backup-vault:submit-cross-account-vault",
     "cloudTrailEnabled": "true",
     "cloudTrailLogGroupPrefix": "/aws/cloudtrail/",
     "cloudTrailLogGroupRetentionPeriodDays": "7",

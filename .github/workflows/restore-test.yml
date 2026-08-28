@@ -1,0 +1,417 @@
+name: restore test
+run-name: "Restore test for ${{ inputs.table-name || 'prod-env-receipts' }}"
+
+# Proves the backups are restorable, not just present.
+#
+# A backup nobody has restored is a guess. Once a month this restores the newest recovery
+# point of one critical table into a throwaway table, counts the items, and deletes it
+# again - once from the local vault in the prod account, once from the copy in the backup
+# account. Either leg failing fails the workflow.
+
+on:
+  schedule:
+    # 05:00 UTC on the 1st, after the 04:00 monthly backup and its copy
+    - cron: '0 5 1 * *'
+  workflow_dispatch:
+    inputs:
+      table-name:
+        description: 'Table to restore'
+        type: string
+        required: false
+        default: 'prod-env-receipts'
+
+env:
+  AWS_REGION: 'eu-west-2'
+  BACKUP_ACCOUNT_ID: '914216784828'
+  CROSS_ACCOUNT_VAULT_NAME: 'submit-cross-account-vault'
+
+jobs:
+  params:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: Normalise params
+        id: normalise
+        shell: bash
+        run: |
+          set -euo pipefail
+          X='${{ inputs.table-name }}' ; echo "table-name=${X:-prod-env-receipts}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      table-name: ${{ steps.normalise.outputs.table-name }}
+
+  restore-from-primary-vault:
+    needs: [params]
+    name: 'Restore from the prod account vault'
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      result: ${{ steps.verify.outputs.result }}
+      source-items: ${{ steps.verify.outputs.source_items }}
+      restored-items: ${{ steps.verify.outputs.restored_items }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set restore parameters
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          {
+            echo "ACCOUNT_ID=$ACCOUNT_ID"
+            echo "SOURCE_TABLE=${{ needs.params.outputs.table-name }}"
+            echo "SOURCE_TABLE_ARN=arn:aws:dynamodb:${{ env.AWS_REGION }}:$ACCOUNT_ID:table/${{ needs.params.outputs.table-name }}"
+            echo "VAULT_NAME=prod-env-primary-vault"
+            echo "RESTORE_ROLE_ARN=arn:aws:iam::$ACCOUNT_ID:role/prod-env-backup-role"
+            echo "TARGET_TABLE=${{ needs.params.outputs.table-name }}-restoretest-${{ github.run_id }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Find the newest recovery point
+        id: recovery-point
+        run: |
+          set -euo pipefail
+          RP=$(aws backup list-recovery-points-by-backup-vault \
+            --backup-vault-name "$VAULT_NAME" \
+            --by-resource-arn "$SOURCE_TABLE_ARN" \
+            --region "${{ env.AWS_REGION }}" \
+            --query 'sort_by(RecoveryPoints[?Status==`COMPLETED`], &CompletionDate)[-1].RecoveryPointArn' \
+            --output text)
+
+          if [ -z "$RP" ] || [ "$RP" = "None" ]; then
+            echo "FAIL: no completed recovery point for $SOURCE_TABLE in $VAULT_NAME."
+            echo "The backup plan has not produced a restorable point. Nothing to test."
+            exit 1
+          fi
+
+          echo "Recovery point: $RP"
+          echo "recovery_point_arn=$RP" >> "$GITHUB_OUTPUT"
+
+      - name: Start the restore job
+        id: restore
+        run: |
+          set -euo pipefail
+          META=$(aws backup get-recovery-point-restore-metadata \
+            --backup-vault-name "$VAULT_NAME" \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreMetadata --output json)
+
+          META=$(echo "$META" | jq --arg t "$TARGET_TABLE" '.targetTableName = $t')
+          echo "Restoring into $TARGET_TABLE"
+
+          JOB_ID=$(aws backup start-restore-job \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --iam-role-arn "$RESTORE_ROLE_ARN" \
+            --resource-type DynamoDB \
+            --metadata "$META" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreJobId --output text)
+
+          echo "Restore job: $JOB_ID"
+          echo "restore_job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the restore to finish
+        run: |
+          set -euo pipefail
+          JOB_ID="${{ steps.restore.outputs.restore_job_id }}"
+          for _ in $(seq 1 120); do
+            STATUS=$(aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+              --region "${{ env.AWS_REGION }}" --query Status --output text)
+            echo "$(date -u +%H:%M:%S) restore job $JOB_ID: $STATUS"
+            case "$STATUS" in
+              COMPLETED) exit 0 ;;
+              FAILED|ABORTED)
+                aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+                  --region "${{ env.AWS_REGION }}" --output json
+                echo "FAIL: restore job ended $STATUS."
+                exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "FAIL: restore job $JOB_ID did not finish within 60 minutes."
+          exit 1
+
+      - name: Verify the restored table
+        id: verify
+        run: |
+          set -euo pipefail
+          STATE=$(aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+            --region "${{ env.AWS_REGION }}" --query 'Table.TableStatus' --output text)
+          if [ "$STATE" != "ACTIVE" ]; then
+            echo "FAIL: restored table $TARGET_TABLE is $STATE, not ACTIVE."
+            exit 1
+          fi
+
+          RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
+            --region "${{ env.AWS_REGION }}" --query Count --output text)
+          SOURCE_ITEMS=$(aws dynamodb scan --table-name "$SOURCE_TABLE" --select COUNT \
+            --region "${{ env.AWS_REGION }}" --query Count --output text)
+
+          echo "Restored $TARGET_TABLE: $RESTORED_ITEMS items"
+          echo "Source   $SOURCE_TABLE: $SOURCE_ITEMS items"
+          echo "restored_items=$RESTORED_ITEMS" >> "$GITHUB_OUTPUT"
+          echo "source_items=$SOURCE_ITEMS" >> "$GITHUB_OUTPUT"
+
+          # The source has moved on since the recovery point, so the counts differ by design.
+          # An empty restore of a non-empty table is the failure worth catching.
+          if [ "$RESTORED_ITEMS" -eq 0 ] && [ "$SOURCE_ITEMS" -gt 0 ]; then
+            echo "FAIL: restored table is empty but $SOURCE_TABLE holds $SOURCE_ITEMS items."
+            exit 1
+          fi
+
+          echo "result=pass" >> "$GITHUB_OUTPUT"
+
+      - name: Delete the temporary table
+        if: always() && env.TARGET_TABLE != ''
+        run: |
+          set -euo pipefail
+          if aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+               --region "${{ env.AWS_REGION }}" >/dev/null 2>&1; then
+            aws dynamodb delete-table --table-name "$TARGET_TABLE" --region "${{ env.AWS_REGION }}" >/dev/null
+            echo "Deleted $TARGET_TABLE"
+          else
+            echo "No table $TARGET_TABLE to delete"
+          fi
+
+  restore-from-backup-account:
+    needs: [params]
+    name: 'Restore from the backup account vault'
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      result: ${{ steps.verify.outputs.result }}
+      restored-items: ${{ steps.verify.outputs.restored_items }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-github-actions-role'
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume backup account deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-deployment-role'
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set restore parameters
+        run: |
+          set -euo pipefail
+          {
+            echo "SOURCE_TABLE=${{ needs.params.outputs.table-name }}"
+            echo "VAULT_NAME=${{ env.CROSS_ACCOUNT_VAULT_NAME }}"
+            echo "RESTORE_ROLE_ARN=arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-restore-role"
+            echo "TARGET_TABLE=${{ needs.params.outputs.table-name }}-restoretest-${{ github.run_id }}"
+          } >> "$GITHUB_ENV"
+
+      - name: Find the newest copied recovery point
+        id: recovery-point
+        run: |
+          set -euo pipefail
+          # The copy carries the source account's table ARN, so match on the table name.
+          RP=$(aws backup list-recovery-points-by-backup-vault \
+            --backup-vault-name "$VAULT_NAME" \
+            --region "${{ env.AWS_REGION }}" \
+            --query "sort_by(RecoveryPoints[?Status=='COMPLETED' && ends_with(ResourceArn, ':table/$SOURCE_TABLE')], &CompletionDate)[-1].RecoveryPointArn" \
+            --output text)
+
+          if [ -z "$RP" ] || [ "$RP" = "None" ]; then
+            echo "No copied recovery point for $SOURCE_TABLE in $VAULT_NAME yet."
+            echo "Copies start with the next daily backup after the copy actions are deployed."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Recovery point: $RP"
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "recovery_point_arn=$RP" >> "$GITHUB_OUTPUT"
+
+      - name: Start the restore job
+        id: restore
+        if: steps.recovery-point.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          META=$(aws backup get-recovery-point-restore-metadata \
+            --backup-vault-name "$VAULT_NAME" \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreMetadata --output json)
+
+          META=$(echo "$META" | jq --arg t "$TARGET_TABLE" '.targetTableName = $t')
+          echo "Restoring into $TARGET_TABLE in ${{ env.BACKUP_ACCOUNT_ID }}"
+
+          JOB_ID=$(aws backup start-restore-job \
+            --recovery-point-arn "${{ steps.recovery-point.outputs.recovery_point_arn }}" \
+            --iam-role-arn "$RESTORE_ROLE_ARN" \
+            --resource-type DynamoDB \
+            --metadata "$META" \
+            --region "${{ env.AWS_REGION }}" \
+            --query RestoreJobId --output text)
+
+          echo "Restore job: $JOB_ID"
+          echo "restore_job_id=$JOB_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for the restore to finish
+        if: steps.recovery-point.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          JOB_ID="${{ steps.restore.outputs.restore_job_id }}"
+          for _ in $(seq 1 120); do
+            STATUS=$(aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+              --region "${{ env.AWS_REGION }}" --query Status --output text)
+            echo "$(date -u +%H:%M:%S) restore job $JOB_ID: $STATUS"
+            case "$STATUS" in
+              COMPLETED) exit 0 ;;
+              FAILED|ABORTED)
+                aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+                  --region "${{ env.AWS_REGION }}" --output json
+                echo "FAIL: restore job ended $STATUS."
+                exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "FAIL: restore job $JOB_ID did not finish within 60 minutes."
+          exit 1
+
+      - name: Verify the restored table
+        id: verify
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.recovery-point.outputs.found }}" != "true" ]; then
+            echo "result=skipped" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          STATE=$(aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+            --region "${{ env.AWS_REGION }}" --query 'Table.TableStatus' --output text)
+          if [ "$STATE" != "ACTIVE" ]; then
+            echo "FAIL: restored table $TARGET_TABLE is $STATE, not ACTIVE."
+            exit 1
+          fi
+
+          RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
+            --region "${{ env.AWS_REGION }}" --query Count --output text)
+          echo "Restored $TARGET_TABLE in the backup account: $RESTORED_ITEMS items"
+          echo "restored_items=$RESTORED_ITEMS" >> "$GITHUB_OUTPUT"
+          echo "result=pass" >> "$GITHUB_OUTPUT"
+
+      - name: Delete the temporary table
+        if: always() && env.TARGET_TABLE != ''
+        run: |
+          set -euo pipefail
+          if aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+               --region "${{ env.AWS_REGION }}" >/dev/null 2>&1; then
+            aws dynamodb delete-table --table-name "$TARGET_TABLE" --region "${{ env.AWS_REGION }}" >/dev/null
+            echo "Deleted $TARGET_TABLE"
+          else
+            echo "No table $TARGET_TABLE to delete"
+          fi
+
+  report:
+    needs: [params, restore-from-primary-vault, restore-from-backup-account]
+    if: always()
+    name: 'Report'
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Publish the result
+        run: |
+          set -euo pipefail
+          PRIMARY='${{ needs.restore-from-primary-vault.result }}'
+          COPY='${{ needs.restore-from-backup-account.result }}'
+          COPY_LEG='${{ needs.restore-from-backup-account.outputs.result }}'
+
+          [ "$PRIMARY" = "success" ] && PRIMARY_VALUE=1 || PRIMARY_VALUE=0
+          if [ "$COPY_LEG" = "skipped" ]; then
+            COPY_VALUE=0
+            COPY_TEXT="no recovery point copied yet"
+          elif [ "$COPY" = "success" ]; then
+            COPY_VALUE=1
+            COPY_TEXT="restored ${{ needs.restore-from-backup-account.outputs.restored-items }} items"
+          else
+            COPY_VALUE=0
+            COPY_TEXT="FAILED"
+          fi
+
+          aws cloudwatch put-metric-data \
+            --namespace DIYAccounting/Backups \
+            --region "${{ env.AWS_REGION }}" \
+            --metric-data \
+              "MetricName=RestoreTestPassed,Dimensions=[{Name=Vault,Value=prod-env-primary-vault}],Value=$PRIMARY_VALUE,Unit=Count" \
+              "MetricName=RestoreTestPassed,Dimensions=[{Name=Vault,Value=${{ env.CROSS_ACCOUNT_VAULT_NAME }}}],Value=$COPY_VALUE,Unit=Count"
+
+          {
+            echo "## Restore test: ${{ needs.params.outputs.table-name }}"
+            echo ""
+            echo "| Vault | Result | Items |"
+            echo "|---|---|---|"
+            echo "| prod-env-primary-vault | $PRIMARY | restored ${{ needs.restore-from-primary-vault.outputs.restored-items }} of ${{ needs.restore-from-primary-vault.outputs.source-items }} live |"
+            echo "| ${{ env.CROSS_ACCOUNT_VAULT_NAME }} | $COPY | $COPY_TEXT |"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [ "$PRIMARY" != "success" ]; then
+            echo "FAIL: the prod account vault did not produce a restorable table."
+            exit 1
+          fi
+          if [ "$COPY" != "success" ]; then
+            echo "FAIL: the backup account vault did not produce a restorable table."
+            exit 1
+          fi

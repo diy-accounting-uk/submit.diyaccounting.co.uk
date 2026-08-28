@@ -2,9 +2,8 @@ name: verify backups
 run-name: "Verify backups for ${{ inputs.environment-name }}"
 
 # Scheduled and manual workflow to verify backup health.
-# Checks PITR status, AWS Backup jobs, and export completeness.
-#
-# See BACKUP_STRATEGY_PLAN.md for full architecture documentation.
+# Checks PITR status, the local vault, backup jobs, and the copy jobs that ship
+# recovery points to the backup account.
 
 on:
   schedule:
@@ -97,6 +96,8 @@ jobs:
             "${{ env.ENV_PREFIX }}-receipts"
             "${{ env.ENV_PREFIX }}-bundles"
             "${{ env.ENV_PREFIX }}-hmrc-api-requests"
+            "${{ env.ENV_PREFIX }}-passes"
+            "${{ env.ENV_PREFIX }}-subscriptions"
           )
 
           ALL_OK=true
@@ -223,6 +224,43 @@ jobs:
             fi
           fi
 
+      - name: Check cross-account copy jobs
+        id: copy-check
+        run: |
+          echo ""
+          echo "=============================================="
+          echo "Cross-account copy jobs (last 48 hours)"
+          echo "=============================================="
+          echo ""
+
+          # 48 hours, not 24: a monthly copy of a large table can still be running the next morning.
+          SINCE=$(date -u -d '48 hours ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-48H +%Y-%m-%dT%H:%M:%SZ)
+
+          COPIES=$(aws backup list-copy-jobs \
+            --by-created-after "$SINCE" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'CopyJobs[*].{Status:State,Destination:DestinationBackupVaultArn,Created:CreationDate,Message:StatusMessage}' \
+            --output json 2>/dev/null || echo "[]")
+
+          if [ "$COPIES" = "[]" ]; then
+            echo "No copy jobs in the last 48 hours."
+            echo "copy_status=none" >> $GITHUB_OUTPUT
+          else
+            echo "$COPIES" | jq -r '.[] | "\(.Status) | \(.Destination) | \(.Created)"' | column -t -s '|'
+
+            FAILED=$(echo "$COPIES" | jq '[.[] | select(.Status == "FAILED")] | length')
+            if [ "$FAILED" -gt 0 ]; then
+              echo ""
+              echo "WARNING: $FAILED copy job(s) to the backup account failed:"
+              echo "$COPIES" | jq -r '.[] | select(.Status == "FAILED") | "  \(.Created): \(.Message)"'
+              echo "copy_status=failed" >> $GITHUB_OUTPUT
+            else
+              echo ""
+              echo "All recent copy jobs completed successfully"
+              echo "copy_status=pass" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: Generate summary
         run: |
           echo ""
@@ -234,14 +272,16 @@ jobs:
           echo "PITR Status:     ${{ steps.pitr-check.outputs.pitr_status || 'unknown' }}"
           echo "Vault Status:    ${{ steps.vault-check.outputs.vault_status || 'unknown' }}"
           echo "Jobs Status:     ${{ steps.jobs-check.outputs.jobs_status || 'unknown' }}"
+          echo "Copy Status:     ${{ steps.copy-check.outputs.copy_status || 'unknown' }}"
           echo ""
 
           # Determine overall status
           PITR="${{ steps.pitr-check.outputs.pitr_status }}"
           VAULT="${{ steps.vault-check.outputs.vault_status }}"
           JOBS="${{ steps.jobs-check.outputs.jobs_status }}"
+          COPIES="${{ steps.copy-check.outputs.copy_status }}"
 
-          if [ "$PITR" = "fail" ] || [ "$JOBS" = "failed" ]; then
+          if [ "$PITR" = "fail" ] || [ "$JOBS" = "failed" ] || [ "$COPIES" = "failed" ]; then
             echo "OVERALL: ATTENTION REQUIRED"
             echo ""
             echo "Review the details above and take corrective action."
@@ -250,7 +290,6 @@ jobs:
             echo "OVERALL: INCOMPLETE"
             echo ""
             echo "BackupStack may not be deployed yet."
-            echo "See BACKUP_STRATEGY_PLAN.md for deployment instructions."
           else
             echo "OVERALL: HEALTHY"
             echo ""
