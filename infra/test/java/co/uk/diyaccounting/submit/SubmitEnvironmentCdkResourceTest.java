@@ -97,6 +97,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
+        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 10);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 2);
@@ -166,7 +167,9 @@ class SubmitEnvironmentCdkResourceTest {
     private static boolean isResourceLevelExemptAction(Object action) {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
-                && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
+                && actions.stream()
+                        .allMatch(a -> String.valueOf(a).startsWith("xray:")
+                                || "cloudwatch:PutMetricData".equals(String.valueOf(a)));
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

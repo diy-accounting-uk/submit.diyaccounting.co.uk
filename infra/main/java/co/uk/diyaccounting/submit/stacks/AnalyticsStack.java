@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
+import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -499,6 +500,21 @@ public class AnalyticsStack extends Stack {
         // The delivery stream's schema configuration names this table by string, which hides the
         // dependency from CDK's graph. Format conversion needs the table to exist first.
         this.activityEventsStream.getNode().addDependency(curatedActivityEventsTable);
+
+        new DataQuality(
+                this,
+                prefix + "-DataQuality",
+                DataQuality.DataQualityProps.builder()
+                        .envName(props.envName())
+                        .resourceNamePrefix(prefix)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseDependency(Optional.of(this.glueDatabase))
+                        .targetTableDependency(Optional.of(curatedActivityEventsTable))
+                        .lakeBucket(this.lakeBucket)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .build());
 
         // ============================================================================
         // Athena workgroup and saved query
