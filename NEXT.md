@@ -17,12 +17,11 @@ PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Dri
 live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Code merged (#46).
-  1. Operator: enable cross-account backup for the organisation. Management account
-     887764105431, AWS Backup console, Settings, Cross-account backup, Enable. Confirmed
-     2026-08-29: the nightly copy jobs already run and fail with "Cross-account copy
-     feature is not enabled for the current organization"; nothing else blocks them.
-  2. Operator: first deploy of the backup account stacks from a host terminal (the workflow
-     assumes a role the stack itself creates):
+  1. Done 2026-08-29 13:05 UTC: cross-account backup enabled for the organisation from
+     the management account (`isCrossAccountBackupEnabled: true`). Claude Code: confirm
+     tonight's copy jobs succeed and a recovery point appears in the cross-account vault.
+  2. In progress 2026-08-29: first deploy of the backup account stacks from a host terminal
+     with the `submit-backup` profile (the workflow assumes a role the stack itself creates):
      `aws sso login --sso-session diyaccounting`, `export AWS_PROFILE=submit-backup
      CDK_DEFAULT_ACCOUNT=914216784828 CDK_DEFAULT_REGION=eu-west-2`,
      `npx cdk bootstrap aws://914216784828/eu-west-2`,
@@ -62,8 +61,8 @@ live in issue #43.
      `hmrc-token-exchanged` customer events carry no `hashed_sub` (the call site was not
      among the three fixed); no `new-session` events reached prod today, worth a look when
      `v_traffic_by_country_daily` stays empty.
-  2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
-     stays. It emails every activity event through the alert topic; keep, sample, or drop.
+  2. Decided 2026-08-29: drop `OpsStack`'s `ActivityEmailProofRule`. In flight on
+     `claude/drop-activity-email-proof`.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
   view and a synth-date cutover instead of a second prefix; the table change whitelists
   follow the real item shapes, not the plan's field lists.
@@ -112,7 +111,8 @@ live in issue #43.
   `tokenEnforcementBehaviour-prod`, failed the same way on its second login while the
   other eleven suites passed), while the other suites logged in
   through the same form in the same run. Last diagnosed in July as transient upstream and
-  cleared on its own; four days running says otherwise. Claude Code: start from the failed
+  cleared on its own; four days running says otherwise. In flight on `claude/hosted-ui-form`
+  (`../.worktrees/submit-hostedui`), starting from the failed
   job's `target/behaviour-test-results/` screenshots and trace in the artifacts, the
   `Waiting for Hosted UI form` helper in `behaviour-tests/helpers/`, and Cognito's own
   Hosted UI logs; establish whether the page is blank, redirected, rate-limited, or a
