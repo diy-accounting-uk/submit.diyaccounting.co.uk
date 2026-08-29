@@ -128,9 +128,11 @@ live in issue #43.
   8c12b18, af7eab7, 5570316, 8fe61f8, d411b61, 64fb844, 31dfaaf, 075cc43) are each eight
   stacks, 31 Lambdas with five provisioned-concurrency units, a distribution and a WAF
   ACL. Operator authorised seven on 2026-08-29 (prod-7f188b7, 8c12b18, af7eab7, 5570316,
-  8fe61f8, d411b61, 64fb844); `destroy-prod.yml` runs them one at a time (its concurrency
-  group cancels surplus queued runs). Claude Code: confirm all seven are gone, then queue
-  prod-31dfaaf and prod-075cc43 once prod-929d6af is live and last-known-good.
+  8fe61f8, d411b61, 64fb844); being deleted directly with `cloudformation delete-stack` in
+  the workflow's order (the origin bucket has to be emptied before EdgeStack goes), which
+  is the approach for stale ci and prod deployments from now on. Claude Code: confirm all
+  seven are gone, then delete prod-31dfaaf and prod-075cc43 once prod-929d6af is live and
+  last-known-good; tidy the API Gateway custom domains the throttled deletes left behind.
   Twenty orphaned log groups from four long-destroyed deployments (`prod-2078c71`,
   `prod-e1af480`, `prod-db95ffc`, `prod-c66bf01`) can go in the same sweep. Branches: all
   15 `origin/claude/*` are merged; all 33 local `claude/*` are merged (one holds a
