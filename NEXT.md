@@ -130,9 +130,9 @@ live in issue #43.
   ACL. Operator authorised seven on 2026-08-29 (prod-7f188b7, 8c12b18, af7eab7, 5570316,
   8fe61f8, d411b61, 64fb844); being deleted directly with `cloudformation delete-stack` in
   the workflow's order (the origin bucket has to be emptied before EdgeStack goes), which
-  is the approach for stale ci and prod deployments from now on. Claude Code: confirm all
-  seven are gone, then delete prod-31dfaaf and prod-075cc43 once prod-929d6af is live and
-  last-known-good; tidy the API Gateway custom domains the throttled deletes left behind.
+  is the approach for stale ci and prod deployments from now on. All seven are gone
+  (2026-08-29 22:50 UTC), their API Gateway custom domains with them. Claude Code: delete
+  prod-31dfaaf and prod-075cc43 once prod-929d6af is live and last-known-good.
   Twenty orphaned log groups from four long-destroyed deployments (`prod-2078c71`,
   `prod-e1af480`, `prod-db95ffc`, `prod-c66bf01`) can go in the same sweep. Branches: all
   15 `origin/claude/*` are merged; all 33 local `claude/*` are merged (one holds a
