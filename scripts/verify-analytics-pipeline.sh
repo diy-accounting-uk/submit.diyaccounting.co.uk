@@ -63,7 +63,9 @@ sleep "${BUFFER_WAIT_SECONDS}"
 
 PARTITION="year=$(date -u +%Y)/month=$(date -u +%m)/day=$(date -u +%d)"
 echo "Listing s3://${LAKE}/curated/activity-events/${PARTITION}/"
-if ! aws s3 ls "s3://${LAKE}/curated/activity-events/${PARTITION}/" --recursive | tee /dev/stderr | grep -q .; then
+OBJECTS="$(aws s3 ls "s3://${LAKE}/curated/activity-events/${PARTITION}/" --recursive)"
+echo "${OBJECTS}"
+if [ -z "${OBJECTS}" ]; then
   echo ""
   echo "FAIL: nothing landed in today's partition."
   echo "Check the Firehose log group first, a transform Lambda that returns a malformed"
