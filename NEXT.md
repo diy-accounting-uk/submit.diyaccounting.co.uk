@@ -45,18 +45,16 @@ live in issue #43.
      with `prod` once the #51 deploy lands.
   2. Done: 14-day volume measured (mean 141 events/day, peak 454) and recorded in
      section 4 of `PLAN_USAGE_DATA_PIPELINE.md`.
-- [ ] **(B13) Usage data pipeline.** Code merged (#50); four rounds of ci fixes in #51 (merged)
-  and PR #52 (open): job IAM reads, SHA-tagged env Lambda images (a fixed tag left functions
+- [ ] **(B13) Usage data pipeline.** Code merged (#50, #51, #52); the ci fixes covered job IAM reads, SHA-tagged env Lambda images (a fixed tag left functions
   on their first image), a 90 s Athena poll budget, and partition registration before each
   Glue Data Quality run (Glue reads catalog partitions, not Athena projection). On ci with
   #52 deployed: the evaluation run scores 1.0 (12 of 12 rules) and the publisher completes
   all ten queries, publishing nothing because ci has no customer rows.
-  1. Operator: merge PR #52.
-  2. Claude Code: after the first prod 04:00 and 05:00 UTC runs following that deploy,
+  1. Claude Code: after the first prod 04:00 and 05:00 UTC runs following the #52 deploy,
      confirm a prod data-quality result exists and `Submit/Analytics` metrics and the
      `prod-env-analytics` dashboard show data. EventBridge's DLQs stay empty on Lambda
      runtime errors; the Lambda-errors alarms are the signal.
-  3. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
+  2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
      stays. It emails every activity event through the alert topic; keep, sample, or drop.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
   view and a synth-date cutover instead of a second prefix; the table change whitelists
