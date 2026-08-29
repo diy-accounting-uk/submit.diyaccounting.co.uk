@@ -11,7 +11,7 @@ else is in one PR:
 
 | PR | Branch | Contents |
 |---|---|---|
-| #50 | `claude/pipeline-batch-4` (worktree `../.worktrees/submit-batch4`) | WP-3 to WP-11 of `PLAN_USAGE_DATA_PIPELINE.md`, the hashedSub fix, the Firehose Glue grant fix |
+| #50 | `claude/pipeline-batch-4` (worktree `../.worktrees/submit-batch4`) | WP-3 to WP-11 of `PLAN_USAGE_DATA_PIPELINE.md`, the hashedSub fix, and three CI fixes: the Firehose Glue grant, the CloudFront log delivery suffix path, the us-east-1 delivery condition on the lake bucket policy |
 
 Deviations from the plan worth knowing at review: WP-3 cut the single delivery stream over to
 Parquet with a union view and a synth-date cutover instead of a second prefix; WP-2 uses two
