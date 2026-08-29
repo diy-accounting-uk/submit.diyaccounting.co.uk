@@ -62,7 +62,7 @@
 
         <div class="auth-providers">
           <div class="auth-provider">
-            <button type="button" class="btn auth-btn google-btn" id="loginWithCognito">
+            <button type="button" class="btn auth-btn google-btn" id="loginWithCognito" disabled>
               Login using your <img src="../images/g-logo.png" alt="" class="provider-logo" /> Google account
             </button>
           </div>
@@ -155,8 +155,11 @@
       }
 
       // DOM elements and event listeners
+      // The button ships disabled: it renders long before the scripts above have loaded, and a
+      // click on it before this line ran did nothing at all.
       const loginWithCognitoButton = document.getElementById("loginWithCognito");
       loginWithCognitoButton.onclick = loginWithCognito;
+      loginWithCognitoButton.disabled = false;
 
       sessionStorage.removeItem("currentActivity");
       console.log("Current activity cleared");
