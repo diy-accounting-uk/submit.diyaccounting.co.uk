@@ -4,21 +4,6 @@ Living handover for this repository. Rules and shape: `../NEXT.md` (DONE or OPEN
 deferred; a bug found fixing item A is A's remainder, not a new item; this file holds ONLY what
 to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` at this root.
 
-## In flight
-
-No sub-agent is running. PRs #46 (B25) and #47 (pipeline batch 1) are merged. Everything
-else is in one PR:
-
-| PR | Branch | Contents |
-|---|---|---|
-| #50 | `claude/pipeline-batch-4` (worktree `../.worktrees/submit-batch4`) | WP-3 to WP-11 of `PLAN_USAGE_DATA_PIPELINE.md`, the hashedSub fix, and three CI fixes: the Firehose Glue grant, the CloudFront log delivery suffix path, the us-east-1 delivery condition on the lake bucket policy |
-
-Deviations from the plan worth knowing at review: WP-3 cut the single delivery stream over to
-Parquet with a union view and a synth-date cutover instead of a second prefix; WP-2 uses two
-custom resources per table (CDK forbids `getResponseField` on a call that ignores errors);
-WP-11 puts the log delivery in `EdgeStack`, the only stack that knows the distribution ARN;
-WP-4's whitelists follow the real item shapes, not the plan's field lists.
-
 ## Open items
 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
@@ -40,9 +25,9 @@ findings live in issue #43.
   Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
   actionlint finding (`set -e` plus command substitution), and
   `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** PR #47 is merged
+- [ ] **(B13a) Firehose spike on one stream.** PRs #47 and #50 are merged
   (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
-  Remaining: the ci deploy from PR #50, `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
+  Remaining: `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
   passes, and the measured 14-day event volume written into section 4 of the plan.
   Surfaced en route: `main` is not Spotless-clean (`spotless:check` binds to `install`,
   not `verify`; six files drift); `deploy-billing-webhook` lacks `needs: deploy-ecr`;
@@ -56,11 +41,11 @@ findings live in issue #43.
   history dies with each release; WP-11 moves it to the env stack. WP-4 (table change
   records for receipts, bundles, subscriptions, passes with per-table whitelists) is on
   `claude/pipeline-batch-3`; it found the plan's per-table field lists did not match the real
-  item shapes and followed the items. WP-2 is merged (#47); WP-3 to WP-7 are in PR #50, including the
+  item shapes and followed the items. All packages are merged (#47, #50), including the
   `hashedSub` fix WP-6 surfaced. Remaining: merges, ci deploy, the verify script and the views
   returning rows, the data-quality run and metrics publisher succeeding once, the dashboard
   showing data.
-- [ ] **(B14) Scheduled ingestion jobs.** All in PR #50: the
+- [ ] **(B14) Scheduled ingestion jobs.** All merged in #50: the
   IngestionStack skeleton (WP-8), nightly Stripe reconciliation (WP-9), GA4 Data API pull
   (WP-10), CloudFront access logs in the catalog (WP-11). Remaining: merges and a ci deploy;
   the operator creates the `GA4_SERVICE_ACCOUNT_JSON` secret in the ci and prod GitHub
