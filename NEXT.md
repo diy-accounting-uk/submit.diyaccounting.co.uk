@@ -7,64 +7,85 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 ## Open items
 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
-reasoning.
+reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
+operator step before them is done or when SSO is live.
 
-**Batches 1 and 2 are live in prod (deployment prod-af7eab7, verified 2026-08-28).**
-PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift
-findings live in issue #43.
+**Prod runs deployment prod-af7eab7 plus PRs #46, #47 and #50 (merged 2026-08-29, deploying).**
+PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift findings
+live in issue #43.
 
-- [ ] **(B25 remainder) Wire cross-account copy jobs and the restore test.** The vault is
-  LIVE (deployed 2026-08-26 with operator approval: `submit-cross-account-vault` in
-  914216784828, KMS-encrypted, copy-in restricted to the prod/ci backup roles, deletion
-  denied from outside the account). Remaining: point BackupStack's copy jobs at it, add
-  passes/subscriptions to the backup selection, create `backup-github-actions-role` so
-  `setup-backup-account.yml` runs unattended, then the monthly restore test — which gates
-  the TypeScript migration (B33). PR #46 is merged. Remaining: operator enables
-  cross-account backup in the management account and bootstraps the backup account from a
-  host shell (`PLAN_CROSS_ACCOUNT_BACKUPS.md`); first `restore-test` run passes both legs.
-  Surfaced en route: `scripts/validate-workflows.sh:29` exits 1 with no output on any
-  actionlint finding (`set -e` plus command substitution), and
-  `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** PRs #47 and #50 are merged
-  (AnalyticsStack, transform Lambda, Glue table, Athena workgroup, verify script).
-  Remaining: `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
-  passes, and the measured 14-day event volume written into section 4 of the plan.
-  Surfaced en route: `main` is not Spotless-clean (`spotless:check` binds to `install`,
-  not `verify`; six files drift); `deploy-billing-webhook` lacks `needs: deploy-ecr`;
-  `npx eslint` crashes on `app/lib/activityAlert.js` via `eslint-plugin-sonarjs`.
-- [ ] **(B13) Usage data pipeline.** Firehose from activity events/DynamoDB streams to
-  partitioned Parquet on S3, Glue catalog and data quality, Athena, dashboard. Starts
-  once B13a has landed. Design surfaced two remainders: `OpsStack` `ActivityEmailProofRule`
-  emails every activity event via the alert topic (`OpsStack.java:191`), which caps bus
-  volume; decide whether it stays before WP-4 adds table change records. The CloudFront
-  access-log bucket lives in the per-deployment `EdgeStack` (`EdgeStack.java:414`) so
-  history dies with each release; WP-11 moves it to the env stack. WP-4 (table change
-  records for receipts, bundles, subscriptions, passes with per-table whitelists) is on
-  `claude/pipeline-batch-3`; it found the plan's per-table field lists did not match the real
-  item shapes and followed the items. All packages are merged (#47, #50), including the
-  `hashedSub` fix WP-6 surfaced. Remaining: merges, ci deploy, the verify script and the views
-  returning rows, the data-quality run and metrics publisher succeeding once, the dashboard
-  showing data.
-- [ ] **(B14) Scheduled ingestion jobs.** All merged in #50: the
-  IngestionStack skeleton (WP-8), nightly Stripe reconciliation (WP-9), GA4 Data API pull
-  (WP-10), CloudFront access logs in the catalog (WP-11). Remaining: merges and a ci deploy;
-  the operator creates the `GA4_SERVICE_ACCOUNT_JSON` secret in the ci and prod GitHub
-  environments from a GCP service-account key and grants that account Viewer on GA4 property
-  523400333; each of the three jobs completes one scheduled run with rows queryable in Athena.
-  The first app deploy after WP-11 lands deletes each deployment's old per-deployment log
-  bucket. Plan correction pending: WP-8's text says the retry/DLQ shape matches
-  `AccountStack.java:832`; that rule has neither.
-- [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Dead GitHub link (point at
-  `github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`) and the sender
-  filter that replies to SNS/GitHub notifications. Operator action in Gmail settings.
-- [ ] **(B19) Analytics console work.** Turn on GA4 export and a scheduled Stripe report;
-  mark GA4 conversions; retire the old stream and stale remarketing tag. Operator console
-  actions. CloudFront logging is already live. History cannot be backfilled.
-- [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** Daily
-  schedules are firing and `verify-backups` is green (2026-08-27, 2026-08-28) with the
-  corrected vault name and PITR on. Still to see: `stack-drift` on Monday 2026-08-31
-  (first run with the noise filter), `compliance` and `codeql` on Sunday 2026-08-30.
-  Investigate if any is not green.
+- [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Code merged (#46).
+  1. Operator: enable cross-account backup for the organisation. Management account
+     887764105431, AWS Backup console, Settings, Cross-account backup, Enable. Every copy job
+     fails until this is on, whatever the policies say.
+  2. Operator: first deploy of the backup account stacks from a host terminal (the workflow
+     assumes a role the stack itself creates):
+     `aws sso login --sso-session diyaccounting`, `export AWS_PROFILE=submit-backup
+     CDK_DEFAULT_ACCOUNT=914216784828 CDK_DEFAULT_REGION=eu-west-2`,
+     `npx cdk bootstrap aws://914216784828/eu-west-2`,
+     `./mvnw --errors clean verify -DskipTests -P cdk-backup`,
+     `cd cdk-backup && npx cdk deploy --all --require-approval never`.
+     Do not run `scripts/aws-accounts/bootstrap-account.sh` against this account; if it has
+     been run, delete `backup-github-actions-role`, `backup-deployment-role` and the OIDC
+     provider first.
+  3. Claude Code: after the next daily backup, confirm a copy exists in
+     `submit-cross-account-vault` (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`).
+  4. Either: dispatch `restore-test.yml` and confirm both legs pass (scheduled for the 1st
+     of each month, 05:00 UTC). This is the gate for the TypeScript migration (B33).
+  Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
+  on any actionlint finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says
+  PITR is off.
+- [ ] **(B13a) Firehose spike on one stream.** Code merged (#47, #50).
+  1. Claude Code (needs SSO): `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
+     passes (publishes one event, waits 930 s, checks `curated/activity-events/`, queries
+     `activity_events_all` and every `v_*` view). Repeat with `prod` once prod has deployed.
+  2. Claude Code: measure the 14-day daily event volume (the CLI call is in section 4 of
+     `PLAN_USAGE_DATA_PIPELINE.md`) and write it into that section in place of the
+     2,000/day assumption.
+- [ ] **(B13) Usage data pipeline.** Code merged (#50): DynamoDB streams and change records,
+  Parquet conversion, Glue Data Quality, eight business views, metrics publisher and the
+  `{env}-env-analytics` dashboard.
+  1. Claude Code (needs SSO): after 04:00 UTC, confirm the data-quality run succeeded
+     (`aws glue list-data-quality-results`) and after 05:00 UTC that `Submit/Analytics`
+     metrics exist and the dashboard shows data.
+  2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
+     stays. It emails every activity event through the alert topic; keep, sample, or drop.
+  Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
+  view and a synth-date cutover instead of a second prefix; the table change whitelists
+  follow the real item shapes, not the plan's field lists.
+- [ ] **(B14) Scheduled ingestion jobs.** Code merged (#50): IngestionStack, nightly Stripe
+  reconciliation (02:15 UTC prod, weekly ci), GA4 Data API pull (03:15 UTC prod, weekly ci),
+  CloudFront access logs in the catalog.
+  1. Operator: mint a GCP service-account key (GCP console, IAM & Admin, Service Accounts,
+     create one, Keys, Add key, JSON), grant that account's email Viewer on GA4 property
+     523400333 (GA4 Admin, Property Access Management), then create the GitHub environment
+     secret `GA4_SERVICE_ACCOUNT_JSON` in both the `ci` and `prod` environments with the
+     key JSON. Deploys skip the secret step until it exists; the GA4 job fails at first
+     invocation until then.
+  2. Claude Code (needs SSO): after the first scheduled runs, confirm rows in
+     `stripe_charges`, `ga4_traffic` and `cloudfront_requests` through Athena.
+  3. Claude Code: correct WP-8's text in `PLAN_USAGE_DATA_PIPELINE.md`, which says the
+     retry/DLQ shape matches `AccountStack.java:832`; that rule has neither.
+  The first app deploy after #50 deletes each deployment's old per-deployment CloudFront
+  log bucket with its remaining history.
+- [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
+  support@diyaccounting.co.uk, Vacation responder / auto-reply: replace the dead GitHub
+  link with `https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`,
+  and restrict the responder so it does not reply to automated senders (at least
+  `*@amazonses.com`, `notifications@github.com`, `no-reply@sns.amazonaws.com`); a
+  "contacts only" or filter-based responder both work.
+- [ ] **(B19) Analytics console work.** Operator.
+  1. GA4 (property 523400333): Admin, Data export, link BigQuery and turn on the daily
+     export; Admin, Events, mark `purchase` and `begin_checkout` as key events; Admin, Data
+     streams, remove the old stream `G-PJPVQWRWJZ`.
+  2. Google Ads: check whether the remarketing campaigns for conversion ID 1065724931 are
+     still running; pause them or remove the tag from the sites.
+  3. Stripe dashboard: Reports, schedule a monthly balance report by email.
+  CloudFront logging is already live. History cannot be backfilled.
+- [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** Claude Code:
+  `compliance` and `codeql` run Sunday 2026-08-30, `stack-drift` Monday 2026-08-31 06:00 UTC
+  (first run with the noise filter). Daily schedules are firing and `verify-backups` is
+  green. Investigate if any is not green.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
