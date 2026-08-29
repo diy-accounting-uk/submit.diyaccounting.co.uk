@@ -33,8 +33,8 @@ live in issue #43.
      provider first.
   3. Claude Code: after the next daily backup, confirm a copy exists in
      `submit-cross-account-vault` (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`).
-  4. Dispatched 2026-08-29: `setup-backup-account.yml` (unattended path) and
-     `restore-test.yml`. Claude Code: confirm both pass; the cross-account leg of the restore
+  4. `setup-backup-account.yml` ran unattended and passed 2026-08-29 20:35 UTC.
+     `restore-test.yml` dispatched. Claude Code: confirm it passes; the cross-account leg of the restore
      test needs tonight's copy first. The restore test is the gate for the TypeScript
      migration (B33).
   Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
@@ -106,19 +106,16 @@ live in issue #43.
   `compliance` and `codeql` run Sunday 2026-08-30, `stack-drift` Monday 2026-08-31 06:00 UTC
   (first run with the noise filter). Daily schedules are firing and `verify-backups` is
   green. Investigate if any is not green.
-- [ ] **Investigate the Cognito Hosted UI form not rendering in prod behaviour tests.** The
-  scheduled prod deploys of 2026-08-26, 27, 28 and 29 and three of the 29th's runs each
-  failed one or two suites with "Failed to find Hosted UI form after 6 attempts" (for
-  example run 33249258942, `submitVatBehaviour-prod`; run 33250989002,
-  `tokenEnforcementBehaviour-prod`, failed the same way on its second login while the
-  other eleven suites passed), while the other suites logged in
-  through the same form in the same run. Last diagnosed in July as transient upstream and
-  cleared on its own; four days running says otherwise. In flight on `claude/hosted-ui-form`
-  (`../.worktrees/submit-hostedui`), starting from the failed
-  job's `target/behaviour-test-results/` screenshots and trace in the artifacts, the
-  `Waiting for Hosted UI form` helper in `behaviour-tests/helpers/`, and Cognito's own
-  Hosted UI logs; establish whether the page is blank, redirected, rate-limited, or a
-  different form, and fix the cause or the test.
+- [ ] **Sign-in button dead before the login page's scripts load.** Investigated 2026-08-29
+  from the failed prod runs' traces: the "Hosted UI form not found" failures never reached
+  Cognito. `web/public/auth/login.html` renders the sign-in button before the eight
+  blocking scripts that precede the inline handler have loaded, so an early click does
+  nothing, and the test's retry loop reloaded the app page and waited for a Cognito form
+  that could not appear. Fix on `claude/hosted-ui-form`: the behaviour login step waits for
+  the handler before clicking and for the origin to change after it, with failure messages
+  that name the page; the button now ships `disabled` and is enabled when wired, which
+  closes the same gap for real users. Remaining: PR, and the next scheduled prod deploy
+  passing every suite.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
