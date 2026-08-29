@@ -121,6 +121,20 @@ live in issue #43.
   that name the page; the button now ships `disabled` and is enabled when wired, which
   closes the same gap for real users. Merged (#54). Remaining: the next scheduled prod
   deploy passing every suite.
+- [ ] **Clear the stale prod deployments and merged branches.** Audited 2026-08-29: prod
+  holds nine app deployments because `destroy previous` runs only after every behaviour
+  suite passes, and the sign-in race failed one suite on each deploy for four days. Once
+  the #54 deploy (prod-929d6af) is live, only it should remain; the rest (prod-7f188b7,
+  8c12b18, af7eab7, 5570316, 8fe61f8, d411b61, 64fb844, 31dfaaf, 075cc43) are each eight
+  stacks, 31 Lambdas with five provisioned-concurrency units, a distribution and a WAF
+  ACL. Operator: say go and Claude Code dispatches `destroy-prod.yml` per deployment.
+  Twenty orphaned log groups from four long-destroyed deployments (`prod-2078c71`,
+  `prod-e1af480`, `prod-db95ffc`, `prod-c66bf01`) can go in the same sweep. Branches: all
+  15 `origin/claude/*` are merged; all 33 local `claude/*` are merged (one holds a
+  duplicate of a main commit); five stashes from April sit on branches that no longer
+  exist; the archived `antonycc` fork is still configured as a remote. Operator: delete
+  the branches (`git branch --merged main`), review and drop the stashes, `git remote
+  remove antonycc`. ci is clean.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
