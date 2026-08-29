@@ -229,6 +229,17 @@ public class DataQuality extends Construct {
                 .resources(List.of(glueRulesetArn(stack, rulesetName)))
                 .build());
 
+        // Starting a run validates the ruleset's target table through the catalog, so the
+        // caller needs the same read the evaluation role has.
+        this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("glue:GetDatabase", "glue:GetTable"))
+                .resources(List.of(
+                        glueCatalogArn(stack),
+                        glueDatabaseArn(stack, props.glueDatabaseName()),
+                        glueTableArn(stack, props.glueDatabaseName(), TARGET_TABLE_NAME)))
+                .build());
+
         // The Lambda only ever hands this one role to Glue: iam:PassRole is scoped to it, with
         // the service condition so nothing else could receive it even if the ARN leaked.
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
