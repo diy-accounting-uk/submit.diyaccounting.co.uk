@@ -50,7 +50,10 @@ live in issue #43.
   `{env}-env-analytics` dashboard.
   1. Both ci jobs failed their first runs on IAM reads (the runner lacked `glue:GetTable`
      on the catalog, the publisher lacked `s3:GetBucketLocation` on the results bucket);
-     fixed and merged in #51. Claude Code: invoke both jobs once ci has the update, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
+     fixed in #51. Invoked by hand on ci after that deploy: the runner now starts its
+     Glue run but the evaluation session lacked reads on its own ruleset, and the publisher
+     gave up on a 10 s poll budget against 7 to 11 s views; both fixed in PR #52. Claude
+     Code: invoke both jobs on ci once #52 deploys, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
      dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
      Lambda-errors alarms are the signal.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
