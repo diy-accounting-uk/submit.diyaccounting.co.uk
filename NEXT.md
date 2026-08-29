@@ -37,17 +37,21 @@ live in issue #43.
   on any actionlint finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says
   PITR is off.
 - [ ] **(B13a) Firehose spike on one stream.** Code merged (#47, #50).
-  1. Claude Code (needs SSO): `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
-     passes (publishes one event, waits 930 s, checks `curated/activity-events/`, queries
-     `activity_events_all` and every `v_*` view). Repeat with `prod` once prod has deployed.
+  1. Done on ci 2026-08-29: the synthetic event landed as Parquet, `activity_events_all`
+     returns the day's events by type, all eight views execute. The script's own partition
+     check reported a false FAIL (pipe bug, fixed in PR #51). Claude Code: repeat with
+     `prod` once PR #51 is merged and prod has deployed.
   2. Done: 14-day volume measured (mean 141 events/day, peak 454) and recorded in
      section 4 of `PLAN_USAGE_DATA_PIPELINE.md`.
 - [ ] **(B13) Usage data pipeline.** Code merged (#50): DynamoDB streams and change records,
   Parquet conversion, Glue Data Quality, eight business views, metrics publisher and the
   `{env}-env-analytics` dashboard.
-  1. Claude Code (needs SSO): after 04:00 UTC, confirm the data-quality run succeeded
-     (`aws glue list-data-quality-results`) and after 05:00 UTC that `Submit/Analytics`
-     metrics exist and the dashboard shows data.
+  1. Both ci jobs failed their first runs on IAM reads (the runner lacked `glue:GetTable`
+     on the catalog, the publisher lacked `s3:GetBucketLocation` on the results bucket);
+     fixed in PR #51. Claude Code: after the first 04:00 and 05:00 UTC runs following the
+     merge, confirm a data-quality result exists and `Submit/Analytics` metrics and the
+     dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
+     Lambda-errors alarms are the signal.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
      stays. It emails every activity event through the alert topic; keep, sample, or drop.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
@@ -65,8 +69,10 @@ live in issue #43.
      `GA4_SERVICE_ACCOUNT_JSON` in both the `ci` and `prod` environments with the key
      JSON. Deploys skip the secret step until it exists; the GA4 job fails at first
      invocation until then.
-  2. Claude Code (needs SSO): after the first scheduled runs, confirm rows in
-     `stripe_charges`, `ga4_traffic` and `cloudfront_requests` through Athena.
+  2. CloudFront v2 log delivery confirmed on ci 2026-08-29 (objects under
+     `raw/cloudfront/distributionid=…/year=…/month=…/day=…/`). Claude Code: after the first
+     scheduled runs (ci: Monday 2026-08-31 02:15 and 03:15 UTC), confirm rows in
+     `stripe_charges` and `ga4_traffic` through Athena, and `cloudfront_requests` now.
   3. Claude Code: correct WP-8's text in `PLAN_USAGE_DATA_PIPELINE.md`, which says the
      retry/DLQ shape matches `AccountStack.java:832`; that rule has neither.
   The first app deploy after #50 deletes each deployment's old per-deployment CloudFront
