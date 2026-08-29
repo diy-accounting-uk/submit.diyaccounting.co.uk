@@ -41,8 +41,8 @@ live in issue #43.
 - [ ] **(B13a) Firehose spike on one stream.** Code merged (#47, #50).
   1. Done on ci 2026-08-29: the synthetic event landed as Parquet, `activity_events_all`
      returns the day's events by type, all eight views execute. The script's own partition
-     check reported a false FAIL (pipe bug, fixed in PR #51). Claude Code: repeat with
-     `prod` once PR #51 is merged and prod has deployed.
+     check reported a false FAIL (pipe bug, fixed and merged in #51). Claude Code: repeat
+     with `prod` once the #51 deploy lands.
   2. Done: 14-day volume measured (mean 141 events/day, peak 454) and recorded in
      section 4 of `PLAN_USAGE_DATA_PIPELINE.md`.
 - [ ] **(B13) Usage data pipeline.** Code merged (#50): DynamoDB streams and change records,
@@ -50,8 +50,7 @@ live in issue #43.
   `{env}-env-analytics` dashboard.
   1. Both ci jobs failed their first runs on IAM reads (the runner lacked `glue:GetTable`
      on the catalog, the publisher lacked `s3:GetBucketLocation` on the results bucket);
-     fixed in PR #51. Claude Code: after the first 04:00 and 05:00 UTC runs following the
-     merge, confirm a data-quality result exists and `Submit/Analytics` metrics and the
+     fixed and merged in #51. Claude Code: invoke both jobs once ci has the update, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
      dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
      Lambda-errors alarms are the signal.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
