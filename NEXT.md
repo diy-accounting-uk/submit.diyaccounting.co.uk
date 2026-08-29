@@ -20,8 +20,9 @@ live in issue #43.
   1. Done 2026-08-29 13:05 UTC: cross-account backup enabled for the organisation from
      the management account (`isCrossAccountBackupEnabled: true`). Claude Code: confirm
      tonight's copy jobs succeed and a recovery point appears in the cross-account vault.
-  2. In progress 2026-08-29: first deploy of the backup account stacks from a host terminal
-     with the `submit-backup` profile (the workflow assumes a role the stack itself creates):
+  2. Done 2026-08-29 20:25 UTC: backup account bootstrapped from a host terminal (both
+     stacks deployed; OIDC provider and the three roles exist). The commands, for the record
+     of what ran:
      `aws sso login --sso-session diyaccounting`, `export AWS_PROFILE=submit-backup
      CDK_DEFAULT_ACCOUNT=914216784828 CDK_DEFAULT_REGION=eu-west-2`,
      `npx cdk bootstrap aws://914216784828/eu-west-2`,
@@ -32,8 +33,10 @@ live in issue #43.
      provider first.
   3. Claude Code: after the next daily backup, confirm a copy exists in
      `submit-cross-account-vault` (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`).
-  4. Either: dispatch `restore-test.yml` and confirm both legs pass (scheduled for the 1st
-     of each month, 05:00 UTC). This is the gate for the TypeScript migration (B33).
+  4. Dispatched 2026-08-29: `setup-backup-account.yml` (unattended path) and
+     `restore-test.yml`. Claude Code: confirm both pass; the cross-account leg of the restore
+     test needs tonight's copy first. The restore test is the gate for the TypeScript
+     migration (B33).
   Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
   on any actionlint finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says
   PITR is off.
