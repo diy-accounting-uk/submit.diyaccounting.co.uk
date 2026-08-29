@@ -129,7 +129,8 @@ public class CloudFrontAccessLogs {
 
     public CloudFrontAccessLogs(final Construct scope, final CloudFrontAccessLogsProps props) {
         var account = Stack.of(scope).getAccount();
-        var region = Stack.of(scope).getRegion();
+        // CloudFront delivery sources and deliveries always live in us-east-1, whatever region
+        // this stack deploys to, so the bucket policy has to trust that region's ARNs.
         var prefix = props.envResourceNamePrefix();
 
         // ============================================================================
@@ -170,7 +171,7 @@ public class CloudFrontAccessLogs {
                                                 account,
                                                 "s3:x-amz-acl",
                                                 "bucket-owner-full-control"),
-                                "ArnLike", Map.of("aws:SourceArn", "arn:aws:logs:%s:%s:*".formatted(region, account))))
+                                "ArnLike", Map.of("aws:SourceArn", "arn:aws:logs:us-east-1:%s:*".formatted(account))))
                         .build());
         props.lakeBucket()
                 .addToResourcePolicy(PolicyStatement.Builder.create()
@@ -181,7 +182,7 @@ public class CloudFrontAccessLogs {
                         .resources(List.of(props.lakeBucket().getBucketArn()))
                         .conditions(Map.of(
                                 "StringEquals", Map.of("aws:SourceAccount", account),
-                                "ArnLike", Map.of("aws:SourceArn", "arn:aws:logs:%s:%s:*".formatted(region, account))))
+                                "ArnLike", Map.of("aws:SourceArn", "arn:aws:logs:us-east-1:%s:*".formatted(account))))
                         .build());
 
         // ============================================================================
