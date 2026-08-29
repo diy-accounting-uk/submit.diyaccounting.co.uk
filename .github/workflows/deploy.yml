@@ -2253,8 +2253,11 @@ jobs:
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
   # Run workflow: .github/workflows/destroy-prod.yml to destroy previous prod deployments but not the holding page (`-holding`)
+  # Without a status function GitHub applies success() over the whole ancestor chain, and the
+  # scenario web-test jobs skipped by skipTestScenarios sit in that chain, so this job would
+  # never run. Gate on the direct results instead.
   destroy-previous:
-    if: ${{ needs.names.outputs.environment-name == 'prod' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && needs.set-origins.result == 'success' && needs.set-last-known-good-deployment.result == 'success' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
     name: 'destroy previous'
     needs:
       - names
