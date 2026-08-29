@@ -54,7 +54,11 @@ live in issue #43.
      Glue run but the evaluation session lacked reads on its own ruleset, and the publisher
      gave up on a 10 s poll budget against 7 to 11 s views; both fixed in PR #52, which also tags the env Lambda images with the commit SHA
      (a fixed tag left the functions on their first image across redeploys). The Glue
-     evaluation run succeeded on ci 2026-08-29 once the role fix deployed. Claude Code:
+     evaluation run completed on ci 2026-08-29 once the role fix deployed, but scored 0 with
+     every rule reporting missing columns: Glue Data Quality reads partitions from the
+     catalog and ignores Athena partition projection, and the table has none registered.
+     In flight: the runner registers the partitions present under `curated/activity-events/`
+     before each run (`claude/dq-partitions`, folded into PR #52). Claude Code:
      invoke the publisher on ci once #52's image fix deploys, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
      dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
      Lambda-errors alarms are the signal.
