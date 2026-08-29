@@ -131,15 +131,15 @@ live in issue #43.
   8fe61f8, d411b61, 64fb844); being deleted directly with `cloudformation delete-stack` in
   the workflow's order (the origin bucket has to be emptied before EdgeStack goes), which
   is the approach for stale ci and prod deployments from now on. All seven are gone
-  (2026-08-29 22:50 UTC), their API Gateway custom domains with them. Claude Code: delete
-  prod-31dfaaf and prod-075cc43 once prod-929d6af is live and last-known-good.
-  Twenty orphaned log groups from four long-destroyed deployments (`prod-2078c71`,
-  `prod-e1af480`, `prod-db95ffc`, `prod-c66bf01`) can go in the same sweep. Branches: all
-  15 `origin/claude/*` are merged; all 33 local `claude/*` are merged (one holds a
-  duplicate of a main commit); five stashes from April sit on branches that no longer
-  exist; the archived `antonycc` fork is still configured as a remote. Operator: delete
-  the branches (`git branch --merged main`), review and drop the stashes, `git remote
-  remove antonycc`. ci is clean.
+  (2026-08-29 22:50 UTC), their API Gateway custom domains with them; prod-31dfaaf and
+  prod-075cc43 followed once prod-929d6af went live; 154 orphaned per-deployment Lambda
+  log groups deleted. Each deployment leaves its Lambda log groups behind because the app
+  stacks do not create them; that fix belongs with the `destroy previous` item below.
+  Branches: all
+  15 `origin/claude/*` and 32 local `claude/*` deleted, five April stashes dropped.
+  Operator: `git branch -D claude/verify-cloudfront-lookup` (force-delete is blocked for
+  Claude Code; it holds only a duplicate of a main commit) and `git remote remove antonycc`
+  if the archived fork should go. ci is clean.
 - [ ] **`destroy previous` has never run.** Across the last 40 `deploy.yml` runs on main the
   job is always skipped, including fully green ones (for example 33277407003 on
   2026-08-29, where every job it needs succeeded, the `set origins` step logged
