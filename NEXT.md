@@ -37,7 +37,7 @@ live in issue #43.
      `restore-test.yml` (run 33270859888) restored prod-env-receipts into a temporary table
      with 4,723 of the live table's 4,751 items (the rest written since the 03:15 backup)
      and deleted it, then failed its own count comparison on paginated scan output; fix in
-     PR (restore-test-count). Claude Code: dispatch it again after that merges and confirm it
+     PR #55. Claude Code: dispatch it again after that merges and confirm it
      passes; the cross-account leg of the restore
      test needs tonight's copy first. The restore test is the gate for the TypeScript
      migration (B33).
