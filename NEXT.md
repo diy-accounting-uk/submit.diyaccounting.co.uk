@@ -52,8 +52,10 @@ live in issue #43.
      on the catalog, the publisher lacked `s3:GetBucketLocation` on the results bucket);
      fixed in #51. Invoked by hand on ci after that deploy: the runner now starts its
      Glue run but the evaluation session lacked reads on its own ruleset, and the publisher
-     gave up on a 10 s poll budget against 7 to 11 s views; both fixed in PR #52. Claude
-     Code: invoke both jobs on ci once #52 deploys, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
+     gave up on a 10 s poll budget against 7 to 11 s views; both fixed in PR #52, which also tags the env Lambda images with the commit SHA
+     (a fixed tag left the functions on their first image across redeploys). The Glue
+     evaluation run succeeded on ci 2026-08-29 once the role fix deployed. Claude Code:
+     invoke the publisher on ci once #52's image fix deploys, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
      dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
      Lambda-errors alarms are the signal.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
