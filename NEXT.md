@@ -16,8 +16,9 @@ live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Code merged (#46).
   1. Operator: enable cross-account backup for the organisation. Management account
-     887764105431, AWS Backup console, Settings, Cross-account backup, Enable. Every copy job
-     fails until this is on, whatever the policies say.
+     887764105431, AWS Backup console, Settings, Cross-account backup, Enable. Confirmed
+     2026-08-29: the nightly copy jobs already run and fail with "Cross-account copy
+     feature is not enabled for the current organization"; nothing else blocks them.
   2. Operator: first deploy of the backup account stacks from a host terminal (the workflow
      assumes a role the stack itself creates):
      `aws sso login --sso-session diyaccounting`, `export AWS_PROFILE=submit-backup
@@ -39,9 +40,8 @@ live in issue #43.
   1. Claude Code (needs SSO): `AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci`
      passes (publishes one event, waits 930 s, checks `curated/activity-events/`, queries
      `activity_events_all` and every `v_*` view). Repeat with `prod` once prod has deployed.
-  2. Claude Code: measure the 14-day daily event volume (the CLI call is in section 4 of
-     `PLAN_USAGE_DATA_PIPELINE.md`) and write it into that section in place of the
-     2,000/day assumption.
+  2. Done: 14-day volume measured (mean 141 events/day, peak 454) and recorded in
+     section 4 of `PLAN_USAGE_DATA_PIPELINE.md`.
 - [ ] **(B13) Usage data pipeline.** Code merged (#50): DynamoDB streams and change records,
   Parquet conversion, Glue Data Quality, eight business views, metrics publisher and the
   `{env}-env-analytics` dashboard.
@@ -56,11 +56,14 @@ live in issue #43.
 - [ ] **(B14) Scheduled ingestion jobs.** Code merged (#50): IngestionStack, nightly Stripe
   reconciliation (02:15 UTC prod, weekly ci), GA4 Data API pull (03:15 UTC prod, weekly ci),
   CloudFront access logs in the catalog.
-  1. Operator: mint a GCP service-account key (GCP console, IAM & Admin, Service Accounts,
-     create one, Keys, Add key, JSON), grant that account's email Viewer on GA4 property
-     523400333 (GA4 Admin, Property Access Management), then create the GitHub environment
-     secret `GA4_SERVICE_ACCOUNT_JSON` in both the `ci` and `prod` environments with the
-     key JSON. Deploys skip the secret step until it exists; the GA4 job fails at first
+  1. Operator: the GA4 Data API is authenticated with a Google Cloud service account (GA4's
+     own admin UI cannot issue API credentials; no GCP compute or billing is involved). In
+     the Google Cloud console pick or create a free project, enable the "Google Analytics
+     Data API" (APIs & Services, Library), then IAM & Admin, Service Accounts, create one,
+     Keys, Add key, JSON. In GA4 Admin, Property Access Management, grant that account's
+     email Viewer on property 523400333. Create the GitHub environment secret
+     `GA4_SERVICE_ACCOUNT_JSON` in both the `ci` and `prod` environments with the key
+     JSON. Deploys skip the secret step until it exists; the GA4 job fails at first
      invocation until then.
   2. Claude Code (needs SSO): after the first scheduled runs, confirm rows in
      `stripe_charges`, `ga4_traffic` and `cloudfront_requests` through Athena.

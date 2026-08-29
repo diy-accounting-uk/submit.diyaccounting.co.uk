@@ -208,12 +208,16 @@ operator would notice hundreds a day. Measure it before sizing anything:
 aws --profile submit-prod cloudwatch get-metric-statistics \
   --namespace AWS/Events --metric-name TriggeredRules \
   --dimensions Name=RuleName,Value=prod-<deployment>-app-activity-telegram \
+               Name=EventBusName,Value=prod-env-activity-bus \
   --start-time "$(date -u -v-14d +%FT%TZ)" --end-time "$(date -u +%FT%TZ)" \
   --period 86400 --statistics Sum
 ```
 
-The first work package records the fourteen-day daily mean in this file's WP-1 done-criteria.
-Everything below assumes 2,000 events/day, which is deliberately generous.
+Measured 2026-08-15 to 2026-08-28 (the metric needs both dimensions; take the daily maximum
+across the per-deployment rules, since every rule on the bus fires for every event): 24 a day
+while only the canaries ran, 255 to 454 a day once deploys and behaviour tests resumed on
+2026-08-24, a fourteen-day mean of 141. Everything below assumes 2,000 events/day, which is
+still generous by a factor of four.
 
 | Line | Basis | Monthly |
 |---|---|---|
