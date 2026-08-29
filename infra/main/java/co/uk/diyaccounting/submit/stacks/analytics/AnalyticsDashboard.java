@@ -174,6 +174,12 @@ public class AnalyticsDashboard extends Construct {
                 .actions(List.of("s3:GetObject", "s3:PutObject"))
                 .resources(List.of(props.resultsBucket().getBucketArn() + "/*"))
                 .build());
+        // Athena checks the results bucket exists and where it lives before it starts a query.
+        this.metricsPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetBucketLocation", "s3:ListBucket"))
+                .resources(List.of(props.resultsBucket().getBucketArn()))
+                .build());
 
         this.metricsPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
