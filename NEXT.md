@@ -34,7 +34,11 @@ live in issue #43.
   3. Claude Code: after the next daily backup, confirm a copy exists in
      `submit-cross-account-vault` (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`).
   4. `setup-backup-account.yml` ran unattended and passed 2026-08-29 20:35 UTC.
-     `restore-test.yml` dispatched. Claude Code: confirm it passes; the cross-account leg of the restore
+     `restore-test.yml` (run 33270859888) restored prod-env-receipts into a temporary table
+     with 4,723 of the live table's 4,751 items (the rest written since the 03:15 backup)
+     and deleted it, then failed its own count comparison on paginated scan output; fix in
+     PR (restore-test-count). Claude Code: dispatch it again after that merges and confirm it
+     passes; the cross-account leg of the restore
      test needs tonight's copy first. The restore test is the gate for the TypeScript
      migration (B33).
   Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
@@ -114,8 +118,8 @@ live in issue #43.
   that could not appear. Fix on `claude/hosted-ui-form`: the behaviour login step waits for
   the handler before clicking and for the origin to change after it, with failure messages
   that name the page; the button now ships `disabled` and is enabled when wired, which
-  closes the same gap for real users. Remaining: PR, and the next scheduled prod deploy
-  passing every suite.
+  closes the same gap for real users. Operator: merge PR #54. Then the next scheduled
+  prod deploy passing every suite is the proof.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
