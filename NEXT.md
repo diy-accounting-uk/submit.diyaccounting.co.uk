@@ -36,9 +36,8 @@ live in issue #43.
   4. `setup-backup-account.yml` ran unattended and passed 2026-08-29 20:35 UTC.
      `restore-test.yml` (run 33270859888) restored prod-env-receipts into a temporary table
      with 4,723 of the live table's 4,751 items (the rest written since the 03:15 backup)
-     and deleted it, then failed its own count comparison on paginated scan output; fix in
-     PR #55. Claude Code: dispatch it again after that merges and confirm it
-     passes; the cross-account leg of the restore
+     and deleted it, then failed its own count comparison on paginated scan output (fixed,
+     #55). Re-dispatched 2026-08-29 evening. Claude Code: confirm it passes; the cross-account leg of the restore
      test needs tonight's copy first. The restore test is the gate for the TypeScript
      migration (B33).
   Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
@@ -68,7 +67,7 @@ live in issue #43.
      `hmrc-token-exchanged` customer events carry no `hashed_sub` (the call site was not
      among the three fixed); no `new-session` events reached prod today, worth a look when
      `v_traffic_by_country_daily` stays empty.
-  2. Decided 2026-08-29: drop `OpsStack`'s `ActivityEmailProofRule`. Operator: merge PR #53.
+  2. Done: `OpsStack`'s `ActivityEmailProofRule` dropped (#53).
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
   view and a synth-date cutover instead of a second prefix; the table change whitelists
   follow the real item shapes, not the plan's field lists.
@@ -118,8 +117,8 @@ live in issue #43.
   that could not appear. Fix on `claude/hosted-ui-form`: the behaviour login step waits for
   the handler before clicking and for the origin to change after it, with failure messages
   that name the page; the button now ships `disabled` and is enabled when wired, which
-  closes the same gap for real users. Operator: merge PR #54. Then the next scheduled
-  prod deploy passing every suite is the proof.
+  closes the same gap for real users. Merged (#54). Remaining: the next scheduled prod
+  deploy passing every suite.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
