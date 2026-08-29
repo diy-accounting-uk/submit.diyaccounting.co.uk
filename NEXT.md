@@ -140,22 +140,26 @@ live in issue #43.
   Operator: `git branch -D claude/verify-cloudfront-lookup` (force-delete is blocked for
   Claude Code; it holds only a duplicate of a main commit) and `git remote remove antonycc`
   if the archived fork should go. ci is clean.
-- [ ] **`destroy previous` has never run.** Every prod deploy creates a new deployment
-  (`prod-<sha>`: eight stacks, 31 Lambdas, a distribution, a WAF ACL) and, once the
-  behaviour tests pass, moves the apex alias onto it; the deployment that was live is then
-  redundant. `deploy.yml`'s last job, `destroy previous`, exists to tear that one down via
-  `destroy-prod.yml`, and it is the pipeline's only automatic cleanup. Across the last 40
-  `deploy.yml` runs on main it has been skipped every time, including fully green runs
-  (33277407003 and 33277429631 on 2026-08-29: every job it needs succeeded, `set origins`
-  logged `EXISTING_DEPLOYMENT_NAME=prod-31dfaaf` and the job reported `Set output
-  'existing-deployment-name'`), yet its `if` (`deploy.yml:2257`) evaluates false. The
-  wiring dates from 2025-10-19. Consequence: nine idle deployments had accumulated, each
-  billing for its WAF ACL, provisioned concurrency and distribution, and cleanup is by
-  hand until this is fixed. Dispatched 2026-08-30 as a Fable investigation on
-  `claude/destroy-previous` (`../.worktrees/submit-destroyprev`): reproduce the condition's
-  evaluation, name the fault, recommend resolutions, and carry a candidate fix; the proof
-  is the next prod deploy removing its predecessor. Fold in: the app stacks should create
-  their Lambda log groups with retention so deployments stop leaving log groups behind.
+- [ ] **`destroy previous` has never run.** Cause found 2026-08-30: the job's `if` has no
+  status function, so GitHub applies the implicit `success()`, which is false whenever any
+  transitive ancestor was skipped; five sandbox scenario jobs are skipped on every push
+  (`skipTestScenarios` defaults true) and feed the chain, and only the intermediate jobs
+  carry `!cancelled()`. Skipped on all 98 retained runs since May, 25 of them green, so 25
+  predecessors were never removed. Fix in PR #56: `!cancelled()` plus explicit result checks
+  on the `if`; `destroy-prod.yml` refuses to destroy the last-known-good or live deployment
+  and deletes a deployment's leftover Lambda log groups once its stacks are gone.
+  1. Operator: merge PR #56.
+  2. Claude Code: on the next prod deploy, confirm `destroy previous` runs and the
+     superseded deployment's stacks and log groups are gone.
+  3. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
+     `ApiStack`, `OpsStack`, `EdgeStack`, `PublishStack`, `KindCdk`, `Route53AliasUpsert`)
+     create log groups the stacks do not own; give each an explicit `LogGroup` with
+     retention and DESTROY. The app Lambdas already do (`constructs/Lambda.java`).
+  4. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
+     most with no retention) remain in us-east-1; say go and Claude Code deletes them.
+  The scheduled sweep in `destroy-prod.yml` does work but removes one deployment per run
+  and produced no runs between 2026-07-13 and 2026-08-24, the same gap as the keep-alive
+  item below.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
