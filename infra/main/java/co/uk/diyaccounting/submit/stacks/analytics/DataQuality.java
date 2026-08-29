@@ -166,11 +166,28 @@ public class DataQuality extends Construct {
 
         this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions", "glue:GetPartitions"))
+                .actions(List.of(
+                        "glue:GetDatabase",
+                        "glue:GetTable",
+                        "glue:GetTableVersion",
+                        "glue:GetTableVersions",
+                        "glue:GetPartitions"))
                 .resources(List.of(
                         glueCatalogArn(stack),
                         glueDatabaseArn(stack, props.glueDatabaseName()),
                         glueTableArn(stack, props.glueDatabaseName(), TARGET_TABLE_NAME)))
+                .build());
+
+        // The evaluation session reads its own run and ruleset back and publishes the result
+        // against the ruleset while it works.
+        this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of(
+                        "glue:GetDataQualityRuleset",
+                        "glue:GetDataQualityRulesetEvaluationRun",
+                        "glue:GetDataQualityResult",
+                        "glue:PublishDataQuality"))
+                .resources(List.of(glueRulesetArn(stack, rulesetName)))
                 .build());
 
         this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
