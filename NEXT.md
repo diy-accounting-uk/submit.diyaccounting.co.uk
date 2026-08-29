@@ -61,8 +61,7 @@ live in issue #43.
      `hmrc-token-exchanged` customer events carry no `hashed_sub` (the call site was not
      among the three fixed); no `new-session` events reached prod today, worth a look when
      `v_traffic_by_country_daily` stays empty.
-  2. Decided 2026-08-29: drop `OpsStack`'s `ActivityEmailProofRule`. In flight on
-     `claude/drop-activity-email-proof`.
+  2. Decided 2026-08-29: drop `OpsStack`'s `ActivityEmailProofRule`. Operator: merge PR #53.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
   view and a synth-date cutover instead of a second prefix; the table change whitelists
   follow the real item shapes, not the plan's field lists.
