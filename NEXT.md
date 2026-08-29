@@ -10,8 +10,8 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-31dfaaf (PRs #46, #47, #50, #51, #52; live and last-known-good
-since 2026-08-29 12:40 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
+**Prod runs deployment prod-929d6af (main through #54; live and last-known-good since
+2026-08-29 23:20 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
 lake is receiving events.
 PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift findings
 live in issue #43.
@@ -119,8 +119,8 @@ live in issue #43.
   that could not appear. Fix on `claude/hosted-ui-form`: the behaviour login step waits for
   the handler before clicking and for the origin to change after it, with failure messages
   that name the page; the button now ships `disabled` and is enabled when wired, which
-  closes the same gap for real users. Merged (#54). Remaining: the next scheduled prod
-  deploy passing every suite.
+  closes the same gap for real users. Merged (#54); its own prod deploy passed all 13
+  suites first time, as did #53's. Remaining: the next scheduled prod deploy doing the same.
 - [ ] **Clear the stale prod deployments and merged branches.** Audited 2026-08-29: prod
   holds nine app deployments because `destroy previous` runs only after every behaviour
   suite passes, and the sign-in race failed one suite on each deploy for four days. Once
