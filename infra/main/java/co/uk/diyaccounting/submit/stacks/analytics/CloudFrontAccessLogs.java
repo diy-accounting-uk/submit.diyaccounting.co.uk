@@ -41,7 +41,7 @@ import software.constructs.Construct;
  *       {@code cf-standard-logs/<deployment>/} prefix, so history survives a redeploy instead of
  *       being destroyed with the bucket that used to live inside {@code EdgeStack}.
  *   <li>The Glue table and lake-bucket policy that let Athena query the Parquet objects
- *       CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/<distribution-id>/year=
+ *       CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/distributionid=<id>/year=
  *       .../month=.../day=.../}.
  * </ol>
  *
@@ -206,7 +206,8 @@ public class CloudFrontAccessLogs {
         tableParameters.put("projection.day.range", "1,31");
         tableParameters.put("projection.day.digits", "2");
         tableParameters.put(
-                "storage.location.template", location + "${distribution_id}/year=${year}/month=${month}/day=${day}/");
+                "storage.location.template",
+                location + "distributionid=${distribution_id}/year=${year}/month=${month}/day=${day}/");
 
         this.table = CfnTable.Builder.create(scope, prefix + "-CloudFrontRequestsTable")
                 .catalogId(account)

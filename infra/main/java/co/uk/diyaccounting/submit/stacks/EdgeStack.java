@@ -626,7 +626,9 @@ public class EdgeStack extends Stack {
                 CfnDeliveryDestinationProps.builder()
                         .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
                         .deliveryDestinationType("S3")
-                        .destinationResourceArn(analyticsLakeBucket.getBucketArn())
+                        // A bare bucket ARN makes the service prepend AWSLogs/<account>/CloudFront/ to
+                        // every key; the prefix on the ARN keeps the objects under the lake's own path.
+                        .destinationResourceArn(analyticsLakeBucket.getBucketArn() + "/raw/cloudfront")
                         .outputFormat("parquet")
                         .build());
 
@@ -647,7 +649,9 @@ public class EdgeStack extends Stack {
                         // *** must exactly match the Name above ***
                         .deliverySourceName(cfAccessLogsSourceName)
                         .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
-                        .s3SuffixPath("raw/cloudfront/{DistributionId}/year=!{yyyy}/month=!{MM}/day=!{dd}/")
+                        // Only the service's own variables are valid here; with the Hive option on it renders
+                        // them as distributionid=.../year=.../month=.../day=... itself.
+                        .s3SuffixPath("{distributionid}/{yyyy}/{MM}/{dd}/")
                         .s3EnableHiveCompatiblePath(true)
                         .build());
         // *** enforce creation order so source exists before delivery ***
