@@ -60,8 +60,8 @@ live in issue #43.
      Fixed in PR #52: the runner registers the partitions present under
      `curated/activity-events/` before each run. The publisher, on its SHA-tagged image, now
      completes all ten queries on ci and publishes nothing there because ci has no customer
-     rows; the first prod run after #52 is the real check. Claude Code: after #52
-     merges and deploys, invoke the data-quality run on ci and confirm a non-zero score, then confirm a data-quality result exists and `Submit/Analytics` metrics and the
+     rows; the first prod run after #52 is the real check. With #52's branch deployed to ci the evaluation run scores 1.0 (12 of 12 rules).
+     Claude Code: after #52 merges and prod deploys, confirm a data-quality result exists and `Submit/Analytics` metrics and the
      dashboard show data. EventBridge's DLQs stay empty on Lambda runtime errors; the
      Lambda-errors alarms are the signal.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
