@@ -491,7 +491,9 @@ jobs:
           ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
           ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
           ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
-          ENV_IMAGE_TAG="env-analytics"
+          # The SHA in the tag is what makes each deploy a new image URI; a fixed tag leaves
+          # CloudFormation with nothing to update and the function on its old image.
+          ENV_IMAGE_TAG="env-analytics-${{ github.sha }}"
 
           docker tag "env-analytics:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
           docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
@@ -526,7 +528,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          BASE_IMAGE_TAG: env-analytics
+          BASE_IMAGE_TAG: env-analytics-${{ github.sha }}
 
   deploy-ingestion:
     name: 'deploy ingestion'
@@ -612,7 +614,9 @@ jobs:
           ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
           ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
           ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
-          ENV_IMAGE_TAG="env-ingestion"
+          # The SHA in the tag is what makes each deploy a new image URI; a fixed tag leaves
+          # CloudFormation with nothing to update and the function on its old image.
+          ENV_IMAGE_TAG="env-ingestion-${{ github.sha }}"
 
           docker tag "env-ingestion:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
           docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
@@ -647,7 +651,7 @@ jobs:
         env:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          BASE_IMAGE_TAG: env-ingestion
+          BASE_IMAGE_TAG: env-ingestion-${{ github.sha }}
           # Computed the same deterministic way create-secrets names the secret above, rather
           # than through .env.ci/.env.prod like the Stripe ARNs: a step env var here already
           # wins over dotenv's non-overriding load of those files, so this is the narrower change.
@@ -1072,7 +1076,9 @@ jobs:
           ECR_REPOSITORY_BASE_URL="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com"
           ECR_REPOSITORY_NAME="${{ needs.names.outputs.environment-name }}-env-ecr"
           ECR_URI="${ECR_REPOSITORY_BASE_URL}/${ECR_REPOSITORY_NAME}"
-          ENV_IMAGE_TAG="env-billing-webhook"
+          # The SHA in the tag is what makes each deploy a new image URI; a fixed tag leaves
+          # CloudFormation with nothing to update and the function on its old image.
+          ENV_IMAGE_TAG="env-billing-webhook-${{ github.sha }}"
 
           docker tag "env-billing-webhook:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
           docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
@@ -1108,4 +1114,4 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           REGIONAL_CERTIFICATE_ARN: ${{ vars.SUBMIT_REGIONAL_CERTIFICATE_ARN }}
-          BASE_IMAGE_TAG: env-billing-webhook
+          BASE_IMAGE_TAG: env-billing-webhook-${{ github.sha }}
