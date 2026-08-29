@@ -30,7 +30,6 @@ import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
-import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -186,16 +185,6 @@ public class OpsStack extends Stack {
         // EventBridge Custom Activity Bus (imported from env-level ActivityStack)
         // ============================================================================
         this.activityBus = EventBus.fromEventBusName(this, "ActivityBus", props.sharedNames().activityBusName);
-
-        // Email proof rule: all ActivityEvent detail-types → SNS alertTopic
-        Rule.Builder.create(this, "ActivityEmailProofRule")
-                .ruleName(props.resourceNamePrefix() + "-activity-email-proof")
-                .eventBus(this.activityBus)
-                .eventPattern(EventPattern.builder()
-                        .detailType(List.of("ActivityEvent"))
-                        .build())
-                .targets(List.of(new SnsTopic(this.alertTopic)))
-                .build();
 
         // ============================================================================
         // Telegram Forwarder Lambda + EventBridge Rule
