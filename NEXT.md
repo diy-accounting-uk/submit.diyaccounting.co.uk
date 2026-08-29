@@ -97,6 +97,16 @@ live in issue #43.
   `compliance` and `codeql` run Sunday 2026-08-30, `stack-drift` Monday 2026-08-31 06:00 UTC
   (first run with the noise filter). Daily schedules are firing and `verify-backups` is
   green. Investigate if any is not green.
+- [ ] **Investigate the Cognito Hosted UI form not rendering in prod behaviour tests.** The
+  scheduled prod deploys of 2026-08-26, 27, 28 and 29 and three of the 29th's runs each
+  failed one or two suites with "Failed to find Hosted UI form after 6 attempts" (for
+  example run 33249258942, `submitVatBehaviour-prod`), while the other suites logged in
+  through the same form in the same run. Last diagnosed in July as transient upstream and
+  cleared on its own; four days running says otherwise. Claude Code: start from the failed
+  job's `target/behaviour-test-results/` screenshots and trace in the artifacts, the
+  `Waiting for Hosted UI form` helper in `behaviour-tests/helpers/`, and Cognito's own
+  Hosted UI logs; establish whether the page is blank, redirected, rate-limited, or a
+  different form, and fix the cause or the test.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
