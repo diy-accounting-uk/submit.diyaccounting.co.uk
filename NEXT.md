@@ -50,10 +50,18 @@ live in issue #43.
   Glue Data Quality run (Glue reads catalog partitions, not Athena projection). On ci with
   #52 deployed: the evaluation run scores 1.0 (12 of 12 rules) and the publisher completes
   all ten queries, publishing nothing because ci has no customer rows.
-  1. Claude Code: after the first prod 04:00 and 05:00 UTC runs following the #52 deploy,
-     confirm a prod data-quality result exists and `Submit/Analytics` metrics and the
-     `prod-env-analytics` dashboard show data. EventBridge's DLQs stay empty on Lambda
-     runtime errors; the Lambda-errors alarms are the signal.
+  1. Verified on prod 2026-08-29 after the #52 deploy, by invoking both jobs: the data
+     quality run scores 1.0 (12 of 12), the publisher completes all ten queries in 88 s,
+     table changes land under `curated/tables/<table>/` (285 records through the four
+     streams in the first six hours), CloudFront logs land under `raw/cloudfront/`, and
+     every login and submission event carries `hashed_sub`. The publisher published nothing
+     because its target date (yesterday) predates the lake. Claude Code: after the
+     2026-08-30 05:00 UTC run, confirm `Submit/Analytics` metrics exist and the
+     `prod-env-analytics` dashboard shows them. EventBridge's DLQs stay empty on Lambda
+     runtime errors; the Lambda-errors alarms are the signal. Surfaced: prod's
+     `hmrc-token-exchanged` customer events carry no `hashed_sub` (the call site was not
+     among the three fixed); no `new-session` events reached prod today, worth a look when
+     `v_traffic_by_country_daily` stays empty.
   2. Operator: decide whether `OpsStack`'s `ActivityEmailProofRule` (`OpsStack.java:191`)
      stays. It emails every activity event through the alert topic; keep, sample, or drop.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
