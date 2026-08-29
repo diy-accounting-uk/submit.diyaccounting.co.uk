@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -94,10 +93,7 @@ public class CloudFrontAccessLogs {
             "sc_range_start",
             "sc_range_end");
 
-    private static final Set<String> BIGINT_FIELDS =
-            Set.of("sc_bytes", "cs_bytes", "sc_status", "c_port", "sc_content_len", "sc_range_start", "sc_range_end");
 
-    private static final Set<String> DOUBLE_FIELDS = Set.of("time_taken", "time_to_first_byte");
 
     public final Bucket logBucket;
     public final CfnTable table;
@@ -265,11 +261,13 @@ public class CloudFrontAccessLogs {
         return "%s-cloudfront-logs-%s".formatted(envResourceNamePrefix, account);
     }
 
+    // The delivery writes every field as a Parquet string, whatever the log reference says
+    // about numbers, and Athena refuses a file whose physical type disagrees with the table.
+    // Views cast the few fields they do arithmetic on.
     private static List<CfnTable.ColumnProperty> buildColumns() {
         var columns = new ArrayList<CfnTable.ColumnProperty>();
         for (String name : FIELD_ORDER) {
-            String type = BIGINT_FIELDS.contains(name) ? "bigint" : DOUBLE_FIELDS.contains(name) ? "double" : "string";
-            columns.add(CfnTable.ColumnProperty.builder().name(name).type(type).build());
+            columns.add(CfnTable.ColumnProperty.builder().name(name).type("string").build());
         }
         return columns;
     }
