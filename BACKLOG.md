@@ -13,18 +13,21 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-08-28)
+## Live status (updated 2026-08-29)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **Nothing is in flight.** Batches 1 and 2 are live in prod (deployment prod-af7eab7);
-  PITR is ENABLED on all 11 tables and the cross-account vault is LIVE in 914216784828.
-  Item 4 (HMRC free-flag email) is sent and closed.
+- **Nothing is in flight.** The cross-account backup wiring (25), the usage data pipeline
+  (13a, 13) and the scheduled ingestion jobs (14) are merged to `main` (PRs #46, #47, #50)
+  and deploying; `NEXT.md` carries each one's verification remainder. PITR is ENABLED on all
+  11 tables and the cross-account vault is LIVE in 914216784828. Item 4 (HMRC free-flag
+  email) is sent and closed.
 - **Operator-bound**: 9 and 9a (Gmail settings), 17a (demo-video redo — Claude Code
-  excluded by operator directive), 19 (analytics console work).
-- **Queued on NEXT.md**: 25 (vault wiring remainder), 13a then 13 (usage data pipeline),
-  14 (scheduled ingestion). The 10a spike waits for the operator to say go.
+  excluded by operator directive), 19 (analytics console work), the GA4 service-account
+  secret for 14, the management-account cross-account-backup switch and backup-account
+  bootstrap for 25.
+- **Next candidates**: the 10a spike when the operator says go.
 
 ## Tier 1: do next
 
