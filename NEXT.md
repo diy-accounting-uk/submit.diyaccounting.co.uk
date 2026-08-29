@@ -140,16 +140,22 @@ live in issue #43.
   Operator: `git branch -D claude/verify-cloudfront-lookup` (force-delete is blocked for
   Claude Code; it holds only a duplicate of a main commit) and `git remote remove antonycc`
   if the archived fork should go. ci is clean.
-- [ ] **`destroy previous` has never run.** Across the last 40 `deploy.yml` runs on main the
-  job is always skipped, including fully green ones (for example 33277407003 on
-  2026-08-29, where every job it needs succeeded, the `set origins` step logged
-  `EXISTING_DEPLOYMENT_NAME=prod-31dfaaf` and the job reported `Set output
-  'existing-deployment-name'`). Its `if` (`deploy.yml:2257`) still evaluates false, so old
-  prod deployments only ever go by hand. Claude Code: find why the job-level output reaches
-  the reusable-workflow call empty (composite output mapping in
-  `.github/actions/set-origins/action.yml:48`, the `uses:` job's expression context, or the
-  `set-last-known-good-deployment` dependency added 2025-11-03), fix it, and prove it on the
-  next prod deploy by seeing the superseded deployment removed.
+- [ ] **`destroy previous` has never run.** Every prod deploy creates a new deployment
+  (`prod-<sha>`: eight stacks, 31 Lambdas, a distribution, a WAF ACL) and, once the
+  behaviour tests pass, moves the apex alias onto it; the deployment that was live is then
+  redundant. `deploy.yml`'s last job, `destroy previous`, exists to tear that one down via
+  `destroy-prod.yml`, and it is the pipeline's only automatic cleanup. Across the last 40
+  `deploy.yml` runs on main it has been skipped every time, including fully green runs
+  (33277407003 and 33277429631 on 2026-08-29: every job it needs succeeded, `set origins`
+  logged `EXISTING_DEPLOYMENT_NAME=prod-31dfaaf` and the job reported `Set output
+  'existing-deployment-name'`), yet its `if` (`deploy.yml:2257`) evaluates false. The
+  wiring dates from 2025-10-19. Consequence: nine idle deployments had accumulated, each
+  billing for its WAF ACL, provisioned concurrency and distribution, and cleanup is by
+  hand until this is fixed. Dispatched 2026-08-30 as a Fable investigation on
+  `claude/destroy-previous` (`../.worktrees/submit-destroyprev`): reproduce the condition's
+  evaluation, name the fault, recommend resolutions, and carry a candidate fix; the proof
+  is the next prod deploy removing its predecessor. Fold in: the app stacks should create
+  their Lambda log groups with retention so deployments stop leaving log groups behind.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
