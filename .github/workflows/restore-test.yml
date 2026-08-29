@@ -164,9 +164,9 @@ jobs:
           fi
 
           RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
-            --region "${{ env.AWS_REGION }}" --query Count --output text)
+            --region "${{ env.AWS_REGION }}" --query Count --output text | awk '{ total += $1 } END { print total + 0 }')
           SOURCE_ITEMS=$(aws dynamodb scan --table-name "$SOURCE_TABLE" --select COUNT \
-            --region "${{ env.AWS_REGION }}" --query Count --output text)
+            --region "${{ env.AWS_REGION }}" --query Count --output text | awk '{ total += $1 } END { print total + 0 }')
 
           echo "Restored $TARGET_TABLE: $RESTORED_ITEMS items"
           echo "Source   $SOURCE_TABLE: $SOURCE_ITEMS items"
@@ -323,7 +323,7 @@ jobs:
           fi
 
           RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
-            --region "${{ env.AWS_REGION }}" --query Count --output text)
+            --region "${{ env.AWS_REGION }}" --query Count --output text | awk '{ total += $1 } END { print total + 0 }')
           echo "Restored $TARGET_TABLE in the backup account: $RESTORED_ITEMS items"
           echo "restored_items=$RESTORED_ITEMS" >> "$GITHUB_OUTPUT"
           echo "result=pass" >> "$GITHUB_OUTPUT"
