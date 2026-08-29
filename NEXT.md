@@ -10,8 +10,8 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-8fe61f8 (PRs #46, #47 and #50; live and last-known-good since
-2026-08-29 08:15 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
+**Prod runs deployment prod-31dfaaf (PRs #46, #47, #50, #51, #52; live and last-known-good
+since 2026-08-29 12:40 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
 lake is receiving events.
 PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift findings
 live in issue #43.
@@ -108,7 +108,9 @@ live in issue #43.
 - [ ] **Investigate the Cognito Hosted UI form not rendering in prod behaviour tests.** The
   scheduled prod deploys of 2026-08-26, 27, 28 and 29 and three of the 29th's runs each
   failed one or two suites with "Failed to find Hosted UI form after 6 attempts" (for
-  example run 33249258942, `submitVatBehaviour-prod`), while the other suites logged in
+  example run 33249258942, `submitVatBehaviour-prod`; run 33250989002,
+  `tokenEnforcementBehaviour-prod`, failed the same way on its second login while the
+  other eleven suites passed), while the other suites logged in
   through the same form in the same run. Last diagnosed in July as transient upstream and
   cleared on its own; four days running says otherwise. Claude Code: start from the failed
   job's `target/behaviour-test-results/` screenshots and trace in the artifacts, the
