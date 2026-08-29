@@ -9,12 +9,7 @@
 // published: a missing metric for a day is a visible gap, a published zero for a query that
 // actually errored would read as "nothing happened" and hide the failure.
 
-import {
-  AthenaClient,
-  StartQueryExecutionCommand,
-  GetQueryExecutionCommand,
-  GetQueryResultsCommand,
-} from "@aws-sdk/client-athena";
+import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
 import { CloudWatchClient, PutMetricDataCommand } from "@aws-sdk/client-cloudwatch";
 import { createLogger } from "../../lib/logger.js";
 
@@ -106,8 +101,7 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "sessions",
     dimension: { name: "Country", column: "country" },
-    sql: (day) =>
-      `SELECT country, sessions FROM v_traffic_by_country_daily WHERE day = DATE '${day}' ORDER BY sessions DESC LIMIT 5`,
+    sql: (day) => `SELECT country, sessions FROM v_traffic_by_country_daily WHERE day = DATE '${day}' ORDER BY sessions DESC LIMIT 5`,
   },
 ];
 
@@ -154,13 +148,13 @@ function sleep(ms) {
  * @returns {Promise<void>}
  */
 export async function pollUntilTerminal(athenaClient, queryExecutionId) {
-  const maxAttempts = Number(process.env.ATHENA_POLL_MAX_ATTEMPTS || 20);
-  const intervalMs = Number(process.env.ATHENA_POLL_INTERVAL_MS || 500);
+  // The view queries take up to about ten seconds each on this workgroup; ninety seconds per
+  // query keeps ten sequential queries well inside the function's five-minute timeout.
+  const maxAttempts = Number(process.env.ATHENA_POLL_MAX_ATTEMPTS || 90);
+  const intervalMs = Number(process.env.ATHENA_POLL_INTERVAL_MS || 1000);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const { QueryExecution } = await athenaClient.send(
-      new GetQueryExecutionCommand({ QueryExecutionId: queryExecutionId }),
-    );
+    const { QueryExecution } = await athenaClient.send(new GetQueryExecutionCommand({ QueryExecutionId: queryExecutionId }));
     const state = QueryExecution?.Status?.State;
 
     if (state === "SUCCEEDED") return;
@@ -240,9 +234,7 @@ export function toMetricData(definition, rows, timestamp) {
       Value: Number(rawValue),
       Unit: definition.unit,
       Timestamp: timestamp,
-      Dimensions: definition.dimension
-        ? [{ Name: definition.dimension.name, Value: row[definition.dimension.column] }]
-        : [],
+      Dimensions: definition.dimension ? [{ Name: definition.dimension.name, Value: row[definition.dimension.column] }] : [],
     });
   }
   return datums;
