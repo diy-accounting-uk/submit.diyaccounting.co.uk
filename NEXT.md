@@ -127,7 +127,10 @@ live in issue #43.
   the #54 deploy (prod-929d6af) is live, only it should remain; the rest (prod-7f188b7,
   8c12b18, af7eab7, 5570316, 8fe61f8, d411b61, 64fb844, 31dfaaf, 075cc43) are each eight
   stacks, 31 Lambdas with five provisioned-concurrency units, a distribution and a WAF
-  ACL. Operator: say go and Claude Code dispatches `destroy-prod.yml` per deployment.
+  ACL. Operator authorised seven on 2026-08-29 (prod-7f188b7, 8c12b18, af7eab7, 5570316,
+  8fe61f8, d411b61, 64fb844); `destroy-prod.yml` runs them one at a time (its concurrency
+  group cancels surplus queued runs). Claude Code: confirm all seven are gone, then queue
+  prod-31dfaaf and prod-075cc43 once prod-929d6af is live and last-known-good.
   Twenty orphaned log groups from four long-destroyed deployments (`prod-2078c71`,
   `prod-e1af480`, `prod-db95ffc`, `prod-c66bf01`) can go in the same sweep. Branches: all
   15 `origin/claude/*` are merged; all 33 local `claude/*` are merged (one holds a
