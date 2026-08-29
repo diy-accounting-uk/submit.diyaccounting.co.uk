@@ -163,6 +163,53 @@ class DataQualityTest {
     }
 
     @Test
+    void runnerLambdaGrantsPartitionRegistrationAndScopedListBucket() {
+        Template template = synthDataQuality();
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        Match.arrayWith(
+                                                List.of("glue:GetPartitions", "glue:BatchCreatePartition")))))))))));
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "s3:ListBucket",
+                                        "Condition",
+                                        Match.objectLike(Map.of(
+                                                "StringLike",
+                                                Map.of(
+                                                        "s3:prefix",
+                                                        "curated/activity-events/*"))))))))))));
+    }
+
+    @Test
+    void runnerLambdaEnvironmentCarriesLakeBucketAndCuratedPrefix() {
+        Template template = synthDataQuality();
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "ANALYTICS_LAKE_BUCKET_NAME", "docs-env-analytics-lake-111111111111",
+                                        "GLUE_DATA_QUALITY_CURATED_PREFIX", "curated/activity-events/")))))));
+    }
+
+    @Test
     void noIamPolicyStatementGrantsOnEveryResourceExceptTheConditionedGlueMetricsGrant() {
         Template template = synthDataQuality();
 

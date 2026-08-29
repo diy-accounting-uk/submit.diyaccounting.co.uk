@@ -60,6 +60,10 @@ public class DataQuality extends Construct {
     // columns (actor, flow, outcome, ...) the rules below check.
     private static final String TARGET_TABLE_NAME = "activity_events";
 
+    // Must match AnalyticsStack's ACTIVITY_EVENTS_CURATED_PREFIX: the runner Lambda lists this S3
+    // prefix to find partitions to register in the catalog before Glue Data Quality reads them.
+    private static final String TARGET_TABLE_CURATED_PREFIX = "curated/activity-events/";
+
     private static final String RULESET = """
             Rules = [
                 RowCount > 0,
@@ -237,7 +241,9 @@ public class DataQuality extends Construct {
                         "GLUE_DATABASE_NAME", props.glueDatabaseName(),
                         "GLUE_DATA_QUALITY_TABLE_NAME", TARGET_TABLE_NAME,
                         "GLUE_DATA_QUALITY_RULESET_NAME", rulesetName,
-                        "GLUE_DATA_QUALITY_ROLE_ARN", this.evaluationRole.getRoleArn()))
+                        "GLUE_DATA_QUALITY_ROLE_ARN", this.evaluationRole.getRoleArn(),
+                        "ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName(),
+                        "GLUE_DATA_QUALITY_CURATED_PREFIX", TARGET_TABLE_CURATED_PREFIX))
                 .build();
 
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -247,14 +253,27 @@ public class DataQuality extends Construct {
                 .build());
 
         // Starting a run validates the ruleset's target table through the catalog, so the
-        // caller needs the same read the evaluation role has.
+        // caller needs the same read the evaluation role has. GetPartitions/BatchCreatePartition
+        // let it register partitions from S3 before the run starts, since Glue Data Quality reads
+        // partitions from the catalog only and activity_events uses Athena partition projection
+        // (no partitions registered by default).
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of("glue:GetDatabase", "glue:GetTable"))
+                .actions(List.of(
+                        "glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
                 .resources(List.of(
                         glueCatalogArn(stack),
                         glueDatabaseArn(stack, props.glueDatabaseName()),
                         glueTableArn(stack, props.glueDatabaseName(), TARGET_TABLE_NAME)))
+                .build());
+
+        // Lists the curated activity-events prefix to discover partitions to register; scoped to
+        // that one prefix so the Lambda can't enumerate the rest of the lake bucket.
+        this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(props.lakeBucket().getBucketArn()))
+                .conditions(Map.of("StringLike", Map.of("s3:prefix", TARGET_TABLE_CURATED_PREFIX + "*")))
                 .build());
 
         // The Lambda only ever hands this one role to Glue: iam:PassRole is scoped to it, with
