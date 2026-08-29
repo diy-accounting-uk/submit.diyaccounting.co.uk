@@ -10,7 +10,9 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-af7eab7 plus PRs #46, #47 and #50 (merged 2026-08-29, deploying).**
+**Prod runs deployment prod-8fe61f8 (PRs #46, #47 and #50; live and last-known-good since
+2026-08-29 08:15 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
+lake is receiving events.
 PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift findings
 live in issue #43.
 
