@@ -5,6 +5,7 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { hasReachedHostedUi, hostedUiFormFailureMessage, hostedUiRedirectFailureMessage } from "../helpers/hosted-ui-navigation.js";
 import { TOTP, Secret } from "otpauth";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-login-steps";
@@ -91,18 +92,71 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
   });
 }
 
+const hostedUiRedirectAttempts = 3;
+const hostedUiRedirectTimeout = 20000;
+
+async function readAppStatusMessage(page) {
+  try {
+    const text = await page.locator("#statusMessagesContainer").innerText({ timeout: 2000 });
+    return text.trim();
+  } catch {
+    return "";
+  }
+}
+
+async function readHostedUiErrorText(page) {
+  try {
+    const text = await page.locator("#errorMessage, .errorMessage, .error-message, .alert-error").first().innerText({ timeout: 2000 });
+    return text.trim();
+  } catch {
+    return "";
+  }
+}
+
 export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Google account", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png` });
     await expect(page.getByText("Google account")).toBeVisible();
-    await loggedClick(page, "button:has-text('Google account')", "Google account", {
-      screenshotPath,
-    });
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
-    await page.screenshot({
-      path: `${screenshotPath}/${timestamp()}-02-cognito-provider-auth-clicked.png`,
-    });
+
+    const appOrigin = new URL(page.url()).origin;
+
+    for (let attempt = 1; attempt <= hostedUiRedirectAttempts; attempt++) {
+      // The sign-in button is static HTML, but the login page attaches its click handler
+      // from an inline script that only runs once the parser-blocking scripts above it
+      // have loaded. A click before then lands on a button with no handler, does nothing,
+      // and leaves the browser sitting on the app's own login page.
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForFunction(() => typeof document.getElementById("loginWithCognito")?.onclick === "function", null, {
+        timeout: 30000,
+      });
+
+      await loggedClick(page, "button:has-text('Google account')", "Google account", {
+        screenshotPath,
+      });
+
+      try {
+        await page.waitForURL((url) => hasReachedHostedUi(url.toString(), appOrigin), { timeout: hostedUiRedirectTimeout });
+        await page.waitForLoadState("networkidle");
+        await page.waitForTimeout(500);
+        await page.screenshot({
+          path: `${screenshotPath}/${timestamp()}-02-cognito-provider-auth-clicked.png`,
+        });
+        return;
+      } catch {
+        const failure = hostedUiRedirectFailureMessage({
+          attempts: attempt,
+          currentUrl: page.url(),
+          pageTitle: await page.title(),
+          statusText: await readAppStatusMessage(page),
+        });
+        await page.screenshot({ path: `${screenshotPath}/${timestamp()}-cognito-redirect-not-followed-${attempt}.png` });
+        console.error(failure);
+        if (attempt === hostedUiRedirectAttempts) {
+          throw new Error(failure);
+        }
+        await page.reload({ waitUntil: "domcontentloaded" });
+      }
+    }
   });
 }
 
@@ -155,37 +209,36 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
   await test.step("The user enters their credentials on the Cognito Hosted UI", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
-    // Wait for the Hosted UI email/password form to load.
     // The Cognito Hosted UI renders duplicate forms (desktop/mobile) synced by JS.
-    // Playwright's fill() hangs even with force:true (editable check blocks), so we
-    // use JavaScript to set values on ALL matching input elements by name attribute.
-    // We use the native HTMLInputElement setter to trigger framework state updates.
+    // Playwright's fill() hangs even with force:true (editable check blocks), so the
+    // fields below are driven with focus plus keyboard input instead.
     //
-    // IMPORTANT: After enabling native auth on Cognito, the Hosted UI may take extra
-    // time to reflect the changes. We use a longer timeout (30s) and retry logic to
-    // handle this propagation delay.
-    // Cognito's Hosted UI is intermittently slow to render the form (red deploy
-    // runs on 2026-07-11/12 and 2026-08-24 all failed here with the domain
-    // healthy). Escalate the wait per attempt rather than failing fast.
-    const maxAttempts = 6;
-    const baseTimeout = 15000;
+    // initCognitoAuth has already proved the browser reached the Hosted UI, so a missing
+    // form here means Cognito itself is slow or serving an error. Reload once per attempt
+    // and report what the page actually shows.
+    const maxAttempts = 3;
     let formFound = false;
 
     for (let attempt = 1; attempt <= maxAttempts && !formFound; attempt++) {
-      const attemptTimeout = baseTimeout * Math.min(attempt, 3);
       try {
-        console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts}, timeout ${attemptTimeout}ms)...`);
-        await page.waitForSelector('input[name="username"]', { state: "attached", timeout: attemptTimeout });
+        console.log(`Waiting for Hosted UI form (attempt ${attempt}/${maxAttempts})...`);
+        await page.waitForSelector('input[name="username"]', { state: "attached", timeout: 20000 });
         await page.waitForSelector('input[name="password"]', { state: "attached", timeout: 5000 });
         formFound = true;
         console.log(`Hosted UI form fields found in DOM`);
       } catch (error) {
+        const failure = hostedUiFormFailureMessage({
+          attempts: attempt,
+          currentUrl: page.url(),
+          pageTitle: await page.title(),
+          errorText: await readHostedUiErrorText(page),
+        });
         if (attempt === maxAttempts) {
-          console.error(`Failed to find Hosted UI form after ${maxAttempts} attempts`);
+          console.error(failure);
           await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-form-not-found.png` });
-          throw error;
+          throw new Error(failure, { cause: error });
         }
-        console.log(`Form not found, refreshing page and retrying...`);
+        console.log(`${failure} Reloading and retrying...`);
         await page.screenshot({ path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png` });
         await page.reload({ waitUntil: "networkidle" });
         await page.waitForTimeout(2000 * attempt);
