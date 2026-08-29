@@ -154,8 +154,10 @@ function sleep(ms) {
  * @returns {Promise<void>}
  */
 export async function pollUntilTerminal(athenaClient, queryExecutionId) {
-  const maxAttempts = Number(process.env.ATHENA_POLL_MAX_ATTEMPTS || 20);
-  const intervalMs = Number(process.env.ATHENA_POLL_INTERVAL_MS || 500);
+  // The view queries take up to about ten seconds each on this workgroup; ninety seconds per
+  // query keeps ten sequential queries well inside the function's five-minute timeout.
+  const maxAttempts = Number(process.env.ATHENA_POLL_MAX_ATTEMPTS || 90);
+  const intervalMs = Number(process.env.ATHENA_POLL_INTERVAL_MS || 1000);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const { QueryExecution } = await athenaClient.send(
