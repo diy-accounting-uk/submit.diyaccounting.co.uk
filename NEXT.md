@@ -140,6 +140,16 @@ live in issue #43.
   exist; the archived `antonycc` fork is still configured as a remote. Operator: delete
   the branches (`git branch --merged main`), review and drop the stashes, `git remote
   remove antonycc`. ci is clean.
+- [ ] **`destroy previous` has never run.** Across the last 40 `deploy.yml` runs on main the
+  job is always skipped, including fully green ones (for example 33277407003 on
+  2026-08-29, where every job it needs succeeded, the `set origins` step logged
+  `EXISTING_DEPLOYMENT_NAME=prod-31dfaaf` and the job reported `Set output
+  'existing-deployment-name'`). Its `if` (`deploy.yml:2257`) still evaluates false, so old
+  prod deployments only ever go by hand. Claude Code: find why the job-level output reaches
+  the reusable-workflow call empty (composite output mapping in
+  `.github/actions/set-origins/action.yml:48`, the `uses:` job's expression context, or the
+  `set-last-known-good-deployment` dependency added 2025-11-03), fix it, and prove it on the
+  next prod deploy by seeing the superseded deployment removed.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July. Nothing guards
   against a repeat yet.
