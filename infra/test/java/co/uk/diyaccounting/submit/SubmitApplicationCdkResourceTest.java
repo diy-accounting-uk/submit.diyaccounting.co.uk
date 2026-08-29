@@ -152,7 +152,20 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.opsStack.getStackName());
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
-        Template.fromStack(submitApplication.edgeStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+        Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
+        edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
+
+        // The CloudFront standard-logging bucket moved to AnalyticsStack (env-scoped) so log
+        // history survives every redeploy of this app stack. EdgeStack must create no bucket for
+        // it any more and instead reference the imported env bucket by name; the origin bucket is
+        // the only S3::Bucket this stack still creates.
+        edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
+
+        // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining
+        // them, landing Parquet directly in the shared analytics lake for the Glue catalog.
+        edgeStackTemplate.resourceCountIs("AWS::Logs::DeliverySource", 1);
+        edgeStackTemplate.resourceCountIs("AWS::Logs::DeliveryDestination", 1);
+        edgeStackTemplate.resourceCountIs("AWS::Logs::Delivery", 1);
 
         infof("Created stack:", submitApplication.publishStack.getStackName());
         Template.fromStack(submitApplication.publishStack).resourceCountIs("Custom::CDKBucketDeployment", 1);
@@ -210,8 +223,7 @@ class SubmitApplicationCdkResourceTest {
             Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
             if (props == null) continue;
             if (!policyGrantsBulkRead(props)) continue;
-            boolean expected = rolesThatReadInBulk.stream()
-                    .anyMatch(slug -> policyAttachesToRoleMatching(props, slug));
+            boolean expected = rolesThatReadInBulk.stream().anyMatch(slug -> policyAttachesToRoleMatching(props, slug));
             if (!expected) found.add(entry.getKey());
         }
         return found;
@@ -226,9 +238,8 @@ class SubmitApplicationCdkResourceTest {
         for (Object statementObj : (List<Object>) statements) {
             if (!(statementObj instanceof Map)) continue;
             Object action = ((Map<String, Object>) statementObj).get("Action");
-            List<Object> actions = action instanceof List<?>
-                    ? (List<Object>) action
-                    : action == null ? List.of() : List.of(action);
+            List<Object> actions =
+                    action instanceof List<?> ? (List<Object>) action : action == null ? List.of() : List.of(action);
             for (Object a : actions) {
                 if ("dynamodb:Scan".equals(a) || "dynamodb:BatchGetItem".equals(a)) return true;
             }

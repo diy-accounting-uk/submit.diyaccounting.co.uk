@@ -137,7 +137,9 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     const response = await hmrcVatReturnPostHandler(buildSubmissionEvent());
     expect(response.statusCode).toBe(200);
 
-    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "vat-return-submitted", actor: "customer" }));
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "vat-return-submitted", actor: "customer", userSub: "test-sub" }),
+    );
     expect(metricCalls("VatSubmissionSuccess")).toHaveLength(1);
     expect(metricCalls("VatSubmissionSuccess")[0][0]).toMatchObject({
       namespace: "Submit/Business",

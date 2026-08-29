@@ -90,7 +90,7 @@ export async function ingestHandler(event) {
   const result = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body);
 
   // Publish activity event after token exchange so we can classify the user from the ID token
-  const { email, provider } = extractUserInfoFromResponse(result);
+  const { email, provider, sub } = extractUserInfoFromResponse(result);
   const actor = classifyActor(email);
   const eventName = grantType === "authorization_code" ? "login" : "token-refresh";
   const label = grantType === "authorization_code" ? "Login" : "Token refresh";
@@ -101,23 +101,25 @@ export async function ingestHandler(event) {
     summary: `${label}${providerLabel}${emailLabel}`,
     actor,
     flow: "user-journey",
+    userSub: sub || undefined,
   });
 
   return result;
 }
 
 /**
- * Extract email and identity provider from the token exchange response.
+ * Extract email, identity provider and subject from the token exchange response.
  * Decodes the ID token JWT payload (no signature verification needed —
- * Cognito just issued it). Returns { email, provider } or empty strings.
+ * Cognito just issued it). Returns { email, provider, sub } or empty strings.
  */
 export function extractUserInfoFromResponse(result) {
   try {
-    if (result.statusCode !== 200) return { email: "", provider: "" };
+    if (result.statusCode !== 200) return { email: "", provider: "", sub: "" };
     const body = JSON.parse(result.body);
-    if (!body.idToken) return { email: "", provider: "" };
+    if (!body.idToken) return { email: "", provider: "", sub: "" };
     const payload = JSON.parse(Buffer.from(body.idToken.split(".")[1], "base64url").toString());
     const email = payload.email || "";
+    const sub = payload.sub || "";
     // Cognito federated users have an 'identities' claim (JSON string of provider array)
     let provider = "";
     if (payload.identities) {
@@ -126,10 +128,10 @@ export function extractUserInfoFromResponse(result) {
         provider = identities[0].providerName || "";
       }
     }
-    return { email, provider };
+    return { email, provider, sub };
   } catch (err) {
     logger.warn({ message: "Failed to extract user info from token response", error: err.message });
-    return { email: "", provider: "" };
+    return { email: "", provider: "", sub: "" };
   }
 }
 

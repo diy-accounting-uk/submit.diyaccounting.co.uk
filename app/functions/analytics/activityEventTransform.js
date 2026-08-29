@@ -14,6 +14,27 @@ import { createLogger } from "../../lib/logger.js";
 const logger = createLogger({ source: "app/functions/analytics/activityEventTransform.js" });
 
 /**
+ * Reformat an ISO-8601 timestamp as "yyyy-MM-dd HH:mm:ss.SSS".
+ *
+ * The Parquet destination's OpenX deserializer only recognises a timestamp column in this
+ * space-separated form, not ISO-8601 with a trailing "T" and "Z". A record with this field
+ * left in ISO-8601 form delivers nothing but an error record once format conversion is on.
+ *
+ * @param {string|undefined} isoTimestamp
+ * @returns {string|null}
+ */
+export function toParquetTimestamp(isoTimestamp) {
+  if (!isoTimestamp) return null;
+  const date = new Date(isoTimestamp);
+  if (Number.isNaN(date.getTime())) return null;
+  const pad = (value, length = 2) => String(value).padStart(length, "0");
+  return (
+    `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
+    `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}.${pad(date.getUTCMilliseconds(), 3)}`
+  );
+}
+
+/**
  * Flatten one EventBridge envelope into the row shape the Glue table declares.
  *
  * @param {Object} envelope - Decoded EventBridge event
@@ -23,8 +44,8 @@ export function flattenEnvelope(envelope) {
   const detail = envelope.detail ?? {};
   return {
     event_id: envelope.id ?? null,
-    event_ts: detail.timestamp ?? null,
-    ingest_ts: envelope.time ?? null,
+    event_ts: toParquetTimestamp(detail.timestamp),
+    ingest_ts: toParquetTimestamp(envelope.time),
     event: detail.event ?? null,
     site: detail.site ?? null,
     summary: detail.summary ?? null,

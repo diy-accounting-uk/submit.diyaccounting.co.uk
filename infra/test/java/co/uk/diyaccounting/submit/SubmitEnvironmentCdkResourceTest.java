@@ -94,18 +94,21 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 1);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
+        analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 1);
+        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
+        analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
+        analytics.resourceCountIs("AWS::Glue::Table", 13);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 1);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
         // The lake and the Athena results bucket
-        analytics.resourceCountIs("AWS::S3::Bucket", 2);
+        analytics.resourceCountIs("AWS::S3::Bucket", 3);
 
         analytics.hasResourceProperties(
                 "AWS::KinesisFirehose::DeliveryStream",
                 Match.objectLike(Map.of(
-                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "GZIP")))));
+                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "UNCOMPRESSED")))));
 
         analytics.hasResourceProperties(
                 "AWS::Events::Rule",
@@ -123,6 +126,17 @@ class SubmitEnvironmentCdkResourceTest {
                                 Map.of("Parameters", Match.objectLike(Map.of("projection.enabled", "true")))))));
 
         assertNoUnscopedIamResources(analytics);
+
+        // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
+        // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
+        // of its own.
+        Template ingestion = Template.fromStack(env.ingestionStack);
+        ingestion.resourceCountIs("AWS::S3::Bucket", 0);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 2);
+        ingestion.resourceCountIs("AWS::Events::Rule", 2);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 2);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        assertNoUnscopedIamResources(ingestion);
     }
 
     /**
@@ -155,7 +169,9 @@ class SubmitEnvironmentCdkResourceTest {
     private static boolean isResourceLevelExemptAction(Object action) {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
-                && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
+                && actions.stream()
+                        .allMatch(a -> String.valueOf(a).startsWith("xray:")
+                                || "cloudwatch:PutMetricData".equals(String.valueOf(a)));
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

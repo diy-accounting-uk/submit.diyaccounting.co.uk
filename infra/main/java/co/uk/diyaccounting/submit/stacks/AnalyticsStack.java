@@ -7,14 +7,31 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
+import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
+import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
+import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
+import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
+import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
+import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -22,6 +39,10 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.customresources.AwsCustomResource;
+import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
+import software.amazon.awscdk.customresources.AwsSdkCall;
+import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
 import software.amazon.awscdk.services.athena.CfnWorkGroup;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
@@ -61,6 +82,9 @@ public class AnalyticsStack extends Stack {
 
     private static final String ACTIVITY_EVENTS_RAW_PREFIX = "raw/activity-events/";
     private static final String ACTIVITY_EVENTS_TABLE_NAME = "activity_events_raw";
+    private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
+    private static final String ACTIVITY_EVENTS_CURATED_TABLE_NAME = "activity_events";
+    private static final String ACTIVITY_EVENTS_UNION_VIEW_NAME = "activity_events_all";
 
     public final Bucket lakeBucket;
     public final Bucket resultsBucket;
@@ -212,9 +236,22 @@ public class AnalyticsStack extends Stack {
                 .resources(List.of(transformLambda.ingestLambdaAliasArn))
                 .build());
 
-        // Buffering at 300s and 5 MiB: at this volume the interval always wins, so an event is
-        // queryable five minutes after it is published. WP-3 raises it once the feedback loop
-        // matters less than object count.
+        // Format conversion resolves the destination schema from Glue at delivery time. Glue
+        // authorises table reads against the catalog and database ARNs as well as the table's,
+        // so all three have to be in the statement or the call is denied.
+        firehoseRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"))
+                .resources(List.of(
+                        glueCatalogArn(),
+                        glueDatabaseArn(sharedNames.glueDatabaseName),
+                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME)))
+                .build());
+
+        // Buffering at 900s and 128 MiB: Parquet's per-file overhead makes many small files
+        // actively bad, and fifteen-minute latency is irrelevant to a daily dashboard. The spike's
+        // JSON stays in place at raw/activity-events/ and stays queryable; this stream now writes
+        // only the curated Parquet copy going forward.
         this.activityEventsStream = CfnDeliveryStream.Builder.create(this, prefix + "-ActivityEventsStream")
                 .deliveryStreamName(sharedNames.activityEventsDeliveryStreamName)
                 .deliveryStreamType("DirectPut")
@@ -222,15 +259,17 @@ public class AnalyticsStack extends Stack {
                         CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
                                 .bucketArn(this.lakeBucket.getBucketArn())
                                 .roleArn(firehoseRole.getRoleArn())
-                                .prefix(ACTIVITY_EVENTS_RAW_PREFIX
+                                .prefix(ACTIVITY_EVENTS_CURATED_PREFIX
                                         + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
                                 .errorOutputPrefix(
                                         "errors/activity-events/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
                                 .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
-                                        .intervalInSeconds(300)
-                                        .sizeInMBs(5)
+                                        .intervalInSeconds(900)
+                                        .sizeInMBs(128)
                                         .build())
-                                .compressionFormat("GZIP")
+                                // Parquet carries its own Snappy compression. Gzipping on top would produce
+                                // gzipped Parquet that Athena can read but cannot predicate-push-down into.
+                                .compressionFormat("UNCOMPRESSED")
                                 .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
                                         .enabled(true)
                                         .logGroupName(sharedNames.activityEventsDeliveryStreamLogGroupName)
@@ -247,6 +286,44 @@ public class AnalyticsStack extends Stack {
                                                                 .build()))
                                                 .build()))
                                         .build())
+                                .dataFormatConversionConfiguration(
+                                        CfnDeliveryStream.DataFormatConversionConfigurationProperty.builder()
+                                                .enabled(true)
+                                                .inputFormatConfiguration(
+                                                        CfnDeliveryStream.InputFormatConfigurationProperty.builder()
+                                                                .deserializer(
+                                                                        CfnDeliveryStream.DeserializerProperty.builder()
+                                                                                .openXJsonSerDe(
+                                                                                        CfnDeliveryStream
+                                                                                                .OpenXJsonSerDeProperty
+                                                                                                .builder()
+                                                                                                .convertDotsInJsonKeysToUnderscores(
+                                                                                                        false)
+                                                                                                .caseInsensitive(false)
+                                                                                                .build())
+                                                                                .build())
+                                                                .build())
+                                                .outputFormatConfiguration(
+                                                        CfnDeliveryStream.OutputFormatConfigurationProperty.builder()
+                                                                .serializer(
+                                                                        CfnDeliveryStream.SerializerProperty.builder()
+                                                                                .parquetSerDe(
+                                                                                        CfnDeliveryStream
+                                                                                                .ParquetSerDeProperty
+                                                                                                .builder()
+                                                                                                .compression("SNAPPY")
+                                                                                                .build())
+                                                                                .build())
+                                                                .build())
+                                                .schemaConfiguration(
+                                                        CfnDeliveryStream.SchemaConfigurationProperty.builder()
+                                                                .catalogId(this.getAccount())
+                                                                .databaseName(sharedNames.glueDatabaseName)
+                                                                .tableName(ACTIVITY_EVENTS_CURATED_TABLE_NAME)
+                                                                .roleArn(firehoseRole.getRoleArn())
+                                                                .versionId("LATEST")
+                                                                .build())
+                                                .build())
                                 .build())
                 .build();
         this.activityEventsStream.getNode().addDependency(streamLogGroup);
@@ -283,6 +360,53 @@ public class AnalyticsStack extends Stack {
                         .description("Usage analytics for " + props.envName())
                         .build())
                 .build();
+
+        new CloudFrontAccessLogs(
+                this,
+                CloudFrontAccessLogs.CloudFrontAccessLogsProps.builder()
+                        .envResourceNamePrefix(prefix)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabase(this.glueDatabase)
+                        .build());
+
+        var tableChangeDelivery = new TableChangeDelivery(
+                this,
+                prefix + "-TableChangeDelivery",
+                TableChangeDelivery.TableChangeDeliveryProps.builder()
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseDependency(Optional.of(this.glueDatabase))
+                        .sharedNames(sharedNames)
+                        .envName(props.envName())
+                        .resourceNamePrefix(prefix)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        var stripeTables = new StripeReconciliationTables(
+                this,
+                StripeReconciliationTables.StripeReconciliationTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        stripeTables.balanceTransactionsTable.addResourceDependency(this.glueDatabase);
+        stripeTables.chargesTable.addResourceDependency(this.glueDatabase);
+        stripeTables.subscriptionsTable.addResourceDependency(this.glueDatabase);
+
+        var ga4Tables = new Ga4Tables(
+                this,
+                Ga4Tables.Ga4TablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
@@ -339,6 +463,77 @@ public class AnalyticsStack extends Stack {
                 .build();
         activityEventsTable.addResourceDependency(this.glueDatabase);
 
+        var curatedLocation =
+                "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_CURATED_PREFIX);
+
+        var curatedTableParameters = new LinkedHashMap<String, String>();
+        curatedTableParameters.put("classification", "parquet");
+        curatedTableParameters.put("has_encrypted_data", "false");
+        curatedTableParameters.put("projection.enabled", "true");
+        curatedTableParameters.put("projection.year.type", "integer");
+        curatedTableParameters.put("projection.year.range", "2026,2035");
+        curatedTableParameters.put("projection.month.type", "integer");
+        curatedTableParameters.put("projection.month.range", "1,12");
+        curatedTableParameters.put("projection.month.digits", "2");
+        curatedTableParameters.put("projection.day.type", "integer");
+        curatedTableParameters.put("projection.day.range", "1,31");
+        curatedTableParameters.put("projection.day.digits", "2");
+        curatedTableParameters.put(
+                "storage.location.template", curatedLocation + "year=${year}/month=${month}/day=${day}/");
+
+        var curatedActivityEventsTable = CfnTable.Builder.create(this, prefix + "-ActivityEventsCuratedTable")
+                .catalogId(this.getAccount())
+                .databaseName(sharedNames.glueDatabaseName)
+                .tableInput(CfnTable.TableInputProperty.builder()
+                        .name(ACTIVITY_EVENTS_CURATED_TABLE_NAME)
+                        .description("Activity events converted to Parquet by Firehose, typed columns")
+                        .tableType("EXTERNAL_TABLE")
+                        .parameters(curatedTableParameters)
+                        .partitionKeys(List.of(
+                                CfnTable.ColumnProperty.builder()
+                                        .name("year")
+                                        .type("int")
+                                        .build(),
+                                CfnTable.ColumnProperty.builder()
+                                        .name("month")
+                                        .type("int")
+                                        .build(),
+                                CfnTable.ColumnProperty.builder()
+                                        .name("day")
+                                        .type("int")
+                                        .build()))
+                        .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
+                                .location(curatedLocation)
+                                .inputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
+                                .outputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat")
+                                .serdeInfo(CfnTable.SerdeInfoProperty.builder()
+                                        .serializationLibrary(
+                                                "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")
+                                        .build())
+                                .columns(buildCuratedActivityEventColumns())
+                                .build())
+                        .build())
+                .build();
+        curatedActivityEventsTable.addResourceDependency(this.glueDatabase);
+        // The delivery stream's schema configuration names this table by string, which hides the
+        // dependency from CDK's graph. Format conversion needs the table to exist first.
+        this.activityEventsStream.getNode().addDependency(curatedActivityEventsTable);
+
+        new DataQuality(
+                this,
+                prefix + "-DataQuality",
+                DataQuality.DataQualityProps.builder()
+                        .envName(props.envName())
+                        .resourceNamePrefix(prefix)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseDependency(Optional.of(this.glueDatabase))
+                        .targetTableDependency(Optional.of(curatedActivityEventsTable))
+                        .lakeBucket(this.lakeBucket)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
         // ============================================================================
         // Athena workgroup and saved query
         // ============================================================================
@@ -386,6 +581,111 @@ public class AnalyticsStack extends Stack {
                 .build();
         eventsPerDayQuery.addResourceDependency(this.workGroup);
         eventsPerDayQuery.addResourceDependency(this.glueDatabase);
+
+        // ============================================================================
+        // Union view: activity_events_all reads both eras so WP-6 queries never change
+        // ============================================================================
+        // Presto views are Glue tables of type VIRTUAL_VIEW with a fiddly base64 payload to
+        // hand-build. A one-shot AwsCustomResource running the CREATE OR REPLACE VIEW statement
+        // keeps the SQL readable in the repo and is idempotent on every redeploy.
+        var defaultCutoverDate = LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.BASIC_ISO_DATE);
+        var cutoverDate = getContextValueString(this, "analyticsParquetCutoverDate", defaultCutoverDate);
+        var unionViewSql =
+                loadResourceText("analytics/views/activity_events_all.sql").replace("__CUTOVER_DATE__", cutoverDate);
+
+        var unionViewDefinitionQuery = CfnNamedQuery.Builder.create(this, prefix + "-ActivityEventsAllViewQuery")
+                .name("activity-events-all-view-definition")
+                .description("Definition of the " + ACTIVITY_EVENTS_UNION_VIEW_NAME
+                        + " view, kept here for reference; the custom resource below is what actually runs it")
+                .database(sharedNames.glueDatabaseName)
+                .workGroup(sharedNames.athenaWorkGroupName)
+                .queryString(unionViewSql)
+                .build();
+        unionViewDefinitionQuery.addResourceDependency(this.workGroup);
+        unionViewDefinitionQuery.addResourceDependency(activityEventsTable);
+        unionViewDefinitionQuery.addResourceDependency(curatedActivityEventsTable);
+
+        var createUnionViewCall = AwsSdkCall.builder()
+                .service("Athena")
+                .action("startQueryExecution")
+                .parameters(Map.of(
+                        "QueryString",
+                        unionViewSql,
+                        "QueryExecutionContext",
+                        Map.of("Database", sharedNames.glueDatabaseName),
+                        "WorkGroup",
+                        sharedNames.athenaWorkGroupName))
+                .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
+                .build();
+
+        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
+                .onCreate(createUnionViewCall)
+                .onUpdate(createUnionViewCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of("athena:StartQueryExecution"))
+                                .resources(List.of(athenaWorkGroupArn(sharedNames.athenaWorkGroupName)))
+                                .build(),
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of(
+                                        "glue:GetDatabase",
+                                        "glue:GetTable",
+                                        "glue:GetTables",
+                                        "glue:CreateTable",
+                                        "glue:UpdateTable"))
+                                .resources(List.of(
+                                        glueCatalogArn(),
+                                        glueDatabaseArn(sharedNames.glueDatabaseName),
+                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_TABLE_NAME),
+                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME),
+                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_UNION_VIEW_NAME)))
+                                .build(),
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
+                                .resources(List.of(
+                                        this.resultsBucket.getBucketArn(), this.resultsBucket.getBucketArn() + "/*"))
+                                .build())))
+                .build();
+        createUnionViewResource.getNode().addDependency(this.workGroup);
+        createUnionViewResource.getNode().addDependency(activityEventsTable);
+        createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
+
+        var businessViews = new BusinessViews(
+                this,
+                BusinessViews.BusinessViewsProps.builder()
+                        .resourceNamePrefix(prefix)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .resultsBucket(this.resultsBucket)
+                        .build());
+        businessViews.namedQueries.forEach(q -> {
+            q.addResourceDependency(this.workGroup);
+            q.addResourceDependency(this.glueDatabase);
+        });
+        businessViews.viewResources.forEach(r -> {
+            r.getNode().addDependency(this.workGroup);
+            r.getNode().addDependency(createUnionViewResource);
+            tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
+            r.getNode().addDependency(stripeTables.chargesTable);
+        });
+
+        new AnalyticsDashboard(
+                this,
+                AnalyticsDashboard.AnalyticsDashboardProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .sharedNames(sharedNames)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .build());
 
         // ============================================================================
         // Alarms
@@ -515,5 +815,76 @@ public class AnalyticsStack extends Stack {
                         .type("string")
                         .build())
                 .toList();
+    }
+
+    /**
+     * Same columns as {@link #buildActivityEventColumns()}, typed for Parquet: event_ts and
+     * ingest_ts become timestamp columns, everything else stays string.
+     */
+    private static List<CfnTable.ColumnProperty> buildCuratedActivityEventColumns() {
+        var columns = new ArrayList<CfnTable.ColumnProperty>();
+        columns.add(CfnTable.ColumnProperty.builder()
+                .name("event_id")
+                .type("string")
+                .build());
+        columns.add(CfnTable.ColumnProperty.builder()
+                .name("event_ts")
+                .type("timestamp")
+                .build());
+        columns.add(CfnTable.ColumnProperty.builder()
+                .name("ingest_ts")
+                .type("timestamp")
+                .build());
+        List.of(
+                        "event",
+                        "site",
+                        "summary",
+                        "actor",
+                        "flow",
+                        "outcome",
+                        "failure",
+                        "request_id",
+                        "hashed_sub",
+                        "bundle_id",
+                        "pass_type_id",
+                        "subscription_id",
+                        "visitor_type",
+                        "country",
+                        "page",
+                        "hmrc_status",
+                        "env",
+                        "detail_json")
+                .forEach(name -> columns.add(CfnTable.ColumnProperty.builder()
+                        .name(name)
+                        .type("string")
+                        .build()));
+        return columns;
+    }
+
+    private String glueTableArn(String databaseName, String tableName) {
+        return "arn:aws:glue:%s:%s:table/%s/%s".formatted(this.getRegion(), this.getAccount(), databaseName, tableName);
+    }
+
+    private String glueDatabaseArn(String databaseName) {
+        return "arn:aws:glue:%s:%s:database/%s".formatted(this.getRegion(), this.getAccount(), databaseName);
+    }
+
+    private String glueCatalogArn() {
+        return "arn:aws:glue:%s:%s:catalog".formatted(this.getRegion(), this.getAccount());
+    }
+
+    private String athenaWorkGroupArn(String workGroupName) {
+        return "arn:aws:athena:%s:%s:workgroup/%s".formatted(this.getRegion(), this.getAccount(), workGroupName);
+    }
+
+    private static String loadResourceText(String resourcePath) {
+        try (InputStream in = AnalyticsStack.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                throw new IllegalStateException("Missing analytics resource: " + resourcePath);
+            }
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to load analytics resource: " + resourcePath, e);
+        }
     }
 }

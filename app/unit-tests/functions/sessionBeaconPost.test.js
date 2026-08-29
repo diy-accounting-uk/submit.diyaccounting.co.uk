@@ -42,6 +42,12 @@ describe("sessionBeaconPost ingestHandler", () => {
     );
   });
 
+  it("carries no subject on a new-session beacon, since the visitor is not yet authenticated", async () => {
+    await ingestHandler(buildBeaconEvent({ page: "/index.html" }));
+
+    expect(mockPublishActivityEvent.mock.calls[0][0].userSub).toBeUndefined();
+  });
+
   it("publishes a logout event classified from the account that is leaving", async () => {
     const response = await ingestHandler(buildBeaconEvent({ event: "logout", email: "customer@gmail.com", provider: "Google" }));
 

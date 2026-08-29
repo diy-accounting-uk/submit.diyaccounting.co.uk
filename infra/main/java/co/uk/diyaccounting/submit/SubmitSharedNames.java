@@ -121,6 +121,7 @@ public class SubmitSharedNames {
     public String ue1EcrLogGroupName;
     public String ue1EcrPublishRoleName;
     public String analyticsStackId;
+    public String ingestionStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -133,6 +134,10 @@ public class SubmitSharedNames {
     public String activityEventTransformLambdaHandler;
     public String activityEventTransformLambdaArn;
     public String activityEventTransformProvisionedConcurrencyLambdaAliasArn;
+    public String dynamoStreamToFirehoseLambdaFunctionName;
+    public String dynamoStreamToFirehoseLambdaHandler;
+    public String dynamoStreamToFirehoseLambdaArn;
+    public String dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn;
 
     // Env-level billing webhook Lambda
     public String envBillingWebhookLambdaFunctionName;
@@ -483,6 +488,7 @@ public class SubmitSharedNames {
         this.ue1EcrLogGroupName = "/aws/ecr/%s-us-east-1".formatted(this.envResourceNamePrefix);
         this.ue1EcrPublishRoleName = "%s-ecr-publish-role-us-east-1".formatted(this.envResourceNamePrefix);
         this.analyticsStackId = "%s-env-AnalyticsStack".formatted(props.envName);
+        this.ingestionStackId = "%s-env-IngestionStack".formatted(props.envName);
         this.analyticsLakeBucketName = "%s-analytics-lake-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.analyticsResultsBucketName =
                 "%s-analytics-results-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
@@ -498,6 +504,13 @@ public class SubmitSharedNames {
                 .formatted(props.regionName, props.awsAccount, this.activityEventTransformLambdaFunctionName);
         this.activityEventTransformProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.activityEventTransformLambdaArn, this.provisionedConcurrencyAliasName);
+        this.dynamoStreamToFirehoseLambdaFunctionName =
+                "%s-dynamo-stream-to-firehose".formatted(this.envResourceNamePrefix);
+        this.dynamoStreamToFirehoseLambdaHandler = "app/functions/analytics/dynamoStreamToFirehose.handler";
+        this.dynamoStreamToFirehoseLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.dynamoStreamToFirehoseLambdaFunctionName);
+        this.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.dynamoStreamToFirehoseLambdaArn, this.provisionedConcurrencyAliasName);
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         // Env-level billing webhook Lambda
@@ -1211,5 +1224,28 @@ public class SubmitSharedNames {
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
         this.selfDestructProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
+    }
+
+    /**
+     * Firehose delivery stream name for one DynamoDB table's change records, e.g.
+     * {@code ci-env-stream-receipts}. Parameterized rather than a fixed field because it is
+     * needed once per streamed table (receipts, bundles, subscriptions, passes).
+     *
+     * @param table the table's short name, e.g. "receipts"
+     * @return the delivery stream name
+     */
+    public String tableStreamDeliveryStreamName(String table) {
+        return "%s-stream-%s".formatted(this.envResourceNamePrefix, table);
+    }
+
+    /**
+     * CloudWatch log group name for a Firehose delivery stream, matching the naming this repo
+     * already uses for the activity-events stream's log group.
+     *
+     * @param deliveryStreamName the delivery stream's name
+     * @return the log group name
+     */
+    public String deliveryStreamLogGroupName(String deliveryStreamName) {
+        return "/aws/kinesisfirehose/%s".formatted(deliveryStreamName);
     }
 }

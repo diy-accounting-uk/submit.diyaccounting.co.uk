@@ -226,6 +226,40 @@ describe("lib/activityAlert", () => {
       expect(detail.requestId).toBeUndefined();
       expect(detail.actor).toBe("customer");
     });
+
+    test("carries the hashed sub from an explicit userSub, and never the raw sub", async () => {
+      process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+      await initializeSalt();
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+
+      await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted", userSub: "explicit-sub-123" });
+
+      const rawDetail = mockSend.mock.calls[0][0].input.Entries[0].Detail;
+      expect(rawDetail).not.toContain("explicit-sub-123");
+      expect(JSON.parse(rawDetail).hashedSub).toBe(hashSub("explicit-sub-123"));
+    });
+
+    test("falls back to the userSub in context when no explicit userSub is passed", async () => {
+      process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+      await initializeSalt();
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+
+      await context.run(new Map(), async () => {
+        context.set("userSub", "context-sub-456");
+        await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted" });
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.hashedSub).toBe(hashSub("context-sub-456"));
+    });
+
+    test("omits the hashed sub when no sub is available", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "new-session", summary: "New session" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.hashedSub).toBeUndefined();
+    });
   });
 
   describe("resolveActorClass", () => {

@@ -17,6 +17,7 @@ import co.uk.diyaccounting.submit.stacks.DataStack;
 import co.uk.diyaccounting.submit.stacks.EcrStack;
 import co.uk.diyaccounting.submit.stacks.HoldingStack;
 import co.uk.diyaccounting.submit.stacks.IdentityStack;
+import co.uk.diyaccounting.submit.stacks.IngestionStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
@@ -35,6 +36,7 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
     public final AnalyticsStack analyticsStack;
+    public final IngestionStack ingestionStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
     public final SimulatorStack simulatorStack;
@@ -69,6 +71,8 @@ public class SubmitEnvironment {
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String baseImageTag;
+        public String ga4PropertyId;
+        public String ga4ServiceAccountArn;
         public String crossAccountBackupVaultArn;
 
         public static class Builder {
@@ -162,6 +166,13 @@ public class SubmitEnvironment {
                 "STRIPE_TEST_WEBHOOK_SECRET_ARN",
                 appProps.stripeTestWebhookSecretArn,
                 "(from stripeTestWebhookSecretArn in cdk.json)");
+        // Not a secret, so cdk.json is the primary source; GA4_PROPERTY_ID still overrides it,
+        // matching every other value in this block.
+        var ga4PropertyId = envOr("GA4_PROPERTY_ID", appProps.ga4PropertyId, "(from ga4PropertyId in cdk.json)");
+        var ga4ServiceAccountArn = envOr(
+                "GA4_SERVICE_ACCOUNT_ARN",
+                appProps.ga4ServiceAccountArn,
+                "(from ga4ServiceAccountArn in cdk.json)");
         // envOr's third argument is only a log label, so the fallback has to be the second one.
         var baseImageTag = envOr(
                 "BASE_IMAGE_TAG",
@@ -284,6 +295,34 @@ public class SubmitEnvironment {
                         .build());
         this.analyticsStack.addStackDependency(this.activityStack);
         this.analyticsStack.addStackDependency(this.dataStack);
+
+        // Create IngestionStack with the scheduling skeleton the Stripe, GA4 and CloudFront
+        // ingestion jobs plug into
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.ingestionStackId, deploymentName, envName);
+        this.ingestionStack = new IngestionStack(
+                app,
+                sharedNames.ingestionStackId,
+                IngestionStack.IngestionStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        // envOr's fallback is nullable (nothing sets these in cdk.json, only the
+                        // .env.* files), and Immutables builder setters reject null outright even
+                        // for a @Value.Default attribute, so every value here needs the same
+                        // guard the BillingWebhookStack wiring below already uses.
+                        .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
+                        .ga4PropertyId(ga4PropertyId != null ? ga4PropertyId : "")
+                        .ga4ServiceAccountArn(ga4ServiceAccountArn != null ? ga4ServiceAccountArn : "")
+                        .build());
+        this.ingestionStack.addStackDependency(this.analyticsStack);
 
         // Create the identity stack before any user-aware services
         infof(
