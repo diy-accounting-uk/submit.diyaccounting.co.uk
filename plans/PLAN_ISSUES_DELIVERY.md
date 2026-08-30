@@ -17,7 +17,6 @@ Frontend hygiene and internal naming — mechanical, low-blast-radius.
 | # | Title | Effort | Copilot? |
 |---|---|---|---|
 | [4](issues/PLAN_ISSUE_4_home_button_canonical.md) | Home button without `index.html` | S | **Yes** |
-| [3](issues/PLAN_ISSUE_3_retire_link_tree.md) | Retire Linktree | S | Partial (repo audit) |
 | [6](issues/PLAN_ISSUE_6_pass_link_navigation.md) | Pass link navigation | M | **Yes** (after Q6.1) |
 | [12](issues/PLAN_ISSUE_12_synthetic_naming_alignment.md) | synthetic/sandbox naming alignment | M | **Yes** (mechanical renames) |
 | [13](issues/PLAN_ISSUE_13_multi_url_lighthouse.md) | Multi-URL Lighthouse | S | **Yes** |

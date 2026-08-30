@@ -66,9 +66,6 @@ Issue numbers were renumbered when the repo migrated orgs in 2026-05 (old #425�
 - **Q12.1** — Keep `sandbox` in `hmrcAccount=sandbox` sessionStorage (vendor word), or align with the rename?
 - **Q12.2** — UI copy — "Developer mode" (user-familiar) or "Synthetic mode" (more correct)?
 - **Q12.3** — `testPass` → `synthetic` DynamoDB migration window — 30 or 90 days?
-- **Q3.1** — Who controls the Linktree account credentials?
-- **Q3.2** — Owned `/links` page on the gateway, or direct-to-home?
-- **Q3.3** — Any printed assets still show `linktr.ee/diyaccounting`?
 
 ## 6. Growth / community
 
