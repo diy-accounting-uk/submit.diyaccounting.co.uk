@@ -51,6 +51,20 @@ operator step before them is done or when SSO is live.
 - [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
   scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
   all ran.
+- [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Claude Code: activate
+  org-wide cost allocation tags (the CDK per-stack tags exist but are not
+  allocation-active), set up CUR 2.0 / Data Exports to S3 with Athena over it, AWS Budgets
+  with alerts and Cost Anomaly Detection in each of the six accounts, and Cost Explorer
+  granularity. Management-account and billing writes come to the operator for approval as
+  they arise. Feeds backlog #43's whole-bill review.
+- [ ] **(#3) Retire the Linktree.** The four repos are clean of `linktr.ee` except this
+  repo's own `plans/` docs for the issue. The live page at linktr.ee/diyaccounting now
+  carries mostly third-party affiliate tiles (Babbel, Fabletics, linksynergy redirects)
+  alongside one stale GitHub link, so it misrepresents the business today. Operator: log
+  into Linktree (Q3.1: who holds the credentials) and delete the account or reduce it to a
+  single tile pointing at https://www.diyaccounting.co.uk; update any social bios that
+  link it; confirm no printed assets carry the URL (Q3.3). Claude Code: when the account
+  is gone, remove the `plans/` docs for the issue and close #3.
 - [ ] **security-review.yml has no schedule.** Its cron (line 26) is commented out, so
   the workflow never runs on its own. Operator: say whether that is deliberate; if not,
   Claude Code re-enables it.
