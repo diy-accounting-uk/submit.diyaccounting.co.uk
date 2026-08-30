@@ -58,6 +58,13 @@ operator step before them is done or when SSO is live.
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
   bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
   if the reports have no reader.
+- [ ] **Prod environment deploy blocked on EcrStack.** The `bf26b9a` environment deploy
+  rolled back `prod-env-EcrStack`: its new log-group retention custom resource is denied
+  `logs:PutRetentionPolicy` because the statement grants the `:*` ARN form and the action
+  authorises against the bare log-group ARN; other stacks pass only because a wider
+  statement on their shared provider role covers it. Analytics and ingestion did not deploy
+  behind it. Fix in flight on `claude/retention-policy-arn`. Operator: merge its PR; Claude
+  Code: confirm the next environment deploy is green through analytics and ingestion.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
