@@ -16,29 +16,29 @@ operator step before them is done or when SSO is live.
   1. Claude Code: confirm `verify-backups` on 2026-08-31 is green. The 2026-08-30 run
      failed only because its 48-hour copy-job window still held the five pre-switch failures
      from 02:20 UTC on the 29th; all five copies on the 30th completed.
-- [ ] **(B14) Scheduled ingestion jobs.** The GA4 pull needs its credential.
-  1. Operator: the GA4 Data API is authenticated with a Google Cloud service account (GA4's
-     own admin UI cannot issue API credentials; no GCP compute or billing is involved). In
-     the Google Cloud console pick or create a free project, enable the "Google Analytics
-     Data API" (APIs & Services, Library), then IAM & Admin, Service Accounts, create one,
-     Keys, Add key, JSON. In GA4 Admin, Property Access Management, grant that account's
-     email Viewer on property 523400333. Save the key file locally and give Claude Code its
-     path; it sets `GA4_SERVICE_ACCOUNT_JSON` in the `ci` and `prod` GitHub environments.
-     Deploys skip the secret step until it exists; the GA4 job fails at first invocation
-     until then.
-  2. Claude Code: once the secret exists, confirm rows in `ga4_traffic` through Athena.
-  3. Claude Code: correct WP-8's text in `PLAN_USAGE_DATA_PIPELINE.md`, which says the
-     retry/DLQ shape matches `AccountStack.java:832`; that rule has neither.
+- [ ] **(B14) Scheduled ingestion jobs.** The GA4 credential is in the `ci` and `prod`
+  GitHub environments and env deploys are dispatched to store it in Secrets Manager.
+  Claude Code: confirm both env deploys store the secret, then after the next scheduled
+  pull confirm rows in `ga4_traffic` through Athena, and correct WP-8's text in
+  `PLAN_USAGE_DATA_PIPELINE.md` (it cites `AccountStack.java:832` for a retry/DLQ shape
+  that rule does not have).
+- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent.** Streams G-C76HK806F1
+  (gateway) and G-X4ZPD99X2K (spreadsheets) received no data for 48h to 2026-08-30 while
+  the submit stream flowed. Claude Code: check the tag wiring on www and spreadsheets
+  pages; if collection is broken the usage pipeline will carry submit data only.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
   support@diyaccounting.co.uk, Vacation responder / auto-reply: replace the dead GitHub
   link with `https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`,
   and restrict the responder so it does not reply to automated senders (at least
-  `*@amazonses.com`, `notifications@github.com`, `no-reply@sns.amazonaws.com`); a
-  "contacts only" or filter-based responder both work.
+  `*@amazonses.com`, `notifications@github.com`, `no-reply@sns.amazonaws.com`). The
+  operator has ruled out "contacts only" (new customers must still get the reply); the
+  remaining routes are a filter-based responder or switching the responder off.
 - [ ] **(B19) Analytics console work.** Operator.
   1. GA4 (property 523400333): Admin, Data export, link BigQuery and turn on the daily
-     export; Admin, Events, mark `purchase` and `begin_checkout` as key events; Admin, Data
-     streams, remove the old stream `G-PJPVQWRWJZ`.
+     export; Admin, Events, mark `purchase` and `begin_checkout` as key events. Do NOT
+     remove any stream from 523400333 (all three are current); `G-PJPVQWRWJZ` lives in the
+     separate old property and `PLAN_GA4.md` retires it only after the new streams show
+     comparable traffic for about a week.
   2. Google Ads: check whether the remarketing campaigns for conversion ID 1065724931 are
      still running; pause them or remove the tag from the sites.
   3. Stripe dashboard: Reports, schedule a monthly balance report by email.
