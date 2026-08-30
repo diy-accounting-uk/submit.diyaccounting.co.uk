@@ -172,6 +172,7 @@ public class SelfDestructStack extends Stack {
         // Environment variables for the function
         Map<String, String> selfDestructLambdaEnv = new HashMap<>();
         putIfNotNull(selfDestructLambdaEnv, "EDGE_ORIGIN_BUCKET", props.originBucketName());
+        putIfNotNull(selfDestructLambdaEnv, "DEPLOYMENT_NAME", props.deploymentName());
         putIfNotNull(
                 selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", props.sharedNames().selfDestructLambdaFunctionName);
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);

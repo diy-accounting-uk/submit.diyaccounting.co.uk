@@ -94,6 +94,19 @@ export async function ingestHandler(event, context) {
       }
     }
 
+    // CDK custom-resource provider Lambdas log after their stack has deleted their log group,
+    // so the group comes back with no retention and blocks the next deployment of the same
+    // name with "already exists". Sweep the deployment's log groups once its stacks are gone.
+    if (process.env.DEPLOYMENT_NAME && results.every((r) => r.status !== "error")) {
+      try {
+        const deletedLogGroups = await deleteLeftoverLogGroups(process.env.DEPLOYMENT_NAME);
+        results.push({ logGroups: deletedLogGroups, status: "deleted", error: null });
+      } catch (error) {
+        console.log(`Error deleting leftover log groups for ${process.env.DEPLOYMENT_NAME}: ${error.message}`);
+        results.push({ logGroups: [], status: "error", error: error.message });
+      }
+    }
+
     // Delete self-destruct stack last if no errors
     if (selfDestructStackName && results.every((r) => r.status !== "error")) {
       try {
@@ -138,6 +151,27 @@ export async function ingestHandler(event, context) {
       data: { error: error.message },
     });
   }
+}
+
+async function deleteLeftoverLogGroups(deploymentName) {
+  const { CloudWatchLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand } =
+    await import("@aws-sdk/client-cloudwatch-logs");
+  const logGroupNamePrefix = `/aws/lambda/${deploymentName}-`;
+  const deleted = [];
+  for (const region of ["eu-west-2", "us-east-1"]) {
+    const logsClient = new CloudWatchLogsClient({ region });
+    let nextToken;
+    do {
+      const page = await logsClient.send(new DescribeLogGroupsCommand({ logGroupNamePrefix, nextToken }));
+      for (const { logGroupName } of page.logGroups ?? []) {
+        console.log(`Deleting leftover log group ${logGroupName} in ${region}`);
+        await logsClient.send(new DeleteLogGroupCommand({ logGroupName }));
+        deleted.push(`${region}:${logGroupName}`);
+      }
+      nextToken = page.nextToken;
+    } while (nextToken);
+  }
+  return deleted;
 }
 
 async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDestruct = false) {
