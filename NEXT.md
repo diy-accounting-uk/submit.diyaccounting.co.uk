@@ -16,22 +16,20 @@ account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #
 - [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Everything is in
   place: org switch on, backup account bootstrapped, `setup-backup-account.yml` runs
   unattended, `restore-test.yml` passes on the prod leg.
-  1. Claude Code: after the 2026-08-30 backup window (02:20 to 03:30 UTC), confirm the copy
-     jobs succeed and a recovery point appears in `submit-cross-account-vault`
-     (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`), then
-     dispatch `restore-test.yml` and confirm both legs restore. That pass is the gate for the
-     TypeScript migration (B33).
+  1. Copies work: all five prod tables copied to `submit-cross-account-vault` on 2026-08-30
+     at 02:20 UTC (ci's too). `restore-test.yml` dispatched at 10:40 UTC with both vaults
+     populated (run 33306629727). Claude Code: confirm both legs restore; that pass is the
+     gate for the TypeScript migration (B33). Confirm today's `verify-backups` (12:33 UTC)
+     is green now the copy failures are gone.
   2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
      finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B13a) Firehose spike on one stream.** Verified on ci. Claude Code: run
   `AWS_PROFILE=submit-prod scripts/verify-analytics-pipeline.sh prod`.
-- [ ] **(B13) Usage data pipeline.** Verified on ci and prod (data quality 1.0, publisher
-  completes, table changes and CloudFront logs landing, `hashed_sub` on login and
-  submission events).
-  1. Claude Code: after the 2026-08-30 05:00 UTC run, confirm `Submit/Analytics` metrics
-     exist and the `prod-env-analytics` dashboard shows them. EventBridge's DLQs stay empty
-     on Lambda runtime errors; the Lambda-errors alarms are the signal.
-  2. Claude Code: `hmrc-token-exchanged` events carry no `hashed_sub`
+- [ ] **(B13) Usage data pipeline.** Verified on ci and prod; the first scheduled prod runs
+  on 2026-08-30 passed (data quality 1.0 at 04:00 UTC; the publisher wrote `NewAccounts`
+  for 2026-08-29 at 05:00 UTC, the one view with rows for a test-traffic day). EventBridge's
+  DLQs stay empty on Lambda runtime errors; the Lambda-errors alarms are the signal.
+  1. Claude Code: `hmrc-token-exchanged` events carry no `hashed_sub`
      (`app/functions/hmrc/hmrcTokenPost.js:117`, the fourth call site); no `new-session`
      events reached prod on 2026-08-29, worth a look if `v_traffic_by_country_daily` stays
      empty.
@@ -49,8 +47,10 @@ account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #
      path; it sets `GA4_SERVICE_ACCOUNT_JSON` in the `ci` and `prod` GitHub environments.
      Deploys skip the secret step until it exists; the GA4 job fails at first invocation
      until then.
-  2. Claude Code: after the first scheduled runs (prod nightly; ci Monday 2026-08-31),
-     confirm rows in `stripe_charges` and `ga4_traffic` through Athena.
+  2. Stripe's first scheduled prod run (2026-08-30 02:15 UTC) wrote its three objects for
+     2026-08-29 (one balance transaction, no charges). GA4's failed on the missing secret,
+     as expected until step 1. Claude Code: once the secret exists, confirm rows in
+     `ga4_traffic` through Athena.
   3. Claude Code: correct WP-8's text in `PLAN_USAGE_DATA_PIPELINE.md`, which says the
      retry/DLQ shape matches `AccountStack.java:832`; that rule has neither.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
@@ -72,9 +72,16 @@ account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #
   `stack-drift` are both Monday 06:00 UTC, first due 2026-08-31 (stack-drift's first run
   with the noise filter). Claude Code: check both on Monday; if codeql's schedule stays
   silent next Sunday, treat it with the keep-alive item.
-- [ ] **Sign-in button race.** Fixed in #54 (button ships disabled until wired; the login
-  step waits for the handler and the origin change). Two deploys since passed all 13 suites
-  first time. Claude Code: confirm the next scheduled prod deploy does the same.
+- [ ] **Scheduled prod deploys fail on the test-report upload, not the tests.** The sign-in
+  fix (#54) is proven: the 2026-08-30 scheduled deploy passed all 24 suites, as did the two
+  push deploys before it. The run still reports failure because the `upload web test
+  results` jobs (which only run when `generate-test-reports` is true, i.e. on schedule)
+  fail the same way every day since at least 2026-08-27: `BUCKET_NAME` resolves to the
+  origin bucket of a long-deleted deployment (`prod-fec2016-app-...`) and the report JSON
+  the step expects (`target/behaviour-test-results/<suite>/test-report-*.json`,
+  `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
+  bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
+  if the reports have no reader.
 - [ ] **`destroy previous` never ran.** Fixed in #56 and proven on its own deploy (run
   33283751626): `destroy previous / destroy` ran and removed prod-929d6af's eight stacks
   and all its log groups.
