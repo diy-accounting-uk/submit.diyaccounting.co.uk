@@ -33,6 +33,20 @@
 - Do NOT overfit to the simulator — always verify against proxy/CI with real services
 - Do NOT ask obvious questions (which URL, which branch) — read the plan file
 
+## NEXT.md holds open work only (CRITICAL)
+
+`NEXT.md` is the list of what remains to do. It never records what is done, what was decided
+against, what was removed, or how something got fixed. When a task closes, delete its entry in
+the same commit; when part of a task closes, delete that part and leave the remainder. Never
+write "done", "fixed in #N", "proven", "removed", "if wanted", or a reference to a branch,
+deployment, file or setting that no longer exists. Completed work lives in `git log` and the
+PR record; the operator does not want to read it again here. Narrative that explains an open
+item is fine when it changes what the next session does; narrative that explains history is
+not.
+
+**Why:** the operator asked twice on 2026-08-30 for completed and "won't do" content to be
+stripped after sessions kept accreting status notes and "tidy up X if wanted" lines.
+
 ## Quick Reference
 
 **Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
