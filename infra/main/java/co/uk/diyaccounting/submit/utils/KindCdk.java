@@ -138,15 +138,30 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceNotFoundException")
                 .build();
 
+        // Both custom resources carry the full statement list. Each AwsCustomResource gets its own
+        // IAM policy, invoked within a second of that policy's creation, and IAM propagation is
+        // not that fast: the retention call was denied in prod on a policy that had just landed.
+        // Granting PutRetentionPolicy from the first resource's policy puts the permission on the
+        // shared provider role well before the second resource runs.
+        // PutRetentionPolicy authorises against the bare log-group ARN, not the ":*" form the
+        // stream-level actions use.
+        String logGroupArn =
+                "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:" + logGroupName;
+        List<PolicyStatement> logGroupStatements = List.of(
+                PolicyStatement.Builder.create()
+                        .actions(List.of("logs:CreateLogGroup", "logs:DeleteLogGroup"))
+                        .resources(List.of(logGroupArn + ":*"))
+                        .build(),
+                PolicyStatement.Builder.create()
+                        .actions(List.of("logs:PutRetentionPolicy"))
+                        .resources(List.of(logGroupArn, logGroupArn + ":*"))
+                        .build());
+
         AwsCustomResource ensureResource = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
                 .onCreate(createLogGroupCall)
                 .onUpdate(createLogGroupCall)
                 .onDelete(deleteLogGroupCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("logs:CreateLogGroup", "logs:DeleteLogGroup"))
-                        .resources(List.of("arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":log-group:" + logGroupName + ":*"))
-                        .build())))
+                .policy(AwsCustomResourcePolicy.fromStatements(logGroupStatements))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
@@ -163,17 +178,7 @@ public class KindCdk {
                         stack, id + "-EnsureLogGroupRetention")
                 .onCreate(putRetentionCall)
                 .onUpdate(putRetentionCall)
-                // PutRetentionPolicy authorises against the bare log-group ARN, not the ":*" form the
-                // stream-level actions use; in stacks with other custom resources a wider statement
-                // on the shared provider role hid that, EcrStack has none.
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("logs:PutRetentionPolicy"))
-                        .resources(List.of(
-                                "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:"
-                                        + logGroupName,
-                                "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:"
-                                        + logGroupName + ":*"))
-                        .build())))
+                .policy(AwsCustomResourcePolicy.fromStatements(logGroupStatements))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
         ensureRetentionResource.getNode().addDependency(ensureResource);
