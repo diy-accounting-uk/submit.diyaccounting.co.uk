@@ -16,8 +16,6 @@ operator step before them is done or when SSO is live.
   1. Claude Code: confirm `verify-backups` on 2026-08-31 is green. The 2026-08-30 run
      failed only because its 48-hour copy-job window still held the five pre-switch failures
      from 02:20 UTC on the 29th; all five copies on the 30th completed.
-  2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
-     finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B14) Scheduled ingestion jobs.** The GA4 pull needs its credential.
   1. Operator: the GA4 Data API is authenticated with a Google Cloud service account (GA4's
      own admin UI cannot issue API credentials; no GCP compute or billing is involved). In
