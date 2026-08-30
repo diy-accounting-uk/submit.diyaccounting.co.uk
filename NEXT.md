@@ -55,9 +55,9 @@ operator step before them is done or when SSO is live.
   `prod-auth.diyaccounting.co.uk`; its validation CNAME is restored with operator
   approval. Claude Code: confirm the prod renewal completes (new NotAfter), re-dispatch
   certificate-check until both environments pass, then close the plan.
-- [ ] **Keep-alive for scheduled workflows.** Operator: merge #63 (weekly job that
-  re-enables inactivity-disabled workflows and fails loudly if any stay disabled), and
-  decide whether `security-review.yml`'s commented-out schedule (line 26) is deliberate.
+- [ ] **Keep-alive for scheduled workflows (#63, merged).** Claude Code: confirm the
+  dispatched first run swept clean. Operator: decide whether `security-review.yml`'s
+  commented-out schedule (line 26) is deliberate.
 
 ## Discipline
 
