@@ -519,6 +519,35 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
+      - name: Refuse to destroy the live or last known good deployment
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          PROD_APEX_ALIAS: submit.diyaccounting.co.uk
+        run: |
+          set -euo pipefail
+          if ! [[ "$DEPLOYMENT" =~ ^prod-[a-zA-Z0-9-]+$ ]] \
+             || [[ "$DEPLOYMENT" == *-holding ]] || [[ "$DEPLOYMENT" == *-gateway ]] || [[ "$DEPLOYMENT" == *-spreadsheets ]]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: not an app deployment name"
+            exit 1
+          fi
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter \
+            --name "/submit/prod/last-known-good-deployment" \
+            --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          echo "Last known good prod deployment: [$LAST_KNOWN_GOOD]"
+          if [ "$DEPLOYMENT" = "$LAST_KNOWN_GOOD" ]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: it is the last known good deployment"
+            exit 1
+          fi
+          LIVE_DISTRIBUTION=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${PROD_APEX_ALIAS}') && contains(Aliases.Items, '${DEPLOYMENT}.${PROD_APEX_ALIAS}')].Id | [0]" \
+            --output text)
+          if [ -n "$LIVE_DISTRIBUTION" ] && [ "$LIVE_DISTRIBUTION" != "None" ]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: distribution [$LIVE_DISTRIBUTION] still serves [$PROD_APEX_ALIAS]"
+            exit 1
+          fi
+          echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
+
       - name: Node dependencies
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
         timeout-minutes: 6
@@ -687,3 +716,30 @@ jobs:
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+
+      # CDK custom-resource provider Lambdas create their own log groups outside the stacks, so
+      # they survive stack deletion with no retention.
+      - name: Delete leftover Lambda log groups
+        if: ${{ !cancelled() }}
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          set -euo pipefail
+          for REGION in eu-west-2 us-east-1; do
+            REMAINING=$(aws cloudformation describe-stacks --region "$REGION" \
+              --query "Stacks[?starts_with(StackName, '${DEPLOYMENT}-')].StackName" --output text)
+            if [ -n "$REMAINING" ] && [ "$REMAINING" != "None" ]; then
+              echo "Stacks still present for ${DEPLOYMENT} in ${REGION}, leaving its log groups: ${REMAINING}"
+              continue
+            fi
+            LOG_GROUPS=$(aws logs describe-log-groups --region "$REGION" \
+              --log-group-name-prefix "/aws/lambda/${DEPLOYMENT}-" \
+              --query "logGroups[].logGroupName" --output text | tr '\t' '\n')
+            for LOG_GROUP in $LOG_GROUPS; do
+              [ -z "$LOG_GROUP" ] || [ "$LOG_GROUP" = "None" ] && continue
+              echo "Deleting log group ${LOG_GROUP} in ${REGION}"
+              aws logs delete-log-group --region "$REGION" --log-group-name "$LOG_GROUP" \
+                || echo "Failed to delete ${LOG_GROUP} in ${REGION}"
+            done
+          done
