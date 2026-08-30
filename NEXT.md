@@ -148,14 +148,13 @@ live in issue #43.
   predecessors were never removed. Fix in PR #56: `!cancelled()` plus explicit result checks
   on the `if`; `destroy-prod.yml` refuses to destroy the last-known-good or live deployment
   and deletes a deployment's leftover Lambda log groups once its stacks are gone.
-  1. Operator: merge PR #56.
-  2. Claude Code: on the next prod deploy, confirm `destroy previous` runs and the
-     superseded deployment's stacks and log groups are gone.
-  3. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
+  1. Merged (#56, 2026-08-30). Claude Code: on its prod deploy, confirm `destroy previous`
+     runs and prod-929d6af's stacks and log groups are gone.
+  2. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
      `ApiStack`, `OpsStack`, `EdgeStack`, `PublishStack`, `KindCdk`, `Route53AliasUpsert`)
      create log groups the stacks do not own; give each an explicit `LogGroup` with
      retention and DESTROY. The app Lambdas already do (`constructs/Lambda.java`).
-  4. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
+  3. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
      most with no retention) remain in us-east-1; say go and Claude Code deletes them.
   The scheduled sweep in `destroy-prod.yml` does work but removes one deployment per run
   and produced no runs between 2026-07-13 and 2026-08-24, the same gap as the keep-alive
