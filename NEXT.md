@@ -50,7 +50,9 @@ operator step before them is done or when SSO is live.
   on 2026-09-06 and treat a second miss with the keep-alive item.
 - [ ] **Scheduled prod deploys fail on the test-report upload, not the tests.** The
   `upload web test results` jobs (scheduled runs only, where `generate-test-reports` is
-  true) fail every day: `BUCKET_NAME` resolves to the
+  true) fail every day, and because `set-last-known-good-deployment` gates on the whole
+  test workflow, every scheduled deploy also skips last-known-good and `destroy previous`,
+  leaving its predecessor's stacks behind (prod-1c556ed after the 2026-08-30 run). They fail on: `BUCKET_NAME` resolves to the
   origin bucket of a long-deleted deployment (`prod-fec2016-app-...`) and the report JSON
   the step expects (`target/behaviour-test-results/<suite>/test-report-*.json`,
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
