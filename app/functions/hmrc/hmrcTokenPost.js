@@ -116,6 +116,7 @@ export async function ingestHandler(event) {
   await publishActivityEvent({
     event: "hmrc-token-exchanged",
     summary: "HMRC token exchanged",
+    userSub,
   });
   return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 }
