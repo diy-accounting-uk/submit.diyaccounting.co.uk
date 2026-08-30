@@ -58,6 +58,10 @@ operator step before them is done or when SSO is live.
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
   bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
   if the reports have no reader.
+- [ ] **Prod app deploy after the retention-race PR.** Claude Code: on merge, confirm the
+  prod deploy is green through ApiStack, `set last-known-good` and `destroy previous`.
+  Operator: approve deleting the rolled-back `prod-f9d0d1a-app-*` stacks (ApiStack is
+  ROLLBACK_COMPLETE; Account, Auth, Billing, Hmrc are orphans of the same deployment).
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
