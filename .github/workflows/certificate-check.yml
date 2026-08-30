@@ -1,0 +1,97 @@
+name: certificate-check
+run-name: "certificate check of ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Fails when any ACM certificate in the account has a domain whose validation is not
+# SUCCESS, or expires within 30 days. A deleted DNS validation record otherwise stays
+# silent until ACM's renewal window, leaving days instead of months to react.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Weekly on Monday, after the 06:00 compliance run
+  workflow_dispatch:
+
+concurrency:
+  group: certificate-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  check-certificates:
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [ci, prod]
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Check every certificate's validation status and expiry
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEADLINE=$(date -u -d '+30 days' +%s)
+          FAILURES=0
+          for REGION in eu-west-2 us-east-1; do
+            for ARN in $(aws acm list-certificates --region "$REGION" \
+                --includes keyTypes=RSA_1024,RSA_2048,RSA_3072,RSA_4096,EC_prime256v1,EC_secp384r1,EC_secp521r1 \
+                --query 'CertificateSummaryList[].CertificateArn' --output text); do
+              CERT=$(aws acm describe-certificate --region "$REGION" --certificate-arn "$ARN" \
+                --query 'Certificate.{status:Status,notAfter:NotAfter,inUse:InUseBy,domains:DomainValidationOptions[].{d:DomainName,s:ValidationStatus},renewal:RenewalSummary.DomainValidationOptions[].{d:DomainName,s:ValidationStatus}}' \
+                --output json)
+              IN_USE=$(echo "$CERT" | jq '.inUse | length')
+              if [ "$IN_USE" = "0" ]; then
+                echo "SKIP (unused): $ARN"
+                continue
+              fi
+              NOT_AFTER=$(echo "$CERT" | jq -r '.notAfter // empty')
+              if [ -n "$NOT_AFTER" ]; then
+                EXPIRY=$(date -u -d "$NOT_AFTER" +%s)
+                if [ "$EXPIRY" -lt "$DEADLINE" ]; then
+                  echo "FAIL: $ARN expires within 30 days ($NOT_AFTER)"
+                  FAILURES=$((FAILURES+1))
+                fi
+              fi
+              BAD=$(echo "$CERT" | jq -r '[(.domains // [])[], (.renewal // [])[]] | map(select(.s != "SUCCESS")) | .[] | "\(.d)=\(.s)"' | sort -u)
+              if [ -n "$BAD" ]; then
+                echo "FAIL: $ARN has domains not validating:"
+                echo "$BAD" | awk '{print "  " $0}'
+                FAILURES=$((FAILURES+1))
+              else
+                echo "OK: $ARN ($REGION)"
+              fi
+            done
+          done
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "$FAILURES certificate problem(s) found"
+            exit 1
+          fi
+          echo "All in-use certificates validate and expire more than 30 days out"
