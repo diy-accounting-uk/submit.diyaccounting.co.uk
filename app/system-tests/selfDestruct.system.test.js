@@ -37,6 +37,25 @@ vi.mock("@aws-sdk/client-cloudformation", () => {
   };
 });
 
+vi.mock("@aws-sdk/client-cloudwatch-logs", () => {
+  class MockLogsClient {
+    async send() {
+      return { logGroups: [] };
+    }
+  }
+  const DescribeLogGroupsCommand = class DescribeLogGroupsCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const DeleteLogGroupCommand = class DeleteLogGroupCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { CloudWatchLogsClient: MockLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand };
+});
+
 function makeEvent() {
   return { requestContext: { http: { method: "POST", path: "/ops/self-destruct" } }, headers: {} };
 }

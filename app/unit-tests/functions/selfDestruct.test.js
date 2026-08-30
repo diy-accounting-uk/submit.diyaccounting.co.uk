@@ -39,6 +39,36 @@ vi.mock("@aws-sdk/client-cloudformation", () => {
   };
 });
 
+const logGroupCalls = [];
+class MockLogsClient {
+  constructor({ region }) {
+    this.region = region;
+  }
+  async send(cmd) {
+    logGroupCalls.push({ region: this.region, command: cmd.constructor.name, input: cmd.input });
+    if (cmd.constructor.name === "DescribeLogGroupsCommand") {
+      return this.region === "us-east-1"
+        ? { logGroups: [{ logGroupName: `${cmd.input.logGroupNamePrefix}EdgeStack-AwsCustomResourceProvider` }] }
+        : { logGroups: [] };
+    }
+    return {};
+  }
+}
+
+vi.mock("@aws-sdk/client-cloudwatch-logs", () => {
+  const DescribeLogGroupsCommand = class DescribeLogGroupsCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const DeleteLogGroupCommand = class DeleteLogGroupCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { CloudWatchLogsClient: MockLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand };
+});
+
 function makeEvent() {
   return {
     requestContext: { http: { method: "POST", path: "/ops/self-destruct" } },
@@ -49,7 +79,9 @@ function makeEvent() {
 describe("functions/infra/selfDestruct", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    logGroupCalls.length = 0;
     Object.assign(process.env, {
+      DEPLOYMENT_NAME: "ci-branch",
       OPS_STACK_NAME: "ops",
       PUBLISH_STACK_NAME: "publish",
       EDGE_STACK_NAME: "edge",
@@ -71,5 +103,30 @@ describe("functions/infra/selfDestruct", () => {
     expect(body.message).toMatch(/Self-destruct sequence completed/);
     // Expect at least one result with skipped
     expect(body.results.some((r) => r.status === "skipped")).toBe(true);
+  });
+
+  it("deletes the deployment's leftover Lambda log groups in both regions once its stacks are gone", async () => {
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    expect(res.statusCode).toBe(200);
+
+    const describes = logGroupCalls.filter((c) => c.command === "DescribeLogGroupsCommand");
+    expect(describes.map((c) => c.region).sort()).toEqual(["eu-west-2", "us-east-1"]);
+    expect(describes.every((c) => c.input.logGroupNamePrefix === "/aws/lambda/ci-branch-")).toBe(true);
+
+    const deletes = logGroupCalls.filter((c) => c.command === "DeleteLogGroupCommand");
+    expect(deletes).toEqual([
+      {
+        region: "us-east-1",
+        command: "DeleteLogGroupCommand",
+        input: { logGroupName: "/aws/lambda/ci-branch-EdgeStack-AwsCustomResourceProvider" },
+      },
+    ]);
+    const body = JSON.parse(res.body);
+    expect(body.results.find((r) => r.logGroups)).toEqual({
+      logGroups: ["us-east-1:/aws/lambda/ci-branch-EdgeStack-AwsCustomResourceProvider"],
+      status: "deleted",
+      error: null,
+    });
   });
 });
