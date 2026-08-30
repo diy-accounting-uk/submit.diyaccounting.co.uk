@@ -49,12 +49,6 @@ operator step before them is done or when SSO is live.
 - [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
   scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
   all ran.
-- [ ] **Certificate renewals (PLAN_CI_CERTIFICATE_RENEWAL.md).** ci renewed to
-  2027-03-15. The first certificate-check run (#62) then caught prod cert `e465ad23`
-  (fronts live submit.diyaccounting.co.uk, expires 2026-09-06) stuck the same way on
-  `prod-auth.diyaccounting.co.uk`; its validation CNAME is restored with operator
-  approval. Claude Code: confirm the prod renewal completes (new NotAfter), re-dispatch
-  certificate-check until both environments pass, then close the plan.
 - [ ] **security-review.yml has no schedule.** Its cron (line 26) is commented out, so
   the workflow never runs on its own. Operator: say whether that is deliberate; if not,
   Claude Code re-enables it.

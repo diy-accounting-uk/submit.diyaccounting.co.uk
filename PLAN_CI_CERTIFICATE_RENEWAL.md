@@ -1,7 +1,6 @@
 # PLAN: CI certificate renewal is blocked on a missing DNS validation record
 
-Status: **renewed to 2027-03-15; closes when #62 (detection check) merges**
-(raised 2026-08-30; deadline 2026-09-04)
+Status: **closed 2026-08-31** (raised 2026-08-30; deadline 2026-09-04)
 
 ## Operator assertions (verbatim)
 
@@ -69,6 +68,12 @@ it displace the statutory items on the board.
   any in-use ACM certificate in ci or prod (both regions) has a domain not validating or
   expires within 30 days. Chosen over a CDK-managed record because the record lives in the
   management account's zone, which this repo's CDK cannot own.
+
+- #62's first run then caught prod cert `e465ad23` (fronting live
+  submit.diyaccounting.co.uk, expiring 2026-09-06) stuck the same way on
+  `prod-auth.diyaccounting.co.uk`. Its validation CNAME was restored with operator
+  approval; the certificate renewed to 2027-03-15. The check now passes for ci and prod
+  (run 33341081056).
 
 ## Evidence gathered 2026-08-30
 
