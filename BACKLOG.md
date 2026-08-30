@@ -22,7 +22,9 @@ truthfully on its own.
   (13a, 13) and the scheduled ingestion jobs (14) are merged to `main` (PRs #46, #47, #50)
   and deploying; `NEXT.md` carries each one's verification remainder. PITR is ENABLED on all
   11 tables and the cross-account vault is LIVE in 914216784828. Item 4 (HMRC free-flag
-  email) is sent and closed.
+  email) is sent (2026-08-26, servicedrm@hmrc.gov.uk); it closes when "There is a free
+  version of this software" appears on the listing, checkable at the 4a text-fragment
+  link.
 - **Operator-bound**: 9 and 9a (Gmail settings), 17a (demo-video redo — Claude Code
   excluded by operator directive), 19 (analytics console work), the GA4 service-account
   secret for 14, the management-account cross-account-backup switch and backup-account
