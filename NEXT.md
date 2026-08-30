@@ -53,11 +53,6 @@ operator step before them is done or when SSO is live.
   deploy's upload jobs fail and skip last-known-good and `destroy previous`). Claude Code:
   after the next scheduled prod deploy, confirm the upload jobs, last-known-good and
   `destroy previous` all ran.
-- [ ] **#60 remainder.** Claude Code: confirm `/aws/apigw/prod-env/access` is receiving
-  access logs from prod-bc6a9dd (needs a fresh `aws sso login --profile submit-prod`).
-  Operator: approve deleting the rolled-back `prod-f9d0d1a-app-*` stacks (ApiStack is
-  ROLLBACK_COMPLETE; Account, Auth, Billing, Hmrc are orphans of the same deployment),
-  which the permission classifier blocked as a loop.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
