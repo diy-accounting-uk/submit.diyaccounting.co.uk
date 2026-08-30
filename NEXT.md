@@ -49,14 +49,15 @@ operator step before them is done or when SSO is live.
 - [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
   scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
   all ran.
-- [ ] **CI certificate renewal (PLAN_CI_CERTIFICATE_RENEWAL.md).** Renewed to
-  2027-03-15. Operator: merge #62 (weekly certificate check, the plan's durable fix).
-  Claude Code: on merge, dispatch the check once, confirm both environments pass, close
-  the plan.
-- [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
-  without repo activity, which is what stopped automation in July and silenced the destroy
-  sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
-  on go.
+- [ ] **Certificate renewals (PLAN_CI_CERTIFICATE_RENEWAL.md).** ci renewed to
+  2027-03-15. The first certificate-check run (#62) then caught prod cert `e465ad23`
+  (fronts live submit.diyaccounting.co.uk, expires 2026-09-06) stuck the same way on
+  `prod-auth.diyaccounting.co.uk`; its validation CNAME is restored with operator
+  approval. Claude Code: confirm the prod renewal completes (new NotAfter), re-dispatch
+  certificate-check until both environments pass, then close the plan.
+- [ ] **Keep-alive for scheduled workflows.** Operator: merge #63 (weekly job that
+  re-enables inactivity-disabled workflows and fails loudly if any stay disabled), and
+  decide whether `security-review.yml`'s commented-out schedule (line 26) is deliberate.
 
 ## Discipline
 
