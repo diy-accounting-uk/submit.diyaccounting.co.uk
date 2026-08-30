@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourceProviderLogGroup;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -160,6 +161,7 @@ public class ObservabilityStack extends Stack {
                             .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
                                     + ":log-group:" + cloudTrailLogGroupName + ":*"))
                             .build())))
+                    .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
                     .build();
 
             // Import the LogGroup created by AwsCustomResource (don't use Builder.create which fails if it exists)

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,6 +176,42 @@ class SubmitApplicationCdkResourceTest {
             // 2 Lambdas: self-destruct function + AwsCustomResource backing Lambda for ensureLogGroup
             Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 2);
         }
+
+        // Every Lambda function in every app stack must route its logs to an explicit, retained log
+        // group — otherwise CDK (or CloudFormation's own custom-resource provider framework) gives
+        // it an unnamed one with no retention and no removal policy, and it outlives the stack.
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.authStack));
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcStack));
+        assertEveryLambdaHasAnExplicitLogGroup(accountStackTemplate);
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.billingStack));
+        assertEveryLambdaHasAnExplicitLogGroup(apiStackTemplate);
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.opsStack));
+        assertEveryLambdaHasAnExplicitLogGroup(edgeStackTemplate);
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.publishStack));
+        if (submitApplication.selfDestructStack != null) {
+            assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.selfDestructStack));
+        }
+    }
+
+    /**
+     * Asserts every Lambda function carries an explicit {@code LoggingConfig.LogGroup}, so its logs
+     * land in a group this stack retains and deletes with it, not an unnamed one CloudWatch creates
+     * with no retention on first invoke. The one known exception is CDK's built-in
+     * auto-delete-objects handler, which exposes no logGroup option at all.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
+        var missing = new ArrayList<String>();
+        template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
+            if (loggingConfig != null && loggingConfig.containsKey("LogGroup")) return;
+            var description = String.valueOf(properties == null ? "" : properties.get("Description"));
+            if (description.contains("auto-deleting objects")) return;
+            missing.add(id);
+        });
+        org.junit.jupiter.api.Assertions.assertTrue(
+                missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
     }
 
     @SuppressWarnings("unchecked")

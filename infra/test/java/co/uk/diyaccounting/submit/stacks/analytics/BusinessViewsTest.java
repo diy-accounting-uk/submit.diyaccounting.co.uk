@@ -66,6 +66,17 @@ class BusinessViewsTest {
     }
 
     @Test
+    void allViewCreatorsShareOneSingletonProviderWithOneExplicitLogGroup() {
+        Template template = synthBusinessViews();
+
+        // Every AwsCustomResource here omits functionName, so all VIEW_COUNT of them reuse one
+        // singleton provider Lambda per stack. A second LogGroup with the same name would fail at
+        // deploy with "already exists", so there must be exactly one function and one log group.
+        template.resourceCountIs("AWS::Lambda::Function", 1);
+        template.resourceCountIs("AWS::Logs::LogGroup", 1);
+    }
+
+    @Test
     void everyViewSqlIsLoadedAndRunAsACreateOrReplaceView() {
         Template template = synthBusinessViews();
 
@@ -85,8 +96,11 @@ class BusinessViewsTest {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) resource.get("Properties");
             var create = String.valueOf(properties.get("Create"));
-            assertTrue(create.contains("startQueryExecution"), "expected an Athena startQueryExecution call: " + create);
-            assertTrue(create.contains("CREATE OR REPLACE VIEW"), "expected a CREATE OR REPLACE VIEW statement: " + create);
+            assertTrue(
+                    create.contains("startQueryExecution"), "expected an Athena startQueryExecution call: " + create);
+            assertTrue(
+                    create.contains("CREATE OR REPLACE VIEW"),
+                    "expected a CREATE OR REPLACE VIEW statement: " + create);
             for (String viewName : expectedViewNames) {
                 if (create.contains("CREATE OR REPLACE VIEW " + viewName + " AS")) {
                     viewNamesFound.add(viewName);
@@ -94,7 +108,8 @@ class BusinessViewsTest {
                 }
             }
         }
-        assertEquals(expectedViewNames.size(), viewNamesFound.size(), "expected every view name to appear exactly once");
+        assertEquals(
+                expectedViewNames.size(), viewNamesFound.size(), "expected every view name to appear exactly once");
         assertEquals(expectedViewNames, Set.copyOf(viewNamesFound));
     }
 

@@ -36,6 +36,8 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.sqs.Queue;
@@ -181,6 +183,12 @@ public class IngestionStack extends Stack {
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
+        LogGroup stripeReconcileLogGroup = LogGroup.Builder.create(this, prefix + "-StripeReconcileLogGroup")
+                .logGroupName("/aws/lambda/" + stripeReconcileFunctionName)
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         var stripeReconcileLambda = DockerImageFunction.Builder.create(this, prefix + "-StripeReconcileFn")
                 .functionName(stripeReconcileFunctionName)
                 .code(DockerImageCode.fromEcr(
@@ -193,6 +201,7 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(stripeReconcileEnv)
+                .logGroup(stripeReconcileLogGroup)
                 .build();
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
@@ -231,8 +240,11 @@ public class IngestionStack extends Stack {
         // losing weekly coverage of the reconciliation path.
         var stripeReconcileSchedule = isProd
                 ? Schedule.cron(CronOptions.builder().minute("15").hour("2").build())
-                : Schedule.cron(
-                        CronOptions.builder().minute("15").hour("2").weekDay("MON").build());
+                : Schedule.cron(CronOptions.builder()
+                        .minute("15")
+                        .hour("2")
+                        .weekDay("MON")
+                        .build());
 
         registerScheduledJob(
                 "StripeReconcile",
@@ -261,7 +273,8 @@ public class IngestionStack extends Stack {
         if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
             ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
         }
-        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
             ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
         }
 
@@ -272,6 +285,12 @@ public class IngestionStack extends Stack {
                         .repositoryArn(sharedNames.ecrRepositoryArn)
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
+
+        LogGroup ga4ReportPullLogGroup = LogGroup.Builder.create(this, prefix + "-Ga4ReportPullLogGroup")
+                .logGroupName("/aws/lambda/" + ga4ReportPullFunctionName)
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
 
         var ga4ReportPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4ReportPullFn")
                 .functionName(ga4ReportPullFunctionName)
@@ -285,6 +304,7 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(ga4ReportPullEnv)
+                .logGroup(ga4ReportPullLogGroup)
                 .build();
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
@@ -294,7 +314,8 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
                 .build());
 
-        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
             var ga4SecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
                     ? props.ga4ServiceAccountArn()
                     : props.ga4ServiceAccountArn() + "-*";
@@ -309,8 +330,11 @@ public class IngestionStack extends Stack {
         // do not start at the same minute. ci: 03:15 every Monday, same reasoning as Stripe's.
         var ga4ReportPullSchedule = isProd
                 ? Schedule.cron(CronOptions.builder().minute("15").hour("3").build())
-                : Schedule.cron(
-                        CronOptions.builder().minute("15").hour("3").weekDay("MON").build());
+                : Schedule.cron(CronOptions.builder()
+                        .minute("15")
+                        .hour("3")
+                        .weekDay("MON")
+                        .build());
 
         registerScheduledJob(
                 "Ga4ReportPull",

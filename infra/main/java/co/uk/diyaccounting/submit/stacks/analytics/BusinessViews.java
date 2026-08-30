@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -45,9 +46,7 @@ public class BusinessViews extends Construct {
 
     private static final List<ViewDefinition> VIEWS = List.of(
             new ViewDefinition(
-                    "v_active_users_daily",
-                    "Distinct customers active each day",
-                    List.of("activity_events_all")),
+                    "v_active_users_daily", "Distinct customers active each day", List.of("activity_events_all")),
             new ViewDefinition(
                     "v_submissions_daily",
                     "VAT returns submitted each day, split by outcome",
@@ -60,8 +59,7 @@ public class BusinessViews extends Construct {
                     "v_pass_redemptions_daily",
                     "Passes issued and redeemed each day, by pass type",
                     List.of("activity_events_all", "dynamo_passes")),
-            new ViewDefinition(
-                    "v_revenue_daily", "Stripe revenue each day, by product", List.of("stripe_charges")),
+            new ViewDefinition("v_revenue_daily", "Stripe revenue each day, by product", List.of("stripe_charges")),
             new ViewDefinition(
                     "v_hmrc_failures_by_class",
                     "HMRC submission failures each day, by failure class",
@@ -71,9 +69,7 @@ public class BusinessViews extends Construct {
                     "Time from a new account's first bundle grant to its first submission",
                     List.of("dynamo_bundles", "dynamo_receipts")),
             new ViewDefinition(
-                    "v_traffic_by_country_daily",
-                    "Sessions each day, by country",
-                    List.of("activity_events_all")));
+                    "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<AwsCustomResource> viewResources = new ArrayList<>();
@@ -121,9 +117,11 @@ public class BusinessViews extends Construct {
 
             var tableResources = new ArrayList<String>();
             for (String readTable : view.readTables()) {
-                tableResources.add(glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), readTable));
+                tableResources.add(
+                        glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), readTable));
             }
-            tableResources.add(glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), view.name()));
+            tableResources.add(
+                    glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), view.name()));
 
             var createViewCall = AwsSdkCall.builder()
                     .service("Athena")
@@ -164,6 +162,7 @@ public class BusinessViews extends Construct {
                                             props.resultsBucket().getBucketArn(),
                                             props.resultsBucket().getBucketArn() + "/*"))
                                     .build())))
+                    .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                     .build();
             this.viewResources.add(viewResource);
         }

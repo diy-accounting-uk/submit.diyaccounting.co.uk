@@ -71,6 +71,36 @@ class TableChangeDeliveryTest {
     }
 
     @Test
+    void everyLambdaFunctionHasItsOwnExplicitLogGroup() {
+        Template template = synthTableChangeDelivery();
+
+        // The consumer Lambda gets its own named log group via the shared Lambda construct; the
+        // four describeTableStreamArn AwsCustomResource calls (one per streamed table) share one
+        // singleton provider Lambda, which needs exactly one more. (Each Firehose delivery stream
+        // gets its own log group too, but those aren't Lambda functions.)
+        template.resourceCountIs("AWS::Lambda::Function", 2);
+        assertEveryLambdaHasAnExplicitLogGroup(template);
+    }
+
+    /**
+     * Asserts every Lambda function carries an explicit {@code LoggingConfig.LogGroup}, so its logs
+     * land in a group this construct retains and deletes with its stack, not an unnamed one
+     * CloudWatch creates with no retention on first invoke.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
+        var missing = new ArrayList<String>();
+        template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
+            if (loggingConfig == null || !loggingConfig.containsKey("LogGroup")) {
+                missing.add(id);
+            }
+        });
+        assertTrue(missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
+    }
+
+    @Test
     void deliveryStreamsConvertToParquetUnderTheirOwnCuratedPrefix() {
         Template template = synthTableChangeDelivery();
 
@@ -169,6 +199,7 @@ class TableChangeDeliveryTest {
 
     private static boolean isResourceLevelExemptAction(Object action) {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
-        return !actions.isEmpty() && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
+        return !actions.isEmpty()
+                && actions.stream().allMatch(a -> String.valueOf(a).startsWith("xray:"));
     }
 }

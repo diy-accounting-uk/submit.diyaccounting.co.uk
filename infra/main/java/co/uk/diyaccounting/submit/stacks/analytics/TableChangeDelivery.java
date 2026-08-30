@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks.analytics;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
@@ -144,7 +145,10 @@ public class TableChangeDelivery extends Construct {
         this.consumerLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of(
-                        "dynamodb:GetRecords", "dynamodb:GetShardIterator", "dynamodb:DescribeStream", "dynamodb:ListStreams"))
+                        "dynamodb:GetRecords",
+                        "dynamodb:GetShardIterator",
+                        "dynamodb:DescribeStream",
+                        "dynamodb:ListStreams"))
                 .resources(tableNameByKind.values().stream()
                         .map(tableName -> "arn:aws:dynamodb:%s:%s:table/%s/stream/*"
                                 .formatted(stack.getRegion(), stack.getAccount(), tableName))
@@ -170,7 +174,8 @@ public class TableChangeDelivery extends Construct {
             String curatedPrefix = "curated/tables/%s/".formatted(kind);
 
             var glueTable = buildGlueTable(props, prefix, kind, glueTableName, curatedPrefix);
-            props.glueDatabaseDependency().ifPresent(dependency -> glueTable.getNode().addDependency(dependency));
+            props.glueDatabaseDependency()
+                    .ifPresent(dependency -> glueTable.getNode().addDependency(dependency));
             this.glueTables.add(glueTable);
 
             var deliveryStream = buildDeliveryStream(
@@ -209,24 +214,20 @@ public class TableChangeDelivery extends Construct {
         var resource = AwsCustomResource.Builder.create(this, tableName + "-DescribeTableStreamArn")
                 .onCreate(describeTableCall)
                 .onUpdate(describeTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(
-                        PolicyStatement.Builder.create()
-                                .effect(Effect.ALLOW)
-                                .actions(List.of("dynamodb:DescribeTable"))
-                                .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
-                                        .formatted(stack.getRegion(), stack.getAccount(), tableName)))
-                                .build())))
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .actions(List.of("dynamodb:DescribeTable"))
+                        .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
+                                .formatted(stack.getRegion(), stack.getAccount(), tableName)))
+                        .build())))
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         return resource.getResponseField("Table.LatestStreamArn");
     }
 
     private CfnTable buildGlueTable(
-            TableChangeDeliveryProps props,
-            String prefix,
-            String kind,
-            String glueTableName,
-            String curatedPrefix) {
+            TableChangeDeliveryProps props, String prefix, String kind, String glueTableName, String curatedPrefix) {
         var location = "s3://%s/%s".formatted(props.lakeBucket().getBucketName(), curatedPrefix);
 
         var tableParameters = new LinkedHashMap<String, String>();
@@ -376,7 +377,10 @@ public class TableChangeDelivery extends Construct {
                 .effect(Effect.ALLOW)
                 .actions(List.of("glue:GetTable", "glue:GetTableVersion", "glue:GetTableVersions"))
                 .resources(List.of(
-                        "arn:aws:glue:%s:%s:catalog".formatted(Stack.of(this).getRegion(), Stack.of(this).getAccount()),
+                        "arn:aws:glue:%s:%s:catalog"
+                                .formatted(
+                                        Stack.of(this).getRegion(),
+                                        Stack.of(this).getAccount()),
                         "arn:aws:glue:%s:%s:database/%s"
                                 .formatted(
                                         Stack.of(this).getRegion(),
@@ -393,50 +397,66 @@ public class TableChangeDelivery extends Construct {
         var stream = CfnDeliveryStream.Builder.create(this, prefix + "-" + kind + "-Stream")
                 .deliveryStreamName(deliveryStreamName)
                 .deliveryStreamType("DirectPut")
-                .extendedS3DestinationConfiguration(CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty
-                        .builder()
-                        .bucketArn(lakeBucket.getBucketArn())
-                        .roleArn(firehoseRole.getRoleArn())
-                        .prefix(curatedPrefix + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
-                        .errorOutputPrefix("errors/" + kind
-                                + "/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
-                        .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
-                                .intervalInSeconds(900)
-                                .sizeInMBs(128)
-                                .build())
-                        .compressionFormat("UNCOMPRESSED")
-                        .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
-                                .enabled(true)
-                                .logGroupName(props.sharedNames().deliveryStreamLogGroupName(deliveryStreamName))
-                                .logStreamName("S3Delivery")
-                                .build())
-                        .dataFormatConversionConfiguration(CfnDeliveryStream.DataFormatConversionConfigurationProperty
-                                .builder()
-                                .enabled(true)
-                                .inputFormatConfiguration(CfnDeliveryStream.InputFormatConfigurationProperty.builder()
-                                        .deserializer(CfnDeliveryStream.DeserializerProperty.builder()
-                                                .openXJsonSerDe(CfnDeliveryStream.OpenXJsonSerDeProperty.builder()
-                                                        .convertDotsInJsonKeysToUnderscores(false)
-                                                        .caseInsensitive(false)
-                                                        .build())
+                .extendedS3DestinationConfiguration(
+                        CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
+                                .bucketArn(lakeBucket.getBucketArn())
+                                .roleArn(firehoseRole.getRoleArn())
+                                .prefix(curatedPrefix
+                                        + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                .errorOutputPrefix(
+                                        "errors/" + kind
+                                                + "/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
+                                        .intervalInSeconds(900)
+                                        .sizeInMBs(128)
+                                        .build())
+                                .compressionFormat("UNCOMPRESSED")
+                                .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
+                                        .enabled(true)
+                                        .logGroupName(
+                                                props.sharedNames().deliveryStreamLogGroupName(deliveryStreamName))
+                                        .logStreamName("S3Delivery")
+                                        .build())
+                                .dataFormatConversionConfiguration(
+                                        CfnDeliveryStream.DataFormatConversionConfigurationProperty.builder()
+                                                .enabled(true)
+                                                .inputFormatConfiguration(
+                                                        CfnDeliveryStream.InputFormatConfigurationProperty.builder()
+                                                                .deserializer(
+                                                                        CfnDeliveryStream.DeserializerProperty.builder()
+                                                                                .openXJsonSerDe(
+                                                                                        CfnDeliveryStream
+                                                                                                .OpenXJsonSerDeProperty
+                                                                                                .builder()
+                                                                                                .convertDotsInJsonKeysToUnderscores(
+                                                                                                        false)
+                                                                                                .caseInsensitive(false)
+                                                                                                .build())
+                                                                                .build())
+                                                                .build())
+                                                .outputFormatConfiguration(
+                                                        CfnDeliveryStream.OutputFormatConfigurationProperty.builder()
+                                                                .serializer(
+                                                                        CfnDeliveryStream.SerializerProperty.builder()
+                                                                                .parquetSerDe(
+                                                                                        CfnDeliveryStream
+                                                                                                .ParquetSerDeProperty
+                                                                                                .builder()
+                                                                                                .compression("SNAPPY")
+                                                                                                .build())
+                                                                                .build())
+                                                                .build())
+                                                .schemaConfiguration(
+                                                        CfnDeliveryStream.SchemaConfigurationProperty.builder()
+                                                                .catalogId(Stack.of(this)
+                                                                        .getAccount())
+                                                                .databaseName(props.glueDatabaseName())
+                                                                .tableName(glueTableName)
+                                                                .roleArn(firehoseRole.getRoleArn())
+                                                                .versionId("LATEST")
+                                                                .build())
                                                 .build())
-                                        .build())
-                                .outputFormatConfiguration(CfnDeliveryStream.OutputFormatConfigurationProperty.builder()
-                                        .serializer(CfnDeliveryStream.SerializerProperty.builder()
-                                                .parquetSerDe(CfnDeliveryStream.ParquetSerDeProperty.builder()
-                                                        .compression("SNAPPY")
-                                                        .build())
-                                                .build())
-                                        .build())
-                                .schemaConfiguration(CfnDeliveryStream.SchemaConfigurationProperty.builder()
-                                        .catalogId(Stack.of(this).getAccount())
-                                        .databaseName(props.glueDatabaseName())
-                                        .tableName(glueTableName)
-                                        .roleArn(firehoseRole.getRoleArn())
-                                        .versionId("LATEST")
-                                        .build())
                                 .build())
-                        .build())
                 .build();
         stream.getNode().addDependency(streamLogGroup);
         stream.getNode().addDependency(firehoseRole);

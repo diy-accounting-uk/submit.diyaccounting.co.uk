@@ -111,6 +111,34 @@ class AnalyticsStackTest {
         });
         org.junit.jupiter.api.Assertions.assertTrue(
                 viewCreatorFound, "expected a Custom::AWS resource running the union view's CREATE OR REPLACE VIEW");
+
+        // AnalyticsStack packs many AwsCustomResource instances (the union view, every BusinessViews
+        // query, every TableChangeDelivery stream lookup) that all reuse one singleton provider
+        // Lambda, plus several named Lambdas (the metrics-publish and data-quality-run functions,
+        // TableChangeDelivery's stream consumer). Every one of those functions must route its logs
+        // to an explicit, retained log group rather than the unretained one CDK auto-creates.
+        assertEveryLambdaHasAnExplicitLogGroup(analytics);
+    }
+
+    /**
+     * Asserts every Lambda function carries an explicit {@code LoggingConfig.LogGroup}, so its logs
+     * land in a group this stack retains and deletes with it, not an unnamed one CloudWatch creates
+     * with no retention on first invoke. The one known exception is CDK's built-in
+     * auto-delete-objects handler, which exposes no logGroup option at all.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
+        var missing = new java.util.ArrayList<String>();
+        template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
+            if (loggingConfig != null && loggingConfig.containsKey("LogGroup")) return;
+            var description = String.valueOf(properties == null ? "" : properties.get("Description"));
+            if (description.contains("auto-deleting objects")) return;
+            missing.add(id);
+        });
+        org.junit.jupiter.api.Assertions.assertTrue(
+                missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

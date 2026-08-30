@@ -34,6 +34,8 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
@@ -64,7 +66,8 @@ public class DataQuality extends Construct {
     // prefix to find partitions to register in the catalog before Glue Data Quality reads them.
     private static final String TARGET_TABLE_CURATED_PREFIX = "curated/activity-events/";
 
-    private static final String RULESET = """
+    private static final String RULESET =
+            """
             Rules = [
                 RowCount > 0,
                 IsComplete "event",
@@ -156,8 +159,10 @@ public class DataQuality extends Construct {
                         .tableName(TARGET_TABLE_NAME)
                         .build())
                 .build();
-        props.glueDatabaseDependency().ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
-        props.targetTableDependency().ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
+        props.glueDatabaseDependency()
+                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
+        props.targetTableDependency()
+                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
 
         // ============================================================================
         // Evaluation role: assumed by Glue, not by the Lambda, to read the table and publish
@@ -225,6 +230,12 @@ public class DataQuality extends Construct {
                         .repositoryName(props.ecrRepositoryName())
                         .build());
 
+        LogGroup runLambdaLogGroup = LogGroup.Builder.create(this, prefix + "-DataQualityRunLogGroup")
+                .logGroupName("/aws/lambda/" + runLambdaFunctionName)
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         this.runLambda = DockerImageFunction.Builder.create(this, prefix + "-DataQualityRunFn")
                 .functionName(runLambdaFunctionName)
                 .code(DockerImageCode.fromEcr(
@@ -236,6 +247,7 @@ public class DataQuality extends Construct {
                 .timeout(Duration.seconds(30))
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
+                .logGroup(runLambdaLogGroup)
                 .environment(Map.of(
                         "ENVIRONMENT_NAME", props.envName(),
                         "GLUE_DATABASE_NAME", props.glueDatabaseName(),
@@ -259,8 +271,8 @@ public class DataQuality extends Construct {
         // (no partitions registered by default).
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
+                .actions(
+                        List.of("glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
                 .resources(List.of(
                         glueCatalogArn(stack),
                         glueDatabaseArn(stack, props.glueDatabaseName()),
@@ -363,7 +375,6 @@ public class DataQuality extends Construct {
     }
 
     private static String glueRulesetArn(Stack stack, String rulesetName) {
-        return "arn:aws:glue:%s:%s:dataQualityRuleset/%s"
-                .formatted(stack.getRegion(), stack.getAccount(), rulesetName);
+        return "arn:aws:glue:%s:%s:dataQualityRuleset/%s".formatted(stack.getRegion(), stack.getAccount(), rulesetName);
     }
 }

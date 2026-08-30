@@ -13,6 +13,7 @@ import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
 import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
@@ -24,6 +25,7 @@ import software.amazon.awscdk.services.iam.IGrantable;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awssdk.utils.StringUtils;
@@ -72,6 +74,34 @@ public class KindCdk {
         return primaryEnv;
     }
 
+    private static final String AWS_CUSTOM_RESOURCE_PROVIDER_LOG_GROUP_ID = "AwsCustomResourceProviderLogGroup";
+
+    /**
+     * Returns the log group for a stack's default AwsCustomResource provider Lambda, creating it
+     * on first call and returning the same instance on every later call for that stack.
+     *
+     * <p>An {@link AwsCustomResource} built without an explicit function name reuses one singleton
+     * Lambda per stack (CDK looks it up by a fixed construct id under the stack, regardless of
+     * which class created it), so every such resource in a stack must share one log group here —
+     * a second {@code LogGroup} construct with the same name would fail at deploy with
+     * "already exists".
+     *
+     * @param stack The stack whose default AwsCustomResource provider log group is needed
+     * @return The shared ILogGroup for that stack's provider Lambda
+     */
+    public static ILogGroup ensureAwsCustomResourceProviderLogGroup(Stack stack) {
+        software.constructs.IConstruct existing =
+                stack.getNode().tryFindChild(AWS_CUSTOM_RESOURCE_PROVIDER_LOG_GROUP_ID);
+        if (existing != null) {
+            return (ILogGroup) existing;
+        }
+        return LogGroup.Builder.create(stack, AWS_CUSTOM_RESOURCE_PROVIDER_LOG_GROUP_ID)
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-AwsCustomResourceProvider")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+    }
+
     /**
      * Record class to hold both the ILogGroup and the AwsCustomResource that creates it.
      * This allows callers to add explicit dependencies when needed.
@@ -97,15 +127,50 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                 .build();
 
+        // Deletes the log group when this custom resource is torn down with the stack, so a
+        // destroyed stack leaves nothing behind even though the group was never a native
+        // CloudFormation-owned LogGroup resource. ResourceNotFoundException is ignored because the
+        // group may already be gone (or never got past onCreate).
+        AwsSdkCall deleteLogGroupCall = AwsSdkCall.builder()
+                .service("CloudWatchLogs")
+                .action("deleteLogGroup")
+                .parameters(Map.of("logGroupName", logGroupName))
+                .ignoreErrorCodesMatching("ResourceNotFoundException")
+                .build();
+
         AwsCustomResource ensureResource = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
                 .onCreate(createLogGroupCall)
                 .onUpdate(createLogGroupCall)
+                .onDelete(deleteLogGroupCall)
                 .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("logs:CreateLogGroup"))
+                        .actions(List.of("logs:CreateLogGroup", "logs:DeleteLogGroup"))
                         .resources(List.of("arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":log-group:" + logGroupName + ":*"))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
+
+        // CreateLogGroup has no retention parameter, so retention is a second, dependent call —
+        // the same two-call shape as ensurePointInTimeRecovery.
+        AwsSdkCall putRetentionCall = AwsSdkCall.builder()
+                .service("CloudWatchLogs")
+                .action("putRetentionPolicy")
+                .parameters(Map.of("logGroupName", logGroupName, "retentionInDays", 3))
+                .physicalResourceId(PhysicalResourceId.of(logGroupName + "-retention"))
+                .build();
+
+        AwsCustomResource ensureRetentionResource = AwsCustomResource.Builder.create(
+                        stack, id + "-EnsureLogGroupRetention")
+                .onCreate(putRetentionCall)
+                .onUpdate(putRetentionCall)
+                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("logs:PutRetentionPolicy"))
+                        .resources(List.of("arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount()
+                                + ":log-group:" + logGroupName + ":*"))
+                        .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .build();
+        ensureRetentionResource.getNode().addDependency(ensureResource);
 
         ILogGroup logGroup = LogGroup.fromLogGroupName(stack, id + "-LogGroup", logGroupName);
 
@@ -152,6 +217,7 @@ public class KindCdk {
                         .actions(List.of("s3:CreateBucket"))
                         .resources(List.of("arn:aws:s3:::" + bucketName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         return Bucket.fromBucketName(stack, id + "-Bucket", bucketName);
@@ -210,6 +276,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         ensurePointInTimeRecovery(stack, id, tableName, ensureTableResource);
@@ -254,6 +321,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         ensurePitrResource.getNode().addDependency(ensureTableResource);
@@ -332,6 +400,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
     }
 
@@ -367,6 +436,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
     }
 
@@ -419,6 +489,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         AwsSdkCall describeTableCall = AwsSdkCall.builder()
@@ -436,6 +507,7 @@ public class KindCdk {
                         .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
                                 + ":table/" + tableName))
                         .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
         streamArnResource.getNode().addDependency(ensureStreamResource);
 

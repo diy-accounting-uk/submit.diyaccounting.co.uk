@@ -6,8 +6,10 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.ArrayList;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -106,6 +108,40 @@ class DataStackTest {
                             .size(),
                     "expected no stream update for " + tableName);
         }
+    }
+
+    @Test
+    void everyLambdaFunctionHasAnExplicitLogGroup() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // DataStack creates no Lambda of its own: every Custom::AWS resource here (CreateTable,
+        // PITR, GSI, TTL, stream enable/describe) shares one singleton provider Lambda, and that
+        // singleton must carry the one explicit, retained LogGroup KindCdk hands it — otherwise
+        // CDK gives it a bare auto-created log group with no retention and no removal policy.
+        assertEquals(
+                1,
+                template.findResources("AWS::Lambda::Function").size(),
+                "expected only the singleton AwsCustomResource provider Lambda");
+        assertEveryLambdaHasAnExplicitLogGroup(template);
+    }
+
+    /**
+     * Asserts every Lambda function carries an explicit {@code LoggingConfig.LogGroup}, so its logs
+     * land in a group this stack retains and deletes with it, not an unnamed one CloudWatch creates
+     * with no retention on first invoke.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
+        var missing = new ArrayList<String>();
+        template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
+            if (loggingConfig == null || !loggingConfig.containsKey("LogGroup")) {
+                missing.add(id);
+            }
+        });
+        assertTrue(missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
     }
 
     @Test

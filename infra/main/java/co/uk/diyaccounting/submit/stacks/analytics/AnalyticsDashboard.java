@@ -40,6 +40,8 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
@@ -129,6 +131,12 @@ public class AnalyticsDashboard extends Construct {
                         .repositoryName(props.ecrRepositoryName())
                         .build());
 
+        LogGroup metricsPublishLogGroup = LogGroup.Builder.create(this, prefix + "-AnalyticsMetricsPublishLogGroup")
+                .logGroupName("/aws/lambda/" + functionName)
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         this.metricsPublishLambda = DockerImageFunction.Builder.create(this, prefix + "-AnalyticsMetricsPublishFn")
                 .functionName(functionName)
                 .code(DockerImageCode.fromEcr(
@@ -141,6 +149,7 @@ public class AnalyticsDashboard extends Construct {
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
                 .environment(environment)
+                .logGroup(metricsPublishLogGroup)
                 .build();
 
         // Athena: run and poll queries against the one workgroup this stack owns.
@@ -216,7 +225,8 @@ public class AnalyticsDashboard extends Construct {
         this.scheduleRule = Rule.Builder.create(this, prefix + "-AnalyticsMetricsPublish-Schedule")
                 .ruleName(functionName + "-schedule")
                 .description("Publish yesterday's Athena view results to CloudWatch as analytics metrics")
-                .schedule(Schedule.cron(CronOptions.builder().minute("0").hour("5").build()))
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("0").hour("5").build()))
                 .targets(List.of(LambdaFunction.Builder.create(this.metricsPublishLambda)
                         .retryAttempts(3)
                         .deadLetterQueue(this.deadLetterQueue)
@@ -309,8 +319,8 @@ public class AnalyticsDashboard extends Construct {
         cfnOutput(
                 this,
                 "AnalyticsDashboardUrl",
-                "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region
-                        + "#dashboards:name=" + dashboardName);
+                "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#dashboards:name="
+                        + dashboardName);
     }
 
     private static Metric metric(String metricName) {

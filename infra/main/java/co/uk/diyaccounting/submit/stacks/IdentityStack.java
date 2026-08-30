@@ -48,6 +48,8 @@ import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
@@ -195,14 +197,23 @@ public class IdentityStack extends Stack {
             preTokenGenAssetDir =
                     Paths.get("../" + preTokenGenRelativePath).toAbsolutePath().normalize();
         }
+        var preTokenGenFunctionName = props.resourceNamePrefix() + "-pre-token-generation";
+        var preTokenGenLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-PreTokenGenerationLogGroup")
+                .logGroupName("/aws/lambda/" + preTokenGenFunctionName)
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         var preTokenGenFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreTokenGeneration")
-                .functionName(props.resourceNamePrefix() + "-pre-token-generation")
+                .functionName(preTokenGenFunctionName)
                 .runtime(Runtime.NODEJS_22_X)
                 .architecture(Architecture.ARM_64)
                 .handler("index.handler")
                 .code(Code.fromAsset(preTokenGenAssetDir.toString()))
                 .timeout(Duration.seconds(5))
                 .memorySize(128)
+                .logGroup(preTokenGenLogGroup)
                 .build();
         this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
         // Grant AdminGetUser using a string ARN pattern to avoid circular dependency:

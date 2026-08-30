@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourceProviderLogGroup;
 import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -648,6 +649,7 @@ public class AnalyticsStack extends Stack {
                                 .resources(List.of(
                                         this.resultsBucket.getBucketArn(), this.resultsBucket.getBucketArn() + "/*"))
                                 .build())))
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
                 .build();
         createUnionViewResource.getNode().addDependency(this.workGroup);
         createUnionViewResource.getNode().addDependency(activityEventsTable);
