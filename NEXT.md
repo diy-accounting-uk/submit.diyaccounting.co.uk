@@ -10,7 +10,7 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-1c556ed.** Drift findings live in issue #43.
+**Prod runs deployment prod-bc6a9dd.** Drift findings live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account backups.**
   1. Claude Code: confirm `verify-backups` on 2026-08-31 is green. The 2026-08-30 run
@@ -58,12 +58,11 @@ operator step before them is done or when SSO is live.
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
   bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
   if the reports have no reader.
-- [ ] **Land #60.** Claude Code: confirm the ci deploy of the branch is green through
-  EdgeStack, publish and set origins; after merge confirm prod is green through ApiStack,
-  `set last-known-good` and `destroy previous`, and that `/aws/apigw/prod-env/access` is
-  receiving access logs. Operator: merge #60; approve deleting the rolled-back
-  `prod-f9d0d1a-app-*` stacks (ApiStack is ROLLBACK_COMPLETE; Account, Auth, Billing, Hmrc
-  are orphans of the same deployment), which the permission classifier blocked as a loop.
+- [ ] **#60 remainder.** Claude Code: confirm `/aws/apigw/prod-env/access` is receiving
+  access logs from prod-bc6a9dd (needs a fresh `aws sso login --profile submit-prod`).
+  Operator: approve deleting the rolled-back `prod-f9d0d1a-app-*` stacks (ApiStack is
+  ROLLBACK_COMPLETE; Account, Auth, Billing, Hmrc are orphans of the same deployment),
+  which the permission classifier blocked as a loop.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
