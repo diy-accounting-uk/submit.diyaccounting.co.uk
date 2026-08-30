@@ -58,7 +58,6 @@ operator step before them is done or when SSO is live.
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
   bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
   if the reports have no reader.
-- [ ] **CDK provider Lambdas leave log groups behind.** Operator: merge PR #58.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
