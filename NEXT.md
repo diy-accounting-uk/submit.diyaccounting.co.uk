@@ -10,8 +10,8 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-929d6af (main through #54); the #56 deploy (prod-1c556ed) is in
-progress.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #43.
+**Prod runs deployment prod-1c556ed (main through #56), the only app deployment in the
+account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Everything is in
   place: org switch on, backup account bootstrapped, `setup-backup-account.yml` runs
@@ -72,16 +72,14 @@ progress.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue 
 - [ ] **Sign-in button race.** Fixed in #54 (button ships disabled until wired; the login
   step waits for the handler and the origin change). Two deploys since passed all 13 suites
   first time. Claude Code: confirm the next scheduled prod deploy does the same.
-- [ ] **`destroy previous` never ran.** Fixed in #56 (`!cancelled()` plus explicit result
-  checks on the job's `if`; `destroy-prod.yml` refuses to destroy the live or last-known-good
-  deployment and deletes a deployment's leftover Lambda log groups once its stacks are gone).
-  1. Claude Code: on the #56 deploy (run 33283751626), confirm `destroy previous` runs and
-     prod-929d6af's stacks and log groups are gone.
-  2. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
+- [ ] **`destroy previous` never ran.** Fixed in #56 and proven on its own deploy (run
+  33283751626): `destroy previous / destroy` ran and removed prod-929d6af's eight stacks
+  and all its log groups.
+  1. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
      `ApiStack`, `OpsStack`, `EdgeStack`, `PublishStack`, `KindCdk`, `Route53AliasUpsert`)
      create log groups the stacks do not own; give each an explicit `LogGroup` with
      retention and DESTROY. The app Lambdas already do (`constructs/Lambda.java`).
-  3. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
+  2. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
      most with no retention) remain in us-east-1; say go and Claude Code deletes them.
 - [ ] **Tidy the last two local git leftovers.** Operator: `git branch -D
   claude/verify-cloudfront-lookup` (force-delete is blocked for Claude Code; it holds only a
