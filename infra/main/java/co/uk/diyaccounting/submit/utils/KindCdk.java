@@ -163,10 +163,16 @@ public class KindCdk {
                         stack, id + "-EnsureLogGroupRetention")
                 .onCreate(putRetentionCall)
                 .onUpdate(putRetentionCall)
+                // PutRetentionPolicy authorises against the bare log-group ARN, not the ":*" form the
+                // stream-level actions use; in stacks with other custom resources a wider statement
+                // on the shared provider role hid that, EcrStack has none.
                 .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
                         .actions(List.of("logs:PutRetentionPolicy"))
-                        .resources(List.of("arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":log-group:" + logGroupName + ":*"))
+                        .resources(List.of(
+                                "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:"
+                                        + logGroupName,
+                                "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:"
+                                        + logGroupName + ":*"))
                         .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
