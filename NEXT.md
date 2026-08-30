@@ -17,10 +17,11 @@ account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #
   place: org switch on, backup account bootstrapped, `setup-backup-account.yml` runs
   unattended, `restore-test.yml` passes on the prod leg.
   1. Copies work: all five prod tables copied to `submit-cross-account-vault` on 2026-08-30
-     at 02:20 UTC (ci's too). `restore-test.yml` dispatched at 10:40 UTC with both vaults
-     populated (run 33306629727). Claude Code: confirm both legs restore; that pass is the
-     gate for the TypeScript migration (B33). Confirm today's `verify-backups` (12:33 UTC)
-     is green now the copy failures are gone.
+     at 02:20 UTC (ci's too). `restore-test.yml` run 33306629727 restored prod-env-receipts
+     from both the prod vault and the cross-account vault into temporary tables and cleaned
+     up: the gate for the TypeScript migration (B33) is passed. Claude Code: confirm today's
+     `verify-backups` (12:33 UTC) is green now the copy failures are gone; from here the
+     monthly restore test runs on the 1st.
   2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
      finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B13a) Firehose spike on one stream.** Verified on ci. Claude Code: run
