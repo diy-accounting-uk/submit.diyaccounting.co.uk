@@ -13,8 +13,9 @@ operator step before them is done or when SSO is live.
 **Prod runs deployment prod-1c556ed.** Drift findings live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account backups.**
-  1. Claude Code: confirm `verify-backups` on 2026-08-30 (12:33 UTC) is green now that
-     copies succeed.
+  1. Claude Code: confirm `verify-backups` on 2026-08-31 is green. The 2026-08-30 run
+     failed only because its 48-hour copy-job window still held the five pre-switch failures
+     from 02:20 UTC on the 29th; all five copies on the 30th completed.
   2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
      finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
 - [ ] **(B14) Scheduled ingestion jobs.** The GA4 pull needs its credential.
