@@ -48,16 +48,11 @@ operator step before them is done or when SSO is live.
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
   on 2026-09-06 and treat a second miss with the keep-alive item.
-- [ ] **Scheduled prod deploys fail on the test-report upload, not the tests.** The
-  `upload web test results` jobs (scheduled runs only, where `generate-test-reports` is
-  true) fail every day, and because `set-last-known-good-deployment` gates on the whole
-  test workflow, every scheduled deploy also skips last-known-good and `destroy previous`,
-  leaving its predecessor's stacks behind (prod-1c556ed after the 2026-08-30 run). They fail on: `BUCKET_NAME` resolves to the
-  origin bucket of a long-deleted deployment (`prod-fec2016-app-...`) and the report JSON
-  the step expects (`target/behaviour-test-results/<suite>/test-report-*.json`,
-  `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
-  bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
-  if the reports have no reader.
+- [ ] **Scheduled-deploy upload fix.** Operator: merge #61 (a suite passed to
+  synthetic-test always wins over the scheduled matrix; until it lands, every scheduled
+  deploy's upload jobs fail and skip last-known-good and `destroy previous`). Claude Code:
+  after the next scheduled prod deploy, confirm the upload jobs, last-known-good and
+  `destroy previous` all ran.
 - [ ] **#60 remainder.** Claude Code: confirm `/aws/apigw/prod-env/access` is receiving
   access logs from prod-bc6a9dd (needs a fresh `aws sso login --profile submit-prod`).
   Operator: approve deleting the rolled-back `prod-f9d0d1a-app-*` stacks (ApiStack is
