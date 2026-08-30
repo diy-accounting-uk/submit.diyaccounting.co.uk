@@ -130,10 +130,11 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
         // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
-        // of its own.
+        // of its own. Both jobs' names are stable across redeploys, so their log groups go
+        // through the idempotent AwsCustomResource path, adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 2);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 3);
         ingestion.resourceCountIs("AWS::Events::Rule", 2);
         ingestion.resourceCountIs("AWS::SQS::Queue", 2);
         ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);

@@ -82,9 +82,11 @@ class IngestionStackTest {
 
         // Importing the lake bucket by name creates no bucket of its own. The constructor wires
         // two jobs: Stripe reconciliation and the GA4 report pull; nothing else self-registers
-        // yet.
+        // yet. Both jobs' function names are stable across every redeploy of this env-scoped
+        // stack, so their log groups go through the idempotent AwsCustomResource path, adding
+        // one more Lambda function: the shared create-if-missing/retention singleton provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 2);
+        template.resourceCountIs("AWS::Lambda::Function", 3);
         template.resourceCountIs("AWS::Events::Rule", 2);
         template.resourceCountIs("AWS::SQS::Queue", 2);
         template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
@@ -126,8 +128,10 @@ class IngestionStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "secretsmanager:GetSecretValue",
-                                        "Resource", Match.stringLikeRegexp(".*stripe.*"))))))))),
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        Match.stringLikeRegexp(".*stripe.*"))))))))),
                 0);
 
         Template configured = Template.fromStack(synthIngestionStack(
@@ -139,24 +143,32 @@ class IngestionStackTest {
         // plus the salt secret grant every hashSub() caller needs.
         configured.hasResourceProperties(
                 "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Action", "secretsmanager:GetSecretValue",
-                                                "Resource",
-                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/stripe/secret_key-*")),
-                                        Match.objectLike(Map.of(
-                                                "Action", "secretsmanager:GetSecretValue",
-                                                "Resource",
-                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/stripe/test_secret_key-*")),
-                                        Match.objectLike(Map.of(
-                                                "Action",
-                                                "secretsmanager:GetSecretValue",
-                                                "Resource",
-                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/user-sub-hash-salt*")))))))));
+                Match.objectLike(
+                        Map.of(
+                                "PolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "secretsmanager:GetSecretValue",
+                                                                                "Resource",
+                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/stripe/secret_key-*")),
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "secretsmanager:GetSecretValue",
+                                                                                "Resource",
+                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/stripe/test_secret_key-*")),
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "secretsmanager:GetSecretValue",
+                                                                                "Resource",
+                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/user-sub-hash-salt*")))))))));
     }
 
     @Test
@@ -210,8 +222,7 @@ class IngestionStackTest {
                 "TestJob",
                 "docs-env-test-job",
                 jobLambda,
-                Schedule.cron(
-                        CronOptions.builder().minute("15").hour("2").build()),
+                Schedule.cron(CronOptions.builder().minute("15").hour("2").build()),
                 "Test ingestion job");
 
         Template template = Template.fromStack(ingestionStack);
@@ -293,15 +304,14 @@ class IngestionStackTest {
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 2);
+        template.resourceCountIs("AWS::Lambda::Function", 3);
     }
 
     @Test
     void ga4PropertyIdEnvVarIsOmittedWhenBlankAndPresentWhenConfigured() {
         Template blank = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
         var blankFunctions = blank.findResources(
-                "AWS::Lambda::Function",
-                Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
         assertEquals(1, blankFunctions.size());
         assertFalse(
                 environmentVariablesOf(blankFunctions).containsKey("GA4_PROPERTY_ID"),
@@ -328,8 +338,10 @@ class IngestionStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "secretsmanager:GetSecretValue",
-                                        "Resource", Match.stringLikeRegexp(".*ga4.*"))))))))),
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        Match.stringLikeRegexp(".*ga4.*"))))))))),
                 0);
 
         Template configured = Template.fromStack(synthIngestionStack(
@@ -341,15 +353,20 @@ class IngestionStackTest {
 
         configured.hasResourceProperties(
                 "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "secretsmanager:GetSecretValue",
-                                        "Resource",
-                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))));
+                Match.objectLike(
+                        Map.of(
+                                "PolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "secretsmanager:GetSecretValue",
+                                                                                "Resource",
+                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))));
     }
 
     @Test

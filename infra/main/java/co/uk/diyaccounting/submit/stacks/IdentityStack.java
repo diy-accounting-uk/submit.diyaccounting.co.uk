@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.nio.file.Paths;
@@ -48,8 +49,6 @@ import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
@@ -197,13 +196,17 @@ public class IdentityStack extends Stack {
             preTokenGenAssetDir =
                     Paths.get("../" + preTokenGenRelativePath).toAbsolutePath().normalize();
         }
+        // IdentityStack is env-scoped (one deployment per environment, redeployed indefinitely),
+        // so this function name is stable forever, not per-deployment: it has already run in ci
+        // and prod, and Lambda already auto-created its log group with no retention or removal
+        // policy. A plain LogGroup construct here would fail at deploy with "already exists" - use
+        // the idempotent create-if-missing path instead, the same one PublishStack and HoldingStack
+        // use for their equally stable-named deployment Lambdas.
         var preTokenGenFunctionName = props.resourceNamePrefix() + "-pre-token-generation";
-        var preTokenGenLogGroup = LogGroup.Builder.create(
-                        this, props.resourceNamePrefix() + "-PreTokenGenerationLogGroup")
-                .logGroupName("/aws/lambda/" + preTokenGenFunctionName)
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        var preTokenGenLogGroup = ensureLogGroupWithDependency(
+                this,
+                props.resourceNamePrefix() + "-PreTokenGenerationLogGroup",
+                "/aws/lambda/" + preTokenGenFunctionName);
 
         var preTokenGenFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreTokenGeneration")
                 .functionName(preTokenGenFunctionName)
@@ -213,8 +216,9 @@ public class IdentityStack extends Stack {
                 .code(Code.fromAsset(preTokenGenAssetDir.toString()))
                 .timeout(Duration.seconds(5))
                 .memorySize(128)
-                .logGroup(preTokenGenLogGroup)
+                .logGroup(preTokenGenLogGroup.logGroup())
                 .build();
+        preTokenGenFunction.getNode().addDependency(preTokenGenLogGroup.ensureResource());
         this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
         // Grant AdminGetUser using a string ARN pattern to avoid circular dependency:
         // UserPool -> Lambda (trigger) -> IAM Policy (UserPool ARN) -> UserPool

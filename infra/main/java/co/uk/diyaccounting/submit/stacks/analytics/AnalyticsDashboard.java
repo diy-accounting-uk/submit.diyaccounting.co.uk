@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -40,8 +41,6 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
@@ -131,11 +130,13 @@ public class AnalyticsDashboard extends Construct {
                         .repositoryName(props.ecrRepositoryName())
                         .build());
 
-        LogGroup metricsPublishLogGroup = LogGroup.Builder.create(this, prefix + "-AnalyticsMetricsPublishLogGroup")
-                .logGroupName("/aws/lambda/" + functionName)
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // AnalyticsStack is env-scoped (one deployment per environment, redeployed
+        // indefinitely), so this function name is stable forever, not per-deployment: it has
+        // already run in ci and prod, and Lambda already auto-created its log group with no
+        // retention or removal policy. A plain LogGroup construct here would fail at deploy with
+        // "already exists" - use the idempotent create-if-missing path instead.
+        var metricsPublishLogGroup = ensureLogGroupWithDependency(
+                stack, prefix + "-AnalyticsMetricsPublishLogGroup", "/aws/lambda/" + functionName);
 
         this.metricsPublishLambda = DockerImageFunction.Builder.create(this, prefix + "-AnalyticsMetricsPublishFn")
                 .functionName(functionName)
@@ -149,8 +150,9 @@ public class AnalyticsDashboard extends Construct {
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
                 .environment(environment)
-                .logGroup(metricsPublishLogGroup)
+                .logGroup(metricsPublishLogGroup.logGroup())
                 .build();
+        this.metricsPublishLambda.getNode().addDependency(metricsPublishLogGroup.ensureResource());
 
         // Athena: run and poll queries against the one workgroup this stack owns.
         this.metricsPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()

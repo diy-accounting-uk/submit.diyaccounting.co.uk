@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -36,8 +37,6 @@ import software.amazon.awscdk.services.lambda.DockerImageCode;
 import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
 import software.amazon.awscdk.services.sqs.Queue;
@@ -183,11 +182,13 @@ public class IngestionStack extends Stack {
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
-        LogGroup stripeReconcileLogGroup = LogGroup.Builder.create(this, prefix + "-StripeReconcileLogGroup")
-                .logGroupName("/aws/lambda/" + stripeReconcileFunctionName)
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // IngestionStack is env-scoped (one deployment per environment, redeployed
+        // indefinitely), so this function name is stable forever, not per-deployment: it has
+        // already run and Lambda already auto-created its log group with no retention or removal
+        // policy. A plain LogGroup construct here would fail at deploy with "already exists" - use
+        // the idempotent create-if-missing path instead.
+        var stripeReconcileLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-StripeReconcileLogGroup", "/aws/lambda/" + stripeReconcileFunctionName);
 
         var stripeReconcileLambda = DockerImageFunction.Builder.create(this, prefix + "-StripeReconcileFn")
                 .functionName(stripeReconcileFunctionName)
@@ -201,8 +202,9 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(stripeReconcileEnv)
-                .logGroup(stripeReconcileLogGroup)
+                .logGroup(stripeReconcileLogGroup.logGroup())
                 .build();
+        stripeReconcileLambda.getNode().addDependency(stripeReconcileLogGroup.ensureResource());
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
         stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -286,11 +288,10 @@ public class IngestionStack extends Stack {
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
-        LogGroup ga4ReportPullLogGroup = LogGroup.Builder.create(this, prefix + "-Ga4ReportPullLogGroup")
-                .logGroupName("/aws/lambda/" + ga4ReportPullFunctionName)
-                .retention(RetentionDays.THREE_DAYS)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
+        // Same exposure as stripeReconcileLambda above: env-scoped, stable function name,
+        // already running - use the idempotent create-if-missing path, not a plain LogGroup.
+        var ga4ReportPullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-Ga4ReportPullLogGroup", "/aws/lambda/" + ga4ReportPullFunctionName);
 
         var ga4ReportPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4ReportPullFn")
                 .functionName(ga4ReportPullFunctionName)
@@ -304,8 +305,9 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(ga4ReportPullEnv)
-                .logGroup(ga4ReportPullLogGroup)
+                .logGroup(ga4ReportPullLogGroup.logGroup())
                 .build();
+        ga4ReportPullLambda.getNode().addDependency(ga4ReportPullLogGroup.ensureResource());
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
         ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()

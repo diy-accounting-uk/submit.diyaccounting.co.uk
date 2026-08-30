@@ -66,7 +66,10 @@ class AnalyticsDashboardTest {
     void createsOneLambdaScheduleDlqAndTwoAlarms() {
         Template template = synthAnalyticsDashboard();
 
-        template.resourceCountIs("AWS::Lambda::Function", 1);
+        // The metrics-publish function name is stable across every redeploy of this env-scoped
+        // stack, so its log group goes through the idempotent AwsCustomResource path, adding a
+        // second Lambda function: the shared create-if-missing/retention singleton provider.
+        template.resourceCountIs("AWS::Lambda::Function", 2);
         template.resourceCountIs("AWS::Events::Rule", 1);
         template.resourceCountIs("AWS::SQS::Queue", 1);
         template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
@@ -87,8 +90,10 @@ class AnalyticsDashboardTest {
         template.hasResourceProperties(
                 "AWS::Events::Rule",
                 Match.objectLike(Map.of(
-                        "Name", "docs-env-analytics-metrics-publish-schedule",
-                        "ScheduleExpression", "cron(0 5 * * ? *)",
+                        "Name",
+                        "docs-env-analytics-metrics-publish-schedule",
+                        "ScheduleExpression",
+                        "cron(0 5 * * ? *)",
                         "Targets",
                         Match.arrayWith(List.of(Match.objectLike(Map.of(
                                 "RetryPolicy", Match.objectLike(Map.of("MaximumRetryAttempts", 3)),
@@ -156,8 +161,10 @@ class AnalyticsDashboardTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "cloudwatch:PutMetricData",
-                                        "Resource", "*",
+                                        "Action",
+                                        "cloudwatch:PutMetricData",
+                                        "Resource",
+                                        "*",
                                         "Condition",
                                         Map.of(
                                                 "StringEquals",
@@ -199,7 +206,6 @@ class AnalyticsDashboardTest {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
                 && actions.stream()
-                        .allMatch(a -> String.valueOf(a).startsWith("xray:")
-                                || "cloudwatch:PutMetricData".equals(a));
+                        .allMatch(a -> String.valueOf(a).startsWith("xray:") || "cloudwatch:PutMetricData".equals(a));
     }
 }
