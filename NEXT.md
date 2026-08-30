@@ -48,11 +48,9 @@ operator step before them is done or when SSO is live.
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
   on 2026-09-06 and treat a second miss with the keep-alive item.
-- [ ] **Scheduled-deploy upload fix.** Operator: merge #61 (a suite passed to
-  synthetic-test always wins over the scheduled matrix; until it lands, every scheduled
-  deploy's upload jobs fail and skip last-known-good and `destroy previous`). Claude Code:
-  after the next scheduled prod deploy, confirm the upload jobs, last-known-good and
-  `destroy previous` all ran.
+- [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
+  scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
+  all ran.
 - [ ] **CI certificate renewal (PLAN_CI_CERTIFICATE_RENEWAL.md).** The validation record
   is restored and ci-auth validates. Operator: merge #62 (weekly certificate check, the
   plan's durable fix). Claude Code: confirm ACM reissues the certificate (new NotAfter
