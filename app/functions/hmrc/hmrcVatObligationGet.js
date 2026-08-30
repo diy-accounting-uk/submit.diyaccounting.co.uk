@@ -540,6 +540,7 @@ export async function getVatObligations(
   await publishActivityEvent({
     event: "vat-obligations-queried",
     summary: "VAT obligations queried",
+    userSub: auditForUserSub,
   });
   return { hmrcResponse, obligations: hmrcResponse.data, hmrcRequestUrl };
 }

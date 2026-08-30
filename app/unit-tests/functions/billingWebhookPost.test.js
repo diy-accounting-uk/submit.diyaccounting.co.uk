@@ -53,11 +53,13 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-// Mock EventBridge (activityAlert.js uses it)
+// Mock EventBridge (activityAlert.js uses it), capturing sends so activity-event
+// tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
 vi.mock("@aws-sdk/client-eventbridge", () => ({
   EventBridgeClient: class {
-    send() {
-      return {};
+    send(...args) {
+      return mockEventBridgeSend(...args);
     }
   },
   PutEventsCommand: class {
@@ -126,6 +128,12 @@ function buildCheckoutSessionPayload(overrides = {}) {
   };
 }
 
+function activityEventsNamed(name) {
+  return mockEventBridgeSend.mock.calls
+    .map((call) => JSON.parse(call[0].input.Entries[0].Detail))
+    .filter((detail) => detail.event === name);
+}
+
 describe("billingWebhookPost", () => {
   beforeEach(() => {
     mockWebhooksConstructEvent.mockReset();
@@ -139,6 +147,7 @@ describe("billingWebhookPost", () => {
     mockUpdateSubscription.mockReset();
     mockUpdateBundleSubscriptionFields.mockReset();
     mockResetTokensByHashedSub.mockReset();
+    mockEventBridgeSend.mockClear();
 
     mockPutBundleByHashedSub.mockResolvedValue(undefined);
     mockPutSubscription.mockResolvedValue(undefined);
@@ -659,5 +668,155 @@ describe("billingWebhookPost", () => {
     const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
     expect(bundle.currentPeriodEnd).toBe(new Date(periodEnd * 1000).toISOString());
     expect(bundle.expiry).toBe(new Date(periodEnd * 1000).toISOString());
+  });
+
+  // ---------------------------------------------------------------------------
+  // Activity events carry the pre-hashed sub from Stripe metadata/subscription
+  // records — the webhook never sees the raw Cognito sub, so it can't pass a
+  // `userSub` for activityAlert.js to hash; it must pass the already-hashed
+  // value straight through in `detail`.
+  // ---------------------------------------------------------------------------
+
+  test("checkout.session.completed publishes subscription-activated with hashedSub in detail", async () => {
+    const payload = buildCheckoutSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-activated");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("invoice.paid publishes subscription-renewed with hashedSub in detail", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const payload = {
+      id: "evt_test_invoice_activity",
+      type: "invoice.paid",
+      data: { object: { id: "in_test_activity", subscription: "sub_test_456" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-renewed");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("customer.subscription.updated with cancel_at_period_end publishes cancellation-scheduled with hashedSub in detail", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const payload = {
+      id: "evt_test_sub_cancel_activity",
+      type: "customer.subscription.updated",
+      data: { object: { id: "sub_test_456", status: "active", cancel_at_period_end: true } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-cancellation-scheduled");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("customer.subscription.deleted publishes subscription-canceled with hashedSub in detail", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const payload = {
+      id: "evt_test_sub_delete_activity",
+      type: "customer.subscription.deleted",
+      data: { object: { id: "sub_test_456" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-canceled");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("invoice.payment_failed publishes payment-failed with hashedSub in detail", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const payload = {
+      id: "evt_test_payment_failed_activity",
+      type: "invoice.payment_failed",
+      data: { object: { id: "in_test_fail_activity", subscription: "sub_test_456" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("payment-failed");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("charge.dispute.created publishes dispute-created with hashedSub in detail when a subscription is resolved", async () => {
+    mockChargesRetrieve.mockResolvedValue({
+      id: "ch_test_dispute_activity",
+      billing_details: { email: "disputed@example.com" },
+      payment_intent: "pi_test_dispute_activity",
+    });
+    mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test_dispute_activity", invoice: "in_test_dispute_activity" });
+    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test_dispute_activity", subscription: "sub_test_dispute_activity" });
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_dispute_activity",
+      hashedSub: "hashed_sub_dispute",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_dispute_activity",
+      type: "charge.dispute.created",
+      data: { object: { id: "dp_test_dispute_activity", charge: "ch_test_dispute_activity" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("dispute-created");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_dispute");
+  });
+
+  test("charge.dispute.created omits hashedSub when no subscription can be resolved", async () => {
+    mockChargesRetrieve.mockResolvedValue({
+      id: "ch_test_dispute_no_sub_activity",
+      billing_details: { email: "nosub@example.com" },
+      payment_intent: "pi_test_no_sub_activity",
+    });
+    mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test_no_sub_activity", invoice: "in_test_no_sub_activity" });
+    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test_no_sub_activity", subscription: "sub_test_not_found_activity" });
+    mockGetSubscription.mockResolvedValue(null);
+
+    const payload = {
+      id: "evt_test_dispute_no_sub_activity",
+      type: "charge.dispute.created",
+      data: { object: { id: "dp_test_no_sub_activity", charge: "ch_test_dispute_no_sub_activity" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("dispute-created");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBeNull();
   });
 });

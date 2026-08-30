@@ -43,8 +43,24 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
+// Capture EventBridge sends so activity-event tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 // Defer importing the ingestHandler until after mocks are defined
 import { ingestHandler as bundlePostHandler, workerHandler as bundlePostWorker } from "@app/functions/account/bundlePost.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -64,6 +80,7 @@ describe("bundlePost ingestHandler", () => {
 
     // Reset and provide default mock DynamoDB behaviour
     vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
         return { Items: [], Count: 0 };
@@ -336,6 +353,24 @@ describe("bundlePost ingestHandler", () => {
     expect(body.granted).toBe(true);
     expect(body.bundle).toBe("day-guest");
     expect(Array.isArray(body.bundles)).toBe(true);
+  });
+
+  test("publishes the bundle-granted event with the hashed sub, never the raw sub", async () => {
+    const token = makeIdToken("user-hashed-sub-check");
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundleGrantedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "bundle-granted";
+    });
+    expect(bundleGrantedCalls).toHaveLength(1);
+    const rawDetail = bundleGrantedCalls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"user-hashed-sub-check"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.hashedSub).toBe(hashSub("user-hashed-sub-check"));
   });
 
   // ============================================================================

@@ -84,8 +84,24 @@ vi.mock("@app/functions/hmrc/hmrcVatObligationGet.js", () => ({
   getVatObligations: (...args) => mockGetVatObligations(...args),
 }));
 
+// Capture EventBridge sends so activity-event tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as hmrcVatReturnGetHandler } from "@app/functions/hmrc/hmrcVatReturnGet.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -124,6 +140,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     mockFetch = setupFetchMock();
     // Reset and provide default mock DynamoDB behaviour
     vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
@@ -257,6 +274,29 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     const callArgs = mockGetVatObligations.mock.calls[0];
     expect(callArgs[0]).toBe("111222333"); // vatNumber
     expect(callArgs[5]).toEqual({ from: "2016-12-25", to: "2017-04-07" });
+  });
+
+  test("publishes the vat-return-queried event with the hashed sub, never the raw sub", async () => {
+    mockObligationsSuccess(TEST_PERIOD_KEY, TEST_PERIOD_START, TEST_PERIOD_END);
+
+    const vatReturn = { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcVatReturnGetHandler(event);
+
+    const queriedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "vat-return-queried";
+    });
+    expect(queriedCalls).toHaveLength(1);
+    const rawDetail = queriedCalls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"test-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
 
   test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {

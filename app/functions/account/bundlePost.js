@@ -463,6 +463,7 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   await publishActivityEvent({
     event: "bundle-granted",
     summary: "Bundle granted: " + bundleId,
+    userSub: userId,
     detail: { bundleId },
   });
   const result = {

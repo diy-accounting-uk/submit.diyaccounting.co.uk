@@ -282,6 +282,7 @@ export async function deleteUserBundle(userId, bundleToRemove, removeAll, reques
       await publishActivityEvent({
         event: "bundle-deleted",
         summary: "Bundle deleted: " + bundleId,
+        userSub: userId,
         detail: { bundleId },
       });
       result = {

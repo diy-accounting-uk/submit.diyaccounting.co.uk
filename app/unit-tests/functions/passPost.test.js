@@ -20,13 +20,15 @@ vi.mock("@app/lib/emailHash.js", () => ({
 vi.mock("@app/services/subHasher.js", () => ({
   initializeSalt: vi.fn().mockResolvedValue(undefined),
   hashSub: vi.fn((sub) => `hashed_${sub}`),
+  isSaltInitialized: vi.fn(() => true),
 }));
 
-// Mock EventBridge
+// Mock EventBridge, capturing sent events so activity-event tests can inspect the Detail JSON.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
 vi.mock("@aws-sdk/client-eventbridge", () => ({
   EventBridgeClient: class {
-    send() {
-      return {};
+    send(...args) {
+      return mockEventBridgeSend(...args);
     }
   },
   PutEventsCommand: class {
@@ -53,6 +55,7 @@ describe("passPost", () => {
     mockRedeemPass.mockReset();
     mockGrantBundle.mockReset();
     mockGrantBundle.mockResolvedValue({ status: "granted", expiry: "2026-03-01T00:00:00.000Z" });
+    mockEventBridgeSend.mockClear();
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
@@ -161,5 +164,24 @@ describe("passPost", () => {
     const body = JSON.parse(result.body);
     expect(body.redeemed).toBe(false);
     expect(body.reason).toBe("not_found");
+  });
+
+  test("publishes the pass-redeemed event with the hashed sub, never the raw sub", async () => {
+    mockRedeemPass.mockResolvedValue({
+      valid: true,
+      bundleId: "day-guest",
+      pass: { testPass: false },
+    });
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+    await ingestHandler(event);
+
+    expect(mockEventBridgeSend).toHaveBeenCalledTimes(1);
+    const rawDetail = mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail;
+    // Only the hashed form ("hashed_test-user-sub") should appear, never the bare raw sub as its own field value.
+    expect(rawDetail).not.toContain('"test-user-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.event).toBe("pass-redeemed");
+    expect(detail.hashedSub).toBe("hashed_test-user-sub");
   });
 });

@@ -21,13 +21,15 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 vi.mock("@app/services/subHasher.js", () => ({
   initializeSalt: vi.fn().mockResolvedValue(undefined),
   hashSub: vi.fn((sub) => `hashed_${sub}`),
+  isSaltInitialized: vi.fn(() => true),
 }));
 
-// Mock EventBridge
+// Mock EventBridge, capturing sent events so activity-event tests can inspect the Detail JSON.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
 vi.mock("@aws-sdk/client-eventbridge", () => ({
   EventBridgeClient: class {
-    send() {
-      return {};
+    send(...args) {
+      return mockEventBridgeSend(...args);
     }
   },
   PutEventsCommand: class {
@@ -47,6 +49,7 @@ describe("passGeneratePost", () => {
   beforeEach(() => {
     mockCreatePass.mockReset();
     mockConsumeTokenForActivity.mockReset();
+    mockEventBridgeSend.mockClear();
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
@@ -175,5 +178,28 @@ describe("passGeneratePost", () => {
     const event = buildEventWithToken(validToken, { passTypeId: "digital-pass" });
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
+  });
+
+  test("publishes the pass-generated event with the hashed sub, never the raw sub", async () => {
+    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
+    mockCreatePass.mockResolvedValue({
+      code: "tiger-happy-mountain-silver",
+      passTypeId: "digital-pass",
+      bundleId: "day-guest",
+      validFrom: "2026-02-17T00:00:00.000Z",
+      validUntil: "2026-02-24T00:00:00.000Z",
+      maxUses: 20,
+    });
+
+    const event = buildEventWithToken(validToken, { passTypeId: "digital-pass" });
+    await ingestHandler(event);
+
+    expect(mockEventBridgeSend).toHaveBeenCalledTimes(1);
+    const rawDetail = mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail;
+    // Only the hashed form ("hashed_test-user-sub") should appear, never the bare raw sub as its own field value.
+    expect(rawDetail).not.toContain('"test-user-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.event).toBe("pass-generated");
+    expect(detail.hashedSub).toBe("hashed_test-user-sub");
   });
 });

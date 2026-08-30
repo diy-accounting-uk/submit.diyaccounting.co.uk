@@ -106,6 +106,7 @@ export async function ingestHandler(event) {
     await publishActivityEvent({
       event: "pass-generated",
       summary: `User pass generated: ${passTypeId}`,
+      userSub,
       detail: { passTypeId, bundleId: pass.bundleId, issuedBy: hashedSub },
     });
 
