@@ -173,8 +173,8 @@ class SubmitApplicationCdkResourceTest {
 
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
-            // 2 Lambdas: self-destruct function + AwsCustomResource backing Lambda for ensureLogGroup
-            Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 2);
+            // Only the self-destruct function: its log group belongs to the environment stack.
+            Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log

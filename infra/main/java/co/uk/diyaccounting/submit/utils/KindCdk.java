@@ -119,22 +119,6 @@ public class KindCdk {
      * @return EnsuredLogGroup containing both the ILogGroup and the AwsCustomResource
      */
     public static EnsuredLogGroup ensureLogGroupWithDependency(Stack stack, String id, String logGroupName) {
-        return ensureLogGroup(stack, id, logGroupName, true);
-    }
-
-    /**
-     * Creates a log group idempotently, sets retention, and leaves the group in place when this
-     * stack is torn down. For env-scoped groups that outlive any one app deployment: the API
-     * access log group and the self-destruct Lambda group are ensured by every app deployment
-     * and owned (created and deleted) by the environment's ObservabilityStack. Deleting them from
-     * an app stack's teardown removed the group under the live deployment.
-     */
-    public static EnsuredLogGroup ensureSharedLogGroup(Stack stack, String id, String logGroupName) {
-        return ensureLogGroup(stack, id, logGroupName, false);
-    }
-
-    private static EnsuredLogGroup ensureLogGroup(
-            Stack stack, String id, String logGroupName, boolean deleteOnTeardown) {
         AwsSdkCall createLogGroupCall = AwsSdkCall.builder()
                 .service("CloudWatchLogs")
                 .action("createLogGroup")
@@ -173,15 +157,13 @@ public class KindCdk {
                         .resources(List.of(logGroupArn, logGroupArn + ":*"))
                         .build());
 
-        AwsCustomResource.Builder ensureBuilder = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
+        AwsCustomResource ensureResource = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
                 .onCreate(createLogGroupCall)
                 .onUpdate(createLogGroupCall)
+                .onDelete(deleteLogGroupCall)
                 .policy(AwsCustomResourcePolicy.fromStatements(logGroupStatements))
-                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack));
-        if (deleteOnTeardown) {
-            ensureBuilder.onDelete(deleteLogGroupCall);
-        }
-        AwsCustomResource ensureResource = ensureBuilder.build();
+                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .build();
 
         // CreateLogGroup has no retention parameter, so retention is a second, dependent call —
         // the same two-call shape as ensurePointInTimeRecovery.

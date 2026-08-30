@@ -8,7 +8,6 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.putIfNotNull;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureSharedLogGroup;
 import static co.uk.diyaccounting.submit.utils.ResourceNameUtils.generateIamCompatibleName;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -37,6 +36,7 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
 
 public class SelfDestructStack extends Stack {
@@ -121,11 +121,10 @@ public class SelfDestructStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Env-scoped group shared by every app deployment and owned by the ObservabilityStack;
-        // this deployment's teardown must not delete it from under the others.
-        ILogGroup logGroup = ensureSharedLogGroup(
-                        this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName())
-                .logGroup();
+        // Env-scoped group created and deleted by the ObservabilityStack and shared by every app
+        // deployment; this stack only references it.
+        ILogGroup logGroup = LogGroup.fromLogGroupName(
+                this, props.resourceNamePrefix() + "-SelfDestructLogGroup", props.selfDestructLogGroupName());
 
         // IAM role for the self-destruct Lambda function
         String roleName = generateIamCompatibleName(props.resourceNamePrefix(), "-self-destruct-role");

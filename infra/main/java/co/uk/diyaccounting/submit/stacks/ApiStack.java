@@ -7,11 +7,9 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureSharedLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
-import co.uk.diyaccounting.submit.utils.KindCdk.EnsuredLogGroup;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -50,6 +48,7 @@ import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
@@ -203,10 +202,11 @@ public class ApiStack extends Stack {
                 .properties(Map.of("ApiId", this.httpApi.getHttpApiId()))
                 .build();
 
-        // The access log group is env-scoped and shared by every app deployment; the
-        // ObservabilityStack owns it and holds the single API Gateway resource policy (10 per
-        // account). Ensuring it here only covers a fresh environment; teardown never deletes it.
-        EnsuredLogGroup ensuredApiAccessLogs = ensureSharedLogGroup(
+        // The access log group is env-scoped: the ObservabilityStack creates and deletes it and
+        // holds the single API Gateway resource policy (10 per account). CloudFormation validates
+        // the stage's destination exists when the change set is created, so nothing in this
+        // stack can create it; an app deployment only references it.
+        ILogGroup apiAccessLogGroup = LogGroup.fromLogGroupName(
                 this, props.resourceNamePrefix() + "-ApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
 
         // Configure default stage access logs and logging level/metrics
@@ -214,11 +214,8 @@ public class ApiStack extends Stack {
         var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
         assert defaultStage != null;
 
-        // Add explicit dependency to ensure log group is created before API Gateway stage configures logging
-        defaultStage.getNode().addDependency(ensuredApiAccessLogs.ensureResource());
-
         defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
-                .destinationArn(ensuredApiAccessLogs.logGroup().getLogGroupArn())
+                .destinationArn(apiAccessLogGroup.getLogGroupArn())
                 .format("{" + "\"requestId\":\"$context.requestId\","
                         + "\"path\":\"$context.path\","
                         + "\"routeKey\":\"$context.routeKey\","
