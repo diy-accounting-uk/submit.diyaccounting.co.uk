@@ -17,8 +17,6 @@ operator step before them is done or when SSO is live.
      copies succeed.
   2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
      finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** Claude Code: `scripts/verify-analytics-pipeline.sh prod`
-  (running 2026-08-30).
 - [ ] **(B13) Usage data pipeline.** Claude Code: `hmrc-token-exchanged` events carry no
   `hashed_sub` (`app/functions/hmrc/hmrcTokenPost.js:117`); in flight on
   `claude/hmrc-token-hashed-sub`.
