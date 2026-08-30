@@ -53,6 +53,10 @@ operator step before them is done or when SSO is live.
   deploy's upload jobs fail and skip last-known-good and `destroy previous`). Claude Code:
   after the next scheduled prod deploy, confirm the upload jobs, last-known-good and
   `destroy previous` all ran.
+- [ ] **CI certificate renewal (PLAN_CI_CERTIFICATE_RENEWAL.md).** The validation record
+  is restored and ci-auth validates. Operator: merge #62 (weekly certificate check, the
+  plan's durable fix). Claude Code: confirm ACM reissues the certificate (new NotAfter
+  past 2026-09-05), then close the plan.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
