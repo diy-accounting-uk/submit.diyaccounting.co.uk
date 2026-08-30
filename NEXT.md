@@ -66,9 +66,12 @@ account.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #
   2. Google Ads: check whether the remarketing campaigns for conversion ID 1065724931 are
      still running; pause them or remove the tag from the sites.
   3. Stripe dashboard: Reports, schedule a monthly balance report by email.
-- [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** Claude Code:
-  `compliance` and `codeql` run Sunday 2026-08-30, `stack-drift` Monday 2026-08-31 06:00 UTC
-  (first run with the noise filter). Investigate if any is not green.
+- [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** `codeql`'s
+  Sunday 04:00 UTC slot did not fire on 2026-08-30 although other schedules ran that morning
+  (its last scheduled run is 2026-07-19; push-triggered runs are green). `compliance` and
+  `stack-drift` are both Monday 06:00 UTC, first due 2026-08-31 (stack-drift's first run
+  with the noise filter). Claude Code: check both on Monday; if codeql's schedule stays
+  silent next Sunday, treat it with the keep-alive item.
 - [ ] **Sign-in button race.** Fixed in #54 (button ships disabled until wired; the login
   step waits for the handler and the origin change). Two deploys since passed all 13 suites
   first time. Claude Code: confirm the next scheduled prod deploy does the same.
