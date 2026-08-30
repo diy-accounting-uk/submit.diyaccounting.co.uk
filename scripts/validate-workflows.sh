@@ -25,7 +25,9 @@ if command -v actionlint &> /dev/null; then
     # Run actionlint on all workflow files
     # Filter out shellcheck info-level warnings (SC2086, SC2129) which are style suggestions
     # that don't affect workflow execution
-    OUTPUT=$(actionlint "${WORKFLOW_DIR}"/*.yml 2>&1)
+    # actionlint exits non-zero on any finding; without the guard, set -e kills the
+    # script here with no output at all.
+    OUTPUT=$(actionlint "${WORKFLOW_DIR}"/*.yml 2>&1 || true)
     FILTERED=$(echo "$OUTPUT" | grep -v "SC2086:info" | grep -v "SC2129:style" || true)
 
     if [ -n "$FILTERED" ]; then
