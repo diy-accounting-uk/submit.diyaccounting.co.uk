@@ -58,13 +58,15 @@ operator step before them is done or when SSO is live.
   `web/public/tests/test-report-web-test.json`) does not exist. Claude Code: fix the
   bucket lookup and the report path in `synthetic-test.yml`'s upload job, or drop the job
   if the reports have no reader.
-- [ ] **Prod app deploy after #60.** Prod API access logs are dropped until it lands:
-  `/aws/apigw/prod-env/access` was deleted under the live deployment and the first prod
-  deploy after merge recreates it. Claude Code: confirm the ci deploy of the branch is green,
-  then on merge confirm prod is green through ApiStack, `set last-known-good` and `destroy
-  previous`, and that the access log group exists again. Operator: merge #60; approve
+- [ ] **Recreate the API access log groups, then land #60.** `/aws/apigw/ci-env/access`
+  and `/aws/apigw/prod-env/access` were deleted under the live deployments; prod API access
+  logs are dropped and every ApiStack change set fails early validation until they exist
+  again. Operator: approve `logs create-log-group` + 3-day retention for both (the env
+  stack's create call only runs when its properties change), then merge #60, then approve
   deleting the rolled-back `prod-f9d0d1a-app-*` stacks (ApiStack is ROLLBACK_COMPLETE;
-  Account, Auth, Billing, Hmrc are orphans of the same deployment).
+  Account, Auth, Billing, Hmrc are orphans of the same deployment). Claude Code: after the
+  groups exist, confirm the ci deploy of the branch is green; after merge confirm prod is
+  green through ApiStack, `set last-known-good` and `destroy previous`.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
   without repo activity, which is what stopped automation in July and silenced the destroy
   sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
