@@ -10,89 +10,49 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-929d6af (main through #54; live and last-known-good since
-2026-08-29 23:20 UTC).** `prod-env-AnalyticsStack` and `prod-env-IngestionStack` exist and the
-lake is receiving events.
-PITR is ENABLED on all 11 prod tables. Issues #4, #5, #6, #7, #8 are closed. Drift findings
-live in issue #43.
+**Prod runs deployment prod-929d6af (main through #54); the #56 deploy (prod-1c556ed) is in
+progress.** PITR is ENABLED on all 11 prod tables. Drift findings live in issue #43.
 
-- [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Code merged (#46).
-  1. Done 2026-08-29 13:05 UTC: cross-account backup enabled for the organisation from
-     the management account (`isCrossAccountBackupEnabled: true`). Claude Code: confirm
-     tonight's copy jobs succeed and a recovery point appears in the cross-account vault.
-  2. Done 2026-08-29 20:25 UTC: backup account bootstrapped from a host terminal (both
-     stacks deployed; OIDC provider and the three roles exist). The commands, for the record
-     of what ran:
-     `aws sso login --sso-session diyaccounting`, `export AWS_PROFILE=submit-backup
-     CDK_DEFAULT_ACCOUNT=914216784828 CDK_DEFAULT_REGION=eu-west-2`,
-     `npx cdk bootstrap aws://914216784828/eu-west-2`,
-     `./mvnw --errors clean verify -DskipTests -P cdk-backup`,
-     `cd cdk-backup && npx cdk deploy --all --require-approval never`.
-     Do not run `scripts/aws-accounts/bootstrap-account.sh` against this account; if it has
-     been run, delete `backup-github-actions-role`, `backup-deployment-role` and the OIDC
-     provider first.
-  3. Claude Code: after the next daily backup, confirm a copy exists in
-     `submit-cross-account-vault` (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`).
-  4. `setup-backup-account.yml` ran unattended and passed 2026-08-29 20:35 UTC.
-     `restore-test.yml` (run 33270859888) restored prod-env-receipts into a temporary table
-     with 4,723 of the live table's 4,751 items (the rest written since the 03:15 backup)
-     and deleted it, then failed its own count comparison on paginated scan output (fixed,
-     #55). Re-run 33277478615 passed end to end on the prod leg; the cross-account leg
-     reports skipped until tonight's first copy lands. Claude Code: after 2026-08-30's copy,
-     dispatch it once more and confirm both legs pass; the cross-account leg of the restore
-     test needs tonight's copy first. The restore test is the gate for the TypeScript
-     migration (B33).
-  Surfaced en route, still open: `scripts/validate-workflows.sh:29` exits 1 with no output
-  on any actionlint finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says
-  PITR is off.
-- [ ] **(B13a) Firehose spike on one stream.** Code merged (#47, #50).
-  1. Done on ci 2026-08-29: the synthetic event landed as Parquet, `activity_events_all`
-     returns the day's events by type, all eight views execute. The script's own partition
-     check reported a false FAIL (pipe bug, fixed and merged in #51). Claude Code: repeat
-     with `prod` once the #51 deploy lands.
-  2. Done: 14-day volume measured (mean 141 events/day, peak 454) and recorded in
-     section 4 of `PLAN_USAGE_DATA_PIPELINE.md`.
-- [ ] **(B13) Usage data pipeline.** Code merged (#50, #51, #52); the ci fixes covered job IAM reads, SHA-tagged env Lambda images (a fixed tag left functions
-  on their first image), a 90 s Athena poll budget, and partition registration before each
-  Glue Data Quality run (Glue reads catalog partitions, not Athena projection). On ci with
-  #52 deployed: the evaluation run scores 1.0 (12 of 12 rules) and the publisher completes
-  all ten queries, publishing nothing because ci has no customer rows.
-  1. Verified on prod 2026-08-29 after the #52 deploy, by invoking both jobs: the data
-     quality run scores 1.0 (12 of 12), the publisher completes all ten queries in 88 s,
-     table changes land under `curated/tables/<table>/` (285 records through the four
-     streams in the first six hours), CloudFront logs land under `raw/cloudfront/`, and
-     every login and submission event carries `hashed_sub`. The publisher published nothing
-     because its target date (yesterday) predates the lake. Claude Code: after the
-     2026-08-30 05:00 UTC run, confirm `Submit/Analytics` metrics exist and the
-     `prod-env-analytics` dashboard shows them. EventBridge's DLQs stay empty on Lambda
-     runtime errors; the Lambda-errors alarms are the signal. Surfaced: prod's
-     `hmrc-token-exchanged` customer events carry no `hashed_sub` (the call site was not
-     among the three fixed); no `new-session` events reached prod today, worth a look when
-     `v_traffic_by_country_daily` stays empty.
-  2. Done: `OpsStack`'s `ActivityEmailProofRule` dropped (#53).
+- [ ] **(B25 remainder) Cross-account copy jobs and the restore test.** Everything is in
+  place: org switch on, backup account bootstrapped, `setup-backup-account.yml` runs
+  unattended, `restore-test.yml` passes on the prod leg.
+  1. Claude Code: after the 2026-08-30 backup window (02:20 to 03:30 UTC), confirm the copy
+     jobs succeed and a recovery point appears in `submit-cross-account-vault`
+     (`aws --profile submit-backup backup list-recovery-points-by-backup-vault`), then
+     dispatch `restore-test.yml` and confirm both legs restore. That pass is the gate for the
+     TypeScript migration (B33).
+  2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
+     finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
+- [ ] **(B13a) Firehose spike on one stream.** Verified on ci. Claude Code: run
+  `AWS_PROFILE=submit-prod scripts/verify-analytics-pipeline.sh prod`.
+- [ ] **(B13) Usage data pipeline.** Verified on ci and prod (data quality 1.0, publisher
+  completes, table changes and CloudFront logs landing, `hashed_sub` on login and
+  submission events).
+  1. Claude Code: after the 2026-08-30 05:00 UTC run, confirm `Submit/Analytics` metrics
+     exist and the `prod-env-analytics` dashboard shows them. EventBridge's DLQs stay empty
+     on Lambda runtime errors; the Lambda-errors alarms are the signal.
+  2. Claude Code: `hmrc-token-exchanged` events carry no `hashed_sub`
+     (`app/functions/hmrc/hmrcTokenPost.js:117`, the fourth call site); no `new-session`
+     events reached prod on 2026-08-29, worth a look if `v_traffic_by_country_daily` stays
+     empty.
   Deviations worth knowing at review: the delivery stream cut over to Parquet with a union
   view and a synth-date cutover instead of a second prefix; the table change whitelists
   follow the real item shapes, not the plan's field lists.
-- [ ] **(B14) Scheduled ingestion jobs.** Code merged (#50): IngestionStack, nightly Stripe
-  reconciliation (02:15 UTC prod, weekly ci), GA4 Data API pull (03:15 UTC prod, weekly ci),
-  CloudFront access logs in the catalog.
+- [ ] **(B14) Scheduled ingestion jobs.** Stripe (02:15 UTC prod, Monday ci), GA4 (03:15 UTC
+  prod, Monday ci) and CloudFront logs are deployed; CloudFront logs verified on ci.
   1. Operator: the GA4 Data API is authenticated with a Google Cloud service account (GA4's
      own admin UI cannot issue API credentials; no GCP compute or billing is involved). In
      the Google Cloud console pick or create a free project, enable the "Google Analytics
      Data API" (APIs & Services, Library), then IAM & Admin, Service Accounts, create one,
      Keys, Add key, JSON. In GA4 Admin, Property Access Management, grant that account's
-     email Viewer on property 523400333. Create the GitHub environment secret
-     `GA4_SERVICE_ACCOUNT_JSON` in both the `ci` and `prod` environments with the key
-     JSON. Deploys skip the secret step until it exists; the GA4 job fails at first
-     invocation until then.
-  2. CloudFront v2 log delivery confirmed on ci 2026-08-29 (objects under
-     `raw/cloudfront/distributionid=…/year=…/month=…/day=…/`). Claude Code: after the first
-     scheduled runs (ci: Monday 2026-08-31 02:15 and 03:15 UTC), confirm rows in
-     `stripe_charges` and `ga4_traffic` through Athena, and `cloudfront_requests` now.
+     email Viewer on property 523400333. Save the key file locally and give Claude Code its
+     path; it sets `GA4_SERVICE_ACCOUNT_JSON` in the `ci` and `prod` GitHub environments.
+     Deploys skip the secret step until it exists; the GA4 job fails at first invocation
+     until then.
+  2. Claude Code: after the first scheduled runs (prod nightly; ci Monday 2026-08-31),
+     confirm rows in `stripe_charges` and `ga4_traffic` through Athena.
   3. Claude Code: correct WP-8's text in `PLAN_USAGE_DATA_PIPELINE.md`, which says the
      retry/DLQ shape matches `AccountStack.java:832`; that rule has neither.
-  The first app deploy after #50 deletes each deployment's old per-deployment CloudFront
-  log bucket with its remaining history.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
   support@diyaccounting.co.uk, Vacation responder / auto-reply: replace the dead GitHub
   link with `https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`,
@@ -106,62 +66,30 @@ live in issue #43.
   2. Google Ads: check whether the remarketing campaigns for conversion ID 1065724931 are
      still running; pause them or remove the tag from the sites.
   3. Stripe dashboard: Reports, schedule a monthly balance report by email.
-  CloudFront logging is already live. History cannot be backfilled.
 - [ ] **Watch the first weekly scheduled runs since the 2026-08-24 restart.** Claude Code:
   `compliance` and `codeql` run Sunday 2026-08-30, `stack-drift` Monday 2026-08-31 06:00 UTC
-  (first run with the noise filter). Daily schedules are firing and `verify-backups` is
-  green. Investigate if any is not green.
-- [ ] **Sign-in button dead before the login page's scripts load.** Investigated 2026-08-29
-  from the failed prod runs' traces: the "Hosted UI form not found" failures never reached
-  Cognito. `web/public/auth/login.html` renders the sign-in button before the eight
-  blocking scripts that precede the inline handler have loaded, so an early click does
-  nothing, and the test's retry loop reloaded the app page and waited for a Cognito form
-  that could not appear. Fix on `claude/hosted-ui-form`: the behaviour login step waits for
-  the handler before clicking and for the origin to change after it, with failure messages
-  that name the page; the button now ships `disabled` and is enabled when wired, which
-  closes the same gap for real users. Merged (#54); its own prod deploy passed all 13
-  suites first time, as did #53's. Remaining: the next scheduled prod deploy doing the same.
-- [ ] **Clear the stale prod deployments and merged branches.** Audited 2026-08-29: prod
-  holds nine app deployments because `destroy previous` runs only after every behaviour
-  suite passes, and the sign-in race failed one suite on each deploy for four days. Once
-  the #54 deploy (prod-929d6af) is live, only it should remain; the rest (prod-7f188b7,
-  8c12b18, af7eab7, 5570316, 8fe61f8, d411b61, 64fb844, 31dfaaf, 075cc43) are each eight
-  stacks, 31 Lambdas with five provisioned-concurrency units, a distribution and a WAF
-  ACL. Operator authorised seven on 2026-08-29 (prod-7f188b7, 8c12b18, af7eab7, 5570316,
-  8fe61f8, d411b61, 64fb844); being deleted directly with `cloudformation delete-stack` in
-  the workflow's order (the origin bucket has to be emptied before EdgeStack goes), which
-  is the approach for stale ci and prod deployments from now on. All seven are gone
-  (2026-08-29 22:50 UTC), their API Gateway custom domains with them; prod-31dfaaf and
-  prod-075cc43 followed once prod-929d6af went live; 154 orphaned per-deployment Lambda
-  log groups deleted. Each deployment leaves its Lambda log groups behind because the app
-  stacks do not create them; that fix belongs with the `destroy previous` item below.
-  Branches: all
-  15 `origin/claude/*` and 32 local `claude/*` deleted, five April stashes dropped.
-  Operator: `git branch -D claude/verify-cloudfront-lookup` (force-delete is blocked for
-  Claude Code; it holds only a duplicate of a main commit) and `git remote remove antonycc`
-  if the archived fork should go. ci is clean.
-- [ ] **`destroy previous` has never run.** Cause found 2026-08-30: the job's `if` has no
-  status function, so GitHub applies the implicit `success()`, which is false whenever any
-  transitive ancestor was skipped; five sandbox scenario jobs are skipped on every push
-  (`skipTestScenarios` defaults true) and feed the chain, and only the intermediate jobs
-  carry `!cancelled()`. Skipped on all 98 retained runs since May, 25 of them green, so 25
-  predecessors were never removed. Fix in PR #56: `!cancelled()` plus explicit result checks
-  on the `if`; `destroy-prod.yml` refuses to destroy the last-known-good or live deployment
-  and deletes a deployment's leftover Lambda log groups once its stacks are gone.
-  1. Merged (#56, 2026-08-30). Claude Code: on its prod deploy, confirm `destroy previous`
-     runs and prod-929d6af's stacks and log groups are gone.
+  (first run with the noise filter). Investigate if any is not green.
+- [ ] **Sign-in button race.** Fixed in #54 (button ships disabled until wired; the login
+  step waits for the handler and the origin change). Two deploys since passed all 13 suites
+  first time. Claude Code: confirm the next scheduled prod deploy does the same.
+- [ ] **`destroy previous` never ran.** Fixed in #56 (`!cancelled()` plus explicit result
+  checks on the job's `if`; `destroy-prod.yml` refuses to destroy the live or last-known-good
+  deployment and deletes a deployment's leftover Lambda log groups once its stacks are gone).
+  1. Claude Code: on the #56 deploy (run 33283751626), confirm `destroy previous` runs and
+     prod-929d6af's stacks and log groups are gone.
   2. Claude Code, on go: the CDK provider Lambdas (AwsCustomResource providers in
      `ApiStack`, `OpsStack`, `EdgeStack`, `PublishStack`, `KindCdk`, `Route53AliasUpsert`)
      create log groups the stacks do not own; give each an explicit `LogGroup` with
      retention and DESTROY. The app Lambdas already do (`constructs/Lambda.java`).
   3. Operator: 156 orphaned `/aws/lambda/prod-*` log groups (~325 KB, 50 dead deployments,
      most with no retention) remain in us-east-1; say go and Claude Code deletes them.
-  The scheduled sweep in `destroy-prod.yml` does work but removes one deployment per run
-  and produced no runs between 2026-07-13 and 2026-08-24, the same gap as the keep-alive
-  item below.
+- [ ] **Tidy the last two local git leftovers.** Operator: `git branch -D
+  claude/verify-cloudfront-lookup` (force-delete is blocked for Claude Code; it holds only a
+  duplicate of a main commit) and `git remote remove antonycc` if the archived fork should go.
 - [ ] **Keep-alive for scheduled workflows.** GitHub disables schedules after 60 days
-  without repo activity, which is what stopped automation in July. Nothing guards
-  against a repeat yet.
+  without repo activity, which is what stopped automation in July and silenced the destroy
+  sweep between 2026-07-13 and 2026-08-24. Nothing guards against a repeat yet. Claude Code,
+  on go.
 
 ## Discipline
 
