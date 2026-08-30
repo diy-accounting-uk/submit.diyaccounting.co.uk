@@ -1,6 +1,6 @@
 # PLAN: CI certificate renewal is blocked on a missing DNS validation record
 
-Status: **record restored and validated; closes when #62 (detection check) merges**
+Status: **renewed to 2027-03-15; closes when #62 (detection check) merges**
 (raised 2026-08-30; deadline 2026-09-04)
 
 ## Operator assertions (verbatim)
@@ -63,8 +63,8 @@ it displace the statutory items on the board.
 ## Resolution 2026-08-30
 
 - The validation CNAME was added to zone Z0315522208PWZSSBI9AL with operator approval at
-  ~21:10 UTC; `ci-auth.diyaccounting.co.uk` flipped to `SUCCESS` at 21:16 UTC. ACM issues
-  the renewed certificate on its own from there; a poll is confirming the new expiry.
+  ~21:10 UTC; `ci-auth.diyaccounting.co.uk` flipped to `SUCCESS` at 21:16 UTC. ACM reissued the
+  certificate the same evening: RenewalStatus SUCCESS, NotAfter 2027-03-15.
 - Durable fix: the detection route, PR #62 (`certificate-check.yml`) — weekly, fails when
   any in-use ACM certificate in ci or prod (both regions) has a domain not validating or
   expires within 30 days. Chosen over a CDK-managed record because the record lives in the
