@@ -17,8 +17,6 @@ operator step before them is done or when SSO is live.
      copies succeed.
   2. Claude Code: `scripts/validate-workflows.sh:29` exits 1 with no output on any actionlint
      finding; `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` still says PITR is off.
-- [ ] **(B13) Usage data pipeline.** Operator: merge PR #57 (hashed subject on every
-  activity event that has one).
 - [ ] **(B14) Scheduled ingestion jobs.** The GA4 pull needs its credential.
   1. Operator: the GA4 Data API is authenticated with a Google Cloud service account (GA4's
      own admin UI cannot issue API credentials; no GCP compute or billing is involved). In
