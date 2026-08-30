@@ -20,10 +20,14 @@ operator step before them is done or when SSO is live.
   GitHub environments and env deploys are dispatched to store it in Secrets Manager.
   Claude Code: confirm both env deploys store the secret, then after the next scheduled
   pull confirm rows in `ga4_traffic` through Athena.
-- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent.** Streams G-C76HK806F1
-  (gateway) and G-X4ZPD99X2K (spreadsheets) received no data for 48h to 2026-08-30 while
-  the submit stream flowed. Claude Code: check the tag wiring on www and spreadsheets
-  pages; if collection is broken the usage pipeline will carry submit data only.
+- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Both
+  sites load gtag correctly with the right measurement IDs but set consent
+  `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
+  ever collected; submit has the banner and a localStorage restore, which is why only its
+  stream flows. `PLAN_GA4.md` lists the consent banner as open. The fix is porting
+  submit's banner (submit.js consent block + analytics.js restore) to the www and
+  spreadsheets repos — two PRs, operator-visible UX change on both live sites. Operator:
+  say go and Claude Code dispatches it.
 - [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
   support@diyaccounting.co.uk, Vacation responder / auto-reply: replace the dead GitHub
   link with `https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`,
