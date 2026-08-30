@@ -58,7 +58,7 @@ Cross-account backups isolate backup data from the production and CI accounts so
 | `{env}-env-bundles` | `ttl` | Enabled (application-managed) |
 | 5 async-request tables | `ttl` | 1 hour |
 
-**PITR status**: Not yet enabled on any tables. Comments in DataStack reference PITR but it has not been configured. This is a Phase 3 prerequisite.
+**PITR status**: Enabled on receipts, bundles, passes and subscriptions in prod (verified 2026-08-30).
 
 **Pre-migration backups**: On-demand backups with prefix `pre-migration-20260221` exist in the old management account (887764105431). These were created before the Phase 1.4 data migration to 972912397388 and cover all 11 prod tables. These are a safety net, not a long-term backup strategy.
 
