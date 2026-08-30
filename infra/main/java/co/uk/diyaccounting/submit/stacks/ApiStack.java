@@ -7,7 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
-import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureSharedLogGroup;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
@@ -203,10 +203,10 @@ public class ApiStack extends Stack {
                 .properties(Map.of("ApiId", this.httpApi.getHttpApiId()))
                 .build();
 
-        // Enable access logging for the default stage - ensure log group exists (idempotent creation)
-        // The resource policy for API Gateway to write to this log group is managed centrally
-        // in the ObservabilityStack to avoid hitting the 10 resource policy limit per account
-        EnsuredLogGroup ensuredApiAccessLogs = ensureLogGroupWithDependency(
+        // The access log group is env-scoped and shared by every app deployment; the
+        // ObservabilityStack owns it and holds the single API Gateway resource policy (10 per
+        // account). Ensuring it here only covers a fresh environment; teardown never deletes it.
+        EnsuredLogGroup ensuredApiAccessLogs = ensureSharedLogGroup(
                 this, props.resourceNamePrefix() + "-ApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
 
         // Configure default stage access logs and logging level/metrics
