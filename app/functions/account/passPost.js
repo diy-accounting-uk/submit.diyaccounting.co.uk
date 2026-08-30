@@ -108,6 +108,7 @@ export async function ingestHandler(event) {
     await publishActivityEvent({
       event: "pass-redeemed",
       summary: "Pass redeemed: " + (result?.bundleId || "unknown"),
+      userSub: userId,
       detail: { bundleId: result?.bundleId },
     });
 

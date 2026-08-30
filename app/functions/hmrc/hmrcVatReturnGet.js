@@ -637,6 +637,7 @@ export async function getVatReturn(
   await publishActivityEvent({
     event: "vat-return-queried",
     summary: "VAT return queried",
+    userSub: auditForUserSub,
   });
   return { hmrcResponse, vatReturn: hmrcResponse.data, hmrcRequestUrl };
 }

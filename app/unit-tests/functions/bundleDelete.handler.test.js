@@ -44,9 +44,25 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
+// Capture EventBridge sends so activity-event tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as bundleDeleteHandler, workerHandler as bundleDeleteWorker } from "@app/functions/account/bundleDelete.js";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -65,6 +81,7 @@ describe("bundleDelete ingestHandler", () => {
 
     // Reset and provide default mock DynamoDB behaviour
     vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       if (cmd instanceof MockQueryCommand) {
         return { Items: [], Count: 0 };
@@ -307,6 +324,32 @@ describe("bundleDelete ingestHandler", () => {
     expect(response.statusCode).toBe(204);
     const body = parseResponseBody(response);
     expect(body).toBeNull();
+  });
+
+  test("publishes the bundle-deleted event with the hashed sub, never the raw sub", async () => {
+    const token = makeIdToken("user-delete-hashed-sub-check");
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
+      }
+      return {};
+    });
+
+    const deleteEvent = buildEventWithToken(token, { bundleId: "day-guest" });
+    deleteEvent.headers["x-wait-time-ms"] = "30000";
+    await bundleDeleteHandler(deleteEvent);
+    await yieldToEventLoop();
+
+    const bundleDeletedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "bundle-deleted";
+    });
+    expect(bundleDeletedCalls).toHaveLength(1);
+    const rawDetail = bundleDeletedCalls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"user-delete-hashed-sub-check"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.hashedSub).toBe(hashSub("user-delete-hashed-sub-check"));
   });
 
   // ============================================================================

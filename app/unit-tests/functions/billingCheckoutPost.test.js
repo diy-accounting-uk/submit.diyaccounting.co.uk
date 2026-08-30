@@ -41,11 +41,13 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: (...args) => mockGetUserBundles(...args),
 }));
 
-// Mock EventBridge (activityAlert.js uses it)
+// Mock EventBridge (activityAlert.js uses it), capturing sends so activity-event
+// tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
 vi.mock("@aws-sdk/client-eventbridge", () => ({
   EventBridgeClient: class {
-    send() {
-      return {};
+    send(...args) {
+      return mockEventBridgeSend(...args);
     }
   },
   PutEventsCommand: class {
@@ -56,6 +58,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 import { ingestHandler } from "@app/functions/billing/billingCheckoutPost.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -75,6 +78,7 @@ describe("billingCheckoutPost", () => {
     process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO = "price_test_sandbox_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+    mockEventBridgeSend.mockClear();
   });
 
   afterEach(() => {
@@ -107,6 +111,18 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items).toEqual([{ price: "price_test_123", quantity: 1 }]);
     expect(params.success_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success");
     expect(params.cancel_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=canceled");
+  });
+
+  test("publishes the checkout-session-created event with the hashed sub, never the raw sub", async () => {
+    const event = buildEventWithToken(validToken);
+    await ingestHandler(event);
+
+    expect(mockEventBridgeSend).toHaveBeenCalledTimes(1);
+    const rawDetail = mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"test-user-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.event).toBe("checkout-session-created");
+    expect(detail.hashedSub).toBe(hashSub("test-user-sub"));
   });
 
   test("returns 401 when no authorization header", async () => {

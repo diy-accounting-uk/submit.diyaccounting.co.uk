@@ -14,6 +14,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/account/interestPost.js" });
 
@@ -33,6 +34,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export async function ingestHandler(event) {
+  await initializeSalt();
   const { request, requestId } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
 
@@ -84,6 +86,7 @@ export async function ingestHandler(event) {
     await publishActivityEvent({
       event: "feedback-engagement-registered",
       summary: "Feedback: " + maskEmail(email),
+      userSub: user?.sub,
       detail: { email: maskEmail(email) },
     });
 

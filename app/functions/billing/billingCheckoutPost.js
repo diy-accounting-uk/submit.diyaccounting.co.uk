@@ -125,6 +125,7 @@ export async function ingestHandler(event) {
       summary: `Checkout started: ${maskEmail(userEmail)}`,
       actor: classifyActor(userEmail, decodedToken["cognito:username"] ? "cognito-native" : undefined),
       flow: "user-journey",
+      userSub,
     });
 
     return http200OkResponse({

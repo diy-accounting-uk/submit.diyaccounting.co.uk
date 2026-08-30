@@ -24,7 +24,23 @@ vi.mock("@aws-sdk/client-sns", () => {
   return { SNSClient, PublishCommand };
 });
 
+// Capture EventBridge sends so activity-event tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 import { ingestHandler } from "@app/functions/account/interestPost.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -34,6 +50,7 @@ describe("interestPost ingestHandler", () => {
     process.env.FEEDBACK_TOPIC_ARN = "arn:aws:sns:eu-west-2:123456789012:test-feedback-engagement";
     vi.clearAllMocks();
     mockSnsSend.mockResolvedValue({});
+    mockEventBridgeSend.mockResolvedValue({});
   });
 
   test("HEAD request returns 200 OK", async () => {
@@ -58,6 +75,18 @@ describe("interestPost ingestHandler", () => {
     expect(publishCommand.input.Subject).toBe("Feedback engagement");
     expect(publishCommand.input.Message).toContain("Email: test@test.submit.diyaccounting.co.uk");
     expect(publishCommand.input.Message).toContain("Timestamp:");
+  });
+
+  test("publishes the feedback-engagement-registered event with the hashed sub, never the raw sub", async () => {
+    const event = buildLambdaEvent({ method: "POST" });
+    await ingestHandler(event);
+
+    expect(mockEventBridgeSend).toHaveBeenCalledTimes(1);
+    const rawDetail = mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain("test-sub");
+    const detail = JSON.parse(rawDetail);
+    expect(detail.event).toBe("feedback-engagement-registered");
+    expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
 
   test("returns 200 with JWT authorizer context (HTTP API)", async () => {

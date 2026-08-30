@@ -163,7 +163,10 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     summary: `Subscription activated: ${bundleId} for ${maskEmail(customerEmail)}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
-    detail: { bundleId, subscriptionId },
+    // Stripe webhooks never see the raw Cognito sub, only the hashedSub set as
+    // checkout metadata — pass it straight through in detail rather than via
+    // userSub, which would hash it a second time.
+    detail: { bundleId, subscriptionId, hashedSub },
   });
 }
 
@@ -220,7 +223,7 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     summary: `Subscription renewed: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
-    detail: { bundleId, subscriptionId },
+    detail: { bundleId, subscriptionId, hashedSub },
   });
 }
 
@@ -261,7 +264,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
       summary: `Cancellation scheduled: ${bundleId}`,
       actor: test ? "test-user" : "customer",
       flow: "user-journey",
-      detail: { bundleId, subscriptionId: subscription.id },
+      detail: { bundleId, subscriptionId: subscription.id, hashedSub },
     });
   }
 }
@@ -300,7 +303,7 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
     summary: `Subscription canceled: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
-    detail: { bundleId, subscriptionId: subscription.id },
+    detail: { bundleId, subscriptionId: subscription.id, hashedSub },
   });
 }
 
@@ -340,7 +343,7 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
     summary: `Payment failed: ${bundleId}`,
     actor: test ? "test-user" : "customer",
     flow: "user-journey",
-    detail: { bundleId, subscriptionId },
+    detail: { bundleId, subscriptionId, hashedSub },
   });
 }
 
@@ -427,6 +430,7 @@ export async function ingestHandler(event) {
         // Resolve subscription from dispute -> charge -> payment_intent -> subscription
         let disputeSubscriptionId = null;
         let disputeCustomerEmail = null;
+        let disputeHashedSub = null;
         try {
           const stripeClient = await getStripeClient({ test });
           const charge = typeof dispute.charge === "string" ? await stripeClient.charges.retrieve(dispute.charge) : dispute.charge;
@@ -449,6 +453,7 @@ export async function ingestHandler(event) {
         if (disputeSubscriptionId) {
           const disputeSubRecord = await getSubscription(`stripe#${disputeSubscriptionId}`);
           if (disputeSubRecord) {
+            disputeHashedSub = disputeSubRecord.hashedSub;
             await updateSubscription(`stripe#${disputeSubscriptionId}`, {
               disputed: true,
               disputeId: dispute.id,
@@ -493,7 +498,7 @@ export async function ingestHandler(event) {
             .join(" "),
           actor: test ? "test-user" : "customer",
           flow: "user-journey",
-          detail: { disputeId: dispute.id, chargeId: dispute.charge, subscriptionId: disputeSubscriptionId },
+          detail: { disputeId: dispute.id, chargeId: dispute.charge, subscriptionId: disputeSubscriptionId, hashedSub: disputeHashedSub },
         });
         break;
       }

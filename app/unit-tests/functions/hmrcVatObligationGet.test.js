@@ -76,8 +76,24 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient };
 });
 
+// Capture EventBridge sends so activity-event tests can inspect the Detail JSON directly.
+const mockEventBridgeSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-eventbridge", () => ({
+  EventBridgeClient: class {
+    send(...args) {
+      return mockEventBridgeSend(...args);
+    }
+  },
+  PutEventsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as hmrcVatObligationGetHandler } from "@app/functions/hmrc/hmrcVatObligationGet.js";
+import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -89,6 +105,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     mockFetch = setupFetchMock();
     // Reset and provide default mock DynamoDB behaviour
     vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
@@ -143,6 +160,27 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     });
     const response = await hmrcVatObligationGetHandler(event);
     expect(response.statusCode).toBe(200);
+  });
+
+  test("publishes the vat-obligations-queried event with the hashed sub, never the raw sub", async () => {
+    const obligations = { obligations: [{ periodKey: "24A1", status: "O" }] };
+    mockHmrcSuccess(mockFetch, obligations);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcVatObligationGetHandler(event);
+
+    const queriedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "vat-obligations-queried";
+    });
+    expect(queriedCalls).toHaveLength(1);
+    const rawDetail = queriedCalls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"test-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
 
   test("returns 500 on HMRC API error", async () => {
