@@ -19,9 +19,7 @@ operator step before them is done or when SSO is live.
 - [ ] **(B14) Scheduled ingestion jobs.** The GA4 credential is in the `ci` and `prod`
   GitHub environments and env deploys are dispatched to store it in Secrets Manager.
   Claude Code: confirm both env deploys store the secret, then after the next scheduled
-  pull confirm rows in `ga4_traffic` through Athena, and correct WP-8's text in
-  `PLAN_USAGE_DATA_PIPELINE.md` (it cites `AccountStack.java:832` for a retry/DLQ shape
-  that rule does not have).
+  pull confirm rows in `ga4_traffic` through Athena.
 - [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent.** Streams G-C76HK806F1
   (gateway) and G-X4ZPD99X2K (spreadsheets) received no data for 48h to 2026-08-30 while
   the submit stream flowed. Claude Code: check the tag wiring on www and spreadsheets

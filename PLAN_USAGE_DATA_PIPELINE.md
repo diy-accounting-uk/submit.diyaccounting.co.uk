@@ -1115,7 +1115,8 @@ things that do not interact.
 
 An EventBridge `Rule` with a `LambdaFunction` target already gives what the requirement asks
 for: `retryAttempts` on the target, a `deadLetterQueue` on the target, and a Lambda `Errors`
-alarm. It also matches the pattern already in the repo at `AccountStack.java:832`.
+alarm. The repo's existing hourly reconcile rule (`AccountStack.java:832`) uses the same
+Rule-plus-target shape but sets neither retries nor a DLQ; the ingestion rules add both.
 
 EventBridge Scheduler is the alternative, worth taking if flexible time windows or one-off
 schedules ever matter. Step Functions earns its place the day a job has to wait on another's
