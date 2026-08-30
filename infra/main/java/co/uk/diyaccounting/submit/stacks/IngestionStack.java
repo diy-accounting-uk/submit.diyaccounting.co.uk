@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -181,6 +182,14 @@ public class IngestionStack extends Stack {
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
+        // IngestionStack is env-scoped (one deployment per environment, redeployed
+        // indefinitely), so this function name is stable forever, not per-deployment: it has
+        // already run and Lambda already auto-created its log group with no retention or removal
+        // policy. A plain LogGroup construct here would fail at deploy with "already exists" - use
+        // the idempotent create-if-missing path instead.
+        var stripeReconcileLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-StripeReconcileLogGroup", "/aws/lambda/" + stripeReconcileFunctionName);
+
         var stripeReconcileLambda = DockerImageFunction.Builder.create(this, prefix + "-StripeReconcileFn")
                 .functionName(stripeReconcileFunctionName)
                 .code(DockerImageCode.fromEcr(
@@ -193,7 +202,9 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(stripeReconcileEnv)
+                .logGroup(stripeReconcileLogGroup.logGroup())
                 .build();
+        stripeReconcileLambda.getNode().addDependency(stripeReconcileLogGroup.ensureResource());
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
         stripeReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -231,8 +242,11 @@ public class IngestionStack extends Stack {
         // losing weekly coverage of the reconciliation path.
         var stripeReconcileSchedule = isProd
                 ? Schedule.cron(CronOptions.builder().minute("15").hour("2").build())
-                : Schedule.cron(
-                        CronOptions.builder().minute("15").hour("2").weekDay("MON").build());
+                : Schedule.cron(CronOptions.builder()
+                        .minute("15")
+                        .hour("2")
+                        .weekDay("MON")
+                        .build());
 
         registerScheduledJob(
                 "StripeReconcile",
@@ -261,7 +275,8 @@ public class IngestionStack extends Stack {
         if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
             ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
         }
-        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
             ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
         }
 
@@ -272,6 +287,11 @@ public class IngestionStack extends Stack {
                         .repositoryArn(sharedNames.ecrRepositoryArn)
                         .repositoryName(sharedNames.ecrRepositoryName)
                         .build());
+
+        // Same exposure as stripeReconcileLambda above: env-scoped, stable function name,
+        // already running - use the idempotent create-if-missing path, not a plain LogGroup.
+        var ga4ReportPullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-Ga4ReportPullLogGroup", "/aws/lambda/" + ga4ReportPullFunctionName);
 
         var ga4ReportPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4ReportPullFn")
                 .functionName(ga4ReportPullFunctionName)
@@ -285,7 +305,9 @@ public class IngestionStack extends Stack {
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(ga4ReportPullEnv)
+                .logGroup(ga4ReportPullLogGroup.logGroup())
                 .build();
+        ga4ReportPullLambda.getNode().addDependency(ga4ReportPullLogGroup.ensureResource());
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
         ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -294,7 +316,8 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
                 .build());
 
-        if (props.ga4ServiceAccountArn() != null && !props.ga4ServiceAccountArn().isBlank()) {
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
             var ga4SecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
                     ? props.ga4ServiceAccountArn()
                     : props.ga4ServiceAccountArn() + "-*";
@@ -309,8 +332,11 @@ public class IngestionStack extends Stack {
         // do not start at the same minute. ci: 03:15 every Monday, same reasoning as Stripe's.
         var ga4ReportPullSchedule = isProd
                 ? Schedule.cron(CronOptions.builder().minute("15").hour("3").build())
-                : Schedule.cron(
-                        CronOptions.builder().minute("15").hour("3").weekDay("MON").build());
+                : Schedule.cron(CronOptions.builder()
+                        .minute("15")
+                        .hour("3")
+                        .weekDay("MON")
+                        .build());
 
         registerScheduledJob(
                 "Ga4ReportPull",

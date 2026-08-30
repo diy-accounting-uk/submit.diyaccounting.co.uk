@@ -19,6 +19,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CustomResource;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -49,6 +50,8 @@ import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
 
 public class ApiStack extends Stack {
@@ -159,12 +162,20 @@ public class ApiStack extends Stack {
         // Custom resource to clean up external API Gateway custom domain mappings on stack deletion.
         // set-origins creates mappings outside CloudFormation; if not removed before CF deletes the
         // HttpApi, the deletion fails because the $default stage is still referenced.
+        LogGroup cleanupFnLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-ApiGwCleanupFnLogGroup")
+                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-api-gw-cleanup")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         Function cleanupFn = Function.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanupFn")
                 .runtime(Runtime.NODEJS_24_X)
                 .handler("index.handler")
                 .code(Code.fromInline(CLEANUP_LAMBDA_CODE))
                 .timeout(Duration.minutes(5))
                 .description("Cleans up external API Gateway custom domain mappings on stack deletion")
+                .logGroup(cleanupFnLogGroup)
                 .build();
 
         cleanupFn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -173,8 +184,18 @@ public class ApiStack extends Stack {
                 .resources(List.of("arn:aws:apigateway:" + getRegion() + "::/*"))
                 .build());
 
+        // The Provider construct wraps cleanupFn in its own "framework-onEvent" Lambda to run the
+        // custom resource protocol; that wrapper needs its own log group, separate from cleanupFn's.
+        LogGroup cleanupProviderLogGroup = LogGroup.Builder.create(
+                        this, props.resourceNamePrefix() + "-ApiGwCleanupProviderLogGroup")
+                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-api-gw-cleanup-provider")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
         Provider cleanupProvider = Provider.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanupProvider")
                 .onEventHandler(cleanupFn)
+                .logGroup(cleanupProviderLogGroup)
                 .build();
 
         CustomResource.Builder.create(this, props.resourceNamePrefix() + "-ApiGwCleanup")

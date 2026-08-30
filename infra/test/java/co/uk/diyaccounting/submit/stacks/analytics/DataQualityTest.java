@@ -5,7 +5,6 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -77,10 +76,11 @@ class DataQualityTest {
 
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
-                Match.objectLike(Map.of(
-                        "Ruleset",
-                        Match.stringLikeRegexp(
-                                "[\\s\\S]*customer[\\s\\S]*test-user[\\s\\S]*synthetic[\\s\\S]*system[\\s\\S]*visitor[\\s\\S]*ai-agent[\\s\\S]*"))));
+                Match.objectLike(
+                        Map.of(
+                                "Ruleset",
+                                Match.stringLikeRegexp(
+                                        "[\\s\\S]*customer[\\s\\S]*test-user[\\s\\S]*synthetic[\\s\\S]*system[\\s\\S]*visitor[\\s\\S]*ai-agent[\\s\\S]*"))));
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(
@@ -99,11 +99,13 @@ class DataQualityTest {
 
         template.resourceCountIs("AWS::Events::Rule", 1);
         template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(0 4 * * ? *)")));
+                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(0 4 * * ? *)")));
 
         template.resourceCountIs("AWS::SQS::Queue", 1);
-        template.resourceCountIs("AWS::Lambda::Function", 1);
+        // The run function name is stable across every redeploy of this env-scoped stack, so its
+        // log group goes through the idempotent AwsCustomResource path, adding a second Lambda
+        // function: the shared create-if-missing/retention singleton provider.
+        template.resourceCountIs("AWS::Lambda::Function", 2);
     }
 
     @Test
@@ -142,8 +144,8 @@ class DataQualityTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "glue:StartDataQualityRulesetEvaluationRun")))))))));
+                                Match.arrayWith(List.of(Match.objectLike(
+                                        Map.of("Action", "glue:StartDataQualityRulesetEvaluationRun")))))))));
 
         template.hasResourceProperties(
                 "AWS::IAM::Policy",
@@ -155,11 +157,10 @@ class DataQualityTest {
                                         "Action",
                                         "iam:PassRole",
                                         "Condition",
-                                        Match.objectLike(Map.of(
-                                                "StringEquals",
+                                        Match.objectLike(
                                                 Map.of(
-                                                        "iam:PassedToService",
-                                                        "glue.amazonaws.com"))))))))))));
+                                                        "StringEquals",
+                                                        Map.of("iam:PassedToService", "glue.amazonaws.com"))))))))))));
     }
 
     @Test
@@ -187,11 +188,10 @@ class DataQualityTest {
                                         "Action",
                                         "s3:ListBucket",
                                         "Condition",
-                                        Match.objectLike(Map.of(
-                                                "StringLike",
+                                        Match.objectLike(
                                                 Map.of(
-                                                        "s3:prefix",
-                                                        "curated/activity-events/*"))))))))))));
+                                                        "StringLike",
+                                                        Map.of("s3:prefix", "curated/activity-events/*"))))))))))));
     }
 
     @Test
@@ -238,7 +238,6 @@ class DataQualityTest {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
                 && actions.stream()
-                        .allMatch(a -> String.valueOf(a).startsWith("xray:")
-                                || "cloudwatch:PutMetricData".equals(a));
+                        .allMatch(a -> String.valueOf(a).startsWith("xray:") || "cloudwatch:PutMetricData".equals(a));
     }
 }

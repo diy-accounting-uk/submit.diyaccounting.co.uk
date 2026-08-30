@@ -5,6 +5,8 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +66,8 @@ public class DataQuality extends Construct {
     // prefix to find partitions to register in the catalog before Glue Data Quality reads them.
     private static final String TARGET_TABLE_CURATED_PREFIX = "curated/activity-events/";
 
-    private static final String RULESET = """
+    private static final String RULESET =
+            """
             Rules = [
                 RowCount > 0,
                 IsComplete "event",
@@ -156,8 +159,10 @@ public class DataQuality extends Construct {
                         .tableName(TARGET_TABLE_NAME)
                         .build())
                 .build();
-        props.glueDatabaseDependency().ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
-        props.targetTableDependency().ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
+        props.glueDatabaseDependency()
+                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
+        props.targetTableDependency()
+                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
 
         // ============================================================================
         // Evaluation role: assumed by Glue, not by the Lambda, to read the table and publish
@@ -225,6 +230,14 @@ public class DataQuality extends Construct {
                         .repositoryName(props.ecrRepositoryName())
                         .build());
 
+        // AnalyticsStack is env-scoped (one deployment per environment, redeployed
+        // indefinitely), so this function name is stable forever, not per-deployment: it has
+        // already run in ci and prod, and Lambda already auto-created its log group with no
+        // retention or removal policy. A plain LogGroup construct here would fail at deploy with
+        // "already exists" - use the idempotent create-if-missing path instead.
+        var runLambdaLogGroup = ensureLogGroupWithDependency(
+                stack, prefix + "-DataQualityRunLogGroup", "/aws/lambda/" + runLambdaFunctionName);
+
         this.runLambda = DockerImageFunction.Builder.create(this, prefix + "-DataQualityRunFn")
                 .functionName(runLambdaFunctionName)
                 .code(DockerImageCode.fromEcr(
@@ -236,6 +249,7 @@ public class DataQuality extends Construct {
                 .timeout(Duration.seconds(30))
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
+                .logGroup(runLambdaLogGroup.logGroup())
                 .environment(Map.of(
                         "ENVIRONMENT_NAME", props.envName(),
                         "GLUE_DATABASE_NAME", props.glueDatabaseName(),
@@ -245,6 +259,7 @@ public class DataQuality extends Construct {
                         "ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName(),
                         "GLUE_DATA_QUALITY_CURATED_PREFIX", TARGET_TABLE_CURATED_PREFIX))
                 .build();
+        this.runLambda.getNode().addDependency(runLambdaLogGroup.ensureResource());
 
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -259,8 +274,8 @@ public class DataQuality extends Construct {
         // (no partitions registered by default).
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
+                .actions(
+                        List.of("glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
                 .resources(List.of(
                         glueCatalogArn(stack),
                         glueDatabaseArn(stack, props.glueDatabaseName()),
@@ -363,7 +378,6 @@ public class DataQuality extends Construct {
     }
 
     private static String glueRulesetArn(Stack stack, String rulesetName) {
-        return "arn:aws:glue:%s:%s:dataQualityRuleset/%s"
-                .formatted(stack.getRegion(), stack.getAccount(), rulesetName);
+        return "arn:aws:glue:%s:%s:dataQualityRuleset/%s".formatted(stack.getRegion(), stack.getAccount(), rulesetName);
     }
 }

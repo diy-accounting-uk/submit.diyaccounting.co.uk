@@ -341,6 +341,17 @@ public class HoldingStack extends Stack {
         var holdingDocRootSource = Source.asset(
                 holdingDir.toString(),
                 AssetOptions.builder().assetHashType(AssetHashType.SOURCE).build());
+
+        // BucketDeployment provisions its S3-sync Lambda as a stack-scoped singleton with a
+        // CloudFormation-assigned function name, so an explicit log group must be created and
+        // passed via .logGroup() rather than named to match — see PublishStack's identical
+        // deployment for why this goes through the idempotent ensureLogGroupWithDependency path.
+        ILogGroup holdingDeploymentLogGroup = ensureLogGroupWithDependency(
+                        this,
+                        props.resourceNamePrefix() + "-HoldingDeploymentLogGroup",
+                        "/aws/lambda/" + props.resourceNamePrefix() + "-holding-deployment")
+                .logGroup();
+
         this.holdingDeployment = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix() + "-HoldingDeployment")
                 .sources(List.of(holdingDocRootSource))
@@ -349,6 +360,7 @@ public class HoldingStack extends Stack {
                 .distributionPaths(List.of("/index.html"))
                 .retainOnDelete(false)
                 .prune(true)
+                .logGroup(holdingDeploymentLogGroup)
                 .build();
 
         // Outputs

@@ -108,7 +108,8 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.hasResourceProperties(
                 "AWS::KinesisFirehose::DeliveryStream",
                 Match.objectLike(Map.of(
-                        "ExtendedS3DestinationConfiguration", Match.objectLike(Map.of("CompressionFormat", "UNCOMPRESSED")))));
+                        "ExtendedS3DestinationConfiguration",
+                        Match.objectLike(Map.of("CompressionFormat", "UNCOMPRESSED")))));
 
         analytics.hasResourceProperties(
                 "AWS::Events::Rule",
@@ -129,14 +130,47 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
         // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
-        // of its own.
+        // of its own. Both jobs' names are stable across redeploys, so their log groups go
+        // through the idempotent AwsCustomResource path, adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 2);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 3);
         ingestion.resourceCountIs("AWS::Events::Rule", 2);
         ingestion.resourceCountIs("AWS::SQS::Queue", 2);
         ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
         assertNoUnscopedIamResources(ingestion);
+
+        // Every Lambda function across the environment stacks must route its logs to an explicit,
+        // retained log group — otherwise CDK (or, for AwsCustomResource, CloudFormation's own
+        // provider framework) gives it an unnamed one with no retention and no removal policy, and
+        // it outlives the stack. The one known exception is CDK's built-in auto-delete-objects
+        // handler, which exposes no logGroup option at all.
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.observabilityStack));
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.dataStack));
+        assertEveryLambdaHasAnExplicitLogGroup(analytics);
+        assertEveryLambdaHasAnExplicitLogGroup(ingestion);
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.identityStack));
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.holdingStack));
+    }
+
+    /**
+     * Asserts every Lambda function carries an explicit {@code LoggingConfig.LogGroup}, so its logs
+     * land in a group this stack retains and deletes with it, not an unnamed one CloudWatch creates
+     * with no retention on first invoke. The one known exception is CDK's built-in
+     * auto-delete-objects handler, which exposes no logGroup option at all.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
+        var missing = new ArrayList<String>();
+        template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
+            if (loggingConfig != null && loggingConfig.containsKey("LogGroup")) return;
+            var description = String.valueOf(properties == null ? "" : properties.get("Description"));
+            if (description.contains("auto-deleting objects")) return;
+            missing.add(id);
+        });
+        assertTrue(missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
     }
 
     /**

@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.utils;
 
 import java.util.List;
 import java.util.Map;
+import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
 import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
@@ -100,16 +101,20 @@ public final class Route53AliasUpsert {
         }
         AwsSdkCall upsertAAAA = upsertAAAABuilder.build();
 
+        var stack = Stack.of(scope);
+
         AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
                 .policy(policy)
                 .onCreate(upsertA)
                 .onUpdate(upsertA)
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
                 .policy(policy)
                 .onCreate(upsertAAAA)
                 .onUpdate(upsertAAAA)
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
     }
 
@@ -200,16 +205,20 @@ public final class Route53AliasUpsert {
             upsertAAAABuilder.assumedRoleArn(route53AssumedRoleArn);
         }
 
+        var stack = Stack.of(scope);
+
         AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
                 .policy(policy)
                 .onCreate(upsertABuilder.build())
                 .onUpdate(upsertABuilder.build())
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
 
         AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
                 .policy(policy)
                 .onCreate(upsertAAAABuilder.build())
                 .onUpdate(upsertAAAABuilder.build())
+                .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                 .build();
     }
 

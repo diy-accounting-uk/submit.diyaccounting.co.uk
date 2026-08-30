@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
+import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
@@ -129,6 +130,14 @@ public class AnalyticsDashboard extends Construct {
                         .repositoryName(props.ecrRepositoryName())
                         .build());
 
+        // AnalyticsStack is env-scoped (one deployment per environment, redeployed
+        // indefinitely), so this function name is stable forever, not per-deployment: it has
+        // already run in ci and prod, and Lambda already auto-created its log group with no
+        // retention or removal policy. A plain LogGroup construct here would fail at deploy with
+        // "already exists" - use the idempotent create-if-missing path instead.
+        var metricsPublishLogGroup = ensureLogGroupWithDependency(
+                stack, prefix + "-AnalyticsMetricsPublishLogGroup", "/aws/lambda/" + functionName);
+
         this.metricsPublishLambda = DockerImageFunction.Builder.create(this, prefix + "-AnalyticsMetricsPublishFn")
                 .functionName(functionName)
                 .code(DockerImageCode.fromEcr(
@@ -141,7 +150,9 @@ public class AnalyticsDashboard extends Construct {
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
                 .environment(environment)
+                .logGroup(metricsPublishLogGroup.logGroup())
                 .build();
+        this.metricsPublishLambda.getNode().addDependency(metricsPublishLogGroup.ensureResource());
 
         // Athena: run and poll queries against the one workgroup this stack owns.
         this.metricsPublishLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -216,7 +227,8 @@ public class AnalyticsDashboard extends Construct {
         this.scheduleRule = Rule.Builder.create(this, prefix + "-AnalyticsMetricsPublish-Schedule")
                 .ruleName(functionName + "-schedule")
                 .description("Publish yesterday's Athena view results to CloudWatch as analytics metrics")
-                .schedule(Schedule.cron(CronOptions.builder().minute("0").hour("5").build()))
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("0").hour("5").build()))
                 .targets(List.of(LambdaFunction.Builder.create(this.metricsPublishLambda)
                         .retryAttempts(3)
                         .deadLetterQueue(this.deadLetterQueue)
@@ -309,8 +321,8 @@ public class AnalyticsDashboard extends Construct {
         cfnOutput(
                 this,
                 "AnalyticsDashboardUrl",
-                "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region
-                        + "#dashboards:name=" + dashboardName);
+                "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#dashboards:name="
+                        + dashboardName);
     }
 
     private static Metric metric(String metricName) {
