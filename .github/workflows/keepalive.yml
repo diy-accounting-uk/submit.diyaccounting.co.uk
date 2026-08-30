@@ -1,0 +1,87 @@
+name: keepalive
+run-name: "keepalive sweep of ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2025-2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# GitHub disables a scheduled workflow once a repository goes 60 days without any
+# activity, and it does so silently: no issue, no notification, the cron simply
+# stops firing (https://docs.github.com/actions/using-workflows/disabling-and-enabling-a-workflow#disabling-a-workflow).
+# That is exactly what happened to this repository's scheduled destroy sweep from
+# 2026-07-13 to 2026-08-24 - six weeks of CI cost drift with nobody told.
+#
+# Re-enabling a workflow that is already active is a no-op that still resets
+# GitHub's 60-day inactivity clock, so a weekly touch here keeps every scheduled
+# workflow's clock running indefinitely. If a workflow is still disabled_inactivity
+# after the sweep runs, this job fails, which is the notification the July outage
+# never got. Workflows a human disabled on purpose (disabled_manually) are left
+# alone and never cause a failure.
+
+on:
+  schedule:
+    - cron: '15 8 * * 6' # Weekly on Saturday - clear of every other workflow's day/hour/minute slot
+  workflow_dispatch:
+
+concurrency:
+  group: keepalive-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Re-enable every workflow to reset GitHub's 60-day inactivity clock
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          list_workflows() {
+            gh api "/repos/${REPO}/actions/workflows" --paginate \
+              --jq '.workflows[] | [.id, .name, .state] | @tsv'
+          }
+
+          echo "=== Workflow states before sweep ==="
+          INACTIVE_COUNT=0
+          while IFS=$'\t' read -r WORKFLOW_ID WORKFLOW_NAME WORKFLOW_STATE; do
+            echo "${WORKFLOW_NAME}: ${WORKFLOW_STATE}"
+            case "${WORKFLOW_STATE}" in
+              active|disabled_inactivity)
+                if [ "${WORKFLOW_STATE}" = "disabled_inactivity" ]; then
+                  INACTIVE_COUNT=$((INACTIVE_COUNT + 1))
+                fi
+                gh api -X PUT "/repos/${REPO}/actions/workflows/${WORKFLOW_ID}/enable"
+                ;;
+              disabled_manually)
+                echo "  leaving disabled_manually workflow alone"
+                ;;
+              *)
+                echo "  unrecognised state, leaving alone"
+                ;;
+            esac
+          done < <(list_workflows)
+
+          echo ""
+          echo "Re-enabled ${INACTIVE_COUNT} workflow(s) GitHub had disabled for inactivity"
+
+          echo ""
+          echo "=== Workflow states after sweep ==="
+          AFTER_SWEEP=$(list_workflows)
+          printf '%s\n' "${AFTER_SWEEP}" | while IFS=$'\t' read -r WORKFLOW_ID WORKFLOW_NAME WORKFLOW_STATE; do
+            echo "${WORKFLOW_NAME}: ${WORKFLOW_STATE}"
+          done
+
+          STILL_INACTIVE=$(printf '%s\n' "${AFTER_SWEEP}" | awk -F'\t' '$3 == "disabled_inactivity"' | wc -l | tr -d ' ')
+          if [ "${STILL_INACTIVE}" -gt 0 ]; then
+            echo ""
+            echo "FAIL: ${STILL_INACTIVE} workflow(s) are still disabled_inactivity after the sweep"
+            exit 1
+          fi
+
+          echo ""
+          echo "All workflows are active or intentionally disabled_manually"
