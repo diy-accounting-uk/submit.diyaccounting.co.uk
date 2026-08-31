@@ -45,6 +45,14 @@ operator step before them is done or when SSO is live.
   branch `deploy.yml`), operator deletes the `NGROK_AUTHTOKEN` GitHub secret and the
   ngrok redirect URI in the HMRC hub, then the PR.
 
+- [ ] **(B17a) Demo videos — operator-owned.** Redo the walkthrough capture properly
+  (the first attempt recorded the simulator and the cuts are blank) and publish to
+  https://www.youtube.com/@DIYAccountingSubmit. Claude Code is excluded from this item
+  (operator directive 2026-08-26).
+- [ ] **(B19) GA4 console work — operator.** In the GA4 console: turn on the data
+  export, schedule the Stripe report, mark conversions, retire the old stream and the
+  stale remarketing tag. The Claude Code remainder is the B14a verification above.
+
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)
