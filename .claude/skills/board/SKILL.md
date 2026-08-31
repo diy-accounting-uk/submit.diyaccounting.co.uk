@@ -35,9 +35,10 @@ combined row). Columns:
 - `GH issue`: only when the backlog Source column cites one (`Issue #18` → `#18`),
   else `—`.
 
-**Part 2 — four lists**, headed `**Tier 2**` through `**Tier 5**`, one line per item,
-items separated by ` · `. Each entry: row number, short name, then a parenthesised
-compact status and issue ref if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
+**Part 2 — one list per backlog tier below Tier 1** (whatever tiers the file
+currently has), each headed `**Tier N**`, one line per item, items separated by ` · `.
+Each entry: row number, short name, then a parenthesised compact status and issue ref
+if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
 
 ## Rules
 
