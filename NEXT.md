@@ -31,12 +31,11 @@ operator step before them is done or when SSO is live.
   go, 2026-08-31): a banner-port agent is producing `claude/ga4-consent-banner` PRs in
   the www and spreadsheets repos, consent logic identical to submit's. Operator merges
   the PRs; verify events in both streams after deploy.
-- [ ] **(B9 remainder) Find the dead GitHub link.** IN FLIGHT: a worktree-isolated
-  agent (dispatched 2026-08-31 01:25 UTC) is searching the four repos and the corpus for
-  the dead GitHub link and surviving "no longer staffed / unmonitored" claims, fixing
-  repo copy (submit commits in its worktree for the coordinator to merge; sibling repos
-  via `claude/b9-dead-links` PRs) and reporting what is elsewhere. Operator: check the
-  antony@ auto-responder for the same stale text.
+- [ ] **(B9 remainder) Dead GitHub link — search done, two operator steps left.** The
+  only dead GitHub link live on a public URL was in stale axe-scan JSON snapshots served
+  from `web/public/tests/accessibility/`; no "unstaffed/unmonitored" claim survives on
+  any live page in any repo. Operator: merge PR #65 (removes the snapshots), and check
+  the antony@ auto-responder for the stale "no longer staffed" text.
 - [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
@@ -44,11 +43,14 @@ operator step before them is done or when SSO is live.
 - [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
   scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
   all ran.
-- [ ] **(B44) Remove ngrok from the proxy test path.** IN FLIGHT: a worktree-isolated
-  design agent (dispatched 2026-08-31 01:47 UTC) is writing `PLAN_REMOVE_NGROK.md` at
-  the repo root — options (cloudflared quick tunnel, `stripe listen`, simulator-routed
-  webhooks) with trade-offs and a recommendation; plan only, no code changes.
-  Implementation follows once the operator picks an option.
+- [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is at the
+  repo root with five options. Recommendation: option C — register a localhost redirect
+  URI for the HMRC sandbox app (the OAuth leg needs no tunnel at all, only that
+  registration) plus `stripe listen` for the webhook leg; option A (named Cloudflare
+  tunnel) is the fallback if the Developer Hub refuses localhost. Operator: approve an
+  option; the plan's first step is the HMRC Developer Hub registration, proven against
+  `test:submitVatBehaviour-proxy` before anything is deleted, then Claude Code
+  implements.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** IN FLIGHT (operator said
   go, 2026-08-31): a worktree-isolated design agent is writing
   `PLAN_COST_INSTRUMENTATION.md` — current state read-only, design (allocation tags, CUR
