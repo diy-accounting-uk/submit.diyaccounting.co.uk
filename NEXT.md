@@ -13,13 +13,16 @@ operator step before them is done or when SSO is live.
 **Prod runs deployment prod-bc6a9dd.** Drift findings live in issue #43.
 
 - [ ] **(B25 remainder) Cross-account backups.**
-  1. Claude Code: confirm `verify-backups` on 2026-08-31 is green. The 2026-08-30 run
-     failed only because its 48-hour copy-job window still held the five pre-switch failures
-     from 02:20 UTC on the 29th; all five copies on the 30th completed.
-- [ ] **(B14) Scheduled ingestion jobs.** The GA4 credential is in the `ci` and `prod`
-  GitHub environments and env deploys are dispatched to store it in Secrets Manager.
-  Claude Code: confirm both env deploys store the secret, then after the next scheduled
-  pull confirm rows in `ga4_traffic` through Athena.
+  1. Claude Code: confirm `verify-backups` is green once it next runs. The 06:00 UTC
+     slot on 2026-08-31 never fired (see the scheduling item below). The 2026-08-30 run
+     failed only because its 48-hour copy-job window still held the five pre-switch
+     failures from 02:20 UTC on the 29th; all five copies on the 30th completed.
+- [ ] **(B14) Scheduled ingestion jobs.** The 03:15 UTC prod pull is a Lambda on an
+  EventBridge schedule (not GitHub Actions, so today's cron trouble does not apply).
+  Verification is blocked on expired AWS SSO: operator runs
+  `aws sso login --sso-session diyaccounting`, then Claude Code queries
+  `prod_env_analytics.ga4_traffic` in Athena workgroup `prod-env-analytics`
+  (submit-prod) for rows. Closing this also closes backlog 13/13a.
 - [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Cowork
   confirmed the scale: zero events in 28 days property-wide from both streams, while
   downloads and donations demonstrably happened; no `purchase`/`begin_checkout` ever
@@ -37,13 +40,21 @@ operator step before them is done or when SSO is live.
   deploy, confirm `submit.diyaccounting.co.uk/tests/accessibility/axe-results.json`
   is gone. Operator: check the antony@ auto-responder for the stale "no longer
   staffed" text.
-- [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
-  Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
-  Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
-  on 2026-09-06 and treat a second miss with the keep-alive item.
-- [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
-  scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
-  all ran.
+- [ ] **Scheduled workflows are silently not firing — bigger than the codeql miss.**
+  Found 2026-08-31: `compliance` and `stack-drift` have not run since 2026-07-13 —
+  seven missed Mondays — while both are `state: active` with unmodified crons and no
+  GitHub incident. Separately, today's `verify-backups` (06:00), `deploy.yml` (04:11)
+  and the weekly pair all failed to fire while other crons ran hours late
+  (`deploy-environment` at 10:07 for an 03:51 cron), which looks like a GitHub
+  scheduling backlog this morning — but the seven-week gap cannot be. Claude Code:
+  recheck late today whether the backlogged crons fired; investigate why compliance and
+  stack-drift specifically stopped in July; `codeql`'s 2026-08-30 Sunday miss is
+  probably the same fault — watch 2026-09-06. Operator: approve manual dispatches of
+  `compliance` and `stack-drift` if wanted before the cause is found.
+- [ ] **Scheduled-deploy upload fix (#61, merged).** Today's 04:11 scheduled deploy
+  never fired (see the scheduling item). The operator's 10:44 UTC manual dispatch of
+  `deploy.yml` is being watched instead: confirm the upload jobs,
+  `set-last-known-good-deployment` and `destroy previous` all ran on it.
 - [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is at the
   repo root with five options. Recommendation: option C — register a localhost redirect
   URI for the HMRC sandbox app (the OAuth leg needs no tunnel at all, only that
