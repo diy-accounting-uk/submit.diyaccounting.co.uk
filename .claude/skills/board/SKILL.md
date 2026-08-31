@@ -34,6 +34,9 @@ compact status and issue ref if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16,
 ## Rules
 
 - Open and in-flight work only. Nothing done, decided-against, or removed.
+- Never annotate an item "deferred", "later", or similar — its tier already says
+  that. Status words describe state (open, in flight, blocked on X, operator-owned,
+  date-gated), not priority.
 - If a GitHub issue referenced by a row is known to be closed, drop the ref rather
   than list a dead issue; run `gh issue list --state open` to check only when the
   answer would change a row.
