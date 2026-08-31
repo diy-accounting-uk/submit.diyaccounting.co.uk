@@ -177,6 +177,13 @@ export async function runStripeListen(webhookUrl) {
     logger.info("[stripe-listen]: Skipping stripe listen — no Stripe price IDs configured (simulator/mock billing)");
     return null;
   }
+  // Deployed environments (ci/prod) receive webhooks at their public endpoint;
+  // forwarding is only needed when the server under test is local.
+  const localServer = process.env.TEST_SERVER_HTTP === "run" || process.env.TEST_SERVER_HTTP === "useExisting";
+  if (!localServer) {
+    logger.info("[stripe-listen]: Skipping stripe listen — server under test is not local");
+    return null;
+  }
 
   logger.info(`[stripe-listen]: Starting stripe listen --forward-to ${webhookUrl}...`);
   return new Promise((resolve, reject) => {
