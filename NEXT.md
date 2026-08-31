@@ -69,10 +69,9 @@ operator step before them is done or when SSO is live.
   `prod-env-hmrc-api-requests` for whether anyone uses them — the usage numbers also
   say whether more read-only pages are worth building.
 
-- [ ] **(B35a) Drop the MCP promise from `web/public/mcp.html` — in flight.** Operator
-  decided (2026-08-31) to unpromise rather than build. PR #67 is open with branch
-  test and deploy both green; operator merges. Closes when the PR merges and the live
-  page makes no promise, then remove the worktree `../wt-submit-unpromise-mcp`.
+- [ ] **(B35a) MCP unpromise — verify the live page.** PR #67 merged 2026-08-31.
+  After main's deploy completes, confirm https://submit.diyaccounting.co.uk/mcp.html
+  makes no promise, then close this and drop backlog rows 35 and 35a.
 
 ## Discipline
 
