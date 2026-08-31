@@ -24,25 +24,20 @@ operator step before them is done or when SSO is live.
   sites load gtag correctly with the right measurement IDs but set consent
   `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
   ever collected; submit has the banner and a localStorage restore, which is why only its
-  stream flows. The banner port is done and tested: consent logic identical to submit's
-  (same `consent.analytics` key), site-native styling. Operator: merge www PR #23 and
-  spreadsheets PR #46, deploy both sites. Claude Code: after deploy, confirm `page_view`
+  stream flows. The banner PRs (www #23, spreadsheets #46) are merged 2026-08-31.
+  Claude Code: confirm both sites deployed, then in a day or two confirm `page_view`
   events arrive on the Gateway and Spreadsheets streams, then close this and update
   `PLAN_GA4.md`.
-- [ ] **(B9 remainder) Dead GitHub link — search done.** No dead GitHub link or
-  "unstaffed/unmonitored" claim survives in any repo. Claude Code: after the next prod
-  deploy, confirm `submit.diyaccounting.co.uk/tests/accessibility/axe-results.json`
-  is gone. Operator: check the antony@ auto-responder for the stale "no longer
-  staffed" text.
-- [ ] **compliance and stack-drift schedules are dead — root cause found, one dispatch
-  each revives them.** Both stopped after 2026-07-13; `deploy.yml`'s schedule broke the
-  same day under the same actor (`support-at-diyaccounting`, still an active member)
-  and silently recovered on 2026-08-25 when a push-triggered run re-armed its schedule
-  under `antonycc`. compliance and stack-drift have only ever had schedule-event runs,
-  so nothing re-armed them. Fix: `gh workflow run compliance-test` and
-  `gh workflow run stack-drift` once under a live account (operator approval pending),
-  then confirm the Monday 2026-09-07 06:00 UTC crons fire on their own. `codeql`'s
-  2026-08-30 miss likely shares the fault — check it, and watch 2026-09-06.
+- [ ] **(B9 remainder) Dead GitHub link — one verify left.** Claude Code: once the
+  in-flight prod deploy completes, confirm
+  `submit.diyaccounting.co.uk/tests/accessibility/axe-results.json` is gone, then close.
+- [ ] **compliance and stack-drift schedule revival.** Both crons died 2026-07-13 with
+  their schedule actor (`deploy.yml` broke identically and self-healed via a push run
+  under a live actor). The operator dispatched both on 2026-08-31 (runs 33387263843,
+  33387266505). Claude Code: confirm both runs finish green (stack-drift's first run
+  with the noise filter — report what it flags), then confirm the Monday 2026-09-07
+  06:00 UTC crons fire on their own before closing. `codeql`'s 2026-08-30 miss likely
+  shares the fault — watch 2026-09-06 and revive the same way if it misses again.
   Separately, this morning's crons were backlogged, not dropped: `deploy.yml`'s 04:11
   schedule fired at 10:50. A watch is confirming whether `verify-backups` also surfaces
   late (feeds B25 above).
@@ -63,11 +58,9 @@ operator step before them is done or when SSO is live.
   anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
   Open steps: operator approves the two management-account commands in the plan
   (activate five tag keys — not retroactive, so first — and delete the broken legacy
-  CUR); operator merges root.diyaccounting.co.uk PR #20 (CostReportingStack eu-west-2 +
-  CostReportingUE1Stack us-east-1 — CUR 2.0 export, seven budgets, anomaly monitor,
-  cost category; Maven, synth and 9 new tests green) and dispatches that repo's
-  deploy.yml; operator turns on hourly
-  granularity in Cost Management Preferences (console only). Feeds backlog #43's
+  CUR); root.diyaccounting.co.uk PR #20 is merged — dispatch that repo's deploy.yml to
+  create the stacks, then confirm the CUR export and budgets exist; operator turns on
+  hourly granularity in Cost Management Preferences (console only). Feeds backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
