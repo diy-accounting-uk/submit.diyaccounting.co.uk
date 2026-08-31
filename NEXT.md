@@ -20,7 +20,10 @@ operator step before them is done or when SSO is live.
   GitHub environments and env deploys are dispatched to store it in Secrets Manager.
   Claude Code: confirm both env deploys store the secret, then after the next scheduled
   pull confirm rows in `ga4_traffic` through Athena.
-- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Both
+- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Cowork
+  confirmed the scale: zero events in 28 days property-wide from both streams, while
+  downloads and donations demonstrably happened; no `purchase`/`begin_checkout` ever
+  received. Collection outranks finishing the pipeline. Both
   sites load gtag correctly with the right measurement IDs but set consent
   `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
   ever collected; submit has the banner and a localStorage restore, which is why only its
@@ -28,22 +31,22 @@ operator step before them is done or when SSO is live.
   submit's banner (submit.js consent block + analytics.js restore) to the www and
   spreadsheets repos — two PRs, operator-visible UX change on both live sites. Operator:
   say go and Claude Code dispatches it.
-- [ ] **(B9/B9a) Fix the support@ Gmail auto-reply.** Operator, Gmail settings for
-  support@diyaccounting.co.uk, Vacation responder / auto-reply: replace the dead GitHub
-  link with `https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk/issues`,
-  and restrict the responder so it does not reply to automated senders (at least
-  `*@amazonses.com`, `notifications@github.com`, `no-reply@sns.amazonaws.com`). The
-  operator has ruled out "contacts only" (new customers must still get the reply); the
-  remaining routes are a filter-based responder or switching the responder off.
-- [ ] **(B19) Analytics console work.** Operator.
-  1. GA4 (property 523400333): Admin, Data export, link BigQuery and turn on the daily
-     export; Admin, Events, mark `purchase` and `begin_checkout` as key events. Do NOT
-     remove any stream from 523400333 (all three are current); `G-PJPVQWRWJZ` lives in the
-     separate old property and `PLAN_GA4.md` retires it only after the new streams show
-     comparable traffic for about a week.
-  2. Google Ads: check whether the remarketing campaigns for conversion ID 1065724931 are
-     still running; pause them or remove the tag from the sites.
-  3. Stripe dashboard: Reports, schedule a monthly balance report by email.
+- [ ] **(B9 remainder) Find the dead GitHub link.** The support@ out-of-office reply is
+  OFF (Cowork, 2026-08-31) — it had answered every sender since January 2023 and told
+  customers the address was unstaffed. It contained no GitHub link, so B9's premise is
+  unverified. Claude Code: search the site copy, the old responder's links
+  (`www.diyaccounting.co.uk/products.html`, the Linktree now 404s, a PayPal donate URL)
+  and the corpus for the dead GitHub link and any surviving "no longer staffed /
+  unmonitored" claims; fix what is in the repos, report what is elsewhere. Operator: check
+  the antony@ auto-responder for the same stale text.
+- [ ] **(B19 outcome) Remove the Google Ads conversion tag.** Both Ads accounts are
+  cancelled (verified 2026-08-31; no Ads invoices in 13 months), so every page loads a tag
+  firing into a dead account. Claude Code: remove conversion ID `1065724931` from www,
+  spreadsheets and submit pages, and mark `google-analytics.toml` `[legacy]`
+  `google_ads_status` answered. The rest of B19 is done: Stripe monthly reports scheduled
+  (both balance-change and payouts), BigQuery daily export linked to `diyaccounting-ga4`
+  (London region, billing attached, £5 budget alert, 10 GiB/day query quota), `purchase`
+  already a key event, `begin_checkout` unmarkable until it fires.
 - [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
@@ -57,6 +60,21 @@ operator step before them is done or when SSO is live.
   with alerts and Cost Anomaly Detection in each of the six accounts, and Cost Explorer
   granularity. Management-account and billing writes come to the operator for approval as
   they arise. Feeds backlog #43's whole-bill review.
+- [ ] **Companies House identity verification, due 2026-10-05 (hard external
+  deadline).** All three directors of 06846849 show verification due 5 October; the PSC
+  leg runs 22 September to 5 October. Antony is verified and holds a code; **Samantha and
+  Jane have not verified and must do it personally**. An unverified director blocks the
+  confirmation statement and is an offence (s.167M). Operator: chase both for their
+  personal codes; this outranks the confirmation statement on any board pack.
+- [ ] **Corpus index leaks plaintext credentials from the Drive mirror.** 
+  `drive/marketing/facebook.txt` (a bare login) comes back verbatim in corpus-loom search
+  excerpts, and two detection passes missed it — the founder's filing habit was small
+  service-named .txt files across `marketing/`, `facilities/`, `technology/`. Claude
+  Code: switch corpus.toml to directory-level exclusions for those trees, then purge and
+  re-index.
+- [ ] **Google Cloud tidy-ups.** Operator: delete the stray `My First Project`
+  (`valued-context-507200-m9`) attached to the new billing account once confirmed empty;
+  it sits inside the £5 budget scope but was created by Google, not us.
 - [ ] **security-review.yml has no schedule.** Its cron (line 26) is commented out, so
   the workflow never runs on its own. Operator: say whether that is deliberate; if not,
   Claude Code re-enables it.
