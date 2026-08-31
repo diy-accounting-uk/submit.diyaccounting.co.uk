@@ -66,12 +66,6 @@ operator step before them is done or when SSO is live.
   Jane have not verified and must do it personally**. An unverified director blocks the
   confirmation statement and is an offence (s.167M). Operator: chase both for their
   personal codes; this outranks the confirmation statement on any board pack.
-- [ ] **Corpus index leaks plaintext credentials from the Drive mirror.** 
-  `drive/marketing/facebook.txt` (a bare login) comes back verbatim in corpus-loom search
-  excerpts, and two detection passes missed it — the founder's filing habit was small
-  service-named .txt files across `marketing/`, `facilities/`, `technology/`. Claude
-  Code: switch corpus.toml to directory-level exclusions for those trees, then purge and
-  re-index.
 - [ ] **Google Cloud tidy-ups.** Operator: delete the stray `My First Project`
   (`valued-context-507200-m9`) attached to the new billing account once confirmed empty;
   it sits inside the £5 budget scope but was created by Google, not us.
