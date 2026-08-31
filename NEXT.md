@@ -12,17 +12,11 @@ operator step before them is done or when SSO is live.
 
 **Prod runs deployment prod-bc6a9dd.** Drift findings live in issue #43.
 
-- [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Cowork
-  confirmed the scale: zero events in 28 days property-wide from both streams, while
-  downloads and donations demonstrably happened; no `purchase`/`begin_checkout` ever
-  received. Collection outranks finishing the pipeline. Both
-  sites load gtag correctly with the right measurement IDs but set consent
-  `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
-  ever collected; submit has the banner and a localStorage restore, which is why only its
-  stream flows. The banner is deployed and live on both sites (2026-08-31). Claude Code:
-  in a day or two confirm `page_view` events arrive on the Gateway and Spreadsheets
-  streams (BigQuery dataset `analytics_523400333` in `diyaccounting-ga4`, or the GA4
-  console), then close this and update `PLAN_GA4.md`.
+- [ ] **Confirm a `purchase` event lands.** GA4 still shows "No stream data detected"
+  for `purchase` property-wide — expected while no paid flow has completed since
+  collection was restored (2026-08-31), but confirm rather than assume once the
+  funnel has run a few days (GA4 property 523400333, or BigQuery
+  `analytics_523400333`). PR #70 carries the `google-analytics.toml` record to merge.
 - [ ] **compliance and stack-drift schedule revival — dispatches passed, cron proof
   remains.** Both revival runs are green (compliance 10/10 checks; stack-drift "all in
   sync" with three stacks correctly filtered as `DRIFTED_BENIGN` on its first
@@ -33,10 +27,6 @@ operator step before them is done or when SSO is live.
 - [ ] **Wire the weekly `certbot renew` launchd agent** on the operator machine so the
   local TLS cert renews unattended (valid to 2026-11-29; recipe in
   `_developers/SETUP.md`, deploy-hook publishes to Secrets Manager).
-
-- [ ] **(B19) GA4 console work — operator.** In the GA4 console: turn on the data
-  export, schedule the Stripe report, mark conversions, retire the old stream and the
-  stale remarketing tag. The Claude Code remainder is the B14a verification above.
 
 - [ ] **(B30) Alarm-count audit.** 123 alarms per deployment and the canary cadence —
   review what should exist against what does; the largest recurring CloudWatch line.

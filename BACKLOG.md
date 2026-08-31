@@ -19,8 +19,8 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own.
 
 - **In flight**: nothing. `NEXT.md` carries the open remainders.
-- **Verification remainders on NEXT.md**: 14a (`page_view` events on the revived
-  Gateway/Spreadsheets streams), the weekly-cron self-fire proofs.
+- **Verification remainders on NEXT.md**: the weekly-cron self-fire proofs and a first
+  `purchase` event.
 - **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive).
 - **Next candidates**: the 10a spike when the operator says go.
 
@@ -34,7 +34,6 @@ truthfully on its own.
 | 25 | Cross-account backups, remainder: point BackupStack's copy jobs at the LIVE vault (`submit-cross-account-vault` in 914216784828, deployed 2026-08-26), add passes/subscriptions to the backup selection, create `backup-github-actions-role` for unattended workflow runs, then the monthly restore test | Issue #11, PLAN_CROSS_ACCOUNT_BACKUPS | M | Existential, second layer. The destination exists and denies deletion from outside; the restore test is the gate for the TypeScript migration (#33). |
 | 28 | Scan detection (#9) and data-theft detection (#10). The IAM half shipped in batch 2: blanket `grantReadData` is gone, per-table per-action grants live | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
 | 43 | AWS cost optimisation: a whole-bill review across all six accounts — Cost Explorer per account and service, right-sizing, storage classes and lifecycle rules, orphaned resources (us-east-1 log groups and images have recurred), data-transfer lines, and a monthly check that the bill moved the way the month's changes predicted. Feeds and is fed by #30 (alarms are the known largest CloudWatch line). | Operator, this session | M | Hygiene, compounding. Nobody has reviewed the whole bill against what runs; every account added since the org split (backup, submit-ci, submit-prod) widened the blind spot. |
-| 19 | Analytics console work (operator): GA4 data export on, scheduled Stripe report, mark conversions, retire the old stream and stale remarketing tag. The consent banner and CloudFront logging halves shipped in batch 2 | PLAN_GA4; 14a remainder | S | Insight. Small, finishes an almost-done plan. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 

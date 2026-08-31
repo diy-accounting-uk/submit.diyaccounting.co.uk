@@ -1,6 +1,11 @@
 # GA4 and Marketing Plan
 
-**Status**: Pending (post go-live tasks)
+**Status**: Complete (2026-08-31). All three streams collect (consent banner restored
+collection on gateway and spreadsheets); `purchase` and `begin_checkout` are key events;
+the BigQuery daily export runs to `analytics_523400333` (London); the Stripe reports are
+scheduled monthly in the Stripe dashboard; both Google Ads accounts are confirmed
+cancelled; retirement of the old property was withdrawn — it is dormant and kept for
+history, recorded in `google-analytics.toml`.
 
 Live sites:
 - https://diyaccounting.co.uk/ (gateway)
@@ -18,11 +23,3 @@ Live sites:
 - Privacy policy with GA4 section
 - Default consent mode: `analytics_storage: 'denied'`
 
-## Open
-
-| Item | Notes |
-|------|-------|
-| Retire old GA4 stream | `G-PJPVQWRWJZ` on `www.diyaccounting.co.uk` — still receiving traffic from old distribution. Retire now that live sites are on new domains. |
-| Configure GA4 conversions | Mark `purchase` and `begin_checkout` as conversion events in GA4 console |
-| Link Google Ads | Check if remarketing campaigns (conversion ID `1065724931`) are still active |
-| Cookie consent banner | GA4 defaults to `analytics_storage: 'denied'`; need consent banner to allow opt-in. GA4 data retention: 14 months. IP anonymization on by default. |
