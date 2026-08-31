@@ -34,6 +34,23 @@ operator step before them is done or when SSO is live.
   `requireActivity()` gating to the obligations and view-return endpoints, and check
   `prod-env-hmrc-api-requests` for whether anyone uses them — the usage numbers also
   say whether more read-only pages are worth building.
+- [ ] **(B14) Scheduled ingestion jobs** — GA4 export, Stripe reconciliation,
+  CloudFront logs, Step Functions/EventBridge orchestration.
+- [ ] **(B20/20a) Ops alerting uplift** — prove one alarm end to end into an
+  auto-raised GitHub issue (channel: Telegram), then the fan-out with dedup.
+- [ ] **(B25) Cross-account backups remainder** — copy jobs to the live vault,
+  passes/subscriptions in the selection, `backup-github-actions-role`, restore test.
+- [ ] **(B28) Scan and data-theft detection alarms** (issues #9, #10) — wave 2,
+  after the B30 audit reports.
+
+## In flight (batch dispatched 2026-08-31, coordinator session)
+
+- endpoints track (B32b) — Sonnet, worktree: started
+- alarm-audit track (B30) — Sonnet, worktree, report only: started
+- ingestion-design track (B14 design) — Opus, worktree, plan doc only: started
+- alarm-to-issue track (B20a) — Sonnet, worktree: started
+- backups track (B25) — Sonnet, worktree: started
+- certbot track (launchd agent, operator machine) — Sonnet, no worktree: started
 
 ## Discipline
 
