@@ -53,6 +53,19 @@ operator step before them is done or when SSO is live.
   export, schedule the Stripe report, mark conversions, retire the old stream and the
   stale remarketing tag. The Claude Code remainder is the B14a verification above.
 
+- [ ] **(B10a) ITSA sandbox spike — gated on operator go.** Subscribe the existing HMRC
+  application to the Self Employment Business API, mint a sandbox test user with
+  `mtd-income-tax` (the `create-hmrc-test-user` workflow already offers it), and make
+  one read-only call. Proves whether ITSA needs a separate application and whether the
+  OAuth and fraud-header machinery carries over; everything in B10 is guesswork until
+  a sandbox call returns.
+- [ ] **(B30) Alarm-count audit.** 123 alarms per deployment and the canary cadence —
+  review what should exist against what does; the largest recurring CloudWatch line.
+- [ ] **(B32b) Gate the two ungated read endpoints.** Apply the specced
+  `requireActivity()` gating to the obligations and view-return endpoints, and check
+  `prod-env-hmrc-api-requests` for whether anyone uses them — the usage numbers also
+  say whether more read-only pages are worth building.
+
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)
