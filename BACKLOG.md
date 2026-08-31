@@ -18,15 +18,13 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **In flight, awaiting merges/approvals**: 43a (cost instrumentation — root PR #20 plus
-  two management-account commands), 14a's consent-banner PRs (www #23, spreadsheets #46),
-  44 (ngrok removal — plan on main, option pick pending). `NEXT.md` carries the detail.
-- **Verification remainders on NEXT.md**: 25 (verify-backups green run), the dead weekly
-  schedules revival, the #61 scheduled-deploy step check. Item 4 (HMRC free-flag email)
-  is sent (2026-08-26); it closes when "There is a free version of this software" appears
-  on the listing, checkable at the 4a text-fragment link.
-- **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive),
-  the antony@ auto-responder check.
+- **In flight**: 44 (ngrok removal — plan on main, the operator is picking the path).
+  `NEXT.md` carries the detail.
+- **Verification remainders on NEXT.md**: 14a (`page_view` events on the revived
+  Gateway/Spreadsheets streams), the weekly-cron self-fire proofs. Item 4 (HMRC
+  free-flag email) is sent (2026-08-26); it closes when "There is a free version of
+  this software" appears on the listing, checkable at the 4a text-fragment link.
+- **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive).
 - **Next candidates**: the 10a spike when the operator says go.
 
 ## Tier 1: do next
@@ -39,7 +37,6 @@ truthfully on its own.
 | 25 | Cross-account backups, remainder: point BackupStack's copy jobs at the LIVE vault (`submit-cross-account-vault` in 914216784828, deployed 2026-08-26), add passes/subscriptions to the backup selection, create `backup-github-actions-role` for unattended workflow runs, then the monthly restore test | Issue #11, PLAN_CROSS_ACCOUNT_BACKUPS | M | Existential, second layer. The destination exists and denies deletion from outside; the restore test is the gate for the TypeScript migration (#33). |
 | 28 | Scan detection (#9) and data-theft detection (#10). The IAM half shipped in batch 2: blanket `grantReadData` is gone, per-table per-action grants live | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
 | 43 | AWS cost optimisation: a whole-bill review across all six accounts — Cost Explorer per account and service, right-sizing, storage classes and lifecycle rules, orphaned resources (us-east-1 log groups and images have recurred), data-transfer lines, and a monthly check that the bill moved the way the month's changes predicted. Feeds and is fed by #30 (alarms are the known largest CloudWatch line) and 42a (Lambda cost share). | Operator, this session | M | Hygiene, compounding. Nobody has reviewed the whole bill against what runs; every account added since the org split (backup, submit-ci, submit-prod) widened the blind spot. |
-| 43a | Enhance all AWS accounts to assist cost analysis: org-wide cost allocation tags activated and a standard tag set applied by CDK (the per-stack tags exist; make them allocation-active), CUR 2.0 / Data Exports to S3 with Athena over it, AWS Budgets with alerts and Cost Anomaly Detection per account, Cost Explorer granularity settings. The instrumentation half of #43 — do first so the review reads real data. | Split from #43 | S/M | Hygiene. Without allocation tags and exports the review is squinting at unattributed totals. |
 | 44 | Replace ngrok in the proxy test path: `start-proxy.sh`, `stripe-setup.js`, the Stripe webhook route and `test.yml` all assume an ngrok tunnel with an account token — a paid external dependency and a recurring source of stuck local runs. Swap for cloudflared or an unauthenticated tunnel, or route webhooks at the simulator so no tunnel is needed | Operator, this session | S/M | Hygiene. Every proxy behaviour-test run and every new machine pays the ngrok setup tax. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
