@@ -144,7 +144,13 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
     serverProcess.stdout.on("data", (data) => logger.info(sanitiseString(`[http-stdout]: ${data.toString().trim()}`)));
     serverProcess.stderr.on("data", (data) => logger.error(sanitiseString(`[http-stderr]: ${data.toString().trim()}`)));
 
-    await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
+    // In TLS mode the server answers only on HTTPS, so the health check has to hit the
+    // same hostname the certificate is issued for rather than the plain HTTP loopback.
+    const healthCheckUrl =
+      process.env.TEST_SERVER_TLS === "run"
+        ? `https://local.submit.diyaccounting.co.uk:${process.env.TEST_SERVER_HTTPS_PORT}`
+        : `http://127.0.0.1:${httpServerPort}`;
+    await checkIfServerIsRunning(healthCheckUrl, 1000, undefined, "http");
   } else {
     logger.info("[http]: Skipping server process as runTestServer is not set to 'run'");
   }

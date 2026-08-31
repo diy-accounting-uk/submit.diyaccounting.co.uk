@@ -6,6 +6,7 @@
 
 import path from "path";
 import fs from "fs";
+import https from "https";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
@@ -288,9 +289,31 @@ if (__runDirect) {
       return undefined;
     })
     .catch((err) => logger.warn(`Vendor public IP detection failed: ${err.message}`));
-  app.listen(TEST_SERVER_HTTP_PORT, () => {
-    const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
-    console.log(message);
-    logger.info(message);
-  });
+  if (process.env.TEST_SERVER_TLS === "run") {
+    const certPath = process.env.TEST_SERVER_TLS_CERT;
+    const keyPath = process.env.TEST_SERVER_TLS_KEY;
+    const httpsPort = process.env.TEST_SERVER_HTTPS_PORT;
+    // Throw at startup rather than falling back to HTTP and failing later at the first navigation.
+    if (!certPath || !fs.existsSync(certPath)) {
+      throw new Error(`TEST_SERVER_TLS=run but TEST_SERVER_TLS_CERT is missing or unreadable: ${certPath}`);
+    }
+    if (!keyPath || !fs.existsSync(keyPath)) {
+      throw new Error(`TEST_SERVER_TLS=run but TEST_SERVER_TLS_KEY is missing or unreadable: ${keyPath}`);
+    }
+    const options = {
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath),
+    };
+    https.createServer(options, app).listen(httpsPort, () => {
+      const message = `Listening at https://local.submit.diyaccounting.co.uk:${httpsPort}`;
+      console.log(message);
+      logger.info(message);
+    });
+  } else {
+    app.listen(TEST_SERVER_HTTP_PORT, () => {
+      const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
+      console.log(message);
+      logger.info(message);
+    });
+  }
 }
