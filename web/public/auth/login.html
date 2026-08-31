@@ -169,11 +169,12 @@
     </script>
     <!-- Mock auth addon - only loaded in local development environments -->
     <script>
-      // Only load mock auth addon in local development (localhost/127.0.0.1/ngrok)
+      // Only load mock auth addon in local development (localhost/127.0.0.1/ngrok/local.submit)
       // In production, this script is excluded from deployment and not needed
       if (
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1" ||
+        window.location.hostname === "local.submit.diyaccounting.co.uk" ||
         window.location.hostname.includes("ngrok")
       ) {
         const script = document.createElement("script");
