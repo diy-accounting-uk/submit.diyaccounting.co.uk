@@ -44,6 +44,11 @@ operator step before them is done or when SSO is live.
 - [ ] **Scheduled-deploy upload fix (#61, merged).** Claude Code: after the next
   scheduled prod deploy, confirm the upload jobs, last-known-good and `destroy previous`
   all ran.
+- [ ] **(B44) Remove ngrok from the proxy test path.** IN FLIGHT: a worktree-isolated
+  design agent (dispatched 2026-08-31 01:47 UTC) is writing `PLAN_REMOVE_NGROK.md` at
+  the repo root — options (cloudflared quick tunnel, `stripe listen`, simulator-routed
+  webhooks) with trade-offs and a recommendation; plan only, no code changes.
+  Implementation follows once the operator picks an option.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Claude Code: activate
   org-wide cost allocation tags (the CDK per-stack tags exist but are not
   allocation-active), set up CUR 2.0 / Data Exports to S3 with Athena over it, AWS Budgets
