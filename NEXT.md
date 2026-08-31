@@ -27,10 +27,11 @@ operator step before them is done or when SSO is live.
   sites load gtag correctly with the right measurement IDs but set consent
   `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
   ever collected; submit has the banner and a localStorage restore, which is why only its
-  stream flows. `PLAN_GA4.md` lists the consent banner as open. IN FLIGHT (operator said
-  go, 2026-08-31): a banner-port agent is producing `claude/ga4-consent-banner` PRs in
-  the www and spreadsheets repos, consent logic identical to submit's. Operator merges
-  the PRs; verify events in both streams after deploy.
+  stream flows. The banner port is done and tested: consent logic identical to submit's
+  (same `consent.analytics` key), site-native styling. Operator: merge www PR #23 and
+  spreadsheets PR #46, deploy both sites. Claude Code: after deploy, confirm `page_view`
+  events arrive on the Gateway and Spreadsheets streams, then close this and update
+  `PLAN_GA4.md`.
 - [ ] **(B9 remainder) Dead GitHub link — search done, two operator steps left.** The
   only dead GitHub link live on a public URL was in stale axe-scan JSON snapshots served
   from `web/public/tests/accessibility/`; no "unstaffed/unmonitored" claim survives on
