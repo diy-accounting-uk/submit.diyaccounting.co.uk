@@ -32,15 +32,15 @@ operator step before them is done or when SSO is live.
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
 - [ ] **(B44) Remove ngrok from the proxy test path — implementation in flight.**
   `PLAN_REMOVE_NGROK.md` is the spec. Branch `claude/remove-ngrok` (pushed); validation
-  runs locally and on the origin branch before any PR. Wave 1 is code-complete
-  (2026-08-31): steps 5/6/8 and 11 merged to the branch (unit+system green locally,
-  branch CI in progress); steps 1-2 sit in root repo PR #23 (branch
-  `claude/local-submit-dns`, worktree `../wt-root-local-submit-dns`, CI green) awaiting
-  operator merge + root deploy. Next: the STOP-AND-WAIT operator gates (merge PR #23
-  and add the `certbot-local` profile; certbot install + first TXT run; HMRC Developer
-  Hub redirect URI with the :3443 port; CI cert secret via `local-tls-publish.sh`;
-  cert paths in the local `.env`), then the step 7/8 proof runs, then the deletion
-  wave (steps 9, 10, 12) with the final test and grep gates.
+  runs locally and on the origin branch before any PR. Wave 1 is code-complete and
+  verified (2026-08-31): steps 5/6/8 and 11 merged to the branch (unit+system green
+  locally, branch test+deploy green on origin); steps 1-2 deployed via root repo —
+  `dig` returns 127.0.0.1 and `root-certbot-dns01` exists with the eu-west-2 SSO
+  trust. Next: the STOP-AND-WAIT operator gates (add the `certbot-local` profile;
+  certbot install + first TXT run; HMRC Developer Hub redirect URI with the :3443
+  port; CI cert secret via `local-tls-publish.sh`; cert paths in the local `.env`),
+  then the step 7/8 proof runs, then the deletion wave (steps 9, 10, 12) with the
+  final test and grep gates.
 
 ## Discipline
 
