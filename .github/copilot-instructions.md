@@ -151,7 +151,7 @@ The repository supports **four environments** via `.env` files:
 | Environment | File | Purpose |
 |------------|------|---------|
 | **test** | `.env.test` | Unit/system tests with mocked services |
-| **proxy** | `.env.proxy` | Local development with ngrok, mock OAuth2, local DynamoDB |
+| **proxy** | `.env.proxy` | Local development with native HTTPS, mock OAuth2, local DynamoDB |
 | **ci** | `.env.ci` | Continuous integration with real AWS resources |
 | **prod** | `.env.prod` | Production deployment |
 
@@ -212,7 +212,6 @@ See REPORT_REPOSITORY_CONTENTS.md Section "Package.json Operations" for the comp
 - `npm run linting-fix` - Auto-fix ESLint issues - Only run if specifically asked to fix formatting and linting errors:
 
 **Local Development**:
-- `npm run proxy` - Start ngrok proxy
 - `npm run auth` - Start mock OAuth2 server (Docker)
 - `npm run data` - Start local DynamoDB (dynalite)
 
@@ -274,7 +273,7 @@ When reviewing changes, consider impact across **all four environments**:
 
 2. **Proxy environment** (`.env.proxy`):
    - Local development setup
-   - Requires ngrok, Docker for OAuth2/DynamoDB
+   - Requires a local TLS certificate for `local.submit.diyaccounting.co.uk`, Docker for OAuth2/DynamoDB
    - Changes should work locally for developers
 
 3. **CI environment** (`.env.ci`):

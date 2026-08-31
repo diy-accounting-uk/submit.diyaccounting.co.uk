@@ -11,7 +11,7 @@ Purpose: Master the end-to-end behavioral testing of the VAT submission flow. Th
 - Target directory: `behaviour-tests/`.
 - Key files: `behaviour-tests/helpers/behaviour-helpers.js`, `playwright.config.js`.
 - Tools: Playwright, Node.js.
-- Environments: Local, Proxy (ngrok), CI.
+- Environments: Local, Proxy (native HTTPS on local.submit.diyaccounting.co.uk), CI.
 
 ## Core Responsibilities
 

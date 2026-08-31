@@ -3,7 +3,7 @@
 # Copyright (C) 2025-2026 DIY Accounting Ltd
 
 # Simulator environment start script
-# Runs entirely locally without Docker, ngrok, or external HMRC API
+# Runs entirely locally without Docker or an external HMRC API
 
 set -euo pipefail
 
