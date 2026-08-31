@@ -397,6 +397,12 @@ public class SubmitSharedNames {
     public String activityTelegramForwarderLambdaArn;
     public String activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn;
 
+    // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
+    public String alarmToGithubIssueLambdaHandler;
+    public String alarmToGithubIssueLambdaFunctionName;
+    public String alarmToGithubIssueLambdaArn;
+    public String alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -1213,6 +1219,19 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, activityTelegramForwarderLambdaHandlerDashed);
         this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
+        var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";
+        var alarmToGithubIssueLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(alarmToGithubIssueLambdaHandlerName);
+        this.alarmToGithubIssueLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, alarmToGithubIssueLambdaHandlerDashed);
+        this.alarmToGithubIssueLambdaHandler =
+                "%s/ops/%s".formatted(appLambdaHandlerPrefix, alarmToGithubIssueLambdaHandlerName);
+        this.alarmToGithubIssueLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, alarmToGithubIssueLambdaHandlerDashed);
+        this.alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.alarmToGithubIssueLambdaArn, this.provisionedConcurrencyAliasName);
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =
