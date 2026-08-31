@@ -131,15 +131,6 @@ public class IngestionStack extends Stack {
         var sharedNames = props.sharedNames();
         var prefix = props.resourceNamePrefix();
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "IngestionStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
         Tags.of(this).add("DataClassification", "internal");
         Tags.of(this).add("BackupRequired", "false");
 

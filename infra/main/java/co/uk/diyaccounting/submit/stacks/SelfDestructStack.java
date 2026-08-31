@@ -103,18 +103,6 @@ public class SelfDestructStack extends Stack {
     public SelfDestructStack(final Construct scope, final String id, final SelfDestructStackProps props) {
         super(scope, id, props);
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "SelfDestructStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
-
-        // Enhanced cost optimization tags
-        Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
         Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");

@@ -121,18 +121,6 @@ public class HoldingStack extends Stack {
     public HoldingStack(final Construct scope, final String id, final HoldingStackProps props) {
         super(scope, id, StackProps.builder().env(props.getEnv()).build());
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk/cdk.json");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "HoldingStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
-
-        // Enhanced cost optimization tags
-        Tags.of(this).add("BillingPurpose", "submit-holding-page");
         Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");

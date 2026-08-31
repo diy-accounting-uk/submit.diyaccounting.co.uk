@@ -479,6 +479,8 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .build());
+
+        CostAllocationTags.applyTo(app, envName, deploymentName);
     }
 
     // load context from cdk.json like existing apps

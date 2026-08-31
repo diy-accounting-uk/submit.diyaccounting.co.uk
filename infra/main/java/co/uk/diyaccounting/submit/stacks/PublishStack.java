@@ -20,7 +20,6 @@ import software.amazon.awscdk.AssetHashType;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Expiration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Size;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -103,18 +102,6 @@ public class PublishStack extends Stack {
                         .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
                         .build());
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "submit");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "PublishStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
-
-        // Enhanced cost optimization tags
-        Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
         Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");

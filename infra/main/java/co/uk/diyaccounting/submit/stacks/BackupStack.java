@@ -17,7 +17,6 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.backup.BackupPlan;
 import software.amazon.awscdk.services.backup.BackupPlanCopyActionProps;
 import software.amazon.awscdk.services.backup.BackupPlanRule;
@@ -129,13 +128,6 @@ public class BackupStack extends Stack {
 
     public BackupStack(Construct scope, String id, StackProps stackProps, BackupStackProps props) {
         super(scope, id, stackProps);
-
-        // Apply cost allocation tags
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Stack", "BackupStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // ============================================================================
         // KMS Key for Backup Encryption

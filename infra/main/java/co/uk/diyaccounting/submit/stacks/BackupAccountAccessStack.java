@@ -15,7 +15,6 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
 import software.amazon.awscdk.services.iam.CfnOIDCProvider;
 import software.amazon.awscdk.services.iam.Effect;
@@ -66,11 +65,6 @@ public class BackupAccountAccessStack extends Stack {
 
     public BackupAccountAccessStack(Construct scope, String id, BackupAccountAccessStackProps props) {
         super(scope, id, props);
-
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Stack", "BackupAccountAccessStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // ============================================================================
         // GitHub OIDC provider
