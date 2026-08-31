@@ -30,12 +30,9 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44 remainder) Operator: two deletions now the tunnel removal is merged.**
-  Delete the `NGROK_AUTHTOKEN` GitHub secret from both environments, and the ngrok
-  redirect URI on the HMRC sandbox application (frees a slot in the 5-URI cap). Then
-  this closes; the weekly `certbot renew` launchd agent on the operator machine is
-  the one optional tail (cert valid to 2026-11-29, recipe in `_developers/SETUP.md`).
-  `repository-contents.txt` regenerates on the next code PR, clearing its stale line.
+- [ ] **Wire the weekly `certbot renew` launchd agent** on the operator machine so the
+  local TLS cert renews unattended (valid to 2026-11-29; recipe in
+  `_developers/SETUP.md`, deploy-hook publishes to Secrets Manager).
 
 - [ ] **(B19) GA4 console work — operator.** In the GA4 console: turn on the data
   export, schedule the Stripe report, mark conversions, retire the old stream and the
