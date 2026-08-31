@@ -432,17 +432,8 @@ public class ApiStack extends Stack {
                                 + this.httpApi.getApiId() + "/*")
                         .build());
 
-        // Per-function error alarm (>=1 error in 5 minutes)
-        Alarm.Builder.create(this, apiLambdaProps.ingestFunctionName() + "-LambdaErrors-" + keySuffix)
-                .alarmName(apiLambdaProps.ingestFunctionName() + "-lambda-errors-" + keySuffix)
-                .metric(fn.metricErrors())
-                .threshold(1.0)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription(
-                        "Lambda errors >= 1 for " + apiLambdaProps.urlPath() + " " + apiLambdaProps.httpMethod())
-                .build();
+        // Per-function error alarm already exists as `{fn}-errors` from the Lambda construct
+        // (Lambda.java) on this same fn.metricErrors() metric — no need to alarm on it again here.
 
         // Additionally create a HEAD route for the same path to ensure HEAD requests are accepted across the API.
         // Only create if the primary route isn't already HEAD and there's no explicit HEAD route defined elsewhere.
