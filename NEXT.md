@@ -27,10 +27,10 @@ operator step before them is done or when SSO is live.
   sites load gtag correctly with the right measurement IDs but set consent
   `analytics_storage: denied` and have no consent banner and no grant path, so nothing is
   ever collected; submit has the banner and a localStorage restore, which is why only its
-  stream flows. `PLAN_GA4.md` lists the consent banner as open. The fix is porting
-  submit's banner (submit.js consent block + analytics.js restore) to the www and
-  spreadsheets repos — two PRs, operator-visible UX change on both live sites. Operator:
-  say go and Claude Code dispatches it.
+  stream flows. `PLAN_GA4.md` lists the consent banner as open. IN FLIGHT (operator said
+  go, 2026-08-31): a banner-port agent is producing `claude/ga4-consent-banner` PRs in
+  the www and spreadsheets repos, consent logic identical to submit's. Operator merges
+  the PRs; verify events in both streams after deploy.
 - [ ] **(B9 remainder) Find the dead GitHub link.** IN FLIGHT: a worktree-isolated
   agent (dispatched 2026-08-31 01:25 UTC) is searching the four repos and the corpus for
   the dead GitHub link and surviving "no longer staffed / unmonitored" claims, fixing
@@ -49,12 +49,13 @@ operator step before them is done or when SSO is live.
   the repo root — options (cloudflared quick tunnel, `stripe listen`, simulator-routed
   webhooks) with trade-offs and a recommendation; plan only, no code changes.
   Implementation follows once the operator picks an option.
-- [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Claude Code: activate
-  org-wide cost allocation tags (the CDK per-stack tags exist but are not
-  allocation-active), set up CUR 2.0 / Data Exports to S3 with Athena over it, AWS Budgets
-  with alerts and Cost Anomaly Detection in each of the six accounts, and Cost Explorer
-  granularity. Management-account and billing writes come to the operator for approval as
-  they arise. Feeds backlog #43's whole-bill review.
+- [ ] **(B43a) Instrument the AWS accounts for cost analysis.** IN FLIGHT (operator said
+  go, 2026-08-31): a worktree-isolated design agent is writing
+  `PLAN_COST_INSTRUMENTATION.md` — current state read-only, design (allocation tags, CUR
+  2.0/Athena, Budgets + Cost Anomaly Detection across the six accounts, Cost Explorer
+  granularity), CDK drafts for this repo, and the ordered NEEDS-APPROVAL write list.
+  Every management-account/billing write comes to the operator individually before it
+  runs. Feeds backlog #43's whole-bill review.
 
 ## Discipline
 
