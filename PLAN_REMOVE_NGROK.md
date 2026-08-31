@@ -1,6 +1,6 @@
 # Remove ngrok from the proxy test path
 
-> Design options. No code changes yet.
+> Plan only. No code changes until the operator says go.
 
 ## Requirement
 
@@ -23,11 +23,13 @@ Backlog row 44, verbatim:
 | `package.json:172` | `"proxy": "npx dotenv -e .env.proxy -- node app/bin/ngrok.js"`. |
 | `package.json:285` | `@ngrok/ngrok` as a devDependency. |
 | `scripts/stripe-setup.js:146` | Registers a Stripe webhook endpoint at the hardcoded `https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook`. |
-| `package.json` accessibility and penetration scripts | `axe`, `lighthouse`, `text-spacing-test.js`, ZAP baseline and `.pa11yci.proxy.json` all hardcode the ngrok hostname (about 30 URLs). |
+| `scripts/stripe-trigger-lifecycle.sh:15` | Comment gives the ngrok URL as the example webhook endpoint. |
+| `package.json` accessibility and penetration scripts | `axe`, `lighthouse`, `text-spacing-test.js`, ZAP baseline and `.pa11yci.proxy.json` all hardcode the ngrok hostname (about 30 URLs across `package.json:191-241` and 26 entries in `.pa11yci.proxy.json`). |
+| `web/public/auth/login.html:172-177` | Loads the mock auth addon only when the hostname is localhost, 127.0.0.1 or contains `ngrok`. |
 | `.github/workflows/test.yml` | `NGROK_AUTHTOKEN` declared as a `workflow_call` secret (line 47) and passed to the one proxy job (line 1123). |
 | `.github/workflows/deploy.yml:299` | Forwards `secrets.NGROK_AUTHTOKEN` into `test.yml`. |
 | `app/unit-tests/bin/ngrok.test.js` | Unit test over `extractDomainFromUrl` and `startNgrok`. |
-| `_developers/SETUP.md` steps 3 to 6, `GITHUB_SETUP.md:155` | Tell a new developer to get an ngrok authtoken and reserve a subdomain. |
+| `_developers/SETUP.md` steps 1, 3, 4, 5, 6 and `GITHUB_SETUP.md:155` | Tell a new developer to get an ngrok authtoken and reserve a subdomain. |
 | `app/bin/server.js:96`, `app/lib/httpServerToLambdaAdaptor.js:24` | Comments only. Both already handle the no-tunnel case. |
 
 ## Why a public URL is needed today
@@ -90,165 +92,245 @@ same time fight over one connection. That is the stuck-run failure mode: `startN
 the tunnel dies mid-run, `checkIfServerIsRunning` keeps polling, and the run hangs until someone
 runs `pkill -f ngrok`.
 
-## Options
+## The chosen path: DNS to localhost with a real certificate, plus `stripe listen`
 
-### Option A: named Cloudflare tunnel on a delegated subdomain
+Keep a stable public hostname, drop the tunnel under it.
 
-Run `cloudflared` against a named tunnel bound to a hostname the company controls, for example
-`proxy.diyaccounting.co.uk`. Stable URL, so both legs keep working exactly as now.
+A public A record `local.submit.diyaccounting.co.uk` points at `127.0.0.1`. Every machine that
+resolves that name reaches its own loopback. A Let's Encrypt certificate for the same name is
+issued over DNS-01, which validates by writing a TXT record in our own zone and never contacts the
+A record. The local Express server terminates TLS with that certificate, so the browser sees a
+valid `https://` origin on a hostname HMRC, Cognito and Google can all have registered. Stripe
+webhooks arrive through `stripe listen`, an outbound connection that replays genuine signed
+events.
 
-- **Files:** `app/bin/ngrok.js` becomes `app/bin/tunnel.js` wrapping the `cloudflared` binary;
-  `behaviour-helpers.js:154`; the base URL in `.env.proxy` and `.env.proxyRunning`; the hardcoded
-  host in `stripe-setup.js` and the roughly 30 accessibility and penetration URLs; `start-proxy.sh`;
-  `package.json` scripts and the `@ngrok/ngrok` devDependency; `test.yml` and `deploy.yml` secrets;
-  `SETUP.md`.
-- **Secrets and dependencies:** `NGROK_AUTHTOKEN` goes. A Cloudflare account and a tunnel
-  credential file arrive, so a GitHub secret is still needed for CI, and `cloudflared` has to be
-  installed locally and in the workflow. Named tunnels need the zone in Cloudflare, so a subdomain
-  has to be delegated from Route53 by NS record.
-- **Stuck runs:** same shape as today. One named hostname is still one connection, so concurrent
-  local and CI runs still collide.
-- **CI:** swap the secret, add a `cloudflared` install step.
-- **Coverage:** unchanged.
-- **Effort:** M. Most of it is DNS delegation and the URL sweep.
+What this buys over the tunnel:
 
-### Option B: cloudflared quick tunnel (unauthenticated, random URL per run)
+- No account, no token, no paid dependency. Issuance uses our own Route53 zone.
+- No shared connection, so a local run and a CI run never collide. Each resolves the name to its
+  own loopback.
+- The front door stays HTTPS with a valid certificate, so the accessibility and penetration runs
+  keep testing what they test today. HSTS and secure-cookie findings do not change.
+- Nothing listens on the public internet. The name resolves to loopback everywhere, so there is
+  no exposed surface to secure.
 
-`cloudflared tunnel --url http://localhost:3000` needs no account and no token, and prints a fresh
-`*.trycloudflare.com` URL each run.
+### Decisions settled
 
-The random URL breaks leg 1 outright. The HMRC sandbox application holds a fixed list of redirect
-URIs and does not accept wildcards, so a URL that changes every run cannot be pre-registered, and
-`submitFormVat()` fails at the HMRC grant page.
+**The name.** `local.submit.diyaccounting.co.uk`. It is a flat record in the apex zone, matching
+the existing `ci-billing.submit.diyaccounting.co.uk` precedent, and it reads as what it is.
 
-For leg 2 it works but costs churn. `stripe-setup.js` would stop being the place the proxy webhook
-is registered. The payment test would have to create a `webhookEndpoint` against the run's URL,
-read `webhook.secret` from the create response, pass it to the server as
-`STRIPE_TEST_WEBHOOK_SECRET`, and delete the endpoint in `afterAll`. Stripe caps webhook endpoints
-per account, so a crashed run that skips cleanup leaves litter that someone has to sweep.
+**Where the record lands.** All DNS for the business sits in one public zone,
+`diyaccounting.co.uk`, id `Z0315522208PWZSSBI9AL`, in the management account 887764105431. There
+is no delegated `submit.` zone. Every stack in both repos imports that zone with
+`HostedZone.fromHostedZoneAttributes` and a literal id, never `fromLookup`.
 
-- **Effort:** S for the webhook leg alone, but it does not solve the leg that actually blocks CI.
-- **Verdict:** not viable on its own. Listed because it is the obvious reading of the backlog row.
+The record belongs in the root repo's `RootDnsStack`
+(`root.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/root/stacks/RootDnsStack.java`,
+stack id `root-RootDnsStack`), wired from `RootEnvironment.java:117-134` with a default in
+`cdk-root/cdk.json`. That stack runs in the account that owns the zone, so it writes the record
+directly with no assumed role. It already holds the fixed, environment-independent records for
+`www` and `spreadsheets`, and `RootDnsStack.java:171-180` already uses a multi-label relative
+name (`ci-holding.spreadsheets`), so `local.submit` needs no new naming machinery.
 
-### Option C: localhost front door plus `stripe listen`
+A submit-repo stack is the wrong home. `SubmitSharedNames.java:440-462` derives every submit FQDN
+from `envName` and `deploymentName`, so `local.` has no natural owner there, and a per-deployment
+stack would destroy and recreate a developer-machine record on every CI run.
 
-Split the problem and answer each leg separately.
+One gap for whoever implements it. `Route53AliasUpsert` only ever writes an `AliasTarget`
+(`Route53AliasUpsert.java:47-55`). A literal `127.0.0.1` needs a sibling method that puts
+`"ResourceRecords": [{"Value": "127.0.0.1"}]` and a `"TTL"` in the record set instead. Write the
+sibling rather than reaching for the L2 `route53.ARecord`, because the UPSERT custom resource is
+what makes these records survive a record created by hand. Write the A record only. Do not copy
+the helper's paired A-and-AAAA shape.
 
-*Leg 1.* Register `http://localhost:3000/activities/submitVatCallback.html` (and the Cognito and
-mock callbacks) as redirect URIs on the HMRC sandbox application, then set
-`DIY_SUBMIT_BASE_URL=http://localhost:3000/` and `TEST_PROXY=off` in `.env.proxy`. The existing
-`runProxy !== "run"` branch in every behaviour test already routes the browser to
-`http://127.0.0.1:3000/`, so no test logic changes. `.env.proxy` then differs from `.env.simulator`
-only in what it points at: real HMRC sandbox and real Stripe instead of the local HTTP simulator.
+Fallback if the CDK route stalls: a direct
+`aws --profile management route53 change-resource-record-sets` UPSERT. **NEEDS-APPROVAL** as a
+direct AWS write, and it leaves the zone drifted from code, so treat it as temporary.
 
-*Leg 2.* Replace the inbound tunnel with the Stripe CLI:
-`stripe listen --forward-to http://localhost:3000/api/v1/billing/webhook`. The CLI holds an
-outbound connection to Stripe and replays events locally, so nothing has to reach the machine. It
-prints a per-session signing secret on startup.
+**Certificate issuance.** certbot with the route53 DNS-01 plugin, run on the developer machine:
 
-- **Files:** delete `app/bin/ngrok.js` and `app/unit-tests/bin/ngrok.test.js`; drop
-  `runLocalSslProxy` from `behaviour-helpers.js` and its call sites in all 17 behaviour tests;
-  add a `runStripeListen` helper that spawns the CLI, parses the `whsec_...` from its first lines,
-  and hands it to the server spawn as `STRIPE_TEST_WEBHOOK_SECRET`; `.env.proxy` and
-  `.env.proxyRunning`; `start-proxy.sh`; the `proxy` script and `@ngrok/ngrok` in `package.json`;
-  the proxy webhook block in `stripe-setup.js`; the hardcoded URLs in the accessibility and
-  penetration scripts and `.pa11yci.proxy.json`; `test.yml` and `deploy.yml`; `SETUP.md` and
-  `GITHUB_SETUP.md`.
-- **Ordering constraint:** `resolveWebhookSecret()` caches the first secret it reads, and the
-  Express server runs as a child process spawned by the harness. So `stripe listen` has to start
-  and yield its secret before `runLocalHttpServer()` spawns the server, not after.
-- **Secrets and dependencies:** `NGROK_AUTHTOKEN` goes, from the developer's shell, from
-  `SETUP.md`, and from both workflows. Nothing new for leg 1. Leg 2 needs the `stripe` CLI binary
-  and a test-mode Stripe key, and the payment test already requires that key
-  (`payment.behaviour.test.js:583`).
-- **Stuck runs:** the whole class goes away for leg 1. No shared hostname, so concurrent local and
-  CI runs stop colliding, and a failure is a local port bind rather than a hang on a remote
-  handshake. Leg 2 becomes a child process the harness owns and can kill.
-- **CI:** the proxy job loses its `NGROK_AUTHTOKEN` and needs no replacement, because
-  `submitVatBehaviour` never touches Stripe. The `stripe listen` step is needed only if the proxy
-  payment test is ever added to CI.
-- **Coverage:** unchanged for HMRC. Real Stripe signature verification is preserved, because
-  `stripe listen` forwards genuine signed payloads. What is lost is that the events arrive over the
-  CLI's connection rather than a public HTTPS POST, so a CloudFront or API Gateway routing fault
-  in front of the webhook would not show up. The `-ci` variant already covers that path.
-- **Detail worth pricing in:** the accessibility and penetration scripts move to
-  `http://127.0.0.1:3000`, and the ZAP baseline runs inside Docker, so it needs
-  `host.docker.internal:3000`. Pa11y, axe and Lighthouse against plain HTTP will report the
-  missing HSTS and secure-cookie findings that TLS termination used to hide.
-- **Effort:** M. The behaviour-test sweep is mechanical, the HMRC hub registration is the gate.
+```bash
+certbot certonly --dns-route53 \
+  -d local.submit.diyaccounting.co.uk \
+  --config-dir "$HOME/.local/share/diyaccounting-local-tls/config" \
+  --work-dir   "$HOME/.local/share/diyaccounting-local-tls/work" \
+  --logs-dir   "$HOME/.local/share/diyaccounting-local-tls/logs" \
+  --non-interactive --agree-tos -m antony@polycode.co.uk
+```
 
-### Option D: route the payment leg at the simulator
+Install certbot and the plugin with `pipx install certbot` then
+`pipx inject certbot certbot-dns-route53`.
 
-Leave the Stripe price IDs blank in `.env.proxy` so the guard at `app/bin/server.js:210` registers
-`mockBilling.js`, and the proxy payment run gets the same auto-completing local checkout the
-simulator run gets. `app/lib/stripeClient.js:50` already honours a `STRIPE_API_BASE_URL` override,
-so a richer version could point the Stripe SDK at the local HTTP simulator and have it emit signed
-webhook events.
+**Certificate home.** Outside the repo, under
+`$HOME/.local/share/diyaccounting-local-tls/`. The live paths are:
 
-- **Files:** two lines in `.env.proxy` for the cheap version. The richer version adds Stripe routes
-  and a signing-secret scenario under `app/http-simulator/routes/`.
-- **Secrets and dependencies:** no Stripe key needed locally at all.
-- **Stuck runs:** removes the tunnel from the payment path only. Leg 1 still needs an answer, so
-  this is a companion to A or C, never a whole solution.
-- **CI:** no change, CI already runs payment in simulator mode.
-- **Coverage:** this is the real cost. The proxy payment test exists to catch webhook signature
-  failures against real Stripe payloads, and the test says so at
-  `payment.behaviour.test.js:368`. Simulating it means no local run exercises real Stripe, and the
-  only real-Stripe webhook coverage left is `test:paymentBehaviour-ci` against the deployed
-  environment. That is a defensible trade if the operator accepts moving that check to CI.
-- **Effort:** S for the cheap version, M for a Stripe-emitting simulator.
+- `$HOME/.local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk/fullchain.pem`
+- `$HOME/.local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk/privkey.pem`
 
-### Option E: other unauthenticated tunnels
+Outside the tree beats a gitignored `.certs/` directory: a private key that never enters a git
+working copy cannot be committed by accident, and it survives `mvnw clean` and worktree removal.
+Nothing new goes in `.gitignore`.
 
-`localtunnel` and similar give a random public URL with no account. They hit exactly the same
-wall as Option B on leg 1, and they add a reliability problem rather than removing one: the free
-shared servers drop connections and rate-limit, which is the failure mode the row is trying to
-delete. `bore` and `frp` are self-hosted, which means running and paying for the relay, so they
-land near Option A's cost without its stability. Not recommended.
+**Credentials for issuance.** `certbot-dns-route53` needs `route53:ListHostedZones` and
+`route53:GetChange` on `*`, plus `route53:ChangeResourceRecordSets` on
+`arn:aws:route53:::hostedzone/Z0315522208PWZSSBI9AL`. Route53 cannot scope
+`ChangeResourceRecordSets` below the zone, so one zone is the tightest grant available.
 
-## Recommendation
+The existing `root-route53-record-delegate` role
+(`RootDnsStack.java:215-230`) grants `ChangeResourceRecordSets` and `GetHostedZone` on that zone
+but not `ListHostedZones` or `GetChange`, so certbot cannot use it. Add a dedicated role, say
+`root-certbot-dns01`, in `RootDnsStack` with exactly those three actions, trusted by the
+operator's SSO identity, and a matching `certbot-local` profile in `~/.aws/config` with `role_arn`
+and `source_profile = management`. **NEEDS-APPROVAL**, because it is an IAM write.
 
-Take Option C, and hold Option A as the fallback for leg 1.
+For the first issuance, before that role exists, run certbot with `AWS_PROFILE=management`.
+**NEEDS-APPROVAL**, because certbot writes and deletes a TXT record in the production zone.
 
-The reasoning is that leg 1 does not need a tunnel at all. The HMRC redirect targets the local
-browser, and the only thing forcing a public hostname is which redirect URI is registered against
-the sandbox application. Registering a localhost URI turns the whole proxy front door into
-`http://127.0.0.1:3000`, which is the branch every behaviour test already has and the simulator
-variant already exercises daily in CI. That deletes the token, the paid account, the shared-domain
-collision, and the hardest failure mode in one move.
+`.github/workflows/request-holding-cert.yml:85,118` is the existing precedent in this repo for
+scripted validation-record writes against the same zone.
 
-Leg 2 then costs one helper. `stripe listen` keeps real Stripe payloads and real signature
-verification, so no coverage moves to CI, and the CLI is a child process the harness can kill.
+**Renewal.** Let's Encrypt certificates last 90 days and certbot renews inside the last 30.
+`certbot renew` with the same three directory flags is a no-op until then, so run it weekly. Wrap
+both commands as `npm run cert:issue` and `npm run cert:renew` so the flags live in one place, and
+drive the renewal from a launchd agent on the operator's machine. Nothing needs restarting after a
+renewal: the server reads the certificate when the harness spawns it, and behaviour runs are
+short.
 
-Do it in this order, because step 1 is the gate:
+**Local HTTPS.** Serve TLS natively from `app/bin/server.js`, gated on env vars. Add an
+`https.createServer(options, app)` branch beside the existing `app.listen` at line 291: when
+`TEST_SERVER_TLS=run`, read `TEST_SERVER_TLS_CERT` and `TEST_SERVER_TLS_KEY` and listen on
+`TEST_SERVER_HTTPS_PORT`; otherwise listen on `TEST_SERVER_HTTP_PORT` as now. Throw at startup if
+`TEST_SERVER_TLS=run` and either file is missing or unreadable, rather than falling back to HTTP
+and failing later at the first navigation.
 
-1. Register `http://localhost:3000/activities/submitVatCallback.html` and the Cognito and mock
-   callback paths on the HMRC sandbox application in the Developer Hub. Confirm the hub accepts a
-   plain-HTTP localhost URI for a sandbox app. If it refuses, stop and switch leg 1 to Option A,
-   because everything below assumes a localhost front door.
-2. Point `.env.proxy` and `.env.proxyRunning` at `http://localhost:3000/` and set `TEST_PROXY=off`.
-   Run `npm run test:submitVatBehaviour-proxy`. This proves leg 1 before any code is deleted.
-3. Delete `app/bin/ngrok.js`, its unit test, `runLocalSslProxy`, the `TEST_PROXY` reads and
-   `ngrokProcess` handles across the 17 behaviour tests, the `proxy` npm script, the
-   `@ngrok/ngrok` devDependency, and the ngrok line in `start-proxy.sh`.
-4. Add `runStripeListen` to `behaviour-helpers.js`, spawning before `runLocalHttpServer` so the
-   parsed `whsec_` reaches the server's environment. Drop the proxy webhook block from
-   `stripe-setup.js`, leaving the CI and prod endpoints.
-5. Sweep the hardcoded hostname out of `.pa11yci.proxy.json` and the accessibility and penetration
-   scripts, using `host.docker.internal:3000` for the ZAP container.
-6. Remove `NGROK_AUTHTOKEN` from `test.yml` and `deploy.yml`, and rewrite steps 3 to 6 of
-   `_developers/SETUP.md` and the ngrok line in `GITHUB_SETUP.md`.
+Native TLS beats a separate local TLS proxy in front. The harness already spawns and kills one
+server process. A second process is the same shape as the thing being deleted: another thing that
+can hang, leak and need `pkill`. `runLocalSslProxy()` at
+`behaviour-tests/helpers/behaviour-helpers.js:154` disappears rather than getting a new body.
 
-Whether `.env.proxyRunning` survives is worth deciding in step 2. Its only distinction from
-`.env.proxy` is that a tunnel is already up, which stops meaning anything once there is no tunnel.
+**Port.** 3443, because binding 443 needs root on macOS. So
+`DIY_SUBMIT_BASE_URL=https://local.submit.diyaccounting.co.uk:3443/`, and every registered
+redirect URI carries the port. Open question to settle in step 4, before anything is deleted:
+whether the HMRC Developer Hub, Cognito and Google all accept a redirect URI with an explicit
+port. If one refuses, add a `pfctl` redirect from 443 to 3443 on loopback and register the
+portless URL instead.
+
+**Path of the certificate on each machine.** The absolute paths contain `$HOME`, so they go in the
+gitignored root `.env`, not in the committed `.env.proxy`. `.env.proxy` carries only
+`TEST_SERVER_TLS=run` and `TEST_SERVER_HTTPS_PORT=3443`. This matches the existing split, where
+`.env` holds the machine-local values and `.env.*` hold the shared ones.
+
+**`TEST_PROXY` goes away.** The `testUrl` expression at `submitVat.behaviour.test.js:193` and its
+16 siblings collapses to `baseUrl`. Every variant's `DIY_SUBMIT_BASE_URL` already names the right
+front door, including `.env.simulator` at `http://localhost:3000/`, so the switch has nothing left
+to choose between. Delete `runProxy`, the `ngrokProcess` handles and the `runLocalSslProxy` calls
+from all 17 tests.
+
+**Cognito.** `.env.proxy` leaves `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID` and `COGNITO_BASE_URI`
+blank and runs the mock OAuth2 server, so the proxy variant does not touch real Cognito today.
+The callback registration is therefore off the critical path. When the operator wants the proxy
+variant on real Cognito, add the URL to `buildCallbackUrls` and `buildLogoutUrls` in
+`infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java:307-326`, for the ci
+environment only, deployed as `ci-env-IdentityStack`. Prod's user pool client keeps no developer
+callback.
+
+**Google.** Cognito owns the `/oauth2/idpresponse` redirect URI that Google is registered against
+(`IdentityStack.java:233-244`), so the Google console needs no change while local login goes
+through the Cognito hosted UI or the mock provider. It becomes an operator console step only if a
+direct browser-to-Google redirect is ever added to the local path.
+
+**CI.** The opt-in proxy job stays, and it needs no secret at all. Its only TLS client is
+Playwright, so the job generates a throwaway self-signed certificate for the same hostname at the
+start of the run:
+
+```bash
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+  -subj "/CN=local.submit.diyaccounting.co.uk" \
+  -addext "subjectAltName=DNS:local.submit.diyaccounting.co.uk" \
+  -keyout "$RUNNER_TEMP/local-tls.key" -out "$RUNNER_TEMP/local-tls.pem"
+```
+
+Point the TLS env vars at those two files and set `ignoreHTTPSErrors: true` in the Playwright
+`use` block at `playwright.config.js:184`, gated on a new `TEST_TLS_IGNORE_ERRORS` env var so
+local runs keep verifying the real certificate. The runner resolves the hostname to 127.0.0.1
+from public DNS exactly as a developer machine does. `NGROK_AUTHTOKEN` leaves with nothing taking
+its place. The job still validates the OAuth journey, which is what it is for; it stops validating
+the certificate, which the `-ci` variant covers against the deployed environment.
+
+### The `stripe listen` leg
+
+Replace the inbound tunnel with the Stripe CLI:
+
+```bash
+stripe listen --forward-to https://local.submit.diyaccounting.co.uk:3443/api/v1/billing/webhook
+```
+
+The CLI holds an outbound connection to Stripe and replays events locally, so nothing reaches the
+machine from outside. It prints a per-session `whsec_...` signing secret on startup. The
+certificate is publicly valid, so the CLI verifies TLS normally and needs no `--skip-verify`.
+
+**Ordering constraint.** `resolveWebhookSecret()` at
+`app/functions/billing/billingWebhookPost.js:39` caches the first secret it reads, and the Express
+server runs as a child process spawned by the harness. So `stripe listen` has to start and yield
+its secret before `runLocalHttpServer()` spawns the server, not after. Add a `runStripeListen`
+helper to `behaviour-helpers.js` that spawns the CLI, parses the `whsec_` from its first lines,
+and passes it into the server spawn environment as `STRIPE_TEST_WEBHOOK_SECRET`.
+
+**ZAP runs in Docker,** so `local.submit.diyaccounting.co.uk` inside the container resolves to the
+container's own loopback. Add `--add-host local.submit.diyaccounting.co.uk:host-gateway` to the
+`docker run` lines at `package.json:229,232`. Keeping the hostname means the certificate name
+still matches, which switching the target to `host.docker.internal` would break.
+
+**Coverage.** Real Stripe payloads and real signature verification are preserved, because
+`stripe listen` forwards genuine signed events. What is not exercised is a public HTTPS POST
+through CloudFront and API Gateway, so a routing fault in front of the webhook would not show up
+locally. The `-ci` variant already covers that path.
+
+## Ordered steps
+
+Step 4 is the gate. Nothing gets deleted until steps 1 to 6 prove the new front door works.
+
+| # | Step | Owner |
+|---|---|---|
+| 1 | Add the `local.submit.diyaccounting.co.uk` A record to `127.0.0.1` in the root repo's `RootDnsStack`, with a non-alias UPSERT sibling on `Route53AliasUpsert`. PR, merge, deploy. Verify with `dig`. | root repo, CDK |
+| 2 | Add the `root-certbot-dns01` IAM role to `RootDnsStack` and a `certbot-local` profile in `~/.aws/config`. **NEEDS-APPROVAL** (IAM write). | root repo, CDK + operator |
+| 3 | Issue the certificate with the certbot command above. **NEEDS-APPROVAL** (TXT write in the production zone). Add `cert:issue` and `cert:renew` npm scripts and the launchd renewal agent. | operator |
+| 4 | Register `https://local.submit.diyaccounting.co.uk:3443/activities/submitVatCallback.html` on the HMRC sandbox application in the Developer Hub. Confirm the hub accepts the explicit port. If it refuses, add the `pfctl` 443-to-3443 redirect and register the portless URL. | operator, console |
+| 5 | Add the TLS branch to `app/bin/server.js`, the `TEST_SERVER_TLS*` vars to `.env.proxy` and the two absolute cert paths to the local `.env`. Point `DIY_SUBMIT_BASE_URL` at the new URL in `.env.proxy` and `.env.proxyRunning`. | this repo |
+| 6 | Run `npm run test:submitVatBehaviour-proxy`, `npm run test:paymentBehaviour-proxy` and `npm run test:postVatReturnFraudPreventionHeadersBehaviour-proxy` green with the tunnel down. This proves both legs before any deletion. | this repo |
+| 7 | Add `runStripeListen` to `behaviour-helpers.js`, spawning before `runLocalHttpServer`. Drop the proxy webhook block from `scripts/stripe-setup.js:146` and fix the example URL comment in `scripts/stripe-trigger-lifecycle.sh:15`. | this repo |
+| 8 | Delete `app/bin/ngrok.js`, `app/unit-tests/bin/ngrok.test.js`, `runLocalSslProxy`, the `TEST_PROXY` reads and `ngrokProcess` handles across the 17 behaviour tests, the `proxy` npm script, the `@ngrok/ngrok` devDependency, and the ngrok block in `scripts/start-proxy.sh:36`. | this repo |
+| 9 | Sweep the hostname out of `.pa11yci.proxy.json` and `package.json:191-241`, keeping `https://` and adding `--add-host` to the two ZAP lines. Update the hostname test at `web/public/auth/login.html:172-177`. | this repo |
+| 10 | Remove `NGROK_AUTHTOKEN` from `test.yml:47`, `test.yml:1123` and `deploy.yml:299`. Add the self-signed certificate step and `TEST_TLS_IGNORE_ERRORS` to the proxy job, and the gated `ignoreHTTPSErrors` to `playwright.config.js:184`. | this repo |
+| 11 | Rewrite `_developers/SETUP.md` steps 1, 3, 4, 5 and 6, the ngrok line in `GITHUB_SETUP.md:155`, the environments table and Stripe webhook line in `CLAUDE.md`, and `REPORT_REPOSITORY_CONTENTS.md`. | this repo |
+| 12 | Decide whether `.env.proxyRunning` survives. Its only difference from `.env.proxy` was that a tunnel was already up. With no tunnel it duplicates `.env.proxy` apart from the `run` and `useExisting` switches for the server, auth and dynamodb. Keep it only if that workflow is still used. | operator |
+| 13 | Add the local callback URL to `IdentityStack.buildCallbackUrls` and `buildLogoutUrls` for the ci environment. Only needed if the operator wants the proxy variant on real Cognito instead of the mock OAuth2 server. | this repo, CDK |
 
 Two things to watch while verifying, neither of them blocking:
 
-- Real HMRC sandbox will now receive `Gov-Client-Public-IP: 203.0.113.1`, the synthetic value from
-  `server.js:99`, where ngrok used to supply a real public IP. The fraud-prevention headers test
-  is where that shows up.
-- Pa11y, axe and Lighthouse over plain HTTP will surface transport-security findings that TLS
-  termination previously masked.
+- HMRC sandbox receives `Gov-Client-Public-IP: 203.0.113.1`, the synthetic value from
+  `server.js:99`, where ngrok used to supply a real public IP. Nothing sits in front of the local
+  server now, so the header stays synthetic. The fraud-prevention headers test is where that
+  shows up.
+- A second developer needs their own certificate for the same name, which needs Route53 change
+  access on the zone. Today that is one person, so the `certbot-local` role covers it.
+
+## Options considered
+
+Kept short, for the record of why this path won.
+
+- **Named Cloudflare tunnel on a delegated subdomain.** Works for both legs, but swaps one account
+  and token for another, adds an NS delegation out of Route53, and keeps the shared-hostname
+  collision that causes the stuck runs.
+- **cloudflared quick tunnel.** Fresh random URL per run, and the HMRC sandbox application holds a
+  fixed redirect URI list with no wildcards, so leg 1 cannot work.
+- **Plain `http://localhost:3000` front door plus `stripe listen`.** No tunnel and no certificate,
+  but the front door stops being HTTPS, which changes what the accessibility and ZAP runs see, and
+  it depends on every provider accepting a plain-HTTP localhost redirect.
+- **Route the payment leg at the simulator.** Removes real Stripe signature coverage from every
+  local run and leaves it only in the `-ci` variant.
+- **localtunnel, bore, frp.** Random URLs or a relay to run and pay for, so the same wall as the
+  quick tunnel with worse reliability.
 
 ## Verification criteria
 
@@ -257,7 +339,7 @@ running:
 
 ```bash
 npm test                                          # unit + system, incl. the deleted ngrok test
-npm run test:submitVatBehaviour-proxy             # leg 1, real HMRC sandbox
+npm run test:submitVatBehaviour-proxy             # leg 1, real HMRC sandbox over the real cert
 npm run test:paymentBehaviour-proxy               # leg 2, real Stripe via stripe listen
 npm run test:postVatReturnFraudPreventionHeadersBehaviour-proxy
 npm run test:submitVatBehaviour-simulator         # simulator path unaffected
@@ -266,11 +348,16 @@ npm run test:submitVatBehaviour-simulator         # simulator path unaffected
 
 Plus:
 
+- `dig +short local.submit.diyaccounting.co.uk` returns `127.0.0.1`.
+- `curl -sSI https://local.submit.diyaccounting.co.uk:3443/` succeeds with no `-k`, proving the
+  certificate chain validates.
 - `grep -ri ngrok` over the repo, excluding `node_modules/`, `target/` and
   `web/public-simulator/`, returns nothing outside `git log`.
 - `test.yml` run with `runProxyBehaviourTests: true` goes green with no `NGROK_AUTHTOKEN` secret
-  configured.
+  configured and no secret replacing it.
 - `stripe webhookEndpoints list` shows no `*.ngrok-free.app` endpoint, and the CI and prod
   endpoints are untouched.
 - The payment run's bundle row gains a real `stripeSubscriptionId` from a Stripe-signed event, so
   `waitForBundleWebhookActivation` passes on signature verification rather than a mock grant.
+- `npm run accessibility:axe-proxy` and `npm run penetration:zap-proxy` report the same findings
+  they report today, with no new transport-security entries.
