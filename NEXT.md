@@ -24,9 +24,10 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **Wire the weekly `certbot renew` launchd agent** on the operator machine so the
-  local TLS cert renews unattended (valid to 2026-11-29; recipe in
-  `_developers/SETUP.md`, deploy-hook publishes to Secrets Manager).
+- [ ] **Manual `certbot renew` in the week of 2026-11-29** (run
+  `aws sso login --sso-session diyaccounting` first; command in `_developers/SETUP.md`).
+  The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
+  and cannot refresh unattended, so the run that matters needs a live session.
 
 - [ ] **(B30) Alarm-count audit.** 123 alarms per deployment and the canary cadence —
   review what should exist against what does; the largest recurring CloudWatch line.
@@ -38,8 +39,11 @@ operator step before them is done or when SSO is live.
   CloudFront logs, Step Functions/EventBridge orchestration.
 - [ ] **(B20/20a) Ops alerting uplift** — prove one alarm end to end into an
   auto-raised GitHub issue (channel: Telegram), then the fan-out with dedup.
-- [ ] **(B25) Cross-account backups remainder** — copy jobs to the live vault,
-  passes/subscriptions in the selection, `backup-github-actions-role`, restore test.
+- [ ] **(B25) Cross-account backups, operator steps only** — the CDK, selection, role,
+  and monthly restore-test workflow are all on main. Remaining: enable cross-account
+  backup at the AWS Organization level, first deploy of the backup-account stacks with
+  the `submit-backup` SSO profile, then the first manual `restore-test.yml` dispatch
+  (the gate for the TypeScript CDK migration, B33).
 - [ ] **(B28) Scan and data-theft detection alarms** (issues #9, #10) — wave 2,
   after the B30 audit reports.
 
@@ -49,8 +53,8 @@ operator step before them is done or when SSO is live.
 - alarm-audit track (B30) — Sonnet, worktree, report only: started
 - ingestion-design track (B14 design) — Opus, worktree, plan doc only: started
 - alarm-to-issue track (B20a) — Sonnet, worktree: started
-- backups track (B25) — Sonnet, worktree: started
-- certbot track (launchd agent, operator machine) — Sonnet, no worktree: started
+- backups track (B25) — merged to `claude/do-next-batch-1` (IAM scoping hardening only;
+  the item itself was already on main), local verify running
 
 ## Discipline
 
