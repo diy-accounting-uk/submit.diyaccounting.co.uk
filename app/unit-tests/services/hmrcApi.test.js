@@ -4,7 +4,8 @@
 // app/unit-tests/services/hmrcApi.test.js
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildHmrcHeaders } from "@app/services/hmrcApi.js";
+import { buildHmrcHeaders, http403ForbiddenFromBundleEnforcement } from "@app/services/hmrcApi.js";
+import { BundleAuthorizationError, BundleEntitlementError } from "@app/services/bundleManagement.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -224,5 +225,51 @@ describe("services/hmrcApi", () => {
 
     expect(result.ok).toBe(false);
     expect(result.error).toBe("Network error");
+  });
+
+  describe("http403ForbiddenFromBundleEnforcement", () => {
+    it("returns a 401 JSON response for a missing authorization token", () => {
+      const error = new BundleAuthorizationError("Missing Authorization Bearer token", { code: "MISSING_AUTH_TOKEN" });
+
+      const response = http403ForbiddenFromBundleEnforcement(error, undefined);
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("Missing Authorization Bearer token");
+      expect(body.code).toBe("MISSING_AUTH_TOKEN");
+    });
+
+    it("returns a 401 JSON response for an invalid authorization token", () => {
+      const error = new BundleAuthorizationError("Invalid Authorization token", { code: "INVALID_AUTH_TOKEN" });
+
+      const response = http403ForbiddenFromBundleEnforcement(error, undefined);
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("Invalid Authorization token");
+      expect(body.code).toBe("INVALID_AUTH_TOKEN");
+    });
+
+    it("returns a 403 JSON response for a bundle entitlement error", () => {
+      const error = new BundleEntitlementError("Forbidden: Activity requires vat-mtd bundle", { code: "BUNDLE_FORBIDDEN" });
+
+      const response = http403ForbiddenFromBundleEnforcement(error, undefined);
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("Forbidden - missing or insufficient bundle entitlement");
+      expect(body.code).toBe("BUNDLE_FORBIDDEN");
+    });
+
+    it("returns a 500 JSON response for an unexpected error", () => {
+      const error = new Error("Something exploded");
+
+      const response = http403ForbiddenFromBundleEnforcement(error, undefined);
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("Authorization failure while checking entitlements");
+      expect(body.detail).toBe("Something exploded");
+    });
   });
 });

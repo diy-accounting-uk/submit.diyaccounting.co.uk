@@ -290,6 +290,21 @@ jobs:
             aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.TELEGRAM_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
           fi
 
+      - name: Create secret in AWS from secrets.GITHUB_ISSUE_BOT_TOKEN
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/github/issue_bot_token"
+          if [ -z "${{ secrets.GITHUB_ISSUE_BOT_TOKEN }}" ]; then
+            echo "No GITHUB_ISSUE_BOT_TOKEN in ${{ needs.names.outputs.environment-name }} environment, skipping"
+            exit 0
+          fi
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.GITHUB_ISSUE_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.GITHUB_ISSUE_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
+          fi
+
       - name: Create user sub hash salt (if not exists)
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/user-sub-hash-salt"

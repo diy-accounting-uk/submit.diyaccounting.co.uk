@@ -185,16 +185,23 @@ public class BackupAccountAccessStack extends Stack {
                 .conditions(Map.of("StringEquals", Map.of("iam:PassedToService", "backup.amazonaws.com")))
                 .build());
 
-        // The restore lands in a table named for the workflow run, and the test deletes it again.
+        // ListTables has no resource-level permissions in DynamoDB's action reference, so it stays
+        // on "*"; the restore test only ever needs it to sanity-check a run, not to enumerate tables.
+        this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ListTablesInBackupAccount")
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:ListTables"))
+                .resources(List.of("*"))
+                .build());
+
+        // The restore lands in a table named for the workflow run and the test deletes it again;
+        // every such table carries the "-restoretest-" marker, so the role reaches no other table.
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("InspectAndCleanUpRestoredTables")
                 .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "dynamodb:DeleteTable",
-                        "dynamodb:DescribeTable",
-                        "dynamodb:ListTables",
-                        "dynamodb:Scan"))
-                .resources(List.of("*"))
+                .actions(List.of("dynamodb:DeleteTable", "dynamodb:DescribeTable", "dynamodb:Scan"))
+                .resources(List.of(String.format(
+                        "arn:aws:dynamodb:*:%s:table/*-restoretest-*", this.getAccount())))
                 .build());
 
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
