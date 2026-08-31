@@ -24,6 +24,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalSslProxy,
+  runStripeListen,
   saveHmrcTestUserToFiles,
   timestamp,
 } from "./helpers/behaviour-helpers.js";
@@ -101,6 +102,7 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 let mockOAuth2Process;
 let serverProcess;
 let ngrokProcess;
+let stripeListenProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
@@ -120,6 +122,14 @@ test.beforeAll(async () => {
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+
+  // Must start, and have its signing secret in env, before runLocalHttpServer spawns the
+  // server — resolveWebhookSecret() caches the first STRIPE_TEST_WEBHOOK_SECRET it reads.
+  stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
+  if (stripeListenProcess) {
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
+  }
+
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
   ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
@@ -133,6 +143,7 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
+  if (stripeListenProcess) stripeListenProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
     await dynamoControl?.stop?.();
