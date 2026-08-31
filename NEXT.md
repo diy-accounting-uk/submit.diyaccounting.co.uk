@@ -40,21 +40,22 @@ operator step before them is done or when SSO is live.
   deploy, confirm `submit.diyaccounting.co.uk/tests/accessibility/axe-results.json`
   is gone. Operator: check the antony@ auto-responder for the stale "no longer
   staffed" text.
-- [ ] **Scheduled workflows are silently not firing — bigger than the codeql miss.**
-  Found 2026-08-31: `compliance` and `stack-drift` have not run since 2026-07-13 —
-  seven missed Mondays — while both are `state: active` with unmodified crons and no
-  GitHub incident. Separately, today's `verify-backups` (06:00), `deploy.yml` (04:11)
-  and the weekly pair all failed to fire while other crons ran hours late
-  (`deploy-environment` at 10:07 for an 03:51 cron), which looks like a GitHub
-  scheduling backlog this morning — but the seven-week gap cannot be. Claude Code:
-  recheck late today whether the backlogged crons fired; investigate why compliance and
-  stack-drift specifically stopped in July; `codeql`'s 2026-08-30 Sunday miss is
-  probably the same fault — watch 2026-09-06. Operator: approve manual dispatches of
-  `compliance` and `stack-drift` if wanted before the cause is found.
-- [ ] **Scheduled-deploy upload fix (#61, merged).** Today's 04:11 scheduled deploy
-  never fired (see the scheduling item). The operator's 10:44 UTC manual dispatch of
-  `deploy.yml` is being watched instead: confirm the upload jobs,
-  `set-last-known-good-deployment` and `destroy previous` all ran on it.
+- [ ] **compliance and stack-drift schedules are dead — root cause found, one dispatch
+  each revives them.** Both stopped after 2026-07-13; `deploy.yml`'s schedule broke the
+  same day under the same actor (`support-at-diyaccounting`, still an active member)
+  and silently recovered on 2026-08-25 when a push-triggered run re-armed its schedule
+  under `antonycc`. compliance and stack-drift have only ever had schedule-event runs,
+  so nothing re-armed them. Fix: `gh workflow run compliance-test` and
+  `gh workflow run stack-drift` once under a live account (operator approval pending),
+  then confirm the Monday 2026-09-07 06:00 UTC crons fire on their own. `codeql`'s
+  2026-08-30 miss likely shares the fault — check it, and watch 2026-09-06.
+  Separately, this morning's crons were backlogged, not dropped: `deploy.yml`'s 04:11
+  schedule fired at 10:50. A watch is confirming whether `verify-backups` also surfaces
+  late (feeds B25 above).
+- [ ] **Scheduled-deploy upload fix (#61, merged).** The 04:11 schedule fired late at
+  10:50 UTC (run 33384213375, cancelling the operator's 10:44 manual dispatch via the
+  concurrency group). A watch is on it: confirm the upload jobs,
+  `set-last-known-good-deployment` and `destroy previous` all ran.
 - [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is at the
   repo root with five options. Recommendation: option C — register a localhost redirect
   URI for the HMRC sandbox app (the OAuth leg needs no tunnel at all, only that
