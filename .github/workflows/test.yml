@@ -1090,7 +1090,9 @@ jobs:
       - params
       - names
     runs-on: ubuntu-24.04
-    environment: ${{ needs.params.outputs.github-environment }}
+    # Always ci: the job tests a local server with the cert and HMRC sandbox
+    # secrets held in submit-ci, regardless of which branch dispatched it.
+    environment: ci
     permissions:
       contents: read
       id-token: write
