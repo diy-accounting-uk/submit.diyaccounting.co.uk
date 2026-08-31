@@ -30,12 +30,12 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44) Remove ngrok from the proxy test path.** The operator chose the
-  DNS-to-localhost path (2026-08-31): Route53 record `local.submit.diyaccounting.co.uk`
-  → 127.0.0.1, Let's Encrypt cert via DNS-01, local server serves HTTPS, `stripe
-  listen` for the webhook leg. A worktree-isolated design agent is revising
-  `PLAN_REMOVE_NGROK.md` around it — plan only, no code. Implementation starts ONLY on
-  the operator's explicit go after reading the revised plan.
+- [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is
+  revised around the chosen DNS-to-localhost path: 13 ordered steps with owners.
+  Implementation starts ONLY on the operator's explicit go after reading the plan.
+  Operator gates inside it: the `root-certbot-dns01` IAM role (NEEDS-APPROVAL, IAM
+  write), the first certbot run (writes a TXT record in the prod zone), and the HMRC
+  Developer Hub redirect-URI registration (the go/no-go gate before any deletion).
 
 ## Discipline
 
