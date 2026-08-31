@@ -225,6 +225,41 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(body.message).toContain("YYYY-MM-DD");
   });
 
+  test("returns 403 JSON when the authenticated user holds no bundle entitled to viewing VAT returns", async () => {
+    // QueryCommand (bundle lookup) resolves to no items via the default beforeEach mock,
+    // so the user has only the automatic "default" bundle, which view-vat-return does not accept.
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
+      headers: { authorization: "Bearer test-token" },
+    });
+    event.requestContext.http.path = "/api/v1/hmrc/vat/return";
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("BUNDLE_FORBIDDEN");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("allows the request through once the user holds a bundle entitled to viewing VAT returns", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
+      }
+      return {};
+    });
+    mockObligationsSuccess(TEST_PERIOD_KEY, TEST_PERIOD_START, TEST_PERIOD_END);
+    mockHmrcSuccess(mockFetch, { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
+      headers: { authorization: "Bearer test-token" },
+    });
+    event.requestContext.http.path = "/api/v1/hmrc/vat/return";
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
   test("returns 400 when no matching obligation found for period dates", async () => {
     mockObligationsNotFound();
 
