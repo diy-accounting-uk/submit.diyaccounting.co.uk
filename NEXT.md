@@ -41,16 +41,12 @@ operator step before them is done or when SSO is live.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Design is at
   `PLAN_COST_INSTRUMENTATION.md` (zero active allocation tags, zero budgets, zero
   anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
-  Open steps: the root deploy failed because the management account's eu-west-2 CDK
-  bootstrap is drifted — CDKToolkit reads healthy but its asset bucket and ECR repo
-  were deleted outside CloudFormation, blocking every CDK deploy to that region (the
-  new stacks are correct and were never created; root PR #21 adds a preflight with the
-  real remediation message). Operator approves, in order:
-  `aws cloudformation delete-stack --stack-name CDKToolkit --region eu-west-2` in
-  887764105431, then `npx cdk bootstrap aws://887764105431/eu-west-2`; then merge PR
-  #21, re-dispatch the root deploy, and on green confirm the CUR export, budgets and
-  anomaly monitor exist. Cost Explorer multi-year and resource-level daily data are
-  enabling (ready within 48h of 2026-08-31). Feeds backlog #43's
+  Open steps: operator merges root PR #21 (deploy preflight for the bootstrap assets)
+  and re-dispatches the root deploy — the eu-west-2 bootstrap is repaired and verified,
+  so it should now create both cost-reporting stacks; on green, Claude Code confirms
+  the CUR export, budgets and anomaly monitor exist. Cost Explorer multi-year and
+  resource-level daily data are enabling (ready within 48h of 2026-08-31). Feeds
+  backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
