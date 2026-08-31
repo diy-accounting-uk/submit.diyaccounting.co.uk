@@ -30,14 +30,12 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is at the
-  repo root with five options. Recommendation: option C — register a localhost redirect
-  URI for the HMRC sandbox app (the OAuth leg needs no tunnel at all, only that
-  registration) plus `stripe listen` for the webhook leg; option A (named Cloudflare
-  tunnel) is the fallback if the Developer Hub refuses localhost. Operator: approve an
-  option; the plan's first step is the HMRC Developer Hub registration, proven against
-  `test:submitVatBehaviour-proxy` before anything is deleted, then Claude Code
-  implements.
+- [ ] **(B44) Remove ngrok from the proxy test path.** The operator chose the
+  DNS-to-localhost path (2026-08-31): Route53 record `local.submit.diyaccounting.co.uk`
+  → 127.0.0.1, Let's Encrypt cert via DNS-01, local server serves HTTPS, `stripe
+  listen` for the webhook leg. A worktree-isolated design agent is revising
+  `PLAN_REMOVE_NGROK.md` around it — plan only, no code. Implementation starts ONLY on
+  the operator's explicit go after reading the revised plan.
 
 ## Discipline
 
