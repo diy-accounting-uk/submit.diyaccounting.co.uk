@@ -30,23 +30,12 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44) Remove ngrok from the proxy test path — implementation in flight.**
-  `PLAN_REMOVE_NGROK.md` is the spec. Branch `claude/remove-ngrok` (pushed); validation
-  runs locally and on the origin branch before any PR. Steps 1-8 are done and proven
-  (2026-08-31): DNS + certbot role deployed, cert issued (expires 2026-11-29), all
-  operator gates cleared (hub accepted the :3443 port; local secrets come from
-  Secrets Manager over SSO at run time — no local .env at all), and both proof legs
-  green with the tunnel down (submitVat + fraud-headers; payment with a real
-  stripeSubscriptionId via stripe listen). The deletion wave (steps 9, 10, 12) is
-  merged: ngrok machinery and hostname gone, docs rewritten, `scripts/proxy-secrets.sh`
-  fetches local secrets over SSO, generated files regenerated, grep gate down to its
-  one accepted residue (`repository-contents.txt` naming the plan file). The final
-  gate is complete: every named check green locally, the dispatched CI proxy job green
-  with no ngrok secret, `deploy.yml` green on the branch, Stripe ngrok/legacy webhook
-  endpoints deleted. PR #68 is open; operator merges. After the merge (operator,
-  2026-08-31): delete the `NGROK_AUTHTOKEN` GitHub secret from both environments and
-  the ngrok redirect URI in the HMRC hub, freeing a slot in the 5-URI cap; then this
-  item closes and `PLAN_REMOVE_NGROK.md` archives.
+- [ ] **(B44 remainder) Operator: two deletions now the tunnel removal is merged.**
+  Delete the `NGROK_AUTHTOKEN` GitHub secret from both environments, and the ngrok
+  redirect URI on the HMRC sandbox application (frees a slot in the 5-URI cap). Then
+  this closes; the weekly `certbot renew` launchd agent on the operator machine is
+  the one optional tail (cert valid to 2026-11-29, recipe in `_developers/SETUP.md`).
+  `repository-contents.txt` regenerates on the next code PR, clearing its stale line.
 
 - [ ] **(B19) GA4 console work — operator.** In the GA4 console: turn on the data
   export, schedule the Stripe report, mark conversions, retire the old stream and the
