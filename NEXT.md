@@ -35,12 +35,15 @@ operator step before them is done or when SSO is live.
   fired-vs-never-fired check (agent running); composite-alarm consolidation (cut 3)
   needs a design pass before any code.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record; the pipeline itself is largely shipped. Phases: 1 prove the
-  shipped pipeline (needs SSO), 2 GA4 BigQuery event export (operator prereqs listed
-  in the plan: Google Cloud project name, dataset location, service-account grants,
-  export retention), 3 Step Functions orchestration, 4 reconciliation views, 5 stop
-  the duplicate CloudFront classic logging (in flight), 6 Stripe restricted keys
-  (operator).
+  is the plan of record. Phase 1 ran: activity events and all four table-change
+  streams land rows; Stripe reconciliation was landing NOTHING (S3 prefix mismatch
+  vs the Glue tables — fix in flight, then replay the mislaid days after deploy);
+  phase 5 rides `claude/do-next-batch-2`. Still open from the run: prod's
+  `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
+  look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
+  points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases:
+  2 GA4 BigQuery event export (operator prereqs in the plan), 3 Step Functions
+  orchestration, 4 reconciliation views, 6 Stripe restricted keys (operator).
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   on the batch branch. Operator: create a fine-grained PAT (Issues read/write on this
   repo only) and set it as GitHub Actions secret `GITHUB_ISSUE_BOT_TOKEN` in the ci
