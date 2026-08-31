@@ -60,15 +60,6 @@ operator step before them is done or when SSO is live.
   with alerts and Cost Anomaly Detection in each of the six accounts, and Cost Explorer
   granularity. Management-account and billing writes come to the operator for approval as
   they arise. Feeds backlog #43's whole-bill review.
-- [ ] **Companies House identity verification, due 2026-10-05 (hard external
-  deadline).** All three directors of 06846849 show verification due 5 October; the PSC
-  leg runs 22 September to 5 October. Antony is verified and holds a code; **Samantha and
-  Jane have not verified and must do it personally**. An unverified director blocks the
-  confirmation statement and is an offence (s.167M). Operator: chase both for their
-  personal codes; this outranks the confirmation statement on any board pack.
-- [ ] **Google Cloud tidy-ups.** Operator: delete the stray `My First Project`
-  (`valued-context-507200-m9`) attached to the new billing account once confirmed empty;
-  it sits inside the £5 budget scope but was created by Google, not us.
 - [ ] **security-review.yml has no schedule.** Its cron (line 26) is commented out, so
   the workflow never runs on its own. Operator: say whether that is deliberate; if not,
   Claude Code re-enables it.
