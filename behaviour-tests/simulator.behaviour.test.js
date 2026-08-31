@@ -14,7 +14,6 @@ import {
   runLocalHttpSimulator,
   runLocalOAuth2Server,
   runLocalDynamoDb,
-  runLocalSslProxy,
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
@@ -29,7 +28,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const baseUrlRaw = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
@@ -44,7 +42,7 @@ const baseUrl = baseUrlRaw ? baseUrlRaw.replace(/\/+$/, "") : "";
 // Screenshot path for simulator page tests
 const screenshotPath = "target/behaviour-test-results/screenshots/simulator-behaviour-test";
 
-let httpServer, proxyProcess, mockOAuth2Process, dynamoDbProcess, httpSimulatorProcess;
+let httpServer, mockOAuth2Process, dynamoDbProcess, httpSimulatorProcess;
 
 /**
  * Simulator Page Behaviour Tests
@@ -112,10 +110,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
       httpServer = await runLocalHttpServer(runTestServer, httpServerPort);
     }
 
-    if (runProxy === "run") {
-      proxyProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
-    }
-
     console.log("\n Test environment ready\n");
   });
 
@@ -124,9 +118,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
     if (httpServer) {
       httpServer.kill();
-    }
-    if (proxyProcess) {
-      proxyProcess.kill();
     }
     if (mockOAuth2Process) {
       mockOAuth2Process.kill();
@@ -145,11 +136,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
   test("Simulator page loads, iframe renders, and journey controls work", async ({ page }) => {
     // Add comprehensive page logging
     addOnPageLogging(page);
-
-    // Set header to bypass ngrok browser warning page (for local proxy testing)
-    await page.setExtraHTTPHeaders({
-      "ngrok-skip-browser-warning": "any value",
-    });
 
     // ============================================================
     // STEP 1: Navigate to simulator page
@@ -372,7 +358,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
   test("View Obligations journey completes end-to-end", async ({ page }) => {
     addOnPageLogging(page);
-    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
 
     const simUrl = `${baseUrl}/simulator.html`;
     console.log(` Navigating to: ${simUrl}`);
@@ -441,7 +426,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
   test("View VAT Return journey completes end-to-end", async ({ page }) => {
     addOnPageLogging(page);
-    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
 
     const simUrl = `${baseUrl}/simulator.html`;
     console.log(` Navigating to: ${simUrl}`);
@@ -510,7 +494,6 @@ test.describe("Simulator Page - Iframe and Journey Controls", () => {
 
   test("Submit VAT Return journey completes end-to-end", async ({ page }) => {
     addOnPageLogging(page);
-    await page.setExtraHTTPHeaders({ "ngrok-skip-browser-warning": "any value" });
 
     const simUrl = `${baseUrl}/simulator.html`;
     console.log(` Navigating to: ${simUrl}`);

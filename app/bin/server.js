@@ -76,7 +76,7 @@ app.use((req, res, next) => {
 
 // Basic CORS middleware (mostly for local tools and OPTIONS where needed)
 app.use((req, res, next) => {
-  // Allow same-origin (ngrok forwards host), and also enable generic CORS for dev tools
+  // Allow same-origin, and also enable generic CORS for dev tools
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -95,7 +95,7 @@ app.use((req, res, next) => {
 });
 
 // Simulate CloudFront headers for fraud prevention in non-proxy environments.
-// In proxy/CI/prod, CloudFront and ngrok set X-Forwarded-For and CloudFront-Viewer-Address.
+// In proxy/CI/prod, CloudFront sets X-Forwarded-For and CloudFront-Viewer-Address.
 // In simulator mode, the Express server receives direct requests from Playwright on localhost,
 // so we inject synthetic values to allow buildFraudHeaders.js to generate all Gov-* headers.
 app.use((req, res, next) => {
@@ -134,7 +134,7 @@ app.use((req, res, next) => {
 });
 
 // Serve a virtual submit.env file for the client, using the server's own environment variables.
-// This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
+// This ensures that behaviour tests get the correct BASE_URL.
 app.get("/submit.env", (req, res) => {
   const publicVars = [
     "COGNITO_CLIENT_ID",
