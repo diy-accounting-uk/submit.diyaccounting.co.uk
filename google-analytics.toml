@@ -27,15 +27,18 @@ stream_id = "13497119809"
 measurement_id = "G-T81V5NL5MB"
 
 # Old GA4 property (www site - to be retired)
-# Plan: Run new streams in parallel with old property for ~1 week after go-live.
-#       Once traffic levels match, delete the old www stream from the old property.
+# Retirement withdrawn (operator, 2026-08-31): the property is effectively dead
+# (0 users/events over 7 days), the tag loads on no page in any repository, and it
+# is a separate property so it never double-counted against 523400333. Deleting it
+# would only discard the old site's history. Leave it.
 [old_property]
 property_name = "http://www.diyaccounting.co.uk - GA4"
+property_id = "395628828"
 stream_name = "http://www.diyaccounting.co.uk - GA4"
 stream_url = "https://www.diyaccounting.co.uk"
 stream_id = "5793048524"
 measurement_id = "G-PJPVQWRWJZ"
-status = "Active - retire after new streams show comparable traffic (~1 week post go-live)"
+status = "Dormant - kept for the old site's history; retirement withdrawn 2026-08-31"
 
 # Legacy references (no longer collecting data)
 [legacy]
