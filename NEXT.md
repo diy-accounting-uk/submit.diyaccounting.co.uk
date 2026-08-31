@@ -47,8 +47,14 @@ operator step before them is done or when SSO is live.
   export retention), 3 Step Functions orchestration, 4 reconciliation views, 5 stop
   the duplicate CloudFront classic logging (in flight), 6 Stripe restricted keys
   (operator).
-- [ ] **(B20/20a) Ops alerting uplift** — prove one alarm end to end into an
-  auto-raised GitHub issue (channel: Telegram), then the fan-out with dedup.
+- [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
+  on the batch branch. Operator: create a fine-grained PAT (Issues read/write on this
+  repo only) and set it as GitHub Actions secret `GITHUB_ISSUE_BOT_TOKEN` in the ci
+  and prod environments. Then the end-to-end proof at deploy time (set-alarm-state on
+  a cheap ci alarm → issue appears → second flip comments, not duplicates), then the
+  B20 fan-out with dedup. Adjacent gap surfaced: `supportTicketPost.js`'s GitHub
+  wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is never provisioned by any workflow,
+  so support-ticket-to-issue is wired in code but never deployed.
 - [ ] **(B25) Cross-account backups, operator steps only** — the CDK, selection, role,
   and monthly restore-test workflow are all on main. Remaining: enable cross-account
   backup at the AWS Organization level, first deploy of the backup-account stacks with
@@ -61,12 +67,11 @@ operator step before them is done or when SSO is live.
 
 ## In flight (batch dispatched 2026-08-31, coordinator session)
 
-- alarm-to-issue track (B20a) — Sonnet, worktree: running
-- hmrcApi-status track (B32b remainder) — Sonnet, worktree: running
 - batch branch `claude/do-next-batch-1` (backups IAM scoping, endpoint gating tests,
-  vitest worktree exclusion): pushed, local re-verify running, PR to follow
-- wave 2 dispatching now: alarm-cuts track (B30 cuts 1+2), detection track (B28),
-  CloudFront-logging track (B14 phase 5)
+  vitest worktree exclusion, hmrcApi 401 fix, alarm→GitHub-issue Lambda): full local
+  validation then PR
+- wave 2, worktrees off the batch branch: alarm-cuts track (B30 cuts 1+2), detection
+  track (B28), CloudFront-logging track (B14 phase 5)
 
 ## Discipline
 
