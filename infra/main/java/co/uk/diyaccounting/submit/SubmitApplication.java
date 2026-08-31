@@ -78,6 +78,7 @@ public class SubmitApplication {
         public String telegramTestChatId;
         public String telegramLiveChatId;
         public String telegramOpsChatId;
+        public String opsGithubTokenSecretArn;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -203,6 +204,10 @@ public class SubmitApplication {
                 envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
         var telegramOpsChatId =
                 envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
+        var opsGithubTokenSecretArn = envOr(
+                "OPS_GITHUB_TOKEN_SECRET_ARN",
+                appProps.opsGithubTokenSecretArn,
+                "(from opsGithubTokenSecretArn in cdk.json)");
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
@@ -366,6 +371,7 @@ public class SubmitApplication {
                         .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")
                         .telegramLiveChatId(telegramLiveChatId != null ? telegramLiveChatId : "")
                         .telegramOpsChatId(telegramOpsChatId != null ? telegramOpsChatId : "")
+                        .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
                         .build());
         // this.opsStack.addDependency(hmrcStack);
         // this.opsStack.addDependency(apiStack);

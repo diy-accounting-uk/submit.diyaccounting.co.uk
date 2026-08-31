@@ -38,6 +38,7 @@
     "edgeFunctionAssetPath": "../app/functions/edge",
     "httpApiUrl": "https://placeholder.example.com/",
     "githubTokenSecretArn": "",
+    "opsGithubTokenSecretArn": "",
     "feedbackEngagementEnabled": "true"
   }
 }
