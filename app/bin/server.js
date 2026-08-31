@@ -7,6 +7,7 @@
 import path from "path";
 import fs from "fs";
 import https from "https";
+import os from "os";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
@@ -290,8 +291,13 @@ if (__runDirect) {
     })
     .catch((err) => logger.warn(`Vendor public IP detection failed: ${err.message}`));
   if (process.env.TEST_SERVER_TLS === "run") {
-    const certPath = process.env.TEST_SERVER_TLS_CERT;
-    const keyPath = process.env.TEST_SERVER_TLS_KEY;
+    // certbot's standard lineage location on a developer machine; CI overrides with explicit paths.
+    const certLineageDir = path.join(
+      os.homedir(),
+      ".local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk",
+    );
+    const certPath = process.env.TEST_SERVER_TLS_CERT || path.join(certLineageDir, "fullchain.pem");
+    const keyPath = process.env.TEST_SERVER_TLS_KEY || path.join(certLineageDir, "privkey.pem");
     const httpsPort = process.env.TEST_SERVER_HTTPS_PORT;
     // Throw at startup rather than falling back to HTTP and failing later at the first navigation.
     if (!certPath || !fs.existsSync(certPath)) {
