@@ -16,7 +16,7 @@ operator step before them is done or when SSO is live.
   for `purchase` property-wide — expected while no paid flow has completed since
   collection was restored (2026-08-31), but confirm rather than assume once the
   funnel has run a few days (GA4 property 523400333, or BigQuery
-  `analytics_523400333`). PR #70 carries the `google-analytics.toml` record to merge.
+  `analytics_523400333`).
 - [ ] **compliance and stack-drift schedule revival — dispatches passed, cron proof
   remains.** Both revival runs are green (compliance 10/10 checks; stack-drift "all in
   sync" with three stacks correctly filtered as `DRIFTED_BENIGN` on its first
