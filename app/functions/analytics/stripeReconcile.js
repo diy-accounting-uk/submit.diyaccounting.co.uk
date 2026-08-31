@@ -161,7 +161,7 @@ export function toNdjsonGzip(records) {
 }
 
 function objectKey(entity, dateStr) {
-  return `curated/stripe/${entity}/dt=${dateStr}/${entity}.json.gz`;
+  return `curated/stripe/stripe_${entity}/dt=${dateStr}/${entity}.json.gz`;
 }
 
 async function putEntityObject(s3Client, bucket, entity, dateStr, records) {
