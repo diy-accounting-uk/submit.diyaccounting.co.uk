@@ -30,12 +30,13 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is
-  revised around the chosen DNS-to-localhost path: 13 ordered steps with owners.
-  Implementation starts ONLY on the operator's explicit go after reading the plan.
-  Operator gates inside it: the `root-certbot-dns01` IAM role (NEEDS-APPROVAL, IAM
-  write), the first certbot run (writes a TXT record in the prod zone), and the HMRC
-  Developer Hub redirect-URI registration (the go/no-go gate before any deletion).
+- [ ] **(B44) Remove ngrok from the proxy test path — plan execution-ready.**
+  `PLAN_REMOVE_NGROK.md` is final: DNS-to-localhost design, per-step owners and
+  verification, audit-verified references, CI on the real cert, and the canonical grep
+  gate (archive excluded per operator, 2026-08-31). The certbot IAM role is
+  pre-approved; three STOP-AND-WAIT operator gates remain inside the steps (first
+  certbot TXT run, HMRC Developer Hub registration, the CI cert secret). The operator
+  restarts a fresh session to run implementation from the plan.
 
 ## Discipline
 
