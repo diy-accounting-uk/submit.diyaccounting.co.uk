@@ -37,7 +37,27 @@ AWS_PROFILE=certbot-local certbot certonly --dns-route53 \
   --non-interactive --agree-tos -m your-email@example.com
 ```
 - The server reads the certificate straight from that lineage, so no cert paths need setting.
-  Renew it before it expires with the same command, or `certbot renew`.
+- Renew with the same directory flags — a plain `certbot renew` cannot find this non-default
+  lineage:
+```bash
+AWS_PROFILE=certbot-local certbot renew \
+  --config-dir "$HOME/.local/share/diyaccounting-local-tls/config" \
+  --work-dir "$HOME/.local/share/diyaccounting-local-tls/work" \
+  --logs-dir "$HOME/.local/share/diyaccounting-local-tls/logs" \
+  --non-interactive
+```
+- Register the deploy-hook once, so an actual renewal publishes the new cert to Secrets Manager
+  for CI (certbot runs every script in that directory after a real renewal; the script uses the
+  `submit-ci` profile):
+```bash
+ln -s "$PWD/scripts/local-tls-publish.sh" \
+  "$HOME/.local/share/diyaccounting-local-tls/config/renewal-hooks/deploy/local-tls-publish.sh"
+```
+- A weekly launchd agent runs the renew unattended: label
+  `uk.co.diyaccounting.submit.certbot-renew`, Sundays 05:00 local, plist in
+  `~/Library/LaunchAgents`, logs in `~/Library/Logs`. Both AWS profiles it needs are SSO-backed
+  and cannot refresh unattended, so in the week the cert becomes due, run
+  `aws sso login --sso-session diyaccounting` and the renew command by hand.
 
 4) Configure local environment (implied secrets)
 - Use .env.proxy as your base for local development. It already sets:
