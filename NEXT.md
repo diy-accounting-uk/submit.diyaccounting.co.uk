@@ -37,13 +37,16 @@ operator step before them is done or when SSO is live.
   operator gates cleared (hub accepted the :3443 port; local secrets come from
   Secrets Manager over SSO at run time — no local .env at all), and both proof legs
   green with the tunnel down (submitVat + fraud-headers; payment with a real
-  stripeSubscriptionId via stripe listen). In flight: the deletion wave — steps 9-10
-  (ngrok machinery + hostname sweep) and step 12 (docs + `scripts/proxy-secrets.sh`
-  SSO wrapper) in worktrees under `.claude/worktrees/`. Then: coordinator regenerates
-  `repository-contents.txt` and the web test report, runs the final gate (named
-  checks, grep gate, dispatched CI proxy job with `runProxyBehaviourTests=true`,
-  branch `deploy.yml`), operator deletes the `NGROK_AUTHTOKEN` GitHub secret and the
-  ngrok redirect URI in the HMRC hub, then the PR.
+  stripeSubscriptionId via stripe listen). The deletion wave (steps 9, 10, 12) is
+  merged: ngrok machinery and hostname gone, docs rewritten, `scripts/proxy-secrets.sh`
+  fetches local secrets over SSO, generated files regenerated, grep gate down to its
+  one accepted residue (`repository-contents.txt` naming the plan file). Final gate in
+  flight: unit+system, CDK build and all five behaviour variants green post-deletion;
+  the accessibility/ZAP/pa11y/compliance batch is running. Then: clean `npm ci`,
+  Stripe endpoint check, push, dispatched CI proxy job with
+  `runProxyBehaviourTests=true` plus a branch `deploy.yml` run; operator deletes the
+  `NGROK_AUTHTOKEN` GitHub secret and the ngrok redirect URI in the HMRC hub; then
+  the PR.
 
 - [ ] **(B17a) Demo videos — operator-owned.** Redo the walkthrough capture properly
   (the first attempt recorded the simulator and the cuts are blank) and publish to
@@ -67,10 +70,10 @@ operator step before them is done or when SSO is live.
   say whether more read-only pages are worth building.
 
 - [ ] **(B35a) Drop the MCP promise from `web/public/mcp.html` — in flight.** Operator
-  decided (2026-08-31) to unpromise rather than build. A sub-agent is rewriting the
-  page and sweeping `web/public/` for coming-soon mentions on branch
-  `claude/unpromise-mcp` (worktree `../wt-submit-unpromise-mcp`), PR to follow for
-  operator merge. Closes when the PR merges and the live page makes no promise.
+  decided (2026-08-31) to unpromise rather than build. The rewrite is done and pushed
+  on branch `claude/unpromise-mcp` (worktree `../wt-submit-unpromise-mcp`), branch CI
+  running; the sub-agent opens the PR on green for operator merge. Closes when the PR
+  merges and the live page makes no promise.
 
 ## Discipline
 
