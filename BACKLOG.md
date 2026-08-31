@@ -18,7 +18,7 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **In flight**: 44 (ngrok removal — plan on main, the operator is picking the path).
+- **In flight**: 44 (tunnel removal from the proxy test path — implementation under way).
   `NEXT.md` carries the detail.
 - **Verification remainders on NEXT.md**: 14a (`page_view` events on the revived
   Gateway/Spreadsheets streams), the weekly-cron self-fire proofs. Item 4 (HMRC
@@ -37,7 +37,7 @@ truthfully on its own.
 | 25 | Cross-account backups, remainder: point BackupStack's copy jobs at the LIVE vault (`submit-cross-account-vault` in 914216784828, deployed 2026-08-26), add passes/subscriptions to the backup selection, create `backup-github-actions-role` for unattended workflow runs, then the monthly restore test | Issue #11, PLAN_CROSS_ACCOUNT_BACKUPS | M | Existential, second layer. The destination exists and denies deletion from outside; the restore test is the gate for the TypeScript migration (#33). |
 | 28 | Scan detection (#9) and data-theft detection (#10). The IAM half shipped in batch 2: blanket `grantReadData` is gone, per-table per-action grants live | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
 | 43 | AWS cost optimisation: a whole-bill review across all six accounts — Cost Explorer per account and service, right-sizing, storage classes and lifecycle rules, orphaned resources (us-east-1 log groups and images have recurred), data-transfer lines, and a monthly check that the bill moved the way the month's changes predicted. Feeds and is fed by #30 (alarms are the known largest CloudWatch line) and 42a (Lambda cost share). | Operator, this session | M | Hygiene, compounding. Nobody has reviewed the whole bill against what runs; every account added since the org split (backup, submit-ci, submit-prod) widened the blind spot. |
-| 44 | Replace ngrok in the proxy test path: `start-proxy.sh`, `stripe-setup.js`, the Stripe webhook route and `test.yml` all assume an ngrok tunnel with an account token — a paid external dependency and a recurring source of stuck local runs. Swap for cloudflared or an unauthenticated tunnel, or route webhooks at the simulator so no tunnel is needed | Operator, this session | S/M | Hygiene. Every proxy behaviour-test run and every new machine pays the ngrok setup tax. |
+| 44 | Replace the tunnel in the proxy test path: `start-proxy.sh`, `stripe-setup.js`, the Stripe webhook route and `test.yml` all assumed a tunnel with an account token — a paid external dependency and a recurring source of stuck local runs. Swap for DNS-to-localhost with a real certificate, routing Stripe webhooks through `stripe listen` | Operator, this session | S/M | Hygiene. Every proxy behaviour-test run and every new machine paid the tunnel setup tax. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 

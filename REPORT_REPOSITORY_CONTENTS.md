@@ -28,7 +28,7 @@ This document provides a high-level overview of the `submit.diyaccounting.co.uk`
 | **Authentication** | AWS Cognito + Google IdP (production), Mock OAuth2 (local) |
 | **Storage** | DynamoDB (bundles, passes, receipts, capacity counters, API requests), S3 (receipts backup) |
 | **API Integration** | HMRC MTD VAT API (test and production) |
-| **Local Dev Proxy** | ngrok (exposes localhost for OAuth callbacks) |
+| **Local Dev Proxy** | Native HTTPS on `local.submit.diyaccounting.co.uk`, a public DNS name pointed at 127.0.0.1 |
 
 ### Key Features
 
@@ -51,12 +51,12 @@ The repository uses multiple environment files. See the actual files for complet
 |-------------|------|---------|
 | **test** | `.env.test` | Unit/system tests with mocked services |
 | **simulator** | `.env.simulator` | Local dev with HTTP simulator (lightweight, no Docker, no external config needed) |
-| **proxy** | `.env.proxy` | Local dev with ngrok, Docker OAuth2, dynalite (requires HMRC sandbox credentials) |
+| **proxy** | `.env.proxy` | Local dev with native HTTPS, Docker OAuth2, dynalite (requires HMRC sandbox credentials) |
 | **proxyRunning** | `.env.proxyRunning` | Connect to already-running local services |
 | **ci** | `.env.ci` | CI with real AWS (`ci.submit.diyaccounting.co.uk`) |
 | **prod** | `.env.prod` | Production (`submit.diyaccounting.co.uk`) |
 
-**Note:** Simulator mode works out of the box with no `.env` file - it uses built-in defaults for all mocked services. Proxy mode requires configuration for ngrok and HMRC sandbox credentials.
+**Note:** Simulator mode works out of the box with no `.env` file - it uses built-in defaults for all mocked services. Proxy mode needs a local TLS certificate for `local.submit.diyaccounting.co.uk` (see `_developers/SETUP.md`) and HMRC sandbox credentials.
 
 ### Key Environment Variables
 
@@ -314,13 +314,11 @@ Developer Machine
     +-- Dynalite (localhost:9001) --> Local DynamoDB
 ```
 
-**Proxy Mode** (full stack with Docker and ngrok for real HMRC sandbox):
+**Proxy Mode** (full stack with Docker and a real HMRC sandbox, over native HTTPS):
 ```
 Developer Machine
     |
-    +-- Express Server (localhost:3000) --> Lambda handlers
-    |
-    +-- ngrok (tunnel) --> Public HTTPS URL for OAuth callbacks
+    +-- Express Server (local.submit.diyaccounting.co.uk:3443, real TLS cert) --> Lambda handlers
     |
     +-- Mock OAuth2 (Docker, localhost:8080) --> Simulates Cognito
     |
@@ -334,12 +332,11 @@ Developer Machine
 npm start                    # or npm run start:simulator
 
 # Proxy mode (for testing with real HMRC sandbox)
-npm run start:proxy          # Requires .env.proxy, ngrok, Docker
+npm run start:proxy          # Requires .env.proxy, a local TLS cert, Docker
 
 # Individual services (advanced):
 npm run data    # Local DynamoDB
 npm run auth    # Mock OAuth2 (Docker)
-npm run proxy   # ngrok tunnel
 npm run server  # Express server
 ```
 
@@ -349,15 +346,15 @@ npm run server  # Express server
 # Simulator mode (no external dependencies, fastest)
 npm run test:submitVatBehaviour-simulator
 
-# Proxy mode (gold standard, uses ngrok and Docker)
-npm run test:submitVatBehaviour-proxy    # Requires .env.proxy configuration
+# Proxy mode (gold standard, real HMRC sandbox over native HTTPS and Docker)
+scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy
 
 # Against deployed environments (requires AWS credentials)
 npm run test:submitVatBehaviour-ci
 npm run test:submitVatBehaviour-prod
 ```
 
-The proxy mode tests are the gold standard for CI validation as they use real OAuth flows via ngrok. Simulator mode tests are faster and require no external setup, making them ideal for rapid development iteration.
+The proxy mode tests are the gold standard for CI validation, because they use real OAuth flows against the HMRC sandbox. Simulator mode tests are faster and need no external setup, so they suit rapid development iteration.
 
 ### Local vs AWS Comparison
 
@@ -394,7 +391,7 @@ The proxy mode tests are the gold standard for CI validation as they use real OA
 
 | Path | Purpose |
 |------|---------|
-| `bin/` | Entry point scripts (server.js, simulator-server.js, ngrok.js, dynamodb.js, main.js, provision-user.mjs) |
+| `bin/` | Entry point scripts (server.js, simulator-server.js, dynamodb.js, main.js, provision-user.mjs) |
 | `data/` | DynamoDB repository implementations |
 | `functions/auth/` | Authentication Lambdas (customAuthorizer, cognitoTokenPost) |
 | `functions/hmrc/` | HMRC API Lambdas (obligations, returns, receipts, token exchange) |

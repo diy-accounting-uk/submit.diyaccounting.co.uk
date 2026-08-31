@@ -319,7 +319,7 @@ Implemented in `behaviour-tests/payment.behaviour.test.js`:
 # Simulator (local, fakes payment)
 npm run test:paymentBehaviour-simulator
 
-# Proxy (local + ngrok, real Stripe test)
+# Proxy (local over native HTTPS, real Stripe test via stripe listen)
 npm run test:paymentBehaviour-proxy
 
 # CI (deployed to AWS)
