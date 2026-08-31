@@ -6,12 +6,12 @@ This project allows UK businesses to submit tax returns to HMRC under the Making
 
 # Quick developer setup (current code paths)
 
-This section reflects what actually happens with the current code and scripts. It provides a step‑by‑step guide to set up your own environment with your own ngrok account/domain, HMRC sandbox credentials, and test data. It also lists the steps to run the test suites up to npm run test:all, and how to deploy to AWS for your own domain based on prod settings.
+This section reflects what actually happens with the current code and scripts. It provides a step‑by‑step guide to set up your own environment with a local TLS certificate, HMRC sandbox credentials, and test data. It also lists the steps to run the test suites up to npm run test:all, and how to deploy to AWS for your own domain based on prod settings.
 
 1) Prerequisites
 - Node.js 22+
 - Java 21+ and Docker (for CDK build/synth)
-- An ngrok account with Authtoken; a reserved subdomain is recommended
+- certbot, for the one-time local TLS certificate (see step 3)
 - HMRC Developer Hub account for sandbox credentials
 
 2) Clone and install
@@ -22,47 +22,60 @@ npm install
 npm run playwright:install
 ```
 
-3) Configure ngrok
-- Get your Authtoken from https://dashboard.ngrok.com/get-started/your-authtoken
-- Reserve a subdomain (e.g. my-submit-dev.ngrok-free.app) for stable URLs
-- Export your token so the proxy can authenticate:
+3) Configure local TLS
+- `local.submit.diyaccounting.co.uk` already resolves to `127.0.0.1` in public DNS, so every
+  developer's machine reaches its own loopback under that name.
+- Ask the operator for the `certbot-local` AWS profile, then issue a certificate once:
 ```bash
-export NGROK_AUTHTOKEN=YOUR_NGROK_AUTHTOKEN
+pipx install certbot
+pipx inject certbot certbot-dns-route53
+AWS_PROFILE=certbot-local certbot certonly --dns-route53 \
+  -d local.submit.diyaccounting.co.uk \
+  --config-dir "$HOME/.local/share/diyaccounting-local-tls/config" \
+  --work-dir "$HOME/.local/share/diyaccounting-local-tls/work" \
+  --logs-dir "$HOME/.local/share/diyaccounting-local-tls/logs" \
+  --non-interactive --agree-tos -m your-email@example.com
 ```
+- The server reads the certificate straight from that lineage, so no cert paths need setting.
+  Renew it before it expires with the same command, or `certbot renew`.
 
 4) Configure local environment (implied secrets)
-- Use .env.proxy as your base for local development. Set at least:
-  - DIY_SUBMIT_BASE_URL=https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+- Use .env.proxy as your base for local development. It already sets:
+  - DIY_SUBMIT_BASE_URL=https://local.submit.diyaccounting.co.uk:3443/
   - TEST_SERVER_HTTP=run
-  - TEST_PROXY=run
+  - TEST_SERVER_TLS=run
+  - TEST_SERVER_HTTPS_PORT=3443
   - TEST_MOCK_OAUTH2=run
   - TEST_DYNAMODB=run
   - USER_SUB_HASH_SALT=local-development-salt-not-for-production (required for user ID hashing)
-- Do NOT commit plaintext secrets. Behaviour tests reference secrets from your shell env or from ARNs in AWS Secrets Manager. Typical values you'll need to supply locally include:
-  - HMRC_SANDBOX_CLIENT_ID
-  - HMRC_SANDBOX_CLIENT_SECRET (or HMRC_SANDBOX_CLIENT_SECRET_ARN when using AWS)
+- Do NOT commit plaintext secrets. Run any proxy command through `scripts/proxy-secrets.sh`, which
+  fetches the HMRC and Stripe secrets from AWS Secrets Manager over your SSO session and sets them
+  in the child process's environment:
+```bash
+scripts/proxy-secrets.sh npm run test:submitVatBehaviour-proxy
+```
   - Optional: GOOGLE_CLIENT_SECRET / DIY_SUBMIT_GOOGLE_CLIENT_ID, COGNITO_* if testing those paths
 - DynamoDB table names for local tests (bundles, HMRC API requests, receipts) default sensibly; tables are created automatically by the behaviour test harness when TEST_DYNAMODB=run.
 - User IDs are salted and hashed before storage (privacy feature). See `_developers/SALTED_HASH_IMPLEMENTATION.md` for details.
 
 5) HMRC sandbox application
 - In the HMRC Developer Hub (Sandbox), create an app and add your redirect URI:
-  - https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
-- Copy the client ID and client secret and provide them via your environment (see step 4).
+  - https://local.submit.diyaccounting.co.uk:3443/activities/submitVatCallback.html
+- Copy the client ID; the sandbox client secret comes from AWS Secrets Manager through
+  `scripts/proxy-secrets.sh` (see step 4), so you don't need to store it locally.
 
 6) Run locally
 Pick one of the following options:
-- All‑in‑one (starts mock OAuth2, ngrok proxy, and the web server):
+- All‑in‑one (starts mock OAuth2, dynalite, and the web server over HTTPS):
 ```bash
 npm start
 ```
 - Or run components individually:
 ```bash
-npm run server                 # Serves at http://127.0.0.1:3000
-npm run proxy -- 3000          # Exposes your ngrok domain
+npm run server                 # Serves at https://local.submit.diyaccounting.co.uk:3443
 npm run auth                   # Starts mock OAuth2 server (optional)
 ```
-Open https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/
+Open https://local.submit.diyaccounting.co.uk:3443/
 
 7) Run tests up to npm run test:all
 - Unit + system tests (Vitest):
@@ -73,9 +86,10 @@ npm test
 ```bash
 npm run test:browser
 ```
-- Behaviour tests (Playwright) — orchestrates server, ngrok, mock OAuth2, and local DynamoDB using .env.proxy:
+- Behaviour tests (Playwright) — orchestrates the server, mock OAuth2, `stripe listen`, and local
+  DynamoDB using .env.proxy:
 ```bash
-npm run test:allBehaviour
+scripts/proxy-secrets.sh npm run test:allBehaviour
 ```
 - Full suite:
 ```bash
@@ -190,36 +204,26 @@ Listening at http://127.0.0.1:3000 for https://test-api.service.hmrc.gov.uk
 
 ```
 
-Access via [http://127.0.0.1:3000](http://127.0.0.1:3000) or...
-use the built-in ngrok proxy to expose http://127.0.0.1:3000 to an SSL terminated public URL:
+Access via [http://127.0.0.1:3000](http://127.0.0.1:3000), or serve HTTPS natively on the local
+hostname once you have the certificate from step 3:
 
 ```bash
-# Set your ngrok authtoken first (get it from https://dashboard.ngrok.com/get-started/your-authtoken)
-export NGROK_AUTHTOKEN=your_authtoken_here
+# .env.proxy already sets these; TEST_SERVER_TLS=run switches server.js to the HTTPS branch
+export TEST_SERVER_TLS=run
+export TEST_SERVER_HTTPS_PORT=3443
 
-# Start the ngrok tunnel
-npm run proxy
+npm run server
 ```
 
-Or you can also use ngrok directly by running:
-```bash
-node app/bin/ngrok.js 3000
-```
-
-ngrok runs and outputs something like:
-```log
-[ngrok]: ✅ Tunnel established at https://wanted-finally-anteater.ngrok-free.app
-Ngrok started url=https://wanted-finally-anteater.ngrok-free.app
-[ngrok]: Tunnel is running. Press CTRL-C to stop.
-```
-
-Here you can open the ngrok URL (e.g., https://wanted-finally-anteater.ngrok-free.app) in a browser of your choice.
-The URL will be based on your `.env.proxy` configuration or a random URL if not specified.
+The server reads the certificate from the certbot lineage under
+`$HOME/.local/share/diyaccounting-local-tls/`, so no cert path configuration is needed. Open
+`https://local.submit.diyaccounting.co.uk:3443` in a browser of your choice.
 
 # Local usage with HMRC
 
-Add your ngrok URL to the HMRC MTD service as a redirect URI, e.g. `https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app/`.
-Start at your ngrok URL, e.g. https://YOUR_RESERVED_SUBDOMAIN.ngrok-free.app
+Register `https://local.submit.diyaccounting.co.uk:3443/activities/submitVatCallback.html` as a
+redirect URI on the HMRC sandbox application.
+Start at `https://local.submit.diyaccounting.co.uk:3443`.
 Enter your VAT number, Period Key, and VAT Due in the form and click "Submit VAT Return".
 Log in to HMRC...
 
@@ -448,8 +452,6 @@ HMRC_CLIENT_SECRET
 7 months ago
 HMRC_SANDBOX_CLIENT_SECRET
 3 weeks ago
-NGROK_AUTHTOKEN
-7 months ago
 PERSONAL_ACCESS_TOKEN
 last week
 RELEASE_PAT
