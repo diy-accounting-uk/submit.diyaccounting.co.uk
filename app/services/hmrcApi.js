@@ -5,8 +5,13 @@
 
 import { v4 as uuidv4 } from "uuid";
 import { createLogger, context } from "../lib/logger.js";
-import { BundleEntitlementError } from "./bundleManagement.js";
-import { http400BadRequestResponse, http500ServerErrorResponse, http403ForbiddenResponse } from "../lib/httpResponseHelper.js";
+import { BundleEntitlementError, BundleAuthorizationError } from "./bundleManagement.js";
+import {
+  http400BadRequestResponse,
+  http500ServerErrorResponse,
+  http403ForbiddenResponse,
+  http401UnauthorizedResponse,
+} from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 
 /**
@@ -626,11 +631,23 @@ export function http500ServerErrorFromBundleEnforcement(error, request) {
   return http500ServerErrorResponse({
     request,
     message: "Authorization failure while checking entitlements",
-    error: { message: error.message || String(error) },
+    error: { detail: error.message || String(error) },
   });
 }
 
 export function http403ForbiddenFromBundleEnforcement(error, request) {
+  if (error instanceof BundleAuthorizationError) {
+    logger.warn({
+      message: "Unauthorized - missing or invalid authorization token",
+      error: error.message,
+      details: error.details,
+    });
+    return http401UnauthorizedResponse({
+      request,
+      message: error.message,
+      error: { code: error.details?.code || "UNAUTHORIZED", ...error.details },
+    });
+  }
   // Only intended for BundleEntitlementError, fall back to 500 otherwise
   if (!(error instanceof BundleEntitlementError)) {
     return http500ServerErrorFromBundleEnforcement(error, request);
