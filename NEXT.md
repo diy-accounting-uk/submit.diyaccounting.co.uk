@@ -52,13 +52,17 @@ operator step before them is done or when SSO is live.
   option; the plan's first step is the HMRC Developer Hub registration, proven against
   `test:submitVatBehaviour-proxy` before anything is deleted, then Claude Code
   implements.
-- [ ] **(B43a) Instrument the AWS accounts for cost analysis.** IN FLIGHT (operator said
-  go, 2026-08-31): a worktree-isolated design agent is writing
-  `PLAN_COST_INSTRUMENTATION.md` — current state read-only, design (allocation tags, CUR
-  2.0/Athena, Budgets + Cost Anomaly Detection across the six accounts, Cost Explorer
-  granularity), CDK drafts for this repo, and the ordered NEEDS-APPROVAL write list.
-  Every management-account/billing write comes to the operator individually before it
-  runs. Feeds backlog #43's whole-bill review.
+- [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Design is at
+  `PLAN_COST_INSTRUMENTATION.md` (zero active allocation tags, zero budgets, zero
+  anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
+  Open steps, in order: operator approves the two management-account commands in the
+  plan (activate five tag keys — not retroactive, so first — and delete the broken
+  legacy CUR); operator merges PR #66 (uniform CDK tags on all 23 stacks); Claude Code
+  builds `CostReportingStack` in root.diyaccounting.co.uk (org-wide CUR 2.0 export,
+  seven budgets, anomaly monitor, cost category per the plan); operator turns on hourly
+  granularity in Cost Management Preferences (console only). Feeds backlog #43's
+  whole-bill review, which should also look at the August jump to $231 (Bedrock in
+  spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
 ## Discipline
 
