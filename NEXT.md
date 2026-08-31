@@ -67,14 +67,11 @@ operator step before them is done or when SSO is live.
 
 ## In flight (batch dispatched 2026-08-31, coordinator session)
 
-- PR #71 (`claude/do-next-batch-1`): validated (unit 1155, mvnw 72/72, behaviour 1
-  passed), awaiting operator merge
-- `claude/do-next-batch-2`: alarm cuts + SecurityDetectionStack merged, mvnw
-  verifying; CloudFront-logging track (B14 phase 5) done but held on phase 1's prod
-  row-count gate (ingestion-verify agent running); billing-webhook triage agent
-  running (65 ALARM entries in 90 days on `billing-webhook-log-errors`, found by the
-  live alarm check — the audit's counts otherwise verified: prod 155 vs ~163
-  predicted, ~45 app alarms never fired)
+- PR #71 (`claude/do-next-batch-1`) and PR #72 (`claude/do-next-batch-2`, stacked on
+  #71): both fully validated locally (unit+system, mvnw, behaviour-proxy), awaiting
+  operator merge. After #72 deploys: replay the Stripe reconcile for 2026-08-29 and
+  2026-08-30 in both envs (invocations in PR #72's description), and run the alarm→
+  issue end-to-end proof once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
 
 ## Discipline
 
