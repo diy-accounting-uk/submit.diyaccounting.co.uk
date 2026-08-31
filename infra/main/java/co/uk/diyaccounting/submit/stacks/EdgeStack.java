@@ -9,7 +9,6 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
-import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -402,15 +401,6 @@ public class EdgeStack extends Stack {
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
                 .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
                 .build();
-        // CloudFront standard logging bucket. History cannot be backfilled, so this needs to be
-        // on before there is traffic worth analyzing, even though nothing consumes the logs yet.
-        // The bucket itself lives in AnalyticsStack (env-scoped, see CloudFrontAccessLogs) so log
-        // history survives every redeploy of this app stack; this stack only imports it by name
-        // and writes under its own deployment-scoped prefix.
-        IBucket cloudFrontLogsBucket = Bucket.fromBucketName(
-                this,
-                props.resourceNamePrefix() + "-CfLogsBucket",
-                CloudFrontAccessLogs.bucketName(props.sharedNames().envResourceNamePrefix, this.getAccount()));
 
         IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
                 this.originBucket,
@@ -574,9 +564,6 @@ public class EdgeStack extends Stack {
                 .domainNames(List.of(props.sharedNames().deploymentDomainName))
                 .certificate(cert)
                 .defaultRootObject("index.html")
-                .enableLogging(true)
-                .logBucket(cloudFrontLogsBucket)
-                .logFilePrefix("cf-standard-logs/" + props.deploymentName() + "/")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
                 .webAclId(webAcl.getAttrArn())
@@ -598,11 +585,11 @@ public class EdgeStack extends Stack {
                         .build());
 
         // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
-        // lake so Athena can query it without a crawler, complementing the classic logBucket()
-        // output above. This is set up here rather than in AnalyticsStack because only this app
-        // stack knows this deployment's distribution ARN; the lake bucket's resource policy
-        // (granted in CloudFrontAccessLogs) accepts writes from every deployment's distribution,
-        // and the Glue table's injected distribution_id partition tells them apart.
+        // lake so Athena can query it without a crawler. This is set up here rather than in
+        // AnalyticsStack because only this app stack knows this deployment's distribution ARN;
+        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes
+        // from every deployment's distribution, and the Glue table's injected distribution_id
+        // partition tells them apart.
         IBucket analyticsLakeBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
@@ -675,7 +662,6 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
         cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
         cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
-        cfnOutput(this, "CloudFrontLogsBucketName", cloudFrontLogsBucket.getBucketName());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }

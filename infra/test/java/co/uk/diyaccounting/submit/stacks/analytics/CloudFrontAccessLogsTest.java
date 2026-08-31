@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -70,20 +71,17 @@ class CloudFrontAccessLogsTest {
     }
 
     @Test
-    void shouldCreateTheClassicLoggingBucketWithAclsEnabledForCloudFrontsAclGrant() {
+    void shouldNotCreateAnAclEnabledLoggingBucketNowThatOnlyTheV2ParquetDeliveryRemains() {
         var sharedNames = SubmitSharedNames.forDocs();
         Template template = synth(sharedNames);
 
-        template.hasResourceProperties(
-                "AWS::S3::Bucket",
-                Match.objectLike(Map.of(
-                        "BucketName",
-                        CloudFrontAccessLogs.bucketName(sharedNames.envResourceNamePrefix, ACCOUNT),
-                        "OwnershipControls",
-                        Match.objectLike(Map.of(
-                                "Rules",
-                                Match.arrayWith(
-                                        List.of(Match.objectLike(Map.of("ObjectOwnership", "ObjectWriter")))))))));
+        var buckets = template.findResources("AWS::S3::Bucket");
+        boolean hasObjectWriterBucket = buckets.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var props = (Map<String, Object>) resource.get("Properties");
+            return String.valueOf(props).contains("ObjectWriter");
+        });
+        assertFalse(hasObjectWriterBucket, "expected no AWS::S3::Bucket with ObjectOwnership: ObjectWriter");
     }
 
     @Test
