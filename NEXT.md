@@ -12,13 +12,6 @@ operator step before them is done or when SSO is live.
 
 **Prod runs deployment prod-bc6a9dd.** Drift findings live in issue #43.
 
-- [ ] **(B25 remainder) Cross-account backups.**
-  1. `verify-backups` still had zero runs at 11:43 UTC on 2026-08-31 (06:00 slot,
-     5h43m late — the morning's other backlogged crons had fired by then, and it is a
-     schedule-only workflow, the pattern that needed a manual kick elsewhere). Operator:
-     `gh workflow run verify-backups`, or approve Claude Code running it. Then confirm
-     the run is green — the 2026-08-30 failure was only the 48-hour copy-job window
-     still holding the five pre-switch failures from the 29th.
 - [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Cowork
   confirmed the scale: zero events in 28 days property-wide from both streams, while
   downloads and donations demonstrably happened; no `purchase`/`begin_checkout` ever
@@ -33,9 +26,10 @@ operator step before them is done or when SSO is live.
 - [ ] **compliance and stack-drift schedule revival — dispatches passed, cron proof
   remains.** Both revival runs are green (compliance 10/10 checks; stack-drift "all in
   sync" with three stacks correctly filtered as `DRIFTED_BENIGN` on its first
-  noise-filtered run). Claude Code: confirm the Monday 2026-09-07 06:00 UTC crons fire
-  on their own before closing; watch `codeql` on 2026-09-06 and revive the same way if
-  it misses again.
+  noise-filtered run). `verify-backups` missed its 06:00 slot the same day and went
+  green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
+  on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
+  closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
 - [ ] **(B44) Remove ngrok from the proxy test path.** `PLAN_REMOVE_NGROK.md` is at the
   repo root with five options. Recommendation: option C — register a localhost redirect
   URI for the HMRC sandbox app (the OAuth leg needs no tunnel at all, only that
