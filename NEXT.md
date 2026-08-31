@@ -32,11 +32,11 @@ operator step before them is done or when SSO is live.
   spreadsheets PR #46, deploy both sites. Claude Code: after deploy, confirm `page_view`
   events arrive on the Gateway and Spreadsheets streams, then close this and update
   `PLAN_GA4.md`.
-- [ ] **(B9 remainder) Dead GitHub link — search done, two operator steps left.** The
-  only dead GitHub link live on a public URL was in stale axe-scan JSON snapshots served
-  from `web/public/tests/accessibility/`; no "unstaffed/unmonitored" claim survives on
-  any live page in any repo. Operator: merge PR #65 (removes the snapshots), and check
-  the antony@ auto-responder for the stale "no longer staffed" text.
+- [ ] **(B9 remainder) Dead GitHub link — search done.** No dead GitHub link or
+  "unstaffed/unmonitored" claim survives in any repo. Claude Code: after the next prod
+  deploy, confirm `submit.diyaccounting.co.uk/tests/accessibility/axe-results.json`
+  is gone. Operator: check the antony@ auto-responder for the stale "no longer
+  staffed" text.
 - [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
@@ -55,11 +55,11 @@ operator step before them is done or when SSO is live.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Design is at
   `PLAN_COST_INSTRUMENTATION.md` (zero active allocation tags, zero budgets, zero
   anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
-  Open steps, in order: operator approves the two management-account commands in the
-  plan (activate five tag keys — not retroactive, so first — and delete the broken
-  legacy CUR); operator merges PR #66 (uniform CDK tags on all 23 stacks); Claude Code
-  builds `CostReportingStack` in root.diyaccounting.co.uk (org-wide CUR 2.0 export,
-  seven budgets, anomaly monitor, cost category per the plan); operator turns on hourly
+  Open steps: operator approves the two management-account commands in the plan
+  (activate five tag keys — not retroactive, so first — and delete the broken legacy
+  CUR); `CostReportingStack` in root.diyaccounting.co.uk (org-wide CUR 2.0 export,
+  seven budgets, anomaly monitor, cost category per the plan) is IN FLIGHT with an
+  agent producing a `claude/cost-reporting-stack` PR; operator turns on hourly
   granularity in Cost Management Preferences (console only). Feeds backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
