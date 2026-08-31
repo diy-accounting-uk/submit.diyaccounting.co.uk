@@ -79,7 +79,6 @@ Different values per environment.
 | `GOOGLE_CLIENT_SECRET` | `aws --profile submit-ci secretsmanager get-secret-value --secret-id ci/submit/google/client_secret` | `aws --profile submit-prod secretsmanager get-secret-value --secret-id prod/submit/google/client_secret` |
 | Stripe credentials (4 secrets per env) | see **Stripe credentials — the four dimensions** below | same |
 | `TELEGRAM_BOT_TOKEN` | from your local `.env` — same value both envs | same |
-| `NGROK_AUTHTOKEN` | from your local `.env` — same value both envs | same |
 
 `GITHUB_TOKEN` is automatic; do not set it.
 
@@ -152,7 +151,7 @@ The endpoints themselves are registered in the Stripe dashboard. `scripts/stripe
 | test (sandbox) | `https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook` |
 | live | `https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook` |
 
-Live mode also registers an ngrok endpoint for local dev (`https://*.ngrok-free.app/api/v1/billing/webhook` — value rotates with the developer's ngrok tunnel).
+Local dev registers no endpoint at all: `stripe listen` forwards test-mode Stripe events straight to `https://local.submit.diyaccounting.co.uk:3443/api/v1/billing/webhook` over an outbound connection.
 
 Run with the correct Stripe mode key:
 

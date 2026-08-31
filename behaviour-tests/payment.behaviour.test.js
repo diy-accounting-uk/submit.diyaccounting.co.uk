@@ -23,7 +23,7 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
-  runLocalSslProxy,
+  runStripeListen,
   saveHmrcTestUserToFiles,
   timestamp,
 } from "./helpers/behaviour-helpers.js";
@@ -83,7 +83,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
@@ -100,7 +99,7 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
+let stripeListenProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
@@ -120,8 +119,15 @@ test.beforeAll(async () => {
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+
+  // Must start, and have its signing secret in env, before runLocalHttpServer spawns the
+  // server — resolveWebhookSecret() caches the first STRIPE_TEST_WEBHOOK_SECRET it reads.
+  stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
+  if (stripeListenProcess) {
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
+  }
+
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   if (bundleTableName) {
     await initializeSalt();
@@ -131,8 +137,8 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
+  if (stripeListenProcess) stripeListenProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
     await dynamoControl?.stop?.();
@@ -169,10 +175,7 @@ async function extractUserSub(page) {
 }
 
 test("Payment funnel: guest → exhaustion → upgrade → submission → usage", async ({ page }, testInfo) => {
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   addOnPageLogging(page);
 
@@ -635,7 +638,6 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       baseUrl,
       serverPort: httpServerPort,
       runTestServer,
-      runProxy,
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,

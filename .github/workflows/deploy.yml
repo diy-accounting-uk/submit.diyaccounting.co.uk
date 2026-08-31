@@ -56,7 +56,7 @@ on:
         required: false
         default: 'true'
       runProxyBehaviourTests:
-        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        description: 'Run proxy behaviour tests (uses the real local TLS certificate and Docker)'
         type: choice
         options:
           - 'true'
@@ -296,7 +296,6 @@ jobs:
       runProxyBehaviourTests: ${{ needs.params.outputs.runProxyBehaviourTests }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-      NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
 
   npm-unit-test-coverage:
     name: 'npm unit test with coverage'

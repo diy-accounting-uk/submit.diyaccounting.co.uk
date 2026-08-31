@@ -6,6 +6,8 @@
 
 import path from "path";
 import fs from "fs";
+import https from "https";
+import os from "os";
 import express from "express";
 import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
@@ -74,7 +76,7 @@ app.use((req, res, next) => {
 
 // Basic CORS middleware (mostly for local tools and OPTIONS where needed)
 app.use((req, res, next) => {
-  // Allow same-origin (ngrok forwards host), and also enable generic CORS for dev tools
+  // Allow same-origin, and also enable generic CORS for dev tools
   const origin = req.headers.origin;
   if (origin) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -93,7 +95,7 @@ app.use((req, res, next) => {
 });
 
 // Simulate CloudFront headers for fraud prevention in non-proxy environments.
-// In proxy/CI/prod, CloudFront and ngrok set X-Forwarded-For and CloudFront-Viewer-Address.
+// In proxy/CI/prod, CloudFront sets X-Forwarded-For and CloudFront-Viewer-Address.
 // In simulator mode, the Express server receives direct requests from Playwright on localhost,
 // so we inject synthetic values to allow buildFraudHeaders.js to generate all Gov-* headers.
 app.use((req, res, next) => {
@@ -132,7 +134,7 @@ app.use((req, res, next) => {
 });
 
 // Serve a virtual submit.env file for the client, using the server's own environment variables.
-// This ensures that behaviour tests (using ngrok) get the correct BASE_URL.
+// This ensures that behaviour tests get the correct BASE_URL.
 app.get("/submit.env", (req, res) => {
   const publicVars = [
     "COGNITO_CLIENT_ID",
@@ -288,9 +290,36 @@ if (__runDirect) {
       return undefined;
     })
     .catch((err) => logger.warn(`Vendor public IP detection failed: ${err.message}`));
-  app.listen(TEST_SERVER_HTTP_PORT, () => {
-    const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
-    console.log(message);
-    logger.info(message);
-  });
+  if (process.env.TEST_SERVER_TLS === "run") {
+    // certbot's standard lineage location on a developer machine; CI overrides with explicit paths.
+    const certLineageDir = path.join(
+      os.homedir(),
+      ".local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk",
+    );
+    const certPath = process.env.TEST_SERVER_TLS_CERT || path.join(certLineageDir, "fullchain.pem");
+    const keyPath = process.env.TEST_SERVER_TLS_KEY || path.join(certLineageDir, "privkey.pem");
+    const httpsPort = process.env.TEST_SERVER_HTTPS_PORT;
+    // Throw at startup rather than falling back to HTTP and failing later at the first navigation.
+    if (!certPath || !fs.existsSync(certPath)) {
+      throw new Error(`TEST_SERVER_TLS=run but TEST_SERVER_TLS_CERT is missing or unreadable: ${certPath}`);
+    }
+    if (!keyPath || !fs.existsSync(keyPath)) {
+      throw new Error(`TEST_SERVER_TLS=run but TEST_SERVER_TLS_KEY is missing or unreadable: ${keyPath}`);
+    }
+    const options = {
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath),
+    };
+    https.createServer(options, app).listen(httpsPort, () => {
+      const message = `Listening at https://local.submit.diyaccounting.co.uk:${httpsPort}`;
+      console.log(message);
+      logger.info(message);
+    });
+  } else {
+    app.listen(TEST_SERVER_HTTP_PORT, () => {
+      const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
+      console.log(message);
+      logger.info(message);
+    });
+  }
 }

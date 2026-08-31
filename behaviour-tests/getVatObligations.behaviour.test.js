@@ -16,7 +16,6 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
-  runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
@@ -76,7 +75,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
@@ -96,7 +94,6 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
@@ -131,16 +128,12 @@ test.beforeAll(async ({ page }, testInfo) => {
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   console.log("beforeAll hook completed successfully");
 });
 
 test.afterAll(async () => {
   // Shutdown local servers at end of test
-  if (ngrokProcess) {
-    ngrokProcess.kill();
-  }
   if (serverProcess) {
     serverProcess.kill();
   }
@@ -169,11 +162,7 @@ async function requestAndVerifyObligations(page, obligationsQuery) {
 }
 
 test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo) => {
-  // Compute test URL based on which servers are running
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   // Add console logging to capture browser messages
   addOnPageLogging(page);
@@ -569,7 +558,6 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       baseUrl,
       serverPort: httpServerPort,
       runTestServer,
-      runProxy,
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,

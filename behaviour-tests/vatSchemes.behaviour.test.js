@@ -17,7 +17,6 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
-  runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
@@ -41,7 +40,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
@@ -58,7 +56,6 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
 let dynamoControl;
 
 test.setTimeout(300_000);
@@ -79,7 +76,6 @@ test.beforeAll(async ({ page }, testInfo) => {
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
@@ -88,7 +84,6 @@ test.beforeAll(async ({ page }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
@@ -176,10 +171,7 @@ const vatSchemeTestData = {
  * Helper to setup test user and login
  */
 async function setupTestUserAndLogin(page, testInfo) {
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   addOnPageLogging(page);
   const outputDir = testInfo.outputPath("");
@@ -361,10 +353,7 @@ test.describe("VAT Exemption Not Applicable", () => {
     // VAT exempt businesses do not need to file VAT returns
     // The app homepage should make this clear
 
-    const testUrl =
-      (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-        ? `http://127.0.0.1:${httpServerPort}/`
-        : baseUrl;
+    const testUrl = baseUrl;
 
     await page.goto(testUrl);
     await page.waitForLoadState("networkidle");

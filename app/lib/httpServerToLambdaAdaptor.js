@@ -21,7 +21,7 @@ export function buildLambdaEventFromHttpRequest(httpRequest) {
   if (referer) incomingHeaders.referer = referer;
 
   // Synthesize CloudFront-Viewer-Address for local dev (CloudFront adds this in production).
-  // Use the real client IP from X-Forwarded-For (set by ngrok/proxy) and the socket port,
+  // Use the real client IP from X-Forwarded-For (set by the proxy) and the socket port,
   // matching the format CloudFront provides: "client-ip:client-port".
   if (!incomingHeaders["cloudfront-viewer-address"]) {
     const xff = incomingHeaders["x-forwarded-for"] || "";

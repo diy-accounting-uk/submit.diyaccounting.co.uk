@@ -17,7 +17,6 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
-  runLocalSslProxy,
   saveHmrcTestUserToFiles,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
@@ -35,7 +34,6 @@ const originalEnv = { ...process.env };
 const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", null);
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
@@ -45,7 +43,6 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
 let dynamoControl;
 
 test.setTimeout(300_000);
@@ -66,7 +63,6 @@ test.beforeAll(async ({ page }, testInfo) => {
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
@@ -75,7 +71,6 @@ test.beforeAll(async ({ page }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
@@ -102,10 +97,7 @@ function generateValid9BoxData() {
 
 test.describe("9-Box VAT Validation Error Tests", () => {
   test("INVALID_WHOLE_AMOUNT: Box 6-9 with decimal values rejected", async ({ page }, testInfo) => {
-    const testUrl =
-      (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-        ? `http://127.0.0.1:${httpServerPort}/`
-        : baseUrl;
+    const testUrl = baseUrl;
 
     addOnPageLogging(page);
     const outputDir = testInfo.outputPath("");
@@ -148,10 +140,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
   });
 
   test("INVALID_NET_VAT_DUE: Box 5 cannot be negative", async ({ page }, testInfo) => {
-    const testUrl =
-      (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-        ? `http://127.0.0.1:${httpServerPort}/`
-        : baseUrl;
+    const testUrl = baseUrl;
 
     addOnPageLogging(page);
     const outputDir = testInfo.outputPath("");
@@ -184,10 +173,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
   });
 
   test("INVALID_TOTAL_VAT_DUE: Box 3 must equal Box 1 + Box 2", async ({ page }, testInfo) => {
-    const testUrl =
-      (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-        ? `http://127.0.0.1:${httpServerPort}/`
-        : baseUrl;
+    const testUrl = baseUrl;
 
     addOnPageLogging(page);
 

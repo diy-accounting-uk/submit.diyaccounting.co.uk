@@ -80,6 +80,10 @@ Each AWS account has its own Secrets Manager entries. GitHub Actions secrets flo
 | HMRC Production Client Secret | `HMRC_CLIENT_SECRET` | `{env}/submit/hmrc/client_secret` | submit-ci, submit-prod | HMRC OAuth token exchange |
 | HMRC Sandbox Client Secret | `HMRC_SANDBOX_CLIENT_SECRET` | `{env}/submit/hmrc/sandbox_client_secret` | submit-ci, submit-prod | HMRC sandbox testing |
 | User Sub Hash Salt | (auto-generated) | `{env}/submit/user-sub-hash-salt` | submit-ci, submit-prod | DynamoDB partition keys |
+| Local TLS Certificate | (none — published by `certbot renew --deploy-hook`) | `ci/submit/local-tls/certificate` | submit-ci | Proxy behaviour tests, native HTTPS on `local.submit.diyaccounting.co.uk:3443` |
+| Telegram Bot Token | `TELEGRAM_BOT_TOKEN` | `{env}/submit/telegram/bot_token` | submit-ci, submit-prod | Activity alerts |
+
+The Telegram bot is `diyaccounting` (`@diyaccounting_bot`); alert groups are `diy-ci-test`, `diy-ci-live`, `diy-ci-ops`, `diy-prod-test`, `diy-prod-live`, `diy-prod-ops`; the operator's username is `@tele_t_uk`.
 
 ### 2.2 Secret Flow Architecture
 
@@ -192,7 +196,6 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 | Secret | Purpose | Last Updated | Notes |
 |--------|---------|--------------|-------|
-| `NGROK_AUTHTOKEN` | Local tunnel for OAuth callbacks | 2025-07-24 | Rotate if compromised |
 | `PERSONAL_ACCESS_TOKEN` | GitHub API for workflow automation | 2026-01-17 | Rotate quarterly recommended |
 | `RELEASE_PAT` | GitHub release creation | 2026-01-10 | Rotate quarterly recommended |
 | `SUPPORT_ISSUE_PAT` | GitHub issue management | 2026-01-17 | Rotate quarterly recommended |

@@ -11,7 +11,6 @@ import {
   ensurePassesTableExists,
   ensureCapacityTableExists,
 } from "@app/bin/dynamodb.js";
-import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
@@ -121,7 +120,8 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const hmrcVatObligationGetAsyncTable = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcVatObligationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncTable, endpoint);
   } else {
-    logger.info("[dynamodb]: Skipping local DynamoDB because TEST_DYNAMODB is not set to 'run'");
+    endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
+    logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
   }
   return { stop, endpoint };
 }
@@ -144,36 +144,95 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
     serverProcess.stdout.on("data", (data) => logger.info(sanitiseString(`[http-stdout]: ${data.toString().trim()}`)));
     serverProcess.stderr.on("data", (data) => logger.error(sanitiseString(`[http-stderr]: ${data.toString().trim()}`)));
 
-    await checkIfServerIsRunning(`http://127.0.0.1:${httpServerPort}`, 1000, undefined, "http");
+    // In TLS mode the server answers only on HTTPS, so the health check has to hit the
+    // same hostname the certificate is issued for rather than the plain HTTP loopback.
+    const healthCheckUrl =
+      process.env.TEST_SERVER_TLS === "run"
+        ? `https://local.submit.diyaccounting.co.uk:${process.env.TEST_SERVER_HTTPS_PORT}`
+        : `http://127.0.0.1:${httpServerPort}`;
+    await checkIfServerIsRunning(healthCheckUrl, 1000, undefined, "http");
   } else {
     logger.info("[http]: Skipping server process as runTestServer is not set to 'run'");
   }
   return serverProcess;
 }
 
-export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
-  logger.info(`[proxy]: runProxy=${runProxy}, httpServerPort=${httpServerPort}, baseUrl=${baseUrl}`);
-  if (runProxy === "run") {
-    logger.info("[proxy]: Starting ngrok tunnel using @ngrok/ngrok...");
-    // Extract domain from baseUrl if provided
-    const domain = extractDomainFromUrl(baseUrl);
-    const started = await startNgrok({
-      addr: httpServerPort,
-      domain: domain,
-      poolingEnabled: true,
-    });
-    logger.info(`[proxy]: Started at ${started.endpoint}`);
-    await checkIfServerIsRunning(started.endpoint, 1000, undefined, "proxy");
-    return {
-      kill: () => {
-        logger.info("[proxy]: kill() called on ngrok proxy, stopping...");
-        started.stop().catch((error) => logger.error("[proxy]: Error during kill:", error));
-      },
-    };
-  } else {
-    logger.info("[proxy]: Skipping ngrok tunnel as runProxy is not set to 'run'");
+/**
+ * Start `stripe listen`, replaying real Stripe webhook traffic to the local server over an
+ * outbound connection instead of an inbound tunnel. Skipped when the run has no Stripe price IDs
+ * configured — the same gate server.js uses to decide whether to register mockBilling.js — so the
+ * simulator's auto-completing checkout path never spawns the Stripe CLI.
+ *
+ * Must be started, and its signing secret read, before runLocalHttpServer spawns the server:
+ * resolveWebhookSecret() in billingWebhookPost.js caches the first STRIPE_TEST_WEBHOOK_SECRET it
+ * sees, so the secret has to exist in the child's env before the process starts.
+ *
+ * @param {string} webhookUrl - the local server's webhook endpoint, e.g.
+ *   https://local.submit.diyaccounting.co.uk:3443/api/v1/billing/webhook
+ * @returns {Promise<{secret: string, kill: Function}|null>}
+ */
+export async function runStripeListen(webhookUrl) {
+  const usesRealStripe = !!(process.env.STRIPE_PRICE_ID_RESIDENT_PRO || process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO);
+  if (!usesRealStripe) {
+    logger.info("[stripe-listen]: Skipping stripe listen — no Stripe price IDs configured (simulator/mock billing)");
     return null;
   }
+  // Deployed environments (ci/prod) receive webhooks at their public endpoint;
+  // forwarding is only needed when the server under test is local.
+  const localServer = process.env.TEST_SERVER_HTTP === "run" || process.env.TEST_SERVER_HTTP === "useExisting";
+  if (!localServer) {
+    logger.info("[stripe-listen]: Skipping stripe listen — server under test is not local");
+    return null;
+  }
+
+  logger.info(`[stripe-listen]: Starting stripe listen --forward-to ${webhookUrl}...`);
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
+    const child = spawn("stripe", ["listen", "--forward-to", webhookUrl], {
+      env: { ...process.env },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let resolved = false;
+    const secretPattern = /whsec_[A-Za-z0-9]+/;
+
+    const onOutput = (streamLabel) => (data) => {
+      const text = data.toString();
+      logger.info(sanitiseString(`[stripe-listen-${streamLabel}]: ${text.trim()}`));
+      if (resolved) return;
+      const match = text.match(secretPattern);
+      if (match) {
+        resolved = true;
+        clearTimeout(startupTimeout);
+        resolve({
+          secret: match[0],
+          kill: () => {
+            logger.info("[stripe-listen]: kill() called, stopping...");
+            child.kill();
+          },
+        });
+      }
+    };
+
+    child.stdout.on("data", onOutput("stdout"));
+    child.stderr.on("data", onOutput("stderr"));
+
+    child.on("error", (error) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(startupTimeout);
+        reject(error);
+      }
+    });
+
+    const startupTimeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        child.kill();
+        reject(new Error("[stripe-listen]: Timed out waiting for the webhook signing secret"));
+      }
+    }, 20_000);
+  });
 }
 
 export async function runLocalOAuth2Server(runMockOAuth2) {

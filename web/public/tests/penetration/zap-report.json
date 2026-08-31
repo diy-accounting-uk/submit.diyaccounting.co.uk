@@ -1,16 +1,40 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Sun, 15 Feb 2026 22:10:36",
-	"created": "2026-02-15T22:10:36.899307949Z",
+	"@generated": "Mon, 31 Aug 2026 19:03:09",
+	"created": "2026-08-31T19:03:09.304809580Z",
 	"insights":[
 		{
 			"level": "Low",
-			"reason": "Exceeded High",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.response.slow",
-			"description": "Percentage of slow responses",
-			"statistic": "91"
+			"reason": "Warning",
+			"site": "",
+			"key": "insight.log.warn",
+			"description": "ZAP warnings logged - see the zap.log file for details",
+			"statistic": "2"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://avatars.githubusercontent.com",
+			"key": "insight.endpoint.ctype.image/png",
+			"description": "Percentage of endpoints with content type image/png",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://avatars.githubusercontent.com",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://avatars.githubusercontent.com",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "1"
 		},
 		{
 			"level": "Info",
@@ -39,39 +63,23 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.code.2xx",
 			"description": "Percentage of responses with status code 2xx",
-			"statistic": "12"
+			"statistic": "97"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.code.3xx",
 			"description": "Percentage of responses with status code 3xx",
-			"statistic": "86"
+			"statistic": "2"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.code.4xx",
-			"description": "Percentage of responses with status code 4xx",
-			"statistic": "1"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.ctype.binary/octet-stream",
-			"description": "Percentage of endpoints with content type binary/octet-stream",
-			"statistic": "5"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.endpoint.ctype.image/jpeg",
 			"description": "Percentage of endpoints with content type image/jpeg",
 			"statistic": "3"
@@ -79,74 +87,106 @@
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.endpoint.ctype.image/png",
 			"description": "Percentage of endpoints with content type image/png",
-			"statistic": "15"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.ctype.image/svg+xml",
-			"description": "Percentage of endpoints with content type image/svg+xml",
 			"statistic": "1"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.ctype.text/css",
-			"description": "Percentage of endpoints with content type text/css",
-			"statistic": "1"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.endpoint.ctype.text/html",
 			"description": "Percentage of endpoints with content type text/html",
-			"statistic": "22"
+			"statistic": "99"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.endpoint.ctype.text/javascript",
 			"description": "Percentage of endpoints with content type text/javascript",
-			"statistic": "45"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.ctype.text/plain",
-			"description": "Percentage of endpoints with content type text/plain",
-			"statistic": "5"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.method.GET",
-			"description": "Percentage of endpoints with method GET",
-			"statistic": "98"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
-			"key": "insight.endpoint.method.POST",
-			"description": "Percentage of endpoints with method POST",
 			"statistic": "1"
 		},
 		{
 			"level": "Info",
 			"reason": "Informational",
-			"site": "https://submit.diyaccounting.co.uk",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "99"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://local.submit.diyaccounting.co.uk:3443",
 			"key": "insight.endpoint.total",
 			"description": "Count of total endpoints",
-			"statistic": "59"
+			"statistic": "32782"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://region1.google-analytics.com",
+			"key": "insight.endpoint.ctype.text/plain",
+			"description": "Percentage of endpoints with content type text/plain",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://region1.google-analytics.com",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "100"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://region1.google-analytics.com",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "11"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.googletagmanager.com",
+			"key": "insight.endpoint.ctype.application/javascript",
+			"description": "Percentage of endpoints with content type application/javascript",
+			"statistic": "20"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.googletagmanager.com",
+			"key": "insight.endpoint.ctype.text/plain",
+			"description": "Percentage of endpoints with content type text/plain",
+			"statistic": "80"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.googletagmanager.com",
+			"key": "insight.endpoint.method.GET",
+			"description": "Percentage of endpoints with method GET",
+			"statistic": "80"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.googletagmanager.com",
+			"key": "insight.endpoint.method.POST",
+			"description": "Percentage of endpoints with method POST",
+			"statistic": "20"
+		},
+		{
+			"level": "Info",
+			"reason": "Informational",
+			"site": "https://www.googletagmanager.com",
+			"key": "insight.endpoint.total",
+			"description": "Count of total endpoints",
+			"statistic": "5"
 		}
 	],
 	"site":[ 
@@ -159,9 +199,33 @@
 			]
 		},
 		{
-			"@name": "https://submit.diyaccounting.co.uk",
-			"@host": "submit.diyaccounting.co.uk",
+			"@name": "https://avatars.githubusercontent.com",
+			"@host": "avatars.githubusercontent.com",
 			"@port": "443",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
+		{
+			"@name": "https://region1.google-analytics.com",
+			"@host": "region1.google-analytics.com",
+			"@port": "443",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
+		{
+			"@name": "https://www.googletagmanager.com",
+			"@host": "www.googletagmanager.com",
+			"@port": "443",
+			"@ssl": "true",
+			"alerts": [ 
+			]
+		},
+		{
+			"@name": "https://local.submit.diyaccounting.co.uk:3443",
+			"@host": "local.submit.diyaccounting.co.uk",
+			"@port": "3443",
 			"@ssl": "true",
 			"alerts": [ 
 				{
@@ -175,64 +239,64 @@
 					"desc": "<p>Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks. Including (but not limited to) Cross Site Scripting (XSS), and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page \u2014 covered types are JavaScript, CSS, HTML frames, fonts, images and embeddable objects such as Java applets, ActiveX, audio and video files.</p>",
 					"instances":[ 
 						{
-							"id": "0",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"id": "2",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "21",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "14",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "8",
-							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
+							"id": "26",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/about.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/about.html",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "11",
-							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
+							"id": "34",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/guide.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/guide.html",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "script-src includes unsafe-inline."
 						},
 						{
-							"id": "33",
-							"uri": "https://submit.diyaccounting.co.uk/api/session/beacon",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/api\/session\/beacon ()({page})",
-							"method": "POST",
+							"id": "29",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/index.html",
+							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "script-src includes unsafe-inline."
 						}
 					],
 					"count": "5",
-					"systemic": true,
+					"systemic": false,
 					"solution": "<p>Ensure that your web server, application server, load balancer, etc. is properly configured to set the Content-Security-Policy header.</p>",
 					"otherinfo": "<p>script-src includes unsafe-inline.</p>",
 					"reference": "<p>https://www.w3.org/TR/CSP/</p><p>https://caniuse.com/#search=content+security+policy</p><p>https://content-security-policy.com/</p><p>https://github.com/HtmlUnit/htmlunit-csp</p><p>https://web.dev/articles/csp#resource-options</p>",
 					"cweid": "693",
 					"wascid": "15",
-					"sourceid": "6"
+					"sourceid": "1"
 				},
 				{
 					"pluginid": "10055",
@@ -245,134 +309,304 @@
 					"desc": "<p>Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks. Including (but not limited to) Cross Site Scripting (XSS), and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page \u2014 covered types are JavaScript, CSS, HTML frames, fonts, images and embeddable objects such as Java applets, ActiveX, audio and video files.</p>",
 					"instances":[ 
 						{
-							"id": "1",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"id": "3",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "22",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "15",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "9",
-							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
+							"id": "27",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/about.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/about.html",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "12",
-							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
+							"id": "35",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/guide.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/guide.html",
 							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "style-src includes unsafe-inline."
 						},
 						{
-							"id": "34",
-							"uri": "https://submit.diyaccounting.co.uk/api/session/beacon",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/api\/session\/beacon ()({page})",
-							"method": "POST",
+							"id": "30",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/index.html",
+							"method": "GET",
 							"param": "Content-Security-Policy",
 							"attack": "",
-							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; frame-src 'self' https://prod-simulator.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self';",
+							"evidence": "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
 							"otherinfo": "style-src includes unsafe-inline."
 						}
 					],
 					"count": "5",
-					"systemic": true,
+					"systemic": false,
 					"solution": "<p>Ensure that your web server, application server, load balancer, etc. is properly configured to set the Content-Security-Policy header.</p>",
 					"otherinfo": "<p>style-src includes unsafe-inline.</p>",
 					"reference": "<p>https://www.w3.org/TR/CSP/</p><p>https://caniuse.com/#search=content+security+policy</p><p>https://content-security-policy.com/</p><p>https://github.com/HtmlUnit/htmlunit-csp</p><p>https://web.dev/articles/csp#resource-options</p>",
 					"cweid": "693",
 					"wascid": "15",
-					"sourceid": "6"
+					"sourceid": "1"
 				},
 				{
-					"pluginid": "90004",
-					"alertRef": "90004-2",
-					"alert": "Insufficient Site Isolation Against Spectre Vulnerability",
-					"name": "Insufficient Site Isolation Against Spectre Vulnerability",
-					"riskcode": "1",
+					"pluginid": "10098",
+					"alertRef": "10098",
+					"alert": "Cross-Domain Misconfiguration",
+					"name": "Cross-Domain Misconfiguration",
+					"riskcode": "2",
 					"confidence": "2",
-					"riskdesc": "Low (Medium)",
-					"desc": "<p>Cross-Origin-Embedder-Policy header is a response header that prevents a document from loading any cross-origin resources that don't explicitly grant the document permission (using CORP or CORS).</p>",
+					"riskdesc": "Medium (Medium)",
+					"desc": "<p>Web browser data loading may be possible, due to a Cross Origin Resource Sharing (CORS) misconfiguration on the web server.</p>",
 					"instances":[ 
 						{
-							"id": "15",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"id": "116",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/api/v1/bundle",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/api\/v1\/bundle",
 							"method": "GET",
-							"param": "Cross-Origin-Embedder-Policy",
+							"param": "",
 							"attack": "",
-							"evidence": "unsafe-none",
+							"evidence": "Access-Control-Allow-Origin: *",
+							"otherinfo": "The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing."
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Ensure that sensitive data is not available in an unauthenticated manner (using IP address white-listing, for instance).</p><p>Configure the \"Access-Control-Allow-Origin\" HTTP header to a more restrictive set of domains, or remove all CORS headers entirely, to allow the web browser to enforce the Same Origin Policy (SOP) in a more restrictive manner.</p>",
+					"otherinfo": "<p>The CORS misconfiguration on the web server permits cross-domain read requests from arbitrary third party domains, using unauthenticated APIs on this domain. Web browser implementations do not permit arbitrary third parties to read the response from authenticated APIs, however. This reduces the risk somewhat. This misconfiguration could be used by an attacker to access data that is available in an unauthenticated manner, but which uses some other form of security, such as IP address white-listing.</p>",
+					"reference": "<p>https://vulncat.fortify.com/en/detail?category=HTML5&subcategory=Overly%20Permissive%20CORS%20Policy</p>",
+					"cweid": "264",
+					"wascid": "14",
+					"sourceid": "77692"
+				},
+				{
+					"pluginid": "120002",
+					"alertRef": "120002-1",
+					"alert": "Information Disclosure - JWT in Browser localStorage",
+					"name": "Information Disclosure - JWT in Browser localStorage",
+					"riskcode": "2",
+					"confidence": "3",
+					"riskdesc": "Medium (High)",
+					"desc": "<p>JWT was stored in browser localStorage.</p><p>This is dangerous because data stored in localStorage does not expire. .</p>",
+					"instances":[ 
+						{
+							"id": "87",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.cognitoAccessToken",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following JWT was set:\nKey: simulator.cognitoAccessToken\nHeader: {\"alg\":\"none\",\"typ\":\"JWT\"}\nPayload: {\"sub\":\"demo-user-12345\",\"token_use\":\"access\"}\nSignature: \nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "91",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.cognitoIdToken",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following JWT was set:\nKey: simulator.cognitoIdToken\nHeader: {\"alg\":\"none\",\"typ\":\"JWT\"}\nPayload: {\"sub\":\"demo-user-12345\",\"email\":\"demo@simulator.diyaccounting.co.uk\",\"name\":\"Demo User\",\"given_name\":\"Demo\"}\nSignature: \nNote that this alert will only be raised once for each URL + key."
+						}
+					],
+					"count": "2",
+					"systemic": false,
+					"solution": "<p>This is an informational alert and no action is necessary. </p>",
+					"otherinfo": "<p>The following JWT was set:</p><p>Key: simulator.cognitoAccessToken</p><p>Header: {\"alg\":\"none\",\"typ\":\"JWT\"}</p><p>Payload: {\"sub\":\"demo-user-12345\",\"token_use\":\"access\"}</p><p>Signature: </p><p>Note that this alert will only be raised once for each URL + key.</p>",
+					"reference": "<p>https://www.zaproxy.org/blog/2020-09-03-zap-jwt-scanner/</p>",
+					"cweid": "922",
+					"wascid": "13",
+					"sourceid": "77658"
+				},
+				{
+					"pluginid": "90003",
+					"alertRef": "90003",
+					"alert": "Sub Resource Integrity Attribute Missing",
+					"name": "Sub Resource Integrity Attribute Missing",
+					"riskcode": "2",
+					"confidence": "3",
+					"riskdesc": "Medium (High)",
+					"desc": "<p>The integrity attribute is missing on a script or link tag served by an external server. The integrity tag prevents an attacker who have gained access to this server from injecting a malicious content.</p>",
+					"instances":[ 
+						{
+							"id": "68",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/",
+							"method": "GET",
+							"param": "",
+							"attack": "",
+							"evidence": "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css\" />",
 							"otherinfo": ""
 						},
 						{
-							"id": "28",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "69",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/",
 							"method": "GET",
-							"param": "Cross-Origin-Embedder-Policy",
+							"param": "",
 							"attack": "",
-							"evidence": "unsafe-none",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js\"></script>",
 							"otherinfo": ""
 						},
 						{
-							"id": "71",
-							"uri": "https://submit.diyaccounting.co.uk/about.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
+							"id": "63",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/index.html",
 							"method": "GET",
-							"param": "Cross-Origin-Embedder-Policy",
+							"param": "",
 							"attack": "",
-							"evidence": "unsafe-none",
+							"evidence": "<link rel=\"stylesheet\" type=\"text/css\" href=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css\" />",
 							"otherinfo": ""
 						},
 						{
-							"id": "82",
-							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
+							"id": "64",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/index.html",
 							"method": "GET",
-							"param": "Cross-Origin-Embedder-Policy",
+							"param": "",
 							"attack": "",
-							"evidence": "unsafe-none",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js\"></script>",
 							"otherinfo": ""
 						},
 						{
-							"id": "54",
-							"uri": "https://submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"id": "65",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/index.html",
 							"method": "GET",
-							"param": "Cross-Origin-Embedder-Policy",
+							"param": "",
 							"attack": "",
-							"evidence": "unsafe-none",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js\"></script>",
 							"otherinfo": ""
 						}
 					],
 					"count": "5",
 					"systemic": true,
-					"solution": "<p>Ensure that the application/web server sets the Cross-Origin-Embedder-Policy header appropriately, and that it sets the Cross-Origin-Embedder-Policy header to 'require-corp' for documents.</p><p>If possible, ensure that the end user uses a standards-compliant and modern web browser that supports the Cross-Origin-Embedder-Policy header (https://caniuse.com/mdn-http_headers_cross-origin-embedder-policy).</p>",
+					"solution": "<p>Provide a valid integrity attribute to the tag.</p>",
 					"otherinfo": "",
-					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cross-Origin-Embedder-Policy</p>",
-					"cweid": "693",
-					"wascid": "14",
-					"sourceid": "1"
+					"reference": "<p>https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Subresource_Integrity</p>",
+					"cweid": "345",
+					"wascid": "15",
+					"sourceid": "316"
+				},
+				{
+					"pluginid": "10017",
+					"alertRef": "10017",
+					"alert": "Cross-Domain JavaScript Source File Inclusion",
+					"name": "Cross-Domain JavaScript Source File Inclusion",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>The page includes one or more script files from a third-party domain.</p>",
+					"instances":[ 
+						{
+							"id": "66",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/",
+							"method": "GET",
+							"param": "https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js",
+							"attack": "",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js\"></script>",
+							"otherinfo": ""
+						},
+						{
+							"id": "67",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/",
+							"method": "GET",
+							"param": "https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js",
+							"attack": "",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js\"></script>",
+							"otherinfo": ""
+						},
+						{
+							"id": "61",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/index.html",
+							"method": "GET",
+							"param": "https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js",
+							"attack": "",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js\"></script>",
+							"otherinfo": ""
+						},
+						{
+							"id": "62",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/docs\/api\/index.html",
+							"method": "GET",
+							"param": "https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js",
+							"attack": "",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js\"></script>",
+							"otherinfo": ""
+						},
+						{
+							"id": "71",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/sim/docs/api/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/sim\/docs\/api\/index.html",
+							"method": "GET",
+							"param": "https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js",
+							"attack": "",
+							"evidence": "<script src=\"https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js\"></script>",
+							"otherinfo": ""
+						}
+					],
+					"count": "5",
+					"systemic": true,
+					"solution": "<p>Ensure JavaScript source files are loaded from only trusted sources, and the sources can't be controlled by end users of the application.</p>",
+					"otherinfo": "",
+					"reference": "",
+					"cweid": "829",
+					"wascid": "15",
+					"sourceid": "316"
+				},
+				{
+					"pluginid": "120001",
+					"alertRef": "120001-1",
+					"alert": "Information Disclosure - Sensitive Information in Browser localStorage",
+					"name": "Information Disclosure - Sensitive Information in Browser localStorage",
+					"riskcode": "1",
+					"confidence": "2",
+					"riskdesc": "Low (Medium)",
+					"desc": "<p>Sensitive Information appears to have been stored in browser localStorage. This can violate PCI and most organizational compliance policies.</p><p>For more details see the Client tabs - this information was set directly in the browser and will therefore not necessarily appear in this form in any HTTP(S) messages.</p>",
+					"instances":[ 
+						{
+							"id": "85",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.userInfo",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set which matches the pattern for email addresses: simulator.userInfo={\"sub\":\"demo-user-12345\",\"email\":\"demo@simulator.diyaccounting.co.uk\",\"name\":\"Demo User\",\"given_name\":\"Demo\"}\nNote that alerts will only be raised once for each URL + key."
+						}
+					],
+					"count": "1",
+					"systemic": false,
+					"solution": "<p>Do not store sensitive information in browser storage. </p>",
+					"otherinfo": "<p>The following data (key=value) was set which matches the pattern for email addresses: simulator.userInfo={\"sub\":\"demo-user-12345\",\"email\":\"demo@simulator.diyaccounting.co.uk\",\"name\":\"Demo User\",\"given_name\":\"Demo\"}</p><p>Note that alerts will only be raised once for each URL + key.</p>",
+					"reference": "",
+					"cweid": "359",
+					"wascid": "13",
+					"sourceid": "77658"
 				},
 				{
 					"pluginid": "10096",
@@ -385,9 +619,9 @@
 					"desc": "<p>A timestamp was disclosed by the application/web server. - Unix</p>",
 					"instances":[ 
 						{
-							"id": "44",
-							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
+							"id": "105",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/submit.catalogue.toml",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/submit.catalogue.toml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -395,9 +629,9 @@
 							"otherinfo": "1742169599, which evaluates to: 2025-03-16 23:59:59."
 						},
 						{
-							"id": "43",
-							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
+							"id": "104",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/submit.catalogue.toml",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/submit.catalogue.toml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -406,13 +640,253 @@
 						}
 					],
 					"count": "2",
-					"systemic": true,
+					"systemic": false,
 					"solution": "<p>Manually confirm that the timestamp data is not sensitive, and that the data cannot be aggregated to disclose exploitable patterns.</p>",
 					"otherinfo": "<p>1742169599, which evaluates to: 2025-03-16 23:59:59.</p>",
 					"reference": "<p>https://cwe.mitre.org/data/definitions/200.html</p>",
 					"cweid": "497",
 					"wascid": "13",
-					"sourceid": "45"
+					"sourceid": "76890"
+				},
+				{
+					"pluginid": "120000",
+					"alertRef": "120000-1",
+					"alert": "Information Disclosure - Information in Browser localStorage",
+					"name": "Information Disclosure - Information in Browser localStorage",
+					"riskcode": "0",
+					"confidence": "3",
+					"riskdesc": "Informational (High)",
+					"desc": "<p>Information was stored in browser localStorage.</p><p>This is not unusual or necessarily unsafe - this informational alert has been raised to help you get a better understanding of what this app is doing. For more details see the Client tabs - this information was set directly in the browser and will therefore not necessarily appear in this form in any HTTP(S) messages.</p>",
+					"instances":[ 
+						{
+							"id": "83",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
+							"method": "GET",
+							"param": "consent.analytics",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: consent.analytics=granted\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "82",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
+							"method": "GET",
+							"param": "consent.rum",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: consent.rum=granted\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "79",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
+							"method": "GET",
+							"param": "rum.config",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: rum.config={\"appMonitorId\":\"${RUM_APP_MONITOR_ID}\",\"region\":\"${AWS_REGION}\",\"identityPoolId\":\"${RUM_IDENTITY_POOL_ID}\",\"guestRoleArn\":\"${RUM_GUEST_ROLE_ARN}\",\"sessionSampleRate\":1}\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "86",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.cognitoAccessToken",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.cognitoAccessToken=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJkZW1vLXVzZXItMTIzNDUiLCJ0b2tlbl91c2UiOiJhY2Nlc3MifQ.\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "90",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.cognitoIdToken",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.cognitoIdToken=eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJkZW1vLXVzZXItMTIzNDUiLCJlbWFpbCI6ImRlbW9Ac2ltdWxhdG9yLmRpeWFjY291bnRpbmcuY28udWsiLCJuYW1lIjoiRGVtbyBVc2VyIiwiZ2l2ZW5fbmFtZSI6IkRlbW8ifQ.\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "84",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.userInfo",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.userInfo={\"sub\":\"demo-user-12345\",\"email\":\"demo@simulator.diyaccounting.co.uk\",\"name\":\"Demo User\",\"given_name\":\"Demo\"}\nNote that this alert will only be raised once for each URL + key."
+						}
+					],
+					"count": "6",
+					"systemic": false,
+					"solution": "<p>This is an informational alert and no action is necessary. </p>",
+					"otherinfo": "<p>The following data (key=value) was set: consent.analytics=granted</p><p>Note that this alert will only be raised once for each URL + key.</p>",
+					"reference": "",
+					"cweid": "359",
+					"wascid": "13",
+					"sourceid": "76863"
+				},
+				{
+					"pluginid": "120000",
+					"alertRef": "120000-2",
+					"alert": "Information Disclosure - Information in Browser sessionStorage",
+					"name": "Information Disclosure - Information in Browser sessionStorage",
+					"riskcode": "0",
+					"confidence": "3",
+					"riskdesc": "Informational (High)",
+					"desc": "<p>Information was stored in browser sessionStorage.</p><p>This is not unusual or necessarily unsafe - this informational alert has been raised to help you get a better understanding of what this app is doing. For more details see the Client tabs - this information was set directly in the browser and will therefore not necessarily appear in this form in any HTTP(S) messages.</p>",
+					"instances":[ 
+						{
+							"id": "80",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
+							"method": "GET",
+							"param": "__diy_session__",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: __diy_session__=1\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "81",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
+							"method": "GET",
+							"param": "traceparent",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: traceparent=00-b644261e30aab4ccc4b5781efd0ddc86-2c0b9d2fd93cd439-01\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "103",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/auth/login.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/auth\/login.html",
+							"method": "GET",
+							"param": "cognito_oauth_nonce",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: cognito_oauth_nonce=f17820accd5b4540b6b726f94e0771da\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "100",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/auth/login.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/auth\/login.html",
+							"method": "GET",
+							"param": "cognito_oauth_state",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: cognito_oauth_state=c2d1acf6c874f80f8a2bd774c0ba12a3\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "97",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/auth/login.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/auth\/login.html",
+							"method": "GET",
+							"param": "lastXRequestId",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: lastXRequestId=a8fb58a0-7d70-4dab-a642-5ccbdcd693bb\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "98",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/auth/login.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/auth\/login.html",
+							"method": "GET",
+							"param": "lastXRequestIdSeenAt",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: lastXRequestIdSeenAt=2026-08-31T18:43:40.815Z\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "99",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/auth/login.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/auth\/login.html",
+							"method": "GET",
+							"param": "redirectXRequestId",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: redirectXRequestId=33245a95-c43d-4136-9da3-2654e39f0f6b\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "88",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.__diy_session__",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.__diy_session__=1\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "89",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.hmrcAccessToken",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.hmrcAccessToken=simulator-hmrc-token\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "92",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.hmrcAccount",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.hmrcAccount=sandbox\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "93",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.hmrcTokenScope",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.hmrcTokenScope=write:vat read:vat\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "95",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.lastXRequestId",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.lastXRequestId=3bdff346-5146-463c-8cb5-704bf5347ac4\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "94",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.lastXRequestIdSeenAt",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.lastXRequestIdSeenAt=2026-08-31T18:43:15.950Z\nNote that this alert will only be raised once for each URL + key."
+						},
+						{
+							"id": "96",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
+							"method": "GET",
+							"param": "simulator.traceparent",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "The following data (key=value) was set: simulator.traceparent=00-3b447f4994fcf7de0f368503033da6db-f81ac0c859036b10-01\nNote that this alert will only be raised once for each URL + key."
+						}
+					],
+					"count": "14",
+					"systemic": false,
+					"solution": "<p>This is an informational alert and no action is necessary. </p>",
+					"otherinfo": "<p>The following data (key=value) was set: __diy_session__=1</p><p>Note that this alert will only be raised once for each URL + key.</p>",
+					"reference": "",
+					"cweid": "359",
+					"wascid": "13",
+					"sourceid": "76863"
 				},
 				{
 					"pluginid": "10027",
@@ -420,135 +894,125 @@
 					"alert": "Information Disclosure - Suspicious Comments",
 					"name": "Information Disclosure - Suspicious Comments",
 					"riskcode": "0",
-					"confidence": "1",
-					"riskdesc": "Informational (Low)",
+					"confidence": "2",
+					"riskdesc": "Informational (Medium)",
 					"desc": "<p>The response appears to contain suspicious comments which may help an attacker.</p>",
 					"instances":[ 
 						{
 							"id": "5",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "user",
-							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
+							"evidence": " bundle expiry date from bundle string or ob",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Parse bundle expiry date from bundle string or object\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "23",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "4",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "user",
-							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
+							"evidence": "// In-memory user bundles state (list",
+							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected 10 times, the first in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "29",
-							"uri": "https://submit.diyaccounting.co.uk/developer-mode.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/developer-mode.js",
+							"id": "21",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "user",
-							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// The toggle icon only appears if the user has a sandbox bundle (qualifiers.sandbox === true).\", see evidence field for the suspicious comment/snippet."
+							"evidence": " bundle expiry date from bundle string or ob",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Parse bundle expiry date from bundle string or object\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "31",
-							"uri": "https://submit.diyaccounting.co.uk/lib/feature-flags.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/feature-flags.js",
+							"id": "20",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "user",
-							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// Future: extend with rolloutPercent, user-segment targeting, and variant\", see evidence field for the suspicious comment/snippet."
+							"evidence": "// In-memory user bundles state (list",
+							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected 10 times, the first in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "35",
-							"uri": "https://submit.diyaccounting.co.uk/lib/request-cache.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/request-cache.js",
+							"id": "57",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/bundles.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/bundles.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// Serve from in-flight promise if present and either TTL is 0 (dedupe only) or still fresh\", see evidence field for the suspicious comment/snippet."
+							"evidence": "// Check if user already has this bu",
+							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected 2 times, the first in likely comment: \"// Check if user already has this bundle with an active subscription\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "40",
-							"uri": "https://submit.diyaccounting.co.uk/lib/utils/crypto-utils.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/crypto-utils.js",
+							"id": "58",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/bundles.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/bundles.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "where",
-							"otherinfo": "The following pattern was used: \\bWHERE\\b and was detected in likely comment: \"// Prefer cryptographically secure random values where available\", see evidence field for the suspicious comment/snippet."
+							"evidence": "Full bundle objects from API (with token inf",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 11 times, the first in likely comment: \"// Full bundle objects from API (with token info, allocated flag, etc.)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "39",
-							"uri": "https://submit.diyaccounting.co.uk/lib/utils/jwt-utils.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/jwt-utils.js",
+							"id": "60",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/hmrc/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/hmrc\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Parse JWT claims from a token\n * @param {string} jwt - JWT token string\n * @returns {object|null} Parsed claims or null i\", see evidence field for the suspicious comment/snippet."
+							"evidence": " bundle expiry date from bundle string or ob",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Parse bundle expiry date from bundle string or object\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "41",
-							"uri": "https://submit.diyaccounting.co.uk/lib/utils/storage-utils.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/utils\/storage-utils.js",
+							"id": "59",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/hmrc/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/hmrc\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"/**\n * Safely get item from localStorage\n * @param {string} key - Storage key\n * @returns {string|null} Stored value or null\n */\", see evidence field for the suspicious comment/snippet."
+							"evidence": "// In-memory user bundles state (list",
+							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected 10 times, the first in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "25",
-							"uri": "https://submit.diyaccounting.co.uk/submit.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.js",
+							"id": "45",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/index.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "Debug",
-							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Debug widgets initial setup\", see evidence field for the suspicious comment/snippet."
+							"evidence": " bundle expiry date from bundle string or ob",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Parse bundle expiry date from bundle string or object\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "37",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
+							"id": "44",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/index.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/index.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "from",
-							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected in likely comment: \"// the href from \"#\" to \"../auth/login.html\" and the browser's default <a> click\", see evidence field for the suspicious comment/snippet."
+							"evidence": "// In-memory user bundles state (list",
+							"otherinfo": "The following pattern was used: \\bUSER\\b and was detected 10 times, the first in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet."
 						},
 						{
-							"id": "36",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
+							"id": "55",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/simulator.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/simulator.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "query",
-							"otherinfo": "The following pattern was used: \\bQUERY\\b and was detected in likely comment: \"// Normalize path - remove leading slash and query parameters\", see evidence field for the suspicious comment/snippet."
-						},
-						{
-							"id": "38",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "debug",
-							"otherinfo": "The following pattern was used: \\bDEBUG\\b and was detected in likely comment: \"// Respect debug gating: only show when debug widgets are enabled\", see evidence field for the suspicious comment/snippet."
+							"evidence": "mpute simulator URL from current hostname us",
+							"otherinfo": "The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Compute simulator URL from current hostname using {env}-simulator.diyaccounting.co.uk pattern\", see evidence field for the suspicious comment/snippet."
 						}
 					],
-					"count": "12",
+					"count": "11",
 					"systemic": false,
 					"solution": "<p>Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.</p>",
-					"otherinfo": "<p>The following pattern was used: \\bUSER\\b and was detected in likely comment: \"// In-memory user bundles state (list of bundleId strings)\", see evidence field for the suspicious comment/snippet.</p>",
+					"otherinfo": "<p>The following pattern was used: \\bFROM\\b and was detected 2 times, the first in likely comment: \"// Parse bundle expiry date from bundle string or object\", see evidence field for the suspicious comment/snippet.</p>",
 					"reference": "",
 					"cweid": "615",
 					"wascid": "13",
@@ -562,12 +1026,12 @@
 					"riskcode": "0",
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
-					"desc": "<p>The application appears to be a modern web application. If you need to explore it automatically then the Ajax Spider may well be more effective than the standard one.</p>",
+					"desc": "<p>The application appears to be a modern web application. If you need to explore it automatically then the Client Spider may well be more effective than the standard one.</p>",
 					"instances":[ 
 						{
 							"id": "6",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -575,9 +1039,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "24",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "22",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -585,9 +1049,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "70",
-							"uri": "https://submit.diyaccounting.co.uk/about.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/about.html",
+							"id": "31",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/about.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/about.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -595,9 +1059,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "81",
-							"uri": "https://submit.diyaccounting.co.uk/auth/login.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/auth\/login.html",
+							"id": "36",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/guide.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/guide.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -605,9 +1069,9 @@
 							"otherinfo": "Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application."
 						},
 						{
-							"id": "53",
-							"uri": "https://submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"id": "39",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/help.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/help.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
@@ -625,56 +1089,6 @@
 					"sourceid": "1"
 				},
 				{
-					"pluginid": "10049",
-					"alertRef": "10049-1",
-					"alert": "Non-Storable Content",
-					"name": "Non-Storable Content",
-					"riskcode": "0",
-					"confidence": "2",
-					"riskdesc": "Informational (Medium)",
-					"desc": "<p>The response contents are not storable by caching components such as proxy servers. If the response does not contain sensitive, personal or user-specific information, it may benefit from being stored and cached, to improve performance.</p>",
-					"instances":[ 
-						{
-							"id": "7",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "403",
-							"otherinfo": ""
-						},
-						{
-							"id": "10",
-							"uri": "https://submit.diyaccounting.co.uk/robots.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/robots.txt",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "403",
-							"otherinfo": ""
-						},
-						{
-							"id": "13",
-							"uri": "https://submit.diyaccounting.co.uk/sitemap.xml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/sitemap.xml",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "403",
-							"otherinfo": ""
-						}
-					],
-					"count": "3",
-					"systemic": true,
-					"solution": "<p>The content may be marked as storable by ensuring that the following conditions are satisfied:</p><p>The request method must be understood by the cache and defined as being cacheable (\"GET\", \"HEAD\", and \"POST\" are currently defined as cacheable)</p><p>The response status code must be understood by the cache (one of the 1XX, 2XX, 3XX, 4XX, or 5XX response classes are generally understood)</p><p>The \"no-store\" cache directive must not appear in the request or response header fields</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"private\" response directive must not appear in the response</p><p>For caching by \"shared\" caches such as \"proxy\" caches, the \"Authorization\" header field must not appear in the request, unless the response explicitly allows it (using one of the \"must-revalidate\", \"public\", or \"s-maxage\" Cache-Control response directives)</p><p>In addition to the conditions above, at least one of the following conditions must also be satisfied by the response:</p><p>It must contain an \"Expires\" header field</p><p>It must contain a \"max-age\" response directive</p><p>For \"shared\" caches such as \"proxy\" caches, it must contain a \"s-maxage\" response directive</p><p>It must contain a \"Cache Control Extension\" that allows it to be cached</p><p>It must have a status code that is defined as cacheable by default (200, 203, 204, 206, 300, 301, 404, 405, 410, 414, 501).</p>",
-					"otherinfo": "",
-					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
-					"cweid": "524",
-					"wascid": "13",
-					"sourceid": "6"
-				},
-				{
 					"pluginid": "10015",
 					"alertRef": "10015",
 					"alert": "Re-examine Cache-control Directives",
@@ -685,53 +1099,53 @@
 					"desc": "<p>The cache-control header has not been set properly or is missing, allowing the browser and proxies to cache content. For static assets like css, js, or image files this might be intended, however, the resources should be reviewed to ensure that no sensitive content will be cached.</p>",
 					"instances":[ 
 						{
-							"id": "2",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"id": "1",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
-							"evidence": "",
+							"evidence": "public, max-age=0",
 							"otherinfo": ""
 						},
 						{
-							"id": "19",
-							"uri": "https://submit.diyaccounting.co.uk/",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/",
+							"id": "11",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
-							"evidence": "",
+							"evidence": "public, max-age=0",
 							"otherinfo": ""
 						},
 						{
-							"id": "52",
-							"uri": "https://submit.diyaccounting.co.uk/index.html",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/index.html",
+							"id": "25",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/about.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/about.html",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
-							"evidence": "",
+							"evidence": "public, max-age=0",
 							"otherinfo": ""
 						},
 						{
-							"id": "42",
-							"uri": "https://submit.diyaccounting.co.uk/submit.deployment-name.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.deployment-name.txt",
+							"id": "0",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/robots.txt",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/robots.txt",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
-							"evidence": "",
+							"evidence": "public, max-age=0",
 							"otherinfo": ""
 						},
 						{
-							"id": "48",
-							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
+							"id": "8",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/sitemap.xml",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/sitemap.xml",
 							"method": "GET",
 							"param": "cache-control",
 							"attack": "",
-							"evidence": "",
+							"evidence": "public, max-age=0",
 							"otherinfo": ""
 						}
 					],
@@ -745,144 +1159,124 @@
 					"sourceid": "1"
 				},
 				{
-					"pluginid": "10050",
-					"alertRef": "10050-1",
-					"alert": "Retrieved from Cache",
-					"name": "Retrieved from Cache",
-					"riskcode": "0",
-					"confidence": "2",
-					"riskdesc": "Informational (Medium)",
-					"desc": "<p>The content was retrieved from a shared cache. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
-					"instances":[ 
-						{
-							"id": "45",
-							"uri": "https://submit.diyaccounting.co.uk/submit.catalogue.toml",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.catalogue.toml",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "68",
-							"uri": "https://submit.diyaccounting.co.uk/submit.version.txt",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.version.txt",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "73",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/auth-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/auth-status.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "72",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/entitlement-status.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/entitlement-status.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						},
-						{
-							"id": "74",
-							"uri": "https://submit.diyaccounting.co.uk/widgets/view-source-link.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/widgets\/view-source-link.js",
-							"method": "GET",
-							"param": "",
-							"attack": "",
-							"evidence": "Hit from cloudfront",
-							"otherinfo": ""
-						}
-					],
-					"count": "5",
-					"systemic": true,
-					"solution": "<p>Validate that the response does not contain sensitive, personal or user-specific information. If it does, consider the use of the following HTTP response headers, to limit, or prevent the content being stored and retrieved from the cache by another user:</p><p>Cache-Control: no-cache, no-store, must-revalidate, private</p><p>Pragma: no-cache</p><p>Expires: 0</p><p>This configuration directs both HTTP 1.0 and HTTP 1.1 compliant caching servers to not store the response, and to not retrieve the response (without validation) from the cache, in response to a similar request.</p>",
-					"otherinfo": "",
-					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.rfc-editor.org/rfc/rfc9110.html</p>",
-					"cweid": "525",
-					"wascid": "-1",
-					"sourceid": "46"
-				},
-				{
 					"pluginid": "10049",
-					"alertRef": "10049-3",
-					"alert": "Storable and Cacheable Content",
-					"name": "Storable and Cacheable Content",
+					"alertRef": "10049-2",
+					"alert": "Storable but Non-Cacheable Content",
+					"name": "Storable but Non-Cacheable Content",
 					"riskcode": "0",
 					"confidence": "2",
 					"riskdesc": "Informational (Medium)",
-					"desc": "<p>The response contents are storable by caching components such as proxy servers, and may be retrieved directly from the cache, rather than from the origin server by the caching servers, in response to similar requests from other users. If the response data is sensitive, personal or user-specific, this may result in sensitive information being leaked. In some cases, this may even result in a user gaining complete control of the session of another user, depending on the configuration of the caching components in use in their environment. This is primarily an issue where \"shared\" caching servers such as \"proxy\" caches are configured on the local network. This configuration is typically found in corporate or educational environments, for instance.</p>",
+					"desc": "<p>The response contents are storable by caching components such as proxy servers, but will not be retrieved directly from the cache, without validating the request upstream, in response to similar requests from other users.</p>",
 					"instances":[ 
 						{
-							"id": "14",
-							"uri": "https://submit.diyaccounting.co.uk",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk",
+							"id": "7",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+							"evidence": "max-age=0",
+							"otherinfo": ""
 						},
 						{
-							"id": "16",
-							"uri": "https://submit.diyaccounting.co.uk/lib/analytics.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/analytics.js",
+							"id": "24",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+							"evidence": "max-age=0",
+							"otherinfo": ""
 						},
 						{
-							"id": "20",
-							"uri": "https://submit.diyaccounting.co.uk/lib/env-loader.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/env-loader.js",
+							"id": "32",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/about.html",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/about.html",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+							"evidence": "max-age=0",
+							"otherinfo": ""
 						},
 						{
-							"id": "17",
-							"uri": "https://submit.diyaccounting.co.uk/lib/session-beacon.js",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/lib\/session-beacon.js",
+							"id": "9",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/robots.txt",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/robots.txt",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+							"evidence": "max-age=0",
+							"otherinfo": ""
 						},
 						{
-							"id": "18",
-							"uri": "https://submit.diyaccounting.co.uk/submit.css",
-							"nodeName": "https:\/\/submit.diyaccounting.co.uk\/submit.css",
+							"id": "10",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/sitemap.xml",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/sitemap.xml",
 							"method": "GET",
 							"param": "",
 							"attack": "",
-							"evidence": "",
-							"otherinfo": "The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives."
+							"evidence": "max-age=0",
+							"otherinfo": ""
 						}
 					],
 					"count": "5",
 					"systemic": true,
-					"solution": "<p>Validate that the response does not contain sensitive, personal or user-specific information. If it does, consider the use of the following HTTP response headers, to limit, or prevent the content being stored and retrieved from the cache by another user:</p><p>Cache-Control: no-cache, no-store, must-revalidate, private</p><p>Pragma: no-cache</p><p>Expires: 0</p><p>This configuration directs both HTTP 1.0 and HTTP 1.1 compliant caching servers to not store the response, and to not retrieve the response (without validation) from the cache, in response to a similar request.</p>",
-					"otherinfo": "<p>The response is stale, and stale responses are not configured to be re-validated or blocked, using the 'must-revalidate', 'proxy-revalidate', 's-maxage', or 'max-age' response 'Cache-Control' directives.</p>",
+					"solution": "",
+					"otherinfo": "",
 					"reference": "<p>https://datatracker.ietf.org/doc/html/rfc7234</p><p>https://datatracker.ietf.org/doc/html/rfc7231</p><p>https://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html</p>",
 					"cweid": "524",
 					"wascid": "13",
 					"sourceid": "1"
+				},
+				{
+					"pluginid": "10031",
+					"alertRef": "10031",
+					"alert": "User Controllable HTML Element Attribute (Potential XSS)",
+					"name": "User Controllable HTML Element Attribute (Potential XSS)",
+					"riskcode": "0",
+					"confidence": "1",
+					"riskdesc": "Informational (Low)",
+					"desc": "<p>This check looks at user-supplied input in query string parameters and POST data to identify where certain HTML attribute values might be controlled. This provides hot-spot detection for XSS (cross-site scripting) that will require further review by a security analyst to determine exploitability.</p>",
+					"instances":[ 
+						{
+							"id": "76",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/submitVat.html?allowSandboxObligations=on&declaration=on&netVatDue=ZAP&periodEnd=2026-08-31&periodKey&periodStart=2026-08-31&runFraudPreventionHeaderValidation=on&testScenario=INVALID_VRN&totalAcquisitionsExVAT=0&totalValueGoodsSuppliedExVAT=0&totalValuePurchasesExVAT=ZAP&totalValueSalesExVAT=ZAP&totalVatDue=ZAP&vatDueAcquisitions=0&vatDueSales=ZAP&vatNumber=ZAP&vatReclaimedCurrPeriod=ZAP",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/hmrc\/vat\/submitVat.html (allowSandboxObligations,declaration,netVatDue,periodEnd,periodKey,periodStart,runFraudPreventionHeaderValidation,testScenario,totalAcquisitionsExVAT,totalValueGoodsSuppliedExVAT,totalValuePurchasesExVAT,totalValueSalesExVAT,totalVatDue,vatDueAcquisitions,vatDueSales,vatNumber,vatReclaimedCurrPeriod)",
+							"method": "GET",
+							"param": "testScenario",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:\n\nhttps://local.submit.diyaccounting.co.uk:3443/hmrc/vat/submitVat.html?allowSandboxObligations=on&declaration=on&netVatDue=ZAP&periodEnd=2026-08-31&periodKey&periodStart=2026-08-31&runFraudPreventionHeaderValidation=on&testScenario=INVALID_VRN&totalAcquisitionsExVAT=0&totalValueGoodsSuppliedExVAT=0&totalValuePurchasesExVAT=ZAP&totalValueSalesExVAT=ZAP&totalVatDue=ZAP&vatDueAcquisitions=0&vatDueSales=ZAP&vatNumber=ZAP&vatReclaimedCurrPeriod=ZAP\n\nappears to include user input in:\na(n) [option] tag [value] attribute\n\nThe user input found was:\ntestScenario=INVALID_VRN\n\nThe user-controlled value was:\ninvalid_vrn"
+						},
+						{
+							"id": "77",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/vatObligations.html?fromDate=2026-08-31&runFraudPreventionHeaderValidation=on&status=O&testScenario=QUARTERLY_NONE_MET&toDate=2026-08-31&vrn=ZAP",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/hmrc\/vat\/vatObligations.html (fromDate,runFraudPreventionHeaderValidation,status,testScenario,toDate,vrn)",
+							"method": "GET",
+							"param": "testScenario",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:\n\nhttps://local.submit.diyaccounting.co.uk:3443/hmrc/vat/vatObligations.html?fromDate=2026-08-31&runFraudPreventionHeaderValidation=on&status=O&testScenario=QUARTERLY_NONE_MET&toDate=2026-08-31&vrn=ZAP\n\nappears to include user input in:\na(n) [option] tag [value] attribute\n\nThe user input found was:\ntestScenario=QUARTERLY_NONE_MET\n\nThe user-controlled value was:\nquarterly_none_met"
+						},
+						{
+							"id": "78",
+							"uri": "https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/viewVatReturn.html?periodEnd=2026-08-31&periodKey&periodStart=2026-08-31&runFraudPreventionHeaderValidation=on&testScenario=DATE_RANGE_TOO_LARGE&vrn=ZAP",
+							"nodeName": "https:\/\/local.submit.diyaccounting.co.uk:3443\/hmrc\/vat\/viewVatReturn.html (periodEnd,periodKey,periodStart,runFraudPreventionHeaderValidation,testScenario,vrn)",
+							"method": "GET",
+							"param": "testScenario",
+							"attack": "",
+							"evidence": "",
+							"otherinfo": "User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:\n\nhttps://local.submit.diyaccounting.co.uk:3443/hmrc/vat/viewVatReturn.html?periodEnd=2026-08-31&periodKey&periodStart=2026-08-31&runFraudPreventionHeaderValidation=on&testScenario=DATE_RANGE_TOO_LARGE&vrn=ZAP\n\nappears to include user input in:\na(n) [option] tag [value] attribute\n\nThe user input found was:\ntestScenario=DATE_RANGE_TOO_LARGE\n\nThe user-controlled value was:\ndate_range_too_large"
+						}
+					],
+					"count": "3",
+					"systemic": false,
+					"solution": "<p>Validate all input and sanitize output it before writing to any HTML attributes.</p>",
+					"otherinfo": "<p>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:</p><p></p><p>https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/submitVat.html?allowSandboxObligations=on&declaration=on&netVatDue=ZAP&periodEnd=2026-08-31&periodKey&periodStart=2026-08-31&runFraudPreventionHeaderValidation=on&testScenario=INVALID_VRN&totalAcquisitionsExVAT=0&totalValueGoodsSuppliedExVAT=0&totalValuePurchasesExVAT=ZAP&totalValueSalesExVAT=ZAP&totalVatDue=ZAP&vatDueAcquisitions=0&vatDueSales=ZAP&vatNumber=ZAP&vatReclaimedCurrPeriod=ZAP</p><p></p><p>appears to include user input in:</p><p>a(n) [option] tag [value] attribute</p><p></p><p>The user input found was:</p><p>testScenario=INVALID_VRN</p><p></p><p>The user-controlled value was:</p><p>invalid_vrn</p>",
+					"reference": "<p>https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html</p>",
+					"cweid": "20",
+					"wascid": "20",
+					"sourceid": "1290"
 				}
 			]
 		}

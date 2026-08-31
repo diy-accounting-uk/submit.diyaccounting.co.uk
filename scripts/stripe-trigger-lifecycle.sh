@@ -12,7 +12,7 @@
 #   - Stripe CLI installed and authenticated (`stripe login`)
 #   - AWS CLI configured (for DynamoDB seeding/verification)
 #   - Environment variables:
-#       STRIPE_WEBHOOK_ENDPOINT  Webhook URL (e.g. https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook)
+#       STRIPE_WEBHOOK_ENDPOINT  Webhook URL (e.g. https://local.submit.diyaccounting.co.uk:3443/api/v1/billing/webhook)
 #       SUBSCRIPTIONS_DYNAMODB_TABLE_NAME  DynamoDB subscriptions table
 #       BUNDLE_DYNAMODB_TABLE_NAME         DynamoDB bundles table
 #       AWS_REGION                         AWS region (default: eu-west-2)

@@ -19,7 +19,7 @@ on:
         required: false
         default: ''
       runProxyBehaviourTests:
-        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        description: 'Run proxy behaviour tests (uses the real local TLS certificate and Docker)'
         type: choice
         options:
           - 'true'
@@ -38,13 +38,11 @@ on:
         required: true
       runProxyBehaviourTests:
         type: string
-        description: 'Run proxy behaviour tests (uses ngrok and Docker)'
+        description: 'Run proxy behaviour tests (uses the real local TLS certificate and Docker)'
         required: false
         default: 'false'
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
-        required: false
-      NGROK_AUTHTOKEN:
         required: false
 
   push:
@@ -521,7 +519,7 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
-  # Simulator behaviour tests - run in parallel without ngrok/Docker/HMRC
+  # Simulator behaviour tests - run in parallel without a tunnel, Docker or HMRC
   # Uses Playwright official container for faster builds (browsers pre-installed)
   behaviour-test-simulator-submit-vat:
     name: 'simulator - submitVatBehaviour'
@@ -1083,7 +1081,7 @@ jobs:
           retention-days: 7
           path: target/behaviour-test-results/
 
-  # Proxy behaviour test - requires Docker, ngrok, and HMRC sandbox secrets
+  # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
     if: ${{ !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
@@ -1093,12 +1091,37 @@ jobs:
       - names
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v4
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -1111,6 +1134,20 @@ jobs:
           npm install
           npx playwright install chromium --with-deps
 
+      - name: Resolve the local hostname to loopback
+        run: echo "127.0.0.1 local.submit.diyaccounting.co.uk" | sudo tee -a /etc/hosts
+
+      - name: Fetch the local TLS certificate
+        run: |
+          aws secretsmanager get-secret-value \
+            --secret-id "$LOCAL_TLS_SECRET_ARN" --region "$AWS_REGION" \
+            --query SecretString --output text > "$RUNNER_TEMP/local-tls.json"
+          jq -r .fullchain "$RUNNER_TEMP/local-tls.json" > "$RUNNER_TEMP/local-tls.pem"
+          jq -r .privkey   "$RUNNER_TEMP/local-tls.json" > "$RUNNER_TEMP/local-tls.key"
+          chmod 600 "$RUNNER_TEMP/local-tls.key"
+        env:
+          LOCAL_TLS_SECRET_ARN: arn:aws:secretsmanager:eu-west-2:367191799875:secret:ci/submit/local-tls/certificate
+
       - name: Run behaviour tests - submit vat
         run: |
           npm run test:submitVatBehaviour-proxy || exit_code=$? \
@@ -1120,7 +1157,10 @@ jobs:
         env:
           HMRC_ACCOUNT: sandbox
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+          TEST_SERVER_TLS: run
+          TEST_SERVER_TLS_CERT: ${{ runner.temp }}/local-tls.pem
+          TEST_SERVER_TLS_KEY: ${{ runner.temp }}/local-tls.key
+          TEST_SERVER_HTTPS_PORT: "3443"
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}

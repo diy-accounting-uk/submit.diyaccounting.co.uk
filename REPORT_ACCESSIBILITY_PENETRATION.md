@@ -2,9 +2,9 @@
 
 **Application**: DIY Accounting Submit
 **Version**: 1.0.0
-**Target URL**: https://example.com
-**Generated**: 2026-02-17T01:23:40.279Z
-**Overall Status**: ✅ PASS
+**Target URL**: https://local.submit.diyaccounting.co.uk:3443
+**Generated**: 2026-08-31T19:03:16.465Z
+**Overall Status**: ❌ FAIL
 
 **Source Files**:
 ```
@@ -26,14 +26,14 @@
 | Check | Status | Summary |
 |-------|--------|---------|
 | npm audit (prod) | ✅ | 0 critical, 0 high, 0 moderate |
-| ESLint Security | ✅ | 0 errors, 7 warnings |
+| ESLint Security | ✅ | 0 errors, 0 warnings |
 | retire.js | ✅ | 0 high, 0 medium, 0 low |
-| OWASP ZAP | ✅ | 0 high, 0 medium, 7 low |
-| Pa11y (WCAG AA) | ✅ | 35/35 pages passed |
-| axe-core | ✅ | 0 violations, 1056 passes |
-| axe-core (WCAG 2.2) | ✅ | 0 violations, 614 passes |
-| Lighthouse | ✅ | A11y: 100%, Perf: 94%, BP: 96% |
-| Text Spacing (1.4.12) | ✅ | 25/25 pages passed |
+| OWASP ZAP | ✅ | 0 high, 8 medium, 8 low |
+| Pa11y (WCAG AA) | ✅ | 27/27 pages passed |
+| axe-core | ✅ | 0 violations, 901 passes |
+| axe-core (WCAG 2.2) | ✅ | 0 violations, 543 passes |
+| Lighthouse | ✅ | A11y: 100%, Perf: 83%, BP: 100% |
+| Text Spacing (1.4.12) | ❌ | 0/25 pages passed |
 
 ---
 
@@ -68,7 +68,7 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | Metric | Count |
 |--------|-------|
 | Errors | 0 |
-| Warnings | 7 |
+| Warnings | 0 |
 
 **Status**: ✅ No security errors
 
@@ -87,9 +87,9 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | Risk Level | Count |
 |------------|-------|
 | High | 0 |
-| Medium | 0 |
-| Low | 7 |
-| Informational | 35 |
+| Medium | 8 |
+| Low | 8 |
+| Informational | 49 |
 
 **Status**: ✅ No high risk vulnerabilities
 
@@ -97,14 +97,19 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 
 | Alert | Risk | Count |
 |-------|------|-------|
-| Insufficient Site Isolation Against Spectre Vulnerability | Low (Medium) | 5 |
+| Cross-Domain Misconfiguration | Medium (Medium) | 1 |
+| Information Disclosure - JWT in Browser localStorage | Medium (High) | 2 |
+| Sub Resource Integrity Attribute Missing | Medium (High) | 5 |
+| Cross-Domain JavaScript Source File Inclusion | Low (Medium) | 5 |
+| Information Disclosure - Sensitive Information in Browser localStorage | Low (Medium) | 1 |
 | Timestamp Disclosure - Unix | Low (Low) | 2 |
-| Information Disclosure - Suspicious Comments | Informational (Low) | 12 |
+| Information Disclosure - Information in Browser localStorage | Informational (High) | 6 |
+| Information Disclosure - Information in Browser sessionStorage | Informational (High) | 14 |
+| Information Disclosure - Suspicious Comments | Informational (Medium) | 11 |
 | Modern Web Application | Informational (Medium) | 5 |
-| Non-Storable Content | Informational (Medium) | 3 |
 | Re-examine Cache-control Directives | Informational (Low) | 5 |
-| Retrieved from Cache | Informational (Medium) | 5 |
-| Storable and Cacheable Content | Informational (Medium) | 5 |
+| Storable but Non-Cacheable Content | Informational (Medium) | 5 |
+| User Controllable HTML Element Attribute (Potential XSS) | Informational (Low) | 3 |
 
 #### Accepted Risks (Suppressed)
 
@@ -121,8 +126,8 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 
 | Metric | Value |
 |--------|-------|
-| Pages Tested | 35 |
-| Pages Passed | 35 |
+| Pages Tested | 27 |
+| Pages Passed | 27 |
 | Pages Failed | 0 |
 
 **Status**: ✅ All pages comply with WCAG AA
@@ -131,49 +136,41 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 
 | Page | Errors |
 |------|--------|
-| https://submit.diyaccounting.co.uk/ | 0 |
-| https://submit.diyaccounting.co.uk/index.html | 0 |
-| https://submit.diyaccounting.co.uk/privacy.html | 0 |
-| https://submit.diyaccounting.co.uk/terms.html | 0 |
-| https://submit.diyaccounting.co.uk/about.html | 0 |
-| https://submit.diyaccounting.co.uk/accessibility.html | 0 |
-| https://submit.diyaccounting.co.uk/auth/login.html | 0 |
-| https://submit.diyaccounting.co.uk/bundles.html | 0 |
-| https://submit.diyaccounting.co.uk/usage.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html | 0 |
-| https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html | 0 |
-| https://submit.diyaccounting.co.uk/guide.html | 0 |
-| https://submit.diyaccounting.co.uk/help.html | 0 |
-| https://submit.diyaccounting.co.uk/mcp.html | 0 |
-| https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html | 0 |
-| https://submit.diyaccounting.co.uk/diy-accounting-limited.html | 0 |
-| https://submit.diyaccounting.co.uk/spreadsheets.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/404-error-distribution.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/404-error-origin.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/403.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/404.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/500.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/502.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/503.html | 0 |
-| https://submit.diyaccounting.co.uk/errors/504.html | 0 |
-| https://diyaccounting.co.uk/ | 0 |
-| https://diyaccounting.co.uk/index.html | 0 |
-| https://diyaccounting.co.uk/about.html | 0 |
-| https://spreadsheets.diyaccounting.co.uk/ | 0 |
-| https://spreadsheets.diyaccounting.co.uk/index.html | 0 |
-| https://spreadsheets.diyaccounting.co.uk/download.html | 0 |
-| https://spreadsheets.diyaccounting.co.uk/donate.html | 0 |
-| https://spreadsheets.diyaccounting.co.uk/knowledge-base.html | 0 |
+| / | 0 |
+| /index.html | 0 |
+| /privacy.html | 0 |
+| /terms.html | 0 |
+| /about.html | 0 |
+| /accessibility.html | 0 |
+| /auth/login.html | 0 |
+| /bundles.html | 0 |
+| /usage.html | 0 |
+| /hmrc/vat/submitVat.html | 0 |
+| /hmrc/vat/vatObligations.html | 0 |
+| /hmrc/vat/viewVatReturn.html | 0 |
+| /hmrc/receipt/receipts.html | 0 |
+| /guide.html | 0 |
+| /help.html | 0 |
+| /mcp.html | 0 |
+| /diy-accounting-spreadsheets.html | 0 |
+| /diy-accounting-limited.html | 0 |
+| /spreadsheets.html | 0 |
+| /errors/404-error-distribution.html | 0 |
+| /errors/404-error-origin.html | 0 |
+| /errors/403.html | 0 |
+| /errors/404.html | 0 |
+| /errors/500.html | 0 |
+| /errors/502.html | 0 |
+| /errors/503.html | 0 |
+| /errors/504.html | 0 |
 
 ### 2.2 axe-core (Automated Accessibility)
 
 | Metric | Count |
 |--------|-------|
 | Violations | 0 |
-| Passes | 1056 |
-| Incomplete | 33 |
+| Passes | 901 |
+| Incomplete | 27 |
 
 **Status**: ✅ No accessibility violations
 
@@ -183,8 +180,8 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | Metric | Count |
 |--------|-------|
 | Violations | 0 |
-| Passes | 614 |
-| Incomplete | 33 |
+| Passes | 543 |
+| Incomplete | 27 |
 
 **Status**: ✅ No WCAG 2.2 violations
 
@@ -194,8 +191,8 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | Category | Score |
 |----------|-------|
 | Accessibility | 100% |
-| Performance | 94% |
-| Best Practices | 96% |
+| Performance | 83% |
+| Best Practices | 100% |
 | SEO | 100% |
 
 **Status**: ✅ Accessibility score meets threshold (90%+)
@@ -205,11 +202,11 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | Metric | Value |
 |--------|-------|
 | Pages Tested | 25 |
-| Pages Passed | 25 |
-| Pages Failed | 0 |
+| Pages Passed | 0 |
+| Pages Failed | 25 |
 | Errors | 0 |
 
-**Status**: ✅ All pages pass text spacing test
+**Status**: ❌ Some pages have text spacing issues
 
 **Test Parameters** (WCAG 1.4.12 minimum values):
 - Line height: 1.5 times font size
@@ -217,6 +214,35 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 - Word spacing: 0.16 times font size
 - Paragraph spacing: 2 times font size
 
+#### Pages with Clipped Content
+
+| Page | Clipped Elements |
+|------|------------------|
+| / | 1 |
+| /about.html | 1 |
+| /privacy.html | 1 |
+| /terms.html | 1 |
+| /accessibility.html | 1 |
+| /auth/login.html | 1 |
+| /bundles.html | 1 |
+| /hmrc/vat/submitVat.html | 1 |
+| /hmrc/vat/vatObligations.html | 1 |
+| /hmrc/vat/viewVatReturn.html | 1 |
+| /hmrc/receipt/receipts.html | 1 |
+| /guide.html | 1 |
+| /help.html | 1 |
+| /mcp.html | 1 |
+| /diy-accounting-spreadsheets.html | 1 |
+| /diy-accounting-limited.html | 1 |
+| /spreadsheets.html | 1 |
+| /errors/404-error-distribution.html | 1 |
+| /errors/404-error-origin.html | 1 |
+| /errors/403.html | 1 |
+| /errors/404.html | 1 |
+| /errors/500.html | 1 |
+| /errors/502.html | 1 |
+| /errors/503.html | 1 |
+| /errors/504.html | 1 |
 
 ---
 
@@ -236,4 +262,4 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 
 ---
 
-*Generated by `node scripts/generate-compliance-report.js --target https://example.com`*
+*Generated by `node scripts/generate-compliance-report.js --target https://local.submit.diyaccounting.co.uk:3443`*
