@@ -16,14 +16,20 @@ Exactly two parts, in this order.
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
 combined row). Columns:
 
-| # | Item | Status | GH issue |
+| # | Item | Tier | State | Status | GH issue |
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
 - `Item`: a short name, not the row's full prose.
-- `Status`: the most current state known — from NEXT.md, the backlog's Live status
-  block, and anything this session has done that the files don't record yet. Say
-  "in flight" work in one compact clause; date-gated items name the date.
+- `Tier`: the backlog tier (`T1`…`T5`), or `NEXT` for an item with no backlog row.
+- `State`: exactly one word — `in-flight` (being worked right now), `ready` (nothing
+  prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
+  prerequisite item, or a decision not yet made). Operator-owned work that could
+  start today is `ready`, not `blocked`.
+- `Status`: the explanatory sentence — the most current state known, from NEXT.md,
+  the backlog's Live status block, and anything this session has done that the files
+  don't record yet. In-flight work in one compact clause; date-gated items name the
+  date; blocked items name what they wait on.
 - `GH issue`: only when the backlog Source column cites one (`Issue #18` → `#18`),
   else `—`.
 
@@ -46,3 +52,9 @@ compact status and issue ref if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16,
 - No commentary beyond the table, the lists, and that closing line, unless something
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
+- **Write the statuses back.** The explanatory status lives in `NEXT.md`, not just in
+  the rendering: after rendering, update any `NEXT.md` item whose entry no longer
+  matches the status you just printed (same facts, prose fitted to the entry), commit
+  the `NEXT.md`-only change to `main` (the docs exception allows a direct push) and
+  push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
+  tier tables stay as they are.
