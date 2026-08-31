@@ -100,7 +100,7 @@ Behaviour tests (`npm run test:*Behaviour-*`) take approximately 2-3 minutes. Ou
 
 2. **Kill stuck processes** if no progress for 60+ seconds:
    ```bash
-   pkill -f "playwright|ngrok|server.js"
+   pkill -f "playwright|server.js"
    ```
 
 3. **Never wait indefinitely** - if a test hasn't produced output in 2 minutes, it's stuck.
@@ -146,7 +146,7 @@ pkill -f "playwright"; sleep 2; npm run test:foo > target/output.txt 2>&1
 **Instead**, run commands separately:
 ```bash
 # Step 1: Clean up
-pkill -f "playwright|ngrok|server.js"
+pkill -f "playwright|server.js"
 
 # Step 2: Wait
 sleep 2
@@ -313,13 +313,13 @@ See `../CLAUDE.md` for shared rules. Additional submit-specific rules:
 |-------------|------|---------|
 | test | `.env.test` | Unit/system tests (mocked) |
 | simulator | `.env.simulator` | Local dev with HTTP simulator (no Docker, no external config) |
-| proxy | `.env.proxy` | Local dev (ngrok, Docker OAuth2, dynalite) |
+| proxy | `.env.proxy` | Local dev (native HTTPS on `local.submit.diyaccounting.co.uk`, Docker OAuth2, dynalite) |
 | ci | `.env.ci` | CI with real AWS |
 | prod | `.env.prod` | Production |
 
-**Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Stripe, HMRC, Telegram, ngrok, Google, Cognito). Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When proxy/CI/prod need different webhook secrets, the local `.env` holds the proxy value and deployed environments resolve from Secrets Manager ARNs.
+**Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Telegram, Google, Cognito). HMRC and Stripe secrets for the proxy variant come from AWS Secrets Manager via `scripts/proxy-secrets.sh`, not from `.env`. Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When CI and prod need different webhook secrets, each resolves its own from Secrets Manager ARNs.
 
-**Stripe webhook setup:** Run `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js` to create/verify webhook endpoints for proxy (ngrok), CI, and prod. The proxy webhook secret goes in `.env` as `STRIPE_WEBHOOK_SECRET`.
+**Stripe webhook setup:** Run `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js` to create/verify webhook endpoints for CI and prod. Local dev registers no endpoint: `stripe listen` forwards events directly and prints a per-session signing secret.
 
 ## Naming Conventions
 

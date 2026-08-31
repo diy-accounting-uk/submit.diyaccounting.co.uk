@@ -30,13 +30,17 @@ operator step before them is done or when SSO is live.
   green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
   on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
   closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
-- [ ] **(B44) Remove ngrok from the proxy test path — plan execution-ready.**
-  `PLAN_REMOVE_NGROK.md` is final: DNS-to-localhost design, per-step owners and
-  verification, audit-verified references, CI on the real cert, and the canonical grep
-  gate (archive excluded per operator, 2026-08-31). The certbot IAM role is
-  pre-approved; three STOP-AND-WAIT operator gates remain inside the steps (first
-  certbot TXT run, HMRC Developer Hub registration, the CI cert secret). The operator
-  restarts a fresh session to run implementation from the plan.
+- [ ] **(B44) Remove ngrok from the proxy test path — implementation in flight.**
+  `PLAN_REMOVE_NGROK.md` is the spec. Branch `claude/remove-ngrok` (pushed); validation
+  runs locally and on the origin branch before any PR. Wave 1 is code-complete and
+  verified (2026-08-31): steps 5/6/8 and 11 merged to the branch (unit+system green
+  locally, branch test+deploy green on origin); steps 1-2 deployed via root repo —
+  `dig` returns 127.0.0.1 and `root-certbot-dns01` exists with the eu-west-2 SSO
+  trust. Next: the STOP-AND-WAIT operator gates (add the `certbot-local` profile;
+  certbot install + first TXT run; HMRC Developer Hub redirect URI with the :3443
+  port; CI cert secret via `local-tls-publish.sh`; cert paths in the local `.env`),
+  then the step 7/8 proof runs, then the deletion wave (steps 9, 10, 12) with the
+  final test and grep gates.
 
 ## Discipline
 
