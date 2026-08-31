@@ -3,6 +3,8 @@
 Design for backlog items 13a (Firehose spike), 13 (the lake) and 14 (scheduled ingestion).
 The repo has no Firehose, Glue or Athena code today, so all of this is greenfield.
 
+WP-8 to WP-11 shipped. `PLAN_SCHEDULED_INGESTION.md` supersedes them for backlog 14.
+
 This document is the design. It carries enough detail that each work package can be
 implemented without further design decisions. The work package table at the end names
 owned paths so packages can run concurrently.
