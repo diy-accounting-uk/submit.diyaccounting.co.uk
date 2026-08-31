@@ -28,10 +28,10 @@ combined row). Columns:
   prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
   prerequisite item, or a decision not yet made). Operator-owned work that could
   start today is `ready`, not `blocked`.
-- `Status`: the explanatory sentence — the most current state known, from NEXT.md,
-  the backlog's Live status block, and anything this session has done that the files
-  don't record yet. In-flight work in one compact clause; date-gated items name the
-  date; blocked items name what they wait on.
+- `Status`: an annotation, not a paragraph — one clause, 12 words or fewer, current
+  as of this render. Date-gated items name the date; blocked items name the blocker;
+  in-flight items name the current step only. The full narrative lives in `NEXT.md`,
+  never in this column.
 - `GH issue`: only when the backlog Source column cites one (`Issue #18` → `#18`),
   else `—`.
 
