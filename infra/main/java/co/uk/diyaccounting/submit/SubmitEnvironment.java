@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.IngestionStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
+import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
@@ -32,6 +33,7 @@ public class SubmitEnvironment {
 
     public final ObservabilityStack observabilityStack;
     public final ObservabilityUE1Stack observabilityUE1Stack;
+    public final SecurityDetectionStack securityDetectionStack;
     public final DataStack dataStack;
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
@@ -199,6 +201,26 @@ public class SubmitEnvironment {
                         .apexDomain(sharedNames.hostedZoneName)
                         .securityServicesEnabled(securityServicesEnabled)
                         .build());
+
+        // Create SecurityDetectionStack with scan- and data-theft-detection alarms built on the
+        // CloudTrail DynamoDB data events and security-findings SNS topic ObservabilityStack sets up
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.securityDetectionStackId, deploymentName, envName);
+        this.securityDetectionStack = new SecurityDetectionStack(
+                app,
+                sharedNames.securityDetectionStackId,
+                SecurityDetectionStack.SecurityDetectionStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
+                        .build());
+        this.securityDetectionStack.addStackDependency(this.observabilityStack);
 
         // Create ObservabilityUE1Stack with resources used in monitoring the application us-east-1
         infof(
