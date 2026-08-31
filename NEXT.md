@@ -56,11 +56,10 @@ operator step before them is done or when SSO is live.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Design is at
   `PLAN_COST_INSTRUMENTATION.md` (zero active allocation tags, zero budgets, zero
   anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
-  Open steps: operator approves the two management-account commands in the plan
-  (activate five tag keys — not retroactive, so first — and delete the broken legacy
-  CUR); root.diyaccounting.co.uk PR #20 is merged — dispatch that repo's deploy.yml to
-  create the stacks, then confirm the CUR export and budgets exist; operator turns on
-  hourly granularity in Cost Management Preferences (console only). Feeds backlog #43's
+  Open steps: root.diyaccounting.co.uk PR #20 is merged — dispatch that repo's
+  deploy.yml to create the stacks, then confirm the CUR export and budgets exist;
+  operator turns on hourly granularity in Cost Management Preferences (console only).
+  Feeds backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
