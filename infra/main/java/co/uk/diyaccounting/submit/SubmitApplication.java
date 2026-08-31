@@ -440,6 +440,8 @@ public class SubmitApplication {
         } else {
             this.selfDestructStack = null;
         }
+
+        CostAllocationTags.applyTo(app, envName, deploymentName);
     }
 
     // populate from cdk.json context using exact camelCase keys

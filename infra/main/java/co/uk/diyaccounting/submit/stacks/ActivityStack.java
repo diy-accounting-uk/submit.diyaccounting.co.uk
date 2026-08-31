@@ -13,7 +13,6 @@ import org.immutables.value.Value;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.events.EventBus;
 import software.constructs.Construct;
 
@@ -55,16 +54,6 @@ public class ActivityStack extends Stack {
 
     public ActivityStack(final Construct scope, final String id, final ActivityStackProps props) {
         super(scope, id, props);
-
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "ActivityStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
 
         // ============================================================================
         // EventBridge Custom Activity Bus

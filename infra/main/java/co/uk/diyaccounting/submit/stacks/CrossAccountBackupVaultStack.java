@@ -15,7 +15,6 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
-import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.backup.BackupVault;
 import software.amazon.awscdk.services.iam.AnyPrincipal;
 import software.amazon.awscdk.services.iam.ArnPrincipal;
@@ -64,11 +63,6 @@ public class CrossAccountBackupVaultStack extends Stack {
 
     public CrossAccountBackupVaultStack(Construct scope, String id, CrossAccountBackupVaultStackProps props) {
         super(scope, id, props);
-
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Stack", "CrossAccountBackupVaultStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
 
         List<ArnPrincipal> sourceBackupRoles =
                 props.sourceBackupRoleArns().stream().map(ArnPrincipal::new).toList();

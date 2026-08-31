@@ -151,6 +151,19 @@ class SubmitEnvironmentCdkResourceTest {
         assertEveryLambdaHasAnExplicitLogGroup(ingestion);
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.identityStack));
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.holdingStack));
+
+        // Cost Explorer can only split spend by a tag key the billable resource actually carries,
+        // so the whole app gets the standard set and each stack names itself.
+        Template.fromStack(env.observabilityStack)
+                .hasResourceProperties(
+                        "AWS::CloudTrail::Trail",
+                        Match.objectLike(Map.of(
+                                "Tags",
+                                Match.arrayWith(List.of(
+                                        Map.of("Key", "Application", "Value", CostAllocationTags.APPLICATION),
+                                        Map.of("Key", "DeploymentName", "Value", "tt-witheight"),
+                                        Map.of("Key", "Environment", "Value", "test"),
+                                        Map.of("Key", "Stack", "Value", "ObservabilityStack"))))));
     }
 
     /**

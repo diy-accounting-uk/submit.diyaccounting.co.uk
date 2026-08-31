@@ -149,18 +149,6 @@ public class EdgeStack extends Stack {
                         .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
                         .build());
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk/cdk.json");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "EdgeStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
-
-        // Enhanced cost optimization tags
-        Tags.of(this).add("BillingPurpose", "authentication-infrastructure");
         Tags.of(this).add("ResourceType", "serverless-web-app");
         Tags.of(this).add("Criticality", "low");
         Tags.of(this).add("DataClassification", "public");

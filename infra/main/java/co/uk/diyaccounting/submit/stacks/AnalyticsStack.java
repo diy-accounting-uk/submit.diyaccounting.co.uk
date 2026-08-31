@@ -134,15 +134,6 @@ public class AnalyticsStack extends Stack {
         var prefix = props.resourceNamePrefix();
         var isProd = "prod".equals(props.envName());
 
-        // Apply cost allocation tags for all resources in this stack
-        Tags.of(this).add("Environment", props.envName());
-        Tags.of(this).add("Application", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("CostCenter", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Owner", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("Project", "@diy-accounting-uk/submit.diyaccounting.co.uk");
-        Tags.of(this).add("DeploymentName", props.deploymentName());
-        Tags.of(this).add("Stack", "AnalyticsStack");
-        Tags.of(this).add("ManagedBy", "aws-cdk");
         Tags.of(this).add("DataClassification", "internal");
         Tags.of(this).add("BackupRequired", "false");
 

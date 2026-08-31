@@ -78,6 +78,8 @@ public class SubmitBackupAccount {
                                 this.crossAccountBackupVaultStack.vaultEncryptionKey.getKeyArn())
                         .build());
         this.backupAccountAccessStack.addDependency(this.crossAccountBackupVaultStack);
+
+        CostAllocationTags.applyTo(app, "backup", "backup");
     }
 
     /** Reads the comma-separated list of deployment-account backup role ARNs. */
