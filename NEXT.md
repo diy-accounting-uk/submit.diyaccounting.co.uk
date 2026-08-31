@@ -31,14 +31,12 @@ operator step before them is done or when SSO is live.
   submit's banner (submit.js consent block + analytics.js restore) to the www and
   spreadsheets repos — two PRs, operator-visible UX change on both live sites. Operator:
   say go and Claude Code dispatches it.
-- [ ] **(B9 remainder) Find the dead GitHub link.** The support@ out-of-office reply is
-  OFF (Cowork, 2026-08-31) — it had answered every sender since January 2023 and told
-  customers the address was unstaffed. It contained no GitHub link, so B9's premise is
-  unverified. Claude Code: search the site copy, the old responder's links
-  (`www.diyaccounting.co.uk/products.html`, the Linktree now 404s, a PayPal donate URL)
-  and the corpus for the dead GitHub link and any surviving "no longer staffed /
-  unmonitored" claims; fix what is in the repos, report what is elsewhere. Operator: check
-  the antony@ auto-responder for the same stale text.
+- [ ] **(B9 remainder) Find the dead GitHub link.** IN FLIGHT: a worktree-isolated
+  agent (dispatched 2026-08-31 01:25 UTC) is searching the four repos and the corpus for
+  the dead GitHub link and surviving "no longer staffed / unmonitored" claims, fixing
+  repo copy (submit commits in its worktree for the coordinator to merge; sibling repos
+  via `claude/b9-dead-links` PRs) and reporting what is elsewhere. Operator: check the
+  antony@ auto-responder for the same stale text.
 - [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
@@ -52,9 +50,6 @@ operator step before them is done or when SSO is live.
   with alerts and Cost Anomaly Detection in each of the six accounts, and Cost Explorer
   granularity. Management-account and billing writes come to the operator for approval as
   they arise. Feeds backlog #43's whole-bill review.
-- [ ] **security-review.yml has no schedule.** Its cron (line 26) is commented out, so
-  the workflow never runs on its own. Operator: say whether that is deliberate; if not,
-  Claude Code re-enables it.
 
 ## Discipline
 
