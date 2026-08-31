@@ -182,6 +182,77 @@ export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
   }
 }
 
+/**
+ * Start `stripe listen`, replaying real Stripe webhook traffic to the local server over an
+ * outbound connection instead of an inbound tunnel. Skipped when the run has no Stripe price IDs
+ * configured — the same gate server.js uses to decide whether to register mockBilling.js — so the
+ * simulator's auto-completing checkout path never spawns the Stripe CLI.
+ *
+ * Must be started, and its signing secret read, before runLocalHttpServer spawns the server:
+ * resolveWebhookSecret() in billingWebhookPost.js caches the first STRIPE_TEST_WEBHOOK_SECRET it
+ * sees, so the secret has to exist in the child's env before the process starts.
+ *
+ * @param {string} webhookUrl - the local server's webhook endpoint, e.g.
+ *   https://local.submit.diyaccounting.co.uk:3443/api/v1/billing/webhook
+ * @returns {Promise<{secret: string, kill: Function}|null>}
+ */
+export async function runStripeListen(webhookUrl) {
+  const usesRealStripe = !!(process.env.STRIPE_PRICE_ID_RESIDENT_PRO || process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO);
+  if (!usesRealStripe) {
+    logger.info("[stripe-listen]: Skipping stripe listen — no Stripe price IDs configured (simulator/mock billing)");
+    return null;
+  }
+
+  logger.info(`[stripe-listen]: Starting stripe listen --forward-to ${webhookUrl}...`);
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
+    const child = spawn("stripe", ["listen", "--forward-to", webhookUrl], {
+      env: { ...process.env },
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+
+    let resolved = false;
+    const secretPattern = /whsec_[A-Za-z0-9]+/;
+
+    const onOutput = (streamLabel) => (data) => {
+      const text = data.toString();
+      logger.info(sanitiseString(`[stripe-listen-${streamLabel}]: ${text.trim()}`));
+      if (resolved) return;
+      const match = text.match(secretPattern);
+      if (match) {
+        resolved = true;
+        clearTimeout(startupTimeout);
+        resolve({
+          secret: match[0],
+          kill: () => {
+            logger.info("[stripe-listen]: kill() called, stopping...");
+            child.kill();
+          },
+        });
+      }
+    };
+
+    child.stdout.on("data", onOutput("stdout"));
+    child.stderr.on("data", onOutput("stderr"));
+
+    child.on("error", (error) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(startupTimeout);
+        reject(error);
+      }
+    });
+
+    const startupTimeout = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        child.kill();
+        reject(new Error("[stripe-listen]: Timed out waiting for the webhook signing secret"));
+      }
+    }, 20_000);
+  });
+}
+
 export async function runLocalOAuth2Server(runMockOAuth2) {
   logger.info(`[auth]: runMockOAuth2=${runMockOAuth2}`);
   let serverProcess;

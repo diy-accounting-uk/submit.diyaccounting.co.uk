@@ -142,12 +142,6 @@ async function main() {
     results.push({ ...p, productId: product.id, priceId: price.id });
   }
 
-  // Proxy webhook (ngrok — for local dev with real Stripe)
-  const proxyWebhook = await findOrCreateWebhook(
-    "https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook",
-    "Proxy environment webhook (ngrok)",
-  );
-
   // CI webhook — env-level endpoint, always available even when app stacks are torn down.
   const ciWebhook = await findOrCreateWebhook(
     "https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
@@ -172,9 +166,6 @@ async function main() {
     console.log(`    Price ID:   ${r.priceId} (£${(r.priceAmount / 100).toFixed(2)}/${r.interval})`);
     console.log(`    Env var:    ${priceEnvPrefix}${suffix}=${r.priceId}`);
   }
-  console.log(`\nProxy Webhook (${mode}):`);
-  console.log("  ID:", proxyWebhook.id);
-  console.log("  Secret:", proxyWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
   console.log(`CI Webhook (${mode}):`);
   console.log("  ID:", ciWebhook.id);
   console.log("  Secret:", ciWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
