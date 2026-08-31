@@ -49,8 +49,8 @@ operator step before them is done or when SSO is live.
   `aws cloudformation delete-stack --stack-name CDKToolkit --region eu-west-2` in
   887764105431, then `npx cdk bootstrap aws://887764105431/eu-west-2`; then merge PR
   #21, re-dispatch the root deploy, and on green confirm the CUR export, budgets and
-  anomaly monitor exist. Operator turns on hourly granularity in Cost Management
-  Preferences (console only). Feeds backlog #43's
+  anomaly monitor exist. Cost Explorer multi-year and resource-level daily data are
+  enabling (ready within 48h of 2026-08-31). Feeds backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
