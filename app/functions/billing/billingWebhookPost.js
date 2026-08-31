@@ -516,7 +516,10 @@ export async function ingestHandler(event) {
         break;
       }
       default:
-        logger.info({ message: "Unhandled webhook event type", type: stripeEvent.type });
+        // Log text here must avoid the log-based-alarm's trigger words (ERROR, Error,
+        // Exception, Unhandled, Task timed out, SEVERE, FATAL) — this is an expected,
+        // no-op event type, not a failure, and the alarm fires on the raw log line.
+        logger.info({ message: "Ignoring webhook event type not handled by this endpoint", type: stripeEvent.type });
     }
   } catch (error) {
     logger.error({ message: "Error processing webhook event", type: stripeEvent.type, error: error.message });
