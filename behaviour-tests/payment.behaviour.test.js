@@ -23,7 +23,6 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
-  runLocalSslProxy,
   runStripeListen,
   saveHmrcTestUserToFiles,
   timestamp,
@@ -84,7 +83,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3000);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
@@ -101,7 +99,6 @@ const runFraudPreventionHeaderValidation = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
 let stripeListenProcess;
 let dynamoControl;
 let userSub = null;
@@ -131,7 +128,6 @@ test.beforeAll(async () => {
   }
 
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   if (bundleTableName) {
     await initializeSalt();
@@ -141,7 +137,6 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
   if (stripeListenProcess) stripeListenProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
@@ -180,10 +175,7 @@ async function extractUserSub(page) {
 }
 
 test("Payment funnel: guest → exhaustion → upgrade → submission → usage", async ({ page }, testInfo) => {
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   addOnPageLogging(page);
 
@@ -646,7 +638,6 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       baseUrl,
       serverPort: httpServerPort,
       runTestServer,
-      runProxy,
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,

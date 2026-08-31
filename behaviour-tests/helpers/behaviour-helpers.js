@@ -11,7 +11,6 @@ import {
   ensurePassesTableExists,
   ensureCapacityTableExists,
 } from "@app/bin/dynamodb.js";
-import { startNgrok, extractDomainFromUrl } from "@app/bin/ngrok.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
 import { test } from "@playwright/test";
@@ -155,31 +154,6 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
     logger.info("[http]: Skipping server process as runTestServer is not set to 'run'");
   }
   return serverProcess;
-}
-
-export async function runLocalSslProxy(runProxy, httpServerPort, baseUrl) {
-  logger.info(`[proxy]: runProxy=${runProxy}, httpServerPort=${httpServerPort}, baseUrl=${baseUrl}`);
-  if (runProxy === "run") {
-    logger.info("[proxy]: Starting ngrok tunnel using @ngrok/ngrok...");
-    // Extract domain from baseUrl if provided
-    const domain = extractDomainFromUrl(baseUrl);
-    const started = await startNgrok({
-      addr: httpServerPort,
-      domain: domain,
-      poolingEnabled: true,
-    });
-    logger.info(`[proxy]: Started at ${started.endpoint}`);
-    await checkIfServerIsRunning(started.endpoint, 1000, undefined, "proxy");
-    return {
-      kill: () => {
-        logger.info("[proxy]: kill() called on ngrok proxy, stopping...");
-        started.stop().catch((error) => logger.error("[proxy]: Error during kill:", error));
-      },
-    };
-  } else {
-    logger.info("[proxy]: Skipping ngrok tunnel as runProxy is not set to 'run'");
-    return null;
-  }
 }
 
 /**

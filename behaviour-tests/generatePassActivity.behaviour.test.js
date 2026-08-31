@@ -22,7 +22,6 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
-  runLocalSslProxy,
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
@@ -64,7 +63,6 @@ const envFilePath = getEnvVarAndLog("envFilePath", "DIY_SUBMIT_ENV_FILEPATH", nu
 const envName = getEnvVarAndLog("envName", "ENVIRONMENT_NAME", "local");
 const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 3500);
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
-const runProxy = getEnvVarAndLog("runProxy", "TEST_PROXY", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
@@ -77,7 +75,6 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 let mockOAuth2Process;
 let serverProcess;
-let ngrokProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
@@ -100,7 +97,6 @@ test.beforeAll(async ({ page }, testInfo) => {
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
-  ngrokProcess = await runLocalSslProxy(runProxy, httpServerPort, baseUrl);
 
   const outputDir = testInfo.outputPath("");
   fs.mkdirSync(outputDir, { recursive: true });
@@ -112,7 +108,6 @@ test.beforeAll(async ({ page }, testInfo) => {
 });
 
 test.afterAll(async () => {
-  if (ngrokProcess) ngrokProcess.kill();
   if (serverProcess) serverProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
@@ -129,10 +124,7 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test("Click through: Generate digital pass and verify in My Generated Passes", async ({ page }, testInfo) => {
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   addOnPageLogging(page);
 
@@ -238,7 +230,6 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
       baseUrl,
       serverPort: httpServerPort,
       runTestServer,
-      runProxy,
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,
@@ -292,10 +283,7 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
 });
 
 test("Click through: Generate physical pass and verify design downloads", async ({ page }, testInfo) => {
-  const testUrl =
-    (runTestServer === "run" || runTestServer === "useExisting") && runProxy !== "run" && runProxy !== "useExisting"
-      ? `http://127.0.0.1:${httpServerPort}/`
-      : baseUrl;
+  const testUrl = baseUrl;
 
   addOnPageLogging(page);
 
@@ -380,7 +368,6 @@ test("Click through: Generate physical pass and verify design downloads", async 
       baseUrl,
       serverPort: httpServerPort,
       runTestServer,
-      runProxy,
       runMockOAuth2,
       testAuthProvider,
       testAuthUsername,

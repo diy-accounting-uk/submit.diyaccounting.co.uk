@@ -13,9 +13,6 @@ export async function goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPat
     // Load default document with warning message bypass
     console.log("Loading document...");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-home-page.png` });
-    await page.setExtraHTTPHeaders({
-      "ngrok-skip-browser-warning": "any value",
-    });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-home-page.png` });
     await loggedGoto(page, testUrl, "Loading home page");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-home-page.png` });
