@@ -54,6 +54,10 @@ truthfully on its own.
 | 32a | Cut pipeline run times: ci deploys hit ~30 minutes, prod ~50 | Operator, this session | M | Hygiene, compounding. Every iteration in every workstream pays this tax. Profile the deploy workflow stages, parallelise stacks, cache Docker/Maven layers, and lean on the existing lean-deploy path for app-only changes. The TypeScript migration (#33) is a chance to rebuild the pipeline shape rather than port it. |
 | 32b | Apply the specced `requireActivity()` gating to the obligations and view-return endpoints, and check `prod-env-hmrc-api-requests` for whether anyone uses them | Split from #32 (32a is an unrelated item) | S | Trust, then revenue. Two read endpoints are live and ungated today. The usage numbers also say whether three more read-only pages are worth building at all. |
 | 40a | Make behaviour-test ports allocatable: `.env.simulator` hardcodes 3000/9000/9001, so two concurrent local runs (e.g. parallel agent worktrees) silently kill each other's servers | Demo-videos agent, batch 2 | S | Hygiene. Every parallel-agent batch risks a wasted run and a misleading failure until ports are per-run. |
+| 27b | WCAG 2.2 AA audit | Split from #27; PLAN_SECURITY_DETECTION_UPLIFT phase 4 | M | Trust. HMRC Terms of Use commitments made in the recognition questionnaires; ITSA recognition will re-ask. |
+| 27c | ICO checklist | Split from #27; PLAN_SECURITY_DETECTION_UPLIFT phase 4 | S | Trust. The data-protection half of the same commitments. |
+| 40d | Mode-naming cleanup: rename the sandbox/test/live "developer options" modes to "synthetic" consistently across code and UI | Issue #12 | S | Hygiene. One name per concept; the current three-way naming misleads every new reader. |
+| 40e | Delete the dead shadowed `submitVat` copy in `submitVat.html` — its friendly-error-message branches can never fire (found fixing B6) | Repo find, fixing B6 | S | Hygiene. Dead code that looks live; behavior-neutral removal. |
 
 ## Tier 3: autonomy (ongoing workstream)
 
@@ -71,7 +75,8 @@ truthfully on its own.
 
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
-| 27 | WCAG 2.2 AA audit and ICO checklist | PLAN_SECURITY_DETECTION_UPLIFT phase 4 | M | Trust. HMRC Terms of Use commitments made in the recognition questionnaires; ITSA recognition will re-ask. The external pen test half moved to 27a in tier 5. |
+| 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
+| 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
 
 
 
@@ -88,10 +93,6 @@ truthfully on its own.
 | 36 | Social IdPs: Apple, Microsoft | Issue #14 | L | Revenue, marginal. No evidence login choice is losing users; revisit when funnel data (#13) exists. |
 | 37 | Merch (#17): simple storefront link version only | Issue #17 | S | Revenue, negligible. Do the link version if ever; skip the integrated build. |
 | 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
-| 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
-| 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
-| 40d | Mode-naming cleanup: rename the sandbox/test/live "developer options" modes to "synthetic" consistently across code and UI | Issue #12 | S | Hygiene. One name per concept; the current three-way naming misleads every new reader. |
-| 40e | Delete the dead shadowed `submitVat` copy in `submitVat.html` — its friendly-error-message branches can never fire (found fixing B6) | Repo find, fixing B6 | S | Hygiene. Dead code that looks live; behavior-neutral removal. |
 | 41 | Doc hygiene: archive the two stale "in progress" plans that shipped, fix the dangling NEXT.md reference, close out PLAN_FLAGGED | Repo review | S | Hygiene. Stale plans mislead every future session. |
 
 ## Why this order
