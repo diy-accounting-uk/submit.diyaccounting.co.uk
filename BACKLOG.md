@@ -13,32 +13,26 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-08-29)
+## Live status (updated 2026-08-31)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **Nothing is in flight.** The cross-account backup wiring (25), the usage data pipeline
-  (13a, 13) and the scheduled ingestion jobs (14) are merged to `main` (PRs #46, #47, #50)
-  and deploying; `NEXT.md` carries each one's verification remainder. PITR is ENABLED on all
-  11 tables and the cross-account vault is LIVE in 914216784828. Item 4 (HMRC free-flag
-  email) is sent (2026-08-26, servicedrm@hmrc.gov.uk); it closes when "There is a free
-  version of this software" appears on the listing, checkable at the 4a text-fragment
-  link.
-- **Operator-bound**: 9 and 9a (Gmail settings), 17a (demo-video redo — Claude Code
-  excluded by operator directive), 19 (analytics console work), the GA4 service-account
-  secret for 14, the management-account cross-account-backup switch and backup-account
-  bootstrap for 25.
+- **In flight, awaiting merges/approvals**: 43a (cost instrumentation — root PR #20 plus
+  two management-account commands), 14a's consent-banner PRs (www #23, spreadsheets #46),
+  44 (ngrok removal — plan on main, option pick pending). `NEXT.md` carries the detail.
+- **Verification remainders on NEXT.md**: 25 (verify-backups green run), the dead weekly
+  schedules revival, the #61 scheduled-deploy step check. Item 4 (HMRC free-flag email)
+  is sent (2026-08-26); it closes when "There is a free version of this software" appears
+  on the listing, checkable at the 4a text-fragment link.
+- **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive),
+  the antony@ auto-responder check.
 - **Next candidates**: the 10a spike when the operator says go.
 
 ## Tier 1: do next
 
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
-| 9 | Fix the dead GitHub link in the support@ Gmail auto-reply (a mailbox setting, not repo code — verified; point it at the spreadsheets repo issues page) | Shutler email; batch 1 verification | S | Hygiene. Every support contact sees a broken link today. |
-| 9a | Widen the support autoresponder's sender filter: it replies to automated notifications, not just people — eight replies to AWS SNS subscription-confirmation emails on 2026-08-25 alone, each bouncing at an amazonses address, same defect class as the recorded GitHub-notification bounces | Workspace session, mail-mirror verification | S | Hygiene. One filter fix stops a standing stream of bounce noise in the support mailbox and prevents the autoresponder confirming SNS subscriptions nobody asked for. |
-| 13 | Usage data pipeline: Firehose from activity events/DynamoDB streams to partitioned Parquet on S3, Glue catalog + data quality, Athena, dashboard | Strategy, AWS audit | L | Insight [DE: streams, lake storage, cataloguing, quality, analysis]. The core CV/certification project, and the business's reporting backbone. Folds closed, with 13a, when B14's `ga4_traffic` Athena check passes — the rest of the pipeline is live in both environments. |
-| 13a | Firehose spike on one stream: activity events to date-partitioned S3, queried with Athena. No Glue quality rules, no dashboard, one table | Split from #13 | S | Insight [DE: streams]. The repo has no Firehose, Glue or Athena code at all, so #13 is greenfield. One table proves the delivery, IAM and cost shape before the lake design is committed. Spike scope fully delivered; closes with 13. |
 | 14 | Scheduled ingestion jobs: GA4 export, Stripe reconciliation, CloudFront logs, orchestrated with Step Functions/EventBridge | Strategy | M | Insight [DE: orchestration, batch ingestion]. Completes the platform; revenue and funnel land in one queryable place. |
 | 20 | Ops alerting uplift: Telegram/Slack fan-out with dedup and auto-raised GitHub issues | Issue #18 | L | Autonomy. Turns alarms into tracked work without an operator watching a channel. |
 | 20a | Channel decided: Telegram (operator, 2026-08-31; it already routes alarms — `SLACK_INTEGRATION_PLAN.md` is superseded). Prove one alarm end to end into an auto-raised GitHub issue | Split from #20 | S | Autonomy. Two plans currently describe two channels doing the same job. One alarm through the whole path answers the channel question and sizes the fan-out. |

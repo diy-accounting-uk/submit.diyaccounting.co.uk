@@ -17,12 +17,6 @@ operator step before them is done or when SSO is live.
      slot on 2026-08-31 never fired (see the scheduling item below). The 2026-08-30 run
      failed only because its 48-hour copy-job window still held the five pre-switch
      failures from 02:20 UTC on the 29th; all five copies on the 30th completed.
-- [ ] **(B14) Scheduled ingestion jobs.** The 03:15 UTC prod pull is a Lambda on an
-  EventBridge schedule (not GitHub Actions, so today's cron trouble does not apply).
-  Verification is blocked on expired AWS SSO: operator runs
-  `aws sso login --sso-session diyaccounting`, then Claude Code queries
-  `prod_env_analytics.ga4_traffic` in Athena workgroup `prod-env-analytics`
-  (submit-prod) for rows. Closing this also closes backlog 13/13a.
 - [ ] **(B14a) Gateway and spreadsheets GA4 streams are silent — diagnosed.** Cowork
   confirmed the scale: zero events in 28 days property-wide from both streams, while
   downloads and donations demonstrably happened; no `purchase`/`begin_checkout` ever
