@@ -3,7 +3,7 @@ env:
   - excludePaths: []
     name: baseline
     urls:
-    - https://submit.diyaccounting.co.uk
+    - https://local.submit.diyaccounting.co.uk:3443
   parameters:
     failOnError: true
     progressToStdout: false
@@ -14,12 +14,12 @@ jobs:
   type: passiveScan-config
 - parameters:
     maxDuration: 2
-    url: https://submit.diyaccounting.co.uk
+    url: https://local.submit.diyaccounting.co.uk:3443
   type: spider
 - parameters:
     maxDuration: 2
-    url: https://submit.diyaccounting.co.uk
-  type: spiderAjax
+    url: https://local.submit.diyaccounting.co.uk:3443
+  type: spiderClient
 - parameters:
     maxDuration: 0
   type: passiveScan-wait

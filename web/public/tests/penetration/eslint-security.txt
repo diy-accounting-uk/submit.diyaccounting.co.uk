@@ -1,20 +1,16 @@
 
-/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/buildFraudHeaders.js
-  10:70  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+Oops! Something went wrong! :(
 
-/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/env.js
-  10:8   warning  Found existsSync from package "fs" with non literal argument at index 0    security/detect-non-literal-fs-filename
-  18:31  warning  Found readFileSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
+ESLint: 9.39.5
 
-/Users/antony/projects/submit.diyaccounting.co.uk/app/lib/logger.js
-  271:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-  289:5  warning  Found mkdirSync from package "fs" with non literal argument at index 0  security/detect-non-literal-fs-filename
-
-/Users/antony/projects/submit.diyaccounting.co.uk/app/services/bundleManagement.js
-  218:19  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-
-/Users/antony/projects/submit.diyaccounting.co.uk/web/public/widgets/entitlement-status.js
-  123:21  warning  Found non-literal argument to RegExp Constructor  security/detect-non-literal-regexp
-
-✖ 7 problems (0 errors, 7 warnings)
-
+TypeError: Cannot read properties of undefined (reading 'Intrinsic')
+    at Object.<anonymous> (/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/node_modules/ts-api-utils/lib/index.cjs:787:57)
+    at Module._compile (node:internal/modules/cjs/loader:1804:14)
+    at Object..js (node:internal/modules/cjs/loader:1936:10)
+    at Module.load (node:internal/modules/cjs/loader:1525:32)
+    at Module._load (node:internal/modules/cjs/loader:1327:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+    at Module.require (node:internal/modules/cjs/loader:1548:12)
+    at require (node:internal/modules/helpers:152:16)
+    at Object.<anonymous> (/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/node_modules/eslint-plugin-sonarjs/cjs/S6759/rule.js:62:24)
