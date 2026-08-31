@@ -70,10 +70,9 @@ operator step before them is done or when SSO is live.
   say whether more read-only pages are worth building.
 
 - [ ] **(B35a) Drop the MCP promise from `web/public/mcp.html` — in flight.** Operator
-  decided (2026-08-31) to unpromise rather than build. The rewrite is done and pushed
-  on branch `claude/unpromise-mcp` (worktree `../wt-submit-unpromise-mcp`), branch CI
-  running; the sub-agent opens the PR on green for operator merge. Closes when the PR
-  merges and the live page makes no promise.
+  decided (2026-08-31) to unpromise rather than build. PR #67 is open with branch
+  test and deploy both green; operator merges. Closes when the PR merges and the live
+  page makes no promise, then remove the worktree `../wt-submit-unpromise-mcp`.
 
 ## Discipline
 
