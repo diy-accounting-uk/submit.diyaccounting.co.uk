@@ -21,7 +21,9 @@ combined row). Columns:
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
 - `Item`: a short name, not the row's full prose.
-- `Tier`: the backlog tier (`T1`…`T5`), or `NEXT` for an item with no backlog row.
+- `Tier`: the backlog tier (`T1`…`T5`). Only backlog rows have a tier — an item
+  tracked only on `NEXT.md` gets `—`, exactly as an item without a GitHub issue does;
+  `NEXT` is where things are tracked, not a tier.
 - `State`: exactly one word — `in-flight` (being worked right now), `ready` (nothing
   prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
   prerequisite item, or a decision not yet made). Operator-owned work that could
