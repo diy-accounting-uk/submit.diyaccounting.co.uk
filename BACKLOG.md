@@ -53,6 +53,7 @@ truthfully on its own.
 | 30 | Alarm-count audit (123 per deployment) and canary cadence review | Cost analysis | M | Hygiene. Largest recurring CloudWatch line; worthwhile after #26 settles what should exist. |
 | 32a | Cut pipeline run times: ci deploys hit ~30 minutes, prod ~50 | Operator, this session | M | Hygiene, compounding. Every iteration in every workstream pays this tax. Profile the deploy workflow stages, parallelise stacks, cache Docker/Maven layers, and lean on the existing lean-deploy path for app-only changes. The TypeScript migration (#33) is a chance to rebuild the pipeline shape rather than port it. |
 | 32b | Apply the specced `requireActivity()` gating to the obligations and view-return endpoints, and check `prod-env-hmrc-api-requests` for whether anyone uses them | Split from #32 (32a is an unrelated item) | S | Trust, then revenue. Two read endpoints are live and ungated today. The usage numbers also say whether three more read-only pages are worth building at all. |
+| 40a | Make behaviour-test ports allocatable: `.env.simulator` hardcodes 3000/9000/9001, so two concurrent local runs (e.g. parallel agent worktrees) silently kill each other's servers | Demo-videos agent, batch 2 | S | Hygiene. Every parallel-agent batch risks a wasted run and a misleading failure until ports are per-run. |
 
 ## Tier 3: autonomy (ongoing workstream)
 
@@ -88,7 +89,6 @@ truthfully on its own.
 | 37 | Merch (#17): simple storefront link version only | Issue #17 | S | Revenue, negligible. Do the link version if ever; skip the integrated build. |
 | 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
 | 40 | Refactor batch: PLAN_REDUCE items, TODO inventory refresh, mode-naming cleanup (#12), and the dead shadowed `submitVat` copy in `submitVat.html` whose friendly-message branches never fire (found fixing B6) | PLAN_REDUCE, TODO_INVENTORY, issue #12 | S/M | Hygiene. Good filler for sub-agents between larger dispatches. |
-| 40a | Make behaviour-test ports allocatable: `.env.simulator` hardcodes 3000/9000/9001, so two concurrent local runs (e.g. parallel agent worktrees) silently kill each other's servers | Demo-videos agent, batch 2 | S | Hygiene. Every parallel-agent batch risks a wasted run and a misleading failure until ports are per-run. |
 | 41 | Doc hygiene: archive the two stale "in progress" plans that shipped, fix the dangling NEXT.md reference, close out PLAN_FLAGGED | Repo review | S | Hygiene. Stale plans mislead every future session. |
 
 ## Why this order
