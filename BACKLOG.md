@@ -88,7 +88,10 @@ truthfully on its own.
 | 36 | Social IdPs: Apple, Microsoft | Issue #14 | L | Revenue, marginal. No evidence login choice is losing users; revisit when funnel data (#13) exists. |
 | 37 | Merch (#17): simple storefront link version only | Issue #17 | S | Revenue, negligible. Do the link version if ever; skip the integrated build. |
 | 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
-| 40 | Refactor batch: PLAN_REDUCE items, TODO inventory refresh, mode-naming cleanup (#12), and the dead shadowed `submitVat` copy in `submitVat.html` whose friendly-message branches never fire (found fixing B6) | PLAN_REDUCE, TODO_INVENTORY, issue #12 | S/M | Hygiene. Good filler for sub-agents between larger dispatches. |
+| 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
+| 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
+| 40d | Mode-naming cleanup: rename the sandbox/test/live "developer options" modes to "synthetic" consistently across code and UI | Issue #12 | S | Hygiene. One name per concept; the current three-way naming misleads every new reader. |
+| 40e | Delete the dead shadowed `submitVat` copy in `submitVat.html` — its friendly-error-message branches can never fire (found fixing B6) | Repo find, fixing B6 | S | Hygiene. Dead code that looks live; behavior-neutral removal. |
 | 41 | Doc hygiene: archive the two stale "in progress" plans that shipped, fix the dangling NEXT.md reference, close out PLAN_FLAGGED | Repo review | S | Hygiene. Stale plans mislead every future session. |
 
 ## Why this order
