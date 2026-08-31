@@ -40,14 +40,13 @@ operator step before them is done or when SSO is live.
   stripeSubscriptionId via stripe listen). The deletion wave (steps 9, 10, 12) is
   merged: ngrok machinery and hostname gone, docs rewritten, `scripts/proxy-secrets.sh`
   fetches local secrets over SSO, generated files regenerated, grep gate down to its
-  one accepted residue (`repository-contents.txt` naming the plan file). Final gate in
-  flight: unit+system, CDK build and all five behaviour variants green post-deletion;
-  the accessibility/ZAP/pa11y/compliance batch is running. Then: clean `npm ci`,
-  Stripe endpoint check (ngrok and legacy webhook endpoints deleted 2026-08-31), push,
-  dispatched CI proxy job with `runProxyBehaviourTests=true` plus a branch `deploy.yml`
-  run; then the PR and operator merge. After the merge (operator, 2026-08-31): delete
-  the `NGROK_AUTHTOKEN` GitHub secret from both environments and the ngrok redirect
-  URI in the HMRC hub, freeing a slot in the 5-URI cap.
+  one accepted residue (`repository-contents.txt` naming the plan file). The final
+  gate is complete: every named check green locally, the dispatched CI proxy job green
+  with no ngrok secret, `deploy.yml` green on the branch, Stripe ngrok/legacy webhook
+  endpoints deleted. PR #68 is open; operator merges. After the merge (operator,
+  2026-08-31): delete the `NGROK_AUTHTOKEN` GitHub secret from both environments and
+  the ngrok redirect URI in the HMRC hub, freeing a slot in the 5-URI cap; then this
+  item closes and `PLAN_REMOVE_NGROK.md` archives.
 
 - [ ] **(B19) GA4 console work — operator.** In the GA4 console: turn on the data
   export, schedule the Stripe report, mark conversions, retire the old stream and the
