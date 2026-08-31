@@ -41,13 +41,13 @@ operator step before them is done or when SSO is live.
 - [ ] **(B43a) Instrument the AWS accounts for cost analysis.** Design is at
   `PLAN_COST_INSTRUMENTATION.md` (zero active allocation tags, zero budgets, zero
   anomaly monitors today; the legacy CUR writes to a bucket that no longer exists).
-  Open steps: the redeploy got past the repaired bootstrap but
-  `root-CostReportingUE1Stack` rolled back — BCM Data Exports rejects the CUR query's
-  `SELECT *` and wants explicit columns; a debug agent is deriving the column list from
-  the service and producing a fix PR. Then: operator merges and re-dispatches; on
-  green, Claude Code confirms the CUR export, budgets and anomaly monitor exist. Cost
-  Explorer multi-year and resource-level daily data are enabling (ready within 48h of
-  2026-08-31). Feeds backlog #43's
+  Open steps: operator merges root PR #22 (the CUR export query now names all 116
+  columns read from the service — BCM Data Exports rejects `SELECT *`) and
+  re-dispatches the root deploy. The eu-west-2 stack is already `CREATE_COMPLETE`; the
+  us-east-1 stack sits in first-create `ROLLBACK_COMPLETE`, which the CDK CLI clears
+  itself on the next deploy. On green, Claude Code confirms the CUR export, budgets
+  and anomaly monitor exist. Cost Explorer multi-year and resource-level daily data
+  are enabling (ready within 48h of 2026-08-31). Feeds backlog #43's
   whole-bill review, which should also look at the August jump to $231 (Bedrock in
   spreadsheets, CloudWatch in submit-prod, the us-east-1 bootstrap ECR line).
 
