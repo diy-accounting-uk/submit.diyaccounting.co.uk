@@ -43,10 +43,11 @@ operator step before them is done or when SSO is live.
   one accepted residue (`repository-contents.txt` naming the plan file). Final gate in
   flight: unit+system, CDK build and all five behaviour variants green post-deletion;
   the accessibility/ZAP/pa11y/compliance batch is running. Then: clean `npm ci`,
-  Stripe endpoint check, push, dispatched CI proxy job with
-  `runProxyBehaviourTests=true` plus a branch `deploy.yml` run; operator deletes the
-  `NGROK_AUTHTOKEN` GitHub secret and the ngrok redirect URI in the HMRC hub; then
-  the PR.
+  Stripe endpoint check (ngrok and legacy webhook endpoints deleted 2026-08-31), push,
+  dispatched CI proxy job with `runProxyBehaviourTests=true` plus a branch `deploy.yml`
+  run; then the PR and operator merge. After the merge (operator, 2026-08-31): delete
+  the `NGROK_AUTHTOKEN` GitHub secret from both environments and the ngrok redirect
+  URI in the HMRC hub, freeing a slot in the 5-URI cap.
 
 - [ ] **(B17a) Demo videos — operator-owned.** Redo the walkthrough capture properly
   (the first attempt recorded the simulator and the cuts are blank) and publish to
