@@ -81,6 +81,9 @@ Each AWS account has its own Secrets Manager entries. GitHub Actions secrets flo
 | HMRC Sandbox Client Secret | `HMRC_SANDBOX_CLIENT_SECRET` | `{env}/submit/hmrc/sandbox_client_secret` | submit-ci, submit-prod | HMRC sandbox testing |
 | User Sub Hash Salt | (auto-generated) | `{env}/submit/user-sub-hash-salt` | submit-ci, submit-prod | DynamoDB partition keys |
 | Local TLS Certificate | (none — published by `certbot renew --deploy-hook`) | `ci/submit/local-tls/certificate` | submit-ci | Proxy behaviour tests, native HTTPS on `local.submit.diyaccounting.co.uk:3443` |
+| Telegram Bot Token | `TELEGRAM_BOT_TOKEN` | `{env}/submit/telegram/bot_token` | submit-ci, submit-prod | Activity alerts |
+
+The Telegram bot is `diyaccounting` (`@diyaccounting_bot`); alert groups are `diy-ci-test`, `diy-ci-live`, `diy-ci-ops`, `diy-prod-test`, `diy-prod-live`, `diy-prod-ops`; the operator's username is `@tele_t_uk`.
 
 ### 2.2 Secret Flow Architecture
 
