@@ -27,23 +27,25 @@ events. No account, no token, no tunnel, no shared connection to collide over.
 |---|---|
 | `app/bin/ngrok.js` | Starts the tunnel through `@ngrok/ngrok` with `authtoken_from_env: true`. Reads `NGROK_DOMAIN`, else derives the domain from `DIY_SUBMIT_BASE_URL`. |
 | `behaviour-tests/helpers/behaviour-helpers.js:154` | `runLocalSslProxy()` imports `startNgrok` and runs it when `TEST_PROXY=run`. Called from every behaviour test's `beforeAll`. |
-| All 17 behaviour tests | Read `TEST_PROXY`, hold an `ngrokProcess` handle, and pick `testUrl = baseUrl` (the tunnel) instead of `http://127.0.0.1:3000/` when the proxy is running. |
-| `.env.proxy:12` and `.env.proxyRunning:12` | `DIY_SUBMIT_BASE_URL=https://wanted-finally-anteater.ngrok-free.app/`. `.env.proxy` also sets `TEST_PROXY=run` and carries two ngrok TODO comments; `.env.proxyRunning` expects a tunnel already up. |
-| `.env.simulator:4` | Comment describing the simulator as the way to run without ngrok. |
+| All 17 behaviour tests | Read `TEST_PROXY` (all 17); 14 also hold an `ngrokProcess` handle. Each picks `testUrl = baseUrl` (the tunnel) instead of `http://127.0.0.1:3000/` when the proxy is running. |
+| `behaviour-tests/steps/behaviour-steps.js:17` | Sends an `ngrok-skip-browser-warning` extra HTTP header on every page load. |
+| `.env.proxy:4,12,18-19` and `.env.proxyRunning:4,12` | `DIY_SUBMIT_BASE_URL=https://wanted-finally-anteater.ngrok-free.app/` at line 12 of both, an ngrok description comment at line 4 of both, and two TODO comments at `.env.proxy:18-19`. `.env.proxy` also sets `TEST_PROXY=run`; `.env.proxyRunning` expects a tunnel already up. |
+| `.env.simulator:4`, `scripts/start-simulator.sh:6` | Comments describing the simulator as the way to run without ngrok. |
 | `scripts/start-proxy.sh:36` | Starts `npm run proxy -- 3000` as a background job alongside dynalite, mock-oauth2 and the server. |
 | `package.json:172` | `"proxy": "npx dotenv -e .env.proxy -- node app/bin/ngrok.js"`. |
 | `package.json:285` and `package-lock.json` | `@ngrok/ngrok` as a devDependency. |
-| `scripts/stripe-setup.js:146` | Registers a Stripe webhook endpoint at the hardcoded `https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook`. |
+| `scripts/stripe-setup.js:145-148` | Registers a Stripe webhook endpoint at the hardcoded `https://wanted-finally-anteater.ngrok-free.app/api/v1/billing/webhook`. |
 | `scripts/stripe-trigger-lifecycle.sh:15` | Comment gives the ngrok URL as the example webhook endpoint. |
-| `package.json:191-241` and `.pa11yci.proxy.json` | `axe`, `lighthouse`, `text-spacing-test.js`, the ZAP baseline, pa11y and the compliance report all hardcode the ngrok hostname. About 30 URLs in `package.json`, 26 entries in `.pa11yci.proxy.json`. |
+| `package.json:191-241` and `.pa11yci.proxy.json` | `axe`, `lighthouse`, `text-spacing-test.js`, the ZAP baseline, pa11y and the compliance report all hardcode the ngrok hostname. 107 hostname occurrences in `package.json`, 27 URLs in `.pa11yci.proxy.json`. |
 | `web/public/auth/login.html:172-177` | Loads the mock auth addon only when the hostname is localhost, 127.0.0.1 or contains `ngrok`. |
-| `.github/workflows/test.yml:47,1123` | `NGROK_AUTHTOKEN` declared as a `workflow_call` secret and passed to the one proxy job. |
-| `.github/workflows/deploy.yml:299` | Forwards `secrets.NGROK_AUTHTOKEN` into `test.yml`. |
+| `.github/workflows/test.yml:22,41,47,524,1086,1123` | `NGROK_AUTHTOKEN` declared as a `workflow_call` secret (47) and passed to the one proxy job (1123). Two input descriptions say "uses ngrok and Docker" (22, 41) and two comments name ngrok (524, 1086). |
+| `.github/workflows/deploy.yml:59,299` | Forwards `secrets.NGROK_AUTHTOKEN` into `test.yml` (299); input description says "uses ngrok and Docker" (59). |
 | `app/unit-tests/bin/ngrok.test.js` | Unit test over `extractDomainFromUrl` and `startNgrok`. |
-| `app/bin/server.js:96`, `app/lib/httpServerToLambdaAdaptor.js:24` | Comments only. Both already handle the no-tunnel case. |
-| `_developers/SETUP.md` steps 1, 3, 4, 5, 6; `GITHUB_SETUP.md:155` | Tell a new developer to get an ngrok authtoken and reserve a subdomain. |
-| `CLAUDE.md`, `REPORT_REPOSITORY_CONTENTS.md`, `PASSES.md:322`, `BACKLOG.md`, `.github/copilot-instructions.md:154,215,277`, `.github/agents/behavior-test-master.agent.md:14`, `prompts/behavior-test-master.md` | Describe the proxy environment as an ngrok environment. |
-| `_developers/archive/NGROK_ALTERNATIVES.md`, `HMRC_PRODUCTION_APPROVAL_PLAN.md:37-58`, `PLAN_PROD_BUNDLE_ACTIVATION_FIX.md:77,129,130`, `QUESTIONNAIRE_EVIDENCE_TRACEABILITY.md:164,165,168,246` | Records of completed work that quote the ngrok hostname. |
+| `app/bin/server.js:77,96,135`, `app/lib/httpServerToLambdaAdaptor.js:24` | Comments only. Both files already handle the no-tunnel case. |
+| `_developers/SETUP.md` (prerequisites, steps 3-7, and the "Run the website locally" section at lines 177-217); `GITHUB_SETUP.md:82,155` | Tell a new developer to get an ngrok authtoken and reserve a subdomain; list `NGROK_AUTHTOKEN` as a GitHub secret. |
+| `RUNBOOK_INFORMATION_SECURITY.md:195` | `NGROK_AUTHTOKEN` row in the secrets inventory table. |
+| `CLAUDE.md`, `REPORT_REPOSITORY_CONTENTS.md`, `PASSES.md:322`, `BACKLOG.md`, `.github/copilot-instructions.md:154,215,277`, `.github/agents/behavior-test-master.agent.md:14`, `prompts/behavior-test-master.md:10` | Describe the proxy environment as an ngrok environment. |
+| `_developers/archive/` (9 files, including `NGROK_ALTERNATIVES.md`, `HMRC_PRODUCTION_APPROVAL_PLAN.md`, `QUESTIONNAIRE_EVIDENCE_TRACEABILITY.md`) | Records of completed work that quote the ngrok hostname as evidence. The operator settled (2026-08-31) that these stay as written; the grep gate excludes the directory. `NGROK_ALTERNATIVES.md` alone is deleted, superseded by this plan. |
 | `repository-contents.txt`, `web/public/tests/test-report-web-test-local.json` | Generated files carrying the hostname from an old run. |
 
 ## Why a public URL is needed today
@@ -69,7 +71,7 @@ Stripe traffic satisfies that.
 
 Nothing else reaches the machine from outside. Mock OAuth2 login, dynalite and the HMRC API calls
 are all outbound or local. `Gov-Client-Public-IP` looks like a third need but is not:
-`app/bin/server.js:99` already injects a synthetic `X-Forwarded-For` of `203.0.113.1` and a
+`app/bin/server.js:101` already injects a synthetic `X-Forwarded-For` of `203.0.113.1` and a
 `CloudFront-Viewer-Address` when the headers are absent, so `buildFraudHeaders.js` produces a
 full header set without a proxy in front.
 
@@ -90,7 +92,7 @@ simulator run gets the local auto-completing checkout instead.
 
 ## How CI uses the tunnel
 
-One job: `behaviour-test-proxy-submit-vat` in `test.yml:1087`. It is gated on
+One job: `behaviour-test-proxy-submit-vat` in `test.yml:1088`. It is gated on
 `runProxyBehaviourTests == 'true'`, which normalises to `'false'` at `test.yml:171` when no input
 is given, so it runs only when someone opts in through `workflow_dispatch`. It gets
 `NGROK_AUTHTOKEN` from the GitHub environment and runs `npm run test:submitVatBehaviour-proxy`.
@@ -127,8 +129,9 @@ A submit-repo stack is the wrong home. `SubmitSharedNames.java:440-462` derives 
 from `envName` and `deploymentName`, so `local.` has no owner there, and a per-deployment stack
 would destroy and recreate a developer-machine record on every CI run.
 
-One gap for whoever implements it. `Route53AliasUpsert` only ever writes an `AliasTarget`
-(`Route53AliasUpsert.java:47-55`). A literal `127.0.0.1` needs a sibling method that puts
+One gap for whoever implements it. `Route53AliasUpsert`
+(`root.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/root/utils/Route53AliasUpsert.java:46-60`)
+only ever writes an `AliasTarget`. A literal `127.0.0.1` needs a sibling method that puts
 `"ResourceRecords": [{"Value": "127.0.0.1"}]` and a `"TTL"` in the record set instead. Write the
 sibling rather than reaching for the L2 `route53.ARecord`, because the UPSERT custom resource is
 what makes these records survive a record created by hand. Write the A record only. Do not copy
@@ -212,21 +215,22 @@ getting a new body.
 
 **Port.** 3443, because binding 443 needs root on macOS. So
 `DIY_SUBMIT_BASE_URL=https://local.submit.diyaccounting.co.uk:3443/`, and every registered
-redirect URI carries the port. Open question to settle in step 4, before anything is deleted:
-whether the HMRC Developer Hub, Cognito and Google all accept a redirect URI with an explicit
-port. If one refuses, add a `pfctl` redirect from 443 to 3443 on loopback and register the
-portless URL instead.
+redirect URI carries the port. Step 4 confirms the HMRC Developer Hub accepts a redirect URI
+with an explicit port, before anything is deleted. If it refuses, the settled fallback is a
+`pfctl` redirect from 443 to 3443 on loopback and the portless URL registered instead. Cognito
+and Google need no registration on the critical path (see the Cognito and Google decisions
+below), so the hub is the only registrar to check.
 
 **Certificate paths on each machine.** The absolute paths contain `$HOME`, so they go in the
 gitignored root `.env`, not in the committed `.env.proxy`. `.env.proxy` carries only
 `TEST_SERVER_TLS=run` and `TEST_SERVER_HTTPS_PORT=3443`. This matches the existing split, where
 `.env` holds machine-local values and `.env.*` hold shared ones.
 
-**`TEST_PROXY` goes away.** The `testUrl` expression at `submitVat.behaviour.test.js:193` and its
-16 siblings collapses to `baseUrl`. Every variant's `DIY_SUBMIT_BASE_URL` already names the right
-front door, including `.env.simulator` at `http://localhost:3000/`, so the switch has nothing left
-to choose between. Delete `runProxy`, the `ngrokProcess` handles and the `runLocalSslProxy` calls
-from all 17 tests.
+**`TEST_PROXY` goes away.** The `testUrl` expression at `submitVat.behaviour.test.js:192-195` and
+its 16 siblings collapses to `baseUrl`. Every variant's `DIY_SUBMIT_BASE_URL` already names the
+right front door, including `.env.simulator` at `http://localhost:3000/`, so the switch has
+nothing left to choose between. Delete `runProxy`, the `ngrokProcess` handles (14 tests) and the
+`runLocalSslProxy` calls from all 17 tests.
 
 **Cognito.** `.env.proxy` leaves `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID` and `COGNITO_BASE_URI`
 blank and runs the mock OAuth2 server, so the proxy variant does not touch real Cognito today.
@@ -253,11 +257,11 @@ arn:aws:secretsmanager:eu-west-2:367191799875:secret:ci/submit/local-tls/certifi
 ```
 
 Create it the same way as the other environment secrets, with the
-`aws secretsmanager describe-secret || create-secret` pattern at `deploy-environment.yml:180-212`.
+`aws secretsmanager describe-secret || create-secret` pattern at `deploy-environment.yml:178-188`.
 The renewal deploy-hook above keeps it current.
 
 The proxy job has no AWS credentials today, so it gains the standard two-step OIDC chain used at
-`test.yml:365-382`: `vars.SUBMIT_ACTIONS_ROLE_ARN` with `role-chaining: false`, then
+`test.yml:364-384`: `vars.SUBMIT_ACTIONS_ROLE_ARN` with `role-chaining: false`, then
 `vars.SUBMIT_DEPLOY_ROLE_ARN` with `role-chaining: true`. `submit-ci-deployment-role` carries
 `AdministratorAccess`, so the read works; a narrower read-only role scoped to this one secret is a
 sensible follow-up if the operator wants the proxy job off the admin role.
@@ -315,33 +319,41 @@ locally. The `-ci` variant already covers that path.
 
 ## Ordered steps
 
-Step 4 is the gate. Nothing gets deleted until steps 1 to 6 prove the new front door works.
+Owner is `sub-agent` or `operator`. Every operator step is a STOP-AND-WAIT gate: the sub-agent
+reaching it presents the exact action below, stops, and waits for the operator to confirm it is
+done before continuing. Ordering: 1 and 2 can run in parallel; 3 needs 2; 4 needs nothing; 5
+needs 3; 6 needs 3; 7 needs 4 and 6; 8 needs 6; 9-12 need 7 and 8 green; the step 11 dispatched
+run needs 5.
 
-| # | Step | Owner |
-|---|---|---|
-| 1 | Add the `local.submit.diyaccounting.co.uk` A record to `127.0.0.1` in the root repo's `RootDnsStack`, with a non-alias UPSERT sibling on `Route53AliasUpsert`. PR, merge, deploy. | root repo, CDK |
-| 2 | Add the `root-certbot-dns01` IAM role to `RootDnsStack` and a `certbot-local` profile in `~/.aws/config`. **Approved by the operator on 2026-08-31**, who accepted that Route53 cannot scope `ChangeResourceRecordSets` below zone level. No further permission needed to create it. | root repo, CDK + operator |
-| 3 | Issue the certificate with the certbot command above. **NEEDS-APPROVAL**: the run writes and deletes a TXT record in the production zone. | operator |
-| 4 | Register `https://local.submit.diyaccounting.co.uk:3443/activities/submitVatCallback.html` on the HMRC sandbox application in the Developer Hub. Confirm the hub accepts the explicit port. If it refuses, add the `pfctl` 443-to-3443 redirect and register the portless URL. **NEEDS-APPROVAL** as an operator console change. | operator, console |
-| 5 | Create the `ci/submit/local-tls/certificate` secret in submit-ci and add `scripts/local-tls-publish.sh` plus the `certbot renew --deploy-hook` wiring and the launchd agent. **NEEDS-APPROVAL**: creating and writing the secret is an AWS write. | operator |
-| 6 | Add the TLS branch to `app/bin/server.js`, `TEST_SERVER_TLS*` to `.env.proxy`, and the two absolute cert paths to the local `.env`. Point `DIY_SUBMIT_BASE_URL` at the new URL in `.env.proxy` and `.env.proxyRunning`, and drop the two ngrok TODO comments at the top of `.env.proxy`. | this repo |
-| 7 | Run the three proxy behaviour tests green with the tunnel down. This proves both legs before any deletion. | this repo |
-| 8 | Add `runStripeListen` to `behaviour-helpers.js`, spawning before `runLocalHttpServer`. Drop the proxy webhook block from `scripts/stripe-setup.js:146` and fix the example URL in `scripts/stripe-trigger-lifecycle.sh:15`. | this repo |
-| 9 | Delete `app/bin/ngrok.js`, `app/unit-tests/bin/ngrok.test.js`, `runLocalSslProxy`, the `TEST_PROXY` reads and `ngrokProcess` handles across the 17 behaviour tests, the `proxy` npm script, the `@ngrok/ngrok` devDependency, the ngrok block in `scripts/start-proxy.sh:36`, and the two stale comments in `app/bin/server.js:96` and `app/lib/httpServerToLambdaAdaptor.js:24`. | this repo |
-| 10 | Sweep the hostname out of `.pa11yci.proxy.json` and `package.json:191-241`, keeping `https://` and adding `--add-host` to the two ZAP lines. Update the hostname test at `web/public/auth/login.html:172-177`. | this repo |
-| 11 | Remove `NGROK_AUTHTOKEN` from `test.yml:47`, `test.yml:1123` and `deploy.yml:299`. Add the OIDC chain, the `/etc/hosts` line, the certificate fetch and the `TEST_SERVER_TLS*` env to the proxy job. | this repo |
-| 12 | Rewrite the prose sites: `_developers/SETUP.md` steps 1, 3, 4, 5, 6; `GITHUB_SETUP.md:155`; `CLAUDE.md`; `REPORT_REPOSITORY_CONTENTS.md`; `PASSES.md:322`; `BACKLOG.md`; `.github/copilot-instructions.md`; `.github/agents/behavior-test-master.agent.md:14`; `prompts/behavior-test-master.md`; the `.env.simulator:4` comment. Delete `_developers/archive/NGROK_ALTERNATIVES.md`, which this plan supersedes, and repoint the quoted hostname in the three other archive documents. Regenerate `repository-contents.txt` and `web/public/tests/test-report-web-test-local.json`. | this repo |
-| 13 | Decide whether `.env.proxyRunning` survives. Its only difference from `.env.proxy` was that a tunnel was already up. With no tunnel it duplicates `.env.proxy` apart from the `run` and `useExisting` switches for the server, auth and dynamodb. Keep it only if that workflow is still used. | operator |
-| 14 | Add the local callback URL to `IdentityStack.buildCallbackUrls` and `buildLogoutUrls` for the ci environment. Only needed if the operator wants the proxy variant on real Cognito instead of the mock OAuth2 server. | this repo, CDK |
+Nothing gets deleted (steps 9-12) until steps 7 and 8 prove both legs work with the tunnel down.
+
+| # | Step | Owner | Verify |
+|---|---|---|---|
+| 1 | Add the `local.submit.diyaccounting.co.uk` A record to `127.0.0.1` in the root repo's `RootDnsStack`, with a non-alias UPSERT sibling on `Route53AliasUpsert` (see the record-lands decision above). Open the PR; the operator merges and the root deploy workflow applies it. | sub-agent (root repo, CDK) | `dig +short local.submit.diyaccounting.co.uk` returns `127.0.0.1` |
+| 2 | Add the `root-certbot-dns01` IAM role to `RootDnsStack` (three actions listed in the credentials decision above), PR alongside or after step 1. **Approved by the operator on 2026-08-31**, who accepted that Route53 cannot scope `ChangeResourceRecordSets` below zone level. No further permission needed to create it. The operator then adds the `certbot-local` profile to `~/.aws/config` with `role_arn` = the new role and `source_profile = management`. | sub-agent (root repo, CDK); operator adds the profile | `aws --profile certbot-local sts get-caller-identity` shows the `root-certbot-dns01` role |
+| 3 | **STOP-AND-WAIT.** Operator installs certbot (`pipx install certbot`, `pipx inject certbot certbot-dns-route53`) and runs the certbot command above with `AWS_PROFILE=certbot-local`. The run writes and deletes a TXT record in the production zone. | operator | Both PEM files exist under `$HOME/.local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk/` |
+| 4 | **STOP-AND-WAIT.** Operator registers `https://local.submit.diyaccounting.co.uk:3443/activities/submitVatCallback.html` on the HMRC sandbox application (`HMRC_CLIENT_ID=uqMHA6RsDGGa7h8EG2VqfqAmv4tV`) in the Developer Hub, and confirms the hub accepted the explicit port. If the hub refuses the port, operator adds the `pfctl` 443-to-3443 loopback redirect and registers the portless URL, and the sub-agent drops `:3443` from every URL in later steps. | operator (console) | The sandbox application's redirect URI list shows the new URL |
+| 5 | Sub-agent adds `scripts/local-tls-publish.sh` (contents above) to this repo. **STOP-AND-WAIT** for the rest: operator creates the `ci/submit/local-tls/certificate` secret in submit-ci by running the script once with `RENEWED_LINEAGE=$HOME/.local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk` (using `create-secret` on first run, per the `deploy-environment.yml:178-188` pattern), wires `certbot renew --deploy-hook` and the weekly launchd agent on their machine. | sub-agent (script); operator (AWS write + launchd) | `aws --profile submit-ci secretsmanager get-secret-value --secret-id ci/submit/local-tls/certificate --region eu-west-2 --query SecretString --output text \| jq 'keys'` returns `["fullchain","privkey"]` |
+| 6 | Add the TLS branch to `app/bin/server.js` (decision above). Add `TEST_SERVER_TLS=run` and `TEST_SERVER_HTTPS_PORT=3443` to `.env.proxy` and `.env.proxyRunning`; the operator adds the two absolute cert paths to the gitignored local `.env`. Point `DIY_SUBMIT_BASE_URL` at `https://local.submit.diyaccounting.co.uk:3443/` in `.env.proxy:12` and `.env.proxyRunning:12`, reword the ngrok description comments at line 4 of both, and drop the two TODO comments at `.env.proxy:18-19`. `.env.proxyRunning` stays: its `useExisting` switches for server, auth and dynamodb are its purpose, and they survive the tunnel. | sub-agent; operator (`.env` lines) | `npm start`, then `curl -sSI https://local.submit.diyaccounting.co.uk:3443/` succeeds with no `-k` |
+| 7 | Prove leg 1 with the tunnel down: `pgrep -f ngrok` empty, then run the HMRC-side proxy tests. | sub-agent | `npm run test:submitVatBehaviour-proxy` and `npm run test:postVatReturnFraudPreventionHeadersBehaviour-proxy` green |
+| 8 | Prove leg 2: add `runStripeListen` to `behaviour-helpers.js`, spawning before `runLocalHttpServer` (ordering constraint above). Drop the proxy webhook block from `scripts/stripe-setup.js:145-148` and fix the example URL in `scripts/stripe-trigger-lifecycle.sh:15`. | sub-agent | `npm run test:paymentBehaviour-proxy` green; the bundle row gains a real `stripeSubscriptionId` |
+| 9 | Delete `app/bin/ngrok.js`, `app/unit-tests/bin/ngrok.test.js`, `runLocalSslProxy`, the `TEST_PROXY` reads (17 tests) and `ngrokProcess` handles (14 tests), the `proxy` npm script at `package.json:172`, the `@ngrok/ngrok` devDependency at `package.json:285`, the ngrok block in `scripts/start-proxy.sh:36`, the `ngrok-skip-browser-warning` header at `behaviour-tests/steps/behaviour-steps.js:17`, and the stale ngrok comments at `app/bin/server.js:77,96,135` and `app/lib/httpServerToLambdaAdaptor.js:24`. | sub-agent | `npm test`; `npm run test:submitVatBehaviour-proxy`; `npm run test:submitVatBehaviour-simulator` |
+| 10 | Sweep the hostname out of `.pa11yci.proxy.json` (27 URLs) and `package.json:191-241` (107 occurrences), keeping `https://` and adding `--add-host local.submit.diyaccounting.co.uk:host-gateway` to the two ZAP lines at `package.json:229,232`. Update the hostname test at `web/public/auth/login.html:172-177` to match `local.submit.diyaccounting.co.uk` instead of `ngrok`. | sub-agent | The accessibility, ZAP, pa11y and compliance commands in the final gate |
+| 11 | Remove `NGROK_AUTHTOKEN` from `test.yml:47,1123` and `deploy.yml:299`, and reword the "uses ngrok and Docker" input descriptions at `test.yml:22,41` and `deploy.yml:59` and the comments at `test.yml:524,1086`. Add the OIDC chain, the `/etc/hosts` line, the certificate fetch and the `TEST_SERVER_TLS*` env to the proxy job (yaml above). Operator deletes the `NGROK_AUTHTOKEN` GitHub secret from both environments. | sub-agent; operator (GitHub secret) | The dispatched proxy-job run below; a `deploy.yml` run on the branch goes green |
+| 12 | Rewrite the prose sites: `_developers/SETUP.md` (prerequisites, steps 3-7, "Run the website locally"); `GITHUB_SETUP.md:82,155`; `RUNBOOK_INFORMATION_SECURITY.md:195`; `CLAUDE.md`; `REPORT_REPOSITORY_CONTENTS.md`; `PASSES.md:322`; `BACKLOG.md`; `.github/copilot-instructions.md:154,215,277`; `.github/agents/behavior-test-master.agent.md:14`; `prompts/behavior-test-master.md:10`; the comments at `.env.simulator:4` and `scripts/start-simulator.sh:6`. Delete `_developers/archive/NGROK_ALTERNATIVES.md`, which this plan supersedes; every other archive file stays as written. Regenerate `repository-contents.txt` with `./scripts/export-files.sh` and `web/public/tests/test-report-web-test-local.json` with `./scripts/publish-web-test-local.sh target/behaviour-test-results/test-report-submitVatBehaviour.json web-test-local` after the step 7 run. | sub-agent | Grep gate below; operator follows the rewritten SETUP.md end to end in a clean shell with `NGROK_AUTHTOKEN` unset |
 
 Two things to watch while verifying, neither of them blocking:
 
 - HMRC sandbox receives `Gov-Client-Public-IP: 203.0.113.1`, the synthetic value from
-  `server.js:99`, where ngrok used to supply a real public IP. Nothing sits in front of the local
+  `server.js:101`, where ngrok used to supply a real public IP. Nothing sits in front of the local
   server now, so the header stays synthetic. The fraud-prevention headers test is where that
   shows up.
 - A second developer needs their own certificate for the same name, which needs Route53 change
   access on the zone. Today that is one person, so the `certbot-local` role covers it.
+
+The ci-environment Cognito callback registration (the Cognito decision above) is not a step here:
+the proxy variant runs on the mock OAuth2 server, and the decision paragraph holds the exact
+change for whenever the operator asks for real Cognito locally.
 
 ## Coverage map
 
@@ -352,26 +364,28 @@ Every inventoried site, the step that removes or repoints it, and the check that
 | `app/bin/ngrok.js` | 9 | `npm test`; grep gate |
 | `app/unit-tests/bin/ngrok.test.js` | 9 | `npm test` passes with the file gone |
 | `runLocalSslProxy` in `behaviour-helpers.js` | 9 | `npm run test:submitVatBehaviour-proxy` |
-| `TEST_PROXY` and `ngrokProcess` in all 17 behaviour tests | 9 | the four proxy runs below, plus `npm run test:submitVatBehaviour-simulator` |
-| `.env.proxy` base URL, `TEST_PROXY`, TODO comments | 6 | `npm run test:submitVatBehaviour-proxy` |
-| `.env.proxyRunning` base URL | 6, 13 | `npm run test:submitVatBehaviour-proxyRunning` if kept, else the file is gone |
-| `.env.simulator:4` comment | 12 | grep gate |
+| `TEST_PROXY` (17 tests) and `ngrokProcess` (14 tests) | 9 | the four proxy runs below, plus `npm run test:submitVatBehaviour-simulator` |
+| `ngrok-skip-browser-warning` header at `behaviour-steps.js:17` | 9 | grep gate |
+| `.env.proxy` base URL, comments, `TEST_PROXY` | 6 | `npm run test:submitVatBehaviour-proxy` |
+| `.env.proxyRunning` base URL and comment | 6 | `npm start`, then `npm run test:submitVatBehaviour-proxyRunning` |
+| `.env.simulator:4` and `scripts/start-simulator.sh:6` comments | 12 | grep gate |
 | `scripts/start-proxy.sh:36` | 9 | `npm start`, then `curl -sSI https://local.submit.diyaccounting.co.uk:3443/` succeeds with no `-k` |
 | `package.json:172` proxy script | 9 | grep gate |
 | `@ngrok/ngrok` in `package.json:285` and `package-lock.json` | 9 | `rm -rf node_modules && npm ci` clean; grep gate |
-| `scripts/stripe-setup.js:146` | 8 | `node scripts/stripe-setup.js`, then `stripe webhookEndpoints list` shows no `*.ngrok-free.app` and the CI and prod endpoints untouched |
+| `scripts/stripe-setup.js:145-148` | 8 | `node scripts/stripe-setup.js`, then `stripe webhookEndpoints list` shows no `*.ngrok-free.app` and the CI and prod endpoints untouched |
 | `scripts/stripe-trigger-lifecycle.sh:15` | 8 | grep gate |
 | `package.json:191-212` axe, lighthouse, text-spacing | 10 | `npm run accessibility:axe-proxy`, `accessibility:axe-wcag22-proxy`, `accessibility:lighthouse-proxy`, `accessibility:text-spacing-proxy` |
 | `package.json:229,232` ZAP baseline | 10 | `npm run penetration:zap-proxy` reaches the site from the container |
 | `package.json:241` compliance report | 10 | `npm run compliance:proxy-report-md` |
-| `.pa11yci.proxy.json` 26 URLs | 10 | `npx pa11y-ci --config .pa11yci.proxy.json` |
+| `.pa11yci.proxy.json` 27 URLs | 10 | `npx pa11y-ci --config .pa11yci.proxy.json` |
 | `web/public/auth/login.html:172-177` | 10 | `npm run test:authBehaviour-proxy`; the mock auth addon loads on the new hostname |
-| `test.yml:47,1123` | 11 | the dispatched proxy-job run below |
-| `deploy.yml:299` | 11 | a `deploy.yml` run on the implementation branch goes green |
-| `app/bin/server.js:96`, `httpServerToLambdaAdaptor.js:24` comments | 9 | grep gate |
-| `_developers/SETUP.md`, `GITHUB_SETUP.md:155` | 12 | operator follows the rewritten SETUP.md end to end in a clean shell with `NGROK_AUTHTOKEN` unset |
+| `test.yml:22,41,47,524,1086,1123` | 11 | the dispatched proxy-job run below; grep gate |
+| `deploy.yml:59,299` | 11 | a `deploy.yml` run on the implementation branch goes green; grep gate |
+| `app/bin/server.js:77,96,135`, `httpServerToLambdaAdaptor.js:24` comments | 9 | grep gate |
+| `_developers/SETUP.md`, `GITHUB_SETUP.md:82,155` | 12 | operator follows the rewritten SETUP.md end to end in a clean shell with `NGROK_AUTHTOKEN` unset |
+| `RUNBOOK_INFORMATION_SECURITY.md:195` | 12 | grep gate |
 | `CLAUDE.md`, `REPORT_REPOSITORY_CONTENTS.md`, `PASSES.md`, `BACKLOG.md`, copilot and agent prompt files | 12 | grep gate |
-| `_developers/archive/*` | 12 | grep gate |
+| `_developers/archive/` | 12 | `_developers/archive/NGROK_ALTERNATIVES.md` is gone; the other 8 files stay as written, outside the gate |
 | `repository-contents.txt`, `web/public/tests/test-report-web-test-local.json` | 12 | regenerated, then grep gate |
 
 ### The opt-in CI job needs its own dispatched run
@@ -416,6 +430,7 @@ npm run test:paymentBehaviour-proxy               # leg 2, real Stripe via strip
 npm run test:postVatReturnFraudPreventionHeadersBehaviour-proxy
 npm run test:authBehaviour-proxy                  # the login.html hostname test
 npm run test:submitVatBehaviour-simulator         # simulator path unaffected
+npm run test:submitVatBehaviour-proxyRunning      # with `npm start` already up in another shell
 npm run accessibility:axe-proxy
 npm run accessibility:axe-wcag22-proxy
 npm run accessibility:lighthouse-proxy
@@ -445,12 +460,13 @@ Plus the environment checks:
 ```bash
 grep -ri ngrok . \
   --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=target \
-  --exclude-dir=web/public-simulator \
+  --exclude-dir=public-simulator --exclude-dir=archive \
   --exclude=NEXT.md --exclude=PLAN_REMOVE_NGROK.md
 ```
 
-One call for the operator before step 12 runs. `_developers/archive/` holds dated records of
-finished work, and three of them quote the ngrok hostname as evidence, including the ZAP findings
-table in `QUESTIONNAIRE_EVIDENCE_TRACEABILITY.md:164-168`. Rewriting those changes what the
-evidence says. The alternative is to add `--exclude-dir=_developers/archive` to the gate and leave
-the records untouched. The gate above is written as specified, with the archive included.
+`--exclude-dir` matches directory basenames, so `public-simulator` covers
+`web/public-simulator` and `archive` covers `_developers/archive` (and `plans/archive`, which is
+also archived record). The archive exclusion is settled. The operator chose (2026-08-31) to keep
+the ngrok mentions in `_developers/archive/` as written, because they are dated evidence,
+including the HMRC questionnaire traceability table. Only `NGROK_ALTERNATIVES.md` is deleted, in
+step 12.
