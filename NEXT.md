@@ -39,14 +39,6 @@ operator step before them is done or when SSO is live.
   and the corpus for the dead GitHub link and any surviving "no longer staffed /
   unmonitored" claims; fix what is in the repos, report what is elsewhere. Operator: check
   the antony@ auto-responder for the same stale text.
-- [ ] **(B19 outcome) Remove the Google Ads conversion tag.** Both Ads accounts are
-  cancelled (verified 2026-08-31; no Ads invoices in 13 months), so every page loads a tag
-  firing into a dead account. Claude Code: remove conversion ID `1065724931` from www,
-  spreadsheets and submit pages, and mark `google-analytics.toml` `[legacy]`
-  `google_ads_status` answered. The rest of B19 is done: Stripe monthly reports scheduled
-  (both balance-change and payouts), BigQuery daily export linked to `diyaccounting-ga4`
-  (London region, billing attached, £5 budget alert, 10 GiB/day query quota), `purchase`
-  already a key event, `begin_checkout` unmarkable until it fires.
 - [ ] **Watch the weekly scheduled runs.** Claude Code: `compliance` and `stack-drift` on
   Monday 2026-08-31 06:00 UTC (stack-drift's first run with the noise filter); `codeql`'s
   Sunday 04:00 UTC slot did not fire on 2026-08-30 while other schedules did, so watch it
