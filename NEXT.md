@@ -66,11 +66,11 @@ operator step before them is done or when SSO is live.
   `prod-env-hmrc-api-requests` for whether anyone uses them — the usage numbers also
   say whether more read-only pages are worth building.
 
-- [ ] **(B35/B35a) MCP server: build it or unpromise the page.** `web/public/mcp.html`
-  is live and promises a product with no code behind it (design done in
-  `PLAN_MCP_SERVER`, zero code). B35a is the one-edit stopgap: give the page a date or
-  say the server is not built, which stops the false claim today and leaves the build
-  decision open.
+- [ ] **(B35a) Drop the MCP promise from `web/public/mcp.html` — in flight.** Operator
+  decided (2026-08-31) to unpromise rather than build. A sub-agent is rewriting the
+  page and sweeping `web/public/` for coming-soon mentions on branch
+  `claude/unpromise-mcp` (worktree `../wt-submit-unpromise-mcp`), PR to follow for
+  operator merge. Closes when the PR merges and the live page makes no promise.
 
 ## Discipline
 
