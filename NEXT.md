@@ -39,9 +39,8 @@ operator step before them is done or when SSO is live.
   (`./mvnw clean verify` 74/74). Still open: deploy and confirm the composite
   `check-`/`-health` alarm split and the widened tolerance in live ci/prod.
 - [ ] **(B14) Scheduled ingestion, live behaviour** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record. `claude/b14-scheduled-ingestion` is ready to merge: ci's
-  `test.yml` and both deploy workflows are green on it, and every new resource is
-  live in ci (`v_ga4_funnel_daily`, `v_purchase_reconciliation_daily`,
+  is the plan of record. Merged to main 2026-09-01, ci green end to end, every new
+  resource live in ci (`v_ga4_funnel_daily`, `v_purchase_reconciliation_daily`,
   `ci-env-analytics-nightly` with its schedule, `ci-env-ga4-event-export-pull`).
   What the resources actually do is still unproven: invoke `ga4-event-export-pull`
   and check `ga4_bq_events` row counts against the GA4 console's page views; start
@@ -83,8 +82,12 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
 - **cognito-token-post env-var fix** — merged (conflicted with B28 issue-10 on
   `AuthStack.java`, both additions kept, resolved and verified before merge).
 - **B28** — both issue-9 and issue-10 merged.
-- **B14** — awaiting merge. `claude/b14-scheduled-ingestion` carries main plus the
-  IAM policy-size fix, and ci is green end to end on it.
+- **B14** — merged. Fix bundled with it: `ci-env-AnalyticsStack`/`DataStack`'s
+  shared custom-resource IAM role was near its 10KB cap (per-resource policy
+  replaced with one minimized per-stack policy), and `deploy-environment.yml`'s
+  `create-secrets` job was missing `actions/checkout` — silently exit-127'ing and
+  skipping all 14 stack deploys in both ci and prod since today's issue-10 merge.
+  Both now fixed and live-verified in ci.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
   ci deploy in progress.
 - **prod-2bc7f1e teardown** — dispatched (`destroy-prod.yml` run 33549674791),
