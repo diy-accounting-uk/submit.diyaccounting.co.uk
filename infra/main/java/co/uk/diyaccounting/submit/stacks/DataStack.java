@@ -76,9 +76,7 @@ public class DataStack extends Stack {
     }
 
     /**
-     * Turns on a stream on one of the four tables usage analytics reads from, and wires the stream's
-     * custom resource to depend on the table's, following the pattern used for the passes GSI: without
-     * the dependency, on a fresh stack the stream's UpdateTable call races the table's CreateTable call.
+     * Turns on a stream on one of the four tables usage analytics reads from.
      *
      * @param tableConstructIdPrefix The construct ID prefix passed to ensureTable for this table,
      *     e.g. "{resourceNamePrefix}-Receipts" for a table created with id "{prefix}-ReceiptsTable"
@@ -86,15 +84,7 @@ public class DataStack extends Stack {
      * @return The table's latest stream ARN
      */
     private String ensureTableStream(String tableConstructIdPrefix, String tableName) {
-        String streamArn = ensureStream(this, tableConstructIdPrefix + "Stream", tableName, STREAM_VIEW_TYPE);
-
-        var ensureTableResource = this.getNode().tryFindChild(tableConstructIdPrefix + "Table-EnsureTable");
-        var ensureStreamResource = this.getNode().tryFindChild(tableConstructIdPrefix + "Stream-EnsureStream");
-        if (ensureTableResource != null && ensureStreamResource != null) {
-            ensureStreamResource.getNode().addDependency(ensureTableResource);
-        }
-
-        return streamArn;
+        return ensureStream(this, tableConstructIdPrefix + "Stream", tableName, STREAM_VIEW_TYPE);
     }
 
     public DataStack(Construct scope, String id, DataStackProps props) {
@@ -246,14 +236,6 @@ public class DataStack extends Stack {
                 "issuedBy",
                 "createdAt");
         infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().passesTableName);
-
-        // Ensure the GSI custom resource waits for the table custom resource to complete.
-        // Without this, on fresh stack creation the GSI UpdateTable call races the CreateTable call.
-        var passesEnsureTable = this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesTable-EnsureTable");
-        var passesEnsureGSI = this.getNode().tryFindChild(props.resourceNamePrefix() + "-PassesIssuedByGSI-EnsureGSI");
-        if (passesEnsureTable != null && passesEnsureGSI != null) {
-            passesEnsureGSI.getNode().addDependency(passesEnsureTable);
-        }
 
         String passesStreamArn =
                 ensureTableStream(props.resourceNamePrefix() + "-Passes", props.sharedNames().passesTableName);

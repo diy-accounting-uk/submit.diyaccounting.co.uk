@@ -369,6 +369,7 @@ public class KindCdk {
                 .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
         ensureTableResource.getNode().addDependency(createTableGrant);
+        recordTableCreation(stack, tableName, ensureTableResource);
 
         ensurePointInTimeRecovery(stack, id, tableName, ensureTableResource);
 
@@ -501,6 +502,7 @@ public class KindCdk {
                 .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
         ensureGsiResource.getNode().addDependency(gsiGrant);
+        dependOnTableCreation(stack, tableName, ensureGsiResource);
     }
 
     /**
@@ -541,6 +543,7 @@ public class KindCdk {
                 .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
         ensureTtlResource.getNode().addDependency(ttlGrant);
+        dependOnTableCreation(stack, tableName, ensureTtlResource);
     }
 
     /**
@@ -548,9 +551,8 @@ public class KindCdk {
      *
      * <p>CreateTable takes no StreamSpecification parameter and does nothing at all when the table
      * already exists, so the stream is a second call, exactly like {@link #ensurePointInTimeRecovery}
-     * and {@link #ensureTimeToLive}. Call this after {@code ensureTable} and wire an explicit
-     * dependency on the table's {@code -EnsureTable} construct, the same way the passes GSI depends
-     * on its table, so the stream update does not race table creation.
+     * and {@link #ensureTimeToLive}. It waits for the table's own {@code ensureTable} call, so it
+     * cannot race table creation.
      *
      * <p>UpdateTable rejects a no-change stream request (re-enabling a stream that already has the
      * same view type) with ValidationException, so that code is ignored to keep repeat deployments
@@ -598,6 +600,7 @@ public class KindCdk {
                 .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
         ensureStreamResource.getNode().addDependency(streamGrant);
+        dependOnTableCreation(stack, tableName, ensureStreamResource);
 
         AwsSdkCall describeTableCall = AwsSdkCall.builder()
                 .service("DynamoDB")
@@ -620,5 +623,34 @@ public class KindCdk {
 
     private static String dynamoTableArn(Stack stack, String tableName) {
         return "arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount() + ":table/" + tableName;
+    }
+
+    /**
+     * The CreateTable custom resource for each table a stack has called {@link #ensureTable} for.
+     *
+     * <p>Every follow-up call — PITR, TTL, a GSI, a stream — targets a table by name and fails
+     * outright if the table is not there yet, and CloudFormation infers no ordering between two
+     * custom resources that never reference each other. Recording the CreateTable resource here
+     * lets those calls add the dependency themselves, rather than leaving each caller to remember
+     * it: the tables that already existed in a live environment hid the race for as long as no new
+     * one was added.
+     */
+    private static final Map<Stack, Map<String, AwsCustomResource>> TABLE_CREATION_RESOURCES =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    private static void recordTableCreation(Stack stack, String tableName, AwsCustomResource resource) {
+        TABLE_CREATION_RESOURCES
+                .computeIfAbsent(stack, ignored -> new java.util.HashMap<>())
+                .put(tableName, resource);
+    }
+
+    private static void dependOnTableCreation(Stack stack, String tableName, AwsCustomResource dependent) {
+        Map<String, AwsCustomResource> byTableName = TABLE_CREATION_RESOURCES.get(stack);
+        AwsCustomResource tableCreation = byTableName == null ? null : byTableName.get(tableName);
+        if (tableCreation == null) {
+            throw new IllegalStateException("%s must be created by ensureTable in stack %s before this call"
+                    .formatted(tableName, stack.getStackName()));
+        }
+        dependent.getNode().addDependency(tableCreation);
     }
 }
