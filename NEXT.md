@@ -99,9 +99,9 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
 - **cognito-token-post env-var fix** — merged (conflicted with B28 issue-10 on
   `AuthStack.java`, both additions kept, resolved and verified before merge).
 - **B28** — both issue-9 and issue-10 merged.
-- **B14** — code-complete, NOT merged. Blocked on the AnalyticsStack IAM
-  policy-size bug above; needs that fixed first, or merging now fails prod's
-  deploy the same way.
+- **B14** — code-complete, NOT merged. A fix agent (opus, working on top of
+  `claude/b14-scheduled-ingestion`) is investigating and fixing the AnalyticsStack
+  IAM policy-size bug, verifying against a real ci deploy before reporting back.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
   ci deploy in progress.
 - **prod-2bc7f1e teardown** — dispatched (`destroy-prod.yml` run 33549674791),
