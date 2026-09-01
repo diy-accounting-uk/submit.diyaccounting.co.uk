@@ -17,13 +17,14 @@ operator step before them is done or when SSO is live.
   collection was restored (2026-08-31), but confirm rather than assume once the
   funnel has run a few days (GA4 property 523400333, or BigQuery
   `analytics_523400333`).
-- [ ] **compliance and stack-drift schedule revival — dispatches passed, cron proof
-  remains.** Both revival runs are green (compliance 10/10 checks; stack-drift "all in
-  sync" with three stacks correctly filtered as `DRIFTED_BENIGN` on its first
-  noise-filtered run). `verify-backups` missed its 06:00 slot the same day and went
-  green on a manual dispatch. Claude Code: confirm `verify-backups`' daily cron fires
-  on 2026-09-01, and the Monday 2026-09-07 06:00 UTC crons fire on their own, before
-  closing; watch `codeql` on 2026-09-06 and revive the same way if it misses again.
+- [ ] **compliance and stack-drift schedule revival — weekly cron proof remains.** Both
+  revival runs are green (compliance 10/10 checks; stack-drift "all in sync" with three
+  stacks correctly filtered as `DRIFTED_BENIGN` on its first noise-filtered run).
+  `verify-backups`' daily cron proved itself: after missing its 06:00 slot on
+  2026-08-31 it self-fired at 13:17 UTC the same day (normal GitHub schedule drift) and
+  passed. Claude Code: confirm the Monday 2026-09-07 06:00 UTC crons fire on their own
+  before closing; watch `codeql` on 2026-09-06 and revive the same way if it misses
+  again.
 - [ ] **Manual `certbot renew` in the week of 2026-11-29** (run
   `aws sso login --sso-session diyaccounting` first; command in `_developers/SETUP.md`).
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
