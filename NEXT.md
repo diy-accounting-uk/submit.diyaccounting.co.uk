@@ -29,23 +29,23 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the
-  source-read audit (~163 alarms per environment, ~$29/month, against AWS_COSTS.md's
-  ~20-alarm assumption). Cuts 1 and 2 ride `claude/do-next-batch-2`. Open: the live
-  fired-vs-never-fired check (agent running); composite-alarm consolidation (cut 3)
+- [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
+  (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
+  fired in 90 days; the one noisy alarm was a log-wording false positive, since
+  fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3)
   needs a design pass before any code.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
   is the plan of record. Phase 1 ran: activity events and all four table-change
   streams land rows; Stripe reconciliation was landing NOTHING (S3 prefix mismatch
-  vs the Glue tables — fix in flight, then replay the mislaid days after deploy);
-  phase 5 rides `claude/do-next-batch-2`. Still open from the run: prod's
+  vs the Glue tables — fix on main, replay 2026-08-29/30 in both envs once the
+  deploy lands); phase 5 is on main. Still open from the run: prod's
   `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
   look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
   points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases:
   2 GA4 BigQuery event export (operator prereqs in the plan), 3 Step Functions
   orchestration, 4 reconciliation views, 6 Stripe restricted keys (operator).
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
-  on the batch branch. Operator: create a fine-grained PAT (Issues read/write on this
+  deployed. Operator: create a fine-grained PAT (Issues read/write on this
   repo only) and set it as GitHub Actions secret `GITHUB_ISSUE_BOT_TOKEN` in the ci
   and prod environments. Then the end-to-end proof at deploy time (set-alarm-state on
   a cheap ci alarm → issue appears → second flip comments, not duplicates), then the
@@ -58,23 +58,19 @@ operator step before them is done or when SSO is live.
   the `submit-backup` SSO profile, then the first manual `restore-test.yml` dispatch
   (the gate for the TypeScript CDK migration, B33).
 - [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10) —
-  `SecurityDetectionStack` with the DynamoDB customer-table alarms rides
-  `claude/do-next-batch-2`. Open, in the plans' own terms: #9's later phases
+  `SecurityDetectionStack` with the DynamoDB customer-table alarms is on main.
+  Open, in the plans' own terms: #9's later phases
   (CloudFront 404-spike aggregation, honeypot pages, IP auto-block — needs a Lambda
   aggregator and web changes); #10's Cognito/S3/Secrets signals (need CloudTrail
   event selectors extended in ObservabilityStack plus agreed burst thresholds); #10
   AC4 mid-session country-change re-auth (app change in `customAuthorizer.js`).
 
-## In flight (batch dispatched 2026-08-31, coordinator session)
+## In flight (coordinator session)
 
-- PR #71 (`claude/do-next-batch-1`): validated (unit 1155, mvnw 72/72, behaviour 1
-  passed), awaiting operator merge
-- `claude/do-next-batch-2`: alarm cuts + SecurityDetectionStack merged, mvnw
-  verifying; CloudFront-logging track (B14 phase 5) done but held on phase 1's prod
-  row-count gate (ingestion-verify agent running); billing-webhook triage agent
-  running (65 ALARM entries in 90 days on `billing-webhook-log-errors`, found by the
-  live alarm check — the audit's counts otherwise verified: prod 155 vs ~163
-  predicted, ~45 app alarms never fired)
+- Both batches are on main (#71, #73); the #73 deploy runs are in progress (watched).
+  After they land: replay the Stripe reconcile for 2026-08-29/30 in both envs
+  (invocations in PR #72's description), and run the alarm→issue end-to-end proof
+  once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
 
 ## Discipline
 
