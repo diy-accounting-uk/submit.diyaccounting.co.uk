@@ -67,11 +67,12 @@ operator step before them is done or when SSO is live.
 
 ## In flight (batch dispatched 2026-08-31, coordinator session)
 
-- PR #71 (`claude/do-next-batch-1`) and PR #72 (`claude/do-next-batch-2`, stacked on
-  #71): both fully validated locally (unit+system, mvnw, behaviour-proxy), awaiting
-  operator merge. After #72 deploys: replay the Stripe reconcile for 2026-08-29 and
-  2026-08-30 in both envs (invocations in PR #72's description), and run the alarm→
+- PR #73 (batch 2 to main): #72 merged into its stacked base after #71 had already
+  reached main, so batch 2 missed main; #73 carries exactly that content — awaiting
+  operator merge. After it deploys: replay the Stripe reconcile for 2026-08-29 and
+  2026-08-30 in both envs (invocations in #72's description), and run the alarm→
   issue end-to-end proof once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
+- Batch 1 is on main; its deploy run is in progress (watched).
 
 ## Discipline
 
