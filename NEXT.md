@@ -68,7 +68,7 @@ operator step before them is done or when SSO is live.
 
 - Both batches are on main and fully deployed (environment and app runs green);
   the Stripe replay is done and proven in Athena. Remaining follow-up: the
-  alarm→issue end-to-end proof once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
+  alarm→issue end-to-end proof — `ISSUE_BOT_TOKEN` is set, deploy still to run.
 
 ## Discipline
 
