@@ -44,24 +44,22 @@ operator step before them is done or when SSO is live.
   burst doesn't cross threshold. Same file as B30 (`Lambda.java`'s alarm
   construct); lands in the same implementation pass as B30, dispatched together.
 - [ ] **Bug: `cognito-token-post` never gets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`.**
-  Found via issues #75/#76 (real signal, not deploy noise — CloudWatch logs show
-  repeated `ValidationException: TableName` failures on every OAuth token
-  exchange in prod). `AuthStack.java` sets `BUNDLE_DYNAMODB_TABLE_NAME` for this
-  Lambda but never sets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`, which
-  `app/data/dynamoDbHmrcApiRequestRepository.js:16` requires — a missing CDK env
-  var, not transient. Every live login has been failing this audit write.
-  Dispatched to a sonnet fix agent, branch `claude/fix-hmrc-audit-table-env`.
+  Found via issues #75/#76. Code-complete on branch `claude/fix-hmrc-audit-table-env`
+  (pushed 2026-09-01) — the env var, an IAM `dynamodb:PutItem` grant the Lambda also
+  lacked, `./mvnw clean verify` and `npm test` all green. ci's own `test.yml`/`deploy.yml`
+  auto-triggered on push; verifying, then coordinator merges to main.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record. Phase 1 ran: activity events, all four table-change
-  streams, and (after the path fix and replay) all three Stripe tables land
-  queryable rows; phase 5 is on main. Still open from the run: prod's
-  `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
-  look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
-  points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases, all
-  four now clear to build (last operator prereq — the BigQuery IAM grant for the GA4
-  service account — done 2026-09-01 via Cowork, `../BRIEF_GA4_BIGQUERY_IAM.md`): 2 GA4
-  BigQuery event export; 3 Step Functions orchestration; 4 reconciliation views; 6 Stripe
-  reconciliation (reuses the existing full Stripe key, 2026-09-01 decision).
+  is the plan of record. Code-complete on branch `claude/b14-scheduled-ingestion`
+  (pushed 2026-09-01), `./mvnw clean verify` 86/86 and `npm test` 1179/1181 (2
+  pre-existing skips) both green. Both phase-1 loose threads resolved as
+  self-resolving, not bugs: the ga4-report-pull "empty" log stream was a secret
+  that didn't exist yet a day before that run, already fixed by the time of the next
+  run; ci's SSM pointer already reads `ci-claudedon`, a real deployment — the
+  `ci-clauderem` value this file previously named was already stale information.
+  Phases 2 (GA4 BigQuery export), 3 (Step Functions orchestration), 4 (reconciliation
+  views) and 6 (Stripe, no code change needed) all built. ci's `test.yml`/`deploy.yml`/
+  `deploy-environment.yml` auto-triggered on push; verifying against real ci resources,
+  then coordinator merges to main.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
   21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
@@ -94,16 +92,14 @@ pushes each as it lands:
 - **B30 design** — done, unmerged. Branch `claude/b30-alarm-design`,
   `PLAN_ALARM_CONSOLIDATION.md`. Wave-2 sonnet implementation, paired with the
   alarm-sensitivity tuning item (same file), not yet dispatched.
-- **cognito-token-post env-var fix** (sonnet, branch `claude/fix-hmrc-audit-table-env`)
-  — dispatched: add `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME` to `AuthStack.java`'s
-  env block for this Lambda, matching the existing `BUNDLE_DYNAMODB_TABLE_NAME`
-  pattern.
+- **cognito-token-post env-var fix** — code-complete, pushed, ci verifying. See
+  the open-item bullet above for detail.
 - **B28 design** — done, unmerged. Branch `claude/b28-security-design`,
   `PLAN_SECURITY_DETECTION_REMAINDER.md`. Wave-2 sonnet implementation (two agents,
   issue-9 and issue-10, parallel) not yet dispatched.
-- **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — running.
-  Phases 2, 3, 4, 6 of `PLAN_SCHEDULED_INGESTION.md` in order, plus the two loose
-  phase-1 threads first.
+- **B14 implement** — code-complete, pushed, ci verifying. See the open-item bullet
+  above for detail. A watcher agent is confirming ci's auto-triggered runs and
+  doing a light existence-check on the new phase-2/3 resources.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — paused,
   holding for the coordinator's go-ahead after a bad manual deploy dispatch against
   the wrong branch context. Has the corrected plan (push its own branch, don't
