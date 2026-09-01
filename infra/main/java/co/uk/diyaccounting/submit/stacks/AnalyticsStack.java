@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +42,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
@@ -611,10 +611,9 @@ public class AnalyticsStack extends Stack {
                 .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
                 .build();
 
-        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
-                .onCreate(createUnionViewCall)
-                .onUpdate(createUnionViewCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(
+        var unionViewGrant = KindCdk.grantToAwsCustomResourceProvider(
+                this,
+                List.of(
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
                                 .actions(List.of("athena:StartQueryExecution"))
@@ -640,9 +639,15 @@ public class AnalyticsStack extends Stack {
                                 .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
                                 .resources(List.of(
                                         this.resultsBucket.getBucketArn(), this.resultsBucket.getBucketArn() + "/*"))
-                                .build())))
+                                .build()));
+
+        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
+                .onCreate(createUnionViewCall)
+                .onUpdate(createUnionViewCall)
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
                 .build();
+        createUnionViewResource.getNode().addDependency(unionViewGrant);
         createUnionViewResource.getNode().addDependency(this.workGroup);
         createUnionViewResource.getNode().addDependency(activityEventsTable);
         createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);

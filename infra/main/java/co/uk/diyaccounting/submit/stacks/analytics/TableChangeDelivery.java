@@ -21,7 +21,6 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.glue.CfnTable;
@@ -211,17 +210,22 @@ public class TableChangeDelivery extends Construct {
                 .physicalResourceId(PhysicalResourceId.of(tableName + "-stream-arn-lookup"))
                 .build();
 
-        var resource = AwsCustomResource.Builder.create(this, tableName + "-DescribeTableStreamArn")
-                .onCreate(describeTableCall)
-                .onUpdate(describeTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+        var grant = KindCdk.grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
                         .effect(Effect.ALLOW)
                         .actions(List.of("dynamodb:DescribeTable"))
                         .resources(List.of("arn:aws:dynamodb:%s:%s:table/%s"
                                 .formatted(stack.getRegion(), stack.getAccount(), tableName)))
-                        .build())))
+                        .build()));
+
+        var resource = AwsCustomResource.Builder.create(this, tableName + "-DescribeTableStreamArn")
+                .onCreate(describeTableCall)
+                .onUpdate(describeTableCall)
                 .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        resource.getNode().addDependency(grant);
 
         return resource.getResponseField("Table.LatestStreamArn");
     }

@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -79,7 +78,7 @@ public final class Route53AliasUpsert {
                     .resources(List.of(route53AssumedRoleArn))
                     .build());
         }
-        var policy = AwsCustomResourcePolicy.fromStatements(statements);
+        var grant = KindCdk.grantToAwsCustomResourceProvider(Stack.of(scope), statements);
 
         var upsertABuilder = AwsSdkCall.builder()
                 .service("Route53")
@@ -103,19 +102,21 @@ public final class Route53AliasUpsert {
 
         var stack = Stack.of(scope);
 
-        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
-                .policy(policy)
+        AwsCustomResource aliasA = AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
                 .onCreate(upsertA)
                 .onUpdate(upsertA)
                 .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        aliasA.getNode().addDependency(grant);
 
-        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
-                .policy(policy)
+        AwsCustomResource aliasAAAA = AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
                 .onCreate(upsertAAAA)
                 .onUpdate(upsertAAAA)
                 .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        aliasAAAA.getNode().addDependency(grant);
     }
 
     /**
@@ -185,7 +186,7 @@ public final class Route53AliasUpsert {
                     .resources(List.of(route53AssumedRoleArn))
                     .build());
         }
-        var policy = AwsCustomResourcePolicy.fromStatements(statements);
+        var grant = KindCdk.grantToAwsCustomResourceProvider(Stack.of(scope), statements);
 
         var upsertABuilder = AwsSdkCall.builder()
                 .service("Route53")
@@ -207,19 +208,21 @@ public final class Route53AliasUpsert {
 
         var stack = Stack.of(scope);
 
-        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
-                .policy(policy)
+        AwsCustomResource aliasA = AwsCustomResource.Builder.create(scope, idPrefix + "-AliasA-Upsert")
                 .onCreate(upsertABuilder.build())
                 .onUpdate(upsertABuilder.build())
                 .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        aliasA.getNode().addDependency(grant);
 
-        AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
-                .policy(policy)
+        AwsCustomResource aliasAAAA = AwsCustomResource.Builder.create(scope, idPrefix + "-AliasAAAA-Upsert")
                 .onCreate(upsertAAAABuilder.build())
                 .onUpdate(upsertAAAABuilder.build())
                 .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        aliasAAAA.getNode().addDependency(grant);
     }
 
     private static String buildFqdn(IHostedZone zone, String relativeRecordName) {

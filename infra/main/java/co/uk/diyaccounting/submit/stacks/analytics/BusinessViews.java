@@ -11,12 +11,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
@@ -120,6 +120,43 @@ public class BusinessViews extends Construct {
         var catalogArn = glueCatalogArn(stack.getRegion(), stack.getAccount());
         var databaseArn = glueDatabaseArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName());
 
+        // Every view here runs on the stack's one shared AwsCustomResource provider role, and IAM
+        // caps the total size of a role's inline policies at 10240 bytes. A per-view policy repeats
+        // the same Athena, Glue and S3 statements once per view and walks that budget down until a
+        // deploy fails, so the whole family is granted once: the union of every table each view
+        // reads and writes, depended on by each view resource.
+        var providerRole = KindCdk.ensureAwsCustomResourceProviderRole(stack);
+        var viewGrant = KindCdk.grantToAwsCustomResourceProvider(
+                stack,
+                List.of(
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of("athena:StartQueryExecution"))
+                                .resources(List.of(workGroupArn))
+                                .build(),
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of(
+                                        "glue:GetDatabase",
+                                        "glue:GetTable",
+                                        "glue:GetTables",
+                                        "glue:CreateTable",
+                                        "glue:UpdateTable"))
+                                .resources(allTableResources(
+                                        stack.getRegion(),
+                                        stack.getAccount(),
+                                        props.glueDatabaseName(),
+                                        catalogArn,
+                                        databaseArn))
+                                .build(),
+                        PolicyStatement.Builder.create()
+                                .effect(Effect.ALLOW)
+                                .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
+                                .resources(List.of(
+                                        props.resultsBucket().getBucketArn(),
+                                        props.resultsBucket().getBucketArn() + "/*"))
+                                .build()));
+
         // Two AwsCustomResources with no Fn::GetAtt between them carry no implicit
         // CloudFormation ordering, so a view that reads a sibling view (e.g.
         // v_purchase_reconciliation_daily reading v_ga4_funnel_daily) needs an explicit
@@ -142,14 +179,6 @@ public class BusinessViews extends Construct {
                     .build();
             this.namedQueries.add(namedQuery);
 
-            var tableResources = new ArrayList<String>();
-            for (String readTable : view.readTables()) {
-                tableResources.add(
-                        glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), readTable));
-            }
-            tableResources.add(
-                    glueTableArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), view.name()));
-
             var createViewCall = AwsSdkCall.builder()
                     .service("Athena")
                     .action("startQueryExecution")
@@ -166,31 +195,12 @@ public class BusinessViews extends Construct {
             var viewResource = AwsCustomResource.Builder.create(this, view.name() + "-CreateView")
                     .onCreate(createViewCall)
                     .onUpdate(createViewCall)
-                    .policy(AwsCustomResourcePolicy.fromStatements(List.of(
-                            PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(List.of("athena:StartQueryExecution"))
-                                    .resources(List.of(workGroupArn))
-                                    .build(),
-                            PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(List.of(
-                                            "glue:GetDatabase",
-                                            "glue:GetTable",
-                                            "glue:GetTables",
-                                            "glue:CreateTable",
-                                            "glue:UpdateTable"))
-                                    .resources(concat(catalogArn, databaseArn, tableResources))
-                                    .build(),
-                            PolicyStatement.Builder.create()
-                                    .effect(Effect.ALLOW)
-                                    .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
-                                    .resources(List.of(
-                                            props.resultsBucket().getBucketArn(),
-                                            props.resultsBucket().getBucketArn() + "/*"))
-                                    .build())))
+                    .role(providerRole)
                     .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                     .build();
+            // AwsCustomResource adds this edge itself when it builds its own policy; the shared
+            // policy has to be depended on explicitly or a view could run before its grant lands.
+            viewResource.getNode().addDependency(viewGrant);
             this.viewResources.add(viewResource);
             viewResourcesByName.put(view.name(), viewResource);
 
@@ -206,11 +216,24 @@ public class BusinessViews extends Construct {
         }
     }
 
-    private static List<String> concat(String first, String second, List<String> rest) {
+    /**
+     * The Glue catalog, the database, and every table any view reads or writes: each view's own
+     * table plus the tables named in its {@code readTables}, de-duplicated because several views
+     * read the same source and one view reads another view's table.
+     */
+    private static List<String> allTableResources(
+            String region, String account, String databaseName, String catalogArn, String databaseArn) {
         var all = new ArrayList<String>();
-        all.add(first);
-        all.add(second);
-        all.addAll(rest);
+        all.add(catalogArn);
+        all.add(databaseArn);
+        var tableNames = new LinkedHashSet<String>();
+        for (ViewDefinition view : VIEWS) {
+            tableNames.add(view.name());
+            tableNames.addAll(view.readTables());
+        }
+        for (String tableName : tableNames) {
+            all.add(glueTableArn(region, account, databaseName, tableName));
+        }
         return all;
     }
 
