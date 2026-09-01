@@ -317,6 +317,9 @@ that day.
 
 # Phase 3: Step Functions orchestration
 
+**Status: code done 2026-09-01, CDK tests green.** Live verification (a real state
+machine execution reaching `SUCCEEDED`, then the next scheduled run) needs a deploy.
+
 **Model: Sonnet.**
 
 Replace five EventBridge rules and five DLQs with one state machine and one schedule.

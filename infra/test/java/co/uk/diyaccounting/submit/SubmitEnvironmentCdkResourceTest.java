@@ -129,16 +129,20 @@ class SubmitEnvironmentCdkResourceTest {
         assertNoUnscopedIamResources(analytics);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
-        // export pull jobs, each with its own schedule, DLQ and two alarms. Importing the lake
-        // bucket by name creates no bucket of its own. Every job's name is stable across
+        // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
+        // state machine (one Step Functions state machine, one EventBridge Scheduler schedule,
+        // one ExecutionsFailed alarm - ExecutionsMissed is prod-only, so not here). Importing the
+        // lake bucket by name creates no bucket of its own. Every job's name is stable across
         // redeploys, so their log groups go through the idempotent AwsCustomResource path,
         // adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
         ingestion.resourceCountIs("AWS::Lambda::Function", 4);
-        ingestion.resourceCountIs("AWS::Events::Rule", 3);
-        ingestion.resourceCountIs("AWS::SQS::Queue", 3);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        ingestion.resourceCountIs("AWS::Events::Rule", 0);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 0);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
+        ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,
@@ -188,9 +192,11 @@ class SubmitEnvironmentCdkResourceTest {
     }
 
     /**
-     * Fail on any inline IAM policy statement that grants on every resource. X-Ray is the one
+     * Fail on any inline IAM policy statement that grants on every resource. X-Ray is one
      * exception the CDK Lambda construct forces on us: its actions carry no resource-level
-     * permissions at all, so a wildcard there is the narrowest grant that exists.
+     * permissions at all, so a wildcard there is the narrowest grant that exists. The CloudWatch
+     * Logs delivery actions below are the same story for a state machine with {@code logs()}
+     * execution logging enabled: CDK grants them itself, and none of them accepts a resource ARN.
      */
     private static void assertNoUnscopedIamResources(Template template) {
         var offenders = new ArrayList<String>();
@@ -214,12 +220,23 @@ class SubmitEnvironmentCdkResourceTest {
         assertTrue(offenders.isEmpty(), "IAM statements granting on every resource: " + offenders);
     }
 
+    private static final List<String> LOG_DELIVERY_ACTIONS = List.of(
+            "logs:CreateLogDelivery",
+            "logs:GetLogDelivery",
+            "logs:UpdateLogDelivery",
+            "logs:DeleteLogDelivery",
+            "logs:ListLogDeliveries",
+            "logs:PutResourcePolicy",
+            "logs:DescribeResourcePolicies",
+            "logs:DescribeLogGroups");
+
     private static boolean isResourceLevelExemptAction(Object action) {
         List<?> actions = action instanceof List<?> list ? list : List.of(String.valueOf(action));
         return !actions.isEmpty()
                 && actions.stream()
                         .allMatch(a -> String.valueOf(a).startsWith("xray:")
-                                || "cloudwatch:PutMetricData".equals(String.valueOf(a)));
+                                || "cloudwatch:PutMetricData".equals(String.valueOf(a))
+                                || LOG_DELIVERY_ACTIONS.contains(String.valueOf(a)));
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)

@@ -9,13 +9,13 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.stacks.analytics.NightlyIngestionWorkflow;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -26,10 +26,6 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
-import software.amazon.awscdk.services.events.CronOptions;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Architecture;
@@ -39,15 +35,17 @@ import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
 
 /**
  * Environment-scoped orchestration for the scheduled jobs that pull third-party usage data into
  * the analytics lake: Stripe reconciliation, GA4 report pulls and CloudFront partition
  * maintenance. This stack owns the scheduling pattern only. Each job lands as one Lambda plus one
- * call to {@link #registerScheduledJob}, so later work adding a job never touches another job's
- * code.
+ * call to {@link #registerIngestionJob}, so later work adding a job never touches another job's
+ * code. Scheduling itself lives in {@link NightlyIngestionWorkflow}, the Step Functions state
+ * machine this stack builds at the end of its constructor: {@link #registerIngestionJob} keeps
+ * only the Lambda-errors alarm, since a failed job now stops the whole chain rather than retrying
+ * in isolation off a DLQ.
  *
  * <p>Env-scoped rather than app-scoped for the same reason as {@link AnalyticsStack}: the jobs
  * write into the lake, which has to outlive any one deployment.
@@ -254,21 +252,10 @@ public class IngestionStack extends Stack {
         // other hashSub() caller reads.
         SubHashSaltHelper.grantSaltAccess(stripeReconcileLambda, region, account, props.envName());
 
-        // prod: 02:15 daily. ci: 02:15 every Monday, so the third-party call stays low without
-        // losing weekly coverage of the reconciliation path.
-        var stripeReconcileSchedule = isProd
-                ? Schedule.cron(CronOptions.builder().minute("15").hour("2").build())
-                : Schedule.cron(CronOptions.builder()
-                        .minute("15")
-                        .hour("2")
-                        .weekDay("MON")
-                        .build());
-
-        registerScheduledJob(
+        registerIngestionJob(
                 "StripeReconcile",
                 stripeReconcileFunctionName,
                 stripeReconcileLambda,
-                stripeReconcileSchedule,
                 "Pull yesterday's Stripe balance transactions, charges and subscription state into the analytics lake");
 
         // ============================================================================
@@ -344,21 +331,10 @@ public class IngestionStack extends Stack {
                     .build());
         }
 
-        // prod: 03:15 daily, an hour after the Stripe job so the two nightly third-party pulls
-        // do not start at the same minute. ci: 03:15 every Monday, same reasoning as Stripe's.
-        var ga4ReportPullSchedule = isProd
-                ? Schedule.cron(CronOptions.builder().minute("15").hour("3").build())
-                : Schedule.cron(CronOptions.builder()
-                        .minute("15")
-                        .hour("3")
-                        .weekDay("MON")
-                        .build());
-
-        registerScheduledJob(
+        registerIngestionJob(
                 "Ga4ReportPull",
                 ga4ReportPullFunctionName,
                 ga4ReportPullLambda,
-                ga4ReportPullSchedule,
                 "Pull yesterday's GA4 traffic, pages and events reports into the analytics lake");
 
         // ============================================================================
@@ -450,69 +426,64 @@ public class IngestionStack extends Stack {
                     .build());
         }
 
-        // prod: 03:20 daily, five minutes after the GA4 Data API pull so the two GA4 jobs do not
-        // start at the same minute. ci: 03:20 every Monday, same reasoning as the other two jobs.
-        var ga4EventExportPullSchedule = isProd
-                ? Schedule.cron(CronOptions.builder().minute("20").hour("3").build())
-                : Schedule.cron(CronOptions.builder()
-                        .minute("20")
-                        .hour("3")
-                        .weekDay("MON")
-                        .build());
-
-        registerScheduledJob(
+        registerIngestionJob(
                 "Ga4EventExportPull",
                 ga4EventExportPullFunctionName,
                 ga4EventExportPullLambda,
-                ga4EventExportPullSchedule,
                 "Pull two days ago's GA4 BigQuery event export into the analytics lake");
+
+        // ============================================================================
+        // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
+        // schedule, replacing the five independent rules and DLQs the jobs used before this
+        // machine existed
+        // ============================================================================
+        // DataQuality and AnalyticsDashboard live in AnalyticsStack, which this stack already
+        // depends on (see SubmitEnvironment), so their Lambdas are imported by name rather than
+        // passed as a cross-stack object reference - the same import-by-name habit the rest of
+        // this repo uses for a resource owned by a sibling stack.
+        var dataQualityRunLambda =
+                Function.fromFunctionName(this, prefix + "-DataQualityRun-Import", prefix + "-data-quality-run");
+        var metricsPublishLambda = Function.fromFunctionName(
+                this, prefix + "-AnalyticsMetricsPublish-Import", prefix + "-analytics-metrics-publish");
+
+        new NightlyIngestionWorkflow(
+                this,
+                NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .stateMachineName(sharedNames.stateMachineName)
+                        .stripeReconcileLambda(stripeReconcileLambda)
+                        .ga4ReportPullLambda(ga4ReportPullLambda)
+                        .ga4EventExportPullLambda(ga4EventExportPullLambda)
+                        .dataQualityRunLambda(dataQualityRunLambda)
+                        .metricsPublishLambda(metricsPublishLambda)
+                        .build());
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);
     }
 
     /**
-     * Wires one ingestion job into its schedule: a DLQ, an EventBridge rule that retries the
-     * Lambda three times before parking the event on the DLQ, a Lambda-errors alarm and a
-     * DLQ-depth alarm. Neither alarm carries an SNS action: the alarm-state-change rule in
-     * OpsStack routes every alarm in the account to Telegram, which keeps the app-scoped alert
-     * topic out of this env-scoped stack.
+     * Wires one ingestion job's Lambda-errors alarm. No DLQ and no per-job schedule any more:
+     * the nightly state machine ({@link NightlyIngestionWorkflow}) invokes every job directly and
+     * a failure anywhere stops the chain, so replay is one state machine execution with an
+     * explicit date rather than a DLQ redrive. The alarm carries no SNS action: the
+     * alarm-state-change rule in OpsStack routes every alarm in the account to Telegram, which
+     * keeps the app-scoped alert topic out of this env-scoped stack.
      *
      * @param name construct id prefix, unique within this stack
      * @param functionName the job Lambda's physical name, e.g. from a {@code SubmitSharedNames}
      *     field. Taken as a plain string rather than read off {@code lambdaFunction} itself:
      *     {@code Function.getFunctionName()} returns a deferred token even for an explicitly
      *     named function, and concatenating a suffix onto a token produces an {@code Fn::Join}
-     *     instead of the plain resource name every other stack in this repo names its DLQs,
-     *     rules and alarms after.
-     * @param lambdaFunction the job Lambda to schedule
-     * @param schedule when the job runs
-     * @param description what the job does, used in the rule and alarm descriptions
-     * @return the created rule
+     *     instead of the plain resource name every other stack in this repo names its alarms
+     *     after.
+     * @param lambdaFunction the job Lambda to alarm on
+     * @param description what the job does, used in the alarm description
+     * @return the created alarm
      */
-    Rule registerScheduledJob(
-            final String name,
-            final String functionName,
-            final Function lambdaFunction,
-            final Schedule schedule,
-            final String description) {
-        var dlq = Queue.Builder.create(this, name + "-Dlq")
-                .queueName(functionName + "-dlq")
-                .retentionPeriod(Duration.days(14))
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-
-        var rule = Rule.Builder.create(this, name + "-Schedule")
-                .ruleName(functionName + "-schedule")
-                .description(description)
-                .schedule(schedule)
-                .targets(List.of(LambdaFunction.Builder.create(lambdaFunction)
-                        .retryAttempts(3)
-                        .deadLetterQueue(dlq)
-                        .maxEventAge(Duration.hours(2))
-                        .build()))
-                .build();
-
-        Alarm.Builder.create(this, name + "-ErrorsAlarm")
+    Alarm registerIngestionJob(
+            final String name, final String functionName, final Function lambdaFunction, final String description) {
+        return Alarm.Builder.create(this, name + "-ErrorsAlarm")
                 .alarmName(functionName + "-errors")
                 .alarmDescription(description + ": Lambda errored at least once in 24 hours")
                 .metric(lambdaFunction.metricErrors(
@@ -522,18 +493,5 @@ public class IngestionStack extends Stack {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
-
-        Alarm.Builder.create(this, name + "-DlqDepthAlarm")
-                .alarmName(functionName + "-dlq-depth")
-                .alarmDescription(description + ": dead-letter queue holds at least one failed run")
-                .metric(dlq.metricApproximateNumberOfMessagesVisible(
-                        MetricOptions.builder().period(Duration.minutes(5)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        return rule;
     }
 }

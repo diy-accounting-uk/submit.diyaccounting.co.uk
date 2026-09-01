@@ -94,14 +94,13 @@ class DataQualityTest {
     }
 
     @Test
-    void scheduleRunsDailyAtFourAmWithRetryAndDlq() {
+    void noScheduleRuleOrDlqOfItsOwn() {
         Template template = synthDataQuality();
 
-        template.resourceCountIs("AWS::Events::Rule", 1);
-        template.hasResourceProperties(
-                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(0 4 * * ? *)")));
-
-        template.resourceCountIs("AWS::SQS::Queue", 1);
+        // No schedule or DLQ: IngestionStack's NightlyIngestionWorkflow state machine invokes
+        // this construct's run Lambda directly as one step in the nightly chain.
+        template.resourceCountIs("AWS::Events::Rule", 0);
+        template.resourceCountIs("AWS::SQS::Queue", 0);
         // The run function name is stable across every redeploy of this env-scoped stack, so its
         // log group goes through the idempotent AwsCustomResource path, adding a second Lambda
         // function: the shared create-if-missing/retention singleton provider.
@@ -112,7 +111,8 @@ class DataQualityTest {
     void alarmsCarryNoSnsActionAndTheFailedAlarmWatchesTheGlueDataQualityMetric() {
         Template template = synthDataQuality();
 
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 3);
+        // Errors alarm plus the Glue-published rules-failed alarm; no DLQ-depth alarm.
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (var resource : alarms.values()) {

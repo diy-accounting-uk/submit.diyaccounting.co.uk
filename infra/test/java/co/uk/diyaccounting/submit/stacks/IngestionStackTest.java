@@ -18,8 +18,6 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
-import software.amazon.awscdk.services.events.CronOptions;
-import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
@@ -118,9 +116,16 @@ class IngestionStackTest {
         // create-if-missing/retention singleton provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
         template.resourceCountIs("AWS::Lambda::Function", 4);
-        template.resourceCountIs("AWS::Events::Rule", 3);
-        template.resourceCountIs("AWS::SQS::Queue", 3);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+
+        // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
+        // state machine and one scheduler schedule replace them. Three job Errors alarms plus
+        // the state machine's ExecutionsFailed alarm; the ExecutionsMissed alarm is prod-only,
+        // so a non-prod envName ("docs") gives four alarms, not five.
+        template.resourceCountIs("AWS::Events::Rule", 0);
+        template.resourceCountIs("AWS::SQS::Queue", 0);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
+        template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
         template.hasResourceProperties(
                 "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-stripe-reconcile")));
@@ -129,25 +134,6 @@ class IngestionStackTest {
         template.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
-    }
-
-    @Test
-    void stripeReconciliationRunsDailyInProdAndWeeklyElsewhere() {
-        Template ciTemplate = Template.fromStack(synthIngestionStack());
-        ciTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-stripe-reconcile-schedule",
-                        "ScheduleExpression", "cron(15 2 ? * MON *)")));
-
-        // synthIngestionStack always uses SubmitSharedNames.forDocs(), so the resource name
-        // prefix stays "docs-env" regardless of envName; only envName drives isProd here.
-        Template prodTemplate = Template.fromStack(synthIngestionStack("prod", null, null));
-        prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-stripe-reconcile-schedule",
-                        "ScheduleExpression", "cron(15 2 * * ? *)")));
     }
 
     @Test
@@ -243,7 +229,7 @@ class IngestionStackTest {
     }
 
     @Test
-    void registerScheduledJobWiresRetryingRuleDlqAndBothAlarms() {
+    void registerIngestionJobWiresOnlyAnErrorsAlarmWithNoDlqOrRule() {
         IngestionStack ingestionStack = synthIngestionStack();
         var jobLambda = Function.Builder.create(ingestionStack, "TestJobLambda")
                 .functionName("docs-env-test-job")
@@ -252,41 +238,18 @@ class IngestionStackTest {
                 .code(Code.fromInline("exports.handler = async () => {};"))
                 .build();
 
-        ingestionStack.registerScheduledJob(
-                "TestJob",
-                "docs-env-test-job",
-                jobLambda,
-                Schedule.cron(CronOptions.builder().minute("15").hour("2").build()),
-                "Test ingestion job");
+        ingestionStack.registerIngestionJob("TestJob", "docs-env-test-job", jobLambda, "Test ingestion job");
 
         Template template = Template.fromStack(ingestionStack);
 
-        // Three queues, rules and alarm pairs pre-exist for the Stripe reconciliation, GA4
-        // report pull and GA4 event export pull jobs the constructor always wires; this test's
-        // job adds a fourth of each.
-        template.resourceCountIs("AWS::SQS::Queue", 4);
-        template.hasResourceProperties(
-                "AWS::SQS::Queue",
-                Match.objectLike(Map.of("QueueName", "docs-env-test-job-dlq", "MessageRetentionPeriod", 1209600)));
+        // No DLQ or rule of its own: the nightly state machine invokes every job directly.
+        template.resourceCountIs("AWS::SQS::Queue", 0);
+        template.resourceCountIs("AWS::Events::Rule", 0);
 
-        template.resourceCountIs("AWS::Events::Rule", 4);
-        template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name",
-                        "docs-env-test-job-schedule",
-                        "ScheduleExpression",
-                        "cron(15 2 * * ? *)",
-                        "Targets",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "RetryPolicy", Match.objectLike(Map.of("MaximumRetryAttempts", 3)),
-                                "DeadLetterConfig", Match.objectLike(Map.of("Arn", Match.anyValue())))))))));
-
-        // All alarms carry no AlarmActions: the account-wide alarm-state-change rule in
-        // OpsStack forwards every CloudWatch alarm to Telegram.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 8);
+        // Three pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
+        // this test's own job alarm.
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 5);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        assertTrue(alarms.size() == 8, "expected exactly eight alarms");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) alarm.get("Properties");
@@ -301,32 +264,6 @@ class IngestionStackTest {
                         "Namespace", "AWS/Lambda",
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "Threshold", 1)));
-
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName", "docs-env-test-job-dlq-depth",
-                        "MetricName", "ApproximateNumberOfMessagesVisible",
-                        "Namespace", "AWS/SQS",
-                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
-                        "Threshold", 1)));
-    }
-
-    @Test
-    void ga4ReportPullRunsDailyInProdAndWeeklyElsewhere() {
-        Template ciTemplate = Template.fromStack(synthIngestionStack());
-        ciTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-ga4-report-pull-schedule",
-                        "ScheduleExpression", "cron(15 3 ? * MON *)")));
-
-        Template prodTemplate = Template.fromStack(synthIngestionStack("prod", null, null));
-        prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-ga4-report-pull-schedule",
-                        "ScheduleExpression", "cron(15 3 * * ? *)")));
     }
 
     @Test
@@ -453,23 +390,6 @@ class IngestionStackTest {
             return last instanceof String s && s.endsWith("/curated/ga4/*");
         }
         return false;
-    }
-
-    @Test
-    void ga4EventExportPullRunsDailyInProdAndWeeklyElsewhere() {
-        Template ciTemplate = Template.fromStack(synthIngestionStack());
-        ciTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-ga4-event-export-pull-schedule",
-                        "ScheduleExpression", "cron(20 3 ? * MON *)")));
-
-        Template prodTemplate = Template.fromStack(synthIngestionStack("prod", null, null));
-        prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-ga4-event-export-pull-schedule",
-                        "ScheduleExpression", "cron(20 3 * * ? *)")));
     }
 
     @Test

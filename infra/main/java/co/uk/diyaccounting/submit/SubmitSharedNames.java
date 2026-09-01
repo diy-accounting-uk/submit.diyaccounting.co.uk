@@ -129,6 +129,7 @@ public class SubmitSharedNames {
     public String analyticsResultsBucketName;
     public String glueDatabaseName;
     public String athenaWorkGroupName;
+    public String stateMachineName;
     public String activityEventsDeliveryStreamName;
     public String activityEventsDeliveryStreamLogGroupName;
     public String activityEventTransformLambdaFunctionName;
@@ -502,6 +503,7 @@ public class SubmitSharedNames {
                 "%s-analytics-results-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.glueDatabaseName = "%s_env_analytics".formatted(props.envName);
         this.athenaWorkGroupName = "%s-analytics".formatted(this.envResourceNamePrefix);
+        this.stateMachineName = "%s-analytics-nightly".formatted(this.envResourceNamePrefix);
         this.activityEventsDeliveryStreamName = "%s-activity-events".formatted(this.envResourceNamePrefix);
         this.activityEventsDeliveryStreamLogGroupName =
                 "/aws/kinesisfirehose/%s".formatted(this.activityEventsDeliveryStreamName);
