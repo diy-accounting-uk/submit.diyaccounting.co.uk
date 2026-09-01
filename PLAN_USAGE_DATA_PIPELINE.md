@@ -20,7 +20,7 @@ CloudFront data so the funnel and the revenue sit in the same place as the produ
 EventBridge activity bus ──rule──> Firehose ──> s3://lake/curated/activity-events/  (Parquet)
 DynamoDB streams (4 tables) ──Lambda──> Firehose x4 ──> s3://lake/curated/tables/<table>/
 GA4 Data API      ──nightly Lambda──> s3://lake/curated/ga4/
-Stripe API        ──nightly Lambda──> s3://lake/curated/stripe/<entity>/
+Stripe API        ──nightly Lambda──> s3://lake/curated/stripe/stripe_<entity>/
 CloudFront logs   ──logging v2──────> s3://lake/raw/cloudfront/            (Parquet)
                                           │
                               Glue database + tables (partition projection)
@@ -127,7 +127,7 @@ raw/cloudfront/<distribution-id>/year=.../month=.../day=.../   Parquet, written 
 curated/activity-events/year=.../month=.../day=.../     Parquet, from WP-3 onward
 curated/tables/<table>/year=.../month=.../day=.../      Parquet, DynamoDB change records
 curated/ga4/report=<name>/dt=YYYY-MM-DD/                gzipped NDJSON
-curated/stripe/<entity>/dt=YYYY-MM-DD/                  gzipped NDJSON
+curated/stripe/stripe_<entity>/dt=YYYY-MM-DD/                  gzipped NDJSON
 errors/<source>/<error-type>/year=.../month=.../day=.../  Firehose failed records
 ```
 
@@ -1197,7 +1197,7 @@ rows join to activity events without carrying a Stripe identifier around. Email 
 card details, addresses and raw customer objects are never written.
 
 Output: gzipped newline-delimited JSON to
-`curated/stripe/<entity>/dt=YYYY-MM-DD/<entity>.json.gz`. NDJSON rather than Parquet because
+`curated/stripe/stripe_<entity>/dt=YYYY-MM-DD/<entity>.json.gz`. NDJSON rather than Parquet because
 each day is a few hundred rows and writing Parquet from Node needs a dependency that earns
 nothing at this size.
 
@@ -1216,7 +1216,7 @@ projection.dt.format        = yyyy-MM-dd
 projection.dt.range         = 2026-01-01,NOW
 projection.dt.interval      = 1
 projection.dt.interval.unit = DAYS
-storage.location.template   = s3://{lake}/curated/stripe/<entity>/dt=${dt}/
+storage.location.template   = s3://{lake}/curated/stripe/stripe_<entity>/dt=${dt}/
 ```
 
 Amounts stay in minor units as `bigint`, exactly as Stripe returns them. `v_revenue_daily`
@@ -1233,7 +1233,7 @@ divides by 100 at the view, in one place.
 
 ## Done criteria
 
-- A manual invoke for a known day writes an object under `curated/stripe/charges/dt=.../`
+- A manual invoke for a known day writes an object under `curated/stripe/stripe_charges/dt=.../`
 - `SELECT sum(amount)/100.0 FROM stripe_charges WHERE dt = date '<day>' AND paid` returns a
   number that matches the Stripe dashboard for that day
 
