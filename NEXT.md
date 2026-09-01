@@ -38,14 +38,16 @@ operator step before them is done or when SSO is live.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
   is the plan of record. Phase 1 ran: activity events, all four table-change
   streams, and (after the path fix and replay) all three Stripe tables land
-  queryable rows; phase 5 is on main. Still open from the run: prod's
-  `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
-  look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
-  points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases, all
-  four now clear to build (last operator prereq — the BigQuery IAM grant for the GA4
-  service account — done 2026-09-01 via Cowork, `../BRIEF_GA4_BIGQUERY_IAM.md`): 2 GA4
-  BigQuery event export; 3 Step Functions orchestration; 4 reconciliation views; 6 Stripe
-  reconciliation (reuses the existing full Stripe key, 2026-09-01 decision).
+  queryable rows; phase 5 is on main. Both loose phase-1 threads are closed: the
+  `ga4-report-pull` 2026-08-30 errors were `ResourceNotFoundException` because the
+  prod GA4 secret didn't exist until 2026-08-31T00:39 BST — self-resolved, both
+  runs since have written data; ci's SSM `last-known-good-deployment` already
+  points at the most recent successful ci deploy (`ci-claudedon`), no write
+  needed. Remaining phases, all four now clear to build (last operator prereq —
+  the BigQuery IAM grant for the GA4 service account — done 2026-09-01 via
+  Cowork, `../BRIEF_GA4_BIGQUERY_IAM.md`): 2 GA4 BigQuery event export; 3 Step
+  Functions orchestration; 4 reconciliation views; 6 Stripe reconciliation
+  (reuses the existing full Stripe key, 2026-09-01 decision).
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   deployed. Operator set the PAT as repository-level GitHub Actions secret
   `ISSUE_BOT_TOKEN` on 2026-09-01 (GitHub rejects secret names starting `GITHUB_`,
@@ -75,8 +77,8 @@ pushes each as it lands:
   remainder, `PLAN_SECURITY_DETECTION_REMAINDER.md`, split so #9 and #10 can implement in
   parallel. Design only, no code. Gates a wave-2 implementation agent once it lands.
 - **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — phases 2, 3, 4, 6 of
-  `PLAN_SCHEDULED_INGESTION.md` in that order (shared-file constraint), plus the two loose
-  phase-1 threads (ga4-report-pull empty log stream, ci's stale SSM pointer) first.
+  `PLAN_SCHEDULED_INGESTION.md` in that order (shared-file constraint). The two loose
+  phase-1 threads are resolved (see open item above).
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — dispatch
   `deploy-environment.yml` then `deploy.yml` for ci, prove ci end to end, then repeat for
   prod. No code changes expected.
