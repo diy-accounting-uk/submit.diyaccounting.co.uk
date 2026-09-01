@@ -325,6 +325,12 @@ jobs:
             echo "Salt secret $SECRET_NAME already exists - preserving existing value"
           fi
 
+      - name: Apply salt secret resource policy
+        run: scripts/put-salt-secret-resource-policy.sh "${{ needs.names.outputs.environment-name }}"
+        env:
+          SUBMIT_DEPLOY_ROLE_ARN: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          SUBMIT_ACTIONS_ROLE_ARN: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+
   deploy-observability:
     name: 'deploy observability'
     needs:

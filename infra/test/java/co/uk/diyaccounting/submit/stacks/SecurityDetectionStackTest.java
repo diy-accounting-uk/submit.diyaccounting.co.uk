@@ -44,8 +44,8 @@ class SecurityDetectionStackTest {
     void wiresScanAndGetItemVolumeAlarmsWhenCloudTrailEnabled() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
 
-        template.resourceCountIs("AWS::Logs::MetricFilter", 2);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+        template.resourceCountIs("AWS::Logs::MetricFilter", 3);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 3);
 
         // The stack imports ObservabilityStack's topic by ARN rather than creating its own.
         template.resourceCountIs("AWS::SNS::Topic", 0);
@@ -101,6 +101,31 @@ class SecurityDetectionStackTest {
         assertTrue(
                 scanFilterScopedToCustomerTables,
                 "expected the Scan metric filter pattern to name all five customer data tables");
+
+        // Salt secret unexpected-read alarm: any occurrence (threshold 1,
+        // GreaterThanOrEqualToThreshold) against the Submit/Security namespace's
+        // SaltSecretUnexpectedRead metric, routed to one SNS action.
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "docs-env-salt-secret-unexpected-read",
+                        "MetricName", "SaltSecretUnexpectedRead",
+                        "Namespace", "Submit/Security",
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "Threshold", 1)));
+
+        // The salt-read filter pattern targets GetSecretValue on the salt secret and excludes
+        // sessions whose role name starts with the environment name ("docs").
+        boolean saltReadFilterScoped = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.contains("\"GetSecretValue\"")
+                    && filterPattern.contains("user-sub-hash-salt")
+                    && filterPattern.contains("docs-*");
+        });
+        assertTrue(saltReadFilterScoped, "expected the salt-read metric filter pattern to reference GetSecretValue,"
+                + " the salt secret, and the docs-* environment role prefix");
     }
 
     @Test

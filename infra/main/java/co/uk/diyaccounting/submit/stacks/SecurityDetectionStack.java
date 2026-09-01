@@ -193,9 +193,56 @@ public class SecurityDetectionStack extends Stack {
                         .build();
         dynamoDbGetItemVolumeAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
+        // ----------------------------------------------------------------------------------
+        // PLAN_ISSUE_10 acceptance criterion 1 remainder: an alarm on any GetSecretValue read
+        // of the salt secret by a principal outside the deployment pipeline. The resource
+        // policy (scripts/put-salt-secret-resource-policy.sh) stops unexpected reads; this
+        // alarm catches a read from a principal the policy does allow but that isn't expected
+        // to read the salt day-to-day, e.g. a console session or SSO user assuming a role that
+        // happens to match the policy's allow patterns.
+        //
+        // Every legitimate reader assumes a role whose name starts with the environment name
+        // (see SubmitSharedNames' *-app-* / *-env-* naming), so this fires on a console read, an
+        // SSO session, or any role created outside the deployment pipeline. It is expected to
+        // fire during salt backup and rotation -- runbook section 6.6 documents that.
+        // ----------------------------------------------------------------------------------
+        String saltReadMetricName = "SaltSecretUnexpectedRead";
+        MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-SaltSecretReadMetricFilter")
+                .logGroup(cloudTrailLogGroup)
+                .filterPattern(FilterPattern.literal(
+                        "{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
+                                + " && ($.requestParameters.secretId = \"*user-sub-hash-salt*\")"
+                                + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\") }"
+                                        .formatted(props.envName())))
+                .metricNamespace("Submit/Security")
+                .metricName(saltReadMetricName)
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+
+        Alarm saltSecretUnexpectedReadAlarm =
+                Alarm.Builder.create(this, props.resourceNamePrefix() + "-SaltSecretUnexpectedReadAlarm")
+                        .alarmName(props.resourceNamePrefix() + "-salt-secret-unexpected-read")
+                        .alarmDescription(
+                                "GetSecretValue on the user-sub-hash-salt secret by a principal whose role name"
+                                        + " does not start with this environment's name. Expected during salt"
+                                        + " backup and rotation (runbook section 6.6); otherwise investigate.")
+                        .metric(Metric.Builder.create()
+                                .namespace("Submit/Security")
+                                .metricName(saltReadMetricName)
+                                .statistic("Sum")
+                                .period(Duration.minutes(5))
+                                .build())
+                        .threshold(1)
+                        .evaluationPeriods(1)
+                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                        .treatMissingData(TreatMissingData.NOT_BREACHING)
+                        .build();
+        saltSecretUnexpectedReadAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
+
         infof(
-                "SecurityDetectionStack %s created: DynamoDB customer-table Scan and GetItem-volume alarms wired to"
-                        + " the security-findings topic",
+                "SecurityDetectionStack %s created: DynamoDB customer-table Scan and GetItem-volume alarms, and the"
+                        + " salt secret unexpected-read alarm, wired to the security-findings topic",
                 this.getNode().getId());
     }
 }
