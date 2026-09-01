@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +42,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
@@ -399,6 +399,7 @@ public class AnalyticsStack extends Stack {
         ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.bqEventsTable.addResourceDependency(this.glueDatabase);
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
@@ -610,10 +611,9 @@ public class AnalyticsStack extends Stack {
                 .physicalResourceId(PhysicalResourceId.of(ACTIVITY_EVENTS_UNION_VIEW_NAME + "-view"))
                 .build();
 
-        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
-                .onCreate(createUnionViewCall)
-                .onUpdate(createUnionViewCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(
+        var unionViewGrant = KindCdk.grantToAwsCustomResourceProvider(
+                this,
+                List.of(
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
                                 .actions(List.of("athena:StartQueryExecution"))
@@ -639,9 +639,15 @@ public class AnalyticsStack extends Stack {
                                 .actions(List.of("s3:PutObject", "s3:GetBucketLocation"))
                                 .resources(List.of(
                                         this.resultsBucket.getBucketArn(), this.resultsBucket.getBucketArn() + "/*"))
-                                .build())))
+                                .build()));
+
+        var createUnionViewResource = AwsCustomResource.Builder.create(this, prefix + "-CreateActivityEventsAllView")
+                .onCreate(createUnionViewCall)
+                .onUpdate(createUnionViewCall)
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
+                .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
                 .build();
+        createUnionViewResource.getNode().addDependency(unionViewGrant);
         createUnionViewResource.getNode().addDependency(this.workGroup);
         createUnionViewResource.getNode().addDependency(activityEventsTable);
         createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
@@ -736,6 +742,15 @@ public class AnalyticsStack extends Stack {
                 .id("expire-raw-activity-events")
                 .prefix(ACTIVITY_EVENTS_RAW_PREFIX)
                 .expiration(Duration.days(isProd ? 90 : 14))
+                .build());
+
+        // user_pseudo_id in the GA4 BigQuery event export is pseudonymous personal data under UK
+        // GDPR, so this prefix gets a dedicated, shorter expiration than the rest of curated/:
+        // 400 days matches the CloudFront raw log retention, well inside the 800-day default.
+        rules.add(LifecycleRule.builder()
+                .id("expire-ga4-bq-events")
+                .prefix("curated/ga4_bq/")
+                .expiration(Duration.days(isProd ? 400 : 30))
                 .build());
 
         rules.add(LifecycleRule.builder()

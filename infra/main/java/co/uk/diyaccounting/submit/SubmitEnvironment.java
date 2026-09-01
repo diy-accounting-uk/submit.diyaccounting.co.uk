@@ -77,6 +77,9 @@ public class SubmitEnvironment {
         public String baseImageTag;
         public String ga4PropertyId;
         public String ga4ServiceAccountArn;
+        public String ga4BigQueryProjectId;
+        public String ga4BigQueryDatasetId;
+        public String ga4BigQueryLocation;
         public String crossAccountBackupVaultArn;
         public String scanDetection404PerMinute;
 
@@ -178,6 +181,18 @@ public class SubmitEnvironment {
                 "GA4_SERVICE_ACCOUNT_ARN",
                 appProps.ga4ServiceAccountArn,
                 "(from ga4ServiceAccountArn in cdk.json)");
+        var ga4BigQueryProjectId = envOr(
+                "GA4_BIGQUERY_PROJECT_ID",
+                appProps.ga4BigQueryProjectId,
+                "(from ga4BigQueryProjectId in cdk.json)");
+        var ga4BigQueryDatasetId = envOr(
+                "GA4_BIGQUERY_DATASET_ID",
+                appProps.ga4BigQueryDatasetId,
+                "(from ga4BigQueryDatasetId in cdk.json)");
+        var ga4BigQueryLocation = envOr(
+                "GA4_BIGQUERY_LOCATION",
+                appProps.ga4BigQueryLocation,
+                "(from ga4BigQueryLocation in cdk.json)");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -372,6 +387,9 @@ public class SubmitEnvironment {
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .ga4PropertyId(ga4PropertyId != null ? ga4PropertyId : "")
                         .ga4ServiceAccountArn(ga4ServiceAccountArn != null ? ga4ServiceAccountArn : "")
+                        .ga4BigQueryProjectId(ga4BigQueryProjectId != null ? ga4BigQueryProjectId : "")
+                        .ga4BigQueryDatasetId(ga4BigQueryDatasetId != null ? ga4BigQueryDatasetId : "")
+                        .ga4BigQueryLocation(ga4BigQueryLocation != null ? ga4BigQueryLocation : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

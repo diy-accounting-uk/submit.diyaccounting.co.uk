@@ -28,7 +28,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 8;
+    private static final int VIEW_COUNT = 10;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -88,7 +88,9 @@ class BusinessViewsTest {
                 "v_revenue_daily",
                 "v_hmrc_failures_by_class",
                 "v_signup_to_first_submission",
-                "v_traffic_by_country_daily");
+                "v_traffic_by_country_daily",
+                "v_ga4_funnel_daily",
+                "v_purchase_reconciliation_daily");
 
         var customResources = template.findResources("Custom::AWS");
         var viewNamesFound = new ArrayList<String>();
@@ -111,6 +113,45 @@ class BusinessViewsTest {
         assertEquals(
                 expectedViewNames.size(), viewNamesFound.size(), "expected every view name to appear exactly once");
         assertEquals(expectedViewNames, Set.copyOf(viewNamesFound));
+    }
+
+    @Test
+    void purchaseReconciliationDependsOnTheGa4FunnelViewItReadsFrom() {
+        Template template = synthBusinessViews();
+
+        // v_purchase_reconciliation_daily's SQL reads v_ga4_funnel_daily directly, and two
+        // AwsCustomResources carry no implicit CloudFormation ordering between them: without an
+        // explicit dependency, CloudFormation could create the reconciliation view before the
+        // funnel view exists in the catalog, and the CREATE OR REPLACE VIEW would fail.
+        var customResources = template.findResources("Custom::AWS");
+        var reconciliationLogicalId = customResources.entrySet().stream()
+                .filter(entry -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("Create"))
+                            .contains("CREATE OR REPLACE VIEW v_purchase_reconciliation_daily AS");
+                })
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a v_purchase_reconciliation_daily Custom::AWS resource"));
+
+        var funnelLogicalId = customResources.entrySet().stream()
+                .filter(entry -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("Create")).contains("CREATE OR REPLACE VIEW v_ga4_funnel_daily AS");
+                })
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a v_ga4_funnel_daily Custom::AWS resource"));
+
+        var reconciliationResource = customResources.get(reconciliationLogicalId);
+        var dependsOn = reconciliationResource.get("DependsOn");
+        assertTrue(dependsOn instanceof List<?>, "expected a DependsOn list on the reconciliation view resource");
+        assertTrue(
+                ((List<?>) dependsOn).stream().anyMatch(id -> String.valueOf(id).contains(funnelLogicalId)),
+                "expected the reconciliation view to depend on the funnel view's Custom::AWS resource, found: "
+                        + dependsOn);
     }
 
     @Test

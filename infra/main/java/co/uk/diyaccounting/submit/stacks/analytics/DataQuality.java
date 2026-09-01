@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -22,10 +21,6 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
-import software.amazon.awscdk.services.events.CronOptions;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.glue.CfnDataQualityRuleset;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
@@ -37,19 +32,17 @@ import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
 /**
- * Glue Data Quality over {@code activity_events}: a ruleset in DQDL, a daily Lambda that starts
- * one evaluation run, and an alarm on the {@code failed} metric Glue itself publishes.
+ * Glue Data Quality over {@code activity_events}: a ruleset in DQDL, a Lambda that starts one
+ * evaluation run when invoked, and an alarm on the {@code failed} metric Glue itself publishes.
  *
- * <p>Not wired through {@code IngestionStack.registerScheduledJob}: that method lives on a
- * sibling stack owned by concurrent work this wave, and this job's target table lives in {@code
- * AnalyticsStack}, not {@code IngestionStack}. This construct reproduces the same shape (one DLQ,
- * one retrying schedule rule, a Lambda-errors alarm and a DLQ-depth alarm) so a later pass can
- * fold both into one shared helper without changing behaviour.
+ * <p>No schedule, DLQ or rule of its own: {@code IngestionStack}'s {@code
+ * NightlyIngestionWorkflow} state machine invokes {@link #runLambda} directly as one step in the
+ * nightly chain, after the ingestion jobs and before the metrics publish. Only the Lambda-errors
+ * alarm stays here, matching {@code IngestionStack.registerIngestionJob}'s shape.
  *
  * <p>The runner Lambda passes a scoped IAM role to Glue for the evaluation run itself: Glue reads
  * the table and, because {@code AdditionalRunOptions.CloudWatchMetricsEnabled} is set, publishes
@@ -91,8 +84,7 @@ public class DataQuality extends Construct {
     public final CfnDataQualityRuleset ruleset;
     public final Role evaluationRole;
     public final Function runLambda;
-    public final Queue dlq;
-    public final Rule schedule;
+    public final Alarm errorsAlarm;
     public final Alarm rulesFailedAlarm;
 
     @Value.Immutable
@@ -301,42 +293,14 @@ public class DataQuality extends Construct {
                 .build());
 
         // ============================================================================
-        // Schedule: DLQ, retrying rule, Lambda-errors alarm, DLQ-depth alarm
+        // Lambda-errors alarm. No schedule, DLQ or DLQ-depth alarm: the nightly state machine
+        // invokes this Lambda directly and a failure here stops the chain.
         // ============================================================================
-        this.dlq = Queue.Builder.create(this, prefix + "-DataQualityRun-Dlq")
-                .queueName(runLambdaFunctionName + "-dlq")
-                .retentionPeriod(Duration.days(14))
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-
-        this.schedule = Rule.Builder.create(this, prefix + "-DataQualityRun-Schedule")
-                .ruleName(runLambdaFunctionName + "-schedule")
-                .description("Start the daily Glue data quality evaluation run over " + TARGET_TABLE_NAME)
-                .schedule(Schedule.cron(
-                        CronOptions.builder().minute("0").hour("4").build()))
-                .targets(List.of(LambdaFunction.Builder.create(this.runLambda)
-                        .retryAttempts(3)
-                        .deadLetterQueue(this.dlq)
-                        .maxEventAge(Duration.hours(2))
-                        .build()))
-                .build();
-
-        Alarm.Builder.create(this, prefix + "-DataQualityRun-ErrorsAlarm")
+        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-DataQualityRun-ErrorsAlarm")
                 .alarmName(runLambdaFunctionName + "-errors")
                 .alarmDescription("The data quality run Lambda errored at least once in 24 hours")
                 .metric(this.runLambda.metricErrors(
                         MetricOptions.builder().period(Duration.hours(24)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        Alarm.Builder.create(this, prefix + "-DataQualityRun-DlqDepthAlarm")
-                .alarmName(runLambdaFunctionName + "-dlq-depth")
-                .alarmDescription("The data quality run's dead-letter queue holds at least one failed run")
-                .metric(this.dlq.metricApproximateNumberOfMessagesVisible(
-                        MetricOptions.builder().period(Duration.minutes(5)).build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)

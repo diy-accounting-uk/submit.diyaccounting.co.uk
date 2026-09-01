@@ -167,6 +167,35 @@ describe("analyticsMetricsPublish", () => {
 
       expect(toMetricData(definition, rows, timestamp)).toEqual([]);
     });
+
+    test.each(["Ga4Purchases", "StripePaidCharges", "ActivityActivations"])(
+      "%s reads its view's coalesced zero, not an absent value",
+      (metricName) => {
+        const definition = METRIC_DEFINITIONS.find((d) => d.metricName === metricName);
+        const column = definition.valueColumn;
+
+        // v_purchase_reconciliation_daily's FULL JOIN + coalesce means a day with a row always
+        // carries a numeric string for every one of the three counts, "0" included when that
+        // source had nothing that day - never null. A published zero here is the correct
+        // reading of "no purchases from this source", not the query-failed case toMetricData
+        // otherwise guards against by skipping null.
+        expect(toMetricData(definition, [{ [column]: "0" }], timestamp)).toEqual([
+          { MetricName: metricName, Value: 0, Unit: "Count", Timestamp: timestamp, Dimensions: [] },
+        ]);
+
+        expect(toMetricData(definition, [{ [column]: "7" }], timestamp)).toEqual([
+          { MetricName: metricName, Value: 7, Unit: "Count", Timestamp: timestamp, Dimensions: [] },
+        ]);
+      },
+    );
+
+    test("reconciliation metrics carry no dimension: the gap columns are not published", () => {
+      for (const metricName of ["Ga4Purchases", "StripePaidCharges", "ActivityActivations"]) {
+        const definition = METRIC_DEFINITIONS.find((d) => d.metricName === metricName);
+        expect(definition.dimension).toBeNull();
+        expect(definition.sql("2026-08-28")).not.toMatch(/minus/i);
+      }
+    });
   });
 
   describe("pollUntilTerminal", () => {

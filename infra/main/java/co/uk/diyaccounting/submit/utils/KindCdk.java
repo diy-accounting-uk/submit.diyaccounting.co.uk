@@ -16,13 +16,18 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.IGrantable;
+import software.amazon.awscdk.services.iam.IRole;
+import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.Policy;
+import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -75,6 +80,70 @@ public class KindCdk {
     }
 
     private static final String AWS_CUSTOM_RESOURCE_PROVIDER_LOG_GROUP_ID = "AwsCustomResourceProviderLogGroup";
+
+    private static final String AWS_CUSTOM_RESOURCE_PROVIDER_ROLE_ID = "AwsCustomResourceProviderRole";
+
+    /**
+     * Returns the execution role for a stack's singleton AwsCustomResource provider Lambda,
+     * creating it on first call and returning the same instance on every later call for that stack.
+     *
+     * <p>CDK gives every {@link AwsCustomResource} in a stack the same provider Lambda, so they all
+     * share one execution role, and each resource's {@code policy} becomes another inline policy on
+     * it. IAM caps the total size of a role's inline policies at 10240 bytes, so a stack that
+     * creates enough custom resources eventually fails to deploy. Owning the role here lets a
+     * construct grant one consolidated policy for a whole family of resources instead of one policy
+     * per resource — see {@code BusinessViews}, where every Athena view shares a single grant.
+     *
+     * <p>The role must be passed to every {@link AwsCustomResource} in the stack. CDK takes the role
+     * from whichever resource happens to build the singleton first and ignores it on the rest, so a
+     * resource that misses it would run under a different role than the one carrying its grants.
+     *
+     * @param stack The stack whose AwsCustomResource provider role is needed
+     * @return The shared execution role for that stack's provider Lambda
+     */
+    public static IRole ensureAwsCustomResourceProviderRole(Stack stack) {
+        software.constructs.IConstruct existing = stack.getNode().tryFindChild(AWS_CUSTOM_RESOURCE_PROVIDER_ROLE_ID);
+        if (existing != null) {
+            return (IRole) existing;
+        }
+        return Role.Builder.create(stack, AWS_CUSTOM_RESOURCE_PROVIDER_ROLE_ID)
+                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+                .managedPolicies(List.of(
+                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .build();
+    }
+
+    private static final String AWS_CUSTOM_RESOURCE_PROVIDER_POLICY_ID = "AwsCustomResourceProviderPolicy";
+
+    /**
+     * Grants {@code statements} to the stack's shared AwsCustomResource provider role, through one
+     * policy per stack that every custom resource in that stack contributes to, and returns that
+     * policy so the caller can make its resource depend on it.
+     *
+     * <p>Letting each {@link AwsCustomResource} carry its own {@code policy} is what walks a stack
+     * into IAM's 10240-byte inline-policy limit: the per-policy and per-statement boilerplate is
+     * repeated once per resource, so the cost grows with the resource count rather than with the
+     * distinct permissions. One minimized document instead merges statements that share an action
+     * or a resource, and the same table granted twice costs nothing the second time.
+     *
+     * @param stack The stack whose provider role is being granted to
+     * @param statements The permissions one custom resource needs
+     * @return The shared policy, to be added as a dependency of that custom resource
+     */
+    public static Policy grantToAwsCustomResourceProvider(Stack stack, List<PolicyStatement> statements) {
+        software.constructs.IConstruct existing = stack.getNode().tryFindChild(AWS_CUSTOM_RESOURCE_PROVIDER_POLICY_ID);
+        Policy policy;
+        if (existing != null) {
+            policy = (Policy) existing;
+        } else {
+            policy = Policy.Builder.create(stack, AWS_CUSTOM_RESOURCE_PROVIDER_POLICY_ID)
+                    .document(PolicyDocument.Builder.create().minimize(true).build())
+                    .build();
+            policy.attachToRole(ensureAwsCustomResourceProviderRole(stack));
+        }
+        statements.forEach(policy::addStatements);
+        return policy;
+    }
 
     /**
      * Returns the log group for a stack's default AwsCustomResource provider Lambda, creating it
@@ -138,32 +207,33 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceNotFoundException")
                 .build();
 
-        // Both custom resources carry the full statement list. Each AwsCustomResource gets its own
-        // IAM policy, invoked within a second of that policy's creation, and IAM propagation is
-        // not that fast: the retention call was denied in prod on a policy that had just landed.
-        // Granting PutRetentionPolicy from the first resource's policy puts the permission on the
-        // shared provider role well before the second resource runs.
+        // Both calls are granted up front, before either resource exists, because the retention
+        // call runs within a second of the grant and IAM propagation is not that fast: it was once
+        // denied in prod on a permission that had just landed.
         // PutRetentionPolicy authorises against the bare log-group ARN, not the ":*" form the
         // stream-level actions use.
         String logGroupArn =
                 "arn:aws:logs:" + stack.getRegion() + ":" + stack.getAccount() + ":log-group:" + logGroupName;
-        List<PolicyStatement> logGroupStatements = List.of(
-                PolicyStatement.Builder.create()
-                        .actions(List.of("logs:CreateLogGroup", "logs:DeleteLogGroup"))
-                        .resources(List.of(logGroupArn + ":*"))
-                        .build(),
-                PolicyStatement.Builder.create()
-                        .actions(List.of("logs:PutRetentionPolicy"))
-                        .resources(List.of(logGroupArn, logGroupArn + ":*"))
-                        .build());
+        Policy logGroupGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(
+                        PolicyStatement.Builder.create()
+                                .actions(List.of("logs:CreateLogGroup", "logs:DeleteLogGroup"))
+                                .resources(List.of(logGroupArn + ":*"))
+                                .build(),
+                        PolicyStatement.Builder.create()
+                                .actions(List.of("logs:PutRetentionPolicy"))
+                                .resources(List.of(logGroupArn, logGroupArn + ":*"))
+                                .build()));
 
         AwsCustomResource ensureResource = AwsCustomResource.Builder.create(stack, id + "-EnsureLogGroup")
                 .onCreate(createLogGroupCall)
                 .onUpdate(createLogGroupCall)
                 .onDelete(deleteLogGroupCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(logGroupStatements))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureResource.getNode().addDependency(logGroupGrant);
 
         // CreateLogGroup has no retention parameter, so retention is a second, dependent call —
         // the same two-call shape as ensurePointInTimeRecovery.
@@ -178,9 +248,10 @@ public class KindCdk {
                         stack, id + "-EnsureLogGroupRetention")
                 .onCreate(putRetentionCall)
                 .onUpdate(putRetentionCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(logGroupStatements))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureRetentionResource.getNode().addDependency(logGroupGrant);
         ensureRetentionResource.getNode().addDependency(ensureResource);
 
         ILogGroup logGroup = LogGroup.fromLogGroupName(stack, id + "-LogGroup", logGroupName);
@@ -221,15 +292,20 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("BucketAlreadyOwnedByYou")
                 .build();
 
-        AwsCustomResource.Builder.create(stack, id + "-EnsureBucket")
-                .onCreate(createBucketCall)
-                .onUpdate(createBucketCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
+        Policy bucketGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
                         .actions(List.of("s3:CreateBucket"))
                         .resources(List.of("arn:aws:s3:::" + bucketName))
-                        .build())))
+                        .build()));
+
+        AwsCustomResource ensureBucketResource = AwsCustomResource.Builder.create(stack, id + "-EnsureBucket")
+                .onCreate(createBucketCall)
+                .onUpdate(createBucketCall)
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureBucketResource.getNode().addDependency(bucketGrant);
 
         return Bucket.fromBucketName(stack, id + "-Bucket", bucketName);
     }
@@ -279,16 +355,21 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ResourceInUseException")
                 .build();
 
+        Policy createTableGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:CreateTable", "dynamodb:DescribeTable"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
         AwsCustomResource ensureTableResource = AwsCustomResource.Builder.create(stack, id + "-EnsureTable")
                 .onCreate(createTableCall)
                 .onUpdate(createTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:CreateTable", "dynamodb:DescribeTable"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureTableResource.getNode().addDependency(createTableGrant);
+        recordTableCreation(stack, tableName, ensureTableResource);
 
         ensurePointInTimeRecovery(stack, id, tableName, ensureTableResource);
 
@@ -324,17 +405,21 @@ public class KindCdk {
                 .physicalResourceId(PhysicalResourceId.of(tableName + "-pitr"))
                 .build();
 
+        Policy pitrGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateContinuousBackups", "dynamodb:DescribeContinuousBackups"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
         AwsCustomResource ensurePitrResource = AwsCustomResource.Builder.create(stack, id + "-EnsurePITR")
                 .onCreate(updateContinuousBackupsCall)
                 .onUpdate(updateContinuousBackupsCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:UpdateContinuousBackups", "dynamodb:DescribeContinuousBackups"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
 
+        ensurePitrResource.getNode().addDependency(pitrGrant);
         ensurePitrResource.getNode().addDependency(ensureTableResource);
     }
 
@@ -403,16 +488,21 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ValidationException")
                 .build();
 
-        AwsCustomResource.Builder.create(stack, id + "-EnsureGSI")
+        Policy gsiGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTable", "dynamodb:DescribeTable"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
+        AwsCustomResource ensureGsiResource = AwsCustomResource.Builder.create(stack, id + "-EnsureGSI")
                 .onCreate(updateTableCall)
                 .onUpdate(updateTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:UpdateTable", "dynamodb:DescribeTable"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureGsiResource.getNode().addDependency(gsiGrant);
+        dependOnTableCreation(stack, tableName, ensureGsiResource);
     }
 
     /**
@@ -439,16 +529,21 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ValidationException")
                 .build();
 
-        AwsCustomResource.Builder.create(stack, id + "-EnsureTTL")
+        Policy ttlGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTimeToLive", "dynamodb:DescribeTimeToLive"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
+        AwsCustomResource ensureTtlResource = AwsCustomResource.Builder.create(stack, id + "-EnsureTTL")
                 .onCreate(updateTtlCall)
                 .onUpdate(updateTtlCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:UpdateTimeToLive", "dynamodb:DescribeTimeToLive"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureTtlResource.getNode().addDependency(ttlGrant);
+        dependOnTableCreation(stack, tableName, ensureTtlResource);
     }
 
     /**
@@ -456,9 +551,8 @@ public class KindCdk {
      *
      * <p>CreateTable takes no StreamSpecification parameter and does nothing at all when the table
      * already exists, so the stream is a second call, exactly like {@link #ensurePointInTimeRecovery}
-     * and {@link #ensureTimeToLive}. Call this after {@code ensureTable} and wire an explicit
-     * dependency on the table's {@code -EnsureTable} construct, the same way the passes GSI depends
-     * on its table, so the stream update does not race table creation.
+     * and {@link #ensureTimeToLive}. It waits for the table's own {@code ensureTable} call, so it
+     * cannot race table creation.
      *
      * <p>UpdateTable rejects a no-change stream request (re-enabling a stream that already has the
      * same view type) with ValidationException, so that code is ignored to keep repeat deployments
@@ -492,16 +586,21 @@ public class KindCdk {
                 .ignoreErrorCodesMatching("ValidationException")
                 .build();
 
+        Policy streamGrant = grantToAwsCustomResourceProvider(
+                stack,
+                List.of(PolicyStatement.Builder.create()
+                        .actions(List.of("dynamodb:UpdateTable", "dynamodb:DescribeTable"))
+                        .resources(List.of(dynamoTableArn(stack, tableName)))
+                        .build()));
+
         AwsCustomResource ensureStreamResource = AwsCustomResource.Builder.create(stack, id + "-EnsureStream")
                 .onCreate(updateTableCall)
                 .onUpdate(updateTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:UpdateTable"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        ensureStreamResource.getNode().addDependency(streamGrant);
+        dependOnTableCreation(stack, tableName, ensureStreamResource);
 
         AwsSdkCall describeTableCall = AwsSdkCall.builder()
                 .service("DynamoDB")
@@ -513,15 +612,45 @@ public class KindCdk {
         AwsCustomResource streamArnResource = AwsCustomResource.Builder.create(stack, id + "-DescribeStream")
                 .onCreate(describeTableCall)
                 .onUpdate(describeTableCall)
-                .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                        .actions(List.of("dynamodb:DescribeTable"))
-                        .resources(List.of("arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount()
-                                + ":table/" + tableName))
-                        .build())))
                 .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
+                .role(ensureAwsCustomResourceProviderRole(stack))
                 .build();
+        streamArnResource.getNode().addDependency(streamGrant);
         streamArnResource.getNode().addDependency(ensureStreamResource);
 
         return streamArnResource.getResponseField("Table.LatestStreamArn");
+    }
+
+    private static String dynamoTableArn(Stack stack, String tableName) {
+        return "arn:aws:dynamodb:" + stack.getRegion() + ":" + stack.getAccount() + ":table/" + tableName;
+    }
+
+    /**
+     * The CreateTable custom resource for each table a stack has called {@link #ensureTable} for.
+     *
+     * <p>Every follow-up call — PITR, TTL, a GSI, a stream — targets a table by name and fails
+     * outright if the table is not there yet, and CloudFormation infers no ordering between two
+     * custom resources that never reference each other. Recording the CreateTable resource here
+     * lets those calls add the dependency themselves, rather than leaving each caller to remember
+     * it: the tables that already existed in a live environment hid the race for as long as no new
+     * one was added.
+     */
+    private static final Map<Stack, Map<String, AwsCustomResource>> TABLE_CREATION_RESOURCES =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    private static void recordTableCreation(Stack stack, String tableName, AwsCustomResource resource) {
+        TABLE_CREATION_RESOURCES
+                .computeIfAbsent(stack, ignored -> new java.util.HashMap<>())
+                .put(tableName, resource);
+    }
+
+    private static void dependOnTableCreation(Stack stack, String tableName, AwsCustomResource dependent) {
+        Map<String, AwsCustomResource> byTableName = TABLE_CREATION_RESOURCES.get(stack);
+        AwsCustomResource tableCreation = byTableName == null ? null : byTableName.get(tableName);
+        if (tableCreation == null) {
+            throw new IllegalStateException("%s must be created by ensureTable in stack %s before this call"
+                    .formatted(tableName, stack.getStackName()));
+        }
+        dependent.getNode().addDependency(tableCreation);
     }
 }

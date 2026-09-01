@@ -85,7 +85,7 @@ class AnalyticsStackTest {
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
         // Two Glue tables: the JSON spike table stays queryable, the typed Parquet table is new.
-        analytics.resourceCountIs("AWS::Glue::Table", 13);
+        analytics.resourceCountIs("AWS::Glue::Table", 14);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
@@ -99,7 +99,7 @@ class AnalyticsStackTest {
 
         // Two saved queries: the spike's day-one query, plus the union view's definition kept
         // here for reference (the custom resource below is what actually creates the view).
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 12);
 
         // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
         var customResources = analytics.findResources("Custom::AWS");

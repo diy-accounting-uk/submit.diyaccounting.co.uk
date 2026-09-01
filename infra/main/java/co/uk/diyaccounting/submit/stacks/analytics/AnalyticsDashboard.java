@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -30,10 +29,6 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
-import software.amazon.awscdk.services.events.CronOptions;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Architecture;
@@ -42,18 +37,22 @@ import software.amazon.awscdk.services.lambda.DockerImageFunction;
 import software.amazon.awscdk.services.lambda.EcrImageCodeProps;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.s3.IBucket;
-import software.amazon.awscdk.services.sqs.Queue;
 import software.constructs.Construct;
 
 /**
- * WP-7: the scheduled Lambda that turns the WP-6 Athena views into CloudWatch custom metrics,
- * and the dashboard that reads them.
+ * WP-7: the Lambda that turns the WP-6 Athena views into CloudWatch custom metrics, invoked as
+ * the last step of the nightly chain, and the dashboard that reads them.
  *
  * <p>Not a {@code Stack}: this lives inside {@code AnalyticsStack}, which owns the lake, the
  * Glue database and the Athena workgroup this construct queries. A plain {@code
  * DockerImageFunction} rather than the shared {@code Lambda} construct, matching {@code
  * IngestionStack}'s Stripe reconciliation job: that construct creates its own Errors alarm,
  * which would collide with the one this class adds for the same function name.
+ *
+ * <p>No schedule, DLQ or DLQ-depth alarm of its own: {@code IngestionStack}'s {@code
+ * NightlyIngestionWorkflow} state machine invokes {@link #metricsPublishLambda} directly as the
+ * final step, after the ingestion jobs and the data quality run, so a failed ingestion stops the
+ * publish rather than the publish running regardless and putting a false zero on the dashboard.
  *
  * <p>CloudWatch over QuickSight is the design's cost call (see PLAN_USAGE_DATA_PIPELINE.md's
  * WP-7 section): about $9/month all in, reusing the alarm and Telegram routing that already
@@ -67,8 +66,7 @@ public class AnalyticsDashboard extends Construct {
     private static final String METRICS_NAMESPACE = "Submit/Analytics";
 
     public final Function metricsPublishLambda;
-    public final Queue deadLetterQueue;
-    public final Rule scheduleRule;
+    public final Alarm errorsAlarm;
     public final Dashboard dashboard;
 
     @Value.Immutable
@@ -214,44 +212,15 @@ public class AnalyticsDashboard extends Construct {
                 .build());
 
         // ============================================================================
-        // Schedule, DLQ and alarms
+        // Lambda-errors alarm. No schedule, DLQ or DLQ-depth alarm: the nightly state machine
+        // invokes this Lambda directly as the last step, so a failure here (or upstream) ends
+        // the execution rather than retrying in isolation off a DLQ.
         // ============================================================================
-        // 05:00 UTC daily in both environments (WP-8's schedule table): after the 04:00 data
-        // quality run and well after the 02:15/02:45 ingestion jobs settle yesterday's data.
-        this.deadLetterQueue = Queue.Builder.create(this, prefix + "-AnalyticsMetricsPublish-Dlq")
-                .queueName(functionName + "-dlq")
-                .retentionPeriod(Duration.days(14))
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-
-        this.scheduleRule = Rule.Builder.create(this, prefix + "-AnalyticsMetricsPublish-Schedule")
-                .ruleName(functionName + "-schedule")
-                .description("Publish yesterday's Athena view results to CloudWatch as analytics metrics")
-                .schedule(Schedule.cron(
-                        CronOptions.builder().minute("0").hour("5").build()))
-                .targets(List.of(LambdaFunction.Builder.create(this.metricsPublishLambda)
-                        .retryAttempts(3)
-                        .deadLetterQueue(this.deadLetterQueue)
-                        .maxEventAge(Duration.hours(2))
-                        .build()))
-                .build();
-
-        Alarm.Builder.create(this, prefix + "-AnalyticsMetricsPublish-ErrorsAlarm")
+        this.errorsAlarm = Alarm.Builder.create(this, prefix + "-AnalyticsMetricsPublish-ErrorsAlarm")
                 .alarmName(functionName + "-errors")
                 .alarmDescription("Analytics metrics publish errored at least once in 24 hours")
                 .metric(this.metricsPublishLambda.metricErrors(
                         MetricOptions.builder().period(Duration.hours(24)).build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        Alarm.Builder.create(this, prefix + "-AnalyticsMetricsPublish-DlqDepthAlarm")
-                .alarmName(functionName + "-dlq-depth")
-                .alarmDescription("Analytics metrics publish dead-letter queue holds at least one failed run")
-                .metric(this.deadLetterQueue.metricApproximateNumberOfMessagesVisible(
-                        MetricOptions.builder().period(Duration.minutes(5)).build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -309,6 +278,17 @@ public class AnalyticsDashboard extends Construct {
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("HMRC Failures by Class")
                 .left(List.of(search("HmrcFailures", "FailureClass")))
+                .width(24)
+                .height(6)
+                .build()));
+
+        // The three counts plotted together so a gap between sources is visible without a
+        // query. Not the two gap metrics themselves: METRIC_DEFINITIONS in
+        // analyticsMetricsPublish.js publishes only the three raw counts, and this widget reads
+        // exactly those three plain metric names, not a SEARCH.
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("Purchase Reconciliation: GA4 vs Stripe vs Activity Events")
+                .left(List.of(metric("Ga4Purchases"), metric("StripePaidCharges"), metric("ActivityActivations")))
                 .width(24)
                 .height(6)
                 .build()));

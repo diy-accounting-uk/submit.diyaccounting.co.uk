@@ -153,6 +153,10 @@ jobs:
       contents: read
     steps:
 
+      # The salt secret's resource policy is applied by a script from the repo.
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:

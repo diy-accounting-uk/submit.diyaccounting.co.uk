@@ -63,16 +63,18 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void createsOneLambdaScheduleDlqAndTwoAlarms() {
+    void createsOneLambdaNoScheduleOrDlqAndOneAlarm() {
         Template template = synthAnalyticsDashboard();
 
         // The metrics-publish function name is stable across every redeploy of this env-scoped
         // stack, so its log group goes through the idempotent AwsCustomResource path, adding a
         // second Lambda function: the shared create-if-missing/retention singleton provider.
         template.resourceCountIs("AWS::Lambda::Function", 2);
-        template.resourceCountIs("AWS::Events::Rule", 1);
-        template.resourceCountIs("AWS::SQS::Queue", 1);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+        // No schedule or DLQ: IngestionStack's NightlyIngestionWorkflow state machine invokes
+        // this Lambda directly as the last step of the nightly chain.
+        template.resourceCountIs("AWS::Events::Rule", 0);
+        template.resourceCountIs("AWS::SQS::Queue", 0);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
         template.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         // Importing both buckets by name creates no bucket of its own.
@@ -84,28 +86,11 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void scheduleRunsDailyAtOhFiveHundredUtc() {
-        Template template = synthAnalyticsDashboard();
-
-        template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name",
-                        "docs-env-analytics-metrics-publish-schedule",
-                        "ScheduleExpression",
-                        "cron(0 5 * * ? *)",
-                        "Targets",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "RetryPolicy", Match.objectLike(Map.of("MaximumRetryAttempts", 3)),
-                                "DeadLetterConfig", Match.objectLike(Map.of("Arn", Match.anyValue())))))))));
-    }
-
-    @Test
-    void alarmsCarryNoSnsActionAndMatchTheirMetrics() {
+    void alarmCarriesNoSnsActionAndMatchesTheErrorsMetric() {
         Template template = synthAnalyticsDashboard();
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        assertEquals(2, alarms.size());
+        assertEquals(1, alarms.size());
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) alarm.get("Properties");
@@ -118,17 +103,10 @@ class AnalyticsDashboardTest {
                         "AlarmName", "docs-env-analytics-metrics-publish-errors",
                         "MetricName", "Errors",
                         "Namespace", "AWS/Lambda")));
-
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName", "docs-env-analytics-metrics-publish-dlq-depth",
-                        "MetricName", "ApproximateNumberOfMessagesVisible",
-                        "Namespace", "AWS/SQS")));
     }
 
     @Test
-    void dashboardHasSixRowsOfWidgetsAllReadingTheAnalyticsNamespace() throws Exception {
+    void dashboardHasSevenRowsOfWidgetsAllReadingTheAnalyticsNamespace() throws Exception {
         Template template = synthAnalyticsDashboard();
 
         var dashboards = template.findResources("AWS::CloudWatch::Dashboard");
@@ -148,6 +126,9 @@ class AnalyticsDashboardTest {
         assertTrue(dashboardBody.contains("PassesIssued"));
         assertTrue(dashboardBody.contains("PassesRedeemed"));
         assertTrue(dashboardBody.contains("HmrcFailures"));
+        assertTrue(dashboardBody.contains("Ga4Purchases"));
+        assertTrue(dashboardBody.contains("StripePaidCharges"));
+        assertTrue(dashboardBody.contains("ActivityActivations"));
     }
 
     @Test

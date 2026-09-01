@@ -43,12 +43,12 @@ class Ga4TablesTest {
     }
 
     @Test
-    void createsThreeTablesWithDateProjectionAndNoOtherPartitionKey() {
+    void createsFourTablesWithDateProjectionAndNoOtherPartitionKey() {
         Template template = synthTemplate();
 
-        template.resourceCountIs("AWS::Glue::Table", 3);
+        template.resourceCountIs("AWS::Glue::Table", 4);
 
-        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events")) {
+        for (String tableName : List.of("ga4_traffic", "ga4_pages", "ga4_events", "ga4_bq_events")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -74,11 +74,11 @@ class Ga4TablesTest {
     }
 
     @Test
-    void eachTableLocationSitsUnderItsOwnReportPrefix() {
+    void eachDataApiTableLocationSitsUnderItsOwnReportPrefix() {
         Template template = synthTemplate();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertEquals(3, tables.size());
+        assertEquals(4, tables.size());
 
         var expectedReportNames =
                 Map.of("ga4_traffic", "traffic", "ga4_pages", "pages", "ga4_events", "events");
@@ -89,6 +89,7 @@ class Ga4TablesTest {
             @SuppressWarnings("unchecked")
             var tableInput = (Map<String, Object>) properties.get("TableInput");
             var tableName = (String) tableInput.get("Name");
+            if (!expectedReportNames.containsKey(tableName)) continue;
             @SuppressWarnings("unchecked")
             var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
             var location = (String) storageDescriptor.get("Location");
@@ -98,6 +99,23 @@ class Ga4TablesTest {
                             + expectedReportNames.get(tableName) + "/",
                     location);
         }
+    }
+
+    @Test
+    void bqEventsTableLocationSitsUnderTheGa4BqEventsPrefix() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "ga4_bq_events",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Location",
+                                        "s3://docs-env-analytics-lake-111111111111/curated/ga4_bq/events/")))))));
     }
 
     @Test
@@ -137,6 +155,33 @@ class Ga4TablesTest {
                                                 Map.of("Name", "eventCount", "Type", "bigint"),
                                                 Map.of(
                                                         "Name", "eventValue", "Type", "double"))))))))));
+    }
+
+    @Test
+    void bqEventsColumnsUseNumericTypesForSessionAndValueFields() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "ga4_bq_events",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(List.of(
+                                                Map.of("Name", "event_ts", "Type", "string"),
+                                                Map.of("Name", "user_pseudo_id", "Type", "string"),
+                                                Map.of("Name", "ga_session_id", "Type", "bigint"),
+                                                Map.of(
+                                                        "Name",
+                                                        "engagement_time_msec",
+                                                        "Type",
+                                                        "bigint"),
+                                                Map.of(
+                                                        "Name", "event_value", "Type", "double"))))))))));
     }
 
     @Test

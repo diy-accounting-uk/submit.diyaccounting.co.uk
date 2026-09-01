@@ -59,16 +59,18 @@ class KindCdkTest {
         App app = new App();
         Stack stack = new Stack(app, "TestStack");
 
+        KindCdk.ensureTable(stack, "WidgetsTable", "test-env-widgets", "pk", null);
         String streamArn = KindCdk.ensureStream(stack, "Widgets", "test-env-widgets", "NEW_AND_OLD_IMAGES");
 
         assertNotNull(streamArn);
 
         Template template = Template.fromStack(stack);
 
-        // One call enables the stream, a second reads back the ARN: getResponseField cannot be
-        // combined with ignoreErrorCodesMatching on the same call, and the enable call must ignore
-        // ValidationException to stay idempotent against an already-streaming table.
-        template.resourceCountIs("Custom::AWS", 2);
+        // Two calls create the table and turn PITR on; a third enables the stream and a fourth reads
+        // back its ARN, because getResponseField cannot be combined with ignoreErrorCodesMatching on
+        // the same call and the enable call must ignore ValidationException to stay idempotent
+        // against an already-streaming table.
+        template.resourceCountIs("Custom::AWS", 4);
         // Map.of does not preserve key order, so the two StreamSpecification fields and TableName can
         // appear in either order in the serialized Create string - match each fact independently.
         template.hasResourceProperties(

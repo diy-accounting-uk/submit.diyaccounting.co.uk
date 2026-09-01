@@ -11,6 +11,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourcePr
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.RetentionDaysConverter;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,6 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsCustomResourcePolicy;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
 import software.amazon.awscdk.services.cloudtrail.Trail;
@@ -156,13 +156,18 @@ public class ObservabilityStack extends Stack {
                             .physicalResourceId(PhysicalResourceId.of(cloudTrailLogGroupName))
                             .ignoreErrorCodesMatching("ResourceAlreadyExistsException")
                             .build())
-                    .policy(AwsCustomResourcePolicy.fromStatements(List.of(PolicyStatement.Builder.create()
-                            .actions(List.of("logs:CreateLogGroup"))
-                            .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
-                                    + ":log-group:" + cloudTrailLogGroupName + ":*"))
-                            .build())))
                     .logGroup(ensureAwsCustomResourceProviderLogGroup(this))
+                    .role(KindCdk.ensureAwsCustomResourceProviderRole(this))
                     .build();
+            ensureLogGroup
+                    .getNode()
+                    .addDependency(KindCdk.grantToAwsCustomResourceProvider(
+                            this,
+                            List.of(PolicyStatement.Builder.create()
+                                    .actions(List.of("logs:CreateLogGroup"))
+                                    .resources(List.of("arn:aws:logs:" + this.getRegion() + ":" + this.getAccount()
+                                            + ":log-group:" + cloudTrailLogGroupName + ":*"))
+                                    .build())));
 
             // Import the LogGroup created by AwsCustomResource (don't use Builder.create which fails if it exists)
             this.cloudTrailLogGroup = LogGroup.fromLogGroupName(
