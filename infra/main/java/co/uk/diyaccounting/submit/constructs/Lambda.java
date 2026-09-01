@@ -11,7 +11,9 @@ import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
+import software.amazon.awscdk.services.cloudwatch.AlarmRule;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.CompositeAlarm;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
@@ -33,6 +35,11 @@ import software.amazon.awscdk.services.logs.MetricFilter;
 import software.constructs.Construct;
 
 public class Lambda {
+
+    /** Alarm names starting with this are terms of a composite and are not routed to Telegram or GitHub. */
+    public static final String CHECK_ALARM_NAME_PREFIX = "check-";
+
+    public static final String HEALTH_ALARM_NAME_SUFFIX = "-health";
 
     public final DockerImageCode dockerImage;
     public final Function ingestLambda;
@@ -121,8 +128,8 @@ public class Lambda {
 
         // Alarms: a small set of useful, actionable Lambda alarms
         // 1) Errors >= 1 in a 5-minute period
-        Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
-                .alarmName(props.ingestFunctionName() + "-errors")
+        Alarm errorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-errors")
                 .metric(this.ingestLambda
                         .metricErrors()
                         .with(MetricOptions.builder()
@@ -136,8 +143,8 @@ public class Lambda {
                 .build();
 
         // 2) Throttles >= 1 in a 5-minute period
-        Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
-                .alarmName(props.ingestFunctionName() + "-throttles")
+        Alarm throttlesAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-throttles")
                 .metric(this.ingestLambda
                         .metricThrottles()
                         .with(MetricOptions.builder()
@@ -154,8 +161,8 @@ public class Lambda {
         // Lambda Duration metric unit is milliseconds. Convert timeout to ms and apply 80% threshold.
         double timeoutMs = props.ingestLambdaTimeout().toSeconds().doubleValue() * 1000.0;
         double highDurationThresholdMs = timeoutMs * 0.8;
-        Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
-                .alarmName(props.ingestFunctionName() + "-high-duration-p95")
+        Alarm highDurationP95Alarm = Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-high-duration-p95")
                 .metric(this.ingestLambda
                         .metricDuration()
                         .with(MetricOptions.builder()
@@ -191,8 +198,12 @@ public class Lambda {
                 .period(Duration.minutes(5))
                 .build();
 
-        Alarm.Builder.create(scope, props.idPrefix() + "-LogErrorsAlarm")
-                .alarmName(this.ingestLambda.getFunctionName() + "-log-errors")
+        Alarm logErrorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-LogErrorsAlarm")
+                // props.ingestFunctionName(), not this.ingestLambda.getFunctionName(): the latter
+                // renders as an unresolved Fn::Join/Ref token in the synthesized template (same
+                // physical value, but the composite alarm and its EventBridge routing both need a
+                // synth-time literal to match the name-prefix contract against).
+                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-log-errors")
                 .metric(logErrorMetric)
                 .threshold(1)
                 .evaluationPeriods(1)
@@ -200,6 +211,17 @@ public class Lambda {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function "
                         + this.ingestLambda.getFunctionName())
+                .build();
+
+        // Composite health alarm: fans in the four checks above into one notification so a
+        // broken function raises one Telegram message and one GitHub issue instead of four.
+        // The children above keep the "check-" prefix and stay out of OpsStack's routing rule;
+        // only this composite carries the deployment/environment prefix that rule matches on.
+        CompositeAlarm.Builder.create(scope, props.idPrefix() + "-HealthAlarm")
+                .compositeAlarmName(props.ingestFunctionName() + HEALTH_ALARM_NAME_SUFFIX)
+                .alarmRule(AlarmRule.anyOf(errorsAlarm, throttlesAlarm, highDurationP95Alarm, logErrorsAlarm))
+                .alarmDescription("Health check failed for function " + this.ingestLambda.getFunctionName()
+                        + ": errors, throttles, p95 duration near timeout, or error-like log lines")
                 .build();
     }
 }

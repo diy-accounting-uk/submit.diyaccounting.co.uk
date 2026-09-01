@@ -478,10 +478,8 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 
 | Detection | Alarm Name Pattern | Response |
 |-----------|-------------------|----------|
-| Lambda errors | `{env}-submit-*-errors` | Check Lambda logs for stack trace |
-| Lambda log errors | `{env}-submit-*-log-errors` | Search logs for error pattern |
+| Lambda health (errors, throttles, slow, log errors) | `{env}-submit-*-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
 | API 5xx errors | `{env}-submit-api-5xx` | Check API Gateway + Lambda logs |
-| Lambda throttles | `{env}-submit-*-throttles` | Potential abuse - check source |
 | Health check failures | `{env}-ops-health-check` | Check CloudFront, API, Lambda |
 
 ### 7.2 Manual Monitoring Required

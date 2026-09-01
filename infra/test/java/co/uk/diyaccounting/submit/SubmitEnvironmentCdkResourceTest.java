@@ -128,6 +128,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
+        // Composite health alarms route through OpsStack's AlarmStateChangeRule, which matches
+        // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
+        // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
+        // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
+        // hardcoded above).
+        List<String> envRoutedPrefixes = List.of("test-env-");
+        SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(analytics, 2, envRoutedPrefixes);
+
         // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
         // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
         // of its own. Both jobs' names are stable across redeploys, so their log groups go
@@ -139,6 +147,13 @@ class SubmitEnvironmentCdkResourceTest {
         ingestion.resourceCountIs("AWS::SQS::Queue", 2);
         ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
         assertNoUnscopedIamResources(ingestion);
+
+        // BillingWebhookStack only synthesizes when a regional API Gateway custom-domain
+        // certificate is configured; this test's config doesn't set one.
+        if (env.billingWebhookStack != null) {
+            Template billingWebhook = Template.fromStack(env.billingWebhookStack);
+            SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(billingWebhook, 1, envRoutedPrefixes);
+        }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,
         // retained log group — otherwise CDK (or, for AwsCustomResource, CloudFormation's own
