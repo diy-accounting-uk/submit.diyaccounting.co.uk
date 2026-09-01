@@ -42,8 +42,11 @@ operator step before them is done or when SSO is live.
   `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
   look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
   points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases:
-  2 GA4 BigQuery event export (operator prereqs in the plan), 3 Step Functions
-  orchestration, 4 reconciliation views, 6 Stripe restricted keys (operator).
+  2 GA4 BigQuery event export — one operator prereq left, a BigQuery IAM grant for the
+  GA4 service account, briefed for Cowork at `../BRIEF_GA4_BIGQUERY_IAM.md`; 3 Step
+  Functions orchestration; 4 reconciliation views; 6 Stripe reconciliation, no longer
+  operator-gated — 2026-09-01 decision to reuse the existing full Stripe key instead of
+  minting restricted ones.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   deployed. Operator set the PAT as repository-level GitHub Actions secret
   `ISSUE_BOT_TOKEN` on 2026-09-01 (GitHub rejects secret names starting `GITHUB_`,

@@ -68,27 +68,20 @@ Telegram message names which job broke.
 
 ## Operator prerequisites
 
-Each line is a separate action. Nothing in phases 2 or 6 can be verified until its
-prerequisite is done, though the code and its unit tests can be written and merged first.
+Each line is a separate action. Phase 2 cannot be verified until its remaining prerequisite
+is done, though the code and its unit tests can be written and merged first. Phase 6 has no
+prerequisite (2026-09-01 decision above).
 
-- [ ] **Name the Google Cloud project that owns `analytics_523400333`.** Give the project
-      id to the implementer for `cdk-environment/cdk.json`. It is not a secret.
-- [ ] **Confirm the dataset's BigQuery location.** `PLAN_GA4.md` records London, so
-      `europe-west2` is the expected value. A BigQuery job fails outright if the location
-      does not match, so confirm rather than assume.
+- [x] **Google Cloud project.** `diyaccounting-ga4` (958354756046).
+- [x] **Dataset location.** `europe-west2` (London), confirmed.
 - [ ] **Grant the existing GA4 service account BigQuery access.** It is the identity behind
-      `GA4_SERVICE_ACCOUNT_JSON`. It needs `roles/bigquery.jobUser` on the project that
-      owns the dataset, and `roles/bigquery.dataViewer` on the `analytics_523400333`
-      dataset only. Reusing this account means no new key and no new secret. If the account
-      lives in a different project from the dataset, grant Job User in the dataset's
-      project as well.
-- [ ] **Set the export dataset's default table expiration to never.** GA4 exports can land
-      in a dataset that expires tables after 60 days, which would cap our history at the
-      source.
-- [ ] **Create two Stripe restricted keys, live and test.** Read-only on Balance
-      transactions, Charges, Subscriptions and Customers. Nothing else, and no write
-      permission anywhere. Add them to the `prod` and `ci` GitHub environments as
-      `STRIPE_READONLY_KEY` and `STRIPE_TEST_READONLY_KEY`.
+      `GA4_SERVICE_ACCOUNT_JSON` (`ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`),
+      today granted only Viewer on the GA4 property itself — no project-level IAM roles. It
+      needs `roles/bigquery.jobUser` on project `diyaccounting-ga4` and
+      `roles/bigquery.dataViewer` on the `analytics_523400333` dataset only. Reusing this
+      account means no new key and no new secret.
+- [x] **Table expiration.** Billing is attached to `diyaccounting-ga4`, so BigQuery is out of
+      sandbox and export tables no longer expire after 60 days.
 - [ ] **Have AWS SSO live for phase 1.** `aws sso login --sso-session diyaccounting`. Phase
       1 reads prod S3 and Athena and cannot run without it.
 
@@ -582,52 +575,44 @@ still returns a non-zero count for the day after the deploy.
 
 ---
 
-# Phase 6: Stripe restricted key
+# Phase 6: Stripe reconciliation
 
-**Model: Sonnet.** Gated on the operator creating the two keys.
+**Model: Sonnet.** No longer gated on the operator — reuses the existing key.
 
-The nightly reconciliation job reads Stripe with the same full secret key the billing
-Lambdas use to create checkout sessions and cancel subscriptions. A read-only job does not
-need write access to live billing.
+Operator decision 2026-09-01: reuse the existing full `STRIPE_SECRET_KEY_ARN` /
+`STRIPE_TEST_SECRET_KEY_ARN` (the same key the billing Lambdas use to create checkout
+sessions and cancel subscriptions) rather than minting narrower read-only restricted keys.
+Accepted risk, to avoid adding two more keys to rotate manually.
 
 ## Files owned
 
-- `.github/workflows/deploy-environment.yml` (edit)
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java` (edit)
 - `infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java` (edit)
-- `infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java` (edit)
 - `app/functions/analytics/stripeReconcile.js` (edit)
 - `app/unit-tests/analytics/stripeReconcile.test.js` (edit)
 
 ## What changes
 
-Two new steps in the `create-secrets` job, copied from the existing Stripe steps at
-`deploy-environment.yml:211`, writing `{env}/submit/stripe/readonly_key` and
-`{env}/submit/stripe/test_readonly_key`. Keep the skip-when-empty guard so a deploy before
-the operator creates the keys still succeeds.
+`IngestionStack` wires the reconciliation Lambda to the same `stripeSecretKeyArn` /
+`stripeTestSecretKeyArn` props already granted to the billing Lambdas — no new secret, no
+new `create-secrets` step, no prop rename.
 
-`IngestionStack` swaps `stripeSecretKeyArn` and `stripeTestSecretKeyArn` for
-`stripeReadonlyKeyArn` and `stripeTestReadonlyKeyArn` on the reconciliation Lambda only.
-The billing Lambdas keep the full keys. Rename the props rather than adding new ones
-alongside: the reconciliation job is the only reader of these two.
-
-`stripeReconcile.js` reads `STRIPE_READONLY_KEY_ARN` and `STRIPE_TEST_READONLY_KEY_ARN`.
-Check whether `app/lib/stripeClient.js` hardcodes the env var names before editing; if it
-does, the reconciliation job needs its own resolver rather than a parameter threaded
-through a shared helper for the billing path.
+`stripeReconcile.js` reads `STRIPE_SECRET_KEY_ARN` / `STRIPE_TEST_SECRET_KEY_ARN`, the same
+env vars the billing path already resolves. Check whether `app/lib/stripeClient.js` already
+exposes a shared resolver before adding a new one.
 
 ## Test strategy
 
-Unit tier: the job resolves the readonly ARN and never reads `STRIPE_SECRET_KEY_ARN`.
+Unit tier: the job resolves the same ARN the billing path uses.
 
-CDK tier: the reconciliation Lambda's `secretsmanager:GetSecretValue` names only the two
-readonly secret ARNs.
+CDK tier: the reconciliation Lambda's `secretsmanager:GetSecretValue` grant matches the
+billing Lambdas' (same secret, read-only API calls made against it — no write scope check
+needed since the key already has write capability by design).
 
 ## Verification criterion
 
 A manual invoke of `prod-env-stripe-reconcile` writes the same three entity files it wrote
-before the change, and the Lambda's execution role grants no access to
-`prod/submit/stripe/secret_key`.
+before the change.
 
 ---
 
@@ -642,7 +627,7 @@ by phases 3 and 4. Run those in sequence, not in parallel worktrees.
    table and phase 3's ordering.
 3. **Phase 5** in a parallel worktree once phase 1 is green. It shares no files with 2, 3
    or 4.
-4. **Phase 6** last, once the operator has created the restricted keys.
+4. **Phase 6** can run any time — no operator gate.
 
 Run `./mvnw clean verify` after every merge that touches
 `SubmitEnvironmentCdkResourceTest.java` or `SubmitApplicationCdkResourceTest.java`. Their
