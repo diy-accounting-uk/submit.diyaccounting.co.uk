@@ -36,11 +36,13 @@ operator step before them is done or when SSO is live.
   fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3) —
   design landed 2026-09-01 on branch `claude/b30-alarm-design`,
   `PLAN_ALARM_CONSOLIDATION.md`, not yet merged; ready for a sonnet implementation
-  pass. Folded in: `activity-telegram-forwarder-errors` and
-  `-high-duration-p95` (issues #77-82) both fired within the same 30-second
+  pass.
+- [ ] **Alarm-sensitivity tuning: `activity-telegram-forwarder-errors` and
+  `-high-duration-p95`** (issues #77-82) both fired within the same 30-second
   window as the OpsStack deploy that created the Lambda — deploy-induced, not a
   standing fault. Tune these two alarms' evaluation tolerance so a deploy-time
-  burst doesn't cross threshold, as part of the same implementation pass.
+  burst doesn't cross threshold. Same file as B30 (`Lambda.java`'s alarm
+  construct); lands in the same implementation pass as B30, dispatched together.
 - [ ] **Bug: `cognito-token-post` never gets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`.**
   Found via issues #75/#76 (real signal, not deploy noise — CloudWatch logs show
   repeated `ValidationException: TableName` failures on every OAuth token
@@ -48,6 +50,7 @@ operator step before them is done or when SSO is live.
   Lambda but never sets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`, which
   `app/data/dynamoDbHmrcApiRequestRepository.js:16` requires — a missing CDK env
   var, not transient. Every live login has been failing this audit write.
+  Dispatched to a sonnet fix agent, branch `claude/fix-hmrc-audit-table-env`.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
   is the plan of record. Phase 1 ran: activity events, all four table-change
   streams, and (after the path fix and replay) all three Stripe tables land
@@ -89,7 +92,12 @@ Wave 1 dispatched 2026-09-01, four worktree-isolated sub-agents, coordinator mer
 pushes each as it lands:
 
 - **B30 design** — done, unmerged. Branch `claude/b30-alarm-design`,
-  `PLAN_ALARM_CONSOLIDATION.md`. Wave-2 sonnet implementation not yet dispatched.
+  `PLAN_ALARM_CONSOLIDATION.md`. Wave-2 sonnet implementation, paired with the
+  alarm-sensitivity tuning item (same file), not yet dispatched.
+- **cognito-token-post env-var fix** (sonnet, branch `claude/fix-hmrc-audit-table-env`)
+  — dispatched: add `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME` to `AuthStack.java`'s
+  env block for this Lambda, matching the existing `BUNDLE_DYNAMODB_TABLE_NAME`
+  pattern.
 - **B28 design** — done, unmerged. Branch `claude/b28-security-design`,
   `PLAN_SECURITY_DETECTION_REMAINDER.md`. Wave-2 sonnet implementation (two agents,
   issue-9 and issue-10, parallel) not yet dispatched.
