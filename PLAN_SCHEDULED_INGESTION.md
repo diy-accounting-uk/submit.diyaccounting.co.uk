@@ -68,22 +68,23 @@ Telegram message names which job broke.
 
 ## Operator prerequisites
 
-Each line is a separate action. Phase 2 cannot be verified until its remaining prerequisite
-is done, though the code and its unit tests can be written and merged first. Phase 6 has no
-prerequisite (2026-09-01 decision above).
+Each line is a separate action. Phase 6 has no prerequisite (2026-09-01 decision above).
 
 - [x] **Google Cloud project.** `diyaccounting-ga4` (958354756046).
 - [x] **Dataset location.** `europe-west2` (London), confirmed.
-- [ ] **Grant the existing GA4 service account BigQuery access.** It is the identity behind
-      `GA4_SERVICE_ACCOUNT_JSON` (`ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`),
-      today granted only Viewer on the GA4 property itself — no project-level IAM roles. It
-      needs `roles/bigquery.jobUser` on project `diyaccounting-ga4` and
-      `roles/bigquery.dataViewer` on the `analytics_523400333` dataset only. Reusing this
-      account means no new key and no new secret.
+- [x] **Grant the existing GA4 service account BigQuery access.** Done 2026-09-01 by a Cowork
+      console session (`../BRIEF_GA4_BIGQUERY_IAM.md`). `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`
+      holds `roles/bigquery.jobUser` on project `diyaccounting-ga4` and `roles/bigquery.dataViewer`
+      on the `analytics_523400333` dataset only, both verified in the console. The dataset already
+      holds daily export tables with no expiration (`events_20260830`, `events_20260831`), so
+      phase 2's first query has real data to read once the IAM policy finishes propagating.
 - [x] **Table expiration.** Billing is attached to `diyaccounting-ga4`, so BigQuery is out of
       sandbox and export tables no longer expire after 60 days.
 - [ ] **Have AWS SSO live for phase 1.** `aws sso login --sso-session diyaccounting`. Phase
       1 reads prod S3 and Athena and cannot run without it.
+
+All phase 2 operator prerequisites are now met. Phase 2 code can be written and verified
+against real data.
 
 ## Cost
 
