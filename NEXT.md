@@ -35,19 +35,17 @@ operator step before them is done or when SSO is live.
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
   fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3)
   needs a design pass before any code.
-- [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record. Phase 1 ran: activity events, all four table-change
-  streams, and (after the path fix and replay) all three Stripe tables land
-  queryable rows; phase 5 is on main. Both loose phase-1 threads are closed: the
-  `ga4-report-pull` 2026-08-30 errors were `ResourceNotFoundException` because the
-  prod GA4 secret didn't exist until 2026-08-31T00:39 BST — self-resolved, both
-  runs since have written data; ci's SSM `last-known-good-deployment` already
-  points at the most recent successful ci deploy (`ci-claudedon`), no write
-  needed. Remaining phases, all four now clear to build (last operator prereq —
-  the BigQuery IAM grant for the GA4 service account — done 2026-09-01 via
-  Cowork, `../BRIEF_GA4_BIGQUERY_IAM.md`): 2 GA4 BigQuery event export; 3 Step
-  Functions orchestration; 4 reconciliation views; 6 Stripe reconciliation
-  (reuses the existing full Stripe key, 2026-09-01 decision).
+- [ ] **(B14) Scheduled ingestion, live verification** — `PLAN_SCHEDULED_INGESTION.md`
+  phases 2 (GA4 BigQuery event export), 3 (Step Functions orchestration) and 4
+  (cross-source reconciliation) are code-complete on `claude/b14-scheduled-ingestion`
+  (mvn clean verify 86/86, npm analytics unit tests 120/120); phase 6 needed no
+  code change, already covered by the existing shared-Stripe-key wiring. Each
+  phase's own verification criterion still needs a ci/prod deploy: invoke
+  `ga4-event-export-pull` and check `ga4_bq_events` has rows close to the GA4
+  console's page-view count; start a state machine execution, confirm
+  `SUCCEEDED`, then confirm the next scheduled run also succeeds unattended;
+  confirm `v_purchase_reconciliation_daily` returns rows and the three new
+  metrics land in the `Submit/Analytics` namespace after a nightly run.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   deployed. Operator set the PAT as repository-level GitHub Actions secret
   `ISSUE_BOT_TOKEN` on 2026-09-01 (GitHub rejects secret names starting `GITHUB_`,
@@ -76,9 +74,9 @@ pushes each as it lands:
 - **B28 design** (opus, branch `claude/b28-security-design`) — design doc for issues #9/#10
   remainder, `PLAN_SECURITY_DETECTION_REMAINDER.md`, split so #9 and #10 can implement in
   parallel. Design only, no code. Gates a wave-2 implementation agent once it lands.
-- **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — phases 2, 3, 4, 6 of
-  `PLAN_SCHEDULED_INGESTION.md` in that order (shared-file constraint). The two loose
-  phase-1 threads are resolved (see open item above).
+- **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — done, ready to
+  merge: phases 2, 3, 4 code-complete and tested, phase 6 needed no change. Live-deploy
+  verification is the remaining open item (see above).
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — dispatch
   `deploy-environment.yml` then `deploy.yml` for ci, prove ci end to end, then repeat for
   prod. No code changes expected.
