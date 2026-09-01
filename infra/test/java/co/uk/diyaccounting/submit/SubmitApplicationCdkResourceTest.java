@@ -191,6 +191,77 @@ class SubmitApplicationCdkResourceTest {
         edgeStackTemplate.resourceCountIs("AWS::Logs::DeliveryDestination", 1);
         edgeStackTemplate.resourceCountIs("AWS::Logs::Delivery", 1);
 
+        // Sensitive-path scan detection (issue #9 phase 9.1): SensitivePathScan sits at
+        // priority 0, ahead of the three managed/rate-limit rules; the manual block list (phase
+        // 9.3) adds a fifth rule at priority 4.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::WebACL", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "SensitivePathScan", "Priority", 0)))))));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "WafManualBlock", "Priority", 4)))))));
+        edgeStackTemplate.findResources("AWS::WAFv2::WebACL").values().forEach(webAcl -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) webAcl.get("Properties");
+            @SuppressWarnings("unchecked")
+            var rules = (List<Object>) properties.get("Rules");
+            infof("Edge stack WebACL rule count: %d", rules.size());
+        });
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(
+                        Match.objectLike(Map.of("Name", "SensitivePathScan")),
+                        Match.objectLike(Map.of("Name", "RateLimitRule")),
+                        Match.objectLike(Map.of("Name", "AWSManagedRulesKnownBadInputsRuleSet")),
+                        Match.objectLike(Map.of("Name", "AWSManagedRulesCommonRuleSet")),
+                        Match.objectLike(Map.of("Name", "WafManualBlock")))))));
+
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::RegexPatternSet", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::RegexPatternSet",
+                Match.objectLike(Map.of("RegularExpressionList", Match.arrayWith(List.of("^/\\.env")))));
+
+        // Blocks-only WAF logging, feeding the scan-detect Lambda through a subscription filter.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::LoggingConfiguration", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::LoggingConfiguration",
+                Match.objectLike(Map.of("LoggingFilter", Match.objectLike(Map.of("DefaultBehavior", "DROP")))));
+        edgeStackTemplate.resourceCountIs("AWS::Logs::SubscriptionFilter", 1);
+
+        // Issue #9 makes this one-line change on issue #10's behalf: its mid-session country
+        // check needs CloudFront-Viewer-Country, and this origin request policy is the only
+        // place that can add it.
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::CloudFront::OriginRequestPolicy",
+                Match.objectLike(Map.of(
+                        "OriginRequestPolicyConfig",
+                        Match.objectLike(Map.of(
+                                "HeadersConfig",
+                                Match.objectLike(Map.of(
+                                        "Headers", Match.arrayWith(List.of("CloudFront-Viewer-Country")))))))));
+
+        // Manual IP block list (issue #9 phase 9.3): two empty IP sets by default, and the alarm
+        // that confirms a hand-applied block is doing something.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::IPSet", 2);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::IPSet", Match.objectLike(Map.of("IPAddressVersion", "IPV4", "Addresses", List.of())));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::IPSet", Match.objectLike(Map.of("IPAddressVersion", "IPV6", "Addresses", List.of())));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        "tt-witheight-app-waf-manual-block",
+                        "MetricName",
+                        "BlockedRequests",
+                        "Namespace",
+                        "AWS/WAFV2")));
+
         infof("Created stack:", submitApplication.publishStack.getStackName());
         Template.fromStack(submitApplication.publishStack).resourceCountIs("Custom::CDKBucketDeployment", 1);
 

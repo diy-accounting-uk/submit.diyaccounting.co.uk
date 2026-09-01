@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.IdentityStack;
 import co.uk.diyaccounting.submit.stacks.IngestionStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
+import co.uk.diyaccounting.submit.stacks.ScanDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
@@ -38,6 +39,7 @@ public class SubmitEnvironment {
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
     public final AnalyticsStack analyticsStack;
+    public final ScanDetectionStack scanDetectionStack;
     public final IngestionStack ingestionStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
@@ -76,6 +78,7 @@ public class SubmitEnvironment {
         public String ga4PropertyId;
         public String ga4ServiceAccountArn;
         public String crossAccountBackupVaultArn;
+        public String scanDetection404PerMinute;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -175,6 +178,11 @@ public class SubmitEnvironment {
                 "GA4_SERVICE_ACCOUNT_ARN",
                 appProps.ga4ServiceAccountArn,
                 "(from ga4ServiceAccountArn in cdk.json)");
+        var scanDetection404PerMinute = Integer.parseInt(envOr(
+                "SCAN_DETECTION_404_PER_MINUTE",
+                appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
+                        ? "20"
+                        : appProps.scanDetection404PerMinute));
         // envOr's third argument is only a log label, so the fallback has to be the second one.
         var baseImageTag = envOr(
                 "BASE_IMAGE_TAG",
@@ -317,6 +325,27 @@ public class SubmitEnvironment {
                         .build());
         this.analyticsStack.addStackDependency(this.activityStack);
         this.analyticsStack.addStackDependency(this.dataStack);
+
+        // Create ScanDetectionStack with the 404-rate scan detector (issue #9 phase 9.2), which
+        // queries the cloudfront_requests table AnalyticsStack catalogues.
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                "%s-env-ScanDetectionStack".formatted(envName), deploymentName, envName);
+        this.scanDetectionStack = new ScanDetectionStack(
+                app,
+                "%s-env-ScanDetectionStack".formatted(envName),
+                ScanDetectionStack.ScanDetectionStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .scanDetection404PerMinute(scanDetection404PerMinute)
+                        .build());
+        this.scanDetectionStack.addStackDependency(this.analyticsStack);
 
         // Create IngestionStack with the scheduling skeleton the Stripe, GA4 and CloudFront
         // ingestion jobs plug into

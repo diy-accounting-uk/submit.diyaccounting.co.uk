@@ -79,6 +79,9 @@ public class SubmitApplication {
         public String telegramLiveChatId;
         public String telegramOpsChatId;
         public String opsGithubTokenSecretArn;
+        // Comma-separated hand-applied IP block list for EdgeStack's WafManualBlock rule (issue
+        // #9 phase 9.3); see wafManualBlockIps in cdk-application/cdk.json.
+        public String wafManualBlockIps;
 
         public static class Builder {
             private final SubmitApplicationProps p = new SubmitApplicationProps();
@@ -395,6 +398,8 @@ public class SubmitApplication {
                         .hostedZoneId(appProps.hostedZoneId)
                         .certificateArn(certificateArn)
                         .apiGatewayUrl(httpApiUrl)
+                        .baseImageTag(baseImageTag)
+                        .wafManualBlockIps(appProps.wafManualBlockIps != null ? appProps.wafManualBlockIps : "")
                         .build());
 
         // Create the Publish stack (Bucket Deployments to CloudFront)
