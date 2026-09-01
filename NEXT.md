@@ -30,25 +30,33 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **Prod CloudFront cutover stuck since issue-9's merge, now fixed pending
-  confirmation.** `EdgeStack` had two deploy-breaking bugs (a semicolon in a WAF
-  IPSet description violating AWS's regex; a 13-pattern regex set exceeding
-  WAFv2's 10-pattern limit) — both fixed, commit `40fc40a3`. Consequence while
-  broken: `deploy-edge` failed on every prod deploy since, so `set-origins` (the
-  job that actually repoints CloudFront) kept getting skipped — but
-  `set-last-known-good-deployment` only depends on `web-test`, not on
-  `set-origins`, so the SSM pointer kept advancing anyway. Result: CloudFront has
-  been serving stale `prod-9050bb5` (pre-dating B28/cognito-fix/B14) while SSM
-  claims `prod-a994f29` is "last known good" despite never being cut over — so
-  the cognito-token-post audit-log fix, B28's scan/data-theft detection, and
-  B14's ingestion work are not actually live for real customers yet, only
-  deployed. A bump commit (`ccd8b3ee`) forced a fresh deploy; a watcher is
-  confirming `deploy-edge`/`set-origins` succeed for real and CloudFront's
-  origin actually changes before anything gets torn down. Once confirmed: purge
-  the orphaned `prod-9050bb5`, `prod-a994f29`, and partial `prod-40fc40a` stack
-  sets. Separately worth fixing later: `set-last-known-good-deployment` should
-  depend on `set-origins`, not just `web-test`, so this class of mismatch can't
-  recur.
+- [ ] **Prod CloudFront cutover stuck since issue-9's merge — three EdgeStack
+  bugs found, all fixed, third one pending ci verification before merge.**
+  1) a semicolon in a WAF IPSet description violating AWS's regex; 2) a
+  13-pattern regex set exceeding WAFv2's 10-pattern limit — both fixed and on
+  main, commit `40fc40a3`. 3) found deploying the fix for 1/2:
+  `CfnLoggingConfiguration.redactedFields(List<Object>)` silently drops its Map
+  contents through JSII (every entry synthesized as `{}}`, confirmed by dumping
+  the actual synthesized template, not just re-running), which WAFv2 rejects at
+  deploy time with `EXACTLY_ONE_CONDITION_REQUIRED` — CDK synth never catches it
+  since the property is untyped. Fixed via `addPropertyOverride`, regression
+  test added; on branch `claude/fix-waf-redacted-fields`
+  (commit `28e4c1e9`), ci verifying, not yet merged.
+  Consequence while all this was broken: `deploy-edge` failed on every prod
+  deploy since issue-9 landed, so `set-origins` (the job that actually repoints
+  CloudFront) kept getting skipped — but `set-last-known-good-deployment` only
+  depends on `web-test`, not on `set-origins`, so the SSM pointer kept advancing
+  anyway. Result: CloudFront has been serving stale `prod-9050bb5` (pre-dating
+  B28/cognito-fix/B14) while SSM has claimed three different deployments were
+  "last known good" in turn, none of them ever actually cut over — so the
+  cognito-token-post audit-log fix, B28's scan/data-theft detection, and B14's
+  ingestion work are not actually live for real customers yet, only deployed.
+  Once bug 3 is ci-verified and merged: force one more clean deploy, confirm
+  `deploy-edge`/`set-origins` succeed for real and CloudFront's origin actually
+  changes, then purge the orphaned `prod-9050bb5`, `prod-a994f29`, and partial
+  `prod-40fc40a`/`prod-ccd8b3e` stack sets. Separately worth fixing later:
+  `set-last-known-good-deployment` should depend on `set-origins`, not just
+  `web-test`, so this class of mismatch can't recur.
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
