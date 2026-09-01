@@ -105,6 +105,12 @@ public class AuthStack extends Stack {
                 "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().securityStateTableName);
 
+        // Lookup existing DynamoDB HMRC API requests Table
+        ITable hmrcApiRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcApiRequestsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -122,6 +128,7 @@ public class AuthStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("COGNITO_BASE_URI", props.sharedNames().cognitoBaseUri)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("COGNITO_CLIENT_ID", props.cognitoClientId())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
@@ -159,7 +166,10 @@ public class AuthStack extends Stack {
                 "Created Lambda %s for Cognito exchange token with ingestHandler %s",
                 this.cognitoTokenPostLambda.getNode().getId(), props.sharedNames().cognitoTokenPostIngestLambdaHandler);
 
-        // No bundles grant: cognitoTokenPost exchanges a Cognito code for tokens and touches no table.
+        // No bundles grant: cognitoTokenPost exchanges a Cognito code for tokens and touches no bundle.
+
+        // Allow the token exchange Lambda to write HMRC API request audit records to DynamoDB
+        hmrcApiRequestsTable.grant(this.cognitoTokenPostLambda, "dynamodb:PutItem");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.cognitoTokenPostLambda, region, account, props.envName());
