@@ -11,7 +11,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
-import { fiveMinuteTtl } from "../lib/dateUtils.js";
+import { fiveMinuteTtl, calculateOneHourTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSecurityStateRepository.js" });
 
@@ -47,4 +47,55 @@ export async function incrementRateCounter({ hashedSub, minute }) {
 
   logger.info({ message: "Rate counter incremented", hashedSub, minute, hits: Attributes?.hits });
   return Attributes.hits;
+}
+
+/**
+ * Reads the stored session-geo item for a consumer.
+ *
+ * @param {string} hashedSub
+ * @returns {Promise<{country?: string, revokedAt?: number}|null>} null when no item exists
+ */
+export async function getSessionGeo(hashedSub) {
+  const { docClient, module } = await getDynamoDbDocClient();
+  const tableName = getTableName();
+
+  const result = await docClient.send(
+    new module.GetCommand({
+      TableName: tableName,
+      Key: { stateKey: `geo#${hashedSub}` },
+    }),
+  );
+
+  return result.Item || null;
+}
+
+/**
+ * Writes the session-geo item for a consumer in one call, always refreshing the one-hour
+ * TTL. A country-change write passes both the new country and revokedAt together: writing
+ * the new country as part of the same call that revokes is what lets a genuine
+ * re-authentication from the new country be recognised as trusted on its next request,
+ * rather than mismatching against the stale country forever.
+ *
+ * @param {string} hashedSub
+ * @param {Object} fields
+ * @param {string} fields.country
+ * @param {number} [fields.revokedAt] - epoch seconds; omitted clears any prior revocation
+ */
+export async function putSessionGeo(hashedSub, { country, revokedAt }) {
+  const { docClient, module } = await getDynamoDbDocClient();
+  const tableName = getTableName();
+
+  await docClient.send(
+    new module.PutCommand({
+      TableName: tableName,
+      Item: {
+        stateKey: `geo#${hashedSub}`,
+        country,
+        ...(revokedAt !== undefined ? { revokedAt } : {}),
+        ttl: calculateOneHourTtl(new Date()).ttl,
+      },
+    }),
+  );
+
+  logger.info({ message: "Session geo written", hashedSub, country, revoked: revokedAt !== undefined });
 }

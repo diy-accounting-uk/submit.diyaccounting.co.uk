@@ -95,9 +95,10 @@ app.use((req, res, next) => {
 });
 
 // Simulate CloudFront headers for fraud prevention in non-proxy environments.
-// In proxy/CI/prod, CloudFront sets X-Forwarded-For and CloudFront-Viewer-Address.
-// In simulator mode, the Express server receives direct requests from Playwright on localhost,
-// so we inject synthetic values to allow buildFraudHeaders.js to generate all Gov-* headers.
+// In proxy/CI/prod, CloudFront sets X-Forwarded-For, CloudFront-Viewer-Address and
+// CloudFront-Viewer-Country. In simulator mode, the Express server receives direct requests
+// from Playwright on localhost, so we inject synthetic values so buildFraudHeaders.js can
+// generate all Gov-* headers and customAuthorizer.js's country check behaves like CloudFront.
 app.use((req, res, next) => {
   if (!req.headers["x-forwarded-for"]) {
     req.headers["x-forwarded-for"] = "203.0.113.1"; // RFC 5737 TEST-NET-3 (documentation IP)
@@ -105,6 +106,9 @@ app.use((req, res, next) => {
   if (!req.headers["cloudfront-viewer-address"]) {
     const port = req.socket?.remotePort || 12345;
     req.headers["cloudfront-viewer-address"] = `203.0.113.1:${port}`;
+  }
+  if (!req.headers["cloudfront-viewer-country"]) {
+    req.headers["cloudfront-viewer-country"] = "GB";
   }
   next();
 });

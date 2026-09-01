@@ -89,4 +89,57 @@ describe("dynamoDbSecurityStateRepository", () => {
 
     expect(hits).toBe(501);
   });
+
+  test("getSessionGeo keys the item as geo#<hash> and returns the stored item", async () => {
+    const { getSessionGeo } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Item: { stateKey: "geo#hashed-abc", country: "GB" } });
+
+    const item = await getSessionGeo("hashed-abc");
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const command = mockSend.mock.calls[0][0];
+    const { GetCommand } = await import("@aws-sdk/lib-dynamodb");
+    expect(command).toBeInstanceOf(GetCommand);
+    expect(command.input.TableName).toBe("test-security-state");
+    expect(command.input.Key).toEqual({ stateKey: "geo#hashed-abc" });
+    expect(item).toEqual({ stateKey: "geo#hashed-abc", country: "GB" });
+  });
+
+  test("getSessionGeo returns null when no item exists", async () => {
+    const { getSessionGeo } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    const item = await getSessionGeo("hashed-abc");
+
+    expect(item).toBeNull();
+  });
+
+  test("putSessionGeo writes country, revokedAt and a fresh one-hour TTL in one call", async () => {
+    const { putSessionGeo } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putSessionGeo("hashed-abc", { country: "FR", revokedAt: 1700000000 });
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const command = mockSend.mock.calls[0][0];
+    const { PutCommand } = await import("@aws-sdk/lib-dynamodb");
+    expect(command).toBeInstanceOf(PutCommand);
+    expect(command.input.TableName).toBe("test-security-state");
+    expect(command.input.Item).toEqual({
+      stateKey: "geo#hashed-abc",
+      country: "FR",
+      revokedAt: 1700000000,
+      ttl: expect.any(Number),
+    });
+  });
+
+  test("putSessionGeo omits revokedAt when not given", async () => {
+    const { putSessionGeo } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putSessionGeo("hashed-abc", { country: "GB" });
+
+    const command = mockSend.mock.calls[0][0];
+    expect(command.input.Item).not.toHaveProperty("revokedAt");
+  });
 });
