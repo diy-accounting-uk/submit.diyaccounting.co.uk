@@ -215,18 +215,14 @@ public class EdgeStack extends Stack {
                 .scope("CLOUDFRONT")
                 .description("URI paths that only a vulnerability scanner requests, blocked before they reach any"
                         + " origin")
+                // Consolidated via alternation, not one entry per path: WAFv2 caps a
+                // RegexPatternSet at 10 patterns (NUM_PATTERNS_IN_REGEX_PATTERN_SET), and the
+                // original one-entry-per-path list of 13 exceeded it, failing CREATE for this
+                // resource on every deploy. Four entries here, matching the same paths, with
+                // headroom for more.
                 .regularExpressionList(List.of(
-                        "^/\\.env",
-                        "^/\\.git/",
-                        "^/\\.aws/",
-                        "^/\\.ssh/",
-                        "^/wp-admin",
-                        "^/wp-login",
-                        "^/xmlrpc\\.php",
-                        "^/phpmyadmin",
-                        "^/vendor/",
-                        "^/actuator",
-                        "^/server-status",
+                        "^/\\.(env|git/|aws/|ssh/)",
+                        "^/(wp-admin|wp-login|xmlrpc\\.php|phpmyadmin|vendor/|actuator|server-status)",
                         "^/config\\.(json|php|yml|yaml)$",
                         "\\.php$"))
                 .build();
@@ -260,7 +256,7 @@ public class EdgeStack extends Stack {
                 .scope("CLOUDFRONT")
                 .ipAddressVersion("IPV4")
                 .addresses(manualBlockV4)
-                .description("Hand-applied IPv4 block list; see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                .description("Hand-applied IPv4 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
                 .build();
 
         CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
@@ -268,7 +264,7 @@ public class EdgeStack extends Stack {
                 .scope("CLOUDFRONT")
                 .ipAddressVersion("IPV6")
                 .addresses(manualBlockV6)
-                .description("Hand-applied IPv6 block list; see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                .description("Hand-applied IPv6 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
                 .build();
 
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting

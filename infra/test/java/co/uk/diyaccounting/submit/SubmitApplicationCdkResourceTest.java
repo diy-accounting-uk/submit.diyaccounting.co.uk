@@ -224,7 +224,8 @@ class SubmitApplicationCdkResourceTest {
         edgeStackTemplate.resourceCountIs("AWS::WAFv2::RegexPatternSet", 1);
         edgeStackTemplate.hasResourceProperties(
                 "AWS::WAFv2::RegexPatternSet",
-                Match.objectLike(Map.of("RegularExpressionList", Match.arrayWith(List.of("^/\\.env")))));
+                Match.objectLike(
+                        Map.of("RegularExpressionList", Match.arrayWith(List.of("^/\\.(env|git/|aws/|ssh/)")))));
 
         // Blocks-only WAF logging, feeding the scan-detect Lambda through a subscription filter.
         edgeStackTemplate.resourceCountIs("AWS::WAFv2::LoggingConfiguration", 1);
