@@ -9,7 +9,19 @@ import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 
 const logger = createLogger({ source: "app/lib/activityAlert.js" });
 
-const ebClient = new EventBridgeClient({ region: process.env.AWS_REGION || "eu-west-2" });
+/**
+ * The region the EventBridge client publishes into. ACTIVITY_BUS_REGION overrides AWS_REGION so
+ * a Lambda running outside the activity bus's home region (the WAF scan-detect Lambda runs in
+ * us-east-1; the bus lives in eu-west-2) can still publish to it. Every Lambda in the bus's own
+ * region leaves ACTIVITY_BUS_REGION unset and this falls through to AWS_REGION as before.
+ *
+ * @returns {string}
+ */
+export function resolveActivityBusRegion() {
+  return process.env.ACTIVITY_BUS_REGION || process.env.AWS_REGION || "eu-west-2";
+}
+
+const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
 
 /**
  * Publish an activity event to the EventBridge custom bus.

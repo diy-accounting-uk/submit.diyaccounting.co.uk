@@ -9,11 +9,16 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.ArnComponents;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.PhysicalName;
 import software.amazon.awscdk.RemovalPolicy;
@@ -68,6 +73,11 @@ import software.amazon.awscdk.services.logs.CfnDeliveryDestinationProps;
 import software.amazon.awscdk.services.logs.CfnDeliveryProps;
 import software.amazon.awscdk.services.logs.CfnDeliverySource;
 import software.amazon.awscdk.services.logs.CfnDeliverySourceProps;
+import software.amazon.awscdk.services.logs.FilterPattern;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.SubscriptionFilter;
+import software.amazon.awscdk.services.logs.destinations.LambdaDestination;
 import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.route53.IHostedZone;
@@ -75,6 +85,9 @@ import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.wafv2.CfnIPSet;
+import software.amazon.awscdk.services.wafv2.CfnLoggingConfiguration;
+import software.amazon.awscdk.services.wafv2.CfnRegexPatternSet;
 import software.amazon.awscdk.services.wafv2.CfnWebACL;
 import software.constructs.Construct;
 
@@ -124,6 +137,19 @@ public class EdgeStack extends Stack {
         String certificateArn();
 
         String apiGatewayUrl();
+
+        // The scan-detect Lambda's Docker image tag. Required rather than defaulted: every other
+        // Docker-image Lambda in this repo takes this from the deployment's own baseImageTag, and
+        // a silent default would deploy the scan detector on a stale image without anyone asking.
+        String baseImageTag();
+
+        // Comma-separated IPv4/IPv6 addresses for the manual WAF block list (phase 9.3), read from
+        // cdk-application/cdk.json's wafManualBlockIps context key. Defaults to empty: no address is
+        // blocked until an operator adds one following RUNBOOK_INFORMATION_SECURITY.md section 7.5.
+        @Value.Default
+        default String wafManualBlockIps() {
+            return "";
+        }
 
         static ImmutableEdgeStackProps.Builder builder() {
             return ImmutableEdgeStackProps.builder();
@@ -177,6 +203,74 @@ public class EdgeStack extends Stack {
         var cert =
                 Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
 
+        // ============================================================================
+        // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
+        // ============================================================================
+        // Anchored patterns only: "^/\.env" must never match "/submit.env", which the publish
+        // step writes as a real asset (see the SubmitApplicationCdkResourceTest verification of
+        // this and scripts/verify-waf-false-positives.sh for the deployed check).
+        CfnRegexPatternSet sensitivePathsRegexSet = CfnRegexPatternSet.Builder.create(
+                        this, props.resourceNamePrefix() + "-SensitivePathsRegexSet")
+                .name(props.resourceNamePrefix() + "-sensitive-paths")
+                .scope("CLOUDFRONT")
+                .description("URI paths that only a vulnerability scanner requests, blocked before they reach any"
+                        + " origin")
+                .regularExpressionList(List.of(
+                        "^/\\.env",
+                        "^/\\.git/",
+                        "^/\\.aws/",
+                        "^/\\.ssh/",
+                        "^/wp-admin",
+                        "^/wp-login",
+                        "^/xmlrpc\\.php",
+                        "^/phpmyadmin",
+                        "^/vendor/",
+                        "^/actuator",
+                        "^/server-status",
+                        "^/config\\.(json|php|yml|yaml)$",
+                        "\\.php$"))
+                .build();
+
+        // ============================================================================
+        // Manual IP block list (issue #9 phase 9.3)
+        // ============================================================================
+        // Addresses come from cdk-application/cdk.json's wafManualBlockIps context key, a
+        // comma-separated list that defaults to empty. A deploy always resets the IP sets to
+        // exactly this list, which is deliberate: RUNBOOK_INFORMATION_SECURITY.md section 7.5
+        // tells an operator to add a hand-applied block to cdk.json too, or the next deploy drops
+        // it. Two sets, not one, because CfnIPSet requires one ipAddressVersion per set and about
+        // half of the traffic arrives over IPv6.
+        List<String> manualBlockAddresses = new ArrayList<>();
+        if (props.wafManualBlockIps() != null && !props.wafManualBlockIps().isBlank()) {
+            for (String address : props.wafManualBlockIps().split(",")) {
+                var trimmed = address.trim();
+                if (!trimmed.isEmpty()) {
+                    manualBlockAddresses.add(trimmed);
+                }
+            }
+        }
+        List<String> manualBlockV4 = manualBlockAddresses.stream()
+                .filter(address -> !address.contains(":"))
+                .toList();
+        List<String> manualBlockV6 =
+                manualBlockAddresses.stream().filter(address -> address.contains(":")).toList();
+
+        CfnIPSet wafManualBlockIpv4Set = CfnIPSet.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockIPv4Set")
+                .name(props.resourceNamePrefix() + "-waf-manual-block-v4")
+                .scope("CLOUDFRONT")
+                .ipAddressVersion("IPV4")
+                .addresses(manualBlockV4)
+                .description("Hand-applied IPv4 block list; see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                .build();
+
+        CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
+                .name(props.resourceNamePrefix() + "-waf-manual-block-v6")
+                .scope("CLOUDFRONT")
+                .ipAddressVersion("IPV6")
+                .addresses(manualBlockV6)
+                .description("Hand-applied IPv6 block list; see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                .build();
+
         // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
         CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
                 .name(props.resourceNamePrefix() + "-waf")
@@ -185,6 +279,39 @@ public class EdgeStack extends Stack {
                         .allow(CfnWebACL.AllowActionProperty.builder().build())
                         .build())
                 .rules(List.of(
+                        // Sensitive-path scan rule - blocks and signals in the same evaluation,
+                        // ahead of every other rule so a WAF log record shows this rule's id.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("SensitivePathScan")
+                                .priority(0)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .regexPatternSetReferenceStatement(
+                                                CfnWebACL.RegexPatternSetReferenceStatementProperty.builder()
+                                                        .arn(sensitivePathsRegexSet.getAttrArn())
+                                                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                                                .uriPath(Map.of())
+                                                                .build())
+                                                        .textTransformations(List.of(
+                                                                CfnWebACL.TextTransformationProperty.builder()
+                                                                        .priority(0)
+                                                                        .type("URL_DECODE")
+                                                                        .build(),
+                                                                CfnWebACL.TextTransformationProperty.builder()
+                                                                        .priority(1)
+                                                                        .type("LOWERCASE")
+                                                                        .build()))
+                                                        .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("SensitivePathScan")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
                         // Rate limiting rule - 2000 requests per 5 minutes per IP
                         CfnWebACL.RuleProperty.builder()
                                 .name("RateLimitRule")
@@ -244,6 +371,41 @@ public class EdgeStack extends Stack {
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
                                         .metricName("AWSManagedRulesCommonRuleSet")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
+                        // Manual IP block list (issue #9 phase 9.3) - sits after the managed
+                        // groups so its own BlockedRequests metric counts only what they let
+                        // through, which is what keeps the metric readable.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("WafManualBlock")
+                                .priority(4)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .orStatement(CfnWebACL.OrStatementProperty.builder()
+                                                .statements(List.of(
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .ipSetReferenceStatement(
+                                                                        CfnWebACL.IPSetReferenceStatementProperty
+                                                                                .builder()
+                                                                                .arn(wafManualBlockIpv4Set.getAttrArn())
+                                                                                .build())
+                                                                .build(),
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .ipSetReferenceStatement(
+                                                                        CfnWebACL.IPSetReferenceStatementProperty
+                                                                                .builder()
+                                                                                .arn(wafManualBlockIpv6Set.getAttrArn())
+                                                                                .build())
+                                                                .build()))
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("WafManualBlock")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build()))
@@ -371,6 +533,120 @@ public class EdgeStack extends Stack {
                 .build();
 
         infof("Created cross-region rule forwarding WAF alarm state changes to eu-west-2 default bus");
+
+        // ============================================================================
+        // WAF manual-block alarm (issue #9 phase 9.3)
+        // ============================================================================
+        // Confirms a hand-applied block in cdk-application/cdk.json's wafManualBlockIps is
+        // actually stopping traffic, and shows when an attacker has stopped, following the same
+        // shape as the three WAF alarms above.
+        Alarm wafManualBlockAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockAlarm")
+                .alarmName(props.resourceNamePrefix() + "-waf-manual-block")
+                .alarmDescription("WAF blocked a request from a manually blocked IP (see wafManualBlockIps in"
+                        + " cdk-application/cdk.json)")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/WAFV2")
+                        .metricName("BlockedRequests")
+                        .dimensionsMap(Map.of(
+                                "WebACL", props.resourceNamePrefix() + "-waf",
+                                "Region", "Global",
+                                "Rule", "WafManualBlock"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // ============================================================================
+        // WAF logging and sensitive-path scan detection (issue #9 phase 9.1)
+        // ============================================================================
+        // Blocks only: the loggingFilter below drops every ALLOWed request before it reaches this
+        // log group, which keeps volume and cost near zero. redactedFields keeps tokens out of a
+        // log group that is not the application's own.
+        var wafLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-WafLogGroup")
+                // The "aws-waf-logs-" prefix is required by WAF; anything else fails at deploy.
+                .logGroupName("aws-waf-logs-" + props.resourceNamePrefix())
+                .retention(RetentionDays.ONE_MONTH)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        // loggingFilter and redactedFields are untyped (Object) on the L1 CfnLoggingConfiguration
+        // construct, so CDK never Pascal-cases them the way it does every strongly-typed nested
+        // property elsewhere in this file: whatever keys go in are the keys CloudFormation gets.
+        // The WAFv2 PutLoggingConfiguration API this resource calls requires exactly the
+        // PascalCase shape below (confirmed against the synthesized template, not just the docs),
+        // so these are built as plain maps rather than the *Property.builder() helpers, which
+        // would silently emit their JSII-interface camelCase names instead.
+        CfnLoggingConfiguration.Builder.create(this, props.resourceNamePrefix() + "-WafLoggingConfig")
+                .resourceArn(webAcl.getAttrArn())
+                .logDestinationConfigs(List.of(wafLogGroup.getLogGroupArn()))
+                .loggingFilter(Map.of(
+                        "DefaultBehavior",
+                        "DROP",
+                        "Filters",
+                        List.of(Map.of(
+                                "Behavior",
+                                "KEEP",
+                                "Requirement",
+                                "MEETS_ANY",
+                                "Conditions",
+                                List.of(Map.of("ActionCondition", Map.of("Action", "BLOCK")))))))
+                .redactedFields(List.of(
+                        Map.of("SingleHeader", Map.of("Name", "authorization")),
+                        Map.of("SingleHeader", Map.of("Name", "x-authorization")),
+                        Map.of("SingleHeader", Map.of("Name", "cookie"))))
+                .build();
+
+        // The detect Lambda reads the WAF block log via a subscription filter and turns each
+        // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
+        // activity bus (this stack, like the whole edge, is us-east-1).
+        var wafScanDetectFunctionName = props.resourceNamePrefix() + "-waf-scan-detect";
+        var wafScanDetectEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("DEPLOYMENT_NAME", props.deploymentName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_REGION", "eu-west-2");
+
+        var wafScanDetectLambda = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(wafScanDetectFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
+                        .ingestFunctionName(wafScanDetectFunctionName)
+                        .ingestHandler("app/functions/security/wafScanDetect.handler")
+                        .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
+                                + wafScanDetectFunctionName)
+                        .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:us-east-1:" + this.getAccount()
+                                + ":function:" + wafScanDetectFunctionName + ":live")
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.seconds(30))
+                        .provisionedConcurrencyAliasName("live")
+                        .environment(wafScanDetectEnv)
+                        .build());
+
+        // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
+        // us-east-1. Scoped to this environment's own activity bus, not every bus in the account.
+        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
+                + props.sharedNames().activityBusName;
+        wafScanDetectLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        SubscriptionFilter.Builder.create(this, props.resourceNamePrefix() + "-WafScanDetectSubscription")
+                .logGroup(wafLogGroup)
+                .destination(new LambdaDestination(wafScanDetectLambda.ingestLambda))
+                .filterPattern(FilterPattern.literal("{ $.terminatingRuleId = \"SensitivePathScan\" }"))
+                .build();
+
+        infof(
+                "Created WAF logging (blocks only) and scan-detect Lambda %s subscribed to it",
+                wafScanDetectLambda.ingestLambda.getNode().getId());
 
         // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
         // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
@@ -532,12 +808,16 @@ public class EdgeStack extends Stack {
                 .comment(
                         "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
                 // Forward ALL viewer headers plus CloudFront-Viewer-Address (contains client ip:port)
-                // needed for Gov-Client-Public-Port HMRC fraud prevention header.
+                // needed for Gov-Client-Public-Port HMRC fraud prevention header, and
+                // CloudFront-Viewer-Country (issue #9 phase 9.1, on issue #10's behalf: its
+                // mid-session country check in customAuthorizer.js needs this header, and this
+                // origin request policy is the only place that can add it).
                 // all() forwards ALL viewer headers including Host. API Gateway HTTP API v2
                 // routes by path, not Host, so this should be safe. If 403 errors occur,
                 // fall back to denyList("Host") and use API Gateway custom domain instead
                 // (see PLAN_HMRC_FRAUD_PREVENTION_HEADERS.md Approach 3).
-                .headerBehavior(OriginRequestHeaderBehavior.all("CloudFront-Viewer-Address"))
+                .headerBehavior(
+                        OriginRequestHeaderBehavior.all("CloudFront-Viewer-Address", "CloudFront-Viewer-Country"))
                 .queryStringBehavior(OriginRequestQueryStringBehavior.all())
                 // Forward all cookies to support authentication
                 .cookieBehavior(OriginRequestCookieBehavior.all())
@@ -662,6 +942,11 @@ public class EdgeStack extends Stack {
         cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
         cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
         cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
+        cfnOutput(this, "SensitivePathsRegexSetArn", sensitivePathsRegexSet.getAttrArn());
+        cfnOutput(this, "WafScanDetectLambdaArn", wafScanDetectLambda.ingestLambda.getFunctionArn());
+        cfnOutput(this, "WafManualBlockIpv4SetArn", wafManualBlockIpv4Set.getAttrArn());
+        cfnOutput(this, "WafManualBlockIpv6SetArn", wafManualBlockIpv6Set.getAttrArn());
+        cfnOutput(this, "WafManualBlockAlarmArn", wafManualBlockAlarm.getAlarmArn());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }

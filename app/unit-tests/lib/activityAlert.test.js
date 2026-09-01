@@ -26,6 +26,7 @@ import {
   maskVrn,
   publishActivityEvent,
   publishActivityFailureEvent,
+  resolveActivityBusRegion,
   resolveActorClass,
 } from "@app/lib/activityAlert.js";
 import { context } from "@app/lib/logger.js";
@@ -259,6 +260,42 @@ describe("lib/activityAlert", () => {
 
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.hashedSub).toBeUndefined();
+    });
+  });
+
+  describe("resolveActivityBusRegion", () => {
+    const originalActivityBusRegion = process.env.ACTIVITY_BUS_REGION;
+    const originalAwsRegion = process.env.AWS_REGION;
+
+    afterEach(() => {
+      if (originalActivityBusRegion === undefined) {
+        delete process.env.ACTIVITY_BUS_REGION;
+      } else {
+        process.env.ACTIVITY_BUS_REGION = originalActivityBusRegion;
+      }
+      if (originalAwsRegion === undefined) {
+        delete process.env.AWS_REGION;
+      } else {
+        process.env.AWS_REGION = originalAwsRegion;
+      }
+    });
+
+    test("comes from ACTIVITY_BUS_REGION when set", () => {
+      process.env.ACTIVITY_BUS_REGION = "us-east-1";
+      process.env.AWS_REGION = "eu-west-2";
+      expect(resolveActivityBusRegion()).toBe("us-east-1");
+    });
+
+    test("falls back to AWS_REGION when ACTIVITY_BUS_REGION is not set", () => {
+      delete process.env.ACTIVITY_BUS_REGION;
+      process.env.AWS_REGION = "eu-west-2";
+      expect(resolveActivityBusRegion()).toBe("eu-west-2");
+    });
+
+    test("falls back to eu-west-2 when neither is set", () => {
+      delete process.env.ACTIVITY_BUS_REGION;
+      delete process.env.AWS_REGION;
+      expect(resolveActivityBusRegion()).toBe("eu-west-2");
     });
   });
 
