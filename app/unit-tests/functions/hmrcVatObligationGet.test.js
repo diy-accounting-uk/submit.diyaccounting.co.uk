@@ -216,6 +216,40 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect(body.message).toContain("date format");
   });
 
+  test("returns 403 JSON when the authenticated user holds no bundle entitled to VAT obligations", async () => {
+    // QueryCommand (bundle lookup) resolves to no items via the default beforeEach mock,
+    // so the user has only the automatic "default" bundle, which vat-obligations does not accept.
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    event.requestContext.http.path = "/api/v1/hmrc/vat/obligation";
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("BUNDLE_FORBIDDEN");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("allows the request through once the user holds a bundle entitled to VAT obligations", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "day-guest" }], Count: 1 };
+      }
+      return {};
+    });
+    mockHmrcSuccess(mockFetch, { obligations: [] });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    event.requestContext.http.path = "/api/v1/hmrc/vat/obligation";
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
   test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "111222333" },

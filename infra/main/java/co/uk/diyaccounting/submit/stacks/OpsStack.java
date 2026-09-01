@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -35,6 +36,7 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
@@ -113,6 +115,17 @@ public class OpsStack extends Stack {
         @Value.Default
         default String telegramOpsChatId() {
             return "";
+        }
+
+        // GitHub issue configuration for the alarm-to-issue Lambda
+        @Value.Default
+        default String opsGithubTokenSecretArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String opsGithubRepo() {
+            return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
         // Canary configuration
@@ -240,6 +253,54 @@ public class OpsStack extends Stack {
                 telegramForwarderLambda.ingestLambda.getNode().getId());
 
         // ============================================================================
+        // Alarm-to-GitHub-Issue Lambda + EventBridge target (optional)
+        // ============================================================================
+        // A sibling Lambda rather than logic added to the Telegram forwarder above:
+        // it shares the AlarmStateChangeRule below as a second target, so a GitHub
+        // API failure or added latency here cannot affect Telegram delivery, and the
+        // forwarder's own code, env vars, and IAM role stay untouched. Only created
+        // when a GitHub token secret is configured.
+        IFunction alarmToGithubIssueLambda = null;
+        if (props.opsGithubTokenSecretArn() != null && !props.opsGithubTokenSecretArn().isBlank()) {
+            var alarmToGithubIssueEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("OPS_GITHUB_TOKEN_SECRET_ARN", props.opsGithubTokenSecretArn())
+                    .with("GITHUB_REPO", props.opsGithubRepo());
+            var alarmToGithubIssueLambdaConstruct = new Lambda(
+                    this,
+                    LambdaProps.builder()
+                            .idPrefix(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .ingestHandler(props.sharedNames().alarmToGithubIssueLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().alarmToGithubIssueLambdaArn)
+                            .ingestProvisionedConcurrencyAliasArn(
+                                    props.sharedNames().alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn)
+                            .ingestProvisionedConcurrency(0)
+                            .ingestLambdaTimeout(Duration.seconds(10))
+                            .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                            .environment(alarmToGithubIssueEnv)
+                            .build());
+            alarmToGithubIssueLambda = alarmToGithubIssueLambdaConstruct.ingestLambda;
+
+            var githubSecretArnWithWildcard = props.opsGithubTokenSecretArn().endsWith("*")
+                    ? props.opsGithubTokenSecretArn()
+                    : props.opsGithubTokenSecretArn() + "-*";
+            alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(githubSecretArnWithWildcard))
+                    .build());
+
+            cfnOutput(this, "AlarmToGithubIssueLambdaArn", alarmToGithubIssueLambda.getFunctionArn());
+            infof(
+                    "Created Alarm-to-GitHub-Issue Lambda %s for repo %s",
+                    alarmToGithubIssueLambdaConstruct.ingestLambda.getNode().getId(), props.opsGithubRepo());
+        }
+
+        // ============================================================================
         // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
         // ============================================================================
         // These rules match AWS service events on the default EventBridge bus
@@ -270,15 +331,22 @@ public class OpsStack extends Stack {
                         .build()))
                 .build();
 
-        // CloudWatch Alarm State Change → Telegram forwarder
+        // CloudWatch Alarm State Change → Telegram forwarder, and the
+        // alarm-to-GitHub-issue Lambda when one was created above.
+        var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
+        alarmStateChangeTargets.add(
+                LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());
+        if (alarmToGithubIssueLambda != null) {
+            alarmStateChangeTargets.add(
+                    LambdaFunction.Builder.create(alarmToGithubIssueLambda).build());
+        }
         Rule.Builder.create(this, "AlarmStateChangeRule")
                 .ruleName(props.resourceNamePrefix() + "-alarm-state-change")
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.cloudwatch"))
                         .detailType(List.of("CloudWatch Alarm State Change"))
                         .build())
-                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
-                        .build()))
+                .targets(alarmStateChangeTargets)
                 .build();
 
         infof("Created default bus rules for CloudFormation and CloudWatch alarm events");
