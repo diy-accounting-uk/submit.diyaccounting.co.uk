@@ -122,6 +122,7 @@ public class SubmitSharedNames {
     public String ue1EcrPublishRoleName;
     public String analyticsStackId;
     public String ingestionStackId;
+    public String securityDetectionStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -473,6 +474,7 @@ public class SubmitSharedNames {
         // Use envName directly for consistency with stack IDs (e.g., ci-env-IdentityStack → ci-env-user-pool)
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
+        this.securityDetectionStackId = "%s-env-SecurityDetectionStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);

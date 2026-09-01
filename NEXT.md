@@ -31,15 +31,9 @@ operator step before them is done or when SSO is live.
 
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the
   source-read audit (~163 alarms per environment, ~$29/month, against AWS_COSTS.md's
-  ~20-alarm assumption). Open: the live fired-vs-never-fired check (needs SSO);
-  apply cut 1 (ApiStack duplicate per-route error alarms) and cut 2 (OpsStack
-  unfiltered account-wide alarm EventBridge rule) — in flight; composite-alarm
-  consolidation (cut 3) needs a design pass before any code.
-- [ ] **(B32b) Read-endpoint gating, remainder.** Both endpoints turned out to be
-  gated already via `enforceBundles`; the missing 403-path tests are on the batch
-  branch. Open: `app/services/hmrcApi.js` returns 500 for `BundleAuthorizationError`
-  instead of an auth status (fix in flight), and the `prod-env-hmrc-api-requests`
-  usage scan (needs `aws sso login --sso-session diyaccounting`).
+  ~20-alarm assumption). Cuts 1 and 2 ride `claude/do-next-batch-2`. Open: the live
+  fired-vs-never-fired check (agent running); composite-alarm consolidation (cut 3)
+  needs a design pass before any code.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
   is the plan of record; the pipeline itself is largely shipped. Phases: 1 prove the
   shipped pipeline (needs SSO), 2 GA4 BigQuery event export (operator prereqs listed
@@ -60,18 +54,24 @@ operator step before them is done or when SSO is live.
   backup at the AWS Organization level, first deploy of the backup-account stacks with
   the `submit-backup` SSO profile, then the first manual `restore-test.yml` dispatch
   (the gate for the TypeScript CDK migration, B33).
-- [ ] **(B28) Scan and data-theft detection alarms** (issues #9, #10) — build
-  `SecurityDetectionStack` per `plans/issues/PLAN_ISSUE_9_scan_detection.md` and
-  `PLAN_ISSUE_10_data_theft_detection.md`, wired to the existing
-  `securityFindingsTopic`; merge after the OpsStack rule fix (B30 cut 2).
+- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10) —
+  `SecurityDetectionStack` with the DynamoDB customer-table alarms rides
+  `claude/do-next-batch-2`. Open, in the plans' own terms: #9's later phases
+  (CloudFront 404-spike aggregation, honeypot pages, IP auto-block — needs a Lambda
+  aggregator and web changes); #10's Cognito/S3/Secrets signals (need CloudTrail
+  event selectors extended in ObservabilityStack plus agreed burst thresholds); #10
+  AC4 mid-session country-change re-auth (app change in `customAuthorizer.js`).
 
 ## In flight (batch dispatched 2026-08-31, coordinator session)
 
-- batch branch `claude/do-next-batch-1` (backups IAM scoping, endpoint gating tests,
-  vitest worktree exclusion, hmrcApi 401 fix, alarm→GitHub-issue Lambda): full local
-  validation then PR
-- wave 2, worktrees off the batch branch: alarm-cuts track (B30 cuts 1+2), detection
-  track (B28), CloudFront-logging track (B14 phase 5)
+- PR #71 (`claude/do-next-batch-1`): validated (unit 1155, mvnw 72/72, behaviour 1
+  passed), awaiting operator merge
+- `claude/do-next-batch-2`: alarm cuts + SecurityDetectionStack merged, mvnw
+  verifying; CloudFront-logging track (B14 phase 5) done but held on phase 1's prod
+  row-count gate (ingestion-verify agent running); billing-webhook triage agent
+  running (65 ALARM entries in 90 days on `billing-webhook-log-errors`, found by the
+  live alarm check — the audit's counts otherwise verified: prod 155 vs ~163
+  predicted, ~45 app alarms never fired)
 
 ## Discipline
 

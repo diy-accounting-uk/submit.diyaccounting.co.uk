@@ -103,7 +103,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
         // The lake and the Athena results bucket
-        analytics.resourceCountIs("AWS::S3::Bucket", 3);
+        analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
         analytics.hasResourceProperties(
                 "AWS::KinesisFirehose::DeliveryStream",

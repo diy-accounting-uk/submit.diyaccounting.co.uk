@@ -333,6 +333,16 @@ public class OpsStack extends Stack {
 
         // CloudWatch Alarm State Change → Telegram forwarder, and the
         // alarm-to-GitHub-issue Lambda when one was created above.
+        //
+        // This rule is created once per app deployment, but every alarm this deployment's
+        // Lambda/API/WAF constructs create is named with this deployment's own prefix
+        // (`{deploymentName}-app-...`). Without a filter, every concurrent deployment's copy
+        // of this rule matches every alarm in the account, so one alarm state change fires
+        // the Telegram forwarder (and now the GitHub-issue Lambda) once per live deployment.
+        // The alarmName content filter below scopes each deployment's rule to alarms it owns,
+        // plus this environment's own shared alarms (RUM, Firehose, ingestion, data-quality —
+        // named with the `{envName}-env-...` prefix), since those aren't owned by any single
+        // deployment and still need at least one deployment's rule to forward them.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
         alarmStateChangeTargets.add(
                 LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());
@@ -345,6 +355,11 @@ public class OpsStack extends Stack {
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.cloudwatch"))
                         .detailType(List.of("CloudWatch Alarm State Change"))
+                        .detail(Map.of(
+                                "alarmName",
+                                List.of(
+                                        Map.of("prefix", props.resourceNamePrefix() + "-"),
+                                        Map.of("prefix", props.sharedNames().envResourceNamePrefix + "-"))))
                         .build())
                 .targets(alarmStateChangeTargets)
                 .build();
