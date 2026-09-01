@@ -22,6 +22,7 @@ import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import org.opentest4j.AssertionFailedError;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
 @SetEnvironmentVariable.SetEnvironmentVariables({
@@ -156,10 +157,14 @@ class SubmitApplicationCdkResourceTest {
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
 
-        // The CloudFront standard-logging bucket moved to AnalyticsStack (env-scoped) so log
-        // history survives every redeploy of this app stack. EdgeStack must create no bucket for
-        // it any more and instead reference the imported env bucket by name; the origin bucket is
-        // the only S3::Bucket this stack still creates.
+        // Access logs reach the analytics lake only through the v2 Parquet delivery below; the
+        // distribution itself must carry no classic standard-logging configuration.
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::CloudFront::Distribution",
+                Match.objectLike(Map.of(
+                        "DistributionConfig", Match.objectLike(Map.of("Logging", Match.absent())))));
+
+        // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
 
         // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining

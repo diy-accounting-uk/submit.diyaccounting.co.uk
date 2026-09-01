@@ -266,13 +266,26 @@ describe("stripeReconcile", () => {
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
       expect(keys).toEqual([
-        `curated/stripe/balance_transactions/dt=${result.date}/balance_transactions.json.gz`,
-        `curated/stripe/charges/dt=${result.date}/charges.json.gz`,
-        `curated/stripe/subscriptions/dt=${result.date}/subscriptions.json.gz`,
+        `curated/stripe/stripe_balance_transactions/dt=${result.date}/balance_transactions.json.gz`,
+        `curated/stripe/stripe_charges/dt=${result.date}/charges.json.gz`,
+        `curated/stripe/stripe_subscriptions/dt=${result.date}/subscriptions.json.gz`,
       ]);
       for (const call of mockS3Send.mock.calls) {
         expect(call[0].input.Bucket).toBe("test-lake-bucket");
       }
+    });
+
+    test("writes each entity under the stripe_-prefixed Glue table directory the reconciliation tables read from", async () => {
+      const result = await handler({ date: "2026-08-20" });
+
+      const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
+      // The Glue tables (StripeReconciliationTables.java) are named stripe_balance_transactions,
+      // stripe_charges and stripe_subscriptions, and each table's S3 location carries that same
+      // prefix. The object key's directory must match exactly or Athena sees zero partitions.
+      expect(keys[0]).toMatch(/^curated\/stripe\/stripe_balance_transactions\/dt=2026-08-20\//);
+      expect(keys[1]).toMatch(/^curated\/stripe\/stripe_charges\/dt=2026-08-20\//);
+      expect(keys[2]).toMatch(/^curated\/stripe\/stripe_subscriptions\/dt=2026-08-20\//);
+      expect(result.date).toBe("2026-08-20");
     });
 
     test("an explicit date in the event overrides the default and sets the Stripe date window", async () => {
@@ -289,9 +302,9 @@ describe("stripeReconcile", () => {
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
       expect(keys).toEqual([
-        "curated/stripe/balance_transactions/dt=2026-08-20/balance_transactions.json.gz",
-        "curated/stripe/charges/dt=2026-08-20/charges.json.gz",
-        "curated/stripe/subscriptions/dt=2026-08-20/subscriptions.json.gz",
+        "curated/stripe/stripe_balance_transactions/dt=2026-08-20/balance_transactions.json.gz",
+        "curated/stripe/stripe_charges/dt=2026-08-20/charges.json.gz",
+        "curated/stripe/stripe_subscriptions/dt=2026-08-20/subscriptions.json.gz",
       ]);
     });
 
@@ -316,7 +329,7 @@ describe("stripeReconcile", () => {
       const result = await handler({ date: "2026-08-20" });
 
       expect(result.counts.charges).toBe(1);
-      const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/charges/"));
+      const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
       const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
       const row = JSON.parse(body.trimEnd());
       expect(row.id).toBe("ch_1");

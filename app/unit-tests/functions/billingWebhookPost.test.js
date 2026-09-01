@@ -397,6 +397,36 @@ describe("billingWebhookPost", () => {
     expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
   });
 
+  test("logs unhandled event types without tripping the log-error-metric alarm's trigger words", async () => {
+    // The prod-env-billing-webhook-log-errors alarm's metric filter matches any log
+    // line containing ERROR, Error, Exception, Unhandled, "Task timed out", SEVERE, or
+    // FATAL — regardless of pino log level. An expected, no-op event type (e.g.
+    // customer.subscription.created, which routinely accompanies checkout.session.completed)
+    // must not emit a line matching any of those terms, or every occurrence pages as a
+    // false-positive error alarm.
+    const payload = {
+      id: "evt_test_subscription_created",
+      type: "customer.subscription.created",
+      data: { object: { id: "sub_test_new" } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const event = buildWebhookEvent(payload);
+      const result = await ingestHandler(event);
+
+      expect(result.statusCode).toBe(200);
+      const loggedLines = writeSpy.mock.calls.map((call) => call[0]).join("");
+      const triggerWords = ["ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"];
+      for (const word of triggerWords) {
+        expect(loggedLines).not.toContain(word);
+      }
+    } finally {
+      writeSpy.mockRestore();
+    }
+  });
+
   test("uses test webhook secret for test-mode events (livemode: false)", async () => {
     const payload = {
       ...buildCheckoutSessionPayload(),

@@ -12,37 +12,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
-import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.glue.CfnDatabase;
 import software.amazon.awscdk.services.glue.CfnTable;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.s3.BlockPublicAccess;
 import software.amazon.awscdk.services.s3.Bucket;
-import software.amazon.awscdk.services.s3.BucketEncryption;
-import software.amazon.awscdk.services.s3.LifecycleRule;
-import software.amazon.awscdk.services.s3.ObjectOwnership;
 import software.constructs.Construct;
 
 /**
  * CloudFront access-log resources shared by every deployment in one environment.
  *
- * <p>Two independent things land here, both environment-scoped rather than tied to one
- * deployment, because a deployment's app stacks (EdgeStack included, along with its CloudFront
- * distribution) are destroyed and recreated on every release:
- *
- * <ol>
- *   <li>The classic ACL-based standard-logging bucket. Every deployment's {@code EdgeStack}
- *       imports it by name (see {@link #bucketName}) and writes flat log files into its own
- *       {@code cf-standard-logs/<deployment>/} prefix, so history survives a redeploy instead of
- *       being destroyed with the bucket that used to live inside {@code EdgeStack}.
- *   <li>The Glue table and lake-bucket policy that let Athena query the Parquet objects
- *       CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/distributionid=<id>/year=
- *       .../month=.../day=.../}.
- * </ol>
+ * <p>Holds the Glue table and lake-bucket policy that let Athena query the Parquet objects
+ * CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/distributionid=<id>/year=
+ * .../month=.../day=.../}. Environment-scoped rather than tied to one deployment, because a
+ * deployment's app stacks (EdgeStack included, along with its CloudFront distribution) are
+ * destroyed and recreated on every release.
  *
  * <p>The delivery source/destination/delivery resources that subscribe one specific distribution
  * to that v2 delivery are deliberately NOT created here. This construct is instantiated from
@@ -95,16 +81,12 @@ public class CloudFrontAccessLogs {
 
 
 
-    public final Bucket logBucket;
     public final CfnTable table;
 
     @Value.Immutable
     public interface CloudFrontAccessLogsProps {
 
-        /** {@code sharedNames.envResourceNamePrefix}, e.g. {@code ci-env}. Used for logical ids and the
-         * classic log bucket's physical name; callers outside this environment scope (an EdgeStack
-         * importing the bucket by name) must derive the same value from their own sharedNames rather
-         * than any deployment-scoped prefix. */
+        /** {@code sharedNames.envResourceNamePrefix}, e.g. {@code ci-env}. Used for logical ids. */
         String envResourceNamePrefix();
 
         /** The lake bucket's literal physical name, e.g. {@code sharedNames.analyticsLakeBucketName}. */
@@ -128,23 +110,6 @@ public class CloudFrontAccessLogs {
         // CloudFront delivery sources and deliveries always live in us-east-1, whatever region
         // this stack deploys to, so the bucket policy has to trust that region's ARNs.
         var prefix = props.envResourceNamePrefix();
-
-        // ============================================================================
-        // Classic standard-logging bucket, migrated from EdgeStack
-        // ============================================================================
-        // Env-scoped so log history outlives a deployment's app stacks. ObjectOwnership.OBJECT_WRITER
-        // keeps ACLs enabled: CloudFront's classic standard logging writes objects via an ACL grant
-        // to the AWS log-delivery account, which needs ACLs on.
-        this.logBucket = Bucket.Builder.create(scope, prefix + "-CfLogsBucket")
-                .bucketName(bucketName(prefix, account))
-                .encryption(BucketEncryption.S3_MANAGED)
-                .objectOwnership(ObjectOwnership.OBJECT_WRITER)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .autoDeleteObjects(true)
-                .lifecycleRules(List.of(
-                        LifecycleRule.builder().expiration(Duration.days(90)).build()))
-                .build();
 
         // ============================================================================
         // Lake bucket policy: authorise CloudWatch Logs delivery (v2) to write under raw/cloudfront/
@@ -247,18 +212,7 @@ public class CloudFrontAccessLogs {
                 .build();
         this.table.addResourceDependency(props.glueDatabase());
 
-        infof(
-                "CloudFrontAccessLogs created for %s: log bucket %s, table %s",
-                prefix, this.logBucket.getBucketName(), TABLE_NAME);
-    }
-
-    /**
-     * The env-scoped classic standard-logging bucket name. Every deployment's {@code EdgeStack}
-     * imports it by this name via {@code Bucket.fromBucketName}; pass the environment's
-     * {@code sharedNames.envResourceNamePrefix}, never a deployment-scoped prefix.
-     */
-    public static String bucketName(String envResourceNamePrefix, String account) {
-        return "%s-cloudfront-logs-%s".formatted(envResourceNamePrefix, account);
+        infof("CloudFrontAccessLogs created for %s: table %s", prefix, TABLE_NAME);
     }
 
     // The delivery writes every field as a Parquet string, whatever the log reference says
