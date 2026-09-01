@@ -70,13 +70,17 @@ operator step before them is done or when SSO is live.
   `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
-- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10) — design
-  merged to main 2026-09-01 (`PLAN_SECURITY_DETECTION_REMAINDER.md`), split into
-  independent issue-9/issue-10 sections. Two implementation agents running in
-  parallel: `claude/b28-issue9-scan-detection`, `claude/b28-issue10-data-theft`.
-  Scope decision recorded in the design: no honeypot pages, no IP auto-block
-  automation — manual block list only, matching issue #9's actual acceptance
-  criteria rather than the older NEXT.md phrasing.
+- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10). Issue 9
+  (scan detection) merged to main 2026-09-01: WAF sensitive-path rule + logging +
+  detection Lambda, Athena-based 404-rate check (`ScanDetectionStack`), manual
+  `WAF-Manual-Block` IPSet, runbook 7.5. No honeypots, no auto-block, per the
+  recorded scope decision. Issue 10 (data-theft remainder) code-complete on branch
+  `claude/b28-issue10-data-theft`, `./mvnw clean verify` and `npm test` both green:
+  salt-secret resource policy + unexpected-read alarm, bundle-endpoint burst
+  detection, mid-session country-change re-auth in `customAuthorizer.js`,
+  cross-account hold runbook (6.6). Still open for both: the plan's live-AWS
+  verification steps (need a real deploy — resource-policy read-back, a real burst
+  against ci, deployed authorizer log check).
 
 ## In flight (coordinator session)
 
@@ -87,8 +91,8 @@ pushes each as it lands:
   the open-item bullet above.
 - **cognito-token-post env-var fix** — code-complete, pushed, ci verifying. See
   the open-item bullet above for detail.
-- **B28 implement** — running, two parallel sonnet agents: branch
-  `claude/b28-issue9-scan-detection` and branch `claude/b28-issue10-data-theft`.
+- **B28 implement** — issue-9 merged to main. Issue-10 code-complete, branch
+  `claude/b28-issue10-data-theft`, coordinator merging next.
 - **B14 implement** — code-complete, pushed, ci verifying. See the open-item bullet
   above for detail. A watcher agent is confirming ci's auto-triggered runs and
   doing a light existence-check on the new phase-2/3 resources.
