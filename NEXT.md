@@ -33,15 +33,11 @@ operator step before them is done or when SSO is live.
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
-  fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3) —
-  design merged to main 2026-09-01 (`PLAN_ALARM_CONSOLIDATION.md`); implementation
-  running on branch `claude/b30-alarm-implement`.
-- [ ] **Alarm-sensitivity tuning: `activity-telegram-forwarder-errors` and
-  `-high-duration-p95`** (issues #77-82) both fired within the same 30-second
-  window as the OpsStack deploy that created the Lambda — deploy-induced, not a
-  standing fault. Tune these two alarms' evaluation tolerance so a deploy-time
-  burst doesn't cross threshold. Same file as B30; folded into the same
-  `claude/b30-alarm-implement` implementation run.
+  fixed). Cuts 1 and 2 are on main. Composite-alarm consolidation (cut 3) and the
+  `activity-telegram-forwarder` alarm-sensitivity tuning (issues #77-82, same
+  `Lambda.java` construct) both merged to main 2026-09-01, code-verified
+  (`./mvnw clean verify` 74/74). Still open: deploy and confirm the composite
+  `check-`/`-health` alarm split and the widened tolerance in live ci/prod.
 - [ ] **Bug: `cognito-token-post` never gets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`.**
   Found via issues #75/#76. Code-complete on branch `claude/fix-hmrc-audit-table-env`
   (pushed 2026-09-01) — the env var, an IAM `dynamodb:PutItem` grant the Lambda also
@@ -87,8 +83,8 @@ operator step before them is done or when SSO is live.
 Wave 1 dispatched 2026-09-01, four worktree-isolated sub-agents, coordinator merges and
 pushes each as it lands:
 
-- **B30 implement** (sonnet, branch `claude/b30-alarm-implement`) — running,
-  composite-alarm consolidation plus the alarm-sensitivity tuning fold-in.
+- **B30 implement** — merged to main. Live-deploy verification still open, see
+  the open-item bullet above.
 - **cognito-token-post env-var fix** — code-complete, pushed, ci verifying. See
   the open-item bullet above for detail.
 - **B28 implement** — running, two parallel sonnet agents: branch

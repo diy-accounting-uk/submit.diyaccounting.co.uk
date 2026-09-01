@@ -84,4 +84,31 @@ public interface AbstractLambdaProps {
     default Optional<Role> role() {
         return Optional.empty();
     }
+
+    // Evaluation tolerance for the errors and high-duration-p95 alarms. Defaults reproduce the
+    // original single-datapoint behaviour (one breaching 5-minute period trips the alarm). A
+    // construct expected to see brief, harmless bursts around its own deploy (e.g. a Lambda that
+    // cold-starts into a backlog of the very events its EventBridge rule is about to raise) can
+    // widen these to an M-of-N window so a lone deploy-time period doesn't cross threshold, while
+    // a sustained problem spanning multiple periods still does.
+
+    @Value.Default
+    default int errorsAlarmEvaluationPeriods() {
+        return 1;
+    }
+
+    @Value.Default
+    default int errorsAlarmDatapointsToAlarm() {
+        return 1;
+    }
+
+    @Value.Default
+    default int highDurationP95AlarmEvaluationPeriods() {
+        return 1;
+    }
+
+    @Value.Default
+    default int highDurationP95AlarmDatapointsToAlarm() {
+        return 1;
+    }
 }
