@@ -589,6 +589,17 @@ still returns a non-zero count for the day after the deploy.
 
 # Phase 6: Stripe reconciliation
 
+**Status: verified 2026-09-01, no code change needed.** `stripeReconcile.js` already
+calls the shared `getStripeClient()` from `app/lib/stripeClient.js` (the same
+resolver `billingWebhookPost.js`/`billingCheckoutPost.js`/`billingPortalGet.js`
+use), and `IngestionStack`/`BillingWebhookStack` already receive the identical
+`stripeSecretKeyArn`/`stripeTestSecretKeyArn` from `SubmitEnvironment.java` with
+the same `secretsmanager:GetSecretValue` wildcard-suffix grant shape. The "What
+changes" section below already describes the shipped state; the existing unit
+test (`mockGetStripeClient` called with `{test: true/false}`) and CDK test
+(`stripeReconciliationGetsScopedSecretAndSaltGrantsOnlyWhenArnsAreConfigured`)
+already cover it. 20/20 and 1/1 rerun green.
+
 **Model: Sonnet.** No longer gated on the operator — reuses the existing key.
 
 Operator decision 2026-09-01: reuse the existing full `STRIPE_SECRET_KEY_ARN` /
