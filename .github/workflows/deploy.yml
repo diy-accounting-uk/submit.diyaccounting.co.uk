@@ -1,4 +1,4 @@
-# deploy: public-url fix for synthetic test (bump 01)
+# deploy: force a clean prod deployment after the EdgeStack WAF fix (bump 02)
 name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
