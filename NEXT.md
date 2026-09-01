@@ -35,10 +35,9 @@ operator step before them is done or when SSO is live.
   fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3)
   needs a design pass before any code.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record. Phase 1 ran: activity events and all four table-change
-  streams land rows; Stripe reconciliation was landing NOTHING (S3 prefix mismatch
-  vs the Glue tables — fix on main, replay 2026-08-29/30 in both envs once the
-  deploy lands); phase 5 is on main. Still open from the run: prod's
+  is the plan of record. Phase 1 ran: activity events, all four table-change
+  streams, and (after the path fix and replay) all three Stripe tables land
+  queryable rows; phase 5 is on main. Still open from the run: prod's
   `ga4-report-pull` 2026-08-30 invocation left an empty log stream (unexplained —
   look before phase 2 builds on it), and ci's SSM `last-known-good-deployment`
   points at `ci-clauderem`, a deployment with no stacks anywhere. Remaining phases:
@@ -67,10 +66,10 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-- Both batches are on main (#71, #73); the #73 deploy runs are in progress (watched).
-  After they land: replay the Stripe reconcile for 2026-08-29/30 in both envs
-  (invocations in PR #72's description), and run the alarm→issue end-to-end proof
-  once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
+- Both batches are on main (#71, #73). The environment deploy is green and the
+  Stripe replay is done and proven in Athena; the app deploy run is still in
+  progress (watched). Remaining follow-up: the alarm→issue end-to-end proof once
+  `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
 
 ## Discipline
 
