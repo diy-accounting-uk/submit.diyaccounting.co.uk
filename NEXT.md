@@ -34,7 +34,20 @@ operator step before them is done or when SSO is live.
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
   fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3)
-  needs a design pass before any code.
+  needs a design pass before any code — design landed 2026-09-01 on branch
+  `claude/b30-alarm-design`, `PLAN_ALARM_CONSOLIDATION.md`, not yet merged.
+  Folded in: `activity-telegram-forwarder-errors` and
+  `-high-duration-p95` (issues #77-82) both fired within the same 30-second
+  window as the OpsStack deploy that created the Lambda — deploy-induced, not a
+  standing fault. Tune these two alarms' evaluation tolerance so a deploy-time
+  burst doesn't cross threshold, as part of the same implementation pass.
+- [ ] **Bug: `cognito-token-post` never gets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`.**
+  Found via issues #75/#76 (real signal, not deploy noise — CloudWatch logs show
+  repeated `ValidationException: TableName` failures on every OAuth token
+  exchange in prod). `AuthStack.java` sets `BUNDLE_DYNAMODB_TABLE_NAME` for this
+  Lambda but never sets `HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME`, which
+  `app/data/dynamoDbHmrcApiRequestRepository.js:16` requires — a missing CDK env
+  var, not transient. Every live login has been failing this audit write.
 - [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
   is the plan of record. Phase 1 ran: activity events, all four table-change
   streams, and (after the path fix and replay) all three Stripe tables land
