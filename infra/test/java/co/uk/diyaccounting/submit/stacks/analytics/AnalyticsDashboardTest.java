@@ -106,7 +106,7 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void dashboardHasSixRowsOfWidgetsAllReadingTheAnalyticsNamespace() throws Exception {
+    void dashboardHasSevenRowsOfWidgetsAllReadingTheAnalyticsNamespace() throws Exception {
         Template template = synthAnalyticsDashboard();
 
         var dashboards = template.findResources("AWS::CloudWatch::Dashboard");
@@ -126,6 +126,9 @@ class AnalyticsDashboardTest {
         assertTrue(dashboardBody.contains("PassesIssued"));
         assertTrue(dashboardBody.contains("PassesRedeemed"));
         assertTrue(dashboardBody.contains("HmrcFailures"));
+        assertTrue(dashboardBody.contains("Ga4Purchases"));
+        assertTrue(dashboardBody.contains("StripePaidCharges"));
+        assertTrue(dashboardBody.contains("ActivityActivations"));
     }
 
     @Test

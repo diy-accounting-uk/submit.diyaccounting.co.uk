@@ -282,6 +282,17 @@ public class AnalyticsDashboard extends Construct {
                 .height(6)
                 .build()));
 
+        // The three counts plotted together so a gap between sources is visible without a
+        // query. Not the two gap metrics themselves: METRIC_DEFINITIONS in
+        // analyticsMetricsPublish.js publishes only the three raw counts, and this widget reads
+        // exactly those three plain metric names, not a SEARCH.
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("Purchase Reconciliation: GA4 vs Stripe vs Activity Events")
+                .left(List.of(metric("Ga4Purchases"), metric("StripePaidCharges"), metric("ActivityActivations")))
+                .width(24)
+                .height(6)
+                .build()));
+
         this.dashboard = Dashboard.Builder.create(this, prefix + "-AnalyticsDashboard")
                 .dashboardName(dashboardName)
                 .widgets(dashboardRows)

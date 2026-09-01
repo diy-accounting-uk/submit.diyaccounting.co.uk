@@ -41,8 +41,19 @@ import software.constructs.Construct;
  */
 public class BusinessViews extends Construct {
 
-    /** Views by the business question they answer and the catalog tables they read. */
-    private record ViewDefinition(String name, String description, List<String> readTables) {}
+    /**
+     * Views by the business question they answer and the catalog tables they read. {@code
+     * dependsOnViews} names sibling views (by {@link ViewDefinition#name()}) this view's SQL
+     * reads from directly: the caller must create those first and add an explicit CloudFormation
+     * dependency, since two {@code AwsCustomResource}s with no {@code Fn::GetAtt} between them
+     * carry no implicit ordering.
+     */
+    private record ViewDefinition(String name, String description, List<String> readTables, List<String> dependsOnViews) {
+
+        ViewDefinition(String name, String description, List<String> readTables) {
+            this(name, description, readTables, List.of());
+        }
+    }
 
     private static final List<ViewDefinition> VIEWS = List.of(
             new ViewDefinition(
@@ -69,7 +80,16 @@ public class BusinessViews extends Construct {
                     "Time from a new account's first bundle grant to its first submission",
                     List.of("dynamo_bundles", "dynamo_receipts")),
             new ViewDefinition(
-                    "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")));
+                    "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_ga4_funnel_daily",
+                    "Distinct GA4 sessions reaching each funnel step each day",
+                    List.of("ga4_bq_events")),
+            new ViewDefinition(
+                    "v_purchase_reconciliation_daily",
+                    "GA4, Stripe and activity-event purchase counts each day, side by side",
+                    List.of("stripe_charges", "activity_events_all", "v_ga4_funnel_daily"),
+                    List.of("v_ga4_funnel_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<AwsCustomResource> viewResources = new ArrayList<>();
@@ -99,6 +119,13 @@ public class BusinessViews extends Construct {
         var workGroupArn = athenaWorkGroupArn(stack.getRegion(), stack.getAccount(), props.athenaWorkGroupName());
         var catalogArn = glueCatalogArn(stack.getRegion(), stack.getAccount());
         var databaseArn = glueDatabaseArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName());
+
+        // Two AwsCustomResources with no Fn::GetAtt between them carry no implicit
+        // CloudFormation ordering, so a view that reads a sibling view (e.g.
+        // v_purchase_reconciliation_daily reading v_ga4_funnel_daily) needs an explicit
+        // dependency edge, added below once both resources exist. VIEWS is declared with every
+        // dependency earlier in the list than its dependent, so a single forward pass suffices.
+        var viewResourcesByName = new java.util.LinkedHashMap<String, AwsCustomResource>();
 
         for (ViewDefinition view : VIEWS) {
             var sql = loadResourceText("analytics/views/" + view.name() + ".sql");
@@ -165,6 +192,17 @@ public class BusinessViews extends Construct {
                     .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
                     .build();
             this.viewResources.add(viewResource);
+            viewResourcesByName.put(view.name(), viewResource);
+
+            for (String dependsOnView : view.dependsOnViews()) {
+                var upstream = viewResourcesByName.get(dependsOnView);
+                if (upstream == null) {
+                    throw new IllegalStateException(
+                            "%s depends on %s, which must be declared earlier in VIEWS".formatted(
+                                    view.name(), dependsOnView));
+                }
+                viewResource.getNode().addDependency(upstream);
+            }
         }
     }
 

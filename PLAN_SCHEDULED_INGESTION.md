@@ -428,6 +428,10 @@ morning's scheduled run also shows `SUCCEEDED` with no manual start.
 
 # Phase 4: cross-source reconciliation
 
+**Status: code done 2026-09-01, unit and CDK tests green.** Live verification
+(`v_purchase_reconciliation_daily` returning rows, the three new metrics appearing
+in the `Submit/Analytics` namespace) needs a deploy and a nightly run.
+
 **Model: Sonnet.**
 
 Three independent sources now hold a count of the same thing: GA4 says how many purchases

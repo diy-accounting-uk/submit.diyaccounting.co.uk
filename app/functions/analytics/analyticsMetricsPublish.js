@@ -28,6 +28,11 @@ const PUT_METRIC_DATA_BATCH_SIZE = 20;
 /**
  * Each definition names a view under infra/main/resources/analytics/views and the columns
  * it reads from it. The views are the contract: a column renamed there has to be renamed here.
+ *
+ * 23 CloudWatch metrics total, up from the 20 PLAN_USAGE_DATA_PIPELINE.md named as a cost guard
+ * at $0.30/metric/month: this list's three purchase-reconciliation entries add $0.90/month. They
+ * publish the three counts v_purchase_reconciliation_daily carries, not its two gap columns: a
+ * gap is meaningful next to its two sides, and a bare difference metric reads as noise on its own.
  */
 export const METRIC_DEFINITIONS = [
   {
@@ -102,6 +107,27 @@ export const METRIC_DEFINITIONS = [
     valueColumn: "sessions",
     dimension: { name: "Country", column: "country" },
     sql: (day) => `SELECT country, sessions FROM v_traffic_by_country_daily WHERE day = DATE '${day}' ORDER BY sessions DESC LIMIT 5`,
+  },
+  {
+    metricName: "Ga4Purchases",
+    unit: "Count",
+    valueColumn: "ga4_purchases",
+    dimension: null,
+    sql: (day) => `SELECT ga4_purchases FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "StripePaidCharges",
+    unit: "Count",
+    valueColumn: "stripe_paid_charges",
+    dimension: null,
+    sql: (day) => `SELECT stripe_paid_charges FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "ActivityActivations",
+    unit: "Count",
+    valueColumn: "activity_activations",
+    dimension: null,
+    sql: (day) => `SELECT activity_activations FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
 ];
 
