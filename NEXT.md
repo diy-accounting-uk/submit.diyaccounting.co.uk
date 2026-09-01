@@ -45,9 +45,10 @@ operator step before them is done or when SSO is live.
   2 GA4 BigQuery event export (operator prereqs in the plan), 3 Step Functions
   orchestration, 4 reconciliation views, 6 Stripe restricted keys (operator).
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
-  deployed. Operator: create a fine-grained PAT (Issues read/write on this
-  repo only) and set it as GitHub Actions secret `GITHUB_ISSUE_BOT_TOKEN` in the ci
-  and prod environments. Then the end-to-end proof at deploy time (set-alarm-state on
+  deployed. Operator set the PAT as repository-level GitHub Actions secret
+  `ISSUE_BOT_TOKEN` on 2026-09-01 (GitHub rejects secret names starting `GITHUB_`,
+  and `deploy-environment.yml` now reads `secrets.ISSUE_BOT_TOKEN`, matching). Next:
+  the end-to-end proof at deploy time (set-alarm-state on
   a cheap ci alarm → issue appears → second flip comments, not duplicates), then the
   B20 fan-out with dedup. Adjacent gap surfaced: `supportTicketPost.js`'s GitHub
   wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is never provisioned by any workflow,
