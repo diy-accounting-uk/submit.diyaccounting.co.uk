@@ -576,7 +576,14 @@ public class EdgeStack extends Stack {
         // PascalCase shape below (confirmed against the synthesized template, not just the docs),
         // so these are built as plain maps rather than the *Property.builder() helpers, which
         // would silently emit their JSII-interface camelCase names instead.
-        CfnLoggingConfiguration.Builder.create(this, props.resourceNamePrefix() + "-WafLoggingConfig")
+        // The redactedFields(List<Object>) builder overload does not marshal Map elements
+        // correctly through JSII — confirmed against the synthesized template: every entry came
+        // out as {} regardless of whether the Maps were built with Map.of(...) or HashMap.
+        // loggingFilter's nested Lists-of-Maps serialize fine because the whole graph goes through
+        // as one top-level Object; only the direct List<Object> parameter is affected. Bypassing it
+        // with the L1 escape hatch (addPropertyOverride), which serializes correctly.
+        var wafLoggingConfig = CfnLoggingConfiguration.Builder.create(
+                        this, props.resourceNamePrefix() + "-WafLoggingConfig")
                 .resourceArn(webAcl.getAttrArn())
                 .logDestinationConfigs(List.of(wafLogGroup.getLogGroupArn()))
                 .loggingFilter(Map.of(
@@ -590,11 +597,13 @@ public class EdgeStack extends Stack {
                                 "MEETS_ANY",
                                 "Conditions",
                                 List.of(Map.of("ActionCondition", Map.of("Action", "BLOCK")))))))
-                .redactedFields(List.of(
-                        Map.of("SingleHeader", Map.of("Name", "authorization")),
-                        Map.of("SingleHeader", Map.of("Name", "x-authorization")),
-                        Map.of("SingleHeader", Map.of("Name", "cookie"))))
                 .build();
+        wafLoggingConfig.addPropertyOverride(
+                "RedactedFields",
+                List.of(
+                        redactedSingleHeader("authorization"),
+                        redactedSingleHeader("x-authorization"),
+                        redactedSingleHeader("cookie")));
 
         // The detect Lambda reads the WAF block log via a subscription filter and turns each
         // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
@@ -965,6 +974,14 @@ public class EdgeStack extends Stack {
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(responseHeadersPolicy)
                 .build();
+    }
+
+    private static Map<String, Object> redactedSingleHeader(String headerName) {
+        Map<String, Object> singleHeader = new HashMap<>();
+        singleHeader.put("Name", headerName);
+        Map<String, Object> fieldToMatch = new HashMap<>();
+        fieldToMatch.put("SingleHeader", singleHeader);
+        return fieldToMatch;
     }
 
     private String getHostFromUrl(String url) {

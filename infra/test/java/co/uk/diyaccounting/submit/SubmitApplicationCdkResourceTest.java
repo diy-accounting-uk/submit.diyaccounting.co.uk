@@ -232,6 +232,17 @@ class SubmitApplicationCdkResourceTest {
         edgeStackTemplate.hasResourceProperties(
                 "AWS::WAFv2::LoggingConfiguration",
                 Match.objectLike(Map.of("LoggingFilter", Match.objectLike(Map.of("DefaultBehavior", "DROP")))));
+        // Regression guard: redactedFields(List<Object>) silently drops its Map elements through
+        // JSII (each entry synthesizes as {} instead of {"SingleHeader": {"Name": ...}}), which
+        // WAFv2 accepts at synth time but rejects at deploy time
+        // (EXACTLY_ONE_CONDITION_REQUIRED). The fix uses addPropertyOverride instead; this
+        // assertion catches a regression back to the builder method.
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::LoggingConfiguration",
+                Match.objectLike(Map.of(
+                        "RedactedFields",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                "SingleHeader", Match.objectLike(Map.of("Name", "authorization")))))))));
         edgeStackTemplate.resourceCountIs("AWS::Logs::SubscriptionFilter", 1);
 
         // Issue #9 makes this one-line change on issue #10's behalf: its mid-session country
