@@ -53,11 +53,6 @@ operator step before them is done or when SSO is live.
   B20 fan-out with dedup. Adjacent gap surfaced: `supportTicketPost.js`'s GitHub
   wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is never provisioned by any workflow,
   so support-ticket-to-issue is wired in code but never deployed.
-- [ ] **(B25) Cross-account backups, operator steps only** — the CDK, selection, role,
-  and monthly restore-test workflow are all on main. Remaining: enable cross-account
-  backup at the AWS Organization level, first deploy of the backup-account stacks with
-  the `submit-backup` SSO profile, then the first manual `restore-test.yml` dispatch
-  (the gate for the TypeScript CDK migration, B33).
 - [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10) —
   `SecurityDetectionStack` with the DynamoDB customer-table alarms is on main.
   Open, in the plans' own terms: #9's later phases
