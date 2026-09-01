@@ -36,6 +36,7 @@ public class DataStack extends Stack {
     public ITable passesTable;
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
+    public ITable securityStateTable;
     public Key saltEncryptionKey;
 
     // Stream view type shared by every streamed table. NEW_AND_OLD_IMAGES rather than NEW_IMAGE
@@ -280,6 +281,20 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().subscriptionsTableName);
         infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
 
+        // Security state table for issue #10 data-theft detection: bundle-endpoint burst
+        // counters (rate#{hashedSub}#{minute}) and mid-session country-change state
+        // (geo#{hashedSub}). PK-only table (no sort key) - both item shapes are looked up by
+        // stateKey. No PITR: every item expires within an hour and none of it is customer data.
+        this.securityStateTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-SecurityStateTable",
+                props.sharedNames().securityStateTableName,
+                "stateKey",
+                null);
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-SecurityStateTTL", props.sharedNames().securityStateTableName, "ttl");
+        infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "ReceiptsTableStreamArn", receiptsStreamArn);
@@ -317,6 +332,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "SubscriptionsTableName", this.subscriptionsTable.getTableName());
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
+        cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
+        cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).
         // Used by migration 003 to encrypt the passphrase salt as a system#config item.

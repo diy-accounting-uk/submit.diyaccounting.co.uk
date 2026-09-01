@@ -42,9 +42,22 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
+// Burst detection (issue #10) publishes through activityAlert.js; spy on the failure-event
+// export directly rather than asserting on EventBridge, which is a no-op without
+// ACTIVITY_BUS_NAME anyway.
+const mockPublishActivityFailureEvent = vi.fn();
+vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    publishActivityFailureEvent: (...args) => mockPublishActivityFailureEvent(...args),
+  };
+});
+
 // Defer importing the ingestHandlers until after mocks are defined
-import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
+import { ingestHandler as bundleGetHandler, nowMinute } from "@app/functions/account/bundleGet.js";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -299,5 +312,133 @@ describe("bundleGet ingestHandler", () => {
     const event = buildEventWithToken(token, {});
 
     await expect(bundleGetHandler(event)).rejects.toThrow();
+  });
+
+  // ============================================================================
+  // Bundle Burst Detection (issue #10 acceptance criteria 3 and 6)
+  // ============================================================================
+
+  describe("bundle burst detection", () => {
+    const originalTableName = process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    let securityStateHits;
+
+    function stateKeyFor(userId) {
+      return `rate#${hashSub(userId)}#${nowMinute()}`;
+    }
+
+    function seedHits(userId, hits) {
+      securityStateHits.set(stateKeyFor(userId), hits);
+    }
+
+    beforeEach(async () => {
+      process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
+      securityStateHits = new Map();
+      mockPublishActivityFailureEvent.mockClear();
+      await initializeSalt(); // hashSub() below needs the salt ready before the handler runs it
+
+      mockSend.mockImplementation(async (cmd) => {
+        if (cmd instanceof MockUpdateCommand && cmd.input.Key && "stateKey" in cmd.input.Key) {
+          const key = cmd.input.Key.stateKey;
+          const hits = (securityStateHits.get(key) || 0) + 1;
+          securityStateHits.set(key, hits);
+          return { Attributes: { hits } };
+        }
+        if (cmd instanceof MockQueryCommand) {
+          return { Items: [], Count: 0 };
+        }
+        return {};
+      });
+    });
+
+    afterEach(() => {
+      if (originalTableName === undefined) {
+        delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+      } else {
+        process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = originalTableName;
+      }
+    });
+
+    test("no event at 500 hits, one event at 501, none at 502", async () => {
+      const userId = "user-burst-threshold";
+      const token = makeIdToken(userId);
+      seedHits(userId, 499);
+
+      await bundleGetHandler(buildEventWithToken(token, {})); // 500th
+      expect(mockPublishActivityFailureEvent).not.toHaveBeenCalled();
+
+      await bundleGetHandler(buildEventWithToken(token, {})); // 501st
+      expect(mockPublishActivityFailureEvent).toHaveBeenCalledTimes(1);
+      expect(mockPublishActivityFailureEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: "api-burst-detected",
+          failure: "burst-threshold",
+          detail: expect.objectContaining({ endpoint: "GET /api/v1/bundle", threshold: 500 }),
+        }),
+      );
+
+      await bundleGetHandler(buildEventWithToken(token, {})); // 502nd
+      expect(mockPublishActivityFailureEvent).toHaveBeenCalledTimes(1);
+    });
+
+    test("does not publish when the request is a synthetic test run", async () => {
+      const userId = "user-burst-test-run";
+      const token = makeIdToken(userId);
+      seedHits(userId, 500);
+
+      const event = buildEventWithToken(token, {});
+      event.headers["x-request-id"] = "test_burst-request";
+
+      await bundleGetHandler(event);
+
+      expect(mockPublishActivityFailureEvent).not.toHaveBeenCalled();
+    });
+
+    test("skips the counter entirely when the table name is unset", async () => {
+      delete process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+      const userId = "user-burst-unset";
+      const token = makeIdToken(userId);
+
+      const response = await bundleGetHandler(buildEventWithToken(token, {}));
+
+      expect(response.statusCode).toBe(200);
+      const stateUpdateCalls = mockSend.mock.calls
+        .map((call) => call[0])
+        .filter((cmd) => cmd instanceof MockUpdateCommand && cmd.input.Key && "stateKey" in cmd.input.Key);
+      expect(stateUpdateCalls.length).toBe(0);
+      expect(mockPublishActivityFailureEvent).not.toHaveBeenCalled();
+    });
+
+    test("delegates hashing to activityAlert.js: raw sub only reaches the userSub parameter, never detail or summary", async () => {
+      const userId = "user-burst-raw-sub";
+      const token = makeIdToken(userId);
+      seedHits(userId, 500);
+
+      await bundleGetHandler(buildEventWithToken(token, {}));
+
+      expect(mockPublishActivityFailureEvent).toHaveBeenCalledTimes(1);
+      const publishedArgs = mockPublishActivityFailureEvent.mock.calls[0][0];
+      expect(publishedArgs.userSub).toBe(userId);
+      expect(JSON.stringify(publishedArgs.detail)).not.toContain(userId);
+      expect(publishedArgs.summary).not.toContain(userId);
+    });
+
+    test("a counter failure does not fail the request", async () => {
+      mockSend.mockImplementation(async (cmd) => {
+        if (cmd instanceof MockUpdateCommand && cmd.input.Key && "stateKey" in cmd.input.Key) {
+          throw new Error("DynamoDB unavailable");
+        }
+        if (cmd instanceof MockQueryCommand) {
+          return { Items: [], Count: 0 };
+        }
+        return {};
+      });
+
+      const userId = "user-burst-failure";
+      const token = makeIdToken(userId);
+
+      const response = await bundleGetHandler(buildEventWithToken(token, {}));
+
+      expect(response.statusCode).toBe(200);
+    });
   });
 });

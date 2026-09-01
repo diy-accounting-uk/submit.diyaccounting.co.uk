@@ -99,6 +99,12 @@ public class AuthStack extends Stack {
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
 
+        // Lookup existing DynamoDB Security State Table (issue #10 mid-session country check)
+        ITable securityStateTable = Table.fromTableName(
+                this,
+                "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().securityStateTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -171,6 +177,7 @@ public class AuthStack extends Stack {
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var customAuthorizerLambda = new ApiLambda(
@@ -213,6 +220,21 @@ public class AuthStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
+
+        // Mid-session country-change check (issue #10 acceptance criterion 4): read and write
+        // the geo#{hashedSub} item, and force a global sign-out when the country changes.
+        // PutItem, not UpdateItem: putSessionGeo always replaces the whole item (country,
+        // revokedAt, ttl) in one call rather than patching individual attributes.
+        securityStateTable.grant(this.customAuthorizerLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+        var userPoolArn = String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, props.cognitoUserPoolId());
+        this.customAuthorizerLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:AdminUserGlobalSignOut"))
+                .resources(List.of(userPoolArn))
+                .build());
+        infof(
+                "Granted Security State Table read/write and AdminUserGlobalSignOut to %s",
+                this.customAuthorizerLambda.getFunctionName());
 
         // cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());
