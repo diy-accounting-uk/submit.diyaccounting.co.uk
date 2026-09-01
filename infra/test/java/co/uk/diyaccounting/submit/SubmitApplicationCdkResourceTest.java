@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import co.uk.diyaccounting.submit.constructs.Lambda;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -62,11 +63,22 @@ class SubmitApplicationCdkResourceTest {
         app.synth();
         infof("CDK synth complete");
 
+        // Composite health alarms (one per Lambda construct) route to Telegram/GitHub through
+        // OpsStack's AlarmStateChangeRule; their four "check-" children deliberately do not. The
+        // rule's own alarmName prefix matchers are the ground truth for what "routed" means, so
+        // read them from the synthesized template rather than hardcoding them here.
+        Template opsStackTemplateForRouting = Template.fromStack(submitApplication.opsStack);
+        List<String> routedPrefixes = routedAlarmNamePrefixes(opsStackTemplateForRouting);
+
         infof("Created stack:", submitApplication.authStack.getStackName());
-        Template.fromStack(submitApplication.authStack).resourceCountIs("AWS::Lambda::Function", 2);
+        Template authStackTemplate = Template.fromStack(submitApplication.authStack);
+        authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
+        assertLambdaHealthAlarms(authStackTemplate, 2, routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
-        Template.fromStack(submitApplication.hmrcStack).resourceCountIs("AWS::Lambda::Function", 8);
+        Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 8);
+        assertLambdaHealthAlarms(hmrcStackTemplate, 5, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -74,6 +86,7 @@ class SubmitApplicationCdkResourceTest {
         // bundleCapacityReconcile(1), sessionBeaconPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
         accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
+        assertLambdaHealthAlarms(accountStackTemplate, 11, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -112,7 +125,9 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.billingStack.getStackName());
         // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
         // billingWebhookPost moved to env-level BillingWebhookStack
-        Template.fromStack(submitApplication.billingStack).resourceCountIs("AWS::Lambda::Function", 3);
+        Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
+        billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
+        assertLambdaHealthAlarms(billingStackTemplate, 3, routedPrefixes);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -152,6 +167,9 @@ class SubmitApplicationCdkResourceTest {
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
+        // No absolute count: the second Lambda construct (alarm-to-GitHub-issue) only exists when
+        // a GitHub token ARN is configured, and this test's config doesn't set one.
+        assertLambdaHealthAlarms(opsStackTemplateForRouting, null, routedPrefixes);
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
@@ -173,13 +191,86 @@ class SubmitApplicationCdkResourceTest {
         edgeStackTemplate.resourceCountIs("AWS::Logs::DeliveryDestination", 1);
         edgeStackTemplate.resourceCountIs("AWS::Logs::Delivery", 1);
 
+        // Sensitive-path scan detection (issue #9 phase 9.1): SensitivePathScan sits at
+        // priority 0, ahead of the three managed/rate-limit rules; the manual block list (phase
+        // 9.3) adds a fifth rule at priority 4.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::WebACL", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "SensitivePathScan", "Priority", 0)))))));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "WafManualBlock", "Priority", 4)))))));
+        edgeStackTemplate.findResources("AWS::WAFv2::WebACL").values().forEach(webAcl -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) webAcl.get("Properties");
+            @SuppressWarnings("unchecked")
+            var rules = (List<Object>) properties.get("Rules");
+            infof("Edge stack WebACL rule count: %d", rules.size());
+        });
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(
+                        Match.objectLike(Map.of("Name", "SensitivePathScan")),
+                        Match.objectLike(Map.of("Name", "RateLimitRule")),
+                        Match.objectLike(Map.of("Name", "AWSManagedRulesKnownBadInputsRuleSet")),
+                        Match.objectLike(Map.of("Name", "AWSManagedRulesCommonRuleSet")),
+                        Match.objectLike(Map.of("Name", "WafManualBlock")))))));
+
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::RegexPatternSet", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::RegexPatternSet",
+                Match.objectLike(Map.of("RegularExpressionList", Match.arrayWith(List.of("^/\\.env")))));
+
+        // Blocks-only WAF logging, feeding the scan-detect Lambda through a subscription filter.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::LoggingConfiguration", 1);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::LoggingConfiguration",
+                Match.objectLike(Map.of("LoggingFilter", Match.objectLike(Map.of("DefaultBehavior", "DROP")))));
+        edgeStackTemplate.resourceCountIs("AWS::Logs::SubscriptionFilter", 1);
+
+        // Issue #9 makes this one-line change on issue #10's behalf: its mid-session country
+        // check needs CloudFront-Viewer-Country, and this origin request policy is the only
+        // place that can add it.
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::CloudFront::OriginRequestPolicy",
+                Match.objectLike(Map.of(
+                        "OriginRequestPolicyConfig",
+                        Match.objectLike(Map.of(
+                                "HeadersConfig",
+                                Match.objectLike(Map.of(
+                                        "Headers", Match.arrayWith(List.of("CloudFront-Viewer-Country")))))))));
+
+        // Manual IP block list (issue #9 phase 9.3): two empty IP sets by default, and the alarm
+        // that confirms a hand-applied block is doing something.
+        edgeStackTemplate.resourceCountIs("AWS::WAFv2::IPSet", 2);
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::IPSet", Match.objectLike(Map.of("IPAddressVersion", "IPV4", "Addresses", List.of())));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::WAFv2::IPSet", Match.objectLike(Map.of("IPAddressVersion", "IPV6", "Addresses", List.of())));
+        edgeStackTemplate.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        "tt-witheight-app-waf-manual-block",
+                        "MetricName",
+                        "BlockedRequests",
+                        "Namespace",
+                        "AWS/WAFV2")));
+
         infof("Created stack:", submitApplication.publishStack.getStackName());
         Template.fromStack(submitApplication.publishStack).resourceCountIs("Custom::CDKBucketDeployment", 1);
 
         if (submitApplication.selfDestructStack != null) {
             infof("Created stack:", submitApplication.selfDestructStack.getStackName());
             // Only the self-destruct function: its log group belongs to the environment stack.
-            Template.fromStack(submitApplication.selfDestructStack).resourceCountIs("AWS::Lambda::Function", 1);
+            Template selfDestructStackTemplate = Template.fromStack(submitApplication.selfDestructStack);
+            selfDestructStackTemplate.resourceCountIs("AWS::Lambda::Function", 1);
+            assertLambdaHealthAlarms(selfDestructStackTemplate, 1, routedPrefixes);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log
@@ -217,6 +308,96 @@ class SubmitApplicationCdkResourceTest {
         });
         org.junit.jupiter.api.Assertions.assertTrue(
                 missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
+    }
+
+    /**
+     * Asserts a stack's per-function health-alarm shape: one {@code {fn}-health} composite alarm
+     * per Lambda construct, fed by exactly four {@code check-}-prefixed children that are not
+     * themselves routed. {@code expectedConstructs} pins the composite count when the stack's
+     * Lambda-construct count is deterministic for this test's config; pass {@code null} when it
+     * depends on optional config (e.g. a GitHub token ARN) and let the assertions derive the
+     * expected child count from however many composites actually synthesized.
+     */
+    @SuppressWarnings("unchecked")
+    static void assertLambdaHealthAlarms(Template template, Integer expectedConstructs, List<String> routedPrefixes) {
+        if (expectedConstructs != null) {
+            template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", expectedConstructs);
+        }
+
+        Map<String, Map<String, Object>> composites = template.findResources("AWS::CloudWatch::CompositeAlarm");
+        for (Map.Entry<String, Map<String, Object>> entry : composites.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
+            String alarmName = String.valueOf(props == null ? null : props.get("AlarmName"));
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    alarmName.endsWith(Lambda.HEALTH_ALARM_NAME_SUFFIX),
+                    "Composite alarm " + entry.getKey() + " name '" + alarmName + "' does not end with "
+                            + Lambda.HEALTH_ALARM_NAME_SUFFIX);
+            boolean routed = false;
+            for (String prefix : routedPrefixes) {
+                if (alarmName.startsWith(prefix)) {
+                    routed = true;
+                    break;
+                }
+            }
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    routed,
+                    "Composite alarm '" + alarmName + "' does not start with any routed prefix " + routedPrefixes
+                            + " — it is a silent alarm");
+        }
+
+        Map<String, Map<String, Object>> alarms = template.findResources("AWS::CloudWatch::Alarm");
+        long checkAlarmCount = 0;
+        for (Map.Entry<String, Map<String, Object>> entry : alarms.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
+            if (props == null) continue;
+            String alarmName = String.valueOf(props.get("AlarmName"));
+            if (!alarmName.startsWith(Lambda.CHECK_ALARM_NAME_PREFIX)) continue;
+            checkAlarmCount++;
+            boolean routed = false;
+            for (String prefix : routedPrefixes) {
+                if (alarmName.startsWith(prefix)) {
+                    routed = true;
+                    break;
+                }
+            }
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    routed,
+                    "check- alarm '" + alarmName + "' unexpectedly starts with a routed prefix " + routedPrefixes
+                            + " — it would double-notify alongside its composite");
+        }
+
+        long expectedCheckAlarms = 4L * composites.size();
+        org.junit.jupiter.api.Assertions.assertEquals(
+                expectedCheckAlarms,
+                checkAlarmCount,
+                "Expected " + expectedCheckAlarms + " check- alarms for " + composites.size()
+                        + " composite health alarms, found " + checkAlarmCount);
+    }
+
+    /**
+     * Reads the {@code alarmName} prefix matchers off OpsStack's {@code *-alarm-state-change}
+     * EventBridge rule — the actual routing contract, not a copy of it.
+     */
+    @SuppressWarnings("unchecked")
+    static List<String> routedAlarmNamePrefixes(Template opsStackTemplate) {
+        Map<String, Map<String, Object>> rules = opsStackTemplate.findResources("AWS::Events::Rule");
+        for (Map.Entry<String, Map<String, Object>> entry : rules.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
+            if (props == null) continue;
+            String name = String.valueOf(props.get("Name"));
+            if (!name.endsWith("-alarm-state-change")) continue;
+            Map<String, Object> eventPattern = (Map<String, Object>) props.get("EventPattern");
+            Map<String, Object> detail = (Map<String, Object>) eventPattern.get("detail");
+            List<Object> alarmNameMatchers = (List<Object>) detail.get("alarmName");
+            List<String> prefixes = new ArrayList<>();
+            for (Object matcher : alarmNameMatchers) {
+                Map<String, Object> matcherMap = (Map<String, Object>) matcher;
+                Object prefix = matcherMap.get("prefix");
+                if (prefix != null) prefixes.add(String.valueOf(prefix));
+            }
+            return prefixes;
+        }
+        throw new AssertionFailedError("No *-alarm-state-change EventBridge rule found in OpsStack template");
     }
 
     @SuppressWarnings("unchecked")

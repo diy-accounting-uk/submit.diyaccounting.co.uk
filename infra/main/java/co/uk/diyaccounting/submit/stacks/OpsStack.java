@@ -219,6 +219,18 @@ public class OpsStack extends Stack {
                         .ingestLambdaTimeout(Duration.seconds(10))
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(telegramForwarderEnv)
+                        // Every OpsStack deploy recreates this Lambda, and its own EventBridge
+                        // rule is about to hand it a burst of the alarm-state-change events that
+                        // rule was already generating (see AlarmStateChangeRule below). A fresh,
+                        // cold-starting instance briefly absorbing that burst looks like errors
+                        // and slow p95 duration for one 5-minute period; that is deploy noise,
+                        // not a fault. Require 2 of 3 periods (15 minutes) to breach before
+                        // alarming, so a lone deploy-time period doesn't trip it while a sustained
+                        // problem still does. See GitHub issues #77-82.
+                        .errorsAlarmEvaluationPeriods(3)
+                        .errorsAlarmDatapointsToAlarm(2)
+                        .highDurationP95AlarmEvaluationPeriods(3)
+                        .highDurationP95AlarmDatapointsToAlarm(2)
                         .build());
 
         // Single catch-all rule: the Lambda handles routing to the correct chat IDs
@@ -334,15 +346,16 @@ public class OpsStack extends Stack {
         // CloudWatch Alarm State Change → Telegram forwarder, and the
         // alarm-to-GitHub-issue Lambda when one was created above.
         //
-        // This rule is created once per app deployment, but every alarm this deployment's
-        // Lambda/API/WAF constructs create is named with this deployment's own prefix
-        // (`{deploymentName}-app-...`). Without a filter, every concurrent deployment's copy
-        // of this rule matches every alarm in the account, so one alarm state change fires
-        // the Telegram forwarder (and now the GitHub-issue Lambda) once per live deployment.
-        // The alarmName content filter below scopes each deployment's rule to alarms it owns,
-        // plus this environment's own shared alarms (RUM, Firehose, ingestion, data-quality —
-        // named with the `{envName}-env-...` prefix), since those aren't owned by any single
-        // deployment and still need at least one deployment's rule to forward them.
+        // This rule is created once per app deployment, and the `alarmName` filter scopes it to
+        // alarms this deployment owns plus this environment's shared alarms, which no single
+        // deployment owns.
+        //
+        // Alarm names beginning `check-` are deliberately outside both prefixes. They are the
+        // four per-function checks in `Lambda.java`, which exist as the terms of that function's
+        // `{fn}-health` composite alarm. The composite carries the prefix and notifies; its
+        // children do not, so one broken function raises one message instead of four. EventBridge
+        // cannot AND a prefix match with a suffix exclusion on one field, so the split is carried
+        // by the names. `SubmitApplicationCdkResourceTest` enforces it.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
         alarmStateChangeTargets.add(
                 LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());

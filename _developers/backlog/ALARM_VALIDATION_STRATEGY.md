@@ -30,13 +30,17 @@ Two execution modes:
 
 ## Current Alarm Inventory
 
-### Lambda Alarms (per function × 4 alarms each)
+### Lambda Alarms (per function × 4 alarms each, `check-` prefixed)
+Each function's four checks feed one `{fn}-health` composite alarm, which is the one that
+actually routes to Telegram/GitHub. Forcing a `check-` alarm into ALARM still proves the
+individual check works, and now also proves the composite fans in.
+
 | Alarm | Threshold | Testable Via |
 |-------|-----------|--------------|
-| `{fn}-errors` | ≥1 error/5min | Mutation testing, chaos injection |
-| `{fn}-throttles` | ≥1 throttle/5min | Reserved concurrency + load |
-| `{fn}-high-duration-p95` | ≥80% timeout | Slow code injection |
-| `{fn}-log-errors` | ≥1 ERROR pattern/5min | Log injection |
+| `check-{fn}-errors` | ≥1 error/5min | Mutation testing, chaos injection |
+| `check-{fn}-throttles` | ≥1 throttle/5min | Reserved concurrency + load |
+| `check-{fn}-high-duration-p95` | ≥80% timeout | Slow code injection |
+| `check-{fn}-log-errors` | ≥1 ERROR pattern/5min | Log injection |
 
 ### API Gateway Alarms
 | Alarm | Threshold | Testable Via |
@@ -121,9 +125,9 @@ Two execution modes:
 
 | Test | Method | Expected Result |
 |------|--------|-----------------|
-| Lambda throws exception | Deploy mutant with `throw new Error()` | `{fn}-errors` → ALARM |
-| Lambda logs ERROR | Deploy mutant with `console.error('ERROR')` | `{fn}-log-errors` → ALARM |
-| Lambda timeout | Deploy mutant with `await sleep(30000)` | `{fn}-high-duration-p95` → ALARM |
+| Lambda throws exception | Deploy mutant with `throw new Error()` | `check-{fn}-errors` → ALARM |
+| Lambda logs ERROR | Deploy mutant with `console.error('ERROR')` | `check-{fn}-log-errors` → ALARM |
+| Lambda timeout | Deploy mutant with `await sleep(30000)` | `check-{fn}-high-duration-p95` → ALARM |
 | API 5xx response | Break API Lambda | `{prefix}-api-5xx` → ALARM |
 
 **CI Implementation:**
@@ -439,7 +443,7 @@ async function verifyAlarmTransitions(expectedTransitions) {
 name: Lambda Error Detection
 id: CQ-1
 category: code-quality-gate
-alarm: "{functionName}-errors"
+alarm: "check-{functionName}-errors"
 preconditions:
   - Alarm in OK state
   - Lambda deployed and invokable
@@ -465,7 +469,7 @@ cleanup:
 name: Log-Based Error Detection
 id: CQ-2
 category: code-quality-gate
-alarm: "{functionName}-log-errors"
+alarm: "check-{functionName}-log-errors"
 preconditions:
   - Alarm in OK state
 mutation:
@@ -487,7 +491,7 @@ cleanup:
 name: Lambda Duration Alarm
 id: CQ-3
 category: code-quality-gate
-alarm: "{functionName}-high-duration-p95"
+alarm: "check-{functionName}-high-duration-p95"
 mutation:
   file: "app/functions/{targetFunction}.js"
   type: "slow-response"
@@ -705,10 +709,10 @@ The workflow generates a JSON report:
 
 | Alarm | Console Location | Logs/Details | SNS Topic | Region |
 |-------|------------------|--------------|-----------|--------|
-| `{fn}-errors` | CloudWatch Alarms | Lambda logs in CloudWatch | None (silent) | eu-west-2 |
-| `{fn}-throttles` | CloudWatch Alarms | Lambda metrics | None (silent) | eu-west-2 |
-| `{fn}-high-duration-p95` | CloudWatch Alarms | Lambda metrics, X-Ray | None (silent) | eu-west-2 |
-| `{fn}-log-errors` | CloudWatch Alarms | Lambda logs (search ERROR) | None (silent) | eu-west-2 |
+| `check-{fn}-errors` | CloudWatch Alarms | Lambda logs in CloudWatch | None (silent) | eu-west-2 |
+| `check-{fn}-throttles` | CloudWatch Alarms | Lambda metrics | None (silent) | eu-west-2 |
+| `check-{fn}-high-duration-p95` | CloudWatch Alarms | Lambda metrics, X-Ray | None (silent) | eu-west-2 |
+| `check-{fn}-log-errors` | CloudWatch Alarms | Lambda logs (search ERROR) | None (silent) | eu-west-2 |
 | `{prefix}-api-5xx` | CloudWatch Alarms | API Gateway logs | None (silent) | eu-west-2 |
 | `{prefix}-health-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
 | `{prefix}-api-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
@@ -766,10 +770,11 @@ filter action = "BLOCK"
 
 | Stack | Alarm Name Pattern | Threshold | SNS Topic |
 |-------|-------------------|-----------|-----------|
-| Lambda.java | `{fn}-errors` | ≥1/5min | None (silent) |
-| Lambda.java | `{fn}-throttles` | ≥1/5min | None (silent) |
-| Lambda.java | `{fn}-high-duration-p95` | ≥80% timeout | None (silent) |
-| Lambda.java | `{fn}-log-errors` | ≥1/5min | None (silent) |
+| Lambda.java | `check-{fn}-errors` | ≥1/5min | None (silent) |
+| Lambda.java | `check-{fn}-throttles` | ≥1/5min | None (silent) |
+| Lambda.java | `check-{fn}-high-duration-p95` | ≥80% timeout | None (silent) |
+| Lambda.java | `check-{fn}-log-errors` | ≥1/5min | None (silent) |
+| Lambda.java | `{fn}-health` (composite, `anyOf` the four `check-` alarms above) | n/a | routed via OpsStack's AlarmStateChangeRule |
 | ApiStack.java | `{prefix}-api-5xx` | ≥1/5min | None (silent) |
 | OpsStack.java | `{prefix}-health-failed` | <90%/5min (2 periods) | alertTopic |
 | OpsStack.java | `{prefix}-api-failed` | <90%/5min (2 periods) | alertTopic |
@@ -938,10 +943,10 @@ aws cloudfront update-distribution --id $DIST_ID \
 
 ---
 
-### 7.2 Response Runbook: Lambda Errors (`{fn}-errors`)
+### 7.2 Response Runbook: Lambda Errors (`check-{fn}-errors`)
 
 #### Signal Location
-- **Primary:** CloudWatch Alarms console → `{fn}-errors`
+- **Primary:** CloudWatch Alarms console → `check-{fn}-errors`
 - **Dashboard:** Operations dashboard → Lambda Errors widget
 - **SNS:** Currently silent (no SNS action configured)
 

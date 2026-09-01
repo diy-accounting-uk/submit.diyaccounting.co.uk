@@ -183,6 +183,13 @@ public class AccountStack extends Stack {
                 "ImportedBundleDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundleDeleteAsyncRequestsTableName);
 
+        // Lookup existing DynamoDB Security State Table (issue #10 data-theft detection: bundle
+        // burst counters and, once AuthStack's customAuthorizer uses it, mid-session geo state)
+        ITable securityStateTable = Table.fromTableName(
+                this,
+                "ImportedSecurityStateTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().securityStateTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -201,6 +208,7 @@ public class AccountStack extends Stack {
         var getBundlesLambdaEnv = new PopulatedMap<String, String>()
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME", bundleCapacityTable.getTableName())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         // .with("ASYNC_REQUESTS_DYNAMODB_TABLE_NAME", asyncRequestsTable.getTableName());
@@ -254,6 +262,14 @@ public class AccountStack extends Stack {
 
         infof(
                 "Granted DynamoDB permissions to %s for Bundles and Bundle Capacity Tables",
+                this.bundleGetLambda.getFunctionName());
+
+        // Burst detection: bundleGet increments a one-minute rate counter on the security
+        // state table for every request (issue #10 acceptance criteria 3 and 6).
+        securityStateTable.grant(this.bundleGetLambda, "dynamodb:UpdateItem");
+
+        infof(
+                "Granted DynamoDB UpdateItem on Security State Table to %s",
                 this.bundleGetLambda.getFunctionName());
 
         // Grant access to user sub hash salt secret in Secrets Manager

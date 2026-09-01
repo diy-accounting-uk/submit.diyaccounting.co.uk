@@ -445,7 +445,7 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 |--------------------|-------------------|
 | `GOOGLE_CLIENT_SECRET` | 1. Regenerate in Google Console<br>2. Update GitHub secret<br>3. Deploy with `force-identity-refresh` to affected environment(s) |
 | `HMRC_CLIENT_SECRET` | 1. Regenerate in HMRC Developer Hub<br>2. Update GitHub secret<br>3. Run deploy environment workflow for affected environment(s) |
-| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. **Do NOT rotate** (breaks data access)<br>3. Focus on access control in the affected account |
+| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. If theft is suspected, follow 6.6 (rotation is safe: the versioned registry's read-path fallback means no user loses access mid-migration)<br>3. Otherwise focus on access control in the affected account |
 | GitHub OIDC trust | 1. Check OIDC trust policies in affected account(s)<br>2. Each account has its own OIDC provider scoped to its repo<br>3. Compromise of one repo's OIDC trust does not affect other accounts |
 | AWS account credentials (SSO) | 1. Disable the compromised user in IAM Identity Center (management account 887764105431)<br>2. Review CloudTrail in all accounts<br>3. Check for data exfiltration in submit-prod (972912397388)<br>4. Verify backup vault integrity in submit-backup (914216784828) |
 
@@ -470,6 +470,43 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 3. Review recent workflow runs for unauthorized deployments
 4. OIDC trust in each account can be disabled independently
 
+### 6.6 Suspected Data Theft: Cross-Account Hold
+
+**1. What raises it**: any of these alarms or activity events --
+- `{env}-env-dynamodb-customer-table-scan`
+- `{env}-env-dynamodb-customer-table-getitem-volume`
+- `{env}-env-salt-secret-unexpected-read`
+- an `api-burst-detected` activity event
+- an `auth-country-change` activity event
+
+**2. Establish the principal** from CloudTrail:
+
+```bash
+aws --profile submit-<env> cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=EventName,AttributeValue=GetItem \
+  --start-time "$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
+  --max-results 50
+```
+
+Swap `GetItem` for `Scan` or `GetSecretValue` depending on which alarm fired. The DynamoDB alarms are scoped to the customer tables listed in `SecurityDetectionStack` (receipts, bundles, passes, subscriptions, hmrc-api-requests) -- a match outside that list is not this alarm's doing.
+
+**3. Contain**: revoke the SSO session in IAM Identity Center. If the compromise is an AWS credential rather than a user token, follow 6.5 for the affected account.
+
+**4. Force logout**:
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+scripts/force-logout-all-users.sh <env>
+```
+
+Pages `cognito-idp list-users` and calls `admin-user-global-sign-out` per user. Every refresh token dies immediately; access tokens die at their own `exp`, up to an hour later. Say that plainly in the incident record -- it decides whether the salt rotation below can wait.
+
+**5. Rotate the salt.** This supersedes the "Do NOT rotate" guidance that predates the versioned salt registry (section 4.2). Migration `003-rotate-salt-to-passphrase` adds a new salt version and re-keys existing items; the read-path fallback in section 4.8 means no user loses access mid-migration. See section 4.8 for the mechanics.
+
+**6. Expect the alarm to fire during the response.** Step 5's salt read and rotation happen from an SSO session, which is exactly what `{env}-env-salt-secret-unexpected-read` watches for. Note the expected alarm in the incident record instead of chasing it.
+
+**7. Then 6.2**, the 72-hour notification path, unchanged.
+
 ---
 
 ## 7. Security Monitoring
@@ -478,10 +515,8 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 
 | Detection | Alarm Name Pattern | Response |
 |-----------|-------------------|----------|
-| Lambda errors | `{env}-submit-*-errors` | Check Lambda logs for stack trace |
-| Lambda log errors | `{env}-submit-*-log-errors` | Search logs for error pattern |
+| Lambda health (errors, throttles, slow, log errors) | `{env}-submit-*-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
 | API 5xx errors | `{env}-submit-api-5xx` | Check API Gateway + Lambda logs |
-| Lambda throttles | `{env}-submit-*-throttles` | Potential abuse - check source |
 | Health check failures | `{env}-ops-health-check` | Check CloudFront, API, Lambda |
 
 ### 7.2 Manual Monitoring Required
@@ -522,6 +557,68 @@ fields @timestamp, @message
 | **Monthly** | Review DynamoDB growth (submit-prod), audit CloudTrail across all accounts via SSO, verify backup vault integrity (submit-backup) |
 | **Quarterly** | Test export/deletion scripts, review IAM policies per account, update this document |
 | **Annually** | Rotate OAuth secrets, disaster recovery test (restore from cross-account backup), penetration testing |
+
+### 7.5 Scan Detection Response
+
+Two alerts, both in the ops Telegram chat.
+
+| Alert | What it means | Response |
+|-------|---------------|----------|
+| `Scan blocked: <method> <uri> from <ip> (<country>) on <deployment>` | A request to a sensitive path (`/.env`, `/wp-admin`, `.php`, and the rest of `EdgeStack`'s regex pattern set) was blocked with a 403 before it reached any origin. | Informational — the request already failed. |
+| `404 scan: <ip> made <n> 404s in one minute on distribution <id>` | One IP raised more than the configured threshold (default 20) of 404s in one minute against one distribution. WAF never sees a response status, so this request was **not** blocked. | Needs a decision — see below. |
+
+**Check whether it is synthetic first.** Resolve the distribution id in the `404 scan` alert:
+
+```bash
+aws --profile submit-prod cloudfront get-distribution --id <id> \
+  --query 'Distribution.DistributionConfig.Comment'
+```
+
+A ci distribution is a test run. On the prod distribution, check the user agent in the alert's
+detail: behaviour-test traffic carries a ` DIYAccountingSynthetic/1` token appended to a real
+desktop Chrome UA (`playwright.config.js`). That token is a convenience, not proof — anyone can
+send it — so on a prod alert also check whether a synthetic run was in flight:
+
+```bash
+gh run list --workflow synthetic-test.yml --limit 5
+```
+
+**If it is not synthetic**, add the IP to the manual block IP set:
+
+```bash
+aws --profile submit-prod --region us-east-1 wafv2 update-ip-set \
+  --scope CLOUDFRONT --name prod-app-waf-manual-block-v4 \
+  --id <id> --lock-token <token> \
+  --addresses <existing…> 203.0.113.9/32
+```
+
+(`prod-app-waf-manual-block-v6` for an IPv6 address.) That takes effect in about a minute. It is
+also transient: the next CDK deploy of the deployment resets the IP set's addresses to the
+`wafManualBlockIps` context list in `cdk-application/cdk.json`. Open a pull request adding the
+address there too, or the block silently disappears on the next deploy — which is worse than no
+block at all, because it looks handled.
+
+**See everything that IP asked for**, so the alert can be judged rather than guessed:
+
+```sql
+SELECT c_ip, cs_method, cs_uri_stem, sc_status, cs_user_agent, "date", "time"
+FROM   cloudfront_requests
+WHERE  distribution_id = '<id>'
+  AND  year = <yyyy> AND month = <mm> AND day = <dd>
+  AND  c_ip = '<ip>'
+ORDER BY "date", "time"
+```
+
+Run it in the `<env>-env-analytics` Athena workgroup, `<env>_env_analytics` database.
+
+**Removing a block**: drop the address from both the deployed IP set (the `wafv2 update-ip-set`
+command above, with the address removed from `--addresses`) and the `wafManualBlockIps` list in
+`cdk-application/cdk.json`.
+
+**False-positive check**: `scripts/verify-waf-false-positives.sh <env> [minutes]` reads
+`AWS/WAFV2` `BlockedRequests` for `SensitivePathScan` and the two AWS managed rule groups over the
+last N minutes and exits non-zero if any of them blocked anything. Run it straight after a
+behaviour suite — a block during a synthetic run is a false positive by definition.
 
 ---
 

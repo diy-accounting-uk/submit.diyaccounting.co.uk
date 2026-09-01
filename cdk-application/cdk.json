@@ -39,6 +39,7 @@
     "httpApiUrl": "https://placeholder.example.com/",
     "githubTokenSecretArn": "",
     "opsGithubTokenSecretArn": "",
-    "feedbackEngagementEnabled": "true"
+    "feedbackEngagementEnabled": "true",
+    "wafManualBlockIps": ""
   }
 }

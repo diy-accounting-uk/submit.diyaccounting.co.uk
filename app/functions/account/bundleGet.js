@@ -16,9 +16,56 @@ import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } fr
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
-import { initializeSalt } from "../../services/subHasher.js";
+import { initializeSalt, hashSub } from "../../services/subHasher.js";
+import { incrementRateCounter } from "../../data/dynamoDbSecurityStateRepository.js";
+import { publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
+
+// Threshold for the bundle-endpoint burst detector (issue #10 acceptance criteria 3 and 6):
+// a module constant, not configuration, so the alert's own description can name it exactly.
+export const BUNDLE_GET_BURST_PER_MINUTE = 500;
+
+/**
+ * Fixed one-minute bucket key for the burst counter. A sliding window would need a read per
+ * request; a fixed bucket needs one atomic ADD whose return value is the count. The edge is a
+ * consumer spreading requests across a minute boundary can reach about 1000 before tripping
+ * the threshold - acceptable for a detector whose purpose is to catch bulk extraction.
+ *
+ * @param {Date} [date]
+ * @returns {number}
+ */
+export function nowMinute(date = new Date()) {
+  return Math.floor(date.getTime() / 60000);
+}
+
+/**
+ * Increments the caller's one-minute request counter and, on crossing the threshold, reports
+ * one burst event. Never blocks the request: a counter failure is logged and swallowed, and
+ * the check is a no-op when the security state table isn't configured (simulator, local dev).
+ *
+ * @param {string} userId - raw sub; hashed before it reaches DynamoDB or the activity event
+ */
+async function checkBundleGetBurst(userId) {
+  if (!process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME) return;
+
+  try {
+    const hashedSub = hashSub(userId);
+    const hits = await incrementRateCounter({ hashedSub, minute: nowMinute() });
+    if (hits === BUNDLE_GET_BURST_PER_MINUTE + 1 && resolveActorClass() === "customer") {
+      await publishActivityFailureEvent({
+        event: "api-burst-detected",
+        summary: `Bundle reads: ${hits - 1} in one minute from one consumer`,
+        failure: "burst-threshold",
+        flow: "operational",
+        userSub: userId,
+        detail: { endpoint: "GET /api/v1/bundle", threshold: BUNDLE_GET_BURST_PER_MINUTE },
+      });
+    }
+  } catch (error) {
+    logger.warn({ message: "Bundle burst counter failed", error: error.message });
+  }
+}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -86,6 +133,8 @@ export async function ingestHandler(event) {
       error: {},
     });
   }
+
+  await checkBundleGetBurst(userId);
 
   let result;
   // Processing

@@ -76,18 +76,18 @@ class SubmitEnvironmentCdkResourceTest {
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
-        // 6) Data stack creates 11 DynamoDB tables + 11 PITR + 1 GSI + 7 TTL via AwsCustomResource
+        // 6) Data stack creates 12 DynamoDB tables + 12 PITR + 1 GSI + 8 TTL via AwsCustomResource
         // for idempotent deployments
         // Tables: receipts, bundles, bundlePostAsyncRequests, bundleDeleteAsyncRequests,
         // hmrcVatReturnPostAsyncRequests, hmrcVatReturnGetAsyncRequests, hmrcVatObligationGetAsyncRequests,
-        // hmrcApiRequests, passes, bundleCapacity, subscriptions
+        // hmrcApiRequests, passes, bundleCapacity, subscriptions, securityState
         // PITR: every table
         // GSIs: passes issuedBy-index
         // TTL: bundles, bundlePostAsync, bundleDeleteAsync, hmrcVatReturnPostAsync,
-        //      hmrcVatReturnGetAsync, hmrcVatObligationGetAsync, hmrcApiRequests
+        //      hmrcVatReturnGetAsync, hmrcVatObligationGetAsync, hmrcApiRequests, securityState
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 38);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 41);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
@@ -128,6 +128,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
+        // Composite health alarms route through OpsStack's AlarmStateChangeRule, which matches
+        // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
+        // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
+        // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
+        // hardcoded above).
+        List<String> envRoutedPrefixes = List.of("test-env-");
+        SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(analytics, 2, envRoutedPrefixes);
+
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
         // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
         // state machine (one Step Functions state machine, one EventBridge Scheduler schedule,
@@ -144,6 +152,13 @@ class SubmitEnvironmentCdkResourceTest {
         ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);
+
+        // BillingWebhookStack only synthesizes when a regional API Gateway custom-domain
+        // certificate is configured; this test's config doesn't set one.
+        if (env.billingWebhookStack != null) {
+            Template billingWebhook = Template.fromStack(env.billingWebhookStack);
+            SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(billingWebhook, 1, envRoutedPrefixes);
+        }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,
         // retained log group — otherwise CDK (or, for AwsCustomResource, CloudFormation's own

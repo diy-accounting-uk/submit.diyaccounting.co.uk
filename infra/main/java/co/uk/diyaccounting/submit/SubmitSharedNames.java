@@ -89,6 +89,7 @@ public class SubmitSharedNames {
     public String bundleCapacityTableName;
     public String activityBusName;
     public String subscriptionsTableName;
+    public String securityStateTableName;
     public String originBucketName;
     public String originAccessLogBucketName;
     public String distributionAccessLogGroupName;
@@ -547,6 +548,7 @@ public class SubmitSharedNames {
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
+        this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);

@@ -33,53 +33,79 @@ operator step before them is done or when SSO is live.
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
-  fixed). Cuts 1 and 2 are on main. Open: composite-alarm consolidation (cut 3)
-  needs a design pass before any code.
-- [ ] **(B14) Scheduled ingestion, live verification** — `PLAN_SCHEDULED_INGESTION.md`
-  phases 2 (GA4 BigQuery event export), 3 (Step Functions orchestration) and 4
-  (cross-source reconciliation) are code-complete on `claude/b14-scheduled-ingestion`
-  (mvn clean verify 86/86, npm analytics unit tests 120/120); phase 6 needed no
-  code change, already covered by the existing shared-Stripe-key wiring. Each
-  phase's own verification criterion still needs a ci/prod deploy: invoke
-  `ga4-event-export-pull` and check `ga4_bq_events` has rows close to the GA4
-  console's page-view count; start a state machine execution, confirm
-  `SUCCEEDED`, then confirm the next scheduled run also succeeds unattended;
-  confirm `v_purchase_reconciliation_daily` returns rows and the three new
-  metrics land in the `Submit/Analytics` namespace after a nightly run.
+  fixed). Cuts 1 and 2 are on main. Composite-alarm consolidation (cut 3) and the
+  `activity-telegram-forwarder` alarm-sensitivity tuning (issues #77-82, same
+  `Lambda.java` construct) both merged to main 2026-09-01, code-verified
+  (`./mvnw clean verify` 74/74). Still open: deploy and confirm the composite
+  `check-`/`-health` alarm split and the widened tolerance in live ci/prod.
+- [ ] **Bug: `ci-env-AnalyticsStack`'s auto-generated IAM policy exceeds AWS's 10240-byte
+  max size.** Found running B14's ci deploy 2026-09-01: `ci-env-BusinessViews/
+  v_ga4_funnel_daily-CreateView/CustomResourcePolicy` failed
+  `ServiceLimitExceeded` on `ci-env-AnalyticsStack-AWS679f53fac...`, the CDK
+  Provider Framework's auto-generated role. The stack rolled back cleanly
+  (`UPDATE_ROLLBACK_COMPLETE`), but the dependent ingestion-stack deploy was
+  skipped, so none of B14's new resources (the two Athena views, the
+  `NightlyIngestionWorkflow` state machine, `ga4-event-export-pull`) are live
+  anywhere. Blocks B14's live verification and its merge to main — merging now
+  would just fail the same way against prod. Needs investigation: likely too
+  many CustomResource-backed Athena views/tables sharing one auto-generated
+  Provider role; the fix is probably splitting providers or moving to an
+  L1/non-custom-resource construct for view creation, not a quick tweak.
+- [ ] **(B14) Scheduled ingestion, remaining phases** — `PLAN_SCHEDULED_INGESTION.md`
+  is the plan of record. Code-complete on branch `claude/b14-scheduled-ingestion`
+  (pushed 2026-09-01), `./mvnw clean verify` 86/86 and `npm test` 1179/1181 (2
+  pre-existing skips) both green, ci's `test.yml` and `deploy.yml` (app stacks)
+  both passed. Both phase-1 loose threads resolved as self-resolving, not bugs:
+  the ga4-report-pull "empty" log stream was a secret that didn't exist yet a day
+  before that run, already fixed by the time of the next run; ci's SSM pointer
+  already reads `ci-claudedon`, a real deployment — the `ci-clauderem` value this
+  file previously named was already stale information. Phases 2 (GA4 BigQuery
+  export), 3 (Step Functions orchestration), 4 (reconciliation views) and 6
+  (Stripe, no code change needed) all built. **Blocked on the AnalyticsStack IAM
+  policy-size bug above** — ci's `deploy-environment.yml` failed deploying the new
+  Athena views, so phases 2-4's actual resources have never run live. Not merged
+  to main yet; merging now would fail the same deploy in prod.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
-  deployed. Operator set the PAT as repository-level GitHub Actions secret
-  `ISSUE_BOT_TOKEN` on 2026-09-01 (GitHub rejects secret names starting `GITHUB_`,
-  and `deploy-environment.yml` now reads `secrets.ISSUE_BOT_TOKEN`, matching). Next:
-  the end-to-end proof at deploy time (set-alarm-state on
-  a cheap ci alarm → issue appears → second flip comments, not duplicates), then the
-  B20 fan-out with dedup. Adjacent gap surfaced: `supportTicketPost.js`'s GitHub
-  wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is never provisioned by any workflow,
-  so support-ticket-to-issue is wired in code but never deployed.
-- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10) —
-  `SecurityDetectionStack` with the DynamoDB customer-table alarms is on main.
-  Open, in the plans' own terms: #9's later phases
-  (CloudFront 404-spike aggregation, honeypot pages, IP auto-block — needs a Lambda
-  aggregator and web changes); #10's Cognito/S3/Secrets signals (need CloudTrail
-  event selectors extended in ObservabilityStack plus agreed burst thresholds); #10
-  AC4 mid-session country-change re-auth (app change in `customAuthorizer.js`).
+  proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
+  21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
+  still needs its own proof. Resumed 2026-09-01 on the corrected approach: pushed
+  `claude/b20-alerting-deploy`, polling for the auto-triggered ci deploy rather than
+  hand-dispatching with a guessed deployment-name. Only hand-dispatch, with an
+  explicit `--ref`, if no auto-deploy appears. Then the live proof (set-alarm-state
+  on a cheap ci alarm → issue
+  appears → second flip comments, not duplicates), then the B20 fan-out with dedup
+  (this is already built — the shared `AlarmStateChangeRule` matches every alarm by
+  deployment prefix and the Lambda already dedups by commenting, so "fan-out" here
+  is just proving what's shipped, not new work). Adjacent gap surfaced:
+  `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
+  never provisioned by any workflow, so support-ticket-to-issue is wired in code but
+  never deployed.
+- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10). Both
+  merged to main 2026-09-01. Issue 9 (scan detection): WAF sensitive-path rule +
+  logging + detection Lambda, Athena-based 404-rate check (`ScanDetectionStack`),
+  manual `WAF-Manual-Block` IPSet, runbook 7.5. No honeypots, no auto-block, per
+  the recorded scope decision. Issue 10 (data-theft remainder): salt-secret
+  resource policy + unexpected-read alarm, bundle-endpoint burst detection,
+  mid-session country-change re-auth in `customAuthorizer.js`, cross-account hold
+  runbook (6.6). Still open for both: the plan's live-AWS verification steps
+  (need a real deploy — resource-policy read-back, a real burst against ci,
+  deployed authorizer log check).
 
 ## In flight (coordinator session)
 
-Wave 1 dispatched 2026-09-01, four worktree-isolated sub-agents, coordinator merges and
-pushes each as it lands:
+Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
 
-- **B30 design** (opus, branch `claude/b30-alarm-design`) — composite-alarm consolidation
-  design doc, `PLAN_ALARM_CONSOLIDATION.md`. Design only, no code. Gates a wave-2
-  implementation agent once it lands.
-- **B28 design** (opus, branch `claude/b28-security-design`) — design doc for issues #9/#10
-  remainder, `PLAN_SECURITY_DETECTION_REMAINDER.md`, split so #9 and #10 can implement in
-  parallel. Design only, no code. Gates a wave-2 implementation agent once it lands.
-- **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — done, ready to
-  merge: phases 2, 3, 4 code-complete and tested, phase 6 needed no change. Live-deploy
-  verification is the remaining open item (see above).
-- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — dispatch
-  `deploy-environment.yml` then `deploy.yml` for ci, prove ci end to end, then repeat for
-  prod. No code changes expected.
+- **B30** — merged.
+- **cognito-token-post env-var fix** — merged (conflicted with B28 issue-10 on
+  `AuthStack.java`, both additions kept, resolved and verified before merge).
+- **B28** — both issue-9 and issue-10 merged.
+- **B14** — code-complete, NOT merged. A fix agent (opus, working on top of
+  `claude/b14-scheduled-ingestion`) is investigating and fixing the AnalyticsStack
+  IAM policy-size bug, verifying against a real ci deploy before reporting back.
+- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
+  ci deploy in progress.
+- **prod-2bc7f1e teardown** — dispatched (`destroy-prod.yml` run 33549674791),
+  operator-approved, stale duplicate prod deployment found via the alarm flood.
 
 ## Discipline
 

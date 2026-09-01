@@ -85,8 +85,9 @@ class DataStackTest {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
 
-        // Async request tables, bundle capacity, and the HMRC audit trail are excluded: no
-        // updateTable call mentions StreamSpecification for any of their table names.
+        // Async request tables, bundle capacity, the HMRC audit trail, and the security state
+        // table are excluded: no updateTable call mentions StreamSpecification for any of their
+        // table names.
         for (String tableName : new String[] {
             dataStack.bundlePostAsyncRequestsTable.getTableName(),
             dataStack.bundleDeleteAsyncRequestsTable.getTableName(),
@@ -95,6 +96,7 @@ class DataStackTest {
             dataStack.hmrcVatObligationGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcApiRequestsTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
+            dataStack.securityStateTable.getTableName(),
         }) {
             assertEquals(
                     0,
