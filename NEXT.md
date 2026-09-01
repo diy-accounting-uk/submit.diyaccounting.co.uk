@@ -66,10 +66,9 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-- Both batches are on main (#71, #73). The environment deploy is green and the
-  Stripe replay is done and proven in Athena; the app deploy run is still in
-  progress (watched). Remaining follow-up: the alarm→issue end-to-end proof once
-  `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
+- Both batches are on main and fully deployed (environment and app runs green);
+  the Stripe replay is done and proven in Athena. Remaining follow-up: the
+  alarm→issue end-to-end proof once `GITHUB_ISSUE_BOT_TOKEN` is provisioned.
 
 ## Discipline
 
