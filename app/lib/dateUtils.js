@@ -25,6 +25,9 @@ export function calculateTtl(baseDate, offset = {}) {
   if (offset.hours) {
     ttlDate.setHours(ttlDate.getHours() + offset.hours);
   }
+  if (offset.minutes) {
+    ttlDate.setMinutes(ttlDate.getMinutes() + offset.minutes);
+  }
 
   return {
     ttl: Math.floor(ttlDate.getTime() / 1000),
@@ -42,6 +45,9 @@ export const TTL_PRESETS = {
   ONE_MONTH: { months: 1 },
   // Short-lived async request state
   ONE_HOUR: { hours: 1 },
+  // Security state: bundle-endpoint rate-limit buckets outlive their one-minute window
+  // slightly, so a burst spanning the boundary still has both buckets to read.
+  FIVE_MINUTES: { minutes: 5 },
 };
 
 /**
@@ -78,4 +84,14 @@ export function calculateOneMonthTtl(baseDate) {
  */
 export function calculateOneHourTtl(baseDate) {
   return calculateTtl(baseDate, TTL_PRESETS.ONE_HOUR);
+}
+
+/**
+ * TTL (Unix epoch seconds) for a security-state rate-counter item, five minutes from now.
+ * Returns the epoch seconds directly rather than the {ttl, ttl_datestamp} pair the other
+ * calculators return: callers set it inline as a DynamoDB expression attribute value.
+ * @returns {number}
+ */
+export function fiveMinuteTtl() {
+  return calculateTtl(new Date(), TTL_PRESETS.FIVE_MINUTES).ttl;
 }
