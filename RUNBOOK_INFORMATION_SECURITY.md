@@ -445,7 +445,7 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 |--------------------|-------------------|
 | `GOOGLE_CLIENT_SECRET` | 1. Regenerate in Google Console<br>2. Update GitHub secret<br>3. Deploy with `force-identity-refresh` to affected environment(s) |
 | `HMRC_CLIENT_SECRET` | 1. Regenerate in HMRC Developer Hub<br>2. Update GitHub secret<br>3. Run deploy environment workflow for affected environment(s) |
-| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. **Do NOT rotate** (breaks data access)<br>3. Focus on access control in the affected account |
+| `USER_SUB_HASH_SALT` | 1. Assess data exposure<br>2. If theft is suspected, follow 6.6 (rotation is safe: the versioned registry's read-path fallback means no user loses access mid-migration)<br>3. Otherwise focus on access control in the affected account |
 | GitHub OIDC trust | 1. Check OIDC trust policies in affected account(s)<br>2. Each account has its own OIDC provider scoped to its repo<br>3. Compromise of one repo's OIDC trust does not affect other accounts |
 | AWS account credentials (SSO) | 1. Disable the compromised user in IAM Identity Center (management account 887764105431)<br>2. Review CloudTrail in all accounts<br>3. Check for data exfiltration in submit-prod (972912397388)<br>4. Verify backup vault integrity in submit-backup (914216784828) |
 
@@ -469,6 +469,43 @@ The system runs across 6 AWS accounts. Compromise of one account does not automa
 2. Revoke any leaked GitHub PATs
 3. Review recent workflow runs for unauthorized deployments
 4. OIDC trust in each account can be disabled independently
+
+### 6.6 Suspected Data Theft: Cross-Account Hold
+
+**1. What raises it**: any of these alarms or activity events --
+- `{env}-env-dynamodb-customer-table-scan`
+- `{env}-env-dynamodb-customer-table-getitem-volume`
+- `{env}-env-salt-secret-unexpected-read`
+- an `api-burst-detected` activity event
+- an `auth-country-change` activity event
+
+**2. Establish the principal** from CloudTrail:
+
+```bash
+aws --profile submit-<env> cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=EventName,AttributeValue=GetItem \
+  --start-time "$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ)" \
+  --max-results 50
+```
+
+Swap `GetItem` for `Scan` or `GetSecretValue` depending on which alarm fired. The DynamoDB alarms are scoped to the customer tables listed in `SecurityDetectionStack` (receipts, bundles, passes, subscriptions, hmrc-api-requests) -- a match outside that list is not this alarm's doing.
+
+**3. Contain**: revoke the SSO session in IAM Identity Center. If the compromise is an AWS credential rather than a user token, follow 6.5 for the affected account.
+
+**4. Force logout**:
+
+```bash
+. ./scripts/aws-assume-submit-deployment-role.sh
+scripts/force-logout-all-users.sh <env>
+```
+
+Pages `cognito-idp list-users` and calls `admin-user-global-sign-out` per user. Every refresh token dies immediately; access tokens die at their own `exp`, up to an hour later. Say that plainly in the incident record -- it decides whether the salt rotation below can wait.
+
+**5. Rotate the salt.** This supersedes the "Do NOT rotate" guidance that predates the versioned salt registry (section 4.2). Migration `003-rotate-salt-to-passphrase` adds a new salt version and re-keys existing items; the read-path fallback in section 4.8 means no user loses access mid-migration. See section 4.8 for the mechanics.
+
+**6. Expect the alarm to fire during the response.** Step 5's salt read and rotation happen from an SSO session, which is exactly what `{env}-env-salt-secret-unexpected-read` watches for. Note the expected alarm in the incident record instead of chasing it.
+
+**7. Then 6.2**, the 72-hour notification path, unchanged.
 
 ---
 
