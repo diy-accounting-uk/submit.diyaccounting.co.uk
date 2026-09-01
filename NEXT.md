@@ -30,6 +30,25 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
+- [ ] **Prod CloudFront cutover stuck since issue-9's merge, now fixed pending
+  confirmation.** `EdgeStack` had two deploy-breaking bugs (a semicolon in a WAF
+  IPSet description violating AWS's regex; a 13-pattern regex set exceeding
+  WAFv2's 10-pattern limit) — both fixed, commit `40fc40a3`. Consequence while
+  broken: `deploy-edge` failed on every prod deploy since, so `set-origins` (the
+  job that actually repoints CloudFront) kept getting skipped — but
+  `set-last-known-good-deployment` only depends on `web-test`, not on
+  `set-origins`, so the SSM pointer kept advancing anyway. Result: CloudFront has
+  been serving stale `prod-9050bb5` (pre-dating B28/cognito-fix/B14) while SSM
+  claims `prod-a994f29` is "last known good" despite never being cut over — so
+  the cognito-token-post audit-log fix, B28's scan/data-theft detection, and
+  B14's ingestion work are not actually live for real customers yet, only
+  deployed. A bump commit (`ccd8b3ee`) forced a fresh deploy; a watcher is
+  confirming `deploy-edge`/`set-origins` succeed for real and CloudFront's
+  origin actually changes before anything gets torn down. Once confirmed: purge
+  the orphaned `prod-9050bb5`, `prod-a994f29`, and partial `prod-40fc40a` stack
+  sets. Separately worth fixing later: `set-last-known-good-deployment` should
+  depend on `set-origins`, not just `web-test`, so this class of mismatch can't
+  recur.
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
@@ -90,8 +109,10 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
   Both now fixed and live-verified in ci.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
   ci deploy in progress.
-- **prod-2bc7f1e teardown** — dispatched (`destroy-prod.yml` run 33549674791),
-  operator-approved, stale duplicate prod deployment found via the alarm flood.
+- **Prod cutover watcher** — confirming the bump-triggered deploy (`ccd8b3ee`)
+  gets `deploy-edge` and `set-origins` through cleanly and CloudFront actually
+  repoints. See the open-item bullet above. Purge of the three orphaned prod
+  deployments follows once confirmed.
 
 ## Discipline
 
