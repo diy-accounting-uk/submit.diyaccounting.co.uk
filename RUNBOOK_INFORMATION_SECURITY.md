@@ -523,6 +523,68 @@ fields @timestamp, @message
 | **Quarterly** | Test export/deletion scripts, review IAM policies per account, update this document |
 | **Annually** | Rotate OAuth secrets, disaster recovery test (restore from cross-account backup), penetration testing |
 
+### 7.5 Scan Detection Response
+
+Two alerts, both in the ops Telegram chat.
+
+| Alert | What it means | Response |
+|-------|---------------|----------|
+| `Scan blocked: <method> <uri> from <ip> (<country>) on <deployment>` | A request to a sensitive path (`/.env`, `/wp-admin`, `.php`, and the rest of `EdgeStack`'s regex pattern set) was blocked with a 403 before it reached any origin. | Informational — the request already failed. |
+| `404 scan: <ip> made <n> 404s in one minute on distribution <id>` | One IP raised more than the configured threshold (default 20) of 404s in one minute against one distribution. WAF never sees a response status, so this request was **not** blocked. | Needs a decision — see below. |
+
+**Check whether it is synthetic first.** Resolve the distribution id in the `404 scan` alert:
+
+```bash
+aws --profile submit-prod cloudfront get-distribution --id <id> \
+  --query 'Distribution.DistributionConfig.Comment'
+```
+
+A ci distribution is a test run. On the prod distribution, check the user agent in the alert's
+detail: behaviour-test traffic carries a ` DIYAccountingSynthetic/1` token appended to a real
+desktop Chrome UA (`playwright.config.js`). That token is a convenience, not proof — anyone can
+send it — so on a prod alert also check whether a synthetic run was in flight:
+
+```bash
+gh run list --workflow synthetic-test.yml --limit 5
+```
+
+**If it is not synthetic**, add the IP to the manual block IP set:
+
+```bash
+aws --profile submit-prod --region us-east-1 wafv2 update-ip-set \
+  --scope CLOUDFRONT --name prod-app-waf-manual-block-v4 \
+  --id <id> --lock-token <token> \
+  --addresses <existing…> 203.0.113.9/32
+```
+
+(`prod-app-waf-manual-block-v6` for an IPv6 address.) That takes effect in about a minute. It is
+also transient: the next CDK deploy of the deployment resets the IP set's addresses to the
+`wafManualBlockIps` context list in `cdk-application/cdk.json`. Open a pull request adding the
+address there too, or the block silently disappears on the next deploy — which is worse than no
+block at all, because it looks handled.
+
+**See everything that IP asked for**, so the alert can be judged rather than guessed:
+
+```sql
+SELECT c_ip, cs_method, cs_uri_stem, sc_status, cs_user_agent, "date", "time"
+FROM   cloudfront_requests
+WHERE  distribution_id = '<id>'
+  AND  year = <yyyy> AND month = <mm> AND day = <dd>
+  AND  c_ip = '<ip>'
+ORDER BY "date", "time"
+```
+
+Run it in the `<env>-env-analytics` Athena workgroup, `<env>_env_analytics` database.
+
+**Removing a block**: drop the address from both the deployed IP set (the `wafv2 update-ip-set`
+command above, with the address removed from `--addresses`) and the `wafManualBlockIps` list in
+`cdk-application/cdk.json`.
+
+**False-positive check**: `scripts/verify-waf-false-positives.sh <env> [minutes]` reads
+`AWS/WAFV2` `BlockedRequests` for `SensitivePathScan` and the two AWS managed rule groups over the
+last N minutes and exits non-zero if any of them blocked anything. Run it straight after a
+behaviour suite — a block during a synthetic run is a false positive by definition.
+
 ---
 
 ## 8. Data Retention
