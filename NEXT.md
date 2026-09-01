@@ -65,9 +65,21 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-- Both batches are on main and fully deployed (environment and app runs green);
-  the Stripe replay is done and proven in Athena. Remaining follow-up: the
-  alarm→issue end-to-end proof — `ISSUE_BOT_TOKEN` is set, deploy still to run.
+Wave 1 dispatched 2026-09-01, four worktree-isolated sub-agents, coordinator merges and
+pushes each as it lands:
+
+- **B30 design** (opus, branch `claude/b30-alarm-design`) — composite-alarm consolidation
+  design doc, `PLAN_ALARM_CONSOLIDATION.md`. Design only, no code. Gates a wave-2
+  implementation agent once it lands.
+- **B28 design** (opus, branch `claude/b28-security-design`) — design doc for issues #9/#10
+  remainder, `PLAN_SECURITY_DETECTION_REMAINDER.md`, split so #9 and #10 can implement in
+  parallel. Design only, no code. Gates a wave-2 implementation agent once it lands.
+- **B14 implement** (sonnet, branch `claude/b14-scheduled-ingestion`) — phases 2, 3, 4, 6 of
+  `PLAN_SCHEDULED_INGESTION.md` in that order (shared-file constraint), plus the two loose
+  phase-1 threads (ga4-report-pull empty log stream, ci's stale SSM pointer) first.
+- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — dispatch
+  `deploy-environment.yml` then `deploy.yml` for ci, prove ci end to end, then repeat for
+  prod. No code changes expected.
 
 ## Discipline
 
