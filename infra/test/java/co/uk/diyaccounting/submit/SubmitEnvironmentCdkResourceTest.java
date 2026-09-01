@@ -99,7 +99,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 13);
+        analytics.resourceCountIs("AWS::Glue::Table", 14);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 10);
         // The lake and the Athena results bucket
@@ -128,16 +128,17 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // 10) Ingestion stack: the Stripe reconciliation and GA4 report pull jobs, each with its
-        // own schedule, DLQ and two alarms. Importing the lake bucket by name creates no bucket
-        // of its own. Both jobs' names are stable across redeploys, so their log groups go
-        // through the idempotent AwsCustomResource path, adding the shared singleton provider.
+        // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
+        // export pull jobs, each with its own schedule, DLQ and two alarms. Importing the lake
+        // bucket by name creates no bucket of its own. Every job's name is stable across
+        // redeploys, so their log groups go through the idempotent AwsCustomResource path,
+        // adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 3);
-        ingestion.resourceCountIs("AWS::Events::Rule", 2);
-        ingestion.resourceCountIs("AWS::SQS::Queue", 2);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 4);
+        ingestion.resourceCountIs("AWS::Events::Rule", 3);
+        ingestion.resourceCountIs("AWS::SQS::Queue", 3);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         assertNoUnscopedIamResources(ingestion);
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,

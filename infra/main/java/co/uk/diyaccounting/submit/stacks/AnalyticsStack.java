@@ -399,6 +399,7 @@ public class AnalyticsStack extends Stack {
         ga4Tables.trafficTable.addResourceDependency(this.glueDatabase);
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
+        ga4Tables.bqEventsTable.addResourceDependency(this.glueDatabase);
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
@@ -736,6 +737,15 @@ public class AnalyticsStack extends Stack {
                 .id("expire-raw-activity-events")
                 .prefix(ACTIVITY_EVENTS_RAW_PREFIX)
                 .expiration(Duration.days(isProd ? 90 : 14))
+                .build());
+
+        // user_pseudo_id in the GA4 BigQuery event export is pseudonymous personal data under UK
+        // GDPR, so this prefix gets a dedicated, shorter expiration than the rest of curated/:
+        // 400 days matches the CloudFront raw log retention, well inside the 800-day default.
+        rules.add(LifecycleRule.builder()
+                .id("expire-ga4-bq-events")
+                .prefix("curated/ga4_bq/")
+                .expiration(Duration.days(isProd ? 400 : 30))
                 .build());
 
         rules.add(LifecycleRule.builder()

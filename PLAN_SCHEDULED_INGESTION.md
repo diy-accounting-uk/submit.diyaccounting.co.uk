@@ -152,6 +152,10 @@ CloudWatch logs and fix it here, not in a later phase.
 
 # Phase 2: GA4 BigQuery event export
 
+**Status: code done 2026-09-01, unit and CDK tests green.** Live-data verification
+(`aws lambda invoke` against a deployed `ga4-event-export-pull`) needs a deploy, which
+happens after this branch merges.
+
 **Model: Sonnet.** The SQL and the schema are written out below.
 
 ## Files owned

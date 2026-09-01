@@ -16,7 +16,11 @@ import software.constructs.Construct;
 /**
  * Glue tables over the GA4 Data API reports that {@code ga4ReportPull.js} writes nightly to
  * {@code curated/ga4/report=<name>/dt=YYYY-MM-DD/}: {@code ga4_traffic}, {@code ga4_pages} and
- * {@code ga4_events}.
+ * {@code ga4_events}. Also the {@code ga4_bq_events} table over the BigQuery event export that
+ * {@code ga4EventExportPull.js} writes to {@code curated/ga4_bq/events/dt=YYYY-MM-DD/}: one row
+ * per event with a session id, which the Data API's aggregated reports cannot provide. The name
+ * {@code ga4_events} is already taken by the Data API's aggregated event-name report, hence
+ * {@code ga4_bq_events} rather than a name that collides.
  *
  * <p>Not a {@link software.constructs.Construct} subclass itself, matching {@link
  * StripeReconciliationTables} and {@link co.uk.diyaccounting.submit.constructs.Lambda} elsewhere
@@ -29,6 +33,12 @@ import software.constructs.Construct;
  * {@code dt} partition value, because the Lambda writes it as part of every row and dropping it at
  * the catalog layer would mean two representations of "the source data" to keep in sync.
  *
+ * <p>{@code ga4_bq_events.user_pseudo_id} is a pseudonymous identifier and counts as personal data
+ * under UK GDPR. It stays because counting users and stitching sessions needs it; the lake bucket
+ * carries a dedicated, shorter-than-default lifecycle rule on {@code curated/ga4_bq/} for it (see
+ * {@code AnalyticsStack.buildLakeLifecycleRules}), the same pattern {@code CloudFrontAccessLogs}
+ * uses for {@code c_ip}.
+ *
  * <p>The caller owns the Glue database and must add a dependency from each table field onto it,
  * the same way {@code AnalyticsStack} does for {@code activity_events} and for {@link
  * StripeReconciliationTables}.
@@ -36,13 +46,16 @@ import software.constructs.Construct;
 public class Ga4Tables {
 
     private static final String CURATED_GA4_PREFIX = "curated/ga4/";
+    private static final String CURATED_GA4_BQ_PREFIX = "curated/ga4_bq/";
     private static final String TRAFFIC_TABLE_NAME = "ga4_traffic";
     private static final String PAGES_TABLE_NAME = "ga4_pages";
     private static final String EVENTS_TABLE_NAME = "ga4_events";
+    private static final String BQ_EVENTS_TABLE_NAME = "ga4_bq_events";
 
     public final CfnTable trafficTable;
     public final CfnTable pagesTable;
     public final CfnTable eventsTable;
+    public final CfnTable bqEventsTable;
 
     @Value.Immutable
     public interface Ga4TablesProps {
@@ -90,6 +103,17 @@ public class Ga4Tables {
                 "events",
                 "GA4 daily event counts by event name, one JSON object per line",
                 buildEventsColumns());
+
+        this.bqEventsTable = buildTableAtLocation(
+                scope,
+                props,
+                catalogId,
+                BQ_EVENTS_TABLE_NAME,
+                "s3://%s/%sevents/".formatted(props.lakeBucketName(), CURATED_GA4_BQ_PREFIX),
+                "GA4 BigQuery event export, one row per event with a session id, one JSON object "
+                        + "per line. user_pseudo_id is pseudonymous personal data under UK GDPR; "
+                        + "see the lifecycle rule on curated/ga4_bq/ in AnalyticsStack.",
+                buildBqEventsColumns());
     }
 
     private static CfnTable buildTable(
@@ -101,7 +125,17 @@ public class Ga4Tables {
             String description,
             List<CfnTable.ColumnProperty> columns) {
         var location = "s3://%s/%sreport=%s/".formatted(props.lakeBucketName(), CURATED_GA4_PREFIX, reportName);
+        return buildTableAtLocation(scope, props, catalogId, tableName, location, description, columns);
+    }
 
+    private static CfnTable buildTableAtLocation(
+            Construct scope,
+            Ga4TablesProps props,
+            String catalogId,
+            String tableName,
+            String location,
+            String description,
+            List<CfnTable.ColumnProperty> columns) {
         var parameters = new LinkedHashMap<String, String>();
         parameters.put("classification", "json");
         parameters.put("compressionType", "gzip");
@@ -189,5 +223,28 @@ public class Ga4Tables {
                 "eventCount", "bigint",
                 "activeUsers", "bigint",
                 "eventValue", "double");
+    }
+
+    private static List<CfnTable.ColumnProperty> buildBqEventsColumns() {
+        return columnsOf(
+                "event_ts", "string",
+                "event_name", "string",
+                "user_pseudo_id", "string",
+                "ga_session_id", "bigint",
+                "ga_session_number", "bigint",
+                "page_location", "string",
+                "page_referrer", "string",
+                "engagement_time_msec", "bigint",
+                "transaction_id", "string",
+                "event_value", "double",
+                "currency", "string",
+                "device_category", "string",
+                "device_os", "string",
+                "country", "string",
+                "traffic_source", "string",
+                "traffic_medium", "string",
+                "traffic_campaign", "string",
+                "stream_id", "string",
+                "platform", "string");
     }
 }

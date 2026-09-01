@@ -120,6 +120,31 @@ public class IngestionStack extends Stack {
             return "";
         }
 
+        // The Google Cloud project holding the GA4 BigQuery export, from cdk.json's
+        // ga4BigQueryProjectId context value. Same blank-in-prod-throws guard as ga4PropertyId:
+        // a mistyped key would otherwise silently keep this blank and the event export job would
+        // error at every invocation instead of failing synth once.
+        @Value.Default
+        default String ga4BigQueryProjectId() {
+            return "";
+        }
+
+        // The BigQuery dataset holding the daily export tables, from cdk.json's
+        // ga4BigQueryDatasetId context value.
+        @Value.Default
+        default String ga4BigQueryDatasetId() {
+            return "";
+        }
+
+        // The BigQuery dataset's location, e.g. "europe-west2", from cdk.json's
+        // ga4BigQueryLocation context value. A query job created in the wrong location fails
+        // with a dataset-not-found error that reads like a permissions problem, so this has to
+        // match the dataset's actual location exactly.
+        @Value.Default
+        default String ga4BigQueryLocation() {
+            return "";
+        }
+
         static ImmutableIngestionStackProps.Builder builder() {
             return ImmutableIngestionStackProps.builder();
         }
@@ -335,6 +360,112 @@ public class IngestionStack extends Stack {
                 ga4ReportPullLambda,
                 ga4ReportPullSchedule,
                 "Pull yesterday's GA4 traffic, pages and events reports into the analytics lake");
+
+        // ============================================================================
+        // GA4 BigQuery event export pull job
+        // ============================================================================
+        // Same reasoning as the ga4PropertyId guard above: a mistyped cdk.json key would
+        // otherwise silently keep this blank and the job would error at every invocation
+        // instead of failing synth once.
+        if (isProd
+                && (props.ga4BigQueryProjectId() == null
+                        || props.ga4BigQueryProjectId().isBlank())) {
+            throw new IllegalStateException(
+                    "ga4BigQueryProjectId must be set in prod (see ga4BigQueryProjectId in cdk-environment/cdk.json)");
+        }
+
+        var ga4EventExportPullFunctionName = prefix + "-ga4-event-export-pull";
+
+        var ga4EventExportPullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+        if (props.ga4BigQueryProjectId() != null
+                && !props.ga4BigQueryProjectId().isBlank()) {
+            ga4EventExportPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
+        }
+        if (props.ga4BigQueryDatasetId() != null
+                && !props.ga4BigQueryDatasetId().isBlank()) {
+            ga4EventExportPullEnv.with("GA4_BIGQUERY_DATASET_ID", props.ga4BigQueryDatasetId());
+        }
+        if (props.ga4BigQueryLocation() != null
+                && !props.ga4BigQueryLocation().isBlank()) {
+            ga4EventExportPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
+        }
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
+            ga4EventExportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
+        }
+
+        IRepository ga4EventExportPullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-Ga4EventExportPull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        // Same exposure as the other two jobs above: env-scoped, stable function name - use the
+        // idempotent create-if-missing path, not a plain LogGroup.
+        var ga4EventExportPullLogGroup = ensureLogGroupWithDependency(
+                this,
+                prefix + "-Ga4EventExportPullLogGroup",
+                "/aws/lambda/" + ga4EventExportPullFunctionName);
+
+        var ga4EventExportPullLambda =
+                DockerImageFunction.Builder.create(this, prefix + "-Ga4EventExportPullFn")
+                        .functionName(ga4EventExportPullFunctionName)
+                        .code(DockerImageCode.fromEcr(
+                                ga4EventExportPullRepository,
+                                EcrImageCodeProps.builder()
+                                        .tagOrDigest(props.baseImageTag())
+                                        .cmd(List.of(
+                                                "app/functions/analytics/ga4EventExportPull.handler"))
+                                        .build()))
+                        .timeout(Duration.minutes(5))
+                        .memorySize(1024)
+                        .architecture(Architecture.ARM_64)
+                        .environment(ga4EventExportPullEnv)
+                        .logGroup(ga4EventExportPullLogGroup.logGroup())
+                        .build();
+        ga4EventExportPullLambda.getNode().addDependency(ga4EventExportPullLogGroup.ensureResource());
+
+        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_bq/*"))
+                .build());
+
+        // Same GA4 service-account secret ga4ReportPullLambda reads: one BigQuery-enabled
+        // service account for both the Data API and the BigQuery export.
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
+            var ga4EventExportSecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
+                    ? props.ga4ServiceAccountArn()
+                    : props.ga4ServiceAccountArn() + "-*";
+            ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(ga4EventExportSecretArnWithWildcard))
+                    .build());
+        }
+
+        // prod: 03:20 daily, five minutes after the GA4 Data API pull so the two GA4 jobs do not
+        // start at the same minute. ci: 03:20 every Monday, same reasoning as the other two jobs.
+        var ga4EventExportPullSchedule = isProd
+                ? Schedule.cron(CronOptions.builder().minute("20").hour("3").build())
+                : Schedule.cron(CronOptions.builder()
+                        .minute("20")
+                        .hour("3")
+                        .weekDay("MON")
+                        .build());
+
+        registerScheduledJob(
+                "Ga4EventExportPull",
+                ga4EventExportPullFunctionName,
+                ga4EventExportPullLambda,
+                ga4EventExportPullSchedule,
+                "Pull two days ago's GA4 BigQuery event export into the analytics lake");
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);
     }
