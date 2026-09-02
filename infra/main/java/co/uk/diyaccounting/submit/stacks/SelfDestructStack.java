@@ -209,6 +209,8 @@ public class SelfDestructStack extends Stack {
                         .build());
         this.selfDestructFunction = lambda.ingestLambda;
 
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "self-destruct", List.of(lambda));
+
         // Create EventBridge rule to trigger self-destruct every delayHours starting at a specific instant.
         // Suggested type for selfDestructStartDatetime: java.time.ZonedDateTime (ensure it is defined earlier).
 

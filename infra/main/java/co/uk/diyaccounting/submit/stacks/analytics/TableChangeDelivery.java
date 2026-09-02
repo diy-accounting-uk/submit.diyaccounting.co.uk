@@ -56,6 +56,9 @@ public class TableChangeDelivery extends Construct {
     private static final List<String> STREAMED_TABLE_KINDS = List.of("receipts", "bundles", "subscriptions", "passes");
 
     public final Function consumerLambda;
+    /** The Lambda construct behind {@link #consumerLambda}, so the owning stack can fan in its checks. */
+    public final Lambda consumerLambdaConstruct;
+
     public final List<CfnDeliveryStream> deliveryStreams = new ArrayList<>();
     public final List<CfnTable> glueTables = new ArrayList<>();
     public final List<CfnEventSourceMapping> eventSourceMappings = new ArrayList<>();
@@ -115,7 +118,7 @@ public class TableChangeDelivery extends Construct {
         // ============================================================================
         // Consumer Lambda: one function, four event source mappings
         // ============================================================================
-        var consumerLambdaConstruct = new Lambda(
+        this.consumerLambdaConstruct = new Lambda(
                 this,
                 LambdaProps.builder()
                         .idPrefix(sharedNames.dynamoStreamToFirehoseLambdaFunctionName)
@@ -134,7 +137,7 @@ public class TableChangeDelivery extends Construct {
                                 .with("ENVIRONMENT_NAME", props.envName())
                                 .with("STREAM_TARGETS", buildStreamTargetsJson(deliveryStreamNameByTable)))
                         .build());
-        this.consumerLambda = consumerLambdaConstruct.ingestLambda;
+        this.consumerLambda = this.consumerLambdaConstruct.ingestLambda;
 
         // Redacting the passes table's redemption code uses the same salted HMAC helper the app
         // uses for subs, so the Lambda needs the same secret-read grant every other consumer of

@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -368,6 +369,12 @@ public class BillingStack extends Stack {
 
         // Billing Webhook POST Lambda has been moved to the env-level BillingWebhookStack
         // (always available, independent of app deployments). See PLAN_BILLING_WEBHOOK_TO_ENV.md.
+
+        Lambda.stackHealthAlarm(
+                this,
+                props.resourceNamePrefix(),
+                "billing",
+                List.of(billingCheckoutPostApiLambda, billingPortalGetApiLambda, billingRecoverPostApiLambda));
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());

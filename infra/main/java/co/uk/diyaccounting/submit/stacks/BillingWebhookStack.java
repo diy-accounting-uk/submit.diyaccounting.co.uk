@@ -187,6 +187,8 @@ public class BillingWebhookStack extends Stack {
                 "Created env-level billing webhook Lambda %s",
                 webhookFunction.getNode().getId());
 
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "billing-webhook", List.of(webhookLambda));
+
         // Grant DynamoDB access
         subscriptionsTable.grant(webhookFunction, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem");
         bundlesTable.grant(webhookFunction, "dynamodb:PutItem", "dynamodb:UpdateItem");

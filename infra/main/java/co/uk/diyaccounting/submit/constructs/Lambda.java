@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.constructs;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import java.util.ArrayList;
 import java.util.List;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -14,6 +15,8 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.AlarmRule;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.CompositeAlarm;
+import software.amazon.awscdk.services.cloudwatch.IAlarm;
+import software.amazon.awscdk.services.cloudwatch.IAlarmRule;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
@@ -41,6 +44,9 @@ public class Lambda {
 
     public static final String HEALTH_ALARM_NAME_SUFFIX = "-health";
 
+    /** CloudWatch accepts at most this many operands in one composite alarm rule. */
+    private static final int ALARM_RULE_MAX_OPERANDS = 100;
+
     public final DockerImageCode dockerImage;
     public final Function ingestLambda;
     public final Version ingestLambdaVersion;
@@ -48,6 +54,9 @@ public class Lambda {
     public final String ingestLambdaAliasArn;
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
+
+    /** The four checks on this function, for the owning stack to fan into its health alarm. */
+    public final List<IAlarm> healthChecks;
 
     public Lambda(final Construct scope, AbstractLambdaProps props) {
         this.props = props;
@@ -215,15 +224,39 @@ public class Lambda {
                         + this.ingestLambda.getFunctionName())
                 .build();
 
-        // Composite health alarm: fans in the four checks above into one notification so a
-        // broken function raises one Telegram message and one GitHub issue instead of four.
-        // The children above keep the "check-" prefix and stay out of OpsStack's routing rule;
-        // only this composite carries the deployment/environment prefix that rule matches on.
-        CompositeAlarm.Builder.create(scope, props.idPrefix() + "-HealthAlarm")
-                .compositeAlarmName(props.ingestFunctionName() + HEALTH_ALARM_NAME_SUFFIX)
-                .alarmRule(AlarmRule.anyOf(errorsAlarm, throttlesAlarm, highDurationP95Alarm, logErrorsAlarm))
-                .alarmDescription("Health check failed for function " + this.ingestLambda.getFunctionName()
-                        + ": errors, throttles, p95 duration near timeout, or error-like log lines")
+        this.healthChecks = List.of(errorsAlarm, throttlesAlarm, highDurationP95Alarm, logErrorsAlarm);
+    }
+
+    /**
+     * Fans every check of every Lambda in one stack into a single composite alarm. The children
+     * keep the "check-" prefix and stay outside OpsStack's routing rule; only this composite
+     * carries the deployment or environment prefix that rule matches on, so a stack full of broken
+     * functions raises one Telegram message and one GitHub issue. The composite's state reason
+     * names the check that tripped, which names the function.
+     */
+    public static CompositeAlarm stackHealthAlarm(
+            final Construct scope, String resourceNamePrefix, String stackShortName, List<Lambda> functions) {
+        var checks = new ArrayList<IAlarmRule>();
+        for (Lambda function : functions) {
+            checks.addAll(function.healthChecks);
+        }
+        return CompositeAlarm.Builder.create(scope, "StackHealthAlarm")
+                .compositeAlarmName(resourceNamePrefix + "-" + stackShortName + HEALTH_ALARM_NAME_SUFFIX)
+                .alarmRule(anyOf(checks))
+                .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
+                        + "reported errors, throttles, p95 duration near timeout, or error-like log lines. "
+                        + "The alarm state reason names the check that tripped.")
                 .build();
+    }
+
+    private static IAlarmRule anyOf(List<IAlarmRule> rules) {
+        if (rules.size() <= ALARM_RULE_MAX_OPERANDS) {
+            return AlarmRule.anyOf(rules.toArray(new IAlarmRule[0]));
+        }
+        var groups = new ArrayList<IAlarmRule>();
+        for (int start = 0; start < rules.size(); start += ALARM_RULE_MAX_OPERANDS) {
+            groups.add(anyOf(rules.subList(start, Math.min(start + ALARM_RULE_MAX_OPERANDS, rules.size()))));
+        }
+        return anyOf(groups);
     }
 }

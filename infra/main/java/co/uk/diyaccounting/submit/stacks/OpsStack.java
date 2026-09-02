@@ -264,6 +264,10 @@ public class OpsStack extends Stack {
                 "Created Telegram Forwarder Lambda %s",
                 telegramForwarderLambda.ingestLambda.getNode().getId());
 
+        // Every Lambda construct this stack builds, fanned into one composite health alarm below.
+        var healthCheckedFunctions = new ArrayList<Lambda>();
+        healthCheckedFunctions.add(telegramForwarderLambda);
+
         // ============================================================================
         // Alarm-to-GitHub-Issue Lambda + EventBridge target (optional)
         // ============================================================================
@@ -295,6 +299,7 @@ public class OpsStack extends Stack {
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                             .environment(alarmToGithubIssueEnv)
                             .build());
+            healthCheckedFunctions.add(alarmToGithubIssueLambdaConstruct);
             alarmToGithubIssueLambda = alarmToGithubIssueLambdaConstruct.ingestLambda;
 
             var githubSecretArnWithWildcard = props.opsGithubTokenSecretArn().endsWith("*")
@@ -311,6 +316,8 @@ public class OpsStack extends Stack {
                     "Created Alarm-to-GitHub-Issue Lambda %s for repo %s",
                     alarmToGithubIssueLambdaConstruct.ingestLambda.getNode().getId(), props.opsGithubRepo());
         }
+
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "ops", healthCheckedFunctions);
 
         // ============================================================================
         // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
@@ -351,11 +358,12 @@ public class OpsStack extends Stack {
         // deployment owns.
         //
         // Alarm names beginning `check-` are deliberately outside both prefixes. They are the
-        // four per-function checks in `Lambda.java`, which exist as the terms of that function's
-        // `{fn}-health` composite alarm. The composite carries the prefix and notifies; its
-        // children do not, so one broken function raises one message instead of four. EventBridge
-        // cannot AND a prefix match with a suffix exclusion on one field, so the split is carried
-        // by the names. `SubmitApplicationCdkResourceTest` enforces it.
+        // four per-function checks in `Lambda.java`, which exist as the terms of the owning
+        // stack's `{stack}-health` composite alarm. The composite carries the prefix and
+        // notifies; its children do not, so a stack raises one message however many of its
+        // functions are broken, and the alarm state reason names the check that tripped.
+        // EventBridge cannot AND a prefix match with a suffix exclusion on one field, so the
+        // split is carried by the names. `SubmitApplicationCdkResourceTest` enforces it.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
         alarmStateChangeTargets.add(
                 LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());

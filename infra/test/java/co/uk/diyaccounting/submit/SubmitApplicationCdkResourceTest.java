@@ -63,22 +63,22 @@ class SubmitApplicationCdkResourceTest {
         app.synth();
         infof("CDK synth complete");
 
-        // Composite health alarms (one per Lambda construct) route to Telegram/GitHub through
-        // OpsStack's AlarmStateChangeRule; their four "check-" children deliberately do not. The
-        // rule's own alarmName prefix matchers are the ground truth for what "routed" means, so
-        // read them from the synthesized template rather than hardcoding them here.
+        // One composite health alarm per stack routes to Telegram/GitHub through OpsStack's
+        // AlarmStateChangeRule; the four "check-" children of each function deliberately do not.
+        // The rule's own alarmName prefix matchers are the ground truth for what "routed" means,
+        // so read them from the synthesized template rather than hardcoding them here.
         Template opsStackTemplateForRouting = Template.fromStack(submitApplication.opsStack);
         List<String> routedPrefixes = routedAlarmNamePrefixes(opsStackTemplateForRouting);
 
         infof("Created stack:", submitApplication.authStack.getStackName());
         Template authStackTemplate = Template.fromStack(submitApplication.authStack);
         authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertLambdaHealthAlarms(authStackTemplate, 2, routedPrefixes);
+        assertStackHealthAlarm(authStackTemplate, 2, routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
         hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 8);
-        assertLambdaHealthAlarms(hmrcStackTemplate, 5, routedPrefixes);
+        assertStackHealthAlarm(hmrcStackTemplate, 5, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -86,7 +86,7 @@ class SubmitApplicationCdkResourceTest {
         // bundleCapacityReconcile(1), sessionBeaconPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
         accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
-        assertLambdaHealthAlarms(accountStackTemplate, 11, routedPrefixes);
+        assertStackHealthAlarm(accountStackTemplate, 11, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -127,7 +127,7 @@ class SubmitApplicationCdkResourceTest {
         // billingWebhookPost moved to env-level BillingWebhookStack
         Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
         billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
-        assertLambdaHealthAlarms(billingStackTemplate, 3, routedPrefixes);
+        assertStackHealthAlarm(billingStackTemplate, 3, routedPrefixes);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -167,13 +167,15 @@ class SubmitApplicationCdkResourceTest {
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
-        // No absolute count: the second Lambda construct (alarm-to-GitHub-issue) only exists when
-        // a GitHub token ARN is configured, and this test's config doesn't set one.
-        assertLambdaHealthAlarms(opsStackTemplateForRouting, null, routedPrefixes);
+        // No Lambda-construct count: the second one (alarm-to-GitHub-issue) only exists when a
+        // GitHub token ARN is configured, and this test's config doesn't set one.
+        assertStackHealthAlarm(opsStackTemplateForRouting, null, routedPrefixes);
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
+        // The WAF scan-detect Lambda is this stack's only Lambda construct.
+        assertStackHealthAlarm(edgeStackTemplate, 1, routedPrefixes);
 
         // Access logs reach the analytics lake only through the v2 Parquet delivery below; the
         // distribution itself must carry no classic standard-logging configuration.
@@ -282,7 +284,7 @@ class SubmitApplicationCdkResourceTest {
             // Only the self-destruct function: its log group belongs to the environment stack.
             Template selfDestructStackTemplate = Template.fromStack(submitApplication.selfDestructStack);
             selfDestructStackTemplate.resourceCountIs("AWS::Lambda::Function", 1);
-            assertLambdaHealthAlarms(selfDestructStackTemplate, 1, routedPrefixes);
+            assertStackHealthAlarm(selfDestructStackTemplate, 1, routedPrefixes);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log
@@ -323,67 +325,83 @@ class SubmitApplicationCdkResourceTest {
     }
 
     /**
-     * Asserts a stack's per-function health-alarm shape: one {@code {fn}-health} composite alarm
-     * per Lambda construct, fed by exactly four {@code check-}-prefixed children that are not
-     * themselves routed. {@code expectedConstructs} pins the composite count when the stack's
-     * Lambda-construct count is deterministic for this test's config; pass {@code null} when it
-     * depends on optional config (e.g. a GitHub token ARN) and let the assertions derive the
-     * expected child count from however many composites actually synthesized.
+     * Asserts a stack's health-alarm shape: exactly one {@code {stack}-health} composite alarm,
+     * whose rule names every one of the stack's {@code check-}-prefixed alarms, none of which is
+     * itself routed. {@code expectedConstructs} pins the number of Lambda constructs, four checks
+     * each; pass {@code null} when that count depends on optional config (e.g. a GitHub token
+     * ARN).
      */
     @SuppressWarnings("unchecked")
-    static void assertLambdaHealthAlarms(Template template, Integer expectedConstructs, List<String> routedPrefixes) {
-        if (expectedConstructs != null) {
-            template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", expectedConstructs);
-        }
+    static void assertStackHealthAlarm(Template template, Integer expectedConstructs, List<String> routedPrefixes) {
+        template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
 
         Map<String, Map<String, Object>> composites = template.findResources("AWS::CloudWatch::CompositeAlarm");
-        for (Map.Entry<String, Map<String, Object>> entry : composites.entrySet()) {
-            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
-            String alarmName = String.valueOf(props == null ? null : props.get("AlarmName"));
-            org.junit.jupiter.api.Assertions.assertTrue(
-                    alarmName.endsWith(Lambda.HEALTH_ALARM_NAME_SUFFIX),
-                    "Composite alarm " + entry.getKey() + " name '" + alarmName + "' does not end with "
-                            + Lambda.HEALTH_ALARM_NAME_SUFFIX);
-            boolean routed = false;
-            for (String prefix : routedPrefixes) {
-                if (alarmName.startsWith(prefix)) {
-                    routed = true;
-                    break;
-                }
-            }
-            org.junit.jupiter.api.Assertions.assertTrue(
-                    routed,
-                    "Composite alarm '" + alarmName + "' does not start with any routed prefix " + routedPrefixes
-                            + " — it is a silent alarm");
-        }
+        Map.Entry<String, Map<String, Object>> composite =
+                composites.entrySet().iterator().next();
+        Map<String, Object> compositeProps =
+                (Map<String, Object>) composite.getValue().get("Properties");
+        String compositeName = String.valueOf(compositeProps.get("AlarmName"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                compositeName.endsWith(Lambda.HEALTH_ALARM_NAME_SUFFIX),
+                "Composite alarm " + composite.getKey() + " name '" + compositeName + "' does not end with "
+                        + Lambda.HEALTH_ALARM_NAME_SUFFIX);
+        org.junit.jupiter.api.Assertions.assertTrue(
+                startsWithAny(compositeName, routedPrefixes),
+                "Composite alarm '" + compositeName + "' does not start with any routed prefix " + routedPrefixes
+                        + " — it is a silent alarm");
 
-        Map<String, Map<String, Object>> alarms = template.findResources("AWS::CloudWatch::Alarm");
-        long checkAlarmCount = 0;
-        for (Map.Entry<String, Map<String, Object>> entry : alarms.entrySet()) {
+        var checkAlarmLogicalIds = new ArrayList<String>();
+        for (Map.Entry<String, Map<String, Object>> entry :
+                template.findResources("AWS::CloudWatch::Alarm").entrySet()) {
             Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
             if (props == null) continue;
             String alarmName = String.valueOf(props.get("AlarmName"));
             if (!alarmName.startsWith(Lambda.CHECK_ALARM_NAME_PREFIX)) continue;
-            checkAlarmCount++;
-            boolean routed = false;
-            for (String prefix : routedPrefixes) {
-                if (alarmName.startsWith(prefix)) {
-                    routed = true;
-                    break;
-                }
-            }
+            checkAlarmLogicalIds.add(entry.getKey());
             org.junit.jupiter.api.Assertions.assertFalse(
-                    routed,
+                    startsWithAny(alarmName, routedPrefixes),
                     "check- alarm '" + alarmName + "' unexpectedly starts with a routed prefix " + routedPrefixes
-                            + " — it would double-notify alongside its composite");
+                            + " — it would double-notify alongside its stack's composite");
         }
 
-        long expectedCheckAlarms = 4L * composites.size();
-        org.junit.jupiter.api.Assertions.assertEquals(
-                expectedCheckAlarms,
-                checkAlarmCount,
-                "Expected " + expectedCheckAlarms + " check- alarms for " + composites.size()
-                        + " composite health alarms, found " + checkAlarmCount);
+        if (expectedConstructs != null) {
+            org.junit.jupiter.api.Assertions.assertEquals(
+                    4 * expectedConstructs,
+                    checkAlarmLogicalIds.size(),
+                    "Expected four check- alarms for each of " + expectedConstructs + " Lambda constructs, found "
+                            + checkAlarmLogicalIds.size());
+        }
+
+        // A function whose stack forgot to fan it in has four alarms nobody is watching.
+        var referenced = new ArrayList<String>();
+        collectGetAttTargets(compositeProps.get("AlarmRule"), referenced);
+        var unreferenced = new ArrayList<>(checkAlarmLogicalIds);
+        unreferenced.removeAll(referenced);
+        org.junit.jupiter.api.Assertions.assertTrue(
+                unreferenced.isEmpty(),
+                "These check- alarms are missing from composite '" + compositeName + "': " + unreferenced);
+    }
+
+    private static boolean startsWithAny(String value, List<String> prefixes) {
+        for (String prefix : prefixes) {
+            if (value.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    /** Collects the logical ids an alarm rule refers to, from the Fn::GetAtt calls in its Fn::Join. */
+    @SuppressWarnings("unchecked")
+    private static void collectGetAttTargets(Object node, List<String> into) {
+        if (node instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) node;
+            Object getAtt = map.get("Fn::GetAtt");
+            if (getAtt instanceof List && !((List<Object>) getAtt).isEmpty()) {
+                into.add(String.valueOf(((List<Object>) getAtt).get(0)));
+            }
+            map.values().forEach(value -> collectGetAttTargets(value, into));
+        } else if (node instanceof List) {
+            ((List<Object>) node).forEach(value -> collectGetAttTargets(value, into));
+        }
     }
 
     /**

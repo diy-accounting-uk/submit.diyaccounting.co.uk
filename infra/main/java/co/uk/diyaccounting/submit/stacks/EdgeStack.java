@@ -653,6 +653,8 @@ public class EdgeStack extends Stack {
                 "Created WAF logging (blocks only) and scan-detect Lambda %s subscribed to it",
                 wafScanDetectLambda.ingestLambda.getNode().getId());
 
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
+
         // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
         // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
         this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")

@@ -131,13 +131,13 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // Composite health alarms route through OpsStack's AlarmStateChangeRule, which matches
+        // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
         // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
         // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
         // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
         // hardcoded above).
         List<String> envRoutedPrefixes = List.of("test-env-");
-        SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(analytics, 2, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
         // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
@@ -160,7 +160,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(billingWebhook, 1, envRoutedPrefixes);
+            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,

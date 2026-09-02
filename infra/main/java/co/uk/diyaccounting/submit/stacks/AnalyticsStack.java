@@ -378,6 +378,9 @@ public class AnalyticsStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
+        Lambda.stackHealthAlarm(
+                this, prefix, "analytics", List.of(transformLambda, tableChangeDelivery.consumerLambdaConstruct));
+
         var stripeTables = new StripeReconciliationTables(
                 this,
                 StripeReconciliationTables.StripeReconciliationTablesProps.builder()

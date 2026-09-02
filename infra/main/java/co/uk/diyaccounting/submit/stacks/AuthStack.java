@@ -12,6 +12,7 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -245,6 +246,12 @@ public class AuthStack extends Stack {
         infof(
                 "Granted Security State Table read/write and AdminUserGlobalSignOut to %s",
                 this.customAuthorizerLambda.getFunctionName());
+
+        Lambda.stackHealthAlarm(
+                this,
+                props.resourceNamePrefix(),
+                "auth",
+                List.of(exchangeCognitoTokenLambdaUrlOrigin, customAuthorizerLambda));
 
         // cfnOutput(this, "AuthUrlCognitoLambdaArn", this.cognitoAuthUrlGetLambda.getFunctionArn());
         cfnOutput(this, "ExchangeCognitoTokenLambdaArn", this.cognitoTokenPostLambda.getFunctionArn());
