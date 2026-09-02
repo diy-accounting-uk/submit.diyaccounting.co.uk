@@ -19,13 +19,6 @@ operator step before them is done or when SSO is live.
   collection was restored (2026-08-31), but confirm rather than assume once the
   funnel has run a few days (GA4 property 523400333, or BigQuery
   `analytics_523400333`).
-- [ ] **(B43) Cost optimisation, `PLAN_COST_OPTIMISATION.md`: steady-state prod
-  $253.01 → $64.77/month before VAT.** Provisioned concurrency stays by operator decision.
-  43.1–43.4 and the `invoice.paid` fix are live in prod (deployment prod-6f1779b,
-  2026-09-02; the first prod synthetic run passed with the durable `synthetic-*` users).
-  Claude Code: confirm the next real renewal refreshes tokens (`subscription-renewed`
-  published). Then check the next bill moved as predicted, and confirm the GCP billing
-  budget alert and delete the stray project (row 43).
 
 ## Discipline
 

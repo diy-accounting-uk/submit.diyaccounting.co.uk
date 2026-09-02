@@ -33,9 +33,7 @@ truthfully on its own.
 
 ## Tier 1: do next
 
-| # | Item | Source | Effort | Value |
-|---|---|---|---|---|
-| 43 | Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (2026-09-02): a monthly check that the bill moved the way the plan predicted, and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
+(empty)
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
@@ -72,6 +70,7 @@ truthfully on its own.
 | 16a | Define the CSV contract: column names and their mapping to the nine VAT boxes, published as a fixture both repos test against | Split from #16 | S | Revenue. The interface spans two repos, so it is the part that cannot be changed cheaply later. Submit has an export path today and no import path, so the contract has to be written before either side builds. |
 | 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
 | 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
+| 43 | Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (all four cuts and the `invoice.paid` fix live in prod since 2026-09-02): confirm the next real renewal refreshes tokens (`subscription-renewed` published); a monthly check that the bill moved the way the plan predicted (steady-state target $64.77/month before VAT); and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
 | 47 | Confirm the weekly `compliance` and `stack-drift` crons fire on their own on Monday 2026-09-07 06:00 UTC (both revival runs are green); watch `codeql` on 2026-09-06 and revive it the same way if it misses again | Schedule revival, 2026-08-31 | S | Hygiene. A schedule that only runs when poked is not a schedule; one self-fire closes it. |
 | 48 | Manual `certbot renew` in the week of 2026-11-29: run `aws sso login --sso-session diyaccounting` first, command in `_developers/SETUP.md`. The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed and cannot refresh unattended | Certbot setup | S | Hygiene. The local dev certificate lapses without it; date-gated, operator session needed. |
 
