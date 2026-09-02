@@ -2198,12 +2198,18 @@ jobs:
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
-    if: ${{ !cancelled() && needs.web-test.result == 'success' }}
+    # Requires set-origins too, not just web-test: without this, a deployment whose
+    # EdgeStack/cutover failed could still get marked "last known good" purely on tests
+    # passing, while CloudFront kept serving something else entirely (reproduced live
+    # 2026-09-01/02 - three EdgeStack bugs blocked set-origins for hours while this job
+    # kept advancing the SSM pointer regardless).
+    if: ${{ !cancelled() && needs.web-test.result == 'success' && needs.set-origins.result == 'success' }}
     name: 'set last known good deployment'
     needs:
       - names
       - web-test
       - disable-native-auth
+      - set-origins
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
