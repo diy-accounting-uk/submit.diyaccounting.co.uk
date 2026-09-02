@@ -44,6 +44,7 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
 import {
   handler,
   defaultTargetDate,
+  defaultReconciliationDate,
   pollUntilTerminal,
   parseResultSet,
   runAthenaQuery,
@@ -105,6 +106,15 @@ describe("analyticsMetricsPublish", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-08-29T05:00:00Z"));
       expect(defaultTargetDate()).toBe("2026-08-28");
+      vi.useRealTimers();
+    });
+  });
+
+  describe("defaultReconciliationDate", () => {
+    test("returns two days ago in UTC as YYYY-MM-DD", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-08-29T05:00:00Z"));
+      expect(defaultReconciliationDate()).toBe("2026-08-27");
       vi.useRealTimers();
     });
   });
@@ -303,7 +313,7 @@ describe("analyticsMetricsPublish", () => {
       expect(mockCloudWatchSend).not.toHaveBeenCalled();
     });
 
-    test("uses the explicit event date over yesterday", async () => {
+    test("uses the explicit event date over yesterday, for every definition including the reconciliation trio", async () => {
       mockAllQueriesSucceedEmpty();
 
       await handler({ date: "2020-01-01" });
@@ -315,6 +325,25 @@ describe("analyticsMetricsPublish", () => {
       for (const [command] of startCalls) {
         expect(command.input.QueryString).toContain("2020-01-01");
       }
+    });
+
+    test("on the unmanned default, queries the reconciliation trio two days ago and everything else yesterday", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-08-29T05:00:00Z"));
+      mockAllQueriesSucceedEmpty();
+
+      await handler();
+
+      vi.useRealTimers();
+
+      const startCalls = mockAthenaSend.mock.calls.filter(
+        ([command]) => command.constructor.name === "StartQueryExecutionCommand",
+      );
+      const reconciliationNames = ["Ga4Purchases", "StripePaidCharges", "ActivityActivations"];
+      METRIC_DEFINITIONS.forEach((definition, index) => {
+        const expectedDate = reconciliationNames.includes(definition.metricName) ? "2026-08-27" : "2026-08-28";
+        expect(startCalls[index][0].input.QueryString).toContain(expectedDate);
+      });
     });
 
     test("maps a successful result set to a published metric and stops on the first failing query", async () => {
