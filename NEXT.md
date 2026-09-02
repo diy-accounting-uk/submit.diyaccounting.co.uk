@@ -33,8 +33,10 @@ operator step before them is done or when SSO is live.
   and cannot refresh unattended, so the run that matters needs a live session.
 - [ ] **(B43) Cost optimisation, `PLAN_COST_OPTIMISATION.md`: steady-state prod
   $253.01 → $64.77/month before VAT once 43.1–43.4 land.** Provisioned concurrency stays
-  by operator decision. All four are being implemented now on the `invoice.paid` fix's PR
-  branch so they ship as one prod deploy.
+  by operator decision. All four are integrated on PR #102 with the `invoice.paid` fix so
+  they ship as one prod deploy; `npm test` and `./mvnw clean verify` pass on the branch and
+  its ci deploy is running. After the merge: check the next bill moved as predicted, and
+  confirm the GCP billing budget alert and delete the stray project (row 43).
   - [ ] **(B43.1) Exclude `GetRecords` from CloudTrail DynamoDB data events.** Advanced
     event selector in `ObservabilityStack.java`; no detector reads it. $171.99 → $6.75,
     saves $165.24. Effort S.
@@ -50,8 +52,9 @@ operator step before them is done or when SSO is live.
 - [ ] **Merge the `invoice.paid` fix once the operator says when.** Live Stripe
   invoices on API version `2026-01-28.clover` carry the subscription id at
   `parent.subscription_details.subscription`, not `invoice.subscription`, so every
-  real renewal currently skips token refresh. Fix is on a PR awaiting a merge
-  decision, held because each code merge to main is a full prod deployment.
+  real renewal currently skips token refresh. The fix is on PR #102 with 43.1–43.4,
+  awaiting the operator's merge decision because each code merge to main is a full prod
+  deployment. After the merge, name the then-stale prod app set to `destroy-prod.yml`.
 
 ## Discipline
 
