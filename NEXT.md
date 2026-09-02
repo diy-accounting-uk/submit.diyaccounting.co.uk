@@ -30,26 +30,16 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **(B14) Scheduled ingestion, remainder.** Phases 2, 3, 6 verified live in
-  both ci and prod 2026-09-02 with real evidence: GA4 BigQuery session counts
-  matched the Data API exactly in both; prod's real 02:15 UTC scheduled
-  execution `SUCCEEDED` end to end with no manual start needed. Phase 4's two
-  ci threads are resolved — the metric-visibility gap was slow CloudWatch
-  propagation, not a bug; `activity_activations=0` in ci is permanent and
-  structural, since every ci behaviour-test checkout runs through Stripe
-  test-mode and is tagged `actor='test-user'`, which the view's
-  `actor='customer'` filter can never match. The real bug found (`Ga4Purchases`
-  reading 0 forever on an unmanned run, `D-2`/`D-1` default mismatch) is fixed
-  in PR #98 (`claude/fix-ga4-reconciliation-date-offset`), awaiting merge. One
-  thing stays open, unrelated to the fix: prod's `activity_activations=0` is
-  unproven either way — real live-mode Stripe webhooks succeed (confirmed in
-  CloudWatch logs), but `activity_events_all` in this account only covers
-  2026-08-29 onward, before any of those real events recurred — needs a real
-  renewal or checkout to land before this counts as verified.
+- [ ] **(B14) prod's `activity_activations=0` is unproven either way.** Real
+  live-mode Stripe webhooks succeed (confirmed in CloudWatch logs), but
+  `activity_events_all` in this account only covers 2026-08-29 onward, before
+  any of those real events recurred — needs a real renewal or checkout to land
+  before this counts as verified.
 - [ ] **`supportTicketPost.js`'s GitHub wiring is dormant.** `GITHUB_TOKEN_SECRET_ARN`
   is never provisioned by any workflow, so support-ticket-to-issue is wired in code
   but never deployed. Surfaced while proving B20/20a's alarm→issue path live in ci;
   a separate deploy-gap fix, not part of that proof.
+
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)

@@ -429,7 +429,7 @@ morning's scheduled run also shows `SUCCEEDED` with no manual start.
 
 # Phase 4: cross-source reconciliation
 
-**Status: verified live in ci and prod 2026-09-02, one real bug found and open.**
+**Status: verified live in ci and prod 2026-09-02, one real bug found and fixed (PR #98).**
 
 The CloudWatch visibility gap was slow propagation, not a bug: re-queried a few hours
 later, `GetMetricData` returns all three metrics for ci's 2026-08-31 run
