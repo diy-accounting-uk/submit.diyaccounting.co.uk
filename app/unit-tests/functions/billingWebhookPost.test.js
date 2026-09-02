@@ -157,7 +157,7 @@ describe("billingWebhookPost", () => {
     mockGetSubscription.mockResolvedValue(null);
     mockChargesRetrieve.mockResolvedValue({ id: "ch_test", billing_details: { email: "user@example.com" }, payment_intent: "pi_test" });
     mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test", invoice: "in_test" });
-    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test", subscription: "sub_test_456" });
+    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test", parent: { subscription_details: { subscription: "sub_test_456" } } });
     mockDisputesClose.mockResolvedValue({ id: "dp_test", status: "lost" });
     mockSubscriptionsRetrieve.mockResolvedValue({
       id: "sub_test_456",
@@ -294,7 +294,7 @@ describe("billingWebhookPost", () => {
       id: "evt_test_invoice",
       type: "invoice.paid",
       data: {
-        object: { id: "in_test_123", subscription: "sub_test_456" },
+        object: { id: "in_test_123", parent: { subscription_details: { subscription: "sub_test_456" } } },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -309,14 +309,23 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
-  test("invoice.paid skips when no subscription record found", async () => {
-    mockGetSubscription.mockResolvedValue(null);
+  test("invoice.paid refreshes tokens when the subscription is an expanded object", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const periodEnd = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+    mockSubscriptionsRetrieve.mockResolvedValue({
+      id: "sub_test_456",
+      current_period_end: periodEnd,
+    });
 
     const payload = {
-      id: "evt_test_invoice",
+      id: "evt_test_invoice_expanded",
       type: "invoice.paid",
       data: {
-        object: { id: "in_test_123", subscription: "sub_test_456" },
+        object: { id: "in_test_expanded", parent: { subscription_details: { subscription: { id: "sub_test_456", status: "active" } } } },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -325,6 +334,45 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
+    expect(mockGetSubscription).toHaveBeenCalledWith("stripe#sub_test_456");
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledTimes(1);
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident-pro", 100, expect.any(String));
+  });
+
+  test("invoice.paid skips when no subscription record found", async () => {
+    mockGetSubscription.mockResolvedValue(null);
+
+    const payload = {
+      id: "evt_test_invoice",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_123", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("invoice.paid skips when invoice carries no subscription id", async () => {
+    const payload = {
+      id: "evt_test_invoice_no_sub",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_no_sub", parent: { subscription_details: null } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockGetSubscription).not.toHaveBeenCalled();
     expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
   });
 
@@ -481,7 +529,7 @@ describe("billingWebhookPost", () => {
       id: "evt_test_payment_failed",
       type: "invoice.payment_failed",
       data: {
-        object: { id: "in_test_fail", subscription: "sub_test_456" },
+        object: { id: "in_test_fail", parent: { subscription_details: { subscription: "sub_test_456" } } },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -496,6 +544,30 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
   });
 
+  test("invoice.payment_failed updates bundle when the subscription is an expanded object", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+
+    const payload = {
+      id: "evt_test_payment_failed_expanded",
+      type: "invoice.payment_failed",
+      data: {
+        object: { id: "in_test_fail_expanded", parent: { subscription_details: { subscription: { id: "sub_test_456", status: "past_due" } } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const event = buildWebhookEvent(payload);
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockGetSubscription).toHaveBeenCalledWith("stripe#sub_test_456");
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due" });
+  });
+
   test("invoice.payment_failed skips when no subscription record found", async () => {
     mockGetSubscription.mockResolvedValue(null);
 
@@ -503,7 +575,7 @@ describe("billingWebhookPost", () => {
       id: "evt_test_payment_failed",
       type: "invoice.payment_failed",
       data: {
-        object: { id: "in_test_fail", subscription: "sub_test_456" },
+        object: { id: "in_test_fail", parent: { subscription_details: { subscription: "sub_test_456" } } },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -521,7 +593,7 @@ describe("billingWebhookPost", () => {
       id: "evt_test_payment_failed_no_sub",
       type: "invoice.payment_failed",
       data: {
-        object: { id: "in_test_fail_no_sub", subscription: null },
+        object: { id: "in_test_fail_no_sub", parent: { subscription_details: null } },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
@@ -593,7 +665,7 @@ describe("billingWebhookPost", () => {
     });
     mockInvoicesRetrieve.mockResolvedValue({
       id: "in_test_dispute",
-      subscription: "sub_test_dispute_456",
+      parent: { subscription_details: { subscription: "sub_test_dispute_456" } },
     });
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_dispute_456",
@@ -642,7 +714,7 @@ describe("billingWebhookPost", () => {
     });
     mockInvoicesRetrieve.mockResolvedValue({
       id: "in_test_no_sub",
-      subscription: "sub_test_not_found",
+      parent: { subscription_details: { subscription: "sub_test_not_found" } },
     });
     mockGetSubscription.mockResolvedValue(null);
 
@@ -727,7 +799,7 @@ describe("billingWebhookPost", () => {
     const payload = {
       id: "evt_test_invoice_activity",
       type: "invoice.paid",
-      data: { object: { id: "in_test_activity", subscription: "sub_test_456" } },
+      data: { object: { id: "in_test_activity", parent: { subscription_details: { subscription: "sub_test_456" } } } },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
@@ -787,7 +859,7 @@ describe("billingWebhookPost", () => {
     const payload = {
       id: "evt_test_payment_failed_activity",
       type: "invoice.payment_failed",
-      data: { object: { id: "in_test_fail_activity", subscription: "sub_test_456" } },
+      data: { object: { id: "in_test_fail_activity", parent: { subscription_details: { subscription: "sub_test_456" } } } },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);
 
@@ -805,7 +877,10 @@ describe("billingWebhookPost", () => {
       payment_intent: "pi_test_dispute_activity",
     });
     mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test_dispute_activity", invoice: "in_test_dispute_activity" });
-    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test_dispute_activity", subscription: "sub_test_dispute_activity" });
+    mockInvoicesRetrieve.mockResolvedValue({
+      id: "in_test_dispute_activity",
+      parent: { subscription_details: { subscription: "sub_test_dispute_activity" } },
+    });
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_dispute_activity",
       hashedSub: "hashed_sub_dispute",
@@ -833,7 +908,10 @@ describe("billingWebhookPost", () => {
       payment_intent: "pi_test_no_sub_activity",
     });
     mockPaymentIntentsRetrieve.mockResolvedValue({ id: "pi_test_no_sub_activity", invoice: "in_test_no_sub_activity" });
-    mockInvoicesRetrieve.mockResolvedValue({ id: "in_test_no_sub_activity", subscription: "sub_test_not_found_activity" });
+    mockInvoicesRetrieve.mockResolvedValue({
+      id: "in_test_no_sub_activity",
+      parent: { subscription_details: { subscription: "sub_test_not_found_activity" } },
+    });
     mockGetSubscription.mockResolvedValue(null);
 
     const payload = {

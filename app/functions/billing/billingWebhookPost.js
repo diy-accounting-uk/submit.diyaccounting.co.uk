@@ -82,6 +82,18 @@ async function resolveWebhookSecret({ test = false } = {}) {
   throw new Error("No Stripe webhook secret configured");
 }
 
+// Since Stripe API version 2025-03-31.basil, invoice objects no longer carry a
+// top-level `subscription` field — the id moved to
+// invoice.parent.subscription_details.subscription, either as a plain string
+// or, when expanded, an object carrying an `id`.
+function subscriptionIdFromInvoice(invoice) {
+  const subscription = invoice.parent?.subscription_details?.subscription;
+  if (subscription && typeof subscription === "object") {
+    return subscription.id;
+  }
+  return subscription || null;
+}
+
 function getCatalogTokensGranted(bundleId) {
   try {
     const catalog = loadCatalogFromRoot();
@@ -171,7 +183,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 }
 
 async function handleInvoicePaid(invoice, { test = false } = {}) {
-  const subscriptionId = invoice.subscription;
+  const subscriptionId = subscriptionIdFromInvoice(invoice);
   if (!subscriptionId) {
     logger.info({ message: "invoice.paid without subscription, skipping", invoiceId: invoice.id });
     return;
@@ -308,13 +320,13 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
 }
 
 async function handlePaymentFailed(invoice, { test = false } = {}) {
+  const subscriptionId = subscriptionIdFromInvoice(invoice);
   logger.warn({
     message: "Processing invoice.payment_failed",
-    subscriptionId: invoice.subscription,
+    subscriptionId,
     invoiceId: invoice.id,
   });
 
-  const subscriptionId = invoice.subscription;
   if (!subscriptionId) return;
 
   const subRecord = await getSubscription(`stripe#${subscriptionId}`);
@@ -442,7 +454,7 @@ export async function ingestHandler(event) {
                 : charge.payment_intent;
             if (pi.invoice) {
               const inv = typeof pi.invoice === "string" ? await stripeClient.invoices.retrieve(pi.invoice) : pi.invoice;
-              disputeSubscriptionId = inv.subscription || null;
+              disputeSubscriptionId = subscriptionIdFromInvoice(inv);
             }
           }
         } catch (lookupErr) {
