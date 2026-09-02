@@ -27,8 +27,7 @@ truthfully on its own.
   (cross-account backups: `submit-backup` stacks deployed, `restore-test.yml` succeeded),
   28 (scan and data-theft detection: both stacks live in ci and prod, burst detector fired
   once at threshold in a real ci test).
-- **Verification remainders on NEXT.md**: the weekly-cron self-fire proofs and a first
-  `purchase` event.
+- **Verification remainders on NEXT.md**: a first `purchase` event.
 - **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive).
 - **Next candidates**: the 10a spike when the operator says go.
 
@@ -73,6 +72,8 @@ truthfully on its own.
 | 16a | Define the CSV contract: column names and their mapping to the nine VAT boxes, published as a fixture both repos test against | Split from #16 | S | Revenue. The interface spans two repos, so it is the part that cannot be changed cheaply later. Submit has an export path today and no import path, so the contract has to be written before either side builds. |
 | 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
 | 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
+| 47 | Confirm the weekly `compliance` and `stack-drift` crons fire on their own on Monday 2026-09-07 06:00 UTC (both revival runs are green); watch `codeql` on 2026-09-06 and revive it the same way if it misses again | Schedule revival, 2026-08-31 | S | Hygiene. A schedule that only runs when poked is not a schedule; one self-fire closes it. |
+| 48 | Manual `certbot renew` in the week of 2026-11-29: run `aws sso login --sso-session diyaccounting` first, command in `_developers/SETUP.md`. The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed and cannot refresh unattended | Certbot setup | S | Hygiene. The local dev certificate lapses without it; date-gated, operator session needed. |
 
 ## Tier 4: hardening and compliance
 
