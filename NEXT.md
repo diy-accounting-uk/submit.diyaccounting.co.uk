@@ -68,7 +68,9 @@ operator step before them is done or when SSO is live.
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
 - [ ] **(B28) Scan and data-theft detection — code merged, but two stacks were
-  never actually deployed anywhere.** Both issues merged to main 2026-09-01;
+  never actually deployed anywhere.** A fork is refining this into a concrete
+  plan (exact job YAML, Docker-or-not per stack, dependency ordering); a fresh
+  implementation agent follows once that lands. Both issues merged to main 2026-09-01;
   live-verified against ci 2026-09-02 with a real gap found: `SecurityDetectionStack`
   and `ScanDetectionStack` are both correctly wired into `SubmitEnvironment.java`
   (confirmed by reading the source), but `deploy-environment.yml` has **no deploy
