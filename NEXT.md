@@ -46,21 +46,10 @@ operator step before them is done or when SSO is live.
   CloudWatch logs), but `activity_events_all` in this account only covers
   2026-08-29 onward, before any of those real events recurred — needs a real
   renewal or checkout to land before this counts as verified.
-- [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
-  proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
-  21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
-  still needs its own proof. Resumed 2026-09-01 on the corrected approach: pushed
-  `claude/b20-alerting-deploy`, polling for the auto-triggered ci deploy rather than
-  hand-dispatching with a guessed deployment-name. Only hand-dispatch, with an
-  explicit `--ref`, if no auto-deploy appears. Then the live proof (set-alarm-state
-  on a cheap ci alarm → issue
-  appears → second flip comments, not duplicates), then the B20 fan-out with dedup
-  (this is already built — the shared `AlarmStateChangeRule` matches every alarm by
-  deployment prefix and the Lambda already dedups by commenting, so "fan-out" here
-  is just proving what's shipped, not new work). Adjacent gap surfaced:
-  `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
-  never provisioned by any workflow, so support-ticket-to-issue is wired in code but
-  never deployed.
+- [ ] **`supportTicketPost.js`'s GitHub wiring is dormant.** `GITHUB_TOKEN_SECRET_ARN`
+  is never provisioned by any workflow, so support-ticket-to-issue is wired in code
+  but never deployed. Surfaced while proving B20/20a's alarm→issue path live in ci;
+  a separate deploy-gap fix, not part of that proof.
 - [ ] **(B28) Bundle burst-load test blocked on Bash permission.** Prod deploy
   confirmed (`prod-env-SecurityDetectionStack` and `prod-env-ScanDetectionStack`
   both `CREATE_COMPLETE`) and the `CloudFront-Viewer-Country` header confirmed
@@ -74,14 +63,6 @@ operator step before them is done or when SSO is live.
   Needs the operator to either run the burst themselves or add a Bash
   permission rule covering it; see `PLAN_SECURITY_DETECTION_REMAINDER.md`
   phase 10.2 for the exact commands tried.
-
-## In flight (coordinator session)
-
-Final push 2026-09-02 — remaining items dispatched to finish completely,
-including their own merges, no more partial hand-backs:
-
-- **B20/20a** — finishing the live alarm-flip proof against the fresh ci
-  deployment, no more pausing.
 
 ## Discipline
 
