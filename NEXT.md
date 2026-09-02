@@ -31,9 +31,19 @@ operator step before them is done or when SSO is live.
   `aws sso login --sso-session diyaccounting` first; command in `_developers/SETUP.md`).
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
-- [ ] **(B43) Cost optimisation: operator review of `PLAN_COST_OPTIMISATION.md`.**
-  Analysis only until the operator picks which items to implement; steady-state
-  submit-prod scope, deployment churn excluded.
+- [ ] **(B43) Cost optimisation, four items approved from `PLAN_COST_OPTIMISATION.md`**
+  ($253/month → $65/month steady state; provisioned concurrency stays by operator
+  decision). Each is a code change through a PR; every merge to main is a prod deploy,
+  so batch them.
+  - [ ] Exclude `GetRecords` from CloudTrail DynamoDB data events with an advanced event
+    selector in `ObservabilityStack.java` (saves $165/month; no detector reads it).
+  - [ ] One durable Cognito test user with a rotated password instead of one per run
+    (`scripts/enable-cognito-native-test.js`, `disable-…`; saves $9/month).
+  - [ ] One composite alarm per stack instead of per function, the alternative named in
+    `PLAN_ALARM_CONSOLIDATION.md` (26 → 8 composites; saves $9/month).
+  - [ ] Drop `deployment-name` from the behaviour-test metric dimensions so the
+    `prod-submit.diyaccounting.co.uk` namespace stops growing 13 series per deploy
+    (saves about $5/month).
 - [ ] **Merge the `invoice.paid` fix once the operator says when.** Live Stripe
   invoices on API version `2026-01-28.clover` carry the subscription id at
   `parent.subscription_details.subscription`, not `invoice.subscription`, so every
