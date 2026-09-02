@@ -82,34 +82,10 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
-
-- **B30** — merged and fully live-verified, including the `AnalyticsStack` gap
-  fix (both Lambdas' composite alarms now confirmed present in prod). Done.
-- **cognito-token-post env-var fix** — merged (conflicted with B28 issue-10 on
-  `AuthStack.java`, both additions kept, resolved and verified before merge).
-- **B28** — both issue-9 and issue-10 merged.
-- **B14** — merged. Fix bundled with it: `ci-env-AnalyticsStack`/`DataStack`'s
-  shared custom-resource IAM role was near its 10KB cap (per-resource policy
-  replaced with one minimized per-stack policy), and `deploy-environment.yml`'s
-  `create-secrets` job was missing `actions/checkout` — silently exit-127'ing and
-  skipping all 14 stack deploys in both ci and prod since today's issue-10 merge.
-  Both now fixed and live-verified in ci.
-- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
-  ci deploy in progress.
-- **Prod orphan purge** — done. All four orphaned deployments
-  (`prod-9050bb5`, `prod-a994f29`, `prod-40fc40a`, `prod-ccd8b3e`) torn down;
-  independently re-verified after the fact (not just trusting the sub-agent's
-  own report): only `prod-52127a0`'s stacks remain, CloudFront and SSM both
-  still agree, live site returns HTTP 200.
-- **Wave 2: live-verification agents** — B30 fully done. B14's state-machine
-  execution result still pending, see the open-item bullet above.
-- **B28 deploy-gap design fork** — done. `PLAN_SECURITY_DETECTION_DEPLOY_GAP.md`
-  on branch `claude/b28-deploy-gap-design` (unmerged): `SecurityDetectionStack`
-  is alarm-only, gets the simple `deploy-cdk-stack.yml` template, no Docker;
-  `ScanDetectionStack` needs its own full Docker build (confirmed no job in this
-  file reuses another's image, even when they share the same base `Dockerfile`).
-  Implementation agent follows, on its own branch, ci-verified before merge.
+- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — a fresh
+  ci deployment is up (the prior one self-destructed on its 2-hour TTL before
+  the live proof ran); proceeding straight to the alarm-flip proof once it's
+  confirmed ready.
 
 ## Discipline
 
