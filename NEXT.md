@@ -37,17 +37,6 @@ operator step before them is done or when SSO is live.
   stale deployment while SSM claimed otherwise. All three bugs are fixed and
   prod is confirmed correctly cut over and cleaned up now — this item is just
   the pipeline fix so the same class of drift can't recur.
-- [ ] **(B30) Alarm-count audit, remainder — live-verified with one gap found.**
-  Composite-alarm consolidation (cut 3) and the `activity-telegram-forwarder`
-  tuning confirmed live in prod deployment `prod-52127a0`: 23 composite
-  `-health` alarms, 92 `check-` prefixed children, correct `AlarmRule`s, the
-  widened 2-of-3 tolerance exactly as designed, no leftover old-style alarms —
-  all read-verified against real CloudWatch, not inferred. Gap: `AnalyticsStack`'s
-  two env-level Lambdas (`activity-event-transform`, `dynamo-stream-to-firehose`)
-  are still on the old alarm scheme — that stack's last update (18:12) predates
-  B30's merge (20:38), so it never redeployed. A `deploy-environment.yml` run for
-  prod was dispatched 2026-09-02 to pick this up (env-level only, no
-  CloudFront/WAF, safe alongside the orphan purge); confirm it lands.
 - [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2/3/6 verified for
   real against ci (real Lambda invoke, real Athena queries; state machine
   execution result pending as of 2026-09-02). Then repeat in prod, which is now
@@ -68,9 +57,9 @@ operator step before them is done or when SSO is live.
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
 - [ ] **(B28) Scan and data-theft detection — code merged, but two stacks were
-  never actually deployed anywhere.** A fork is refining this into a concrete
-  plan (exact job YAML, Docker-or-not per stack, dependency ordering); a fresh
-  implementation agent follows once that lands. Both issues merged to main 2026-09-01;
+  never actually deployed anywhere.** Design done: `PLAN_SECURITY_DETECTION_DEPLOY_GAP.md`
+  on branch `claude/b28-deploy-gap-design` has the exact job YAML for both;
+  implementation agent to follow. Both issues merged to main 2026-09-01;
   live-verified against ci 2026-09-02 with a real gap found: `SecurityDetectionStack`
   and `ScanDetectionStack` are both correctly wired into `SubmitEnvironment.java`
   (confirmed by reading the source), but `deploy-environment.yml` has **no deploy
@@ -95,7 +84,8 @@ operator step before them is done or when SSO is live.
 
 Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
 
-- **B30** — merged.
+- **B30** — merged and fully live-verified, including the `AnalyticsStack` gap
+  fix (both Lambdas' composite alarms now confirmed present in prod). Done.
 - **cognito-token-post env-var fix** — merged (conflicted with B28 issue-10 on
   `AuthStack.java`, both additions kept, resolved and verified before merge).
 - **B28** — both issue-9 and issue-10 merged.
@@ -112,9 +102,14 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
   independently re-verified after the fact (not just trusting the sub-agent's
   own report): only `prod-52127a0`'s stacks remain, CloudFront and SSM both
   still agree, live site returns HTTP 200.
-- **Wave 2: live-verification agents** — B30 and B14 done, see the open-item
-  bullets above. B28 found the deploy-job gap, also above. B14's state-machine
-  execution result still pending.
+- **Wave 2: live-verification agents** — B30 fully done. B14's state-machine
+  execution result still pending, see the open-item bullet above.
+- **B28 deploy-gap design fork** — done. `PLAN_SECURITY_DETECTION_DEPLOY_GAP.md`
+  on branch `claude/b28-deploy-gap-design` (unmerged): `SecurityDetectionStack`
+  is alarm-only, gets the simple `deploy-cdk-stack.yml` template, no Docker;
+  `ScanDetectionStack` needs its own full Docker build (confirmed no job in this
+  file reuses another's image, even when they share the same base `Dockerfile`).
+  Implementation agent follows, on its own branch, ci-verified before merge.
 
 ## Discipline
 
