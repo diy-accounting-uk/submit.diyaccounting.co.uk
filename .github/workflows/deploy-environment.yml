@@ -47,6 +47,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ActivityStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
@@ -58,6 +59,7 @@ on:
       # Holding page source
       - 'web/holding/**'
       # Shared utilities and entry point
+      - 'infra/main/java/co/uk/diyaccounting/submit/constructs/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java'
