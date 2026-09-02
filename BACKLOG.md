@@ -27,7 +27,11 @@ truthfully on its own.
   (cross-account backups: `submit-backup` stacks deployed, `restore-test.yml` succeeded),
   28 (scan and data-theft detection: both stacks live in ci and prod, burst detector fired
   once at threshold in a real ci test).
-- **Verification remainders on NEXT.md**: a first `purchase` event.
+- **Verification remainders on NEXT.md**: the `purchase` event check fragmented on 2026-09-02
+  into three residuals, all on `NEXT.md`: retag `purchase` to the Stripe checkout (today it
+  fires on a VAT receipt with `value: 0`); prove the funnel synthetically against a ci GA4
+  property and BigQuery dataset (synthetic traffic never reaches the prod export); then
+  confirm a real `purchase` lands in prod.
 - **Date-gated (Tier 3)**: 47 due 2026-09-06/07; 43 due from 2026-10-02 (GCP part now); 48 due the week of 2026-11-29.
 - **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive).
 - **Next candidates**: the 10a spike when the operator says go.
