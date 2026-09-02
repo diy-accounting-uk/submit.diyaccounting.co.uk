@@ -389,10 +389,10 @@ for the next scheduled run. A `404 scan` message naming that IP and a count abov
 in the ops Telegram chat. Then run `npm run test:submitVatBehaviour-ci` and confirm no
 message is raised for the test runner's traffic.
 
-**Status: not deployed to ci as of 2026-09-02.** No `ci-env-ScanDetectionStack` in
-CloudFormation, no `{env}-env-scan-detect-404` Lambda in eu-west-2, no
-`ci-env-scan-detect-404-errors`/`-missed` alarms. Phase 9.2 has not shipped to this
-environment.
+**Status: verified live in ci 2026-09-02** via the deploy-gap fix (`2c6633a3`).
+`ci-env-ScanDetectionStack` is `UPDATE_COMPLETE`, `ci-env-scan-detect-404` is `Active`,
+and `ci-env-scan-detect-404-errors`/`-missed` alarms both exist. A real scheduled
+invocation of the Lambda was observed in its logs.
 
 ---
 
@@ -637,12 +637,10 @@ ci/submit/user-sub-hash-salt` is denied, and within about ten minutes
 `npm run test:submitVatBehaviour-ci` stays green, which is the check that no Lambda lost its
 read access.
 
-**Status: policy deployed, alarm missing, as of 2026-09-02.** The resource policy on
-`ci/submit/user-sub-hash-salt` is in place with the allow/deny shape above. No
-`ci-env-salt-secret-unexpected-read` alarm exists, and no `SecurityDetectionStack` (or any
-stack containing "Security") appears in ci CloudFormation at all — the metric filter and alarm
-from this phase have not shipped to ci, and neither has the pre-existing Scan/GetItem-volume
-alarm pair the stack was already supposed to hold.
+**Status: verified live in ci 2026-09-02** via the deploy-gap fix (`2c6633a3`).
+`ci-env-SecurityDetectionStack` is `CREATE_COMPLETE`, the resource policy on
+`ci/submit/user-sub-hash-salt` is in place, and `ci-env-salt-secret-unexpected-read` and
+`ci-env-dynamodb-customer-table-getitem-volume` both exist and are `OK`.
 
 ---
 
@@ -937,6 +935,9 @@ runs.
 `scripts/force-logout-all-users.sh ci` signs out the ci test users, and a behaviour run
 started before it has to log in again. Every other command in 6.6 runs read-only against ci
 without error.
+
+**Status: written.** `RUNBOOK_INFORMATION_SECURITY.md` section 6.6 and
+`scripts/force-logout-all-users.sh` both exist. Not independently re-verified this session.
 
 ---
 
