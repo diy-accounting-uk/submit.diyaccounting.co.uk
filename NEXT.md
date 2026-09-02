@@ -14,11 +14,15 @@ operator step before them is done or when SSO is live.
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
-- [ ] **Confirm a `purchase` event lands.** GA4 still shows "No stream data detected"
-  for `purchase` property-wide — expected while no paid flow has completed since
-  collection was restored (2026-08-31), but confirm rather than assume once the
-  funnel has run a few days (GA4 property 523400333, or BigQuery
-  `analytics_523400333`).
+- [ ] **Confirm a `purchase` event lands.** `purchase` fires in `submitVat.html` when a
+  VAT return's receipt is displayed (`begin_checkout` when the form is submitted), so it
+  needs a real customer submission with analytics consent, not a Stripe payment.
+  Synthetic runs never reach the GA4 export (4 `submitVat.html` page views since
+  2026-08-25, all real), and the last customer submission (`actor = customer` in
+  `prod-env-receipts`) was 2026-08-29, before collection was restored on 2026-08-31.
+  Check again after the next customer receipt: `bq --project_id=diyaccounting-ga4
+  --location=europe-west2` against `analytics_523400333.events_*`, or GA4 property
+  523400333.
 
 ## Discipline
 
