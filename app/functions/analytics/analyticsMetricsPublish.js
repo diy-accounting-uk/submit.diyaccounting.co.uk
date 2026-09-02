@@ -113,6 +113,10 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "ga4_purchases",
     dimension: null,
+    // Reconciliation date, not targetDate: ga4EventExportPull only ever writes D-2 data on an
+    // unmanned nightly run (BigQuery's export table for D-1 isn't reliably ready yet), so
+    // querying this trio at D-1 would read ga4_purchases as a permanent, silent zero.
+    usesReconciliationDate: true,
     sql: (day) => `SELECT ga4_purchases FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
   {
@@ -120,6 +124,9 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "stripe_paid_charges",
     dimension: null,
+    // Same reconciliation date as Ga4Purchases: the three counts are only meaningful compared
+    // against each other for the same day (see v_purchase_reconciliation_daily.sql).
+    usesReconciliationDate: true,
     sql: (day) => `SELECT stripe_paid_charges FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
   {
@@ -127,6 +134,7 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "activity_activations",
     dimension: null,
+    usesReconciliationDate: true,
     sql: (day) => `SELECT activity_activations FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
 ];
@@ -158,6 +166,21 @@ export function defaultTargetDate() {
   const now = new Date();
   const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
   return yesterday.toISOString().slice(0, 10);
+}
+
+/**
+ * Two days ago in UTC, as "YYYY-MM-DD" — the day ga4EventExportPull.js actually writes on an
+ * unmanned nightly run, since BigQuery's D-1 export table isn't reliably ready at 03:15 UTC.
+ * The purchase-reconciliation trio (Ga4Purchases, StripePaidCharges, ActivityActivations) reads
+ * this date so all three compare the same day; Stripe and activity data for it are already
+ * written by the time this runs, since each was D-1 on a previous night's run.
+ *
+ * @returns {string}
+ */
+export function defaultReconciliationDate() {
+  const now = new Date();
+  const twoDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 2));
+  return twoDaysAgo.toISOString().slice(0, 10);
 }
 
 function sleep(ms) {
@@ -289,21 +312,26 @@ export async function publishMetricData(metricData, namespace) {
  * published: a failure partway through throws and leaves the whole day unpublished rather than
  * risking a set of metrics where some are missing and others aren't.
  *
- * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides yesterday.
+ * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides yesterday, and
+ *   also overrides the reconciliation trio's date (see defaultReconciliationDate): a manual
+ *   replay for one date runs every definition against that same date, matching what an explicit
+ *   `date` on the state machine's execution input does for every other task in the workflow.
  * @returns {Promise<{date: string, metricsPublished: number}>}
  */
 export async function handler(event = {}) {
   const targetDate = event.date ?? defaultTargetDate();
+  const reconciliationDate = event.date ?? defaultReconciliationDate();
   const workGroup = process.env.ATHENA_WORK_GROUP_NAME;
   const database = process.env.GLUE_DATABASE_NAME;
   if (!workGroup) throw new Error("ATHENA_WORK_GROUP_NAME environment variable is required");
   if (!database) throw new Error("GLUE_DATABASE_NAME environment variable is required");
 
-  const timestamp = new Date(`${targetDate}T00:00:00Z`);
   const metricData = [];
 
   for (const definition of METRIC_DEFINITIONS) {
-    const rows = await runAthenaQuery({ workGroup, database, sql: definition.sql(targetDate) });
+    const day = definition.usesReconciliationDate ? reconciliationDate : targetDate;
+    const rows = await runAthenaQuery({ workGroup, database, sql: definition.sql(day) });
+    const timestamp = new Date(`${day}T00:00:00Z`);
     metricData.push(...toMetricData(definition, rows, timestamp));
   }
 

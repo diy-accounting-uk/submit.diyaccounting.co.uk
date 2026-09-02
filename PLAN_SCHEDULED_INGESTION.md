@@ -451,20 +451,25 @@ Prod verification, run for real against `prod-52127a0`:
   (execution `0d6a9786-a4d8-4337-be9e-b10cbc035be1`, `SUCCEEDED`, all five tasks green).
 - `v_purchase_reconciliation_daily` returns a row (`2026-08-31`, all three counts zero).
 
-**Real bug found: `Ga4Purchases` can never populate on an unmanned nightly run.**
+**Bug found and fixed: `Ga4Purchases` could never populate on an unmanned nightly run.**
 `ga4EventExportPull.js` defaults to `D-2` (GA4's BigQuery export lags a day).
-`analyticsMetricsPublish.js` and `stripeReconcile.js` both default to `D-1`. All three run
+`analyticsMetricsPublish.js` and `stripeReconcile.js` both defaulted to `D-1`. All three ran
 in the same state-machine execution, same night, with no explicit `date`. GA4 data for
-`D-1` is never written until the following night's run, when `D-1` becomes that night's
-`D-2` — a permanent one-day gap that recurs on every automatic run, not a timing fluke.
-`Ga4Purchases` will read 0 forever via the schedule, silently masking real GA4 purchase
+`D-1` was never written until the following night's run, when `D-1` became that night's
+`D-2` — a permanent one-day gap that recurred on every automatic run, not a timing fluke.
+`Ga4Purchases` would read 0 forever via the schedule, silently masking real GA4 purchase
 counts through `coalesce(ga4.purchases, 0)`. ci's own phase-4 proof only worked because
 the verification execution passed an explicit `{"date": "2026-08-31"}`, which overrides
-every task's default and hides the mismatch. `StripePaidCharges` and `ActivityActivations`
-don't have this problem: their own source jobs default to `D-1` too, so they align with
-what metrics-publish queries. Needs a decision: move `ga4EventExportPull.js`'s default to
-`D-1` (risking a missing BigQuery table some nights), or have the reconciliation metrics
-read `D-2` specifically, or accept the view running a day behind.
+every task's default and hid the mismatch.
+
+Fixed in `analyticsMetricsPublish.js`: the three purchase-reconciliation metrics
+(`Ga4Purchases`, `StripePaidCharges`, `ActivityActivations`) now share a
+`defaultReconciliationDate()` of `D-2`, matching what `ga4EventExportPull.js` actually
+writes on an unmanned run, instead of the general `defaultTargetDate()` (`D-1`) every other
+metric definition still uses. Stripe and activity data for `D-2` are already written by the
+time this runs, since each was `D-1` on the previous night's run. An explicit `event.date`
+still overrides both dates identically, so a manual replay for one date runs every
+definition against that date, unchanged from before.
 
 `activity_activations` reading 0 in prod is not proven to be a bug, and is not proven
 fixed either — it stays open. Prod's real live-mode webhook path works: CloudWatch logs
