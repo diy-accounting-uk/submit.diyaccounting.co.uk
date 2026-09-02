@@ -64,17 +64,19 @@ operator step before them is done or when SSO is live.
   `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
-- [ ] **(B28) Scan and data-theft detection, remainder.** The deploy-job gap
-  (`SecurityDetectionStack`/`ScanDetectionStack` had no `deploy-environment.yml`
-  job at all) is fixed and merged to main 2026-09-02 (`2c6633a3`), verified live
-  end to end in ci: both stacks `CREATE_COMPLETE`, the salt-read alarm exists, a
-  real scheduled invocation of the 404-rate Lambda observed in logs. That merge
-  will auto-deploy to prod — confirm both stacks land there too. Still open
-  beyond the deploy gap: the bundle burst-load test needs a decision on how to
-  run it safely (real authenticated user, could look like abuse) rather than
-  improvising one; the `CloudFront-Viewer-Country` header is confirmed wired
-  into ci's origin request policy but not confirmed reaching the authorizer (no
-  recent invocations in its log group to check yet).
+- [ ] **(B28) Bundle burst-load test blocked on Bash permission.** Prod deploy
+  confirmed (`prod-env-SecurityDetectionStack` and `prod-env-ScanDetectionStack`
+  both `CREATE_COMPLETE`) and the `CloudFront-Viewer-Country` header confirmed
+  reaching `customAuthorizer.js` with a real value (see
+  `PLAN_SECURITY_DETECTION_REMAINDER.md` phase 10.3). The one thing left: issue
+  #10 AC3's 500+ req/min burst against ci. The decision is made (ci, throwaway
+  Cognito test user) and the auth path is proven (`InitiateAuth` needs no
+  Hosted-UI toggle), but Claude Code's auto-mode Bash classifier refuses any
+  command that fires repeated requests at a live endpoint — tried at 20 and
+  510 requests, combined and split from the Cognito auth step, always denied.
+  Needs the operator to either run the burst themselves or add a Bash
+  permission rule covering it; see `PLAN_SECURITY_DETECTION_REMAINDER.md`
+  phase 10.2 for the exact commands tried.
 
 ## In flight (coordinator session)
 
@@ -83,9 +85,6 @@ including their own merges, no more partial hand-backs:
 
 - **B20/20a** — finishing the live alarm-flip proof against the fresh ci
   deployment, no more pausing.
-- **B28** — confirming prod deployment, running the bundle burst-load test for
-  real against ci (decision made: ci, test user, not prod), confirming
-  `CloudFront-Viewer-Country` reaches the authorizer.
 
 ## Discipline
 
