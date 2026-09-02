@@ -37,10 +37,22 @@ operator step before them is done or when SSO is live.
   stale deployment while SSM claimed otherwise. All three bugs are fixed and
   prod is confirmed correctly cut over and cleaned up now — this item is just
   the pipeline fix so the same class of drift can't recur.
-- [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2/3/6 verified for
-  real against ci (real Lambda invoke, real Athena queries; state machine
-  execution result pending as of 2026-09-02). Then repeat in prod, which is now
-  also live and current for the first time today.
+- [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2, 3, 6 verified
+  live in ci 2026-09-02 with real evidence: phase 2's BigQuery-derived session
+  count matched GA4's own Data API count exactly (12=12); phase 3's real state
+  machine execution `SUCCEEDED` end to end; phase 6 rode along inside it. Phase
+  4 partial: `v_purchase_reconciliation_daily` returns rows correctly, but two
+  things need attention — `activity_activations` reads 0 across the last 14
+  days despite non-zero Stripe charges (matches the "webhook path broke" signal
+  the view's own design doc names; may be a ci-only synthetic-charge artifact,
+  not yet distinguished), and the three new CloudWatch metrics show zero
+  datapoints via `GetMetricData` despite clean publish logs and being listed
+  "recently active" — a pre-existing metric published in the same Lambda
+  invocation at the same timestamp WAS queryable within minutes, so this isn't
+  a code difference found yet. Re-check the metrics in an hour or two before
+  concluding it's stuck rather than slow. Once phase 4 settles: repeat the
+  whole verification in prod, which is now also live and current for the first
+  time today.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
   21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
