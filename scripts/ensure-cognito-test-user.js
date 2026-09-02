@@ -2,33 +2,60 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 //
-// Create a Cognito test user for behavior tests, with TOTP MFA enrollment
+// Ensure the durable Cognito test user for a test lane exists, and rotate its credentials
 //
-// Usage: node scripts/create-cognito-test-user.js <environment-name>
-// Example: node scripts/create-cognito-test-user.js ci
+// Usage: node scripts/ensure-cognito-test-user.js <environment-name> <test-lane>
+// Example: node scripts/ensure-cognito-test-user.js ci submitVatBehaviour
 //
-// This script creates a test user in the Cognito user pool for the specified environment,
-// enrolls a TOTP device, and sets TOTP as the preferred MFA method.
-// It outputs the credentials as environment variables that can be used by behavior tests.
+// Each test lane keeps one durable user in the environment's user pool. The user is created
+// once and reused, so a run costs no new monthly active user. Every run rotates the password,
+// re-enrols the TOTP device and purges the user's DynamoDB data, so credentials never outlive
+// the run that issued them and a run never inherits the previous run's bundles or receipts.
+//
+// Lanes that run in parallel need separate users: the behaviour suites clear and re-grant
+// bundles for whoever they log in as, and a rotation from one lane would invalidate another
+// lane's password mid-run.
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
+  AdminGetUserCommand,
   AdminSetUserPasswordCommand,
   InitiateAuthCommand,
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
   AdminSetUserMFAPreferenceCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+import { execFileSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
 
-const environmentName = process.argv[2] || "ci";
+const environmentName = process.argv[2];
+const testLane = process.argv[3];
+
+if (!environmentName || !testLane) {
+  console.error("Usage: node scripts/ensure-cognito-test-user.js <environment-name> <test-lane>");
+  process.exit(1);
+}
+
+function durableTestUserEmail(lane) {
+  const slug = lane
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  if (!slug) throw new Error(`Test lane "${lane}" has no usable characters`);
+  return `synthetic-${slug}@test.diyaccounting.co.uk`;
+}
 
 async function main() {
-  console.log("=== Creating Cognito Test User ===");
+  const testEmail = durableTestUserEmail(testLane);
+
+  console.log("=== Ensuring Cognito Test User ===");
   console.log(`Environment: ${environmentName}`);
+  console.log(`Test lane: ${testLane}`);
+  console.log(`Username: ${testEmail}`);
   console.log(`AWS Region: ${process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "not set"}`);
   console.log("");
 
@@ -69,33 +96,39 @@ async function main() {
     process.exit(1);
   }
 
-  // Generate unique test user credentials
-  const timestamp = Date.now();
-  const randomHex = crypto.randomBytes(4).toString("hex");
-  const testEmail = `test-${timestamp}-${randomHex}@test.diyaccounting.co.uk`;
   const testPassword = `Test${crypto.randomBytes(8).toString("hex")}Aa1#`;
-
-  console.log(`Creating test user: ${testEmail}`);
-
   const cognitoClient = new CognitoIdentityProviderClient({});
 
   try {
-    // Create the user using AdminCreateUser
-    await cognitoClient.send(
-      new AdminCreateUserCommand({
-        UserPoolId: userPoolId,
-        Username: testEmail,
-        UserAttributes: [
-          { Name: "email", Value: testEmail },
-          { Name: "email_verified", Value: "true" },
-        ],
-        MessageAction: "SUPPRESS",
-      }),
-    );
+    try {
+      await cognitoClient.send(
+        new AdminCreateUserCommand({
+          UserPoolId: userPoolId,
+          Username: testEmail,
+          UserAttributes: [
+            { Name: "email", Value: testEmail },
+            { Name: "email_verified", Value: "true" },
+          ],
+          MessageAction: "SUPPRESS",
+        }),
+      );
+      console.log("Created the durable test user");
+    } catch (error) {
+      if (error.name !== "UsernameExistsException") throw error;
+      console.log("Reusing the existing durable test user");
+    }
 
-    console.log("Setting permanent password...");
+    const user = await cognitoClient.send(new AdminGetUserCommand({ UserPoolId: userPoolId, Username: testEmail }));
+    const userSub = user.UserAttributes?.find((a) => a.Name === "sub")?.Value;
+    if (!userSub) throw new Error(`No sub attribute on ${testEmail}`);
 
-    // Set permanent password (skip forced password change)
+    console.log("Purging the user's data from the previous run...");
+    execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", userSub, "--confirm"], {
+      stdio: "inherit",
+    });
+
+    console.log("Rotating password...");
+
     await cognitoClient.send(
       new AdminSetUserPasswordCommand({
         UserPoolId: userPoolId,
@@ -105,13 +138,25 @@ async function main() {
       }),
     );
 
-    // Enroll TOTP MFA device
+    // Cognito never hands back the secret of an enrolled TOTP device, so a reused user can only
+    // be re-enrolled. Turning the software token off first lets the password login below return
+    // tokens instead of an MFA challenge we have no code for.
+    console.log("Clearing the previous TOTP device...");
+    await cognitoClient.send(
+      new AdminSetUserMFAPreferenceCommand({
+        UserPoolId: userPoolId,
+        Username: testEmail,
+        SoftwareTokenMfaSettings: {
+          Enabled: false,
+          PreferredMfa: false,
+        },
+      }),
+    );
+
     console.log("Enrolling TOTP MFA device...");
 
-    // Step 1: Authenticate the user to get an access token
     // Uses InitiateAuth (not AdminInitiateAuth) because the User Pool Client has
     // ALLOW_USER_PASSWORD_AUTH enabled but not ALLOW_ADMIN_USER_PASSWORD_AUTH.
-    // MFA is OPTIONAL and user hasn't enrolled yet, so this returns tokens directly.
     const authResponse = await cognitoClient.send(
       new InitiateAuthCommand({
         ClientId: userPoolClientId,
@@ -124,7 +169,6 @@ async function main() {
     );
 
     if (!authResponse.AuthenticationResult?.AccessToken) {
-      // If we get a challenge instead of tokens, MFA may already be required
       throw new Error(
         `Expected tokens but got challenge: ${authResponse.ChallengeName || "unknown"}. ` +
           `MFA enrollment requires an access token from a non-MFA login.`,
@@ -134,7 +178,6 @@ async function main() {
     const accessToken = authResponse.AuthenticationResult.AccessToken;
     console.log("Authenticated user for TOTP enrollment");
 
-    // Step 2: Associate a software token (get the TOTP shared secret)
     const associateResponse = await cognitoClient.send(
       new AssociateSoftwareTokenCommand({
         AccessToken: accessToken,
@@ -144,7 +187,6 @@ async function main() {
     const totpSecret = associateResponse.SecretCode;
     console.log(`TOTP secret received (${totpSecret.length} chars)`);
 
-    // Step 3: Generate a valid TOTP code from the secret
     const { TOTP, Secret } = await import("otpauth");
     const totp = new TOTP({
       secret: Secret.fromBase32(totpSecret),
@@ -155,7 +197,6 @@ async function main() {
     const totpCode = totp.generate();
     console.log("Generated TOTP verification code");
 
-    // Step 4: Verify the software token
     const verifyResponse = await cognitoClient.send(
       new VerifySoftwareTokenCommand({
         AccessToken: accessToken,
@@ -169,7 +210,6 @@ async function main() {
     }
     console.log("TOTP device verified successfully");
 
-    // Step 5: Set TOTP as the preferred MFA method
     await cognitoClient.send(
       new AdminSetUserMFAPreferenceCommand({
         UserPoolId: userPoolId,
@@ -190,7 +230,7 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, secondsRemaining * 1000));
 
     console.log("");
-    console.log("=== Test User Created Successfully (with TOTP MFA) ===");
+    console.log("=== Test User Ready (with TOTP MFA) ===");
     console.log("");
     console.log("Use these environment variables for behavior tests:");
     console.log("");
@@ -213,7 +253,7 @@ async function main() {
     console.log(`TEST_AUTH_PASSWORD=${testPassword}`);
     console.log(`TOTP_SECRET=${totpSecret}`);
   } catch (error) {
-    console.error(`ERROR: Failed to create Cognito test user: ${error.message}`);
+    console.error(`ERROR: Failed to ensure Cognito test user: ${error.message}`);
     process.exit(1);
   }
 }

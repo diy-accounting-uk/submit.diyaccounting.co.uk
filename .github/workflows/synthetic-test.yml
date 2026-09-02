@@ -341,18 +341,17 @@ jobs:
             echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      - name: Create Cognito test user
+      - name: Ensure Cognito test user
         id: cognito-test-user
         shell: bash
         run: |
-          # If credentials were passed in, use them instead of creating a new user
+          # If credentials were passed in, use them instead of rotating our own
           if [ -n "${{ needs.params.outputs.test-auth-username }}" ] && [ -n "${{ needs.params.outputs.test-auth-password }}" ]; then
-            echo "Using provided test credentials (skipping user creation)"
+            echo "Using provided test credentials"
             # Test system credentials - intentionally not masked so they appear in job summary
             echo "test-auth-username=${{ needs.params.outputs.test-auth-username }}" >> "$GITHUB_OUTPUT"
             echo "test-auth-password=${{ needs.params.outputs.test-auth-password }}" >> "$GITHUB_OUTPUT"
             echo "test-auth-totp-secret=${{ needs.params.outputs.test-auth-totp-secret }}" >> "$GITHUB_OUTPUT"
-            echo "user-created-here=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -360,11 +359,9 @@ jobs:
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
             # The script writes test-auth-username and test-auth-password to $GITHUB_OUTPUT directly
-            node 'scripts/create-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}"
-            echo "user-created-here=true" >> "$GITHUB_OUTPUT"
+            node 'scripts/ensure-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}" '${{ matrix.suite }}'
           else
-            echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-            echo "user-created-here=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
       - name: Stagger HMRC API calls
@@ -436,13 +433,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-
-      - name: Delete Cognito test user
-        if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.test-auth-username != '' && steps.cognito-test-user.outputs.user-created-here == 'true' }}
-        shell: bash
-        run: |
-          echo "Deleting test user created by this workflow..."
-          node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-disable != 'true' && needs.params.outputs.skip-cleanup != 'true' }}
@@ -550,7 +540,7 @@ jobs:
           aws cloudwatch put-metric-data \
             --namespace "${{ needs.names.outputs.apex-domain }}" \
             --metric-name "behaviour-test" \
-            --dimensions deployment-name=${{ needs.names.outputs.deployment-name }},test=${{ matrix.suite }} \
+            --dimensions test=${{ matrix.suite }} \
             --value "$VALUE" \
             --region ${{ env.AWS_REGION }}
 

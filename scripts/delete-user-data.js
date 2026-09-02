@@ -5,12 +5,12 @@
 /**
  * Delete user data (GDPR Right to Erasure / "Right to be Forgotten")
  *
- * Queries all 8 DynamoDB tables by hashedSub partition key (not scan).
- * HMRC receipts are anonymized (not deleted) for 7-year legal retention.
+ * Queries all 8 DynamoDB tables (`<environment-name>-env-<table>`) by hashedSub partition
+ * key (not scan). HMRC receipts are anonymized (not deleted) for 7-year legal retention.
  *
  * Usage:
- *   node scripts/delete-user-data.js <deployment-name> --user-sub <sub> [--confirm]
- *   node scripts/delete-user-data.js <deployment-name> --hashed-sub <hash> [--confirm]
+ *   node scripts/delete-user-data.js <environment-name> --user-sub <sub> [--confirm]
+ *   node scripts/delete-user-data.js <environment-name> --hashed-sub <hash> [--confirm]
  *
  * Options:
  *   --user-sub <sub>       User sub (will be hashed with all salt versions)
@@ -20,8 +20,8 @@
  *
  * Environment variables:
  *   AWS_REGION               AWS region (default: eu-west-2)
- *   ENVIRONMENT_NAME         For Secrets Manager salt lookup (required with --user-sub)
- *   USER_SUB_HASH_SALT       Override salt registry JSON (local dev)
+ *   USER_SUB_HASH_SALT       Override salt registry JSON (local dev); otherwise the salt is
+ *                            read from Secrets Manager for <environment-name>
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
@@ -150,13 +150,13 @@ const TABLE_DEFS = [
 /**
  * Main deletion function.
  */
-async function deleteUserData({ deploymentName, hashedSubs, confirm = false, jsonOutput = false }) {
+async function deleteUserData({ environmentName, hashedSubs, confirm = false, jsonOutput = false }) {
   const region = process.env.AWS_REGION || "eu-west-2";
   const docClient = makeDocClient(region);
 
   const summary = {
     timestamp: new Date().toISOString(),
-    deploymentName,
+    environmentName,
     hashedSubs,
     dryRun: !confirm,
     tables: {},
@@ -164,14 +164,14 @@ async function deleteUserData({ deploymentName, hashedSubs, confirm = false, jso
   };
 
   if (!jsonOutput) {
-    console.log(`Deployment: ${deploymentName}`);
+    console.log(`Environment: ${environmentName}`);
     console.log(`Hashed subs: ${hashedSubs.join(", ")}`);
     console.log(`Mode: ${confirm ? "CONFIRMED - will delete" : "DRY RUN"}`);
     console.log("");
   }
 
   for (const tableDef of TABLE_DEFS) {
-    const tableName = `${deploymentName}-${tableDef.suffix}`;
+    const tableName = `${environmentName}-env-${tableDef.suffix}`;
     let allItems = [];
 
     // Query for all hashedSub variants
@@ -228,20 +228,22 @@ function getArg(name) {
   return null;
 }
 
-const deploymentName = args[0];
+const environmentName = args[0];
 const userSub = getArg("--user-sub");
 const hashedSub = getArg("--hashed-sub");
 const confirm = args.includes("--confirm");
 const jsonOutput = args.includes("--json");
 
-if (!deploymentName || (!userSub && !hashedSub)) {
+if (!environmentName || (!userSub && !hashedSub)) {
   console.error("Usage:");
-  console.error("  node scripts/delete-user-data.js <deployment-name> --user-sub <sub> [--confirm] [--json]");
-  console.error("  node scripts/delete-user-data.js <deployment-name> --hashed-sub <hash> [--confirm] [--json]");
+  console.error("  node scripts/delete-user-data.js <environment-name> --user-sub <sub> [--confirm] [--json]");
+  console.error("  node scripts/delete-user-data.js <environment-name> --hashed-sub <hash> [--confirm] [--json]");
   console.error("");
   console.error("WARNING: This is a destructive operation. Run export-user-data.js first as backup!");
   process.exit(1);
 }
+
+process.env.ENVIRONMENT_NAME = environmentName;
 
 (async () => {
   try {
@@ -255,7 +257,7 @@ if (!deploymentName || (!userSub && !hashedSub)) {
       }
     }
 
-    await deleteUserData({ deploymentName, hashedSubs, confirm, jsonOutput });
+    await deleteUserData({ environmentName, hashedSubs, confirm, jsonOutput });
   } catch (error) {
     console.error(`Deletion failed: ${error.message}`);
     if (!jsonOutput) console.error(error.stack);

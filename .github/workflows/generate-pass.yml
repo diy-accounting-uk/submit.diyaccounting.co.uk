@@ -341,11 +341,11 @@ jobs:
         env:
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-      - name: Create Cognito test user
+      - name: Ensure Cognito test user
         id: cognito-user
         if: ${{ needs.params.outputs.generate-cognito-user == 'true' }}
         run: |
-          node scripts/create-cognito-test-user.js "${{ needs.names.outputs.environment-name }}"
+          node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" passGeneration
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 

@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 //
-// Disable Cognito native auth and delete the test user created by enable-cognito-native-test.js
+// Disable Cognito native auth and drop the credentials enable-cognito-native-test.js saved
+//
+// The test user itself stays. It is durable and reused, and its password was rotated when the
+// credentials were issued.
 //
 // Usage: node scripts/disable-cognito-native-test.js [environment-name]
 // Example: node scripts/disable-cognito-native-test.js ci
@@ -37,28 +40,10 @@ async function main() {
   const credentials = JSON.parse(fs.readFileSync(credentialsFile, "utf-8"));
   console.log(`=== Cleaning up Cognito native auth for ${credentials.environment} ===`);
   console.log(`Test user: ${credentials.username}`);
-  console.log(`Created: ${credentials.createdAt}`);
+  console.log(`Issued: ${credentials.issuedAt}`);
   console.log("");
 
-  // Step 1: Delete test user
-  console.log(`=== Deleting test user ===`);
-  try {
-    const { stdout, stderr } = await execFileAsync("node", [
-      "scripts/delete-cognito-test-user.js",
-      credentials.environment,
-      credentials.username,
-    ]);
-    if (stdout) console.log(stdout.trimEnd());
-    if (stderr) console.error(stderr.trimEnd());
-  } catch (error) {
-    console.error(`Failed to delete test user: ${error.message}`);
-    if (error.stdout) console.log(error.stdout.trimEnd());
-    if (error.stderr) console.error(error.stderr.trimEnd());
-    // Continue to disable native auth even if user deletion fails
-  }
-
-  // Step 2: Disable native auth
-  console.log("");
+  // Step 1: Disable native auth
   console.log(`=== Disabling Cognito native auth ===`);
   try {
     const { stdout, stderr } = await execFileAsync("node", ["scripts/toggle-cognito-native-auth.js", "disable", credentials.environment]);
@@ -70,7 +55,7 @@ async function main() {
     if (error.stderr) console.error(error.stderr.trimEnd());
   }
 
-  // Step 3: Remove credentials file
+  // Step 2: Remove credentials file
   fs.unlinkSync(credentialsFile);
   console.log("");
   console.log(`Removed credentials file: ${credentialsFile}`);

@@ -628,12 +628,11 @@ Head-injected scripts for early API prefetching:
 | `text-spacing-test.js` | WCAG 1.4.12 text spacing tests |
 | `capture-demo-videos.js` | Capture demo videos for documentation |
 | `create-hmrc-test-user.js` | Create HMRC sandbox test user |
-| `create-cognito-test-user.js` | Create Cognito test user |
-| `delete-cognito-test-user.js` | Delete Cognito test user |
+| `ensure-cognito-test-user.js` | Create or reuse a test lane's durable Cognito user and rotate its credentials |
 | `enable-cognito-native-test.js` | Enable email/password login for testing |
 | `disable-cognito-native-test.js` | Disable email/password login |
 | `toggle-cognito-native-auth.js` | Toggle Cognito native auth provider |
-| `cleanup-test-users.js` | Clean up Cognito test users |
+| `cleanup-test-users.js` | Delete stray Cognito test users and purge durable test users' data |
 | `bundle-for-tests.js` | Grant test bundles |
 | `stripe-setup.js` | Create/verify Stripe webhook endpoints |
 | `export-user-data.js` | Export user data (GDPR) |

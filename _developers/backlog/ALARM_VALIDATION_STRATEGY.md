@@ -31,9 +31,9 @@ Two execution modes:
 ## Current Alarm Inventory
 
 ### Lambda Alarms (per function × 4 alarms each, `check-` prefixed)
-Each function's four checks feed one `{fn}-health` composite alarm, which is the one that
-actually routes to Telegram/GitHub. Forcing a `check-` alarm into ALARM still proves the
-individual check works, and now also proves the composite fans in.
+Every check in a stack feeds that stack's one `{prefix}-{stack}-stack-health` composite alarm, which
+is the one that actually routes to Telegram/GitHub. Forcing a `check-` alarm into ALARM still
+proves the individual check works, and now also proves the composite fans in.
 
 | Alarm | Threshold | Testable Via |
 |-------|-----------|--------------|
@@ -774,7 +774,7 @@ filter action = "BLOCK"
 | Lambda.java | `check-{fn}-throttles` | ≥1/5min | None (silent) |
 | Lambda.java | `check-{fn}-high-duration-p95` | ≥80% timeout | None (silent) |
 | Lambda.java | `check-{fn}-log-errors` | ≥1/5min | None (silent) |
-| Lambda.java | `{fn}-health` (composite, `anyOf` the four `check-` alarms above) | n/a | routed via OpsStack's AlarmStateChangeRule |
+| Lambda.java | `{prefix}-{stack}-stack-health` (composite, `anyOf` every `check-` alarm in the stack) | n/a | routed via OpsStack's AlarmStateChangeRule |
 | ApiStack.java | `{prefix}-api-5xx` | ≥1/5min | None (silent) |
 | OpsStack.java | `{prefix}-health-failed` | <90%/5min (2 periods) | alertTopic |
 | OpsStack.java | `{prefix}-api-failed` | <90%/5min (2 periods) | alertTopic |

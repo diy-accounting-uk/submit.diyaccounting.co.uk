@@ -5,6 +5,8 @@
 
 package co.uk.diyaccounting.submit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -91,6 +93,7 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
+        assertTrailLogsDynamoDbDataEventsExceptGetRecords(Template.fromStack(env.observabilityStack));
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
@@ -128,13 +131,13 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // Composite health alarms route through OpsStack's AlarmStateChangeRule, which matches
+        // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
         // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
         // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
         // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
         // hardcoded above).
         List<String> envRoutedPrefixes = List.of("test-env-");
-        SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(analytics, 2, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
         // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
@@ -157,7 +160,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertLambdaHealthAlarms(billingWebhook, 1, envRoutedPrefixes);
+            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,
@@ -184,6 +187,36 @@ class SubmitEnvironmentCdkResourceTest {
                                         Map.of("Key", "DeploymentName", "Value", "tt-witheight"),
                                         Map.of("Key", "Environment", "Value", "test"),
                                         Map.of("Key", "Stack", "Value", "ObservabilityStack"))))));
+    }
+
+    /**
+     * The trail must log DynamoDB data events (the security detectors match Scan and GetItem)
+     * without the stream poller's GetRecords, and it must not also carry the basic
+     * EventSelectors property, which CloudTrail rejects alongside advanced selectors.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertTrailLogsDynamoDbDataEventsExceptGetRecords(Template template) {
+        Map<String, Map<String, Object>> trails = template.findResources("AWS::CloudTrail::Trail");
+        assertEquals(1, trails.size());
+        Map<String, Object> properties =
+                (Map<String, Object>) trails.values().iterator().next().get("Properties");
+        assertFalse(properties.containsKey("EventSelectors"), "basic EventSelectors must be absent");
+        List<Map<String, Object>> selectors = (List<Map<String, Object>>) properties.get("AdvancedEventSelectors");
+        assertEquals(2, selectors.size());
+        List<Map<String, Object>> dataFields = selectors.stream()
+                .map(selector -> (List<Map<String, Object>>) selector.get("FieldSelectors"))
+                .filter(fields -> fields.stream()
+                        .anyMatch(field -> "eventCategory".equals(field.get("Field"))
+                                && List.of("Data").equals(field.get("Equals"))))
+                .findFirst()
+                .orElseThrow();
+        assertTrue(dataFields.stream()
+                .anyMatch(field -> "resources.type".equals(field.get("Field"))
+                        && List.of("AWS::DynamoDB::Table").equals(field.get("Equals"))));
+        assertTrue(dataFields.stream()
+                .anyMatch(field -> "eventName".equals(field.get("Field"))
+                        && List.of("GetRecords").equals(field.get("NotEquals"))));
+        assertTrue(dataFields.stream().noneMatch(field -> "readOnly".equals(field.get("Field"))));
     }
 
     /**

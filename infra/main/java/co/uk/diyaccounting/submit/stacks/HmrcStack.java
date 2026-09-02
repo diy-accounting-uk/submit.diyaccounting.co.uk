@@ -14,6 +14,7 @@ import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
+import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -552,6 +553,17 @@ public class HmrcStack extends Stack {
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
                 .build());
+
+        Lambda.stackHealthAlarm(
+                this,
+                props.resourceNamePrefix(),
+                "hmrc",
+                List.of(
+                        exchangeHmrcTokenLambdaUrlOrigin,
+                        submitVatLambdaUrlOrigin,
+                        hmrcVatObligationGetLambdaUrlOrigin,
+                        hmrcVatReturnGetLambdaUrlOrigin,
+                        myReceiptsLambdaUrlOrigin));
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
         cfnOutput(this, "SubmitVatLambdaArn", this.hmrcVatReturnPostLambda.getFunctionArn());

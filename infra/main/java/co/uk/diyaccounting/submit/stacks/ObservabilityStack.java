@@ -33,7 +33,6 @@ import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.IWidget;
 import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
@@ -195,28 +194,51 @@ public class ObservabilityStack extends Stack {
             // Ensure the LogGroup is created before the Trail tries to use it
             this.trail.getNode().addDependency(ensureLogGroup);
 
-            // Phase 2.2: DynamoDB Data Event Logging via L1 construct
+            // DynamoDB Data Event Logging via L1 construct.
             // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
-            // This enables detection of bulk data access patterns indicating potential data breach
+            // so the security detection metric filters (SecurityDetectionStack) can see them.
+            // GetRecords is excluded: the analytics Lambda's DynamoDB Streams event-source mapping polls
+            // GetRecords constantly (around 1.3 million events/day), no detector reads it, and it dwarfs
+            // every other DynamoDB call combined. Advanced event selectors replace basic ones entirely,
+            // so management events must be re-declared here or they are lost.
             software.amazon.awscdk.services.cloudtrail.CfnTrail cfnTrail =
                     (software.amazon.awscdk.services.cloudtrail.CfnTrail)
                             this.trail.getNode().getDefaultChild();
 
-            cfnTrail.setEventSelectors(
-                    List.of(software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
-                            .readWriteType("All")
-                            .includeManagementEvents(true)
-                            .dataResources(List.of(
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.DataResourceProperty.builder()
-                                            .type("AWS::DynamoDB::Table")
-                                            // Log all DynamoDB tables in this account
-                                            // Note: CloudTrail doesn't support wildcards in table ARNs,
-                                            // so we use "arn:aws:dynamodb" to match all tables
-                                            .values(List.of("arn:aws:dynamodb"))
+            cfnTrail.setAdvancedEventSelectors(List.of(
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
+                            .name("Management events")
+                            .fieldSelectors(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventCategory")
+                                            .equalTo(List.of("Management"))
+                                            .build()))
+                            .build(),
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
+                            .name("DynamoDB data events excluding GetRecords")
+                            .fieldSelectors(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventCategory")
+                                            .equalTo(List.of("Data"))
+                                            .build(),
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("resources.type")
+                                            .equalTo(List.of("AWS::DynamoDB::Table"))
+                                            .build(),
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventName")
+                                            .notEquals(List.of("GetRecords"))
                                             .build()))
                             .build()));
+            // The L2 Trail always renders its (empty) basic EventSelectors list, and CloudTrail
+            // rejects a trail that carries both kinds of selector.
+            cfnTrail.addPropertyDeletionOverride("EventSelectors");
 
-            infof("Configured CloudTrail DynamoDB data event logging for all tables in account");
+            infof("Configured CloudTrail DynamoDB data event logging for all tables in account, excluding GetRecords");
 
             // CloudWatch Logs Insights query for detecting bulk data access:
             // filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
@@ -535,33 +557,19 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 2: GitHub Synthetic Tests and Deployment Events
-        // GitHub synthetic test metrics (sent from deploy.yml)
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("GitHub Synthetic Tests (all deployments)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{%s,deployment-name,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)",
-                                        apexDomain))
-                                .label("Behaviour Tests (0=pass)")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Deployments")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{%s,deployment-name} MetricName=\"deployment\"', 'Sum', 3600)",
-                                        apexDomain))
-                                .label("Deployment events")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
+        // Row 2: GitHub Synthetic Tests
+        // GitHub synthetic test metrics (sent from synthetic-test.yml), one series per suite
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("GitHub Synthetic Tests")
+                .left(List.of(MathExpression.Builder.create()
+                        .expression(String.format(
+                                "SEARCH('{%s,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)", apexDomain))
+                        .label("Behaviour Tests (0=pass)")
+                        .period(Duration.hours(1))
+                        .build()))
+                .width(24)
+                .height(6)
+                .build()));
 
         // Row 3: Business Metrics - Key Lambda function invocations across all deployments
         // Using SEARCH to aggregate across deployment-specific function names
@@ -738,30 +746,6 @@ public class ObservabilityStack extends Stack {
                         .build()))
                 .width(24)
                 .height(6)
-                .build()));
-
-        // Row 8: Help text for deployment annotations (was Row 7)
-        dashboardRows.add(List.of(TextWidget.Builder.create()
-                .markdown(
-                        """
-                        ### Deployment Tracking
-
-                        Deployment events are tracked via custom metrics sent from GitHub Actions.
-                        The metric namespace is `%s` with dimension `deployment-name`.
-
-                        To send deployment metrics from your CI/CD pipeline:
-                        ```bash
-                        aws cloudwatch put-metric-data \\
-                          --namespace "%s" \\
-                          --metric-name "deployment" \\
-                          --dimensions "deployment-name=$DEPLOYMENT_NAME" \\
-                          --value 1 \\
-                          --unit Count
-                        ```
-                        """
-                                .formatted(apexDomain, apexDomain))
-                .width(24)
-                .height(4)
                 .build()));
 
         Dashboard operationsDashboard = Dashboard.Builder.create(

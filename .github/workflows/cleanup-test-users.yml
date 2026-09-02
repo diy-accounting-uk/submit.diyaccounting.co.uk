@@ -72,31 +72,22 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Resolve deployment name from SSM
+      - name: Resolve environment name
         id: names
         run: |
           ENV_NAME="${{ inputs.environment-name || 'ci' }}"
           echo "environment-name=${ENV_NAME}" >> "$GITHUB_OUTPUT"
-          DEPLOYMENT=$(aws ssm get-parameter \
-            --name "/submit/${ENV_NAME}/last-known-good-deployment" \
-            --query "Parameter.Value" --output text)
-          echo "deployment-name=${DEPLOYMENT}" >> "$GITHUB_OUTPUT"
-          echo "Environment: ${ENV_NAME}, Deployment: ${DEPLOYMENT}"
+          echo "Environment: ${ENV_NAME}"
 
       - name: Cleanup test users (scheduled - always confirm)
         if: ${{ github.event_name == 'schedule' }}
-        env:
-          ENVIRONMENT_NAME: ${{ steps.names.outputs.environment-name }}
         run: |
           node scripts/cleanup-test-users.js \
             "${{ steps.names.outputs.environment-name }}" \
-            "${{ steps.names.outputs.deployment-name }}" \
             --confirm --json | tee cleanup-summary.json
 
       - name: Cleanup test users (manual dispatch)
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        env:
-          ENVIRONMENT_NAME: ${{ steps.names.outputs.environment-name }}
         run: |
           CONFIRM_FLAG=""
           if [ "${{ inputs.confirm }}" = "true" ]; then
@@ -104,7 +95,6 @@ jobs:
           fi
           node scripts/cleanup-test-users.js \
             "${{ steps.names.outputs.environment-name }}" \
-            "${{ steps.names.outputs.deployment-name }}" \
             ${CONFIRM_FLAG} --json | tee cleanup-summary.json
 
       - name: Upload cleanup summary
@@ -119,7 +109,6 @@ jobs:
           echo "# Test User Cleanup Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Environment**: ${{ steps.names.outputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment**: ${{ steps.names.outputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f cleanup-summary.json ]; then

@@ -19,6 +19,7 @@ import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
+import java.util.ArrayList;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -194,6 +195,9 @@ public class AccountStack extends Stack {
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
+        // Every Lambda construct this stack builds, fanned into one composite health alarm below.
+        var healthCheckedFunctions = new ArrayList<Lambda>();
+
         // Construct Cognito User Pool ARN for IAM policies
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "us-east-1";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
@@ -234,6 +238,7 @@ public class AccountStack extends Stack {
                         .environment(getBundlesLambdaEnv)
                         .build());
 
+        healthCheckedFunctions.add(getBundlesAsyncLambda);
         this.bundleGetLambdaProps = getBundlesAsyncLambda.apiProps;
         this.bundleGetLambda = getBundlesAsyncLambda.ingestLambda;
         this.bundleGetLambdaLogGroup = getBundlesAsyncLambda.logGroup;
@@ -322,6 +327,7 @@ public class AccountStack extends Stack {
         // Update API environment with SQS queue URL
         requestBundlesLambdaEnv.put("SQS_QUEUE_URL", requestBundlesAsyncLambda.queue.getQueueUrl());
 
+        healthCheckedFunctions.add(requestBundlesAsyncLambda);
         this.bundlePostLambdaProps = requestBundlesAsyncLambda.apiProps;
         this.bundlePostLambda = requestBundlesAsyncLambda.ingestLambda;
         this.bundlePostLambdaLogGroup = requestBundlesAsyncLambda.logGroup;
@@ -404,6 +410,7 @@ public class AccountStack extends Stack {
         // Update API environment with SQS queue URL
         bundleDeleteLambdaEnv.put("SQS_QUEUE_URL", bundleDeleteAsyncLambda.queue.getQueueUrl());
 
+        healthCheckedFunctions.add(bundleDeleteAsyncLambda);
         this.bundleDeleteLambdaProps = bundleDeleteAsyncLambda.apiProps;
         this.bundleDeleteLambda = bundleDeleteAsyncLambda.ingestLambda;
         this.bundleDeleteLambdaLogGroup = bundleDeleteAsyncLambda.logGroup;
@@ -501,6 +508,7 @@ public class AccountStack extends Stack {
                             .environment(supportTicketPostLambdaEnv)
                             .build());
 
+            healthCheckedFunctions.add(supportTicketPostApiLambda);
             this.supportTicketPostLambdaProps = supportTicketPostApiLambda.apiProps;
             this.supportTicketPostLambda = supportTicketPostApiLambda.ingestLambda;
             this.supportTicketPostLambdaLogGroup = supportTicketPostApiLambda.logGroup;
@@ -571,6 +579,7 @@ public class AccountStack extends Stack {
                             .environment(interestPostLambdaEnv)
                             .build());
 
+            healthCheckedFunctions.add(interestPostApiLambda);
             this.interestPostLambdaProps = interestPostApiLambda.apiProps;
             this.interestPostLambda = interestPostApiLambda.ingestLambda;
             this.interestPostLambdaLogGroup = interestPostApiLambda.logGroup;
@@ -623,6 +632,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().passGetLambdaCustomAuthorizer)
                         .environment(passGetLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(passGetApiLambda);
         this.passGetLambdaProps = passGetApiLambda.apiProps;
         this.passGetLambda = passGetApiLambda.ingestLambda;
         this.passGetLambdaLogGroup = passGetApiLambda.logGroup;
@@ -664,6 +674,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().passPostLambdaCustomAuthorizer)
                         .environment(passPostLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(passPostApiLambda);
         this.passPostLambdaProps = passPostApiLambda.apiProps;
         this.passPostLambda = passPostApiLambda.ingestLambda;
         this.passPostLambdaLogGroup = passPostApiLambda.logGroup;
@@ -708,6 +719,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().passAdminPostLambdaCustomAuthorizer)
                         .environment(passAdminPostLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(passAdminPostApiLambda);
         this.passAdminPostLambdaProps = passAdminPostApiLambda.apiProps;
         this.passAdminPostLambda = passAdminPostApiLambda.ingestLambda;
         this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
@@ -751,6 +763,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().passGeneratePostLambdaCustomAuthorizer)
                         .environment(passGeneratePostLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(passGeneratePostApiLambda);
         this.passGeneratePostLambdaProps = passGeneratePostApiLambda.apiProps;
         this.passGeneratePostLambda = passGeneratePostApiLambda.ingestLambda;
         this.passGeneratePostLambdaLogGroup = passGeneratePostApiLambda.logGroup;
@@ -795,6 +808,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().passMyPassesGetLambdaCustomAuthorizer)
                         .environment(passMyPassesGetLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(passMyPassesGetApiLambda);
         this.passMyPassesGetLambdaProps = passMyPassesGetApiLambda.apiProps;
         this.passMyPassesGetLambda = passMyPassesGetApiLambda.ingestLambda;
         this.passMyPassesGetLambdaLogGroup = passMyPassesGetApiLambda.logGroup;
@@ -838,6 +852,7 @@ public class AccountStack extends Stack {
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(reconcileLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(reconcileLambda);
         this.bundleCapacityReconcileLambda = reconcileLambda.ingestLambda;
         this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
         // Reconciliation counts live bundles, which is the one legitimate Scan in the system.
@@ -888,6 +903,7 @@ public class AccountStack extends Stack {
                         .customAuthorizer(props.sharedNames().sessionBeaconPostLambdaCustomAuthorizer)
                         .environment(sessionBeaconPostLambdaEnv)
                         .build());
+        healthCheckedFunctions.add(sessionBeaconPostApiLambda);
         this.sessionBeaconPostLambdaProps = sessionBeaconPostApiLambda.apiProps;
         this.sessionBeaconPostLambda = sessionBeaconPostApiLambda.ingestLambda;
         this.sessionBeaconPostLambdaLogGroup = sessionBeaconPostApiLambda.logGroup;
@@ -900,6 +916,8 @@ public class AccountStack extends Stack {
         infof(
                 "Created Session Beacon POST Lambda %s",
                 this.sessionBeaconPostLambda.getNode().getId());
+
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "account", healthCheckedFunctions);
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());

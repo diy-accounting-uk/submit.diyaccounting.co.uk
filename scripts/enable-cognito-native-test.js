@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 //
-// Enable Cognito native auth and create a test user for local behaviour testing
+// Enable Cognito native auth and refresh the local test user for local behaviour testing
 //
 // Usage: node scripts/enable-cognito-native-test.js [environment-name]
 // Example: node scripts/enable-cognito-native-test.js ci
@@ -12,7 +12,7 @@
 //
 // This script:
 //   1. Enables COGNITO on the Hosted UI (toggle-cognito-native-auth.js enable)
-//   2. Creates a test user (create-cognito-test-user.js)
+//   2. Rotates the local test lane's durable user (ensure-cognito-test-user.js)
 //   3. Saves credentials to cognito-native-test-credentials.json
 //   4. Prints export commands for running behaviour tests
 
@@ -53,14 +53,14 @@ async function main() {
     process.exit(1);
   }
 
-  // Step 2: Create test user
+  // Step 2: Refresh the durable test user
   console.log("");
-  console.log(`=== Creating test user for ${environmentName} ===`);
+  console.log(`=== Preparing test user for ${environmentName} ===`);
   let username = null;
   let password = null;
   let totpSecret = null;
   try {
-    const { stdout, stderr } = await execFileAsync("node", ["scripts/create-cognito-test-user.js", environmentName]);
+    const { stdout, stderr } = await execFileAsync("node", ["scripts/ensure-cognito-test-user.js", environmentName, "local"]);
     if (stdout) console.log(stdout.trimEnd());
     if (stderr) console.error(stderr.trimEnd());
 
@@ -74,14 +74,14 @@ async function main() {
       if (totpMatch) totpSecret = totpMatch[1];
     }
   } catch (error) {
-    console.error(`Failed to create test user: ${error.message}`);
+    console.error(`Failed to prepare test user: ${error.message}`);
     if (error.stdout) console.log(error.stdout.trimEnd());
     if (error.stderr) console.error(error.stderr.trimEnd());
     process.exit(1);
   }
 
   if (!username || !password) {
-    console.error("ERROR: Could not parse credentials from create-cognito-test-user.js output");
+    console.error("ERROR: Could not parse credentials from ensure-cognito-test-user.js output");
     process.exit(1);
   }
 
@@ -95,7 +95,7 @@ async function main() {
     username,
     password,
     totpSecret: totpSecret || undefined,
-    createdAt: new Date().toISOString(),
+    issuedAt: new Date().toISOString(),
   };
   fs.writeFileSync(credentialsFile, JSON.stringify(credentials, null, 2) + "\n");
   console.log("");

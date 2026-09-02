@@ -73,18 +73,9 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Resolve deployment name and user pool
+      - name: Resolve user pool
         id: resolve
-        env:
-          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
-          # Get deployment name from SSM
-          DEPLOYMENT=$(aws ssm get-parameter \
-            --name "/submit/${{ inputs.environment-name }}/last-known-good-deployment" \
-            --query "Parameter.Value" --output text)
-          echo "deployment-name=${DEPLOYMENT}" >> "$GITHUB_OUTPUT"
-          echo "Deployment: ${DEPLOYMENT}"
-
           # Get User Pool ID from CloudFormation
           STACK_NAME="${{ inputs.environment-name }}-env-IdentityStack"
           USER_POOL_ID=$(aws cloudformation describe-stacks \
@@ -140,7 +131,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
           node scripts/export-user-data.js \
-            "${{ steps.resolve.outputs.deployment-name }}" \
+            "${{ inputs.environment-name }}" \
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}"
 
       - name: Upload user data export
@@ -156,7 +147,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
           node scripts/delete-user-data.js \
-            "${{ steps.resolve.outputs.deployment-name }}" \
+            "${{ inputs.environment-name }}" \
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
             --json | tee deletion-summary.json
 
@@ -166,7 +157,7 @@ jobs:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
         run: |
           node scripts/delete-user-data.js \
-            "${{ steps.resolve.outputs.deployment-name }}" \
+            "${{ inputs.environment-name }}" \
             --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
             --confirm --json | tee deletion-summary.json
 
@@ -191,7 +182,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Email**: ${{ inputs.email }}" >> $GITHUB_STEP_SUMMARY
           echo "**Environment**: ${{ inputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Deployment**: ${{ steps.resolve.outputs.deployment-name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Cognito Username**: ${{ steps.lookup.outputs.username }}" >> $GITHUB_STEP_SUMMARY
           echo "**Confirmed**: ${{ inputs.confirm }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
