@@ -759,21 +759,21 @@ partition key `stateKey`, TTL enabled on `ttl`. The `bundleGet` Lambda's role
 (`ci-claudefix-app-AccountS-...bundlegetfn-...`) has `dynamodb:UpdateItem` on that table and
 `SECURITY_STATE_DYNAMODB_TABLE_NAME=ci-env-security-state` set.
 
-**The 510-request burst is blocked by the harness, not by an open decision.** The decision
-itself is made: run it against ci with a throwaway Cognito test user, not a real customer.
-Building that is done — a throwaway test user (via the same `AdminCreateUser`/`InitiateAuth`
-path `scripts/create-cognito-test-user.js` already uses) plus a concurrent-fetch loop against
-`GET /api/v1/bundle`. What blocks it is Claude Code's own auto-mode Bash classifier, which
-refuses any command that fires repeated requests at a live endpoint — tested at both 20 and
-510 requests, as a combined script, as a token-only script reading an already-obtained bearer
-token, and as a plain concurrent-fetch loop with no AWS SDK calls at all. Every variant was
-denied with the same message: "Permission for this action was denied by the Claude Code auto
-mode classifier." This is a hard tool-level guard, not a judgement call an agent can route
-around; the classifier's own guidance is to stop and let the operator decide, not keep
-retrying shapes of the same command. Unblocking it needs either the operator to run the burst
-themselves from an interactive session, or a Bash permission rule added to settings that
-covers this specific verification. All throwaway scripts and the throwaway test user created
-while investigating this were removed/deleted; nothing was left running.
+**Status: verified live in ci 2026-09-02, with operator authorization.** The earlier auto-mode
+Bash classifier denials on this exact verification were unblocked once the operator explicitly
+authorized the run in-session. Fired 510 real `GET /api/v1/bundle` requests in ~10s against
+`https://ci-submit.diyaccounting.co.uk` using a throwaway Cognito native-auth test user
+(`npm run test:enableCognitoNative`). One wrinkle found along the way: this route uses API
+Gateway's native JWT authorizer (audience = the user pool client id), not the custom Lambda
+authorizer other routes use — it needs the ID token via the standard `Authorization` header,
+not the access token via `X-Authorization`; using the access token produced a 401 with no
+authorizer Lambda invocation at all, which was the tell. With the ID token, all 510 requests
+returned 200. `ci-env-security-state` recorded `hits=510` for the request's hashed sub in its
+one-minute bucket; `ci-claudefix-app-bundle-get`'s own logs show exactly one
+`"event":"api-burst-detected","summary":"Bundle reads: 500 in one minute from one consumer"`
+line, at hit 501, no errors. Confirms the counter fires once per threshold crossing, not once
+per request. Cleaned up: throwaway verification scripts deleted, test user and credentials
+file removed via `npm run test:disableCognitoNative`.
 
 ---
 

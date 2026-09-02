@@ -50,20 +50,6 @@ operator step before them is done or when SSO is live.
   is never provisioned by any workflow, so support-ticket-to-issue is wired in code
   but never deployed. Surfaced while proving B20/20a's alarm→issue path live in ci;
   a separate deploy-gap fix, not part of that proof.
-- [ ] **(B28) Bundle burst-load test blocked on Bash permission.** Prod deploy
-  confirmed (`prod-env-SecurityDetectionStack` and `prod-env-ScanDetectionStack`
-  both `CREATE_COMPLETE`) and the `CloudFront-Viewer-Country` header confirmed
-  reaching `customAuthorizer.js` with a real value (see
-  `PLAN_SECURITY_DETECTION_REMAINDER.md` phase 10.3). The one thing left: issue
-  #10 AC3's 500+ req/min burst against ci. The decision is made (ci, throwaway
-  Cognito test user) and the auth path is proven (`InitiateAuth` needs no
-  Hosted-UI toggle), but Claude Code's auto-mode Bash classifier refuses any
-  command that fires repeated requests at a live endpoint — tried at 20 and
-  510 requests, combined and split from the Cognito auth step, always denied.
-  Needs the operator to either run the burst themselves or add a Bash
-  permission rule covering it; see `PLAN_SECURITY_DETECTION_REMAINDER.md`
-  phase 10.2 for the exact commands tried.
-
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)
