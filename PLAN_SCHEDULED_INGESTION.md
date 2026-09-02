@@ -152,9 +152,9 @@ CloudWatch logs and fix it here, not in a later phase.
 
 # Phase 2: GA4 BigQuery event export
 
-**Status: code done 2026-09-01, unit and CDK tests green.** Live-data verification
-(`aws lambda invoke` against a deployed `ga4-event-export-pull`) needs a deploy, which
-happens after this branch merges.
+**Status: verified live in ci 2026-09-02.** `ga4-event-export-pull` invoked directly wrote
+2786 rows for dt=2026-08-31; `ga4_bq_events` distinct session count (12) matches the GA4
+Data API's own session count for the same day exactly.
 
 **Model: Sonnet.** The SQL and the schema are written out below.
 
@@ -317,8 +317,9 @@ that day.
 
 # Phase 3: Step Functions orchestration
 
-**Status: code done 2026-09-01, CDK tests green.** Live verification (a real state
-machine execution reaching `SUCCEEDED`, then the next scheduled run) needs a deploy.
+**Status: verified live in ci 2026-09-02.** A manual execution of `ci-env-analytics-nightly`
+reached `SUCCEEDED` with all five tasks green (execution
+`manual-verify-b14-1788310957`). The next Monday scheduled run is still unobserved.
 
 **Model: Sonnet.**
 
@@ -428,9 +429,11 @@ morning's scheduled run also shows `SUCCEEDED` with no manual start.
 
 # Phase 4: cross-source reconciliation
 
-**Status: code done 2026-09-01, unit and CDK tests green.** Live verification
-(`v_purchase_reconciliation_daily` returning rows, the three new metrics appearing
-in the `Submit/Analytics` namespace) needs a deploy and a nightly run.
+**Status: partially verified live in ci 2026-09-02.** `v_purchase_reconciliation_daily`
+returns rows. The three new metrics show up in `list-metrics --recently-active` and the
+Lambda logged a successful publish, but `GetMetricData`/`GetMetricStatistics` still
+returned no datapoints for them 30+ minutes after the run, while `ActiveUsers` (same run,
+same timestamp) was queryable within minutes. Unexplained; needs a re-check.
 
 **Model: Sonnet.**
 
@@ -589,7 +592,9 @@ still returns a non-zero count for the day after the deploy.
 
 # Phase 6: Stripe reconciliation
 
-**Status: verified 2026-09-01, no code change needed.** `stripeReconcile.js` already
+**Status: verified live in ci 2026-09-02**, as the "Stripe reconciliation" task inside the
+`ci-env-analytics-nightly` execution that also verified phase 3. No code change needed.
+`stripeReconcile.js` already
 calls the shared `getStripeClient()` from `app/lib/stripeClient.js` (the same
 resolver `billingWebhookPost.js`/`billingCheckoutPost.js`/`billingPortalGet.js`
 use), and `IngestionStack`/`BillingWebhookStack` already receive the identical

@@ -250,6 +250,12 @@ decide; do not build it.
 
 `curl https://<ci host>/submit.env` must still return the asset, not a 403.
 
+**Status: infra confirmed deployed 2026-09-02.** `SensitivePathScan` is at priority 0 on the
+`ci-claudefix-app-waf` web ACL, `aws-waf-logs-ci-claudefix-app` log group exists, and
+`ci-claudefix-app-waf-scan-detect` (us-east-1) is deployed. `scripts/verify-waf-false-positives.sh
+ci-claudefix 60` passes with zero blocks. Not run: the live `/.env` curl and delay measurement —
+deliberately not triggered against the real ci site.
+
 ---
 
 ## Phase 9.2: 404-rate aggregation
@@ -383,6 +389,11 @@ for the next scheduled run. A `404 scan` message naming that IP and a count abov
 in the ops Telegram chat. Then run `npm run test:submitVatBehaviour-ci` and confirm no
 message is raised for the test runner's traffic.
 
+**Status: not deployed to ci as of 2026-09-02.** No `ci-env-ScanDetectionStack` in
+CloudFormation, no `{env}-env-scan-detect-404` Lambda in eu-west-2, no
+`ci-env-scan-detect-404-errors`/`-missed` alarms. Phase 9.2 has not shipped to this
+environment.
+
 ---
 
 ## Phase 9.3: manual block list and runbook
@@ -471,6 +482,10 @@ Add a throwaway address to `cdk-application/cdk.json`, deploy ci, and confirm th
 set contains it. Then `scripts/verify-waf-false-positives.sh ci 30` exits 0 after a green
 `npm run test:submitVatBehaviour-ci`, which is acceptance criterion 4 measured rather than
 asserted.
+
+**Status: infra confirmed deployed 2026-09-02.** `WafManualBlock` at priority 4 on the ci web
+ACL, both `ci-claudefix-app-waf-manual-block-v4` and `-v6` IP sets exist (empty). Not run: the
+throwaway-address deploy-and-confirm cycle.
 
 ---
 
@@ -622,6 +637,13 @@ ci/submit/user-sub-hash-salt` is denied, and within about ten minutes
 `npm run test:submitVatBehaviour-ci` stays green, which is the check that no Lambda lost its
 read access.
 
+**Status: policy deployed, alarm missing, as of 2026-09-02.** The resource policy on
+`ci/submit/user-sub-hash-salt` is in place with the allow/deny shape above. No
+`ci-env-salt-secret-unexpected-read` alarm exists, and no `SecurityDetectionStack` (or any
+stack containing "Security") appears in ci CloudFormation at all — the metric filter and alarm
+from this phase have not shipped to ci, and neither has the pre-existing Scan/GetItem-volume
+alarm pair the stack was already supposed to hold.
+
 ---
 
 ## Phase 10.2: bundle burst detection
@@ -732,6 +754,13 @@ minute from a script. A `Bundle reads: 500 in one minute` message arrives in Tel
 not 50 times. Then run `npm run test:submitVatBehaviour-ci` and confirm no burst message
 appears.
 
+**Status: table and IAM confirmed deployed 2026-09-02.** `ci-env-security-state` exists,
+partition key `stateKey`, TTL enabled on `ttl`. The `bundleGet` Lambda's role
+(`ci-claudefix-app-AccountS-...bundlegetfn-...`) has `dynamodb:UpdateItem` on that table and
+`SECURITY_STATE_DYNAMODB_TABLE_NAME=ci-env-security-state` set. Not run: the 550-request burst
+— needs the coordinator's judgement on a safe way to generate that load (e.g. via existing
+behaviour-test infrastructure) rather than an ad hoc script against a real authenticated user.
+
 ---
 
 ## Phase 10.3: mid-session country change
@@ -829,6 +858,12 @@ stays green against ci after the deploy, proving the check is inert for real sin
 sessions. Confirm on a deployed ci request that `CloudFront-Viewer-Country` arrives at the
 authorizer by reading one authorizer log line, which is also the check that issue 9's origin
 request policy change landed.
+
+**Status: header wiring confirmed deployed 2026-09-02.** The ci distribution's `/api/v1/*`
+behaviour uses origin request policy `ci-claudefix-app-fraud-prevention-orp`, which whitelists
+`CloudFront-Viewer-Country` alongside `CloudFront-Viewer-Address`. Not confirmed: an actual
+authorizer log line showing the header, since `/aws/lambda/ci-claudefix-app-custom-authorizer`
+has no stored log data (no recent invocations) — no live request was made to generate one.
 
 ---
 
