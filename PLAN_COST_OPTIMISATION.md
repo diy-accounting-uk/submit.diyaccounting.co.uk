@@ -14,14 +14,16 @@ Prod's run rate is now about **$253 a month before VAT ($304 with UK VAT)** for 
 That is not what any past bill shows. July came in at $53 before tax. The jump happened on
 2026-08-29, when CloudTrail started recording DynamoDB data events for every table and shipping
 them to CloudWatch Logs. Almost all of that traffic is `GetRecords` from the DynamoDB Streams
-poller, which carries no security signal and which no metric filter reads. It costs about
-**$172 a month**. Excluding it and the other changes below brings prod to **$49 a month before
-VAT ($59 with VAT)**.
+poller, which carries no security signal and which no metric filter reads. That pipeline costs
+$171.99 a month and excluding `GetRecords` recovers **$165.24** of it. With the other changes
+below, prod comes to **$63 a month before VAT ($76 with VAT)**.
 
-Two numbers to hold on to: **$253 if nothing changes, $49 after the recommended changes.**
+Two numbers to hold on to: **$253 if nothing changes, $63 after the recommended changes.**
+Provisioned concurrency stays, on the operator's decision, and holds $12.70 a month inside that
+after figure.
 
-Separately, each stale `prod-*-app-*` stack set left standing costs **$46.88 a month**. Two are
-standing right now.
+Separately, each `prod-*-app-*` stack set standing beyond the one that serves costs **$46.88 a
+month**.
 
 ## How the baseline was derived
 
@@ -95,16 +97,28 @@ Sorted by saving. Effort is S (under a day), M (a few days), L (longer).
 
 | # | Change | Now $/mo | After $/mo | Saving | Risk | Effort | How |
 |---|---|---:|---:|---:|---|---|---|
-| 1 | Stop logging DynamoDB Streams `GetRecords` as CloudTrail data events | 171.99 | 1.72 | **170.27** | Low. The three metric filters on this log group match `GetItem`, `Scan` and `GetSecretValue` only, so none of them loses input. | S | `ObservabilityStack.java:205-219` replaces `setEventSelectors` with `setAdvancedEventSelectors`, keeping the `AWS::DynamoDB::Table` resource type and adding a `NotEquals` field selector on `eventName` for `GetRecords`. |
-| 2 | Drop provisioned concurrency to zero | 12.70 | 0.00 | **12.70** | Medium. The first request after an idle period pays a cold start on token exchange, the authorizer, `bundle-get` and `hmrc-vat-return-post`. | S | Set `ingestProvisionedConcurrency` to 0 at `AuthStack.java:152`, `AuthStack.java:205`, `AccountStack.java:227`, `HmrcStack.java:192` and `HmrcStack.java:284`. `AnalyticsStack.java:184` already passes 0. |
-| 3 | Reuse one durable Cognito test user instead of creating one per run | 9.80 | 0.80 | **9.00** | Low. Tests share a fixed identity, so one failing run can leave state behind for the next. | S/M | `scripts/enable-cognito-native-test.js` and `scripts/disable-cognito-native-test.js` create and delete a user per run. Keep one user and rotate its password instead. |
-| 4 | Cut two of the four child alarms per Lambda | 28.10 | 22.90 | **5.20** | Medium. Throttle and p95-latency alerting goes. Error and log-error alerting stays, and the composite still fires. | M | `Lambda.java:122-203` builds four alarms per construct; drop `-throttles` and `-high-duration-p95` and shrink the composite's rule to the two survivors. |
-| 5 | Stop keying the behaviour-test metric namespace on the per-commit deployment name | 10.35 | 5.35 | **5.00 (estimate)** | None to the service. The dashboard loses its per-commit split. | S | The `prod-submit.diyaccounting.co.uk` namespace already holds 504 series, dimensioned `deployment-name` x `test`. Every prod deploy adds up to 13 more, for ever. Drop `deployment-name` from the dimension set, or move it to a log field. |
-| 6 | Delete the three test and sandbox secrets from the prod account | 4.45 | 3.25 | **1.20** | Low, if prod never runs against HMRC sandbox or Stripe test mode. Confirm before removing. | S | `prod/submit/hmrc/sandbox_client_secret`, `prod/submit/stripe/test_secret_key`, `prod/submit/stripe/test_webhook_secret`. Remove the CDK secret definitions, then let the deploy workflow drop them. |
-| 7 | Set retention on the CloudTrail log group and a lifecycle rule on its S3 bucket | 0.60 | 0.40 | **0.20** | Low. CloudTrail's own S3 copy stays the audit record. | S | The log group's retention is `NEVER` today. `ObservabilityStack.java:130` computes `cloudTrailLogGroupRetentionPeriod` and never uses it: the `AwsCustomResource` at line 138 calls `createLogGroup` only, never `putRetentionPolicy`. The trail bucket at `ObservabilityStack.java:178` has no `lifecycleRules` at all. |
-| 8 | Add a tagged-image rule to the two ECR repositories | 0.26 | 0.10 | **0.16** | Low. Keep the last 10 tagged images. | S | Both repos expire untagged images after 1 day and keep every tagged image. `prod-env-ecr` holds 100, `prod-env-ecr-us-east-1` holds 74. |
+| 1 | Stop logging DynamoDB Streams `GetRecords` as CloudTrail data events | 171.99 | 6.75 | **165.24** | Low. See "What we lose" below. | S | `ObservabilityStack.java:205-219` replaces `setEventSelectors` with `setAdvancedEventSelectors`, keeping the `AWS::DynamoDB::Table` resource type and adding a `NotEquals` field selector on `eventName` for `GetRecords`. |
+| 2 | Reuse one durable Cognito test user instead of creating one per run | 9.80 | 0.80 | **9.00** | Low. Tests share a fixed identity, so one failing run can leave state behind for the next. | S/M | `scripts/enable-cognito-native-test.js` and `scripts/disable-cognito-native-test.js` create and delete a user per run. Keep one user and rotate its password instead. |
+| 3 | Move to one composite alarm per stack instead of one per function | 28.10 | 19.10 | **9.00** | Low. The Telegram title names the stack rather than the function, so you read `state.reason` to find which function broke. | M | `PLAN_ALARM_CONSOLIDATION.md` already sets out this option and its trade-off; follow the alternative it names. See the alarm arithmetic below. |
+| 4 | Stop keying the behaviour-test metric namespace on the per-commit deployment name | 10.35 | 5.35 | **5.00 (estimate)** | None to the service. The dashboard loses its per-commit split. | S | The `prod-submit.diyaccounting.co.uk` namespace already holds 504 series, dimensioned `deployment-name` x `test`. Every prod deploy adds up to 13 more, for ever. Drop `deployment-name` from the dimension set, or move it to a log field. |
+| 5 | Delete the three test and sandbox secrets from the prod account | 4.45 | 3.25 | **1.20** | Low, if prod never runs against HMRC sandbox or Stripe test mode. Confirm before removing. | S | `prod/submit/hmrc/sandbox_client_secret`, `prod/submit/stripe/test_secret_key`, `prod/submit/stripe/test_webhook_secret`. Remove the CDK secret definitions, then let the deploy workflow drop them. |
+| 6 | Set retention on the CloudTrail log group and a lifecycle rule on its S3 bucket | 0.60 | 0.40 | **0.20** | Low. CloudTrail's own S3 copy stays the audit record. | S | The log group's retention is `NEVER` today. `ObservabilityStack.java:130` computes `cloudTrailLogGroupRetentionPeriod` and never uses it: the `AwsCustomResource` at line 138 calls `createLogGroup` only, never `putRetentionPolicy`. The trail bucket at `ObservabilityStack.java:178` has no `lifecycleRules` at all. |
+| 7 | Add a tagged-image rule to the two ECR repositories | 0.26 | 0.10 | **0.16** | Low. Keep the last 10 tagged images. | S | Both repos expire untagged images after 1 day and keep every tagged image. `prod-env-ecr` holds 100, `prod-env-ecr-us-east-1` holds 74. |
 
-Item 7's saving is small today and large if item 1 is not done. Without item 1 the log group
+### Alarm arithmetic behind item 3
+
+Live today for one deployment plus the env stacks: 151 standard alarms (111 eu-west-2, 9
+us-east-1, 31 env) at $0.10, and 26 composite alarms (23 app, 3 env) at $0.50. That is $15.10 +
+$13.00 = $28.10. The per-function composites went in on 2026-09-02 and no bill has shown them
+yet.
+
+Per-stack composites collapse those 26 to 8, so $15.10 + $4.00 = $19.10.
+
+A further $5.20 sits in the 52 `-throttles` and `-high-duration-p95` child alarms across the 26
+functions. `PLAN_ALARM_CONSOLIDATION.md` says that cut needs 90 days of `describe-alarm-history`
+first, so it is not counted in the after total.
+
+Item 6's saving is small today and large if item 1 is not done. Without item 1 the log group
 ingests 228 GB a month with no expiry, so storage alone climbs by about $6.80 a month, every
 month.
 
@@ -122,21 +136,39 @@ a day and does not move with traffic or with deployment count.
 The comment at `ObservabilityStack.java:222` names the query the selector exists to serve:
 `eventSource = dynamodb.amazonaws.com and eventName = Scan`. `GetRecords` was never wanted.
 
+A one-hour sample of 8,000 events measures the residual. `GetRecords` is 7,307 of them and
+94.93% of the bytes. Everything else is management events (`sts`, `s3`, `monitoring`, `lambda`,
+`kms`, `ecr`, `logs`, `cloudformation`), which CloudTrail delivers free on the first trail but
+which CloudWatch Logs still charges to ingest. So the log group keeps about 5% of its volume,
+$6.71 a month, and that sample hour ran two destroy workflows, so 5% is on the high side.
+
+#### What we lose
+
+The change excludes one `eventName`. It does not turn DynamoDB data events off.
+
+| | |
+|---|---|
+| **Gone** | `GetRecords` on the DynamoDB Streams shards, about 4 calls per second per shard, made by the AnalyticsStack event-source mapping's own Lambda role. No human principal appears in any of the 7,307 sampled records. Both copies go: the CloudWatch log group and the trail's S3 bucket shrink by the same 95%. |
+| **Kept** | Every `GetItem`, `Query`, `Scan`, `PutItem`, `UpdateItem`, `DeleteItem` and `BatchGetItem` on every table, each with its principal and source IP. All management events, unchanged. |
+| **Detectors** | None loses input. The three consumers of this log group are in `SecurityDetectionStack.java` at lines 131, 165 and 210, and they match `Scan`, `GetItem` and `GetSecretValue`. |
+| **CDK mechanics** | Advanced event selectors replace basic ones outright, so management events have to be re-declared in the same selector list. Use `CfnTrail.AdvancedEventSelectorProperty` with a field selector of `eventName` `NotEquals` `GetRecords` alongside the `AWS::DynamoDB::Table` resource-type selector. |
+| **The blunter alternative** | Turning DynamoDB data events off entirely saves under $0.05 a month more: the sample held 7 non-`GetRecords` DynamoDB events in 8,000, all `DescribeStream`. It blinds the B28 `Scan` and `GetItem` detectors. Not worth it. |
+
 ## Steady-state monthly spend after all recommended changes
 
 | Line | $/month |
 |---|---:|
-| CloudWatch alarms | 22.90 |
+| CloudWatch alarms | 19.10 |
+| Lambda provisioned concurrency | 12.70 |
 | WAF | 8.17 |
+| CloudWatch Logs ingestion | 6.71 |
 | CloudWatch custom metrics | 5.35 |
 | Secrets Manager | 3.25 |
 | Synthetics canary runs | 2.48 |
 | KMS | 2.05 |
-| CloudWatch Logs ingestion | 1.30 |
 | Security Hub | 0.99 |
 | Cognito Plus MAU | 0.80 |
 | S3 | 0.45 |
-| CloudTrail data events | 0.40 |
 | GuardDuty | 0.35 |
 | submit-backup account | 0.18 |
 | DynamoDB | 0.17 |
@@ -144,22 +176,24 @@ The comment at `ObservabilityStack.java:222` names the query the selector exists
 | AWS Backup, prod | 0.11 |
 | ECR | 0.10 |
 | Glue | 0.07 |
+| CloudTrail data events | 0.04 |
 | API Gateway | 0.02 |
-| Lambda provisioned concurrency | 0.00 |
 | CloudFront, Athena, Firehose, RUM, Route 53 | 0.00 |
-| **Total** | **49.31** |
+| **Total** | **63.26** |
 
-$59.17 with UK VAT.
+$75.91 with UK VAT. Total saving $189.75.
 
-**If only the changes that alter no behaviour** (items 1, 5, 7 and 8): saving $175.63, leaving
-**$77.38 a month before VAT ($92.86 with VAT)**. Items 2, 3, 4 and 6 each trade something real:
-cold-start latency, test isolation, throttle and latency alerting, and the ability to run prod
-against sandbox credentials.
+Provisioned concurrency stays at $12.70 in that total, second only to alarms.
+
+**If only the changes that alter no behaviour** (items 1, 4, 6 and 7): saving $170.60, leaving
+**$82.41 a month before VAT ($98.89 with VAT)**. Items 2, 3 and 5 each trade something real:
+test isolation, per-function alarm attribution, and the ability to run prod against sandbox
+credentials.
 
 ## Cost of each stale prod stack set
 
-Excluded from the baseline above. This is what one extra `prod-*-app-*` set costs per month
-while it stands.
+Excluded from the baseline above. This is what one `prod-*-app-*` set beyond the serving one
+costs per month while it stands. The figure holds for future churn whatever today's sets do.
 
 | Line | $/month |
 |---|---:|
@@ -171,12 +205,15 @@ while it stands.
 | Canary artifacts bucket, API Gateway, SQS | 0.10 |
 | **Total per stale set** | **46.88** |
 
-Three sets were live in eu-west-2 when this was read: `prod-575eeb7` (carrying the
-`submit.diyaccounting.co.uk` alias on E4Z63PR601H8Y), `prod-2fdb564`, and `prod-112b1ce` part-way
-through creation. Two stale sets is **$93.76 a month** on top of the $253 baseline.
+As at 2026-09-02 13:00 UTC, `prod-112b1ce` serves: it holds the `submit.diyaccounting.co.uk`
+alias on distribution E2OXL53711PV70. Two `destroy-prod.yml` runs dispatched at 12:19 UTC are
+working on `prod-2fdb564` and `prod-575eeb7` (runs 33629302847 and 33629305881). At the time of
+writing 33629302847 is in progress and 33629305881 is pending, so both sets are still standing
+and still costing $46.88 each.
 
-Backlog row 43 names `prod-bc6a9dd` as the live deployment. Three deploys have landed since.
-The set that carries the live alias changes with each merge to main.
+Backlog row 43 names `prod-bc6a9dd` as the live deployment. Several deploys have landed since.
+The set that carries the live alias changes with each merge to main, and nothing tears the
+previous one down automatically.
 
 ## Deployment churn, excluded from the baseline
 
@@ -190,12 +227,14 @@ figure.
 - **CloudTrail management events and S3 request volume** rose with the merge count and fall back
   on their own.
 - **Cognito MAU** is partly churn. 546 billable MAU in August against 40 users in the pool.
-  Item 3 addresses it.
+  Item 2 addresses it.
 
 ## Considered and rejected
 
 | Candidate | Number that rejected it |
 |---|---|
+| Drop Lambda provisioned concurrency to zero | Would save $12.70, the second-largest controllable line. August used 2,411 provisioned GB-seconds against 4,710,844 provisioned, so it runs idle 99.95% of the time. Operator decision: cold starts on the auth and token path are not acceptable. Out of scope. |
+| Turn DynamoDB data events off entirely | Under $0.05 beyond the `GetRecords` exclusion, and it blinds the `Scan` and `GetItem` detectors. |
 | DynamoDB PITR on the 12 tables | All 12 tables together hold 10.4 MB. PITR at $0.20/GB-month is $0.002 a month. Eight of the twelve are empty. |
 | Canary cadence, 51 minutes to 2 hours | Saves $1.43. Doubling the worst-case time to notice an outage is not worth it. |
 | Cognito Plus down to Essentials | Saves $2.73 at 546 MAU ($0.02 to $0.015). Loses threat protection. |
@@ -216,7 +255,7 @@ figure.
 - **The $10.35 custom-metric line, attributed to individual series.** Cost Explorer stops at
   `EUW2-CW:MetricMonitorUsage`. `list-metrics --recently-active PT3H` returns 195 non-AWS series
   against a billed count near 35, so the two do not reconcile. The `behaviour-test` namespace
-  and its 504 accumulated series is the identified growth risk, and item 5's $5.00 saving is an
+  and its 504 accumulated series is the identified growth risk, and item 4's $5.00 saving is an
   estimate rather than a measurement.
 - **Whether the 546 August Cognito MAU are test users.** The pool holds 40. MAU counts anyone
   active at any point in the month, and deleted users still count, so the gap fits test-user
