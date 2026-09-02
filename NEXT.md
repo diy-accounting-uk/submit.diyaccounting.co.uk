@@ -34,7 +34,9 @@ operator step before them is done or when SSO is live.
   live-mode Stripe webhooks succeed (confirmed in CloudWatch logs), but
   `activity_events_all` in this account only covers 2026-08-29 onward, before
   any of those real events recurred — needs a real renewal or checkout to land
-  before this counts as verified.
+  before this counts as verified. Phase 5 (stop duplicate CloudFront log
+  delivery) turned out to already be done — no classic logging path exists in
+  the code, confirmed live in ci — so this is the only open thread left.
 - [ ] **`supportTicketPost.js`'s GitHub wiring is dormant.** `GITHUB_TOKEN_SECRET_ARN`
   is never provisioned by any workflow, so support-ticket-to-issue is wired in code
   but never deployed. Surfaced while proving B20/20a's alarm→issue path live in ci;

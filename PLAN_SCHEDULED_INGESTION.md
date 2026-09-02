@@ -588,7 +588,14 @@ run.
 
 # Phase 5: stop the duplicate CloudFront delivery
 
-**Model: Sonnet.** Small, and independent of phases 2 to 4.
+**Status: already done, verified 2026-09-02.** `EdgeStack.java`'s `Distribution.Builder` has
+no `.enableLogging()`/`.logBucket()`/`.logFilePrefix()` call, and
+`CloudFrontAccessLogs.java` has no classic ACL-enabled bucket construct — only the v2
+Parquet path exists. Confirmed live in ci: no objects under a `cf-standard-logs/` prefix in
+the analytics lake bucket, and the v2 path has current data
+(`raw/cloudfront/distributionid=.../year=2026/month=08/day=29/*.parquet`). The classic path
+this phase describes never shipped, or was removed before this plan was written up; either
+way the described duplication does not exist in the current code.
 
 Every CloudFront access log is delivered twice today. `EdgeStack.java:578` enables classic
 standard logging into the env log bucket under `cf-standard-logs/<deployment>/` as gzipped
