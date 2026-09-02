@@ -68,29 +68,17 @@ operator step before them is done or when SSO is live.
   `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
-- [ ] **(B28) Scan and data-theft detection — code merged, but two stacks were
-  never actually deployed anywhere.** Design done: `PLAN_SECURITY_DETECTION_DEPLOY_GAP.md`
-  on branch `claude/b28-deploy-gap-design` has the exact job YAML for both;
-  implementation agent to follow. Both issues merged to main 2026-09-01;
-  live-verified against ci 2026-09-02 with a real gap found: `SecurityDetectionStack`
-  and `ScanDetectionStack` are both correctly wired into `SubmitEnvironment.java`
-  (confirmed by reading the source), but `deploy-environment.yml` has **no deploy
-  job for either stack** — nobody added the corresponding CI/CD job when the CDK
-  code was written, so both are code-complete and entirely undeployed, in ci and
-  prod alike. This is real new work, not a redeploy: add two jobs to
-  `deploy-environment.yml` following the existing per-stack pattern (see
-  `deploy-analytics`/`deploy-billing-webhook` for the template — env-level Docker
-  image build + `cdk deploy <env>-env-<Stack> --exclusively`), for
-  `SecurityDetectionStack` (alarm-only, likely no Docker image needed) and
-  `ScanDetectionStack` (has its own Lambda, likely needs one). Verified live in ci
-  (all via read-only/non-destructive checks): 9.1 (sensitive-path WAF rule +
-  logging) and 9.3 (manual block list) both pass; 9.3's salt-secret resource
-  policy, the security-state table, and `bundleGet`'s IAM all pass; the bundle
-  burst-load test was deliberately not attempted — needs a decision on how to run
-  it safely (real authenticated user, could look like abuse) rather than
-  improvising one. The `CloudFront-Viewer-Country` header is confirmed wired into
-  ci's origin request policy but not confirmed reaching the authorizer (no recent
-  invocations in its log group to check).
+- [ ] **(B28) Scan and data-theft detection, remainder.** The deploy-job gap
+  (`SecurityDetectionStack`/`ScanDetectionStack` had no `deploy-environment.yml`
+  job at all) is fixed and merged to main 2026-09-02 (`2c6633a3`), verified live
+  end to end in ci: both stacks `CREATE_COMPLETE`, the salt-read alarm exists, a
+  real scheduled invocation of the 404-rate Lambda observed in logs. That merge
+  will auto-deploy to prod — confirm both stacks land there too. Still open
+  beyond the deploy gap: the bundle burst-load test needs a decision on how to
+  run it safely (real authenticated user, could look like abuse) rather than
+  improvising one; the `CloudFront-Viewer-Country` header is confirmed wired
+  into ci's origin request policy but not confirmed reaching the authorizer (no
+  recent invocations in its log group to check yet).
 
 ## In flight (coordinator session)
 
