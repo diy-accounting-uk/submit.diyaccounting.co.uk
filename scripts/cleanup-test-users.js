@@ -10,11 +10,10 @@
  * their identity: only their data is purged, so reusing them costs no new monthly active user.
  *
  * Usage:
- *   node scripts/cleanup-test-users.js <environment-name> <deployment-name> [--confirm] [--json]
+ *   node scripts/cleanup-test-users.js <environment-name> [--confirm] [--json]
  *
  * Environment variables:
  *   AWS_REGION               AWS region (default: eu-west-2)
- *   ENVIRONMENT_NAME         For Secrets Manager salt lookup
  *   USER_SUB_HASH_SALT       Override salt registry JSON (local dev)
  */
 
@@ -106,17 +105,13 @@ async function deleteCognitoUser(userPoolId, username) {
 
 const args = process.argv.slice(2);
 const environmentName = args[0];
-const deploymentName = args[1];
 const confirm = args.includes("--confirm");
 const jsonOutput = args.includes("--json");
 
-if (!environmentName || !deploymentName) {
-  console.error("Usage: node scripts/cleanup-test-users.js <environment-name> <deployment-name> [--confirm] [--json]");
+if (!environmentName) {
+  console.error("Usage: node scripts/cleanup-test-users.js <environment-name> [--confirm] [--json]");
   process.exit(1);
 }
-
-// Set ENVIRONMENT_NAME for subHasher salt initialization
-process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
 
 (async () => {
   try {
@@ -145,7 +140,7 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
       if (confirm) {
         try {
           // Delete user data from DynamoDB via delete-user-data.js
-          execFileSync("node", ["scripts/delete-user-data.js", deploymentName, "--user-sub", user.sub, "--confirm", "--json"], {
+          execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", user.sub, "--confirm", "--json"], {
             stdio: "pipe",
             env: { ...process.env },
           });

@@ -8,8 +8,9 @@
 // Example: node scripts/ensure-cognito-test-user.js ci submitVatBehaviour
 //
 // Each test lane keeps one durable user in the environment's user pool. The user is created
-// once and reused, so a run costs no new monthly active user. Every run rotates the password
-// and re-enrols the TOTP device, so credentials never outlive the run that issued them.
+// once and reused, so a run costs no new monthly active user. Every run rotates the password,
+// re-enrols the TOTP device and purges the user's DynamoDB data, so credentials never outlive
+// the run that issued them and a run never inherits the previous run's bundles or receipts.
 //
 // Lanes that run in parallel need separate users: the behaviour suites clear and re-grant
 // bundles for whoever they log in as, and a rotation from one lane would invalidate another
@@ -19,12 +20,14 @@ import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-clo
 import {
   CognitoIdentityProviderClient,
   AdminCreateUserCommand,
+  AdminGetUserCommand,
   AdminSetUserPasswordCommand,
   InitiateAuthCommand,
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
   AdminSetUserMFAPreferenceCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+import { execFileSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
 
@@ -114,6 +117,15 @@ async function main() {
       if (error.name !== "UsernameExistsException") throw error;
       console.log("Reusing the existing durable test user");
     }
+
+    const user = await cognitoClient.send(new AdminGetUserCommand({ UserPoolId: userPoolId, Username: testEmail }));
+    const userSub = user.UserAttributes?.find((a) => a.Name === "sub")?.Value;
+    if (!userSub) throw new Error(`No sub attribute on ${testEmail}`);
+
+    console.log("Purging the user's data from the previous run...");
+    execFileSync("node", ["scripts/delete-user-data.js", environmentName, "--user-sub", userSub, "--confirm"], {
+      stdio: "inherit",
+    });
 
     console.log("Rotating password...");
 

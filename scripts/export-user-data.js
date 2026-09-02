@@ -5,17 +5,17 @@
 /**
  * Export all data for a specific user (GDPR Right of Access / Data Portability)
  *
- * Queries all 8 DynamoDB tables by hashedSub partition key.
+ * Queries all 8 DynamoDB tables (`<environment-name>-env-<table>`) by hashedSub partition key.
  * Output is in JSON format suitable for providing to the user.
  *
  * Usage:
- *   node scripts/export-user-data.js <deployment-name> --user-sub <sub>
- *   node scripts/export-user-data.js <deployment-name> --hashed-sub <hash>
+ *   node scripts/export-user-data.js <environment-name> --user-sub <sub>
+ *   node scripts/export-user-data.js <environment-name> --hashed-sub <hash>
  *
  * Environment variables:
  *   AWS_REGION             AWS region (default: eu-west-2)
- *   ENVIRONMENT_NAME       For Secrets Manager salt lookup (required with --user-sub)
- *   USER_SUB_HASH_SALT     Override salt registry JSON (local dev)
+ *   USER_SUB_HASH_SALT     Override salt registry JSON (local dev); otherwise the salt is
+ *                          read from Secrets Manager for <environment-name>
  *   OUTPUT_DIR             Output directory for export file (default: current directory)
  */
 
@@ -82,11 +82,11 @@ const TABLE_SUFFIXES = [
 /**
  * Export user data from all tables.
  */
-async function exportUserData(deploymentName, hashedSubs) {
+async function exportUserData(environmentName, hashedSubs) {
   const region = process.env.AWS_REGION || "eu-west-2";
   const docClient = makeDocClient(region);
 
-  console.log(`Deployment: ${deploymentName}`);
+  console.log(`Environment: ${environmentName}`);
   console.log(`Hashed subs: ${hashedSubs.join(", ")}`);
   console.log(`Region: ${region}`);
   console.log("");
@@ -94,14 +94,14 @@ async function exportUserData(deploymentName, hashedSubs) {
   const userData = {
     exportDate: new Date().toISOString(),
     hashedSubs,
-    deployment: deploymentName,
+    environment: environmentName,
     data: {},
   };
 
   let totalItems = 0;
 
   for (const suffix of TABLE_SUFFIXES) {
-    const tableName = `${deploymentName}-${suffix}`;
+    const tableName = `${environmentName}-env-${suffix}`;
     let allItems = [];
 
     for (const hashedSub of hashedSubs) {
@@ -141,16 +141,18 @@ function getArg(name) {
   return null;
 }
 
-const deploymentName = args[0];
+const environmentName = args[0];
 const userSub = getArg("--user-sub");
 const hashedSub = getArg("--hashed-sub");
 
-if (!deploymentName || (!userSub && !hashedSub)) {
+if (!environmentName || (!userSub && !hashedSub)) {
   console.error("Usage:");
-  console.error("  node scripts/export-user-data.js <deployment-name> --user-sub <sub>");
-  console.error("  node scripts/export-user-data.js <deployment-name> --hashed-sub <hash>");
+  console.error("  node scripts/export-user-data.js <environment-name> --user-sub <sub>");
+  console.error("  node scripts/export-user-data.js <environment-name> --hashed-sub <hash>");
   process.exit(1);
 }
+
+process.env.ENVIRONMENT_NAME = environmentName;
 
 (async () => {
   try {
@@ -162,7 +164,7 @@ if (!deploymentName || (!userSub && !hashedSub)) {
       console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
     }
 
-    const file = await exportUserData(deploymentName, hashedSubs);
+    const file = await exportUserData(environmentName, hashedSubs);
     console.log("");
     console.log("Export successful");
     console.log(`File: ${file}`);
