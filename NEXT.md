@@ -10,7 +10,9 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-bc6a9dd.** Drift findings live in issue #43.
+**Prod serves from prod-575eeb7; prod-112b1ce is deploying and will take over; prod-2fdb564
+is stale.** Each stale `prod-*-app-*` set costs $46.88/month until torn down
+(`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
 - [ ] **Confirm a `purchase` event lands.** GA4 still shows "No stream data detected"
   for `purchase` property-wide — expected while no paid flow has completed since
