@@ -515,7 +515,7 @@ Pages `cognito-idp list-users` and calls `admin-user-global-sign-out` per user. 
 
 | Detection | Alarm Name Pattern | Response |
 |-----------|-------------------|----------|
-| Lambda health (errors, throttles, slow, log errors) | `{deployment}-app-{stack}-health`, `{env}-env-{stack}-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
+| Lambda health (errors, throttles, slow, log errors) | `{deployment}-app-{stack}-stack-health`, `{env}-env-{stack}-stack-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
 | API 5xx errors | `{env}-submit-api-5xx` | Check API Gateway + Lambda logs |
 | Health check failures | `{env}-ops-health-check` | Check CloudFront, API, Lambda |
 

@@ -15,7 +15,7 @@ transition when CloudFormation creates it.
 
 Each stack that builds Lambda constructs also builds one `CompositeAlarm` over every check of
 every function it owns. `Lambda.stackHealthAlarm` does the fan-in. The composite is named
-`{resourceNamePrefix}-{stackShortName}-health`, so it carries the deployment or environment
+`{resourceNamePrefix}-{stackShortName}-stack-health`, so it carries the deployment or environment
 prefix the routing rule already matches, and the four children keep the `check-` prefix and stay
 outside it.
 
@@ -23,16 +23,16 @@ Eight composites cover a prod deployment:
 
 | Level | Composite |
 |---|---|
-| app | `{deployment}-app-auth-health` |
-| app | `{deployment}-app-hmrc-health` |
-| app | `{deployment}-app-account-health` |
-| app | `{deployment}-app-billing-health` |
-| app | `{deployment}-app-ops-health` |
-| app | `{deployment}-app-edge-health` |
-| env | `{env}-env-analytics-health` |
-| env | `{env}-env-billing-webhook-health` |
+| app | `{deployment}-app-auth-stack-health` |
+| app | `{deployment}-app-hmrc-stack-health` |
+| app | `{deployment}-app-account-stack-health` |
+| app | `{deployment}-app-billing-stack-health` |
+| app | `{deployment}-app-ops-stack-health` |
+| app | `{deployment}-app-edge-stack-health` |
+| env | `{env}-env-analytics-stack-health` |
+| env | `{env}-env-billing-webhook-stack-health` |
 
-A ci deployment adds `{deployment}-app-self-destruct-health`.
+A ci deployment adds `{deployment}-app-self-destruct-stack-health`.
 
 A composite alarm costs $0.50 a month, a standard alarm $0.10. The 151 children stay, because
 they are the terms of the composite's rule. Per-stack costs about $4 a month across the estate.
@@ -61,7 +61,7 @@ aws --profile submit-ci cloudwatch describe-alarms --alarm-types CompositeAlarm 
   --query 'CompositeAlarms[].AlarmName'
 ```
 
-returns one `-health` name per stack that owns Lambda functions, and
+returns one `-stack-health` name per stack that owns Lambda functions, and
 
 ```bash
 aws --profile submit-ci cloudwatch describe-alarms --alarm-name-prefix check- \
@@ -78,7 +78,7 @@ aws --profile submit-ci cloudwatch set-alarm-state \
   --state-value ALARM --state-reason "routing check"
 ```
 
-Exactly one Telegram message arrives. It names `<deployment>-app-<stack>-health`, and its
+Exactly one Telegram message arrives. It names `<deployment>-app-<stack>-stack-health`, and its
 `state.reason` names the child that tripped. No second message arrives when a second child of the
 same stack is set to ALARM while the composite is still in ALARM. Reset both children with
 `--state-value OK` and confirm one recovery message.

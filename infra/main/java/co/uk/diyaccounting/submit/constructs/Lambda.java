@@ -42,7 +42,7 @@ public class Lambda {
     /** Alarm names starting with this are terms of a composite and are not routed to Telegram or GitHub. */
     public static final String CHECK_ALARM_NAME_PREFIX = "check-";
 
-    public static final String HEALTH_ALARM_NAME_SUFFIX = "-health";
+    public static final String HEALTH_ALARM_NAME_SUFFIX = "-stack-health";
 
     /** CloudWatch accepts at most this many operands in one composite alarm rule. */
     private static final int ALARM_RULE_MAX_OPERANDS = 100;
