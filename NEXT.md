@@ -30,32 +30,21 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **Prod CloudFront cutover stuck since issue-9's merge — all three
-  EdgeStack bugs now fixed and merged, final deploy in flight to confirm.**
-  1) a semicolon in a WAF IPSet description violating AWS's regex; 2) a
-  13-pattern regex set exceeding WAFv2's 10-pattern limit; 3)
-  `CfnLoggingConfiguration.redactedFields(List<Object>)` silently dropping its
-  Map contents through JSII (every entry synthesized as `{}`, CDK synth never
-  catches it since the property is untyped) — fixed via `addPropertyOverride`,
-  regression test added. All three merged to main, commit `52127a03`; each
-  individually confirmed via a real ci deploy (not just a green checkmark —
-  `deploy-edge` succeeding specifically, and for bug 3, `RedactedFields`'
-  actual content read back from the live WAFv2 resource).
-  Consequence while all this was broken: `deploy-edge` failed on every prod
-  deploy since issue-9 landed, so `set-origins` (the job that actually repoints
-  CloudFront) kept getting skipped — but `set-last-known-good-deployment` only
-  depends on `web-test`, not on `set-origins`, so the SSM pointer kept advancing
-  anyway. Result: CloudFront has been serving stale `prod-9050bb5` (pre-dating
-  B28/cognito-fix/B14) while SSM has claimed four different deployments were
-  "last known good" in turn, none of them ever actually cut over — so the
-  cognito-token-post audit-log fix, B28's scan/data-theft detection, and B14's
-  ingestion work are not actually live for real customers yet, only deployed.
-  The `52127a03` push triggered a fresh prod deploy; a watcher is confirming
-  `deploy-edge`/`set-origins` succeed for real and CloudFront's origin actually
-  changes before anything gets torn down. Once confirmed: purge the orphaned
-  `prod-9050bb5`, `prod-a994f29`, `prod-40fc40a`, and `prod-ccd8b3e` stack sets.
-  Separately worth fixing later: `set-last-known-good-deployment` should depend
-  on `set-origins`, not just `web-test`, so this class of mismatch can't recur.
+- [ ] **Prod CloudFront cutover fixed and confirmed — orphan purge in flight.**
+  Three EdgeStack bugs blocked `deploy-edge` on every prod deploy since issue-9's
+  merge (a semicolon in a WAF IPSet description; a 13-pattern regex set over
+  WAFv2's 10-pattern limit; `CfnLoggingConfiguration.redactedFields(List<Object>)`
+  silently dropping its Map contents through JSII), all fixed and merged
+  (`52127a03`). Deployment `prod-52127a0` confirmed live 2026-09-02: `deploy-edge`
+  and `set-origins` both succeeded, CloudFront's origin is `prod-52127a0`, and
+  SSM's `last-known-good-deployment` agrees — the cognito-token-post audit-log
+  fix, B28's detection work, and B14's ingestion work are now actually serving
+  real traffic, not just deployed. A purge agent is tearing down the four
+  orphaned deployments (`prod-9050bb5`, `prod-a994f29`, `prod-40fc40a`,
+  `prod-ccd8b3e`) sequentially. Separately worth fixing later:
+  `set-last-known-good-deployment` should depend on `set-origins`, not just
+  `web-test`, so a deployment can't be marked "last known good" without actually
+  being cut over — that gap is what let this whole situation compound today.
 - [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
   (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
   fired in 90 days; the one noisy alarm was a log-wording false positive, since
