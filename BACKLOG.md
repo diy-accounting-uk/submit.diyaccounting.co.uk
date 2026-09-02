@@ -18,7 +18,7 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **In flight**: nothing. 43.1–43.4 are approved and ready to start as one batch.
+- **In flight**: 43.1–43.4, all four on the `invoice.paid` fix's PR branch (PR #102) so they merge as one prod deploy.
 - **Closed 2026-09-01/02, dropped from Tier 1**: 14 (scheduled ingestion: all six phases
   live in ci and prod; a real live payment on 2026-09-02 reached Athena as
   `activity_activations = 1` within 15 minutes), 20/20a (ops alerting, alarm→issue path

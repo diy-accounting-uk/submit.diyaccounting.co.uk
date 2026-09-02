@@ -33,8 +33,8 @@ operator step before them is done or when SSO is live.
   and cannot refresh unattended, so the run that matters needs a live session.
 - [ ] **(B43) Cost optimisation, `PLAN_COST_OPTIMISATION.md`: steady-state prod
   $253.01 → $64.77/month before VAT once 43.1–43.4 land.** Provisioned concurrency stays
-  by operator decision. Each item is a PR; every merge to main is a prod deploy, so the
-  four merge as one batch.
+  by operator decision. All four are being implemented now on the `invoice.paid` fix's PR
+  branch so they ship as one prod deploy.
   - [ ] **(B43.1) Exclude `GetRecords` from CloudTrail DynamoDB data events.** Advanced
     event selector in `ObservabilityStack.java`; no detector reads it. $171.99 → $6.75,
     saves $165.24. Effort S.
