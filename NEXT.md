@@ -37,10 +37,6 @@ operator step before them is done or when SSO is live.
   before this counts as verified. Phase 5 (stop duplicate CloudFront log
   delivery) turned out to already be done — no classic logging path exists in
   the code, confirmed live in ci — so this is the only open thread left.
-- [ ] **`supportTicketPost.js`'s GitHub wiring is dormant.** `GITHUB_TOKEN_SECRET_ARN`
-  is never provisioned by any workflow, so support-ticket-to-issue is wired in code
-  but never deployed. Surfaced while proving B20/20a's alarm→issue path live in ci;
-  a separate deploy-gap fix, not part of that proof.
 
 ## Discipline
 
