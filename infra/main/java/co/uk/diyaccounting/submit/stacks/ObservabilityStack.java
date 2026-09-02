@@ -33,7 +33,6 @@ import software.amazon.awscdk.services.cloudwatch.GraphWidget;
 import software.amazon.awscdk.services.cloudwatch.IWidget;
 import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cognito.CfnIdentityPool;
 import software.amazon.awscdk.services.cognito.CfnIdentityPoolRoleAttachment;
@@ -535,33 +534,19 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 2: GitHub Synthetic Tests and Deployment Events
-        // GitHub synthetic test metrics (sent from deploy.yml)
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("GitHub Synthetic Tests (all deployments)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{%s,deployment-name,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)",
-                                        apexDomain))
-                                .label("Behaviour Tests (0=pass)")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Deployments")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{%s,deployment-name} MetricName=\"deployment\"', 'Sum', 3600)",
-                                        apexDomain))
-                                .label("Deployment events")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
+        // Row 2: GitHub Synthetic Tests
+        // GitHub synthetic test metrics (sent from synthetic-test.yml), one series per suite
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("GitHub Synthetic Tests")
+                .left(List.of(MathExpression.Builder.create()
+                        .expression(String.format(
+                                "SEARCH('{%s,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)", apexDomain))
+                        .label("Behaviour Tests (0=pass)")
+                        .period(Duration.hours(1))
+                        .build()))
+                .width(24)
+                .height(6)
+                .build()));
 
         // Row 3: Business Metrics - Key Lambda function invocations across all deployments
         // Using SEARCH to aggregate across deployment-specific function names
@@ -738,30 +723,6 @@ public class ObservabilityStack extends Stack {
                         .build()))
                 .width(24)
                 .height(6)
-                .build()));
-
-        // Row 8: Help text for deployment annotations (was Row 7)
-        dashboardRows.add(List.of(TextWidget.Builder.create()
-                .markdown(
-                        """
-                        ### Deployment Tracking
-
-                        Deployment events are tracked via custom metrics sent from GitHub Actions.
-                        The metric namespace is `%s` with dimension `deployment-name`.
-
-                        To send deployment metrics from your CI/CD pipeline:
-                        ```bash
-                        aws cloudwatch put-metric-data \\
-                          --namespace "%s" \\
-                          --metric-name "deployment" \\
-                          --dimensions "deployment-name=$DEPLOYMENT_NAME" \\
-                          --value 1 \\
-                          --unit Count
-                        ```
-                        """
-                                .formatted(apexDomain, apexDomain))
-                .width(24)
-                .height(4)
                 .build()));
 
         Dashboard operationsDashboard = Dashboard.Builder.create(

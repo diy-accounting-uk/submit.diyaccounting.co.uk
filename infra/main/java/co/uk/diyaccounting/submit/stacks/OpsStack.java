@@ -395,11 +395,13 @@ public class OpsStack extends Stack {
 
         this.githubSyntheticAlarm = Alarm.Builder.create(this, "GithubSyntheticAlarm")
                 .alarmName(props.resourceNamePrefix() + "-github-synthetic-failed")
-                .alarmDescription("GitHub Actions synthetic test has not succeeded in 2 hours")
+                .alarmDescription("GitHub Actions synthetic test has not succeeded in 2 hours. "
+                        + "The behaviour-test metric is published per environment, not per deployment, "
+                        + "so a synthetic failure on any deployment in this environment trips this alarm.")
                 .metric(Metric.Builder.create()
                         .namespace(apexDomain)
                         .metricName("behaviour-test")
-                        .dimensionsMap(Map.of("deployment-name", props.deploymentName(), "test", "submitVatBehaviour"))
+                        .dimensionsMap(Map.of("test", "submitVatBehaviour"))
                         .statistic("Minimum")
                         .period(Duration.hours(2))
                         .build())

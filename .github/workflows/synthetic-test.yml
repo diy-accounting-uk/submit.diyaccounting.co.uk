@@ -550,7 +550,7 @@ jobs:
           aws cloudwatch put-metric-data \
             --namespace "${{ needs.names.outputs.apex-domain }}" \
             --metric-name "behaviour-test" \
-            --dimensions deployment-name=${{ needs.names.outputs.deployment-name }},test=${{ matrix.suite }} \
+            --dimensions test=${{ matrix.suite }} \
             --value "$VALUE" \
             --region ${{ env.AWS_REGION }}
 
