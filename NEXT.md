@@ -35,10 +35,9 @@ operator step before them is done or when SSO is live.
   $253.01 → $64.77/month before VAT.** Provisioned concurrency stays by operator decision.
   43.1–43.4 and the `invoice.paid` fix are live in prod (deployment prod-6f1779b,
   2026-09-02; the first prod synthetic run passed with the durable `synthetic-*` users).
-  Claude Code: confirm `prod-env-cloud-trail` ingest drops from ~8 GB/day, `[ALARM]` issues
-  arrive titled `{stack}-stack-health`, and the next real renewal refreshes tokens
-  (`subscription-renewed` published). Then check the next bill moved as predicted, and
-  confirm the GCP billing budget alert and delete the stray project (row 43).
+  Claude Code: confirm the next real renewal refreshes tokens (`subscription-renewed`
+  published). Then check the next bill moved as predicted, and confirm the GCP billing
+  budget alert and delete the stray project (row 43).
 
 ## Discipline
 
