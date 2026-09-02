@@ -205,15 +205,11 @@ costs per month while it stands. The figure holds for future churn whatever toda
 | Canary artifacts bucket, API Gateway, SQS | 0.10 |
 | **Total per stale set** | **46.88** |
 
-As at 2026-09-02 13:00 UTC, `prod-112b1ce` serves: it holds the `submit.diyaccounting.co.uk`
-alias on distribution E2OXL53711PV70. Two `destroy-prod.yml` runs dispatched at 12:19 UTC are
-working on `prod-2fdb564` and `prod-575eeb7` (runs 33629302847 and 33629305881). At the time of
-writing 33629302847 is in progress and 33629305881 is pending, so both sets are still standing
-and still costing $46.88 each.
-
-Backlog row 43 names `prod-bc6a9dd` as the live deployment. Several deploys have landed since.
-The set that carries the live alias changes with each merge to main, and nothing tears the
-previous one down automatically.
+One set stands: `prod-112b1ce`, which holds the `submit.diyaccounting.co.uk` alias on
+distribution E2OXL53711PV70. The set that carries the live alias changes with each merge to
+main, and nothing tears the previous one down automatically; `destroy-prod.yml` in sweep mode
+only takes sets older than eight hours, so a burst of merges in one day leaves its stale sets
+standing until someone names them.
 
 ## Deployment churn, excluded from the baseline
 
