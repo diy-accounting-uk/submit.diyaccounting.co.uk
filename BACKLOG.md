@@ -18,8 +18,9 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
-- **In flight**: 43.1–43.4, all four on the `invoice.paid` fix's PR branch (PR #102) so they merge as one prod deploy.
-- **Closed 2026-09-01/02, dropped from Tier 1**: 14 (scheduled ingestion: all six phases
+- **In flight**: nothing.
+- **Closed 2026-09-01/02, dropped from Tier 1**: 43.1–43.4 (all four cost cuts merged
+  with the `invoice.paid` fix in PR #102), 14 (scheduled ingestion: all six phases
   live in ci and prod; a real live payment on 2026-09-02 reached Athena as
   `activity_activations = 1` within 15 minutes), 20/20a (ops alerting, alarm→issue path
   proven live in ci: creates on first ALARM, comments not duplicates on the next), 25
@@ -36,10 +37,6 @@ truthfully on its own.
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
 | 43 | Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (2026-09-02): a monthly check that the bill moved the way the plan predicted, and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
-| 43.1 | Exclude `GetRecords` from CloudTrail DynamoDB data events with an advanced event selector in `ObservabilityStack.java`; no detector reads it. $171.99 → $6.75/month, saves $165.24 | PLAN_COST_OPTIMISATION item 1 | S | Hygiene. The single line that took prod from $53 to $253 a month. |
-| 43.2 | One durable Cognito test user with a rotated password instead of one per run (`scripts/enable-cognito-native-test.js`, `disable-…`). $9.80 → $0.80/month, saves $9.00 | PLAN_COST_OPTIMISATION item 2 | S/M | Hygiene. 546 billable MAU against 40 real users. |
-| 43.3 | One composite alarm per stack instead of per function, the alternative named in `PLAN_ALARM_CONSOLIDATION.md`; 26 → 8 composites, 151 standard stay. $28.10 → $19.10/month, saves $9.00 | PLAN_COST_OPTIMISATION item 3 | M | Hygiene. Same Telegram signal, stack-level attribution. |
-| 43.4 | Drop `deployment-name` from the behaviour-test metric dimensions so the `prod-submit.diyaccounting.co.uk` namespace stops growing 13 series per deploy. $10.35 → $5.35/month, saves about $5.00 | PLAN_COST_OPTIMISATION item 4 | S | Hygiene. 504 series and growing for ever. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 

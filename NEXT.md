@@ -32,30 +32,15 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 - [ ] **(B43) Cost optimisation, `PLAN_COST_OPTIMISATION.md`: steady-state prod
-  $253.01 → $64.77/month before VAT once 43.1–43.4 land.** Provisioned concurrency stays
-  by operator decision. All four are integrated on PR #102 with the `invoice.paid` fix so
-  they ship as one prod deploy; `npm test`, `./mvnw clean verify` and the branch's ci
-  `test` and `deploy` workflows are all green. After the merge: check the next bill moved
-  as predicted, and confirm the GCP billing budget alert and delete the stray project
-  (row 43).
-  - [ ] **(B43.1) Exclude `GetRecords` from CloudTrail DynamoDB data events.** Advanced
-    event selector in `ObservabilityStack.java`; no detector reads it. $171.99 → $6.75,
-    saves $165.24. Effort S.
-  - [ ] **(B43.2) One durable Cognito test user per test lane instead of one per run.**
-    `scripts/ensure-cognito-test-user.js` creates it if missing, then purges its data and
-    rotates password and TOTP each run. $9.80 → $0.80, saves $9.00. Effort S/M.
-  - [ ] **(B43.3) One composite alarm per stack instead of per function.** The
-    alternative named in `PLAN_ALARM_CONSOLIDATION.md`; 26 → 8 composites, 151 standard
-    stay. $28.10 → $19.10, saves $9.00. Effort M.
-  - [ ] **(B43.4) Drop `deployment-name` from the behaviour-test metric dimensions** so
-    the `prod-submit.diyaccounting.co.uk` namespace stops growing 13 series per deploy.
-    $10.35 → $5.35, saves about $5.00. Effort S.
-- [ ] **Merge the `invoice.paid` fix once the operator says when.** Live Stripe
-  invoices on API version `2026-01-28.clover` carry the subscription id at
-  `parent.subscription_details.subscription`, not `invoice.subscription`, so every
-  real renewal currently skips token refresh. The fix is on PR #102 with 43.1–43.4,
-  awaiting the operator's merge decision because each code merge to main is a full prod
-  deployment. After the merge, name the then-stale prod app set to `destroy-prod.yml`.
+  $253.01 → $64.77/month before VAT.** Provisioned concurrency stays by operator decision.
+  43.1–43.4 and the `invoice.paid` fix merged to main on 2026-09-02 (PR #102) and are
+  deploying to prod. Claude Code, once that deploy is green: name `prod-112b1ce` to
+  `destroy-prod.yml` (operator approval, $46.88/month while it stands); confirm the first
+  prod synthetic run passes with the durable `synthetic-*` users, `prod-env-cloud-trail`
+  ingest drops from ~8 GB/day, and `[ALARM]` issues arrive titled `{stack}-stack-health`;
+  confirm the next real renewal refreshes tokens (`subscription-renewed` published). Then
+  check the next bill moved as predicted, and confirm the GCP billing budget alert and
+  delete the stray project (row 43).
 
 ## Discipline
 
