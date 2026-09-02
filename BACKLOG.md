@@ -13,12 +13,17 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-08-31)
+## Live status (updated 2026-09-02)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own.
 
 - **In flight**: nothing. `NEXT.md` carries the open remainders.
+- **Closed 2026-09-01/02, dropped from Tier 1**: 20/20a (ops alerting, alarm→issue path
+  proven live in ci: creates on first ALARM, comments not duplicates on the next), 25
+  (cross-account backups: `submit-backup` stacks deployed, `restore-test.yml` succeeded),
+  28 (scan and data-theft detection: both stacks live in ci and prod, burst detector fired
+  once at threshold in a real ci test).
 - **Verification remainders on NEXT.md**: the weekly-cron self-fire proofs and a first
   `purchase` event.
 - **Operator-bound**: 17a (demo-video redo — Claude Code excluded by operator directive).
@@ -28,11 +33,7 @@ truthfully on its own.
 
 | # | Item | Source | Effort | Value |
 |---|---|---|---|---|
-| 14 | Scheduled ingestion jobs: GA4 export, Stripe reconciliation, CloudFront logs, orchestrated with Step Functions/EventBridge | Strategy | M | Insight [DE: orchestration, batch ingestion]. Completes the platform; revenue and funnel land in one queryable place. |
-| 20 | Ops alerting uplift: Telegram/Slack fan-out with dedup and auto-raised GitHub issues | Issue #18 | L | Autonomy. Turns alarms into tracked work without an operator watching a channel. |
-| 20a | Channel decided: Telegram (operator, 2026-08-31; it already routes alarms — `SLACK_INTEGRATION_PLAN.md` is superseded). Prove one alarm end to end into an auto-raised GitHub issue | Split from #20 | S | Autonomy. Two plans currently describe two channels doing the same job. One alarm through the whole path answers the channel question and sizes the fan-out. |
-| 25 | Cross-account backups, operator steps only: enable cross-account backup at the Organization level, first deploy of the backup-account stacks with the `submit-backup` profile, then the first manual `restore-test.yml` dispatch. The CDK, selection, role, and monthly restore-test workflow are on main | Issue #11, PLAN_CROSS_ACCOUNT_BACKUPS | S | Existential, second layer. The destination exists and denies deletion from outside; the restore test is the gate for the TypeScript migration (#33). |
-| 28 | Scan detection (#9) and data-theft detection (#10). The IAM half shipped in batch 2: blanket `grantReadData` is gone, per-table per-action grants live | Issues #9, #10; ALARM_VALIDATION_STRATEGY | M/L | Trust. Real exfiltration vectors on customer tables; CloudTrail data events already collect the raw signal. |
+| 14 | Scheduled ingestion jobs, remainder: phase 5 (stop the duplicate CloudFront log delivery) is unbuilt; prod's `activity_activations` signal is unproven pending a real billing event. Phases 1-4 and 6 verified live in ci and prod 2026-09-02, one bug found and fixed along the way (PR #98) | Strategy | S | Insight [DE: orchestration, batch ingestion]. Completes the platform; revenue and funnel land in one queryable place. |
 | 43 | Cost optimisation, entry point changed 2026-09-01: AWS Budgets already exist per-account plus org-wide (not new — pre-dating this item), with real actual/forecast data flowing, and two are already over forecast: `submit-prod` ($152.69 forecast vs $120 limit) and the org total ($261.14 vs $200). Start by explaining those two, not a blind six-account sweep. `submit-prod`'s cause is confirmed: this session's own merge cadence (5 code merges to main in ~2 hours) each auto-triggered a full prod deployment with no teardown of the previous one — 3 live duplicate `prod-*-app-*` stack sets accumulated within 2 hours, CloudFront stuck pointing at the oldest because the later deploys' cutover step hit a CloudFront API rate limit (observed directly, 2026-09-01). The org total's cause is partly confirmed: the spreadsheets account's Cost Explorer shows "Claude Opus 5 (Amazon Bedrock Edition)" at $43.25 for August, the single largest line in that account by a wide margin — an LLM-as-judge cost, not AWS infrastructure; out of this repo's lane to fix, but real. Once those two are addressed, the rest of the original scope still stands: Cost Explorer per account and service, right-sizing, storage classes and lifecycle rules, orphaned resources (us-east-1 log groups and images have recurred), data-transfer lines, a monthly check that the bill moved the way predicted, and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness not yet confirmed — `gcloud`'s billing API needs an interactive re-login to check; the stray auto-created `My First Project`, `valued-context-507200-m9`, still needs confirming empty and deleting). Feeds and is fed by #30 (alarms are the known largest CloudWatch line). Also feeds a process lesson for future coordinator sessions: batch merges to main into one push at the end of a session rather than merging each landed item individually, since every code push to main is a real prod deployment with no automatic teardown. | Operator, this session; Cowork 2026-08-31 | M | Hygiene, compounding. Nobody had reviewed the whole bill against what runs; the budget telemetry already existed but nothing was reading it — two accounts are over-forecast right now with a known, confirmed cause each. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
