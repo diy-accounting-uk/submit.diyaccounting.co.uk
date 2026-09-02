@@ -471,15 +471,14 @@ time this runs, since each was `D-1` on the previous night's run. An explicit `e
 still overrides both dates identically, so a manual replay for one date runs every
 definition against that date, unchanged from before.
 
-`activity_activations` reading 0 in prod is not proven to be a bug, and is not proven
-fixed either — it stays open. Prod's real live-mode webhook path works: CloudWatch logs
-show `checkout.session.completed` and `invoice.paid` processed successfully with
-`isTestMode:false` as recently as 2026-08-28. But `activity_events_all` in this account
-only has data from 2026-08-29 onward — the activity-events pipeline is four days old here
-— so none of those real webhooks landed inside its window, and no real billing event has
-recurred since. Real subscriptions exist (`stripe_subscriptions` shows five, four active,
-created February to August). The next real renewal or checkout will settle this without a
-code change; until one lands, the signal is unproven, not confirmed working.
+`activity_activations` in prod is proven working. A real live-mode checkout on 2026-09-02
+(11:04:45 UTC, `resident-vat`) published `subscription-activated` as actor `customer`,
+reached the curated parquet layer on the next Firehose flush (11:19 UTC) and
+`v_purchase_reconciliation_daily` read `activity_activations = 1` for that day. The earlier
+zeros were real zeros: `activity_events_all` only held data from 2026-08-29 and no real
+billing event had landed in that window. The same payment showed a separate bug: the
+`invoice.paid` handler reads `invoice.subscription`, which the account's Stripe API version
+(`2026-01-28.clover`) no longer sends; that fix is tracked on `NEXT.md`.
 
 **Model: Sonnet.**
 

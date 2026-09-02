@@ -29,14 +29,14 @@ operator step before them is done or when SSO is live.
   `aws sso login --sso-session diyaccounting` first; command in `_developers/SETUP.md`).
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
-
-- [ ] **(B14) prod's `activity_activations=0` is unproven either way.** Real
-  live-mode Stripe webhooks succeed (confirmed in CloudWatch logs), but
-  `activity_events_all` in this account only covers 2026-08-29 onward, before
-  any of those real events recurred — needs a real renewal or checkout to land
-  before this counts as verified. Phase 5 (stop duplicate CloudFront log
-  delivery) turned out to already be done — no classic logging path exists in
-  the code, confirmed live in ci — so this is the only open thread left.
+- [ ] **(B43) Cost optimisation: operator review of `PLAN_COST_OPTIMISATION.md`.**
+  Analysis only until the operator picks which items to implement; steady-state
+  submit-prod scope, deployment churn excluded.
+- [ ] **Merge the `invoice.paid` fix once the operator says when.** Live Stripe
+  invoices on API version `2026-01-28.clover` carry the subscription id at
+  `parent.subscription_details.subscription`, not `invoice.subscription`, so every
+  real renewal currently skips token refresh. Fix is on a PR awaiting a merge
+  decision, held because each code merge to main is a full prod deployment.
 
 ## Discipline
 
