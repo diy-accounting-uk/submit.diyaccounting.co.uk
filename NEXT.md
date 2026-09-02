@@ -107,6 +107,14 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
   ci deploy in progress.
 - **Prod orphan purge** — cutover confirmed live (`prod-52127a0`), tearing down
   the four orphaned deployments now. See the open-item bullet above.
+- **Wave 2: live-verification agents** (dispatched 2026-09-02, running
+  concurrently with the purge — all read-only or ci-scoped, no CloudFront
+  writes, so no collision risk): B30's composite alarms checked read-only
+  against live `prod-52127a0`; B14's phases 2-4 verified for real in ci
+  (real Lambda invoke, real state machine execution, real Athena queries);
+  B28's issue-9/issue-10 resources confirmed deployed in ci, with the burst-test
+  step explicitly deferred to the coordinator's judgement rather than attempted
+  ad hoc.
 
 ## Discipline
 
