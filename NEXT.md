@@ -45,24 +45,21 @@ operator step before them is done or when SSO is live.
   `set-last-known-good-deployment` should depend on `set-origins`, not just
   `web-test`, so a deployment can't be marked "last known good" without actually
   being cut over — that gap is what let this whole situation compound today.
-- [ ] **(B30) Alarm-count audit, remainder.** `REPORT_ALARM_AUDIT.md` holds the audit
-  (live check verified it: prod 155 alarms vs ~163 predicted, ~45 app alarms never
-  fired in 90 days; the one noisy alarm was a log-wording false positive, since
-  fixed). Cuts 1 and 2 are on main. Composite-alarm consolidation (cut 3) and the
-  `activity-telegram-forwarder` alarm-sensitivity tuning (issues #77-82, same
-  `Lambda.java` construct) both merged to main 2026-09-01, code-verified
-  (`./mvnw clean verify` 74/74). Still open: deploy and confirm the composite
-  `check-`/`-health` alarm split and the widened tolerance in live ci/prod.
-- [ ] **(B14) Scheduled ingestion, live behaviour** — `PLAN_SCHEDULED_INGESTION.md`
-  is the plan of record. Merged to main 2026-09-01, ci green end to end, every new
-  resource live in ci (`v_ga4_funnel_daily`, `v_purchase_reconciliation_daily`,
-  `ci-env-analytics-nightly` with its schedule, `ci-env-ga4-event-export-pull`).
-  What the resources actually do is still unproven: invoke `ga4-event-export-pull`
-  and check `ga4_bq_events` row counts against the GA4 console's page views; start
-  a state machine execution and confirm `SUCCEEDED`, then confirm the next
-  scheduled run also succeeds unattended; confirm
-  `v_purchase_reconciliation_daily` returns rows and the three new metrics reach
-  the `Submit/Analytics` namespace after a nightly run. Then repeat in prod.
+- [ ] **(B30) Alarm-count audit, remainder — live-verified with one gap found.**
+  Composite-alarm consolidation (cut 3) and the `activity-telegram-forwarder`
+  tuning confirmed live in prod deployment `prod-52127a0`: 23 composite
+  `-health` alarms, 92 `check-` prefixed children, correct `AlarmRule`s, the
+  widened 2-of-3 tolerance exactly as designed, no leftover old-style alarms —
+  all read-verified against real CloudWatch, not inferred. Gap: `AnalyticsStack`'s
+  two env-level Lambdas (`activity-event-transform`, `dynamo-stream-to-firehose`)
+  are still on the old alarm scheme — that stack's last update (18:12) predates
+  B30's merge (20:38), so it never redeployed. A `deploy-environment.yml` run for
+  prod was dispatched 2026-09-02 to pick this up (env-level only, no
+  CloudFront/WAF, safe alongside the orphan purge); confirm it lands.
+- [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2/3/6 verified for
+  real against ci (real Lambda invoke, real Athena queries; state machine
+  execution result pending as of 2026-09-02). Then repeat in prod, which is now
+  also live and current for the first time today.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
   21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
@@ -78,16 +75,27 @@ operator step before them is done or when SSO is live.
   `supportTicketPost.js`'s GitHub wiring is dormant — `GITHUB_TOKEN_SECRET_ARN` is
   never provisioned by any workflow, so support-ticket-to-issue is wired in code but
   never deployed.
-- [ ] **(B28) Scan and data-theft detection, remainder** (issues #9, #10). Both
-  merged to main 2026-09-01. Issue 9 (scan detection): WAF sensitive-path rule +
-  logging + detection Lambda, Athena-based 404-rate check (`ScanDetectionStack`),
-  manual `WAF-Manual-Block` IPSet, runbook 7.5. No honeypots, no auto-block, per
-  the recorded scope decision. Issue 10 (data-theft remainder): salt-secret
-  resource policy + unexpected-read alarm, bundle-endpoint burst detection,
-  mid-session country-change re-auth in `customAuthorizer.js`, cross-account hold
-  runbook (6.6). Still open for both: the plan's live-AWS verification steps
-  (need a real deploy — resource-policy read-back, a real burst against ci,
-  deployed authorizer log check).
+- [ ] **(B28) Scan and data-theft detection — code merged, but two stacks were
+  never actually deployed anywhere.** Both issues merged to main 2026-09-01;
+  live-verified against ci 2026-09-02 with a real gap found: `SecurityDetectionStack`
+  and `ScanDetectionStack` are both correctly wired into `SubmitEnvironment.java`
+  (confirmed by reading the source), but `deploy-environment.yml` has **no deploy
+  job for either stack** — nobody added the corresponding CI/CD job when the CDK
+  code was written, so both are code-complete and entirely undeployed, in ci and
+  prod alike. This is real new work, not a redeploy: add two jobs to
+  `deploy-environment.yml` following the existing per-stack pattern (see
+  `deploy-analytics`/`deploy-billing-webhook` for the template — env-level Docker
+  image build + `cdk deploy <env>-env-<Stack> --exclusively`), for
+  `SecurityDetectionStack` (alarm-only, likely no Docker image needed) and
+  `ScanDetectionStack` (has its own Lambda, likely needs one). Verified live in ci
+  (all via read-only/non-destructive checks): 9.1 (sensitive-path WAF rule +
+  logging) and 9.3 (manual block list) both pass; 9.3's salt-secret resource
+  policy, the security-state table, and `bundleGet`'s IAM all pass; the bundle
+  burst-load test was deliberately not attempted — needs a decision on how to run
+  it safely (real authenticated user, could look like abuse) rather than
+  improvising one. The `CloudFront-Viewer-Country` header is confirmed wired into
+  ci's origin request policy but not confirmed reaching the authorizer (no recent
+  invocations in its log group to check).
 
 ## In flight (coordinator session)
 
