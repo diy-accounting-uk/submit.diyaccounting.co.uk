@@ -506,11 +506,16 @@ public class AccountStack extends Stack {
             this.supportTicketPostLambdaLogGroup = supportTicketPostApiLambda.logGroup;
             this.lambdaFunctionProps.add(this.supportTicketPostLambdaProps);
 
-            // Grant permission to read the GitHub token secret
+            // Grant permission to read the GitHub token secret. Secrets Manager appends a random
+            // suffix to the ARN it hands back from create-secret, so the resource policy must
+            // match with a wildcard (see OpsStack's identical alarmToGithubIssueLambda grant).
+            var githubTokenSecretArnWithWildcard = props.githubTokenSecretArn().endsWith("*")
+                    ? props.githubTokenSecretArn()
+                    : props.githubTokenSecretArn() + "-*";
             this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(props.githubTokenSecretArn()))
+                    .resources(List.of(githubTokenSecretArnWithWildcard))
                     .build());
 
             // Grant EventBridge PutEvents permission
