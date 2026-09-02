@@ -30,21 +30,13 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **Prod CloudFront cutover fixed and confirmed — orphan purge in flight.**
-  Three EdgeStack bugs blocked `deploy-edge` on every prod deploy since issue-9's
-  merge (a semicolon in a WAF IPSet description; a 13-pattern regex set over
-  WAFv2's 10-pattern limit; `CfnLoggingConfiguration.redactedFields(List<Object>)`
-  silently dropping its Map contents through JSII), all fixed and merged
-  (`52127a03`). Deployment `prod-52127a0` confirmed live 2026-09-02: `deploy-edge`
-  and `set-origins` both succeeded, CloudFront's origin is `prod-52127a0`, and
-  SSM's `last-known-good-deployment` agrees — the cognito-token-post audit-log
-  fix, B28's detection work, and B14's ingestion work are now actually serving
-  real traffic, not just deployed. A purge agent is tearing down the four
-  orphaned deployments (`prod-9050bb5`, `prod-a994f29`, `prod-40fc40a`,
-  `prod-ccd8b3e`) sequentially. Separately worth fixing later:
-  `set-last-known-good-deployment` should depend on `set-origins`, not just
-  `web-test`, so a deployment can't be marked "last known good" without actually
-  being cut over — that gap is what let this whole situation compound today.
+- [ ] **`set-last-known-good-deployment` should depend on `set-origins`, not
+  just `web-test`**, in `deploy.yml`. Found 2026-09-02: three EdgeStack bugs
+  blocked `deploy-edge`/`set-origins` on every prod deploy for hours while SSM's
+  pointer kept advancing anyway (it only needs tests to pass), so prod served a
+  stale deployment while SSM claimed otherwise. All three bugs are fixed and
+  prod is confirmed correctly cut over and cleaned up now — this item is just
+  the pipeline fix so the same class of drift can't recur.
 - [ ] **(B30) Alarm-count audit, remainder — live-verified with one gap found.**
   Composite-alarm consolidation (cut 3) and the `activity-telegram-forwarder`
   tuning confirmed live in prod deployment `prod-52127a0`: 23 composite
@@ -113,16 +105,14 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
   Both now fixed and live-verified in ci.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
   ci deploy in progress.
-- **Prod orphan purge** — cutover confirmed live (`prod-52127a0`), tearing down
-  the four orphaned deployments now. See the open-item bullet above.
-- **Wave 2: live-verification agents** (dispatched 2026-09-02, running
-  concurrently with the purge — all read-only or ci-scoped, no CloudFront
-  writes, so no collision risk): B30's composite alarms checked read-only
-  against live `prod-52127a0`; B14's phases 2-4 verified for real in ci
-  (real Lambda invoke, real state machine execution, real Athena queries);
-  B28's issue-9/issue-10 resources confirmed deployed in ci, with the burst-test
-  step explicitly deferred to the coordinator's judgement rather than attempted
-  ad hoc.
+- **Prod orphan purge** — done. All four orphaned deployments
+  (`prod-9050bb5`, `prod-a994f29`, `prod-40fc40a`, `prod-ccd8b3e`) torn down;
+  independently re-verified after the fact (not just trusting the sub-agent's
+  own report): only `prod-52127a0`'s stacks remain, CloudFront and SSM both
+  still agree, live site returns HTTP 200.
+- **Wave 2: live-verification agents** — B30 and B14 done, see the open-item
+  bullets above. B28 found the deploy-job gap, also above. B14's state-machine
+  execution result still pending.
 
 ## Discipline
 
