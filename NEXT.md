@@ -82,10 +82,19 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-- **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — a fresh
-  ci deployment is up (the prior one self-destructed on its 2-hour TTL before
-  the live proof ran); proceeding straight to the alarm-flip proof once it's
-  confirmed ready.
+Final push 2026-09-02 — all four remaining items dispatched to finish completely,
+including their own merges, no more partial hand-backs:
+
+- **`set-last-known-good-deployment` fix** — pushed (`claude/fix-last-known-good-dependency`),
+  ci-verifying, agent merges itself once green.
+- **B14** — resolving both open phase-4 threads (the metric-visibility anomaly,
+  the `activity_activations=0` signal), then repeating the whole verification
+  in prod, which is live and current for the first time today.
+- **B20/20a** — finishing the live alarm-flip proof against the fresh ci
+  deployment, no more pausing.
+- **B28** — confirming prod deployment, running the bundle burst-load test for
+  real against ci (decision made: ci, test user, not prod), confirming
+  `CloudFront-Viewer-Country` reaches the authorizer.
 
 ## Discipline
 
