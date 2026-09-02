@@ -30,13 +30,6 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **`set-last-known-good-deployment` should depend on `set-origins`, not
-  just `web-test`**, in `deploy.yml`. Found 2026-09-02: three EdgeStack bugs
-  blocked `deploy-edge`/`set-origins` on every prod deploy for hours while SSM's
-  pointer kept advancing anyway (it only needs tests to pass), so prod served a
-  stale deployment while SSM claimed otherwise. All three bugs are fixed and
-  prod is confirmed correctly cut over and cleaned up now — this item is just
-  the pipeline fix so the same class of drift can't recur.
 - [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2, 3, 6 verified
   live in ci 2026-09-02 with real evidence: phase 2's BigQuery-derived session
   count matched GA4's own Data API count exactly (12=12); phase 3's real state
@@ -85,8 +78,6 @@ operator step before them is done or when SSO is live.
 Final push 2026-09-02 — all four remaining items dispatched to finish completely,
 including their own merges, no more partial hand-backs:
 
-- **`set-last-known-good-deployment` fix** — pushed (`claude/fix-last-known-good-dependency`),
-  ci-verifying, agent merges itself once green.
 - **B14** — resolving both open phase-4 threads (the metric-visibility anomaly,
   the `activity_activations=0` signal), then repeating the whole verification
   in prod, which is live and current for the first time today.
