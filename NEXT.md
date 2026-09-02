@@ -10,7 +10,7 @@ Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's ful
 reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
 operator step before them is done or when SSO is live.
 
-**Prod runs deployment prod-112b1ce, the only app stack set standing.** Each extra
+**Prod runs deployment prod-6f1779b, the only app stack set standing.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -33,14 +33,12 @@ operator step before them is done or when SSO is live.
   and cannot refresh unattended, so the run that matters needs a live session.
 - [ ] **(B43) Cost optimisation, `PLAN_COST_OPTIMISATION.md`: steady-state prod
   $253.01 → $64.77/month before VAT.** Provisioned concurrency stays by operator decision.
-  43.1–43.4 and the `invoice.paid` fix merged to main on 2026-09-02 (PR #102) and are
-  deploying to prod. Claude Code, once that deploy is green: name `prod-112b1ce` to
-  `destroy-prod.yml` (operator approval, $46.88/month while it stands); confirm the first
-  prod synthetic run passes with the durable `synthetic-*` users, `prod-env-cloud-trail`
-  ingest drops from ~8 GB/day, and `[ALARM]` issues arrive titled `{stack}-stack-health`;
-  confirm the next real renewal refreshes tokens (`subscription-renewed` published). Then
-  check the next bill moved as predicted, and confirm the GCP billing budget alert and
-  delete the stray project (row 43).
+  43.1–43.4 and the `invoice.paid` fix are live in prod (deployment prod-6f1779b,
+  2026-09-02; the first prod synthetic run passed with the durable `synthetic-*` users).
+  Claude Code: confirm `prod-env-cloud-trail` ingest drops from ~8 GB/day, `[ALARM]` issues
+  arrive titled `{stack}-stack-health`, and the next real renewal refreshes tokens
+  (`subscription-renewed` published). Then check the next bill moved as predicted, and
+  confirm the GCP billing budget alert and delete the stray project (row 43).
 
 ## Discipline
 
