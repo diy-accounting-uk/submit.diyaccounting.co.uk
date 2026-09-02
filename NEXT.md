@@ -30,22 +30,25 @@ operator step before them is done or when SSO is live.
   The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed
   and cannot refresh unattended, so the run that matters needs a live session.
 
-- [ ] **(B14) Scheduled ingestion, live behaviour** — phases 2, 3, 6 verified
-  live in ci 2026-09-02 with real evidence: phase 2's BigQuery-derived session
-  count matched GA4's own Data API count exactly (12=12); phase 3's real state
-  machine execution `SUCCEEDED` end to end; phase 6 rode along inside it. Phase
-  4 partial: `v_purchase_reconciliation_daily` returns rows correctly, but two
-  things need attention — `activity_activations` reads 0 across the last 14
-  days despite non-zero Stripe charges (matches the "webhook path broke" signal
-  the view's own design doc names; may be a ci-only synthetic-charge artifact,
-  not yet distinguished), and the three new CloudWatch metrics show zero
-  datapoints via `GetMetricData` despite clean publish logs and being listed
-  "recently active" — a pre-existing metric published in the same Lambda
-  invocation at the same timestamp WAS queryable within minutes, so this isn't
-  a code difference found yet. Re-check the metrics in an hour or two before
-  concluding it's stuck rather than slow. Once phase 4 settles: repeat the
-  whole verification in prod, which is now also live and current for the first
-  time today.
+- [ ] **(B14) Scheduled ingestion, remainder.** Phases 2, 3, 6 verified live in
+  both ci and prod 2026-09-02 with real evidence: GA4 BigQuery session counts
+  matched the Data API exactly in both; prod's real 02:15 UTC scheduled
+  execution `SUCCEEDED` end to end with no manual start needed. Phase 4's two
+  ci threads are resolved — the metric-visibility gap was slow CloudWatch
+  propagation, not a bug; `activity_activations=0` in ci is permanent and
+  structural, since every ci behaviour-test checkout runs through Stripe
+  test-mode and is tagged `actor='test-user'`, which the view's
+  `actor='customer'` filter can never match. Two things stay open. First, a
+  real bug: `Ga4Purchases` can never populate on an unmanned nightly run,
+  because `ga4EventExportPull.js` defaults to `D-2` while
+  `analyticsMetricsPublish.js` and `stripeReconcile.js` default to `D-1`, so
+  GA4 data for the day metrics-publish queries is never written by the same
+  night's run — needs a decision on which default changes. Second, prod's
+  `activity_activations=0` stays unproven either way: real live-mode Stripe
+  webhooks succeed (confirmed in CloudWatch logs), but `activity_events_all`
+  in this account only covers 2026-08-29 onward, before any of those real
+  events recurred — needs a real renewal or checkout to land before this
+  counts as verified.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
   21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
@@ -75,12 +78,9 @@ operator step before them is done or when SSO is live.
 
 ## In flight (coordinator session)
 
-Final push 2026-09-02 — all four remaining items dispatched to finish completely,
+Final push 2026-09-02 — remaining items dispatched to finish completely,
 including their own merges, no more partial hand-backs:
 
-- **B14** — resolving both open phase-4 threads (the metric-visibility anomaly,
-  the `activity_activations=0` signal), then repeating the whole verification
-  in prod, which is live and current for the first time today.
 - **B20/20a** — finishing the live alarm-flip proof against the fresh ci
   deployment, no more pausing.
 - **B28** — confirming prod deployment, running the bundle burst-load test for

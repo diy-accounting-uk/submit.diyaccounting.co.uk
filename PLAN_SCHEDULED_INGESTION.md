@@ -429,11 +429,52 @@ morning's scheduled run also shows `SUCCEEDED` with no manual start.
 
 # Phase 4: cross-source reconciliation
 
-**Status: partially verified live in ci 2026-09-02.** `v_purchase_reconciliation_daily`
-returns rows. The three new metrics show up in `list-metrics --recently-active` and the
-Lambda logged a successful publish, but `GetMetricData`/`GetMetricStatistics` still
-returned no datapoints for them 30+ minutes after the run, while `ActiveUsers` (same run,
-same timestamp) was queryable within minutes. Unexplained; needs a re-check.
+**Status: verified live in ci and prod 2026-09-02, one real bug found and open.**
+
+The CloudWatch visibility gap was slow propagation, not a bug: re-queried a few hours
+later, `GetMetricData` returns all three metrics for ci's 2026-08-31 run
+(`StripePaidCharges=16`, `Ga4Purchases=0`, `ActivityActivations=0`), matching
+`ActiveUsers`'s own timing for the same invocation.
+
+`activity_activations` reading 0 in ci is a structural, permanent artifact, not a bug.
+Every `subscription-activated` event ci has ever recorded (60 of them) carries
+`actor='test-user'`: ci's behaviour tests drive real Stripe test-mode checkouts through
+`stripe listen`, and `billingWebhookPost.js` tags `test-user` whenever `livemode` is
+false. `v_purchase_reconciliation_daily`'s `actor = 'customer'` filter can never match ci
+traffic by design. This needs no fix.
+
+Prod verification, run for real against `prod-52127a0`:
+- `ga4-event-export-pull` invoked directly for `dt=2026-08-31`, wrote 2786 rows;
+  `ga4_bq_events` shows the same 2786 rows and 12 distinct sessions ci's Data API count
+  already matched.
+- Prod's own 02:15 UTC schedule had already run today with no manual start needed
+  (execution `0d6a9786-a4d8-4337-be9e-b10cbc035be1`, `SUCCEEDED`, all five tasks green).
+- `v_purchase_reconciliation_daily` returns a row (`2026-08-31`, all three counts zero).
+
+**Real bug found: `Ga4Purchases` can never populate on an unmanned nightly run.**
+`ga4EventExportPull.js` defaults to `D-2` (GA4's BigQuery export lags a day).
+`analyticsMetricsPublish.js` and `stripeReconcile.js` both default to `D-1`. All three run
+in the same state-machine execution, same night, with no explicit `date`. GA4 data for
+`D-1` is never written until the following night's run, when `D-1` becomes that night's
+`D-2` — a permanent one-day gap that recurs on every automatic run, not a timing fluke.
+`Ga4Purchases` will read 0 forever via the schedule, silently masking real GA4 purchase
+counts through `coalesce(ga4.purchases, 0)`. ci's own phase-4 proof only worked because
+the verification execution passed an explicit `{"date": "2026-08-31"}`, which overrides
+every task's default and hides the mismatch. `StripePaidCharges` and `ActivityActivations`
+don't have this problem: their own source jobs default to `D-1` too, so they align with
+what metrics-publish queries. Needs a decision: move `ga4EventExportPull.js`'s default to
+`D-1` (risking a missing BigQuery table some nights), or have the reconciliation metrics
+read `D-2` specifically, or accept the view running a day behind.
+
+`activity_activations` reading 0 in prod is not proven to be a bug, and is not proven
+fixed either — it stays open. Prod's real live-mode webhook path works: CloudWatch logs
+show `checkout.session.completed` and `invoice.paid` processed successfully with
+`isTestMode:false` as recently as 2026-08-28. But `activity_events_all` in this account
+only has data from 2026-08-29 onward — the activity-events pipeline is four days old here
+— so none of those real webhooks landed inside its window, and no real billing event has
+recurred since. Real subscriptions exist (`stripe_subscriptions` shows five, four active,
+created February to August). The next real renewal or checkout will settle this without a
+code change; until one lands, the signal is unproven, not confirmed working.
 
 **Model: Sonnet.**
 
