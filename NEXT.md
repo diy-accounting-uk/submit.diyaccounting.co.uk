@@ -38,17 +38,14 @@ operator step before them is done or when SSO is live.
   propagation, not a bug; `activity_activations=0` in ci is permanent and
   structural, since every ci behaviour-test checkout runs through Stripe
   test-mode and is tagged `actor='test-user'`, which the view's
-  `actor='customer'` filter can never match. Two things stay open. First, a
-  real bug: `Ga4Purchases` can never populate on an unmanned nightly run,
-  because `ga4EventExportPull.js` defaults to `D-2` while
-  `analyticsMetricsPublish.js` and `stripeReconcile.js` default to `D-1`, so
-  GA4 data for the day metrics-publish queries is never written by the same
-  night's run — needs a decision on which default changes. Second, prod's
-  `activity_activations=0` stays unproven either way: real live-mode Stripe
-  webhooks succeed (confirmed in CloudWatch logs), but `activity_events_all`
-  in this account only covers 2026-08-29 onward, before any of those real
-  events recurred — needs a real renewal or checkout to land before this
-  counts as verified.
+  `actor='customer'` filter can never match. The real bug found (`Ga4Purchases`
+  reading 0 forever on an unmanned run, `D-2`/`D-1` default mismatch) is fixed
+  in PR #98 (`claude/fix-ga4-reconciliation-date-offset`), awaiting merge. One
+  thing stays open, unrelated to the fix: prod's `activity_activations=0` is
+  unproven either way — real live-mode Stripe webhooks succeed (confirmed in
+  CloudWatch logs), but `activity_events_all` in this account only covers
+  2026-08-29 onward, before any of those real events recurred — needs a real
+  renewal or checkout to land before this counts as verified.
 - [ ] **(B20/20a) Ops alerting uplift, remainder** — the alarm→GitHub-issue Lambda is
   proven live in prod (deployed 2026-09-01, secret and OpsStack both confirmed; the
   21-issue alarm flood that day was the Lambda working as intended, not a bug). ci
