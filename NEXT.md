@@ -105,10 +105,8 @@ Wave 1 dispatched 2026-09-01, coordinator merges and pushes each landed piece:
   Both now fixed and live-verified in ci.
 - **B20/20a implement** (sonnet, branch `claude/b20-alerting-deploy`) — running,
   ci deploy in progress.
-- **Prod cutover watcher** — confirming the bump-triggered deploy (`ccd8b3ee`)
-  gets `deploy-edge` and `set-origins` through cleanly and CloudFront actually
-  repoints. See the open-item bullet above. Purge of the three orphaned prod
-  deployments follows once confirmed.
+- **Prod orphan purge** — cutover confirmed live (`prod-52127a0`), tearing down
+  the four orphaned deployments now. See the open-item bullet above.
 
 ## Discipline
 
