@@ -1629,8 +1629,8 @@ jobs:
             echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      # Each test creates its own Cognito user via synthetic-test.yml to avoid
-      # race conditions when parallel tests manipulate bundles for the same user
+      # Each suite rotates its own durable Cognito user via synthetic-test.yml. One user per
+      # suite, so parallel suites never clear each other's bundles or each other's password.
 
   verify-api:
     if: ${{ !cancelled() }}
@@ -2181,8 +2181,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-
-      # Each test deletes its own Cognito user via synthetic-test.yml
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ needs.params.outputs.skipCleanup != 'true' && needs.names.outputs.environment-name != 'ci' }}

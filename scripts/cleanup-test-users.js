@@ -5,8 +5,9 @@
 /**
  * Clean up Cognito native test users and their associated data.
  *
- * Scans Cognito for native test users (email matching test-*@test.diyaccounting.co.uk),
- * deletes their data from all DynamoDB tables, then deletes the Cognito users.
+ * Scans Cognito for native test users, deletes their data from all DynamoDB tables, then
+ * deletes the Cognito users. Durable test users (synthetic-*@test.diyaccounting.co.uk) keep
+ * their identity: only their data is purged, so reusing them costs no new monthly active user.
  *
  * Usage:
  *   node scripts/cleanup-test-users.js <environment-name> <deployment-name> [--confirm] [--json]
@@ -21,8 +22,9 @@ import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-clo
 import { CognitoIdentityProviderClient, ListUsersCommand, AdminDeleteUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { execFileSync } from "child_process";
 
-const TEST_EMAIL_PATTERN = /^test-.*@test\.diyaccounting\.co\.uk$/;
-const SKIP_IF_CREATED_WITHIN_MS = 60 * 60 * 1000; // 1 hour
+const EPHEMERAL_EMAIL_PATTERN = /^test-.*@test\.diyaccounting\.co\.uk$/;
+const DURABLE_EMAIL_PATTERN = /^synthetic-.*@test\.diyaccounting\.co\.uk$/;
+const SKIP_IF_TOUCHED_WITHIN_MS = 60 * 60 * 1000; // 1 hour
 
 /**
  * Get Cognito User Pool ID from CloudFormation stack outputs.
@@ -42,37 +44,46 @@ async function getUserPoolId(environmentName) {
 }
 
 /**
- * List all Cognito native test users.
+ * List all Cognito native test users, flagging the durable ones.
  */
 async function listTestUsers(userPoolId) {
   const cognitoClient = new CognitoIdentityProviderClient({});
   const users = [];
-  let paginationToken;
 
-  do {
-    const response = await cognitoClient.send(
-      new ListUsersCommand({
-        UserPoolId: userPoolId,
-        Filter: 'email ^= "test-"',
-        PaginationToken: paginationToken,
-      }),
-    );
+  for (const [prefix, pattern, durable] of [
+    ["test-", EPHEMERAL_EMAIL_PATTERN, false],
+    ["synthetic-", DURABLE_EMAIL_PATTERN, true],
+  ]) {
+    let paginationToken;
 
-    for (const user of response.Users || []) {
-      const email = user.Attributes?.find((a) => a.Name === "email")?.Value;
-      if (email && TEST_EMAIL_PATTERN.test(email)) {
-        const sub = user.Attributes?.find((a) => a.Name === "sub")?.Value;
-        users.push({
-          username: user.Username,
-          email,
-          sub,
-          createdAt: user.UserCreateDate,
-        });
+    do {
+      const response = await cognitoClient.send(
+        new ListUsersCommand({
+          UserPoolId: userPoolId,
+          Filter: `email ^= "${prefix}"`,
+          PaginationToken: paginationToken,
+        }),
+      );
+
+      for (const user of response.Users || []) {
+        const email = user.Attributes?.find((a) => a.Name === "email")?.Value;
+        if (email && pattern.test(email)) {
+          const sub = user.Attributes?.find((a) => a.Name === "sub")?.Value;
+          users.push({
+            username: user.Username,
+            email,
+            sub,
+            durable,
+            // A durable user is as old as its first run, so its last change is what says
+            // whether a test is using it right now.
+            touchedAt: user.UserLastModifiedDate || user.UserCreateDate,
+          });
+        }
       }
-    }
 
-    paginationToken = response.PaginationToken;
-  } while (paginationToken);
+      paginationToken = response.PaginationToken;
+    } while (paginationToken);
+  }
 
   return users;
 }
@@ -116,19 +127,20 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
     if (!jsonOutput) console.log(`Found ${testUsers.length} test user(s)`);
 
     const now = Date.now();
-    const summary = { found: testUsers.length, skipped: 0, deleted: 0, errors: 0, users: [] };
+    const summary = { found: testUsers.length, skipped: 0, purged: 0, deleted: 0, errors: 0, users: [] };
 
     for (const user of testUsers) {
-      // Skip users created in the last hour (might be in use by a running test)
-      if (user.createdAt && now - new Date(user.createdAt).getTime() < SKIP_IF_CREATED_WITHIN_MS) {
+      // Skip users touched in the last hour (might be in use by a running test)
+      if (user.touchedAt && now - new Date(user.touchedAt).getTime() < SKIP_IF_TOUCHED_WITHIN_MS) {
         if (!jsonOutput)
-          console.log(`  SKIP ${user.email} (created ${Math.round((now - new Date(user.createdAt).getTime()) / 60000)}m ago)`);
+          console.log(`  SKIP ${user.email} (touched ${Math.round((now - new Date(user.touchedAt).getTime()) / 60000)}m ago)`);
         summary.skipped++;
         summary.users.push({ email: user.email, action: "skipped", reason: "too recent" });
         continue;
       }
 
-      if (!jsonOutput) console.log(`  ${confirm ? "DELETE" : "WOULD DELETE"} ${user.email} (sub: ${user.sub})`);
+      const verb = user.durable ? "PURGE DATA FOR" : "DELETE";
+      if (!jsonOutput) console.log(`  ${confirm ? verb : `WOULD ${verb}`} ${user.email} (sub: ${user.sub})`);
 
       if (confirm) {
         try {
@@ -138,10 +150,14 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
             env: { ...process.env },
           });
 
-          // Delete the Cognito user
-          await deleteCognitoUser(userPoolId, user.username);
-          summary.deleted++;
-          summary.users.push({ email: user.email, action: "deleted" });
+          if (user.durable) {
+            summary.purged++;
+            summary.users.push({ email: user.email, action: "data-purged" });
+          } else {
+            await deleteCognitoUser(userPoolId, user.username);
+            summary.deleted++;
+            summary.users.push({ email: user.email, action: "deleted" });
+          }
         } catch (error) {
           if (!jsonOutput) console.error(`    ERROR: ${error.message}`);
           summary.errors++;
@@ -155,10 +171,10 @@ process.env.ENVIRONMENT_NAME = process.env.ENVIRONMENT_NAME || environmentName;
     } else {
       console.log("");
       if (!confirm) {
-        console.log(`DRY RUN: Would delete ${testUsers.length - summary.skipped} user(s), skip ${summary.skipped}`);
+        console.log(`DRY RUN: Would act on ${testUsers.length - summary.skipped} user(s), skip ${summary.skipped}`);
         console.log("Add --confirm to execute.");
       } else {
-        console.log(`Deleted: ${summary.deleted}, Skipped: ${summary.skipped}, Errors: ${summary.errors}`);
+        console.log(`Deleted: ${summary.deleted}, Data purged: ${summary.purged}, Skipped: ${summary.skipped}, Errors: ${summary.errors}`);
       }
     }
   } catch (error) {

@@ -717,18 +717,16 @@ jobs:
             echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      - name: Create Cognito test user
+      - name: Ensure Cognito test user
         id: cognito-test-user
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
           if [ "$PROVIDER" = "cognito-native" ]; then
-            node 'scripts/create-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}"
-            echo "user-created-here=true" >> "$GITHUB_OUTPUT"
+            node 'scripts/ensure-cognito-test-user.js' "${{ needs.names.outputs.environment-name }}" submitVatBehaviour
           else
-            echo "Skipping Cognito test user creation (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-            echo "user-created-here=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
       - name: 'Run submitVatBehaviour-${{ needs.names.outputs.environment-name }}'
@@ -772,13 +770,6 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
-
-      - name: Delete Cognito test user
-        if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' && steps.cognito-test-user.outputs.user-created-here == 'true' }}
-        shell: bash
-        run: |
-          echo "Deleting test user created by this workflow..."
-          node scripts/delete-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" "${{ steps.cognito-test-user.outputs.test-auth-username }}"
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' }}

@@ -439,7 +439,7 @@ For faster iteration than pushing commits and waiting for GitHub Actions (`synth
 export AWS_PROFILE=submit-ci    # or submit-prod
 ```
 
-**2. Enable Cognito native auth and create test user:**
+**2. Enable Cognito native auth and refresh the test user:**
 ```bash
 # For ci environment (default)
 npm run test:enableCognitoNative
@@ -449,14 +449,14 @@ npm run test:enableCognitoNative -- prod
 ```
 This script:
 - Adds `COGNITO` to the Hosted UI's SupportedIdentityProviders (enables email/password login)
-- Creates a test user with a random email and password
+- Creates the `local` lane's durable test user if it is missing, then rotates its password and TOTP device
 - Saves credentials to `cognito-native-test-credentials.json` (in project root)
 - Prints the export commands and test command to run
 
 **3. Run behaviour tests:**
 ```bash
 # Use the credentials printed by the enable script
-TEST_AUTH_USERNAME='test-xxx@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
+TEST_AUTH_USERNAME='synthetic-local@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
 
 # Or for prod
 TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-prod
@@ -464,19 +464,22 @@ TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviou
 
 Available behaviour test variants: `-ci` and `-prod` (see package.json for full list).
 
-**4. Clean up - disable Cognito native auth and delete test user:**
+**4. Clean up - disable Cognito native auth:**
 ```bash
 npm run test:disableCognitoNative
 ```
 This script:
 - Reads the saved credentials from `cognito-native-test-credentials.json`
-- Deletes the test user from Cognito
 - Removes `COGNITO` from SupportedIdentityProviders (restores federated-only login)
 - Deletes the credentials file
 
+The test user stays. Cognito bills monthly active users, so every automated lane keeps one
+durable user (`synthetic-<lane>@test.diyaccounting.co.uk`) and rotates its password and TOTP
+device per run instead of creating and deleting a user each time.
+
 ### Important Notes
 
-- **Always clean up** after testing - the credentials file acts as a lock to prevent duplicate test users
+- **Always clean up** after testing - the credentials file acts as a lock, and native auth stays on until you run the disable script
 - If the enable script says credentials already exist, run `npm run test:disableCognitoNative` first
 - The scripts are idempotent: enabling when already enabled or disabling when already disabled is a no-op
 - For auth-specific tests, use `npm run test:authBehaviour-ci` or `npm run test:authBehaviour-prod`
