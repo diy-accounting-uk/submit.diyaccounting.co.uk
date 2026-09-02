@@ -194,28 +194,48 @@ public class ObservabilityStack extends Stack {
             // Ensure the LogGroup is created before the Trail tries to use it
             this.trail.getNode().addDependency(ensureLogGroup);
 
-            // Phase 2.2: DynamoDB Data Event Logging via L1 construct
+            // DynamoDB Data Event Logging via L1 construct.
             // Add event selectors for DynamoDB data plane operations (GetItem, PutItem, DeleteItem, Query, Scan)
-            // This enables detection of bulk data access patterns indicating potential data breach
+            // so the security detection metric filters (SecurityDetectionStack) can see them.
+            // GetRecords is excluded: the analytics Lambda's DynamoDB Streams event-source mapping polls
+            // GetRecords constantly (around 1.3 million events/day), no detector reads it, and it dwarfs
+            // every other DynamoDB call combined. Advanced event selectors replace basic ones entirely,
+            // so management events must be re-declared here or they are lost.
             software.amazon.awscdk.services.cloudtrail.CfnTrail cfnTrail =
                     (software.amazon.awscdk.services.cloudtrail.CfnTrail)
                             this.trail.getNode().getDefaultChild();
 
-            cfnTrail.setEventSelectors(
-                    List.of(software.amazon.awscdk.services.cloudtrail.CfnTrail.EventSelectorProperty.builder()
-                            .readWriteType("All")
-                            .includeManagementEvents(true)
-                            .dataResources(List.of(
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.DataResourceProperty.builder()
-                                            .type("AWS::DynamoDB::Table")
-                                            // Log all DynamoDB tables in this account
-                                            // Note: CloudTrail doesn't support wildcards in table ARNs,
-                                            // so we use "arn:aws:dynamodb" to match all tables
-                                            .values(List.of("arn:aws:dynamodb"))
+            cfnTrail.setAdvancedEventSelectors(List.of(
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
+                            .name("Management events")
+                            .fieldSelectors(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventCategory")
+                                            .equalTo(List.of("Management"))
+                                            .build()))
+                            .build(),
+                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
+                            .name("DynamoDB data events excluding GetRecords")
+                            .fieldSelectors(List.of(
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventCategory")
+                                            .equalTo(List.of("Data"))
+                                            .build(),
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("resources.type")
+                                            .equalTo(List.of("AWS::DynamoDB::Table"))
+                                            .build(),
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
+                                            .AdvancedFieldSelectorProperty.builder()
+                                            .field("eventName")
+                                            .notEquals(List.of("GetRecords"))
                                             .build()))
                             .build()));
 
-            infof("Configured CloudTrail DynamoDB data event logging for all tables in account");
+            infof("Configured CloudTrail DynamoDB data event logging for all tables in account, excluding GetRecords");
 
             // CloudWatch Logs Insights query for detecting bulk data access:
             // filter eventSource = "dynamodb.amazonaws.com" and eventName = "Scan"
