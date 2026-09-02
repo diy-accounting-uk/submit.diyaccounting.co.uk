@@ -234,6 +234,9 @@ public class ObservabilityStack extends Stack {
                                             .notEquals(List.of("GetRecords"))
                                             .build()))
                             .build()));
+            // The L2 Trail always renders its (empty) basic EventSelectors list, and CloudTrail
+            // rejects a trail that carries both kinds of selector.
+            cfnTrail.addPropertyDeletionOverride("EventSelectors");
 
             infof("Configured CloudTrail DynamoDB data event logging for all tables in account, excluding GetRecords");
 
