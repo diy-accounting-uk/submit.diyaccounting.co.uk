@@ -18,7 +18,7 @@ PR; the operator merges.
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
 The board is sequenced in three blocks. Block 1 is the Claude Code batch in flight since
-2026-09-03. Block 2 is the operator batch, briefed for Claude Cowork in
+2026-09-03 on PR #107. Block 2 is the operator batch, briefed for Claude Cowork in
 `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`. Block 3 is everything the first two blocks
 unblock.
 
@@ -31,7 +31,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
-| A funnel | Sonnet | G1, G2a | `agent-a2b9deeea788bc9b4`, coding |
+| A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
 | B vat-reads | Opus design, then Sonnet | B32.1, B32.2, B32.3 | design wave running; coder waits on `scratchpad/design-track-b.md` |
 | C1 catalogue | Sonnet | B12a, B12b | `agent-ac05a6b5dceecc0e4`, coding |
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
@@ -41,34 +41,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
 | I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
-
-#### Track A — GA4 purchase funnel
-
-- [ ] **G1. Tag the Stripe purchase as the GA4 `purchase` event.** Today `purchase` fires in
-  `web/public/hmrc/vat/submitVat.html` `displayReceipt()` (lines ~1010–1024) with `value: 0`,
-  and nothing fires when a Stripe checkout completes (`bundles.html?checkout=success`, lines
-  ~1217–1235, only shows a status line). Do it client-side on the redirect, which has the
-  consent state: append `&session_id={CHECKOUT_SESSION_ID}` to `success_url` in
-  `app/functions/billing/billingCheckoutPost.js:116`; add `billingCheckoutSessionGet.js`
-  (`GET /api/v1/billing/checkout-session/{id}`, owner-checked against the session's
-  `metadata.hashedSub`, returns `amount_total`, `currency`, `bundleId`) with its Express route,
-  CDK function and unit test following the other billing Lambdas; `bundles.html` calls it and
-  fires `purchase` with `transaction_id` = session id, `value` = amount/100, `currency`, one
-  item = the bundle. Move `begin_checkout` from `handleFormSubmission` in `submitVat.html`
-  (lines ~705–719) to the checkout click in `bundles.html`. Retag the VAT submission as
-  `submit_vat_return` so the funnel stays visible. Done when `npm test` passes and a proxy run
-  of `paymentBehaviour` shows the three events in the `dataLayer`.
-  **Source**: none (found 2026-09-02 verifying the purchase event). **Owner**: Claude Code.
-  **Model**: Opus.
-- [ ] **G2a. Find why consented synthetic traffic never reaches the GA4 export.** Synthetic
-  runs call `consentToDataCollection` yet none of their page views appear in
-  `diyaccounting-ga4.analytics_523400333.events_*` (4 `submitVat.html` views since
-  2026-08-25, all real users). Candidates: headless Chromium blocking `gtag/js`, the beacon
-  lost when Playwright closes the page, a GA4 property filter, or consent granted after
-  `config`. Reproduce locally with `paymentBehaviour-proxy` and the GA4 DebugView (or a
-  request log on `google-analytics.com/g/collect`), name the cause, and fix it in
-  `web/public/lib/analytics.js` or the test helpers. Done when a ci run's hits show in
-  DebugView. **Source**: none (same finding). **Owner**: Claude Code. **Model**: Opus.
 
 #### Track B — VAT read endpoints (B32)
 
@@ -246,7 +218,7 @@ results back by pasting them into a Claude Code session or appending to the work
   `HeadlessChrome` in the User-Agent Client Hints, which GA4's bot filter excludes, so the
   ci assertion run needs a browser that does not (Playwright `channel: "chromium"` new
   headless or `chrome`); prove the hit lands in DebugView before wiring the BigQuery check.
-  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on G1, G2a and O1.
+  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1 and the batch PR #107 deploying.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
