@@ -39,7 +39,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | waits on D1 landing |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
-| H privacy-fixes | Sonnet | B27c.3, B27c.4 | `agent-abb91d69d590fe174`, coding |
+| H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
 | I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
 
 #### Track A — GA4 purchase funnel
@@ -164,25 +164,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   cron `57 */4 * * *`, `github-synthetic-failed` on a 2-hour period).
   **Source**: BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code.
   **Model**: Haiku.
-
-#### Track H — Privacy page and receipts retention (B27c remainder)
-
-- [ ] **B27c.3. Fix what the ICO checklist found in code.** `_developers/ICO_CHECKLIST.md`
-  lists: the receipts table never had TTL enabled (`app/data/dynamoDbReceiptRepository.js:46-49`
-  computes a 7-year TTL, `infra/.../stacks/DataStack.java:101-111` never calls
-  `ensureTimeToLive` for it, unlike every other table with a TTL); `web/public/privacy.html`
-  says the HMRC audit trail keeps 30 days (lines ~399–401) where code and runbook say 28;
-  Stripe and Telegram are live processors missing from its processor list; and lines ~624
-  and ~826 publish ICO registration ZB070902 as current when it expired 2026-05-23. Enable
-  the TTL (CDK test, `./mvnw clean verify`), fix the three privacy.html statements (leave the
-  ICO number in place for O3 to replace), unit tests where the pattern has them. **Source**:
-  BACKLOG 27c; `_developers/ICO_CHECKLIST.md`. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B27c.4. Give subject access the same CI-wrapped path erasure has.** Erasure runs
-  through `delete-user-data.yml` and `delete-user-data-by-email.yml` (dry run, audited);
-  export is `scripts/export-user-data.js`, local only. Add `export-user-data.yml` mirroring
-  the erasure workflows' inputs, dry run and summary, uploading the export as a private
-  artifact. **Source**: BACKLOG 27c; `_developers/ICO_CHECKLIST.md`. **Owner**: Claude Code.
-  **Model**: Sonnet.
 
 #### Track I — Pipeline cuts (B32a.2)
 
