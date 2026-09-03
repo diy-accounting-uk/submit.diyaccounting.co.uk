@@ -1148,19 +1148,6 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
           await page.waitForTimeout(500);
           await expect(page.locator("#liabilitiesResults")).toBeHidden();
           break;
-        case "NOT_FOUND":
-          // HMRC answers this scenario with a 404 NOT_FOUND, which the API maps to a
-          // successful empty result rather than an error, so the results container
-          // shows with the same "no data" state as the default (no header) scenario.
-          await waitForSuccessOrError(page, {
-            successSelector: "#liabilitiesResults",
-            description: "VAT liabilities results (NOT_FOUND scenario)",
-            timeout: 450_000,
-            screenshotPath,
-          });
-          await expect(page.locator("#liabilitiesResults")).toBeVisible();
-          await expect(page.locator("#liabilitiesTable .no-data")).toBeVisible();
-          break;
         case "SUBMIT_API_HTTP_500":
         case "SUBMIT_HMRC_API_HTTP_500":
           // These force a failure before (or in place of) the outbound HMRC call, so
@@ -1365,19 +1352,6 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
           await page.waitForTimeout(500);
           await expect(page.locator("#paymentsResults")).toBeHidden();
           break;
-        case "NOT_FOUND":
-          // HMRC answers this scenario with a 404 NOT_FOUND, which the API maps to a
-          // successful empty result rather than an error, so the results container
-          // shows with the same "no data" state as the default (no header) scenario.
-          await waitForSuccessOrError(page, {
-            successSelector: "#paymentsResults",
-            description: "VAT payments results (NOT_FOUND scenario)",
-            timeout: 450_000,
-            screenshotPath,
-          });
-          await expect(page.locator("#paymentsResults")).toBeVisible();
-          await expect(page.locator("#paymentsTable .no-data")).toBeVisible();
-          break;
       }
       return;
     }
@@ -1540,12 +1514,6 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-results.png` });
     if (hasScenario) {
       switch (testScenario) {
-        case "INSOLVENT_TRADER":
-        case "NOT_FOUND":
-          await page.waitForTimeout(500);
-          const penaltiesResults = page.locator("#penaltiesResults");
-          await expect(penaltiesResults).toBeHidden();
-          break;
       }
       return;
     }

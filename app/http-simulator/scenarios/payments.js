@@ -26,13 +26,6 @@ const scenarioPayments = {
  * Error scenarios
  */
 const errorScenarios = {
-  NOT_FOUND: {
-    status: 404,
-    body: {
-      code: "NOT_FOUND",
-      message: "The requested resource could not be found",
-    },
-  },
   INSOLVENT_TRADER: {
     status: 403,
     body: {
