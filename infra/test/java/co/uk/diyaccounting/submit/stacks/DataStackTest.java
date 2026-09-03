@@ -137,6 +137,35 @@ class DataStackTest {
     }
 
     @Test
+    void ttlCustomResourceDependsOnPitrCustomResource() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // DynamoDB allows one control-plane change per table at a time. Without an explicit
+        // dependency, TTL's UpdateTimeToLive call can race the table's own UpdateContinuousBackups
+        // (PITR) call and fail with "Attempt to change a resource which is still in use".
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        dataStack.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName(),
+                                        "\"Enabled\":true"))));
+        assertEquals(1, resource.size());
+        var ttlResource = resource.values().iterator().next();
+        Object dependsOn = ((Map<?, ?>) ttlResource).get("DependsOn");
+        assertTrue(dependsOn != null, "expected the TTL custom resource to declare a DependsOn");
+        var dependsOnIds = (java.util.List<?>) dependsOn;
+        assertTrue(
+                dependsOnIds.stream().anyMatch(dependencyId -> dependencyId.toString().contains("EnsurePITR")),
+                "expected the TTL custom resource's DependsOn to include its table's EnsurePITR resource, got: "
+                        + dependsOnIds);
+    }
+
+    @Test
     void everyLambdaFunctionHasAnExplicitLogGroup() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);

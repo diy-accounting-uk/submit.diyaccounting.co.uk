@@ -421,6 +421,7 @@ public class KindCdk {
 
         ensurePitrResource.getNode().addDependency(pitrGrant);
         ensurePitrResource.getNode().addDependency(ensureTableResource);
+        recordTablePitr(stack, tableName, ensurePitrResource);
     }
 
     /**
@@ -644,6 +645,25 @@ public class KindCdk {
                 .put(tableName, resource);
     }
 
+    /**
+     * The EnsurePITR custom resource for each table {@link #ensureTable} has turned on point-in-time
+     * recovery for.
+     *
+     * <p>DynamoDB allows only one control-plane change per table at a time. Since {@link #ensureTable}
+     * always fires the PITR update right after CreateTable, a TTL, GSI, or stream call that races it
+     * fails with "Attempt to change a resource which is still in use" — CloudFormation infers no
+     * ordering between custom resources that never reference each other. Recording the EnsurePITR
+     * resource here lets {@link #dependOnTableCreation} chain those calls after it too.
+     */
+    private static final Map<Stack, Map<String, AwsCustomResource>> TABLE_PITR_RESOURCES =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    private static void recordTablePitr(Stack stack, String tableName, AwsCustomResource resource) {
+        TABLE_PITR_RESOURCES
+                .computeIfAbsent(stack, ignored -> new java.util.HashMap<>())
+                .put(tableName, resource);
+    }
+
     private static void dependOnTableCreation(Stack stack, String tableName, AwsCustomResource dependent) {
         Map<String, AwsCustomResource> byTableName = TABLE_CREATION_RESOURCES.get(stack);
         AwsCustomResource tableCreation = byTableName == null ? null : byTableName.get(tableName);
@@ -652,5 +672,11 @@ public class KindCdk {
                     .formatted(tableName, stack.getStackName()));
         }
         dependent.getNode().addDependency(tableCreation);
+
+        Map<String, AwsCustomResource> pitrByTableName = TABLE_PITR_RESOURCES.get(stack);
+        AwsCustomResource tablePitr = pitrByTableName == null ? null : pitrByTableName.get(tableName);
+        if (tablePitr != null) {
+            dependent.getNode().addDependency(tablePitr);
+        }
     }
 }
