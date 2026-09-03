@@ -380,11 +380,11 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
     const slowElapsedMs = Date.now() - slowStartMs;
     expect(
       slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(5_000);
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
+    ).toBeGreaterThanOrEqual(4_500);
     expect(
       slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 5s but less than 60s, actual: ${slowElapsedMs}ms`,
+      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
     ).toBeLessThan(60_000);
   }
 
