@@ -207,4 +207,32 @@ describe("billingCheckoutPost", () => {
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
   });
+
+  test("uses STRIPE_PRICE_ID_RESIDENT_ITSA for resident-itsa checkout", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_ITSA = "price_itsa_live_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-itsa" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_itsa_live_789");
+    expect(params.metadata.bundleId).toBe("resident-itsa");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_ITSA for resident-itsa sandbox checkout", async () => {
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_ITSA = "price_itsa_test_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-itsa", sandbox: true });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_itsa_test_789");
+    expect(params.metadata.bundleId).toBe("resident-itsa");
+  });
+
+  test("returns 500 when resident-itsa price ID is not configured", async () => {
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_ITSA;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_ITSA;
+    const event = buildEventWithToken(validToken, { bundleId: "resident-itsa" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(500);
+  });
 });

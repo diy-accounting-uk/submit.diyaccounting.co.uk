@@ -102,6 +102,7 @@ export async function ingestHandler(event) {
     const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, {
       skipCapCheck: true,
       grantQualifiers,
+      viaPass: true,
     });
 
     logger.info({ message: "Pass redeemed and bundle granted", code, bundleId: result.bundleId, userId });

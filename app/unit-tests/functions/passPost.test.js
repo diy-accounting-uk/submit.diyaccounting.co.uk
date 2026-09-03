@@ -133,6 +133,7 @@ describe("passPost", () => {
     expect(body.bundleId).toBe("day-guest");
     expect(body.testPass).toBe(false);
     expect(mockGrantBundle).toHaveBeenCalledTimes(1);
+    expect(mockGrantBundle.mock.calls[0][4]).toMatchObject({ viaPass: true });
   });
 
   test("returns testPass true in redeemed response for test passes", async () => {
