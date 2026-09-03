@@ -95,6 +95,31 @@ const TEXT_SPACING_CSS = `
  */
 async function checkForClippedContent(page) {
   return await page.evaluate(() => {
+    // el.scrollWidth/scrollHeight include the render box of ::before/::after
+    // generated content (e.g. a decorative background shape), which carries
+    // no text and isn't part of the DOM. Clipping that isn't a WCAG 1.4.12
+    // problem, so measure real overflow from the element's actual children
+    // (and its own direct text) instead of trusting scrollWidth/scrollHeight
+    // outright.
+    function realContentExtent(el) {
+      let right = 0;
+      let bottom = 0;
+      for (const child of el.children) {
+        right = Math.max(right, child.offsetLeft + child.offsetWidth);
+        bottom = Math.max(bottom, child.offsetTop + child.offsetHeight);
+      }
+      for (const node of el.childNodes) {
+        if (node.nodeType !== Node.TEXT_NODE || !node.textContent.trim()) continue;
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        for (const rect of range.getClientRects()) {
+          right = Math.max(right, rect.right - el.getBoundingClientRect().left + el.scrollLeft);
+          bottom = Math.max(bottom, rect.bottom - el.getBoundingClientRect().top + el.scrollTop);
+        }
+      }
+      return { right, bottom };
+    }
+
     const clippedElements = [];
     const elements = document.querySelectorAll("*");
 
@@ -109,9 +134,11 @@ async function checkForClippedContent(page) {
       const isHiddenY = overflow === "hidden" || overflowY === "hidden";
 
       if (isHiddenX || isHiddenY) {
-        // Check if content is actually clipped
-        const isClippedX = isHiddenX && el.scrollWidth > el.clientWidth + 1;
-        const isClippedY = isHiddenY && el.scrollHeight > el.clientHeight + 1;
+        const { right, bottom } = realContentExtent(el);
+
+        // Check if real content (not generated ::before/::after boxes) is clipped
+        const isClippedX = isHiddenX && el.scrollWidth > el.clientWidth + 1 && right > el.clientWidth + 1;
+        const isClippedY = isHiddenY && el.scrollHeight > el.clientHeight + 1 && bottom > el.clientHeight + 1;
 
         if (isClippedX || isClippedY) {
           // Get a useful selector for the element
