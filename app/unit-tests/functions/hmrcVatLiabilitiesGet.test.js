@@ -183,15 +183,29 @@ describe("hmrcVatLiabilitiesGet ingestHandler", () => {
     expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
 
-  test("returns 500 on HMRC API error", async () => {
-    mockHmrcError(mockFetch, 400, { code: "INVALID_VRN" });
+  test("returns 500 on HMRC API server error", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVER_ERROR" });
 
     const event = buildHmrcEvent({
-      queryStringParameters: { vrn: "invalid" },
+      queryStringParameters: { vrn: "111222333" },
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcVatLiabilitiesGetHandler(event);
-    expect([400, 500]).toContain(response.statusCode);
+    expect(response.statusCode).toBe(500);
+  });
+
+  test("returns 400 carrying HMRC's code and message when HMRC rejects the request with a 400", async () => {
+    mockHmrcError(mockFetch, 400, { code: "INVALID_VRN", message: "The provided VRN is invalid" });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatLiabilitiesGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.responseBody.code).toBe("INVALID_VRN");
+    expect(body.responseBody.message).toBe("The provided VRN is invalid");
   });
 
   test("returns 200 with an empty liabilities list when HMRC 404s with NOT_FOUND", async () => {

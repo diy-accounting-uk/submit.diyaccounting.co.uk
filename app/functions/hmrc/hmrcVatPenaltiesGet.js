@@ -20,6 +20,7 @@ import {
   validateHmrcAccessToken,
   hmrcHttpGet,
   extractHmrcAccessTokenFromLambdaEvent,
+  http400BadRequestFromHmrcResponse,
   http403ForbiddenFromHmrcResponse,
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
@@ -237,6 +238,9 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
+          // HMRC's own code/message live in the response body - carry it through the async
+          // round-trip so http400/403/404FromHmrcResponse can report it to the caller.
+          data: hmrcResponse.data,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
         return { penalties, hmrcResponse: serializableHmrcResponse };
@@ -284,6 +288,7 @@ export async function ingestHandler(event) {
     const status = result.hmrcResponse.status;
     if (status === 403) return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
     if (status === 404) return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    if (status === 400) return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
     return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
   }
 
@@ -359,6 +364,7 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
+        data: hmrcResponse.data,
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
