@@ -731,6 +731,29 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
           const obligationsResults = page.locator("#obligationsResults");
           await expect(obligationsResults).toBeHidden();
           break;
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          // These force a failure before (or in place of) the outbound HMRC call, so
+          // there's nothing on screen to assert (see the TODO in
+          // getVatObligations.behaviour.test.js about capturing exception failures in
+          // DynamoDB). Still wait for the in-flight request to settle so the next step
+          // doesn't navigate away mid-request.
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          // Every other scenario (including the SLOW_10S delay) succeeds and shows
+          // results. Without this case the switch fell through with no matching branch
+          // and returned immediately, so the test moved on - and navigated away - before
+          // the request had actually completed, racing the client fetch and losing the
+          // odd DynamoDB record under load. Wait for the real response first.
+          await waitForSuccessOrError(page, {
+            successSelector: "#obligationsResults",
+            description: `VAT obligations results (${testScenario})`,
+            timeout: 450_000,
+            screenshotPath,
+          });
+          await expect(page.locator("#obligationsResults")).toBeVisible();
+          break;
       }
       return;
     }
@@ -1137,6 +1160,27 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
           });
           await expect(page.locator("#liabilitiesResults")).toBeVisible();
           await expect(page.locator("#liabilitiesTable .no-data")).toBeVisible();
+          break;
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          // These force a failure before (or in place of) the outbound HMRC call, so
+          // there's nothing on screen to assert. Still wait for the in-flight request to
+          // settle so the next step doesn't navigate away mid-request.
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          // Every other scenario (including the SLOW_10S delay) succeeds and shows
+          // results. Without this case the switch fell through with no matching branch
+          // and returned immediately, so the test moved on - and navigated away - before
+          // the request had actually completed, racing the client fetch and risking a
+          // lost DynamoDB record under load. Wait for the real response first.
+          await waitForSuccessOrError(page, {
+            successSelector: "#liabilitiesResults",
+            description: `VAT liabilities results (${testScenario})`,
+            timeout: 450_000,
+            screenshotPath,
+          });
+          await expect(page.locator("#liabilitiesResults")).toBeVisible();
           break;
       }
       return;
