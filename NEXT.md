@@ -34,7 +34,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
 | B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | `agent-aa23d9d29041c29b6`, coding from `scratchpad/design-track-b.md` |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
-| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d; code complete, awaiting the branch deploy |
+| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d; remainder: forwarding the sandbox-obligations checkbox exposed a backend absent-means-true default that the behaviour tests relied on (test run 33767400509), fix in flight |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
 | D2 accessibility review | Sonnet | B27b.2, B27b.3 | merged 3ada9169; code complete, awaiting the branch deploy |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
