@@ -239,9 +239,17 @@ export async function getGovClientHeaders() {
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {boolean} allowSandboxObligations - Sandbox-only option: use any available open obligation if dates don't match
  * @returns {Promise<object>} Submission response
  */
-export async function submitVat(vatNumber, vatData, accessToken, govClientHeaders = {}, runFraudPreventionHeaderValidation = false) {
+export async function submitVat(
+  vatNumber,
+  vatData,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  allowSandboxObligations = false,
+) {
   const url = "/api/v1/hmrc/vat/return";
 
   // Get Cognito JWT token for custom authorizer
@@ -272,6 +280,7 @@ export async function submitVat(vatNumber, vatData, accessToken, govClientHeader
     finalised: vatData.finalised,
     accessToken,
     runFraudPreventionHeaderValidation,
+    allowSandboxObligations,
   });
   console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 
@@ -287,6 +296,25 @@ export async function submitVat(vatNumber, vatData, accessToken, govClientHeader
     if (responseJson?.reason === "obligation_already_fulfilled") {
       const message = `${responseJson.userMessage} ${responseJson.actionAdvice}`.trim();
       console.warn(message);
+      throw new Error(message);
+    }
+    // Token allowance used up — tell the customer plainly instead of showing the raw response.
+    if (responseJson?.reason === "tokens_exhausted") {
+      const message =
+        "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
+      console.warn(message);
+      throw new Error(message);
+    }
+    // The HMRC authorization is missing a required scope — clear the stale token so the
+    // customer re-authorizes instead of retrying with the same token.
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
       throw new Error(message);
     }
     const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
