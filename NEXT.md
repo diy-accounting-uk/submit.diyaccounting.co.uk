@@ -31,42 +31,14 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 
 | Track | Model | Items, in order | Status |
 |---|---|---|---|
-| A funnel | Opus | G1, G2a | started |
+| A funnel | Opus | G1, G2a | PR #106 open, awaiting merge |
 | B vat-reads | Opus | B32b, B32.1, B32.2, B32.3 | started |
 | C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | started |
 | D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | started |
 | F itsa-test-user | Sonnet | B10a.1 | PR #104 open, awaiting merge |
 | G alarm-audit | Haiku | B30a | started |
-| H privacy-fixes | Sonnet | B27c.3, B27c.4 | started |
+| H privacy-fixes | Sonnet | B27c.3, B27c.4 | PR #105 open, awaiting merge |
 | I pipeline-cuts | Sonnet | B32a.2 | started |
-
-#### Track A — GA4 purchase funnel
-
-- [ ] **G1. Tag the Stripe purchase as the GA4 `purchase` event.** Today `purchase` fires in
-  `web/public/hmrc/vat/submitVat.html` `displayReceipt()` (lines ~1010–1024) with `value: 0`,
-  and nothing fires when a Stripe checkout completes (`bundles.html?checkout=success`, lines
-  ~1217–1235, only shows a status line). Do it client-side on the redirect, which has the
-  consent state: append `&session_id={CHECKOUT_SESSION_ID}` to `success_url` in
-  `app/functions/billing/billingCheckoutPost.js:116`; add `billingCheckoutSessionGet.js`
-  (`GET /api/v1/billing/checkout-session/{id}`, owner-checked against the session's
-  `metadata.hashedSub`, returns `amount_total`, `currency`, `bundleId`) with its Express route,
-  CDK function and unit test following the other billing Lambdas; `bundles.html` calls it and
-  fires `purchase` with `transaction_id` = session id, `value` = amount/100, `currency`, one
-  item = the bundle. Move `begin_checkout` from `handleFormSubmission` in `submitVat.html`
-  (lines ~705–719) to the checkout click in `bundles.html`. Retag the VAT submission as
-  `submit_vat_return` so the funnel stays visible. Done when `npm test` passes and a proxy run
-  of `paymentBehaviour` shows the three events in the `dataLayer`.
-  **Source**: none (found 2026-09-02 verifying the purchase event). **Owner**: Claude Code.
-  **Model**: Opus.
-- [ ] **G2a. Find why consented synthetic traffic never reaches the GA4 export.** Synthetic
-  runs call `consentToDataCollection` yet none of their page views appear in
-  `diyaccounting-ga4.analytics_523400333.events_*` (4 `submitVat.html` views since
-  2026-08-25, all real users). Candidates: headless Chromium blocking `gtag/js`, the beacon
-  lost when Playwright closes the page, a GA4 property filter, or consent granted after
-  `config`. Reproduce locally with `paymentBehaviour-proxy` and the GA4 DebugView (or a
-  request log on `google-analytics.com/g/collect`), name the cause, and fix it in
-  `web/public/lib/analytics.js` or the test helpers. Done when a ci run's hits show in
-  DebugView. **Source**: none (same finding). **Owner**: Claude Code. **Model**: Opus.
 
 #### Track B — VAT read endpoints (B32, B32b)
 
@@ -183,25 +155,6 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   **Source**: BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code.
   **Model**: Haiku.
 
-#### Track H — Privacy page and receipts retention (B27c remainder)
-
-- [ ] **B27c.3. Fix what the ICO checklist found in code.** `_developers/ICO_CHECKLIST.md`
-  lists: the receipts table never had TTL enabled (`app/data/dynamoDbReceiptRepository.js:46-49`
-  computes a 7-year TTL, `infra/.../stacks/DataStack.java:101-111` never calls
-  `ensureTimeToLive` for it, unlike every other table with a TTL); `web/public/privacy.html`
-  says the HMRC audit trail keeps 30 days (lines ~399–401) where code and runbook say 28;
-  Stripe and Telegram are live processors missing from its processor list; and lines ~624
-  and ~826 publish ICO registration ZB070902 as current when it expired 2026-05-23. Enable
-  the TTL (CDK test, `./mvnw clean verify`), fix the three privacy.html statements (leave the
-  ICO number in place for O3 to replace), unit tests where the pattern has them. **Source**:
-  BACKLOG 27c; Track E finding 2026-09-03. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B27c.4. Give subject access the same CI-wrapped path erasure has.** Erasure runs
-  through `delete-user-data.yml` and `delete-user-data-by-email.yml` (dry run, audited);
-  export is `scripts/export-user-data.js`, local only. Add `export-user-data.yml` mirroring
-  the erasure workflows' inputs, dry run and summary, uploading the export as a private
-  artifact. **Source**: BACKLOG 27c; Track E finding. **Owner**: Claude Code. **Model**:
-  Sonnet.
-
 #### Track I — Pipeline cuts (B32a.2)
 
 - [ ] **B32a.2. Make the three largest cuts** from `_developers/PIPELINE_PROFILE_2026-09.md`:
@@ -277,8 +230,13 @@ results back by pasting them into a Claude Code session or appending to the work
   environment variable), pass `GA4_BIGQUERY_DATASET_ID` for ci into
   `app/functions/analytics/ga4EventExportPull.js`'s environment, and extend
   `paymentBehaviour-ci` (or a post-run step in `synthetic-test.yml`) to query the ci dataset
-  for a `purchase` event with the run's transaction id. **Source**: none. **Owner**: Claude
-  Code. **Model**: Sonnet. Blocked on G1, G2a (Track A) and O1.
+  for a `purchase` event with the run's transaction id. Two facts from Track A shape this:
+  behaviour-test browsers stub `gtag.js` and `/g/collect` unless
+  `DIY_SUBMIT_ALLOW_REAL_ANALYTICS=true`, and Playwright's headless shell reports
+  `HeadlessChrome` in the User-Agent Client Hints, which GA4's bot filter excludes, so the
+  ci assertion run needs a browser that does not (Playwright `channel: "chromium"` new
+  headless or `chrome`); prove the hit lands in DebugView before wiring the BigQuery check.
+  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on PR #106 and O1.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
