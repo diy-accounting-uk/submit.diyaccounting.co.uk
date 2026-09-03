@@ -36,7 +36,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
-| D2 accessibility review | Sonnet | B27b.2, B27b.3 | `agent-aed74464c39bc8695`, reviewing (Opus overloaded) |
+| D2 accessibility review | Sonnet | B27b.2, B27b.3 | merged 3ada9169; code complete, awaiting the branch deploy |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
@@ -60,19 +60,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   `GET /organisations/vat/{vrn}/penalties`, plus `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md`
   and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Sonnet. Follows B32.2 in the same track.
-
-#### Track D2 — Accessibility review (B27b)
-
-- [ ] **B27b.2. Manual review of the criteria WCAG 2.2 added** (2.4.11 focus not obscured,
-  2.5.7 dragging, 2.5.8 target size 24px, 3.2.6 consistent help, 3.3.7 redundant entry, 3.3.8
-  accessible authentication) across the 24 pages in `scripts/text-spacing-test.js:51-77`,
-  using Playwright to measure targets and focus visibility. Fix failures; record each
-  criterion's evidence in a new `_developers/hmrc/WCAG_2.2_AA_EVIDENCE.md`. **Source**:
-  BACKLOG 27b. **Owner**: Claude Code. **Model**: Opus.
-- [ ] **B27b.3. Refresh `web/public/accessibility.html`**: results table and date (currently
-  "January 14, 2026"), and the `<meta name="description">` at line 9 that still says WCAG 2.1
-  while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
-  Haiku. Follows B27b.2 in the same track.
 
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
