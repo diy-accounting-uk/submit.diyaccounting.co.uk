@@ -9,8 +9,14 @@
  * Output is in JSON format suitable for providing to the user.
  *
  * Usage:
- *   node scripts/export-user-data.js <environment-name> --user-sub <sub>
- *   node scripts/export-user-data.js <environment-name> --hashed-sub <hash>
+ *   node scripts/export-user-data.js <environment-name> --user-sub <sub> [--dry-run]
+ *   node scripts/export-user-data.js <environment-name> --hashed-sub <hash> [--dry-run]
+ *
+ * Options:
+ *   --user-sub <sub>       User sub (will be hashed with all salt versions)
+ *   --hashed-sub <hash>    Pre-computed hashed sub (skip salt computation)
+ *   --dry-run              Report item counts per table only; fetch no item content and
+ *                          write no export file
  *
  * Environment variables:
  *   AWS_REGION             AWS region (default: eu-west-2)
@@ -51,6 +57,31 @@ async function queryByHashedSub(docClient, tableName, hashedSub) {
   } while (lastEvaluatedKey);
 
   return items;
+}
+
+/**
+ * Count matching items in a DynamoDB table by hashedSub partition key, without fetching
+ * their content.
+ */
+async function countByHashedSub(docClient, tableName, hashedSub) {
+  let total = 0;
+  let lastEvaluatedKey = undefined;
+
+  do {
+    const response = await docClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "hashedSub = :h",
+        ExpressionAttributeValues: { ":h": hashedSub },
+        ExclusiveStartKey: lastEvaluatedKey,
+        Select: "COUNT",
+      }),
+    );
+    total += response.Count || 0;
+    lastEvaluatedKey = response.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return total;
 }
 
 /**
@@ -131,6 +162,43 @@ async function exportUserData(environmentName, hashedSubs) {
   return outputFile;
 }
 
+/**
+ * Report item counts per table without fetching item content or writing an export file.
+ */
+async function countUserData(environmentName, hashedSubs) {
+  const region = process.env.AWS_REGION || "eu-west-2";
+  const docClient = makeDocClient(region);
+
+  console.log(`Environment: ${environmentName}`);
+  console.log(`Hashed subs: ${hashedSubs.join(", ")}`);
+  console.log(`Region: ${region}`);
+  console.log("DRY RUN - counting only, no item content fetched, no file written");
+  console.log("");
+
+  const counts = {};
+  let totalItems = 0;
+
+  for (const suffix of TABLE_SUFFIXES) {
+    const tableName = `${environmentName}-env-${suffix}`;
+    let count = 0;
+
+    for (const hashedSub of hashedSubs) {
+      count += await countByHashedSub(docClient, tableName, hashedSub);
+    }
+
+    const camelKey = suffix.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    counts[camelKey] = count;
+    totalItems += count;
+    console.log(`  ${suffix}: ${count} item(s)`);
+  }
+
+  console.log("");
+  console.log(`Total items: ${totalItems}`);
+  console.log("Omit --dry-run to fetch and write the full export.");
+
+  return { counts, totalItems };
+}
+
 // --- CLI ---
 
 const args = process.argv.slice(2);
@@ -144,11 +212,12 @@ function getArg(name) {
 const environmentName = args[0];
 const userSub = getArg("--user-sub");
 const hashedSub = getArg("--hashed-sub");
+const dryRun = args.includes("--dry-run");
 
 if (!environmentName || (!userSub && !hashedSub)) {
   console.error("Usage:");
-  console.error("  node scripts/export-user-data.js <environment-name> --user-sub <sub>");
-  console.error("  node scripts/export-user-data.js <environment-name> --hashed-sub <hash>");
+  console.error("  node scripts/export-user-data.js <environment-name> --user-sub <sub> [--dry-run]");
+  console.error("  node scripts/export-user-data.js <environment-name> --hashed-sub <hash> [--dry-run]");
   process.exit(1);
 }
 
@@ -162,6 +231,11 @@ process.env.ENVIRONMENT_NAME = environmentName;
     } else {
       hashedSubs = await computeAllHashedSubs(userSub);
       console.log(`Computed ${hashedSubs.length} hash variant(s) for user sub`);
+    }
+
+    if (dryRun) {
+      await countUserData(environmentName, hashedSubs);
+      return;
     }
 
     const file = await exportUserData(environmentName, hashedSubs);

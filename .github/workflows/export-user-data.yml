@@ -1,0 +1,169 @@
+name: Export User Data (GDPR Subject Access)
+run-name: "export user data for ${{ inputs.email }} in ${{ inputs.environment-name }}"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: 'User email address'
+        required: true
+        type: string
+      environment-name:
+        description: 'Environment name'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+      confirm:
+        description: 'Confirm export (false = dry run, counts items only)'
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  export-by-email:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment-name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve user pool
+        id: resolve
+        run: |
+          # Get User Pool ID from CloudFormation
+          STACK_NAME="${{ inputs.environment-name }}-env-IdentityStack"
+          USER_POOL_ID=$(aws cloudformation describe-stacks \
+            --stack-name "${STACK_NAME}" \
+            --query "Stacks[0].Outputs[?OutputKey=='UserPoolId'].OutputValue" \
+            --output text)
+          echo "user-pool-id=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
+          echo "User Pool ID: ${USER_POOL_ID}"
+
+      - name: Look up user in Cognito
+        id: lookup
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          USER_POOL_ID="${{ steps.resolve.outputs.user-pool-id }}"
+          EMAIL="${{ inputs.email }}"
+
+          # Search for user by email (works for all providers: Google, Apple, Microsoft, native)
+          USER_JSON=$(aws cognito-idp list-users \
+            --user-pool-id "${USER_POOL_ID}" \
+            --filter "email = \"${EMAIL}\"" \
+            --output json)
+
+          USER_COUNT=$(echo "${USER_JSON}" | jq '.Users | length')
+          if [ "${USER_COUNT}" = "0" ]; then
+            echo "ERROR: No user found with email: ${EMAIL}"
+            exit 1
+          fi
+
+          # Extract sub and username from first matching user
+          USER_SUB=$(echo "${USER_JSON}" | jq -r '.Users[0].Attributes[] | select(.Name == "sub") | .Value')
+          USERNAME=$(echo "${USER_JSON}" | jq -r '.Users[0].Username')
+          echo "user-sub=${USER_SUB}" >> "$GITHUB_OUTPUT"
+          echo "username=${USERNAME}" >> "$GITHUB_OUTPUT"
+          echo "Found user: ${USERNAME} (sub: ${USER_SUB})"
+
+      - name: Compute hashed sub
+        id: hash
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          # Use Node.js to compute hashed sub with salt from Secrets Manager
+          HASHED_SUB=$(node -e "
+            import { initializeSalt, hashSub } from './app/services/subHasher.js';
+            await initializeSalt();
+            console.log(hashSub('${{ steps.lookup.outputs.user-sub }}'));
+          ")
+          echo "hashed-sub=${HASHED_SUB}" >> "$GITHUB_OUTPUT"
+          echo "Hashed sub: ${HASHED_SUB}"
+
+      - name: Export user data (dry run)
+        if: ${{ inputs.confirm != true }}
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          node scripts/export-user-data.js \
+            "${{ inputs.environment-name }}" \
+            --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" \
+            --dry-run | tee export-summary.log
+
+      - name: Export user data (confirmed)
+        if: ${{ inputs.confirm == true }}
+        env:
+          ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        run: |
+          node scripts/export-user-data.js \
+            "${{ inputs.environment-name }}" \
+            --hashed-sub "${{ steps.hash.outputs.hashed-sub }}" | tee export-summary.log
+
+      - name: Upload user data export
+        if: ${{ inputs.confirm == true }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: user-data-export-${{ github.run_id }}
+          path: user-data-export-*.json
+          retention-days: 7
+
+      - name: Generate step summary
+        run: |
+          echo "# GDPR Subject Access Export Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Email**: ${{ inputs.email }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ inputs.environment-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Cognito Username**: ${{ steps.lookup.outputs.username }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Confirmed**: ${{ inputs.confirm }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f export-summary.log ]; then
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat export-summary.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
