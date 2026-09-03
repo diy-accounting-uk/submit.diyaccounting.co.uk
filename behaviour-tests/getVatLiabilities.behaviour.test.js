@@ -553,10 +553,21 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 403,
       });
-      http404NotFoundResults += countHmrcApiRequestValues(liabilitiesRequest, {
+      const thisRequestHttp404Results = countHmrcApiRequestValues(liabilitiesRequest, {
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 404,
       });
+      if (thisRequestHttp404Results === 1 && !usingHttpSimulator) {
+        // Real HMRC sandbox answers 404 NOT_FOUND when a fresh test user has no liabilities in
+        // the queried range, not when the VRN or endpoint is missing. The handler (see
+        // hmrcVatLiabilitiesGet.js) treats that specific code as an empty result for the
+        // browser, so confirm every 404 audit record is that no-data code rather than a real
+        // error slipping through as a false pass.
+        const responseBody = liabilitiesRequest.httpResponse.body;
+        const errorCode = responseBody?.code ?? responseBody?.errors?.[0]?.code;
+        expect(errorCode).toBe("NOT_FOUND");
+      }
+      http404NotFoundResults += thisRequestHttp404Results;
     });
 
     // Assert result counts. HMRC's own sandbox behaviour for liability retries is not fully
@@ -571,7 +582,12 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
     expect(http200OkResults).toBeGreaterThan(0);
     expect(http400BadRequestResults).toBe(0);
     expect(http403ForbiddenResults).toBe(1);
-    expect(http404NotFoundResults).toBe(0);
+    if (usingHttpSimulator) {
+      // The simulator's plain-query scenario returns liabilities data, so no 404s are expected.
+      expect(http404NotFoundResults).toBe(0);
+    }
+    // In the real sandbox, a fresh test user has no liabilities in range, so HMRC's 404
+    // NOT_FOUND is expected; each 404 record above was already confirmed to carry that code.
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
