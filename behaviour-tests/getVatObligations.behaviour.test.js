@@ -712,7 +712,12 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
     console.log(`  HTTP 500 Server Error: ${http500ServerErrorResults}`);
     console.log(`  HTTP 503 Service Unavailable: ${http503ServiceUnavailableResults}`);
-    expect(http200OkResults).toBe(19);
+    // 20 = the initial retrieval before the scenario loop, the 17 named scenarios that
+    // return obligations data, the no-header default within the loop, and the slow
+    // scenario (which also succeeds, just delayed). Every other named scenario in the
+    // loop returns a non-200 (INSOLVENT_TRADER, NOT_FOUND) or isn't logged at all
+    // (the two forced-500 scenarios fail before any outbound HMRC call is made).
+    expect(http200OkResults).toBe(20);
     expect(http400BadRequestResults).toBe(0);
     expect(http403ForbiddenResults).toBe(1);
     expect(http404NotFoundResults).toBe(1);
