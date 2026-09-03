@@ -33,7 +33,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
 | B vat-reads | Opus design, then Sonnet | B32.1, B32.2, B32.3 | design wave running; coder waits on `scratchpad/design-track-b.md` |
-| C1 catalogue | Sonnet | B12a, B12b | `agent-ac05a6b5dceecc0e4`, coding |
+| C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | `agent-a9b1edbde8f87cb5b`, coding |
 | D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | waits on D1 landing |
@@ -61,24 +61,8 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Sonnet. Follows B32.2 in the same track.
 
-#### Tracks C1 and C2 — Catalogue and hygiene (B12, B40e, B40a)
+#### Track C2 — Hygiene (B40e, B40a)
 
-- [ ] **B12a. Line the `day-guest` bundle up with the strategy's day pass.**
-  `web/public/submit.catalogue.toml` already gives `day-guest` one active allocation per user,
-  `cap = 100` concurrent, `timeout = "P1D"` and `tokensGranted = 3`, which is the day pass
-  as STRATEGY.md defines it. Rename its display `name` to "Day pass", make the bundles page
-  and `about.html`/`guide.html` copy say "day pass", and add a unit test that
-  `bundlePost.js` refuses a second `day-guest` request from the same user within the day
-  (`incrementCounter` and the one-per-user rule, lines ~389–408). **Source**: BACKLOG 12;
-  STRATEGY.md pricing table. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B12b. Add the `resident-itsa` bundle.** Catalogue entry mirroring `resident-vat`
-  (£0.99/month, `tokensGranted = 100`, monthly refresh) granting a `self-employed` activity
-  that the ITSA pages will claim; listed on `bundles.html` and priced through the existing
-  `STRIPE_[TEST_]PRICE_ID_RESIDENT_ITSA` convention in
-  `app/functions/billing/billingCheckoutPost.js:resolveStripePriceId()`; webhook
-  `metadata.bundleId` already carries the id. Hide it in prod (`listedInEnvironments`) until
-  B10 lands. The price ids themselves arrive from B12c. **Source**: BACKLOG 12; STRATEGY.md.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B40e. Port the friendly-error branches, then delete the dead `submitVat` copy.** In
   `web/public/hmrc/vat/submitVat.html` the inline `submitVat` (lines ~930–1000) is
   overwritten at runtime by the module export from `web/public/lib/services/hmrc-service.js:244-297`,
