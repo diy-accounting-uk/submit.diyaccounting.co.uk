@@ -27,6 +27,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, ensureBundleViaPassApi, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { waitForSuccessOrError } from "./helpers/waitForSuccessOrError.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -155,12 +156,20 @@ async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScena
   // Click submit. The HMRC access token may or may not be cached:
   // - Cached (first resubmission after success): client calls API directly
   // - Cleared (after a failed submission): client redirects to HMRC OAuth
-  // Scope enforcement fetches the catalogue asynchronously before redirecting,
-  // so wait for the HMRC auth page or receipt/error instead of a fixed timeout.
+  // Scope enforcement fetches the catalogue asynchronously before redirecting, and a
+  // successful submission's own polling can run far longer than a short fixed wait,
+  // so wait - with a long budget and fail-fast on a new error banner - for whichever
+  // of the HMRC consent redirect or the VAT submission receipt appears first. A new
+  // error banner is the expected terminal state for the sandbox failure scenarios
+  // below, so catch it here rather than treat it as a test failure - completeVat()
+  // and verifyVatSubmission() make the real assertions on the resulting page state.
   await page.locator("#submitBtn").click();
-  const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
-  await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
-  // Check whether we landed on the HMRC OAuth consent page
+  await waitForSuccessOrError(page, {
+    successSelector: "#appNameParagraph, #receiptDisplay",
+    description: "HMRC consent page or VAT submission receipt",
+    timeout: 1_000_000,
+    screenshotPath,
+  }).catch(() => {});
   const isHmrcAuthPage = await page
     .locator("#appNameParagraph")
     .isVisible()
