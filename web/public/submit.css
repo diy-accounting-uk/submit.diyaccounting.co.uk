@@ -151,6 +151,30 @@ textarea:focus,
   outline-offset: 2px;
 }
 
+/* WCAG 2.2 AA: Focus Not Obscured Minimum (2.4.11)
+   The cookie-consent banner (#consent-banner, added by submit.js) is fixed
+   to the bottom of the viewport and can sit on top of whichever element
+   last received keyboard focus, usually the footer links right before it
+   in the DOM. scroll-padding-bottom keeps focus-driven scrollIntoView from
+   landing an element right at the banner's edge, but only works if there's
+   real scroll room below the footer to move into — hence the generated
+   block. body itself has a fixed height (100%, for the sticky footer), so
+   padding or margin placed on body or on footer is absorbed into the
+   already-overflowing content rather than reserving trailing space; a
+   generated block is real rendered content, so it reliably extends the
+   page's scrollable area. flex-shrink: 0 stops the flex layout shrinking
+   it away to reclaim the negative space the overflow already creates. */
+html:has(#consent-banner) {
+  scroll-padding-bottom: 140px;
+}
+
+body:has(#consent-banner)::after {
+  content: "";
+  display: block;
+  height: 140px;
+  flex-shrink: 0;
+}
+
 /* High contrast focus for buttons */
 .btn:focus,
 button:focus {
@@ -544,17 +568,22 @@ label {
    ============================================ */
 
 input[type="text"],
-input[type="number"] {
+input[type="number"],
+input[type="date"] {
   width: 100%;
   padding: 0.75em;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-base);
+  /* WCAG 2.5.8 Target Size (Minimum): the browser's default date-input
+     box comes in under 24px tall without this. */
+  min-height: 24px;
   transition: border-color 0.3s;
 }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
+input[type="number"]:focus,
+input[type="date"]:focus {
   outline: none;
   border-color: #2c5aa0;
 }
