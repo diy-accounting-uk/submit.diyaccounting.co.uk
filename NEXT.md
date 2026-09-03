@@ -32,7 +32,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; remainder: the three new simulator behaviour tests time out waiting for results (deploy run 33771108157), fix in flight; DataStack ordering fix merged a4b1af86 after environment deploy 33773949307 failed on the TTL/PITR race; environment redeploy due with batch 5 |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e with the harness fix a9916f45 and the DataStack ordering fix a4b1af86; code complete, awaiting the branch deploy |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
@@ -138,6 +138,13 @@ results back by pasting them into a Claude Code session or appending to the work
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B40f. Make the Express dev server answer uncaught handler errors as JSON.** When
+  `getAsyncRequest` threw `ResourceNotFoundException` locally, `app/bin/server.js` returned
+  Express's default HTML 500 page and the page failed on `Unexpected token '<'`; the API rule
+  is JSON always, and the deployed Lambdas already answer through `httpResponseHelper.js`. Add
+  a JSON error handler to the dev server and a system test that a throwing route returns a
+  JSON 500. **Source**: repo find 2026-09-03 fixing B32. **Owner**: Claude Code. **Model**:
+  Haiku.
 - [ ] **B12c remainder. Put the `resident-itsa` price ids into `.env.ci` and `.env.prod`** by
   PR once O2 hands them over. **Source**: BACKLOG 12. **Owner**: Claude Code. **Model**: Haiku.
   Blocked on O2.
