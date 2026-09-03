@@ -38,7 +38,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
 | D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | `agent-a17f544dfa18ae6a4`, reviewing |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
-| G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
+| G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
 | I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
 
@@ -95,18 +95,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   "January 14, 2026"), and the `<meta name="description">` at line 9 that still says WCAG 2.1
   while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
   Haiku. Follows B27b.2 in the same track.
-
-#### Track G — Alarm audit (B30a)
-
-- [ ] **B30a. Alarm history audit.** Read-only: for every prod `check-*` alarm (151, four per
-  Lambda from `infra/.../constructs/Lambda.java:138-227`: errors, throttles, p95 duration,
-  log-errors) and the 15 `AsyncApiLambda` extras, pull `describe-alarm-history` for the last
-  90 days and write `_developers/ALARM_AUDIT_2026-09.md`: a table by check type of alarms that
-  never changed state, ones that only flap on deploys, and ones that fired for a real fault;
-  plus the canary picture (`OpsStack` canaries at `rate(51 minutes)`, `synthetic-test.yml`
-  cron `57 */4 * * *`, `github-synthetic-failed` on a 2-hour period).
-  **Source**: BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code.
-  **Model**: Haiku.
 
 #### Track I — Pipeline cuts (B32a.2)
 
@@ -210,9 +198,10 @@ results back by pasting them into a Claude Code session or appending to the work
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
   open item 2, one alert for stuck queue plus broken worker), and set the canary interval and
   synthetic cron so they do not both cover the same 4-hour window. Keep every alarm the
-  routing rule or a runbook reads. CDK tests updated; `./mvnw clean verify`. **Source**:
-  BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus. Blocked
-  on B30a (Track G).
+  routing rule or a runbook reads. CDK tests updated; `./mvnw clean verify`. The audit
+  (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
+  five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
+  `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
 - [ ] **B12c remainder. Put the `resident-itsa` price ids into `.env.ci` and `.env.prod`** by
   PR once O2 hands them over. **Source**: BACKLOG 12. **Owner**: Claude Code. **Model**: Haiku.
   Blocked on O2.
