@@ -40,7 +40,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
-| I pipeline-cuts | Sonnet design | B32a.2 | designed, findings merged 5067f44d; cut 2 waits on O11 |
+| I pipeline-cuts | Sonnet design | B32a.2 | done: findings merged 5067f44d; the operator keeps the shared concurrency group |
 
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
@@ -94,17 +94,6 @@ results back by pasting them into a Claude Code session or appending to the work
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
-- [ ] **O11 / B32a.2 decision. Is the shared deploy concurrency group deliberate?** `deploy.yml`
-  and `deploy-environment.yml` use the same `concurrency` group (`deploy-${{ github.ref_name }}`),
-  so every push waits for the environment deploy to finish before the app deploy starts (13.7
-  of prod's 61 minutes on 2026-09-02). If the group is protecting the app deploy from reading
-  ECR or Cognito mid-update, it stays and the cut is off; if it is a copy-paste, a one-line
-  rename in `deploy-environment.yml` removes the wait. The shared group also drops runs:
-  GitHub keeps one pending run per group, so on 2026-09-03 14:13 the batch branch's
-  environment deploy (run 33765564218) was cancelled with no jobs when the app deploy queued
-  behind the same in-progress run. The other two cuts in
-  `_developers/PIPELINE_PROFILE_2026-09.md` were verified not viable. **Source**: BACKLOG 32a.
-  **Owner**: Operator.
 - [ ] **O10 / B17a. Re-record and publish the demo videos** on
   https://www.youtube.com/@DIYAccountingSubmit, capturing the main site rather than the
   simulator. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code
@@ -149,10 +138,6 @@ results back by pasting them into a Claude Code session or appending to the work
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
-- [ ] **B32a.2 remainder. Rename the environment deploy's concurrency group** in
-  `.github/workflows/deploy-environment.yml` so `deploy.yml` no longer queues behind it, proven
-  by the next prod run's timing. **Source**: BACKLOG 32a. **Owner**: Claude Code. **Model**:
-  Haiku. Blocked on O11 answering that the shared group is not deliberate.
 - [ ] **B12c remainder. Put the `resident-itsa` price ids into `.env.ci` and `.env.prod`** by
   PR once O2 hands them over. **Source**: BACKLOG 12. **Owner**: Claude Code. **Model**: Haiku.
   Blocked on O2.
