@@ -1,32 +1,32 @@
-(node:11422) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(node:44906) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 Running Pa11y on 27 URLs:
- > https://local.submit.diyaccounting.co.uk:3443/ - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/index.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/privacy.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/terms.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/about.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/accessibility.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/auth/login.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/bundles.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/usage.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/submitVat.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/vatObligations.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/hmrc/vat/viewVatReturn.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/hmrc/receipt/receipts.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/guide.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/help.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/mcp.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/diy-accounting-spreadsheets.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/diy-accounting-limited.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/spreadsheets.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/404-error-distribution.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/404-error-origin.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/403.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/404.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/500.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/502.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/503.html - 0 errors
- > https://local.submit.diyaccounting.co.uk:3443/errors/504.html - 0 errors
+ > http://localhost:56573/ - 0 errors
+ > http://localhost:56573/index.html - 0 errors
+ > http://localhost:56573/privacy.html - 0 errors
+ > http://localhost:56573/terms.html - 0 errors
+ > http://localhost:56573/about.html - 0 errors
+ > http://localhost:56573/accessibility.html - 0 errors
+ > http://localhost:56573/auth/login.html - 0 errors
+ > http://localhost:56573/bundles.html - 0 errors
+ > http://localhost:56573/usage.html - 0 errors
+ > http://localhost:56573/hmrc/vat/submitVat.html - 0 errors
+ > http://localhost:56573/hmrc/vat/vatObligations.html - 0 errors
+ > http://localhost:56573/hmrc/vat/viewVatReturn.html - 0 errors
+ > http://localhost:56573/hmrc/receipt/receipts.html - 0 errors
+ > http://localhost:56573/guide.html - 0 errors
+ > http://localhost:56573/help.html - 0 errors
+ > http://localhost:56573/mcp.html - 0 errors
+ > http://localhost:56573/diy-accounting-spreadsheets.html - 0 errors
+ > http://localhost:56573/diy-accounting-limited.html - 0 errors
+ > http://localhost:56573/spreadsheets.html - 0 errors
+ > http://localhost:56573/errors/404-error-distribution.html - 0 errors
+ > http://localhost:56573/errors/404-error-origin.html - 0 errors
+ > http://localhost:56573/errors/403.html - 0 errors
+ > http://localhost:56573/errors/404.html - 0 errors
+ > http://localhost:56573/errors/500.html - 0 errors
+ > http://localhost:56573/errors/502.html - 0 errors
+ > http://localhost:56573/errors/503.html - 0 errors
+ > http://localhost:56573/errors/504.html - 0 errors
 
 ✔ 27/27 URLs passed
