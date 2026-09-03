@@ -373,6 +373,41 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(JSON.parse(response.body)).toEqual(vatReturn);
   });
 
+  test("allowSandboxObligations: falls back to the next fulfilled obligation when the first return 404s", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [
+          { periodKey: "18A1", start: "2020-01-01", end: "2020-03-31", status: "F" },
+          { periodKey: "17A2", start: "2020-04-01", end: "2020-06-30", status: "F" },
+        ],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    mockHmrcError(mockFetch, 404, {});
+    const vatReturn = { periodKey: "17A2", totalVatDue: 250 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSandboxObligations: "true",
+      },
+      headers: {
+        authorization: "Bearer test-token",
+        hmrcAccount: "sandbox",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
   test("poll after successful retrieval returns persisted result without re-resolving periodKey", async () => {
     const persistedVatReturn = { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 };
 
