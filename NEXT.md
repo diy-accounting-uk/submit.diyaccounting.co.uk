@@ -32,7 +32,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; every push deploy green (latest 33792440197). Push deploys skip the HMRC-sandbox `-ci` lanes by default, so the three new endpoints and view-return were run against the real sandbox only by a hand dispatch with `skipTestScenarios=false`, which creates a fresh test user per run; that exposed a simulator-only `NOT_FOUND` scenario, an HMRC 400 mapped to 500, a missing return fallback and two test-step waits, all fixed or in flight. The test-user job's token 403 at 19:14 was HMRC-side (same script passed three times earlier) |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; scenario, 400-mapping, return-fallback and verify-wait fixes merged (last dd7f5b7d); code complete, awaiting the push deploy and a tests-only run with the sandbox lanes |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
