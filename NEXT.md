@@ -36,7 +36,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 | C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | started |
 | D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | started |
 | F itsa-test-user | Sonnet | B10a.1 | PR #104 open, awaiting merge |
-| G alarm-audit | Haiku | B30a | waits for `aws sso login` |
+| G alarm-audit | Haiku | B30a | started |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | started |
 | I pipeline-cuts | Sonnet | B32a.2 | started |
 
@@ -179,8 +179,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   90 days and write `_developers/ALARM_AUDIT_2026-09.md`: a table by check type of alarms that
   never changed state, ones that only flap on deploys, and ones that fired for a real fault;
   plus the canary picture (`OpsStack` canaries at `rate(51 minutes)`, `synthetic-test.yml`
-  cron `57 */4 * * *`, `github-synthetic-failed` on a 2-hour period). Needs a live SSO
-  session (`aws sso login --sso-session diyaccounting`); dispatched the moment one exists.
+  cron `57 */4 * * *`, `github-synthetic-failed` on a 2-hour period).
   **Source**: BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code.
   **Model**: Haiku.
 
