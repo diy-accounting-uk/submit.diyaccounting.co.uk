@@ -988,6 +988,191 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
   });
 }
 
+/* VAT Liabilities Journey Steps */
+
+export async function initVatLiabilities(page, screenshotPath = defaultScreenshotPath) {
+  const activityButtonText = "VAT Liabilities (HMRC)";
+  await test.step(`The user navigates to ${activityButtonText} and sees the liabilities form`, async () => {
+    // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-liabilities.png` });
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Liabilities", { screenshotPath, timeout: 60000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-liabilities.png` });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-liabilities.png` });
+    await expect(page.locator("#vatLiabilitiesForm")).toBeVisible();
+  });
+}
+
+export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the VAT liabilities form with VAT registration number and date range", async () => {
+    const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario, runFraudPreventionHeaderValidation } =
+      liabilitiesQuery || {};
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-liabilities-fill-in.png` });
+
+    // Compute a wide date range with likely hits if not provided
+    const from = hmrcVatPeriodFromDate || "2018-01-01";
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
+
+    // Check if we're in sandbox mode and can use test data link
+    const testDataLink = page.locator("#testDataLink.visible");
+    const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
+
+    if (isSandboxMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in sandbox mode
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-liabilities-click-test-data.png` });
+      await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-liabilities-test-data-added.png` });
+
+      // Verify fields are populated
+      await expect(page.locator("#vrn")).not.toHaveValue("");
+      await expect(page.locator("#fromDate")).not.toHaveValue("");
+      await expect(page.locator("#toDate")).not.toHaveValue("");
+    }
+
+    // Fill out the form manually
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-liabilities-fill-in.png` });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-liabilities-fill-in.png` });
+    await page.waitForTimeout(50);
+    await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-liabilities-fill-in.png` });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      }
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-liabilities-fill-in.png` });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-liabilities-filled-in.png` });
+    }
+
+    await page.waitForTimeout(300);
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageUp");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-liabilities-fill-in.png` });
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-liabilities-fill-in-pagedown.png` });
+    await expect(page.locator("#retrieveBtn")).toBeVisible();
+  });
+}
+
+export async function submitVatLiabilitiesForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the VAT liabilities form", async () => {
+    // Take a focus change screenshot between last cell entry and submit
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-liabilities-submit.png` });
+    // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Submitting VAT liabilities form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-liabilities-submit.png` });
+  });
+}
+
+export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees VAT liabilities results displayed", async () => {
+    // Back-compat: support verifyVatLiabilitiesResults(page, screenshotPath)
+    if (arguments.length === 2 && typeof liabilitiesQuery === "string") {
+      screenshotPath = liabilitiesQuery;
+      liabilitiesQuery = {};
+    }
+    const { testScenario } = liabilitiesQuery || {};
+    const hasScenario = !!testScenario;
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-liabilities-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "INSOLVENT_TRADER":
+        case "NOT_FOUND":
+          await page.waitForTimeout(500);
+          const liabilitiesResults = page.locator("#liabilitiesResults");
+          await expect(liabilitiesResults).toBeHidden();
+          break;
+      }
+      return;
+    }
+    await waitForSuccessOrError(page, {
+      successSelector: "#liabilitiesResults",
+      description: "VAT liabilities results",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-liabilities-results.png` });
+    const resultsContainer = page.locator("#liabilitiesResults");
+    await expect(resultsContainer).toBeVisible();
+
+    // Verify the table (or empty-state message) is displayed
+    const liabilitiesTable = page.locator("#liabilitiesTable");
+    await expect(liabilitiesTable).toBeVisible();
+
+    // Parse table rows into structured data for assertions. HMRC returns no data for the
+    // default scenario, so an empty result set is an acceptable outcome, not a failure.
+    const rowLocator = page.locator("#liabilitiesTable table tbody tr");
+    const rowCount = await rowLocator.count();
+    if (rowCount === 0) {
+      console.log("[verifyVatLiabilitiesResults] No liabilities returned - acceptable for the default scenario");
+      await expect(page.locator("#liabilitiesTable .no-data")).toBeVisible();
+    } else {
+      console.log(`[verifyVatLiabilitiesResults] Found ${rowCount} liability row(s) - validating shape`);
+      for (let i = 0; i < rowCount; i++) {
+        const r = rowLocator.nth(i);
+        // Table structure: Period | Type | Original Amount | Outstanding Amount | Due Date
+        const period = (await r.locator("td").nth(0).innerText()).trim();
+        const type = (await r.locator("td").nth(1).innerText()).trim();
+        expect(period, `Period should be populated for row ${i}`).toBeTruthy();
+        expect(type, `Type should be populated for row ${i}`).toBeTruthy();
+      }
+    }
+
+    console.log("VAT liabilities retrieval completed successfully");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-liabilities-success.png` });
+
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-liabilities-results-pagedown.png` });
+  });
+}
+
 /* View VAT Return Journey Steps */
 
 export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {

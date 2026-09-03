@@ -89,7 +89,7 @@ class SubmitEnvironmentCdkResourceTest {
         //      hmrcVatReturnGetAsync, hmrcVatObligationGetAsync, hmrcApiRequests, securityState
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 42);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 45);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);

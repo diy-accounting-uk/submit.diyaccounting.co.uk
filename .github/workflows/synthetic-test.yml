@@ -36,6 +36,7 @@ on:
           - 'tokenRefreshBehaviour'
           - 'postVatReturnBehaviour'
           - 'getVatObligationsBehaviour'
+          - 'getVatLiabilitiesBehaviour'
           - 'getVatReturnBehaviour'
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'

@@ -344,6 +344,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcVatObligationGetAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncRequestsTableName, endpoint);
     }
+    const hmrcVatLiabilitiesGetAsyncRequestsTableName = process.env.HMRC_VAT_LIABILITIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatLiabilitiesGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatLiabilitiesGetAsyncRequestsTableName, endpoint);
+    }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");
 

@@ -19,6 +19,7 @@ import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bun
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { apiEndpoint as hmrcVatLiabilitiesGetApiEndpoint } from "../functions/hmrc/hmrcVatLiabilitiesGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
@@ -223,6 +224,7 @@ bundleDeleteApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
+hmrcVatLiabilitiesGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 passGetApiEndpoint(app);

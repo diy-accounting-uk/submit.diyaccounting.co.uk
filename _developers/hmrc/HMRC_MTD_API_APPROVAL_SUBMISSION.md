@@ -96,13 +96,13 @@ Organisation Evidence:
 | HMRC Endpoint | Method | Status | Implementation File |
 |---------------|--------|--------|---------------------|
 | Retrieve VAT Obligations | GET `/organisations/vat/{vrn}/obligations` | Implemented | `hmrcVatObligationGet.js` |
+| Retrieve VAT Liabilities | GET `/organisations/vat/{vrn}/liabilities` | Implemented | `hmrcVatLiabilitiesGet.js` |
 | Submit VAT Return | POST `/organisations/vat/{vrn}/returns` | Implemented | `hmrcVatReturnPost.js` |
 | View VAT Return | GET `/organisations/vat/{vrn}/returns/{periodKey}` | Implemented | `hmrcVatReturnGet.js` |
 | OAuth Token Exchange | POST `/oauth/token` | Implemented | `hmrcTokenPost.js` |
 | Fraud Prevention Validation | GET `/test/fraud-prevention-headers/validate` | Tested | Validation in tests |
 
 **Not Implemented (not required for MVP):**
-- View VAT Liabilities
 - View VAT Payments
 
 ## 1.3 Fraud Prevention Headers Compliance
@@ -485,6 +485,28 @@ Each header is traced from collection to transmission.
       "end": "2017-06-30",
       "due": "2017-08-07",
       "status": "O"
+    }
+  ]
+}
+```
+
+### VAT Liabilities GET
+
+**File**: `app/functions/hmrc/hmrcVatLiabilitiesGet.js`
+
+**Response from HMRC (200 OK)**:
+```json
+{
+  "liabilities": [
+    {
+      "taxPeriod": {
+        "from": "2024-01-01",
+        "to": "2024-03-31"
+      },
+      "type": "VAT Return Debit Charge",
+      "originalAmount": 1000.00,
+      "outstandingAmount": 250.00,
+      "due": "2024-05-07"
     }
   ]
 }

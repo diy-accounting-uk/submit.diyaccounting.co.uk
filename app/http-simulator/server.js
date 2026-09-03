@@ -9,6 +9,7 @@ import { apiEndpoint as localOAuthEndpoint } from "./routes/local-oauth.js";
 import { apiEndpoint as hmrcOAuthEndpoint } from "./routes/hmrc-oauth.js";
 import { apiEndpoint as vatReturnsEndpoint } from "./routes/vat-returns.js";
 import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.js";
+import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
@@ -51,6 +52,7 @@ export function createApp() {
   // HMRC VAT API routes
   vatReturnsEndpoint(app);
   vatObligationsEndpoint(app);
+  vatLiabilitiesEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
 

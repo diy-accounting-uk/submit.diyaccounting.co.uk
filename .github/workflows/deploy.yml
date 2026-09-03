@@ -1929,6 +1929,33 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-liability-sandbox:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/synthetic-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'getVatLiabilitiesBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-fraud-prevention-headers-vat-sandbox:
     if: ${{ !cancelled() }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
@@ -2134,6 +2161,7 @@ jobs:
       - web-test-post-vat-return-sandbox
       - web-test-get-vat-return-sandbox
       - web-test-obligation-sandbox
+      - web-test-liability-sandbox
       - web-test-fraud-prevention-headers-vat-sandbox
       - web-test-compliance-sandbox
       - web-test-help-sandbox
