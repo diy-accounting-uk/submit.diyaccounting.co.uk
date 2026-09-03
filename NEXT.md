@@ -35,7 +35,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 | B vat-reads | Opus | B32b, B32.1, B32.2, B32.3 | started |
 | C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | started |
 | D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | started |
-| F itsa-test-user | Sonnet | B10a.1 | committed on `claude/itsa-test-user`; push needs a git credential with `workflow` scope |
+| F itsa-test-user | Sonnet | B10a.1 | PR #104 open, awaiting merge |
 | G alarm-audit | Haiku | B30a | waits for `aws sso login` |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | started |
 | I pipeline-cuts | Sonnet | B32a.2 | started |
