@@ -243,9 +243,11 @@ https://console.cloud.google.com/cloud-resource-manager
 
 **Why.** `deploy.yml` and `deploy-environment.yml` share one GitHub Actions `concurrency`
 group, `deploy-${{ github.ref_name }}`, so on every push the app deploy waits for the whole
-environment deploy to finish first. On 2026-09-02 that was 13.7 of prod's 61 minutes. Two other
-proposed cuts were checked against the workflow source and are not viable (see
-`_developers/PIPELINE_PROFILE_2026-09.md`).
+environment deploy to finish first. On 2026-09-02 that was 13.7 of prod's 61 minutes. The
+shared group also drops runs: GitHub keeps one pending run per group, so when an environment
+deploy and an app deploy both queue behind an in-progress run, the older pending one is
+cancelled with no jobs (run 33765564218 on 2026-09-03). Two other proposed cuts were checked
+against the workflow source and are not viable (see `_developers/PIPELINE_PROFILE_2026-09.md`).
 
 **Where.** `.github/workflows/deploy.yml` and `.github/workflows/deploy-environment.yml`, the
 `concurrency:` block near the top of each; `git log -S 'deploy-${{ github.ref_name }}'` shows

@@ -153,7 +153,10 @@ results back by pasting them into a Claude Code session or appending to the work
   so every push waits for the environment deploy to finish before the app deploy starts (13.7
   of prod's 61 minutes on 2026-09-02). If the group is protecting the app deploy from reading
   ECR or Cognito mid-update, it stays and the cut is off; if it is a copy-paste, a one-line
-  rename in `deploy-environment.yml` removes the wait. The other two cuts in
+  rename in `deploy-environment.yml` removes the wait. The shared group also drops runs:
+  GitHub keeps one pending run per group, so on 2026-09-03 14:13 the batch branch's
+  environment deploy (run 33765564218) was cancelled with no jobs when the app deploy queued
+  behind the same in-progress run. The other two cuts in
   `_developers/PIPELINE_PROFILE_2026-09.md` were verified not viable. **Source**: BACKLOG 32a.
   **Owner**: Operator.
 - [ ] **O10 / B17a. Re-record and publish the demo videos** on
