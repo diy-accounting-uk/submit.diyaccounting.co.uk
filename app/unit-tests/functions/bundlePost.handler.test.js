@@ -59,7 +59,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 // Defer importing the ingestHandler until after mocks are defined
-import { ingestHandler as bundlePostHandler, workerHandler as bundlePostWorker } from "@app/functions/account/bundlePost.js";
+import { ingestHandler as bundlePostHandler, workerHandler as bundlePostWorker, grantBundle } from "@app/functions/account/bundlePost.js";
 import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -347,6 +347,31 @@ describe("bundlePost ingestHandler", () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     const deleteCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.DeleteCommand);
     expect(deleteCalls.length).toBe(0);
+  });
+
+  test("grantBundle with viaPass replaces an active day-guest allocation instead of refusing it", async () => {
+    const userId = "user-day-pass-via-pass";
+    const decodedToken = { sub: userId };
+
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let queryCallCount = 0;
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        queryCallCount++;
+        // The user already holds an unexpired day-guest allocation from earlier today.
+        return queryCallCount === 1 ? { Items: [{ bundleId: "day-guest", expiry: tomorrow }], Count: 1 } : { Items: [], Count: 0 };
+      }
+      return {};
+    });
+
+    const result = await grantBundle(userId, { bundleId: "day-guest" }, decodedToken, null, { skipCapCheck: true, viaPass: true });
+
+    expect(result.status).toBe("granted");
+
+    // The existing allocation must have been deleted and replaced, unlike the direct-request case.
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const deleteCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.DeleteCommand);
+    expect(deleteCalls.length).toBe(1);
   });
 
   test("skips async request lookup when x-initial-request header is true", async () => {

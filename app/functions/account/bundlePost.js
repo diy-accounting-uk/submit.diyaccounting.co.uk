@@ -320,8 +320,14 @@ export async function workerHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false, grantQualifiers } = {}) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers });
+export async function grantBundle(
+  userId,
+  requestBody,
+  decodedToken,
+  requestId = null,
+  { skipCapCheck = false, grantQualifiers, viaPass = false } = {},
+) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers, viaPass });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};
@@ -383,13 +389,15 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
   // If the user already has this bundle, remove it and grant a fresh one.
   // This handles: expired bundles, partially consumed tokens from previous passes,
   // and re-redemption of a new pass for the same bundle type.
-  // Exception: a self-service (on-request) bundle such as day-guest grants once per
-  // user per timeout period — an unexpired existing allocation refuses the request
+  // Exception: a direct self-service (on-request) request such as day-guest grants once
+  // per user per timeout period — an unexpired existing allocation refuses the request
   // instead of resetting it, so a user cannot top up tokens early by re-requesting.
+  // Redemption via a pass (viaPass) always falls through to delete-and-regrant: passPost.js
+  // uses this path to top up a test user's bundle whenever tokens run low.
   const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
   if (existingBundle) {
     const stillActive = existingBundle.expiry && new Date(existingBundle.expiry) > new Date();
-    if (catalogBundle.allocation === "on-request" && stillActive) {
+    if (catalogBundle.allocation === "on-request" && stillActive && !viaPass) {
       logger.info({
         message: "[Catalog bundle] Self-service bundle already granted and still active, refusing re-grant:",
         requestedBundle,
