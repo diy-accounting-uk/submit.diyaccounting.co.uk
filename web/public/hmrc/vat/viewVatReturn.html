@@ -316,6 +316,7 @@
           // Hide form while retrieving
           hideForm();
           showLoading();
+          hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
           showStatus("Retrieving VAT return...", "info");
 
           // Restore form values
@@ -486,6 +487,7 @@
           // We have an access token, proceed directly
           try {
             showLoading();
+            hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
             showStatus("Retrieving VAT return...", "info");
 
             // Build query parameters — use periodKey directly if available (e.g., from prior submission)

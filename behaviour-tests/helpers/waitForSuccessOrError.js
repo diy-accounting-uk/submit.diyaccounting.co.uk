@@ -35,6 +35,38 @@ function defaultErrorConditions() {
  * @param {Array<{selector: string, textPattern?: RegExp}>} [options.errorConditions] - Error conditions to check
  * @returns {Promise<void>} Resolves when success detected, throws on error or timeout
  */
+async function visibleTextsFor(page, selector) {
+  const locators = await page
+    .locator(selector)
+    .all()
+    .catch(() => []);
+  const texts = [];
+  for (const locator of locators) {
+    const isVisible = await locator.isVisible().catch(() => false);
+    if (isVisible) {
+      texts.push(await locator.innerText().catch(() => ""));
+    }
+  }
+  return texts;
+}
+
+// Multiset difference: texts in `current` with one matching occurrence in `baseline` removed
+// per match, so a banner already on the page at wait-start doesn't count as new, but a second
+// occurrence of the same text does.
+function newTextsSince(baseline, current) {
+  const remainingBaseline = [...baseline];
+  const added = [];
+  for (const text of current) {
+    const matchIndex = remainingBaseline.indexOf(text);
+    if (matchIndex === -1) {
+      added.push(text);
+    } else {
+      remainingBaseline.splice(matchIndex, 1);
+    }
+  }
+  return added;
+}
+
 export async function waitForSuccessOrError(page, options = {}) {
   const {
     successSelector,
@@ -44,6 +76,16 @@ export async function waitForSuccessOrError(page, options = {}) {
     screenshotPath,
     errorConditions = defaultErrorConditions(),
   } = options;
+
+  // Snapshot whatever error banners are already visible when the wait begins. A page can carry
+  // a banner left over from an earlier, already-abandoned attempt (status-messages.js never
+  // auto-hides type: "error" banners) — that banner must not fail a wait for a later attempt
+  // that hasn't had a chance to succeed or fail yet. Only a banner that appears (or reappears)
+  // after this snapshot counts as a new error.
+  const baselineTextsByCondition = new Map();
+  for (const condition of errorConditions) {
+    baselineTextsByCondition.set(condition, await visibleTextsFor(page, condition.selector));
+  }
 
   const startTime = Date.now();
   let pollCount = 0;
@@ -64,20 +106,10 @@ export async function waitForSuccessOrError(page, options = {}) {
     // being swallowed by .catch(() => false), silently disabling fail-fast. Check every
     // match instead of assuming there is exactly one.
     for (const condition of errorConditions) {
-      const errorLocators = await page
-        .locator(condition.selector)
-        .all()
-        .catch(() => []);
-      const visibleTexts = [];
-      for (const errorLocator of errorLocators) {
-        const isVisible = await errorLocator.isVisible().catch(() => false);
-        if (isVisible) {
-          const text = await errorLocator.innerText().catch(() => "");
-          visibleTexts.push(text);
-        }
-      }
-      if (visibleTexts.length > 0) {
-        const combinedText = visibleTexts.join(" | ");
+      const visibleTexts = await visibleTextsFor(page, condition.selector);
+      const newTexts = newTextsSince(baselineTextsByCondition.get(condition), visibleTexts);
+      if (newTexts.length > 0) {
+        const combinedText = newTexts.join(" | ");
         if (!condition.textPattern || condition.textPattern.test(combinedText)) {
           const msg =
             `[waitForSuccessOrError] FAIL FAST: Error detected in "${condition.selector}" ` +
