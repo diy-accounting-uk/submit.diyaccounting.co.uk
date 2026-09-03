@@ -151,13 +151,13 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // --- Step 1: Verify clean state ---
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
-  // Day Guest bundle — verify it appears in the catalogue
+  // Day pass bundle — verify it appears in the catalogue
   const requestDayGuestBtn = page.locator('button[data-bundle-id="day-guest"]');
   const requestDayGuestVisible = await requestDayGuestBtn
     .first()
     .isVisible({ timeout: 5000 })
     .catch(() => false);
-  console.log(`[pass-test]: Day Guest bundle button visible: ${requestDayGuestVisible}`);
+  console.log(`[pass-test]: Day pass bundle button visible: ${requestDayGuestVisible}`);
 
   // --- Step 2: Create a test pass via admin API ---
   // Use passTypeId "day-guest-test-pass" which has test=true in submit.passes.toml.
@@ -226,21 +226,21 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 
   // All bundles follow the same flow: validate → card appears → click Request → bundle granted
   expect(statusText).toMatch(/valid|Request/i);
-  const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day Guest"):not([disabled])');
+  const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day pass"):not([disabled])');
   await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
-  console.log("[pass-test]: Day Guest bundle button is now enabled after pass validation");
+  console.log("[pass-test]: Day pass bundle button is now enabled after pass validation");
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
 
   await enabledDayGuestBtn.click();
-  console.log("[pass-test]: Clicked enabled Day Guest bundle button to redeem pass");
+  console.log("[pass-test]: Clicked enabled Day pass bundle button to redeem pass");
 
   await page.waitForTimeout(3000);
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
 
-  // --- Step 6: Verify the Day Guest bundle is now granted ---
+  // --- Step 6: Verify the Day pass bundle is now granted ---
   const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
   await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
-  console.log("[pass-test]: Day Guest bundle shows in Current Bundles with Remove button");
+  console.log("[pass-test]: Day pass bundle shows in Current Bundles with Remove button");
   await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
 
   // --- Step 7: Verify via API that the bundle is allocated ---

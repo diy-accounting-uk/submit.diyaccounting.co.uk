@@ -203,7 +203,7 @@ async function setupTestUserAndLogin(page, testInfo) {
   await consentToDataCollection(page, screenshotPath);
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   await goToHomePage(page, screenshotPath);
 
   return { testUsername, testPassword, testVatNumber, testUrl, outputDir };
