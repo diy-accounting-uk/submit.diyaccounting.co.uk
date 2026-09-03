@@ -239,6 +239,28 @@ https://console.cloud.google.com/cloud-resource-manager
 
 ---
 
+## O11 / B32a.2 — Is the shared deploy concurrency group deliberate?
+
+**Why.** `deploy.yml` and `deploy-environment.yml` share one GitHub Actions `concurrency`
+group, `deploy-${{ github.ref_name }}`, so on every push the app deploy waits for the whole
+environment deploy to finish first. On 2026-09-02 that was 13.7 of prod's 61 minutes. Two other
+proposed cuts were checked against the workflow source and are not viable (see
+`_developers/PIPELINE_PROFILE_2026-09.md`).
+
+**Where.** `.github/workflows/deploy.yml` and `.github/workflows/deploy-environment.yml`, the
+`concurrency:` block near the top of each; `git log -S 'deploy-${{ github.ref_name }}'` shows
+when each was introduced.
+
+**Decide.** Does the environment deploy mutate anything the app deploy reads while it runs
+(ECR repositories, Cognito pool, env-level tables or secrets) such that running them
+concurrently could race? If yes, the shared group is protection and stays. If no, answer
+"rename" and Claude Code changes the environment workflow's group to
+`deploy-environment-${{ github.ref_name }}`.
+
+**Hand back.** "keep" or "rename".
+
+---
+
 ## O10 / B17a — Demo videos
 
 Operator-owned end to end (Claude Code excluded by directive 2026-08-26). Channel:

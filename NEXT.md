@@ -32,15 +32,15 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Opus design, then Sonnet | B32.1, B32.2, B32.3 | design wave running; coder waits on `scratchpad/design-track-b.md` |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | `agent-aa23d9d29041c29b6`, coding from `scratchpad/design-track-b.md` |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
-| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | `agent-a17f544dfa18ae6a4`, reviewing |
+| D2 accessibility review | Sonnet | B27b.2, B27b.3 | `agent-aed74464c39bc8695`, reviewing (Opus overloaded) |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
-| I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
+| I pipeline-cuts | Sonnet design | B32a.2 | designed: cuts 1 and 3 not viable, cut 2 waits on O11; findings going into the profile doc |
 
 #### Track B — VAT read endpoints (B32)
 
@@ -96,16 +96,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
   Haiku. Follows B27b.2 in the same track.
 
-#### Track I — Pipeline cuts (B32a.2)
-
-- [ ] **B32a.2. Make the three largest cuts** from `_developers/PIPELINE_PROFILE_2026-09.md`:
-  decouple `destroy-previous` from `set-last-known-good-deployment` in `deploy.yml` (~6.8 min
-  off prod's critical path); cut the push-triggered workflow fan-out that queued deploy.yml
-  for 13.7 min behind four sibling workflows (concurrency groups or trigger filters); and
-  confirm from `PublishStack.java` whether `deploy-publish` needs all of `deploy-edge` before
-  collapsing that hop. One PR per cut, each proven by the next run's timing. **Source**:
-  BACKLOG 32a. **Owner**: Claude Code. **Model**: Opus.
-
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
 Browser and account work a workflow cannot do, plus the decisions that unblock Tier 2. Each
@@ -158,6 +148,14 @@ results back by pasting them into a Claude Code session or appending to the work
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
+- [ ] **O11 / B32a.2 decision. Is the shared deploy concurrency group deliberate?** `deploy.yml`
+  and `deploy-environment.yml` use the same `concurrency` group (`deploy-${{ github.ref_name }}`),
+  so every push waits for the environment deploy to finish before the app deploy starts (13.7
+  of prod's 61 minutes on 2026-09-02). If the group is protecting the app deploy from reading
+  ECR or Cognito mid-update, it stays and the cut is off; if it is a copy-paste, a one-line
+  rename in `deploy-environment.yml` removes the wait. The other two cuts in
+  `_developers/PIPELINE_PROFILE_2026-09.md` were verified not viable. **Source**: BACKLOG 32a.
+  **Owner**: Operator.
 - [ ] **O10 / B17a. Re-record and publish the demo videos** on
   https://www.youtube.com/@DIYAccountingSubmit, capturing the main site rather than the
   simulator. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code
@@ -202,6 +200,10 @@ results back by pasting them into a Claude Code session or appending to the work
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B32a.2 remainder. Rename the environment deploy's concurrency group** in
+  `.github/workflows/deploy-environment.yml` so `deploy.yml` no longer queues behind it, proven
+  by the next prod run's timing. **Source**: BACKLOG 32a. **Owner**: Claude Code. **Model**:
+  Haiku. Blocked on O11 answering that the shared group is not deliberate.
 - [ ] **B12c remainder. Put the `resident-itsa` price ids into `.env.ci` and `.env.prod`** by
   PR once O2 hands them over. **Source**: BACKLOG 12. **Owner**: Claude Code. **Model**: Haiku.
   Blocked on O2.
