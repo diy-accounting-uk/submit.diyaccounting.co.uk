@@ -17,28 +17,30 @@ PR; the operator merges.
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
-The board is sequenced in three blocks. Block 1 is the proposed Claude Code batch, not yet
-started. Block 2 is the operator batch, briefed for Claude Cowork in
+The board is sequenced in three blocks. Block 1 is the Claude Code batch in flight since
+2026-09-03. Block 2 is the operator batch, briefed for Claude Cowork in
 `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`. Block 3 is everything the first two blocks
 unblock.
 
-### Block 1 — Claude Code batch (proposed)
+### Block 1 — Claude Code batch (in flight)
 
-When started, each track is an isolated worktree on its own `claude/*` branch, one PR per
-track with one commit per item, in the order listed. Tracks A, C and D touch some of the same pages in
-different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
-`behaviour-helpers.js`); each brief names its region and the coordinator rebases at PR time.
+All tracks integrate on the single remote branch `claude/board-batch-1`; the coordinator merges
+each track's commits into it as they land, pushes in batches, and opens the PR once the branch
+is deploying. Each track runs in its own worktree under `.claude/worktrees/`. Design waves run
+on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from those designs.
 
-| Track | Model | Items, in order | Status |
+| Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
-| A funnel | Opus | G1, G2a | ready |
-| B vat-reads | Opus | B32b, B32.1, B32.2, B32.3 | ready |
-| C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | ready |
-| D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | ready |
-| F itsa-test-user | Sonnet | B10a.1 | ready |
-| G alarm-audit | Haiku | B30a | ready; needs a live `aws sso login` |
-| H privacy-fixes | Sonnet | B27c.3, B27c.4 | ready |
-| I pipeline-cuts | Sonnet | B32a.2 | ready |
+| A funnel | Sonnet | G1, G2a | `agent-a2b9deeea788bc9b4`, coding |
+| B vat-reads | Opus design, then Sonnet | B32.1, B32.2, B32.3 | design wave running; coder waits on `scratchpad/design-track-b.md` |
+| C1 catalogue | Sonnet | B12a, B12b | `agent-ac05a6b5dceecc0e4`, coding |
+| C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
+| D1 accessibility scans | Sonnet | B27d, B27b.1 | `agent-a9b1edbde8f87cb5b`, coding |
+| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | waits on D1 landing |
+| F itsa-test-user | Sonnet | B10a.1 | `agent-a99bdf10689976267`, coding |
+| G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
+| H privacy-fixes | Sonnet | B27c.3, B27c.4 | `agent-abb91d69d590fe174`, coding |
+| I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
 
 #### Track A — GA4 purchase funnel
 
@@ -68,17 +70,8 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   `web/public/lib/analytics.js` or the test helpers. Done when a ci run's hits show in
   DebugView. **Source**: none (same finding). **Owner**: Claude Code. **Model**: Opus.
 
-#### Track B — VAT read endpoints (B32, B32b)
+#### Track B — VAT read endpoints (B32)
 
-- [ ] **B32b. Gate obligations and view-return by activity.** `requireActivity()` from
-  `_developers/backlog/vat-api-operations.md` was never built; `hmrcVatObligationGet.js:148`
-  and `hmrcVatReturnGet.js:158` call `enforceBundles(event)` only. Check whether
-  `enforceBundles` (`app/services/bundleManagement.js:122`) tests the caller's bundles against
-  the catalogue's `bundlesForActivity("vat-obligations")`/`("view-vat-return")`; if not, add
-  that check to both handlers (403 with a JSON reason, matching `hmrcVatReturnPost.js`) and
-  unit-test it. Usage is already known (2026-08-06→31: obligations 616 calls / 208 users,
-  view-return 199 / 122), so no query step. **Source**: BACKLOG 32b;
-  `_developers/backlog/vat-api-operations.md`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B32.1. VAT liabilities page and Lambda.** `hmrcVatLiabilitiesGet.js` calling
   `GET /organisations/vat/{vrn}/liabilities` with fraud headers, following
   `hmrcVatObligationGet.js` (stub via `TEST_VAT_LIABILITY`, simulator route, CDK function and
@@ -96,7 +89,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Sonnet. Follows B32.2 in the same track.
 
-#### Track C — Catalogue and hygiene (B12, B40e, B40a)
+#### Tracks C1 and C2 — Catalogue and hygiene (B12, B40e, B40a)
 
 - [ ] **B12a. Line the `day-guest` bundle up with the strategy's day pass.**
   `web/public/submit.catalogue.toml` already gives `day-guest` one active allocation per user,
@@ -134,7 +127,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   `npm run test:submitVatBehaviour-simulator` runs started together both pass. **Source**:
   BACKLOG 40a. **Owner**: Claude Code. **Model**: Sonnet.
 
-#### Track D — Accessibility (B27d, B27b)
+#### Tracks D1 and D2 — Accessibility (B27d, B27b)
 
 - [ ] **B27d. Fix the text-spacing clipping regression.** `npm run
   accessibility:text-spacing-prod` fails all 24 pages with `body (X overflow)`: with the WCAG
