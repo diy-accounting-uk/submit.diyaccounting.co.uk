@@ -108,6 +108,8 @@ public class DataStack extends Stack {
                 "receiptId");
         String receiptsStreamArn =
                 ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().receiptsTableName);
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-ReceiptsTTL", props.sharedNames().receiptsTableName, "ttl");
         infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
 
         // Bundles table for bundle storage
