@@ -10,12 +10,19 @@ import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockBilling.js" });
 
+// Mock Stripe checkout session store, keyed by session id, so the GET checkout-session
+// endpoint below can serve back the amount/currency/bundle a mock POST created.
+const MOCK_AMOUNT_TOTAL = 999;
+const MOCK_CURRENCY = "gbp";
+const mockCheckoutSessions = new Map();
+
 export function apiEndpoint(app) {
   // Mock checkout session — returns a local auto-complete URL instead of a Stripe hosted page
   app.post("/api/v1/billing/checkout-session", async (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     const bundleId = req.body?.bundleId || "resident-pro";
     const sessionId = `sim_cs_${Date.now()}`;
+    mockCheckoutSessions.set(sessionId, { bundleId, amountTotal: MOCK_AMOUNT_TOTAL, currency: MOCK_CURRENCY });
 
     // Extract user sub from auth header so the GET /simulator/checkout can grant the bundle
     // (browser navigation to GET doesn't carry the Authorization header)
@@ -34,11 +41,21 @@ export function apiEndpoint(app) {
     res.json({ checkoutUrl });
   });
 
+  // Mock checkout session retrieval — mirrors billingCheckoutSessionGet.js against the in-memory store
+  app.get("/api/v1/billing/checkout-session/:id", (req, res) => {
+    const session = mockCheckoutSessions.get(req.params.id);
+    if (!session) {
+      res.status(404).json({ message: "Checkout session not found" });
+      return;
+    }
+    res.json({ amountTotal: session.amountTotal, currency: session.currency, bundleId: session.bundleId });
+  });
+
   // Mock checkout completion — grants bundle with subscription fields and redirects to success URL.
   // Matches the shape of bundle records created by billingWebhookPost.js:handleCheckoutComplete()
   // so that "Manage Subscription" buttons render in the simulator.
   app.get("/simulator/checkout", async (req, res) => {
-    const { bundleId = "resident-pro", sub: userSub } = req.query;
+    const { bundleId = "resident-pro", sub: userSub, session: sessionId } = req.query;
     logger.info({ message: "Mock checkout auto-completing", bundleId, userSub });
 
     if (userSub) {
@@ -84,7 +101,8 @@ export function apiEndpoint(app) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
-    res.redirect(`${baseUrl}bundles.html?checkout=success`);
+    const sessionParam = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : "";
+    res.redirect(`${baseUrl}bundles.html?checkout=success${sessionParam}`);
   });
 
   // Mock billing portal — redirects back to bundles page

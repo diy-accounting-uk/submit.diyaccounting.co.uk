@@ -548,6 +548,16 @@
         try {
           const bundleId = btn.getAttribute("data-bundle-id");
           const isSandbox = sessionStorage.getItem("hmrcAccount") === "sandbox";
+
+          // GA4 ecommerce: begin_checkout when the user starts a Stripe checkout
+          if (typeof gtag === "function") {
+            gtag("event", "begin_checkout", {
+              currency: "GBP",
+              value: 0,
+              items: [{ item_id: bundleId }],
+            });
+          }
+
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1218,10 +1228,35 @@
         const checkoutResult = urlParams.get("checkout");
         if (checkoutResult === "success") {
           showStatus("Subscription activated! Your bundle has been added.", "success");
-          // Clear URL param without reload
+          const sessionId = urlParams.get("session_id");
+          // Clear URL params without reload
           const url = new URL(window.location);
           url.searchParams.delete("checkout");
+          url.searchParams.delete("session_id");
           window.history.replaceState({}, "", url);
+
+          // GA4 ecommerce: purchase, once, for this completed Stripe checkout session
+          if (sessionId && typeof gtag === "function") {
+            (async () => {
+              try {
+                const response = await window.fetchWithIdToken(
+                  `/api/v1/billing/checkout-session/${encodeURIComponent(sessionId)}`,
+                );
+                const body = await response.json().catch(() => ({}));
+                if (response.ok && body.amountTotal != null) {
+                  gtag("event", "purchase", {
+                    transaction_id: sessionId,
+                    value: body.amountTotal / 100,
+                    currency: body.currency,
+                    items: [{ item_id: body.bundleId }],
+                  });
+                }
+              } catch (err) {
+                console.warn("Failed to record purchase event:", err);
+              }
+            })();
+          }
+
           // Invalidate bundle cache and re-fetch (retry if webhook hasn't fired yet)
           const refreshBundles = async () => {
             invalidate("/api/v1/bundle");

@@ -34,6 +34,10 @@ public class BillingStack extends Stack {
     public Function billingCheckoutPostLambda;
     public ILogGroup billingCheckoutPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps billingCheckoutSessionGetLambdaProps;
+    public Function billingCheckoutSessionGetLambda;
+    public ILogGroup billingCheckoutSessionGetLambdaLogGroup;
+
     public AbstractApiLambdaProps billingPortalGetLambdaProps;
     public Function billingPortalGetLambda;
     public ILogGroup billingPortalGetLambdaLogGroup;
@@ -244,6 +248,75 @@ public class BillingStack extends Stack {
                 this.billingCheckoutPostLambda.getNode().getId());
 
         // ============================================================================
+        // Billing Checkout Session GET Lambda (JWT auth)
+        // ============================================================================
+        var billingCheckoutSessionGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            billingCheckoutSessionGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            billingCheckoutSessionGetLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
+        var billingCheckoutSessionGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().billingCheckoutSessionGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billingCheckoutSessionGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().billingCheckoutSessionGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billingCheckoutSessionGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().billingCheckoutSessionGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().billingCheckoutSessionGetLambdaCustomAuthorizer)
+                        .environment(billingCheckoutSessionGetLambdaEnv)
+                        .build());
+        this.billingCheckoutSessionGetLambdaProps = billingCheckoutSessionGetApiLambda.apiProps;
+        this.billingCheckoutSessionGetLambda = billingCheckoutSessionGetApiLambda.ingestLambda;
+        this.billingCheckoutSessionGetLambdaLogGroup = billingCheckoutSessionGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.billingCheckoutSessionGetLambdaProps);
+        // No table grants: the session is read from Stripe and matched against the caller's hashed sub.
+        SubHashSaltHelper.grantSaltAccess(this.billingCheckoutSessionGetLambda, region, account, props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.billingCheckoutSessionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe secret %s",
+                    this.billingCheckoutSessionGetLambda.getFunctionName(), props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            this.billingCheckoutSessionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for Stripe test secret %s",
+                    this.billingCheckoutSessionGetLambda.getFunctionName(), props.stripeTestSecretKeyArn());
+        }
+        infof(
+                "Created Billing Checkout Session GET Lambda %s",
+                this.billingCheckoutSessionGetLambda.getNode().getId());
+
+        // ============================================================================
         // Billing Portal GET Lambda (JWT auth)
         // ============================================================================
         var billingPortalGetLambdaEnv = new PopulatedMap<String, String>()
@@ -374,9 +447,17 @@ public class BillingStack extends Stack {
                 this,
                 props.resourceNamePrefix(),
                 "billing",
-                List.of(billingCheckoutPostApiLambda, billingPortalGetApiLambda, billingRecoverPostApiLambda));
+                List.of(
+                        billingCheckoutPostApiLambda,
+                        billingCheckoutSessionGetApiLambda,
+                        billingPortalGetApiLambda,
+                        billingRecoverPostApiLambda));
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "BillingCheckoutSessionGetLambdaArn",
+                this.billingCheckoutSessionGetLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());
         cfnOutput(this, "BillingRecoverPostLambdaArn", this.billingRecoverPostLambda.getFunctionArn());
 
