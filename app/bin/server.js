@@ -29,6 +29,7 @@ import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
 import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
+import { apiEndpoint as billingCheckoutSessionGetApiEndpoint } from "../functions/billing/billingCheckoutSessionGet.js";
 import { apiEndpoint as billingPortalGetApiEndpoint } from "../functions/billing/billingPortalGet.js";
 import { apiEndpoint as billingRecoverPostApiEndpoint } from "../functions/billing/billingRecoverPost.js";
 import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billing/billingWebhookPost.js";
@@ -232,6 +233,7 @@ passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
 billingCheckoutPostApiEndpoint(app);
+billingCheckoutSessionGetApiEndpoint(app);
 billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
