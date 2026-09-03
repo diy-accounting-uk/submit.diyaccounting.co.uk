@@ -36,7 +36,7 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 | C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | started |
 | D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | started |
 | E docs-profiles | Sonnet | B11a.1, B27c.1, B32a.1 | started |
-| F itsa-test-user | Sonnet | B10a.1 | started |
+| F itsa-test-user | Sonnet | B10a.1 | committed on `claude/itsa-test-user`; push needs a git credential with `workflow` scope |
 | G alarm-audit | Haiku | B30a | waits for `aws sso login` |
 
 #### Track A — GA4 purchase funnel
