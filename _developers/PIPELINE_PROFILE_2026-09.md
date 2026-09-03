@@ -112,11 +112,11 @@ strong evidence the account's concurrent-job budget was saturated by that fan-ou
    critical-path minutes (26%) are `destroy-previous`, which per `deploy.yml`'s `needs:` only runs
    after the web-tests pass and the SSM parameter is written. Its own work (sweeping old stacks)
    only needs to know the current deployment's name, which `names` already provides — it does not
-   need the tests to have passed. Running it in parallel with `verify-api` → the 16 web-test jobs →
-   `disable-native-auth` → `set-last-known-good-deployment` (a 6.9-minute span in this prod run)
-   would let `destroy-previous` start at 38.2m instead of 45.0m, finishing at roughly 54.4m instead
-   of 61.2m: **about 6.8 minutes off the prod critical path**. CI shows near-zero saving, since its
-   `destroy-previous` step already completes in under a minute.
+   need the tests to have passed. The profiled 6.8-minute saving assumes running destroy-previous in
+   parallel with web-tests, but this is not safe: the SSM safety check would fail. The safe change
+   (dropping `disable-native-auth` from `set-last-known-good-deployment`'s `needs:` list) saves
+   only **20–30 seconds**. CI shows near-zero saving, since its `destroy-previous` step already
+   completes in under a minute.
 
 2. **Reduce push-triggered workflow fan-out.** The observed 13.7-minute queue gap at the start of
    the prod run coincides with four other workflows firing from the same push. Moving `CodeQL` and
@@ -131,11 +131,43 @@ strong evidence the account's concurrent-job budget was saturated by that fan-ou
    4.7) and 6.0 minutes in CI. `deploy-publish`'s own steps (`deploy.yml:1207-1420`) fetch RUM
    config from `ObservabilityStack` (an env-level stack, unrelated to `deploy-edge`) and compare a
    commit-hash file served from `needs.names.outputs.base-url` — the live CloudFront URL — before
-   deploying `PublishStack`. That commit-hash check is the one step visibly tied to the edge
-   distribution being live; whether `PublishStack`'s own CDK deploy needs `EdgeStack` fully
-   finished, or only its CloudFront distribution ID (available before `EdgeStack`'s own deploy step
-   completes), is not established from the job timing alone and needs a source read of
-   `PublishStack.java` before splitting the dependency. If the commit-hash check is the only real
-   blocker, moving it into `deploy-edge` itself would let `deploy-publish`'s CDK deploy start
-   earlier: **up to about 3-5 minutes off the critical path**, unconfirmed without that follow-up
-   read.
+   deploying `PublishStack`. Splitting the job to run prep steps in parallel would require an
+   artifact hand-off, re-authenticating AWS twice, and keeping two jobs' outputs in sync. The
+   profiled 3–5-minute saving assumes the whole chain is soft, but only 56–73 seconds of prep has
+   no EdgeStack dependency, and splitting costs outweigh a **~1-minute saving** on the critical
+   path. Recommend not doing this one.
+
+## Cuts verified against the workflow source (2026-09-03)
+
+### Cut 1 — destroy-previous
+
+Source: `deploy.yml` and `.github/workflows/destroy-prod.yml` (lines 522–549). The `destroy-prod.yml` workflow independently re-reads the SSM parameter `/submit/prod/last-known-good-deployment` before destroying, and refuses if the target equals that value. Before `set-last-known-good-deployment` writes a new value to SSM, the parameter still holds the *previous* run's value — which is exactly the deployment `destroy-previous` wants to delete. The profiled 6.8-minute saving assumes starting destroy-previous in parallel with web-tests (which run before the SSM write). This is not safe: the job would fail with "Refusing to destroy: it is the last known good deployment."
+
+What is safe: `set-last-known-good-deployment` has `disable-native-auth` in its `needs:` list, but never checks its result — only web-test and set-origins in the `if:` condition. Dropping that entry lets the SSM write start in parallel with the Cognito toggle, not after it. This saves ~20–30 seconds (disable-native-auth ran 23s before set-last-known-good-deployment could start on this run).
+
+**Viable: No. Saving: 20–30 seconds, not 6.8 minutes.** The hardened ordering around set-origins/set-last-known-good-deployment/destroy-previous was stabilized 2026-09-01/02 after three live EdgeStack bugs. Recommend not re-opening this code for a sub-minute win.
+
+### Cut 2 — sibling workflow fan-out
+
+Source: `.github/workflows/deploy.yml` (lines 7–9) and `.github/workflows/deploy-environment.yml` (lines 3–5). Both workflows share the identical concurrency group string `deploy-${{ github.ref_name }}`. GitHub Actions concurrency groups are enforced repo-wide; with `cancel-in-progress: false`, the second run queues entirely until the first releases it. On the 2026-09-02 15:23 push, both workflows started within 1–2 seconds. `deploy-environment.yml` finished at 15:36:41; `deploy.yml`'s `params` job started at 15:36:44 — exactly matching the 13.7-minute queue gap.
+
+This may be intentional (both workflows read env-level resources ECR and Cognito pool by domain convention; concurrent updates could race) or accidental (group string likely copy-pasted). Decoupling requires a real decision first.
+
+**Option B** (if accidental): one-line change in `deploy-environment.yml` line 4:
+```yaml
+concurrency:
+  group: deploy-environment-${{ github.ref_name }}
+  cancel-in-progress: false
+```
+
+**Saving: up to 13.7 minutes off prod critical path if safe.** Before landing, confirm that `deploy.yml`'s `push-images`, `deploy-auth`, etc. steps already tolerate a mid-update ECR repo or Cognito pool (or add guards).
+
+**Viable: Yes, pending confirmation.** Real fork with two answers: serialize with a documenting comment, or decouple with resource-race guards.
+
+### Cut 3 — deploy-edge → deploy-publish
+
+Source: `infra/main/java/.../SubmitApplication.java` (lines 409–410, 421–423). `PublishStack` reads CDK construct references directly off `EdgeStack.distribution.getDistributionId()` and `edgeStack.originBucket.getBucketName()` in its constructor. This forces a CloudFormation cross-stack `Fn::ImportValue` dependency: `deploy-publish`'s CDK deploy cannot succeed unless EdgeStack has already deployed with those exports.
+
+The 56-second prep slice (checkout, npm, java, RUM lookup, hash compute) has no EdgeStack dependency and could theoretically run in parallel. But splitting requires an artifact hand-off (uploaded RUM-injected HTML, generated `submit.env`), re-authenticating AWS twice, and keeping two jobs' outputs in sync.
+
+**Viable: No. Saving: ~1 minute at best, not 3–5 minutes.** The profiled 3–5-minute estimate assumed the whole deploy-edge → deploy-publish → set-origins chain was soft; only 56–73 seconds of prep is actually independent. Artifact drift and double-auth surface area outweigh a one-minute win.
