@@ -37,7 +37,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | `agent-a9b1edbde8f87cb5b`, coding |
 | D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | waits on D1 landing |
-| F itsa-test-user | Sonnet | B10a.1 | `agent-a99bdf10689976267`, coding |
+| F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | `agent-abb91d69d590fe174`, coding |
 | I pipeline-cuts | Opus design, then Sonnet | B32a.2 | design wave running; coder waits on `scratchpad/design-track-i.md` |
@@ -153,17 +153,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
   Haiku. Follows B27b.1 and B27b.2 in the same track.
 
-#### Track F — ITSA test user (B10a.1)
-
-- [ ] **B10a.1. Make the `create-hmrc-test-user` workflow honour its `service-names` input.**
-  `.github/workflows/create-hmrc-test-user.yml` offers `mtd-vat,mtd-income-tax` (lines
-  16–23) but never passes the choice to `scripts/create-hmrc-test-user.js`, whose `main()`
-  calls `createHmrcTestUser(id, secret)` with no options, so `serviceNames` always defaults to
-  `["mtd-vat"]`. Wire the input through as an env var, read it in `main()`, and add a unit
-  test that the request body carries both services. Also surface the NINO in the job summary
-  and artifact alongside the VRN. Unblocks B10a.2 the moment its PR merges. **Source**:
-  BACKLOG 10a; repo find 2026-09-03. **Owner**: Claude Code. **Model**: Sonnet.
-
 #### Track G — Alarm audit (B30a)
 
 - [ ] **B30a. Alarm history audit.** Read-only: for every prod `check-*` alarm (151, four per
@@ -237,8 +226,8 @@ results back by pasting them into a Claude Code session or appending to the work
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
 - [ ] **O5 / B10a.2. Subscribe the sandbox application to the ITSA APIs and mint an ITSA test
   user.** In the HMRC developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in
-  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then, once Track
-  F's PR has merged, run the `create-hmrc-test-user` workflow with `mtd-vat,mtd-income-tax`
+  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then, once B10a.1
+  has deployed from the batch PR, run the `create-hmrc-test-user` workflow with `mtd-vat,mtd-income-tax`
   and keep the credentials artifact (NINO, user id, password). **Source**: BACKLOG 10a.
   **Owner**: Operator. The subscription step is ready now; the workflow run waits on B10a.1.
 - [ ] **O6 / B34a. Decide the Companies House shape**: whether the read-only company lookup
