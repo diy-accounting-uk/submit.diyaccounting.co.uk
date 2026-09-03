@@ -32,7 +32,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; scenario, 400-mapping, return-fallback and verify-wait fixes merged (last dd7f5b7d); push deploy 33800795175 green on re-run (post-return timing flake fixed 011e3cd6); sandbox-lane run 33807881305: obligations, view-return and penalties now pass on the real sandbox; liabilities and payments fail only on an audit assertion that expects zero 404s where HMRC's no-data 404 is legitimate, fix in flight |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; scenario, 400-mapping, return-fallback and verify-wait fixes merged (last dd7f5b7d); push deploy 33800795175 green on re-run (post-return timing flake fixed 011e3cd6); sandbox-lane run 33807881305: obligations, view-return and penalties now pass on the real sandbox; liabilities and payments audit assertion fixed dd8228e8; awaiting the next sandbox-lane run |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
