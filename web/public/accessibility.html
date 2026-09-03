@@ -63,6 +63,15 @@
       th {
         background: #f5f5f5;
       }
+      /* WCAG 2.5.8 Target Size (Minimum): a link that is the only content
+         of a table cell or list item sits below the line-height alone
+         (~17px) with no surrounding text to qualify for the inline-text
+         exception, so give it padding to reach the 24px minimum directly. */
+      table td a,
+      li > a:only-child {
+        display: inline-block;
+        padding: 4px 2px;
+      }
       .conformance-statement {
         background: #e8f5e9;
         border: 2px solid #4caf50;
