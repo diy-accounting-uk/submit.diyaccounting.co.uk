@@ -321,6 +321,34 @@ describe("bundlePost ingestHandler", () => {
     expect(body.status).toBe("granted");
   });
 
+  test("returns 409 and refuses a second day-guest request from the same user within the day", async () => {
+    const token = makeIdToken("user-day-pass-repeat");
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    let queryCallCount = 0;
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        queryCallCount++;
+        // The user already holds an unexpired day-guest allocation from earlier today.
+        return queryCallCount === 1 ? { Items: [{ bundleId: "day-guest", expiry: tomorrow }], Count: 1 } : { Items: [], Count: 0 };
+      }
+      return {};
+    });
+
+    const response = await bundlePostHandler(event);
+
+    expect(response.statusCode).toBe(409);
+    const body = parseResponseBody(response);
+    expect(body.status).toBe("already_granted");
+
+    // The existing allocation must not have been deleted.
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const deleteCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.DeleteCommand);
+    expect(deleteCalls.length).toBe(0);
+  });
+
   test("skips async request lookup when x-initial-request header is true", async () => {
     const token = makeIdToken("user-initial");
     const event = buildEventWithToken(token, { bundleId: "day-guest" });

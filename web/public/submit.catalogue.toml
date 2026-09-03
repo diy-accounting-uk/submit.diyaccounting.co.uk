@@ -31,7 +31,7 @@ allocation = "automatic"
 # Access to free authenticated activities including VAT submission for a limited time
 [[bundles]]
 id = "day-guest"
-name = "Day Guest"
+name = "Day pass"
 levelName = "Guest"
 enable = "always"
 hidden = false
