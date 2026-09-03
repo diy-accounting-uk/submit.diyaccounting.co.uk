@@ -40,7 +40,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
-| I pipeline-cuts | Sonnet design | B32a.2 | designed: cuts 1 and 3 not viable, cut 2 waits on O11; findings going into the profile doc |
+| I pipeline-cuts | Sonnet design | B32a.2 | designed, findings merged 5067f44d; cut 2 waits on O11 |
 
 #### Track B — VAT read endpoints (B32)
 
