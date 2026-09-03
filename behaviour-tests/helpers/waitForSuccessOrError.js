@@ -57,23 +57,31 @@ export async function waitForSuccessOrError(page, options = {}) {
     pollCount++;
 
     // 1. Check for error conditions FIRST (fail fast)
+    // The page can show more than one error banner at once (e.g. an authorizedFetch
+    // poll error alongside the page's own catch-block message) since status-messages.js
+    // never auto-hides type: "error" banners. .locator(selector) alone throws in
+    // Playwright strict mode when more than one element matches, and that throw was
+    // being swallowed by .catch(() => false), silently disabling fail-fast. Check every
+    // match instead of assuming there is exactly one.
     for (const condition of errorConditions) {
-      const errorLocator = page.locator(condition.selector);
-      const isVisible = await errorLocator.isVisible().catch(() => false);
-      if (isVisible) {
-        const text = await errorLocator.innerText().catch(() => "");
-        if (condition.textPattern) {
-          if (condition.textPattern.test(text)) {
-            const msg =
-              `[waitForSuccessOrError] FAIL FAST: Error detected in "${condition.selector}" ` +
-              `after ${Math.round(elapsed / 1000)}s while waiting for "${description}": "${text.substring(0, 200)}"`;
-            console.log(msg);
-            throw new Error(msg);
-          }
-        } else {
+      const errorLocators = await page
+        .locator(condition.selector)
+        .all()
+        .catch(() => []);
+      const visibleTexts = [];
+      for (const errorLocator of errorLocators) {
+        const isVisible = await errorLocator.isVisible().catch(() => false);
+        if (isVisible) {
+          const text = await errorLocator.innerText().catch(() => "");
+          visibleTexts.push(text);
+        }
+      }
+      if (visibleTexts.length > 0) {
+        const combinedText = visibleTexts.join(" | ");
+        if (!condition.textPattern || condition.textPattern.test(combinedText)) {
           const msg =
-            `[waitForSuccessOrError] FAIL FAST: Error element visible "${condition.selector}" ` +
-            `after ${Math.round(elapsed / 1000)}s while waiting for "${description}": "${text.substring(0, 200)}"`;
+            `[waitForSuccessOrError] FAIL FAST: Error detected in "${condition.selector}" ` +
+            `after ${Math.round(elapsed / 1000)}s while waiting for "${description}": "${combinedText.substring(0, 200)}"`;
           console.log(msg);
           throw new Error(msg);
         }

@@ -539,10 +539,19 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
       if (thisRequestHttp200OkResults === 1) {
         // Check that response body contains penalties data. HMRC's penalties response has no
         // wrapper key - the whole object is totalisations/lateSubmissionPenalty/latePaymentPenalty.
+        // The sandbox returns lateSubmissionPenalty, latePaymentPenalty, both, or neither on any
+        // given call, so only validate the shape of whichever fields are actually present.
         const responseBody = penaltiesRequest.httpResponse.body;
         expect(responseBody).toBeDefined();
-        expect(responseBody.lateSubmissionPenalty).toBeDefined();
-        expect(responseBody.latePaymentPenalty).toBeDefined();
+        expect(typeof responseBody).toBe("object");
+        if (responseBody.lateSubmissionPenalty !== undefined) {
+          expect(typeof responseBody.lateSubmissionPenalty).toBe("object");
+          expect(Array.isArray(responseBody.lateSubmissionPenalty.details)).toBe(true);
+        }
+        if (responseBody.latePaymentPenalty !== undefined) {
+          expect(typeof responseBody.latePaymentPenalty).toBe("object");
+          expect(Array.isArray(responseBody.latePaymentPenalty.details)).toBe(true);
+        }
         console.log("[DynamoDB Assertions]: VAT penalties response validated successfully");
       }
       http200OkResults += thisRequestHttp200OkResults;
