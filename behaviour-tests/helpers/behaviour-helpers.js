@@ -120,6 +120,15 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const hmrcVatObligationGetAsyncTable = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcVatObligationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncTable, endpoint);
+
+    const hmrcVatLiabilitiesGetAsyncTable = process.env.HMRC_VAT_LIABILITIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatLiabilitiesGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatLiabilitiesGetAsyncTable, endpoint);
+
+    const hmrcVatPaymentsGetAsyncTable = process.env.HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatPaymentsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatPaymentsGetAsyncTable, endpoint);
+
+    const hmrcVatPenaltiesGetAsyncTable = process.env.HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatPenaltiesGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatPenaltiesGetAsyncTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
