@@ -408,6 +408,43 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
+  test("allowSandboxObligations: falls back to another fulfilled obligation when the exact date match 404s", async () => {
+    // The requested dates match "18A1" exactly, but the sandbox holds no canned return for it -
+    // the other fulfilled obligation in the same window ("17A2") must still be tried.
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [
+          { periodKey: "18A1", start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F" },
+          { periodKey: "17A2", start: "2020-04-01", end: "2020-06-30", status: "F" },
+        ],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    mockHmrcError(mockFetch, 404, {});
+    const vatReturn = { periodKey: "17A2", totalVatDue: 250 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSandboxObligations: "true",
+      },
+      headers: {
+        authorization: "Bearer test-token",
+        hmrcAccount: "sandbox",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
   test("poll after successful retrieval returns persisted result without re-resolving periodKey", async () => {
     const persistedVatReturn = { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 };
 

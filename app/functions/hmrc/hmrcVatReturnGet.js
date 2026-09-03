@@ -278,6 +278,15 @@ export async function ingestHandler(event) {
         const matchedObligation = findObligationByDateRange(obligationsArray, periodStart, periodEnd);
         let resolvedPeriodKey = matchedObligation?.status === "F" ? matchedObligation.periodKey : null;
 
+        // The requested dates can match a fulfilled obligation exactly and still 404 in the
+        // sandbox - it doesn't hold a canned return for every fulfilled obligation it lists.
+        // Keep the other fulfilled obligations from the same window as fallbacks to try in turn.
+        if (resolvedPeriodKey && allowSandboxObligations) {
+          sandboxFallbackPeriodKeys = obligationsArray
+            .filter((o) => o.status === "F" && o.periodKey !== resolvedPeriodKey)
+            .map((o) => o.periodKey.toUpperCase());
+        }
+
         // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
         // use the first available fulfilled obligation instead of erroring. The sandbox may hold
         // no canned return for that period, so keep the rest as fallbacks to try in turn.
