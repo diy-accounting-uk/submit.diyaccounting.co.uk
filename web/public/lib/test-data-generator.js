@@ -239,6 +239,54 @@ function populateVatObligationsForm() {
   console.log("[Test Data] Populated VAT obligations form with test data");
 }
 
+/**
+ * Populate the VAT liabilities form with test data
+ * Used in vatLiabilities.html
+ */
+function populateVatLiabilitiesForm() {
+  const vrnInput = document.getElementById("vrn");
+  const fromDateInput = document.getElementById("fromDate");
+  const toDateInput = document.getElementById("toDate");
+
+  const dateRange = generateTestDateRange();
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+  if (fromDateInput) fromDateInput.value = dateRange.from;
+  if (toDateInput) toDateInput.value = dateRange.to;
+
+  console.log("[Test Data] Populated VAT liabilities form with test data");
+}
+
+/**
+ * Populate the VAT payments form with test data
+ * Used in vatPayments.html
+ */
+function populateVatPaymentsForm() {
+  const vrnInput = document.getElementById("vrn");
+  const fromDateInput = document.getElementById("fromDate");
+  const toDateInput = document.getElementById("toDate");
+
+  const dateRange = generateTestDateRange();
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+  if (fromDateInput) fromDateInput.value = dateRange.from;
+  if (toDateInput) toDateInput.value = dateRange.to;
+
+  console.log("[Test Data] Populated VAT payments form with test data");
+}
+
+/**
+ * Populate the VAT penalties form with test data
+ * Used in vatPenalties.html - VRN only, this endpoint has no date range
+ */
+function populateVatPenaltiesForm() {
+  const vrnInput = document.getElementById("vrn");
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+
+  console.log("[Test Data] Populated VAT penalties form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -251,5 +299,8 @@ if (typeof window !== "undefined") {
     populateSubmitVatForm,
     populateViewVatReturnForm,
     populateVatObligationsForm,
+    populateVatLiabilitiesForm,
+    populateVatPaymentsForm,
+    populateVatPenaltiesForm,
   };
 }

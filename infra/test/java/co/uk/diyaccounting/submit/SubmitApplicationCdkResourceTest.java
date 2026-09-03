@@ -77,8 +77,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 8);
-        assertStackHealthAlarm(hmrcStackTemplate, 5, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 14);
+        assertStackHealthAlarm(hmrcStackTemplate, 8, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -163,7 +163,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 40);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 46);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

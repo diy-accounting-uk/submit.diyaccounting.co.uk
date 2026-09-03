@@ -231,6 +231,36 @@ paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 hmrcScopesRequired = ["read:vat"]
 
 [[activities]]
+id = "vat-liabilities"
+name = "VAT Liabilities (HMRC)"
+display = "always-with-upsell"
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["read:vat"]
+
+[[activities]]
+id = "vat-payments"
+name = "VAT Payments (HMRC)"
+display = "always-with-upsell"
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["read:vat"]
+
+[[activities]]
+id = "vat-penalties"
+name = "VAT Penalties (HMRC)"
+display = "always-with-upsell"
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat.*"]
+hmrcScopesRequired = ["read:vat"]
+
+[[activities]]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"

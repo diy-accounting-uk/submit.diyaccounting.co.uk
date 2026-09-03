@@ -47,6 +47,18 @@ public class HmrcStack extends Stack {
     public Function hmrcVatObligationGetLambda;
     public ILogGroup hmrcVatObligationGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcVatLiabilitiesGetLambdaProps;
+    public Function hmrcVatLiabilitiesGetLambda;
+    public ILogGroup hmrcVatLiabilitiesGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcVatPaymentsGetLambdaProps;
+    public Function hmrcVatPaymentsGetLambda;
+    public ILogGroup hmrcVatPaymentsGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcVatPenaltiesGetLambdaProps;
+    public Function hmrcVatPenaltiesGetLambda;
+    public ILogGroup hmrcVatPenaltiesGetLambdaLogGroup;
+
     public AbstractApiLambdaProps hmrcVatReturnGetLambdaProps;
     public Function hmrcVatReturnGetLambda;
     public ILogGroup hmrcVatReturnGetLambdaLogGroup;
@@ -141,6 +153,24 @@ public class HmrcStack extends Stack {
                 this,
                 "ImportedHmrcVatObligationGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Liabilities GET async request table
+        ITable hmrcVatLiabilitiesGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatLiabilitiesGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Payments GET async request table
+        ITable hmrcVatPaymentsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatPaymentsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Penalties GET async request table
+        ITable hmrcVatPenaltiesGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatPenaltiesGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName);
 
         // Lookup existing DynamoDB Receipts Table
         ITable receiptsTable = Table.fromTableName(
@@ -413,6 +443,234 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());
 
+        // VAT liabilities GET
+        var vatLiabilitiesLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_VAT_LIABILITIES_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcVatLiabilitiesGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatLiabilitiesGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatLiabilitiesGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatLiabilitiesGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatLiabilitiesGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatLiabilitiesGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatLiabilitiesGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatLiabilitiesGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcVatLiabilitiesGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatLiabilitiesGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatLiabilitiesGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatLiabilitiesGetLambdaCustomAuthorizer)
+                        .environment(vatLiabilitiesLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        vatLiabilitiesLambdaEnv.put("SQS_QUEUE_URL", hmrcVatLiabilitiesGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcVatLiabilitiesGetLambdaProps = hmrcVatLiabilitiesGetLambdaUrlOrigin.apiProps;
+        this.hmrcVatLiabilitiesGetLambda = hmrcVatLiabilitiesGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcVatLiabilitiesGetLambdaLogGroup = hmrcVatLiabilitiesGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatLiabilitiesGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for VAT liabilities with ingestHandler %s and worker %s",
+                this.hmrcVatLiabilitiesGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatLiabilitiesGetWorkerLambdaHandler);
+
+        // Grant the VAT liabilities Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatLiabilitiesGetLambda, hmrcVatLiabilitiesGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatLiabilitiesGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcVatLiabilitiesGetLambda.getFunctionName());
+
+        // VAT payments GET
+        var vatPaymentsLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcVatPaymentsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcVatPaymentsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatPaymentsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatPaymentsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatPaymentsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatPaymentsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatPaymentsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatPaymentsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatPaymentsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatPaymentsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatPaymentsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatPaymentsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatPaymentsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcVatPaymentsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatPaymentsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatPaymentsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatPaymentsGetLambdaCustomAuthorizer)
+                        .environment(vatPaymentsLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        vatPaymentsLambdaEnv.put("SQS_QUEUE_URL", hmrcVatPaymentsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcVatPaymentsGetLambdaProps = hmrcVatPaymentsGetLambdaUrlOrigin.apiProps;
+        this.hmrcVatPaymentsGetLambda = hmrcVatPaymentsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcVatPaymentsGetLambdaLogGroup = hmrcVatPaymentsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatPaymentsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for VAT payments with ingestHandler %s and worker %s",
+                this.hmrcVatPaymentsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatPaymentsGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatPaymentsGetWorkerLambdaHandler);
+
+        // Grant the VAT payments Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatPaymentsGetLambda, hmrcVatPaymentsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatPaymentsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcVatPaymentsGetLambda.getFunctionName());
+
+        // VAT penalties GET
+        var vatPenaltiesLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcVatPenaltiesGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcVatPenaltiesGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatPenaltiesGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatPenaltiesGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatPenaltiesGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatPenaltiesGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatPenaltiesGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatPenaltiesGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatPenaltiesGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcVatPenaltiesGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatPenaltiesGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatPenaltiesGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatPenaltiesGetLambdaCustomAuthorizer)
+                        .environment(vatPenaltiesLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        vatPenaltiesLambdaEnv.put("SQS_QUEUE_URL", hmrcVatPenaltiesGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcVatPenaltiesGetLambdaProps = hmrcVatPenaltiesGetLambdaUrlOrigin.apiProps;
+        this.hmrcVatPenaltiesGetLambda = hmrcVatPenaltiesGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcVatPenaltiesGetLambdaLogGroup = hmrcVatPenaltiesGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatPenaltiesGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for VAT penalties with ingestHandler %s and worker %s",
+                this.hmrcVatPenaltiesGetLambda.getNode().getId(),
+                props.sharedNames().hmrcVatPenaltiesGetIngestLambdaHandler,
+                props.sharedNames().hmrcVatPenaltiesGetWorkerLambdaHandler);
+
+        // Grant the VAT penalties Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcVatPenaltiesGetLambda, hmrcVatPenaltiesGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatPenaltiesGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcVatPenaltiesGetLambda.getFunctionName());
+
         // VAT return GET
         var vatReturnGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -562,6 +820,9 @@ public class HmrcStack extends Stack {
                         exchangeHmrcTokenLambdaUrlOrigin,
                         submitVatLambdaUrlOrigin,
                         hmrcVatObligationGetLambdaUrlOrigin,
+                        hmrcVatLiabilitiesGetLambdaUrlOrigin,
+                        hmrcVatPaymentsGetLambdaUrlOrigin,
+                        hmrcVatPenaltiesGetLambdaUrlOrigin,
                         hmrcVatReturnGetLambdaUrlOrigin,
                         myReceiptsLambdaUrlOrigin));
 

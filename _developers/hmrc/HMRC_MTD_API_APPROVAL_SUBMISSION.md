@@ -96,14 +96,13 @@ Organisation Evidence:
 | HMRC Endpoint | Method | Status | Implementation File |
 |---------------|--------|--------|---------------------|
 | Retrieve VAT Obligations | GET `/organisations/vat/{vrn}/obligations` | Implemented | `hmrcVatObligationGet.js` |
+| Retrieve VAT Liabilities | GET `/organisations/vat/{vrn}/liabilities` | Implemented | `hmrcVatLiabilitiesGet.js` |
+| Retrieve VAT Payments | GET `/organisations/vat/{vrn}/payments` | Implemented | `hmrcVatPaymentsGet.js` |
+| Retrieve VAT Penalties | GET `/organisations/vat/{vrn}/penalties` | Implemented | `hmrcVatPenaltiesGet.js` |
 | Submit VAT Return | POST `/organisations/vat/{vrn}/returns` | Implemented | `hmrcVatReturnPost.js` |
 | View VAT Return | GET `/organisations/vat/{vrn}/returns/{periodKey}` | Implemented | `hmrcVatReturnGet.js` |
 | OAuth Token Exchange | POST `/oauth/token` | Implemented | `hmrcTokenPost.js` |
 | Fraud Prevention Validation | GET `/test/fraud-prevention-headers/validate` | Tested | Validation in tests |
-
-**Not Implemented (not required for MVP):**
-- View VAT Liabilities
-- View VAT Payments
 
 ## 1.3 Fraud Prevention Headers Compliance
 
@@ -487,6 +486,82 @@ Each header is traced from collection to transmission.
       "status": "O"
     }
   ]
+}
+```
+
+### VAT Liabilities GET
+
+**File**: `app/functions/hmrc/hmrcVatLiabilitiesGet.js`
+
+**Response from HMRC (200 OK)**:
+```json
+{
+  "liabilities": [
+    {
+      "taxPeriod": {
+        "from": "2024-01-01",
+        "to": "2024-03-31"
+      },
+      "type": "VAT Return Debit Charge",
+      "originalAmount": 1000.00,
+      "outstandingAmount": 250.00,
+      "due": "2024-05-07"
+    }
+  ]
+}
+```
+
+### VAT Payments GET
+
+**File**: `app/functions/hmrc/hmrcVatPaymentsGet.js`
+
+**Response from HMRC (200 OK)**:
+```json
+{
+  "payments": [
+    {
+      "amount": 1000.00,
+      "received": "2024-05-06"
+    }
+  ]
+}
+```
+
+### VAT Penalties GET
+
+**File**: `app/functions/hmrc/hmrcVatPenaltiesGet.js`
+
+**Response from HMRC (200 OK)**:
+```json
+{
+  "totalisations": {
+    "lateSubmissionPenaltyTotalValue": 0,
+    "penalisedPrincipalTotal": 0,
+    "latePaymentPenaltyPostedTotal": 0,
+    "latePaymentPenaltyEstimateTotal": 0
+  },
+  "lateSubmissionPenalty": {
+    "summary": {
+      "activePenaltyPoints": 1,
+      "inactivePenaltyPoints": 0,
+      "periodOfComplianceAchievement": "2025-04-01",
+      "regimeThreshold": 4,
+      "penaltyChargeAmount": 0
+    },
+    "details": [
+      {
+        "penaltyNumber": "12345678901234",
+        "penaltyOrder": "01",
+        "penaltyCategory": "point",
+        "penaltyStatus": "active",
+        "penaltyCreationDate": "2024-07-01",
+        "penaltyExpiryDate": "2026-07-01"
+      }
+    ]
+  },
+  "latePaymentPenalty": {
+    "details": []
+  }
 }
 ```
 
