@@ -226,7 +226,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   if (envName !== "prod") {
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);

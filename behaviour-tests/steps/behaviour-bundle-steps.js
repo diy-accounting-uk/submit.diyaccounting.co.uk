@@ -6,8 +6,20 @@
 import { expect, test } from "@playwright/test";
 import { loggedClick, timestamp } from "../helpers/behaviour-helpers.js";
 import { getStripeClient } from "@app/lib/stripeClient.js";
+import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-bundle-steps";
+
+const catalogue = loadCatalogFromRoot();
+
+// Resolves a bundle's catalogue id from its display name by looking it up in the catalogue,
+// so a display-name change (e.g. "Day Guest" -> "Day pass") never breaks the id used for API
+// calls. Falls back to a lowercased, hyphenated form of the name for bundles the catalogue
+// doesn't define (e.g. the test-only "Test" bundle).
+function resolveBundleId(bundleName) {
+  const catalogBundle = catalogue.bundles?.find((b) => b.name === bundleName);
+  return catalogBundle ? catalogBundle.id : bundleName.toLowerCase().replace(/\s+/g, "-");
+}
 
 export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to Bundles via main navigation", async () => {
@@ -128,7 +140,7 @@ export async function ensureBundlePresent(
   { isHidden = false, testPass = false } = {},
 ) {
   await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
-    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    const bundleId = resolveBundleId(bundleName);
     console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden}, testPass=${testPass})...`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
 
@@ -217,7 +229,7 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-remove-bundle.png` });
 
     // Look for the remove button in the current bundles section
-    const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
+    const bundleId = resolveBundleId(bundleName);
     const removeLocator = page.locator(`button[data-remove-bundle-id="${bundleId}"]`);
     if (await removeLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
       await removeLocator.click();

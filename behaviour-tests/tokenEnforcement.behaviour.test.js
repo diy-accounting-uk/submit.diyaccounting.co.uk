@@ -179,15 +179,15 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 2: Ensure Day Guest bundle is present (via test pass for sandbox routing)
+  // STEP 2: Ensure Day pass bundle is present (via test pass for sandbox routing)
   // ============================================================
-  await test.step("Ensure Day Guest bundle is present", async () => {
+  await test.step("Ensure Day pass bundle is present", async () => {
     console.log("\n" + "=".repeat(60));
-    console.log("STEP 2: Ensure Day Guest bundle");
+    console.log("STEP 2: Ensure Day pass bundle");
     console.log("=".repeat(60));
 
     await goToBundlesPage(page, screenshotPath);
-    await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+    await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   });
 
   // ============================================================

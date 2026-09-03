@@ -261,7 +261,7 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   // TODO: Support testing in non-sandbox mode with production credentials
   if (envName !== "prod") {
     await goToHomePage(page, screenshotPath);

@@ -275,7 +275,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   await goToHomePage(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
   await goToHomePage(page, screenshotPath);
