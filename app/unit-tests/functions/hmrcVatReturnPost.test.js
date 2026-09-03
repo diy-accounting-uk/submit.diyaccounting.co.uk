@@ -52,7 +52,10 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
-import { ingestHandler as hmrcVatReturnPostHandler } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import {
+  ingestHandler as hmrcVatReturnPostHandler,
+  extractAndValidateParameters,
+} from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -433,5 +436,63 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     expect(mockGetVatObligations).not.toHaveBeenCalled();
     // And no HMRC POST should be issued.
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("hmrcVatReturnPost extractAndValidateParameters allowSandboxObligations", () => {
+  function buildParamsEvent(allowSandboxObligations, hmrcAccount) {
+    return buildHmrcEvent({
+      headers: hmrcAccount ? { hmrcAccount } : {},
+      body: {
+        vatNumber: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        vatDue: 100,
+        accessToken: "test-token",
+        ...(allowSandboxObligations === undefined ? {} : { allowSandboxObligations }),
+      },
+    });
+  }
+
+  test("keeps strict obligation matching in sandbox when the flag is absent from the request", () => {
+    const event = buildParamsEvent(undefined, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("keeps strict obligation matching in sandbox when the flag is explicitly false", () => {
+    const event = buildParamsEvent(false, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("allows any open obligation in sandbox when the flag is true", () => {
+    const event = buildParamsEvent(true, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(true);
+  });
+
+  test("allows any open obligation in sandbox when the flag is the string 'true'", () => {
+    const event = buildParamsEvent("true", "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(true);
+  });
+
+  test("ignores the flag outside sandbox even when set to true", () => {
+    const event = buildParamsEvent(true, "live");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("ignores the flag when no hmrcAccount header is provided", () => {
+    const event = buildParamsEvent(true, undefined);
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
   });
 });

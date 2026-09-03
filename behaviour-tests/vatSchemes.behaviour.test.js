@@ -53,6 +53,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = isSandboxMode();
+const allowSandboxObligations = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -225,6 +226,7 @@ test.describe("VAT Scheme Support Tests", () => {
       null,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
     await submitFormVat(page, screenshotPath);
 
@@ -257,6 +259,7 @@ test.describe("VAT Scheme Support Tests", () => {
       null,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
     await submitFormVat(page, screenshotPath);
 
@@ -279,7 +282,7 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.RETAIL.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.RETAIL, null, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.RETAIL, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);
@@ -301,7 +304,7 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.MARGIN.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.MARGIN, null, runFraudPreventionHeaderValidation, screenshotPath);
+    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.MARGIN, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);
@@ -331,6 +334,7 @@ test.describe("VAT Scheme Support Tests", () => {
       null,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
     await submitFormVat(page, screenshotPath);
 
