@@ -32,34 +32,15 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | `agent-aa23d9d29041c29b6`, coding from `scratchpad/design-track-b.md` |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; code complete, awaiting the branch deploy and its three new web-test jobs |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
-| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d; remainder: forwarding the sandbox-obligations checkbox exposed a backend absent-means-true default that the behaviour tests relied on (test run 33767400509), fix in flight |
+| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d, sandbox-obligations fix merged b02fcf43; remainder: same absent-means-true default in `hmrcVatReturnGet.js`, fix in flight |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
 | D2 accessibility review | Sonnet | B27b.2, B27b.3 | merged 3ada9169; code complete, awaiting the branch deploy |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
 | I pipeline-cuts | Sonnet design | B32a.2 | designed, findings merged 5067f44d; cut 2 waits on O11 |
-
-#### Track B — VAT read endpoints (B32)
-
-- [ ] **B32.1. VAT liabilities page and Lambda.** `hmrcVatLiabilitiesGet.js` calling
-  `GET /organisations/vat/{vrn}/liabilities` with fraud headers, following
-  `hmrcVatObligationGet.js` (stub via `TEST_VAT_LIABILITY`, simulator route, CDK function and
-  API route in `HmrcStack.java`/`ApiStack`, `Gov-Test-Scenario` passthrough);
-  `web/public/hmrc/vat/vatLiabilities.html` following `vatObligations.html` (OAuth with
-  `read:vat`, table, empty state, back link); unit tests; `vatLiabilities.behaviour.test.js`
-  with `-proxy`/`-simulator`/`-ci` variants and a `synthetic-test.yml` entry. This one sets
-  the pattern for B32.2 and B32.3. **Source**: BACKLOG 32; issue #19;
-  `_developers/backlog/vat-api-operations.md`. **Owner**: Claude Code. **Model**: Opus.
-- [ ] **B32.2. VAT payments page and Lambda**, same shape as B32.1 for
-  `GET /organisations/vat/{vrn}/payments`. **Source**: BACKLOG 32; issue #19. **Owner**: Claude
-  Code. **Model**: Sonnet. Follows B32.1 in the same track.
-- [ ] **B32.3. VAT penalties page and Lambda**, same shape for
-  `GET /organisations/vat/{vrn}/penalties`, plus `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md`
-  and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
-  **Owner**: Claude Code. **Model**: Sonnet. Follows B32.2 in the same track.
 
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
