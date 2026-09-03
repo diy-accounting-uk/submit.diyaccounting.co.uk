@@ -1900,7 +1900,7 @@ Alarm.Builder.create(this, "ApiAuthFailuresAlarm")
 ### Phase 6: Documentation & Compliance
 29. [ ] Create postmortem template
 30. [ ] Create customer notification templates
-31. [ ] Create ICO notification template
+31. [x] Create ICO notification template — see `RUNBOOK_INFORMATION_SECURITY.md` section 6.7
 32. [ ] Document evidence collection for SOC 2 / ISO 27001
 33. [ ] Schedule annual tabletop for regulatory notification drill
 

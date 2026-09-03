@@ -507,6 +507,50 @@ Pages `cognito-idp list-users` and calls `admin-user-global-sign-out` per user. 
 
 **7. Then 6.2**, the 72-hour notification path, unchanged.
 
+### 6.7 ICO Breach Notification Template
+
+Use this once 6.2 has assessed impact and containment is under way. The 72-hour clock starts when
+the organisation becomes aware of the breach, not when the report is filed.
+
+**Who decides to report**: the operator. The ICO's own guidance says report unless the breach is
+unlikely to result in a risk to people's rights and freedoms — treat that as the default and only
+skip reporting when the reasoning is written down.
+
+**What to record, as soon as containment starts**:
+
+- Date and time the breach happened, and date and time it was discovered (these can differ; the
+  72 hours runs from discovery).
+- What happened, in plain terms (e.g. "OAuth refresh token exposed in a public log").
+- Which AWS account(s) and which data stores were involved (see 6.1's account table).
+- Categories of personal data involved (e.g. HMRC receipts, OAuth tokens, email addresses) and an
+  approximate number of affected users.
+- What containment steps were taken and when (credential rotation, forced logout, etc.).
+- Likely consequences for affected individuals, and whether the risk is "high" (triggers direct
+  user notification, not just ICO notification).
+
+**How to report**: email the completed report to icocasework@ico.org.uk with "Personal data breach
+notification" in the subject line, or use the ICO's online form at
+[ico.org.uk/for-organisations/report-a-breach](https://ico.org.uk/for-organisations/report-a-breach/personal-data-breach/).
+Do not include the affected individuals' personal data (names, etc.) in the report itself — the ICO
+asks for that separately if needed.
+
+**Fields the ICO's form asks for**:
+
+- Reporter's name, email, and contact phone number, and a separate contact if not the reporter.
+- Organisation name and ICO registration number (see the Registration gap in `_developers/ICO_CHECKLIST.md`
+  before filing — a report during a lapsed registration should note the lapse).
+- Date and time of the breach, and date and time of discovery.
+- Description of the breach and how it happened.
+- Categories and approximate number of data subjects affected.
+- Categories and approximate number of personal data records affected.
+- Likely consequences of the breach.
+- Measures taken or proposed to address the breach and mitigate its effects.
+- Whether the breach has been reported to any other authority (e.g. HMRC's SDS Team, per 6.2).
+
+**After reporting**: notify affected users directly if the breach is likely to result in a high
+risk to them (6.2 step 4's "Affected users" line), and keep the incident record (6.2 step 5) as
+the evidence the ICO may ask for later.
+
 ---
 
 ## 7. Security Monitoring
