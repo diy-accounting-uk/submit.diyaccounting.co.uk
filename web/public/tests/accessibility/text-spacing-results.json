@@ -1,464 +1,189 @@
 {
   "testName": "WCAG 1.4.12 Text Spacing",
-  "baseUrl": "https://submit.diyaccounting.co.uk",
-  "timestamp": "2026-08-31T19:05:49.449Z",
+  "baseUrl": "http://localhost:56573",
+  "timestamp": "2026-09-03T14:02:57.460Z",
   "cssInjected": "* {\n    line-height: 1.5 !important;\n    letter-spacing: 0.12em !important;\n    word-spacing: 0.16em !important;\n  }\n  p {\n    margin-bottom: 2em !important;\n  }",
   "pages": [
     {
-      "url": "https://submit.diyaccounting.co.uk/",
-      "timestamp": "2026-08-31T19:05:49.536Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1364,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/",
+      "timestamp": "2026-09-03T14:02:57.541Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/about.html",
-      "timestamp": "2026-08-31T19:05:53.806Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 5400,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/about.html",
+      "timestamp": "2026-09-03T14:02:59.265Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/privacy.html",
-      "timestamp": "2026-08-31T19:05:59.066Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 13960,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/privacy.html",
+      "timestamp": "2026-09-03T14:03:00.636Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/terms.html",
-      "timestamp": "2026-08-31T19:06:02.726Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 8449,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/terms.html",
+      "timestamp": "2026-09-03T14:03:02.321Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/accessibility.html",
-      "timestamp": "2026-08-31T19:06:06.838Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 5361,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/accessibility.html",
+      "timestamp": "2026-09-03T14:03:03.781Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/auth/login.html",
-      "timestamp": "2026-08-31T19:06:10.449Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 762,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/auth/login.html",
+      "timestamp": "2026-09-03T14:03:05.134Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/bundles.html",
-      "timestamp": "2026-08-31T19:06:15.181Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1266,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/bundles.html",
+      "timestamp": "2026-09-03T14:03:06.519Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/submitVat.html",
-      "timestamp": "2026-08-31T19:06:19.634Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 2667,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/hmrc/vat/submitVat.html",
+      "timestamp": "2026-09-03T14:03:07.909Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/vatObligations.html",
-      "timestamp": "2026-08-31T19:06:23.543Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1335,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/hmrc/vat/vatObligations.html",
+      "timestamp": "2026-09-03T14:03:09.275Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/hmrc/vat/viewVatReturn.html",
-      "timestamp": "2026-08-31T19:06:26.942Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1039,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/hmrc/vat/viewVatReturn.html",
+      "timestamp": "2026-09-03T14:03:10.659Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/hmrc/receipt/receipts.html",
-      "timestamp": "2026-08-31T19:06:30.861Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/hmrc/receipt/receipts.html",
+      "timestamp": "2026-09-03T14:03:12.031Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/guide.html",
-      "timestamp": "2026-08-31T19:06:35.079Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 4501,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/guide.html",
+      "timestamp": "2026-09-03T14:03:13.414Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/help.html",
-      "timestamp": "2026-08-31T19:06:39.955Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1440,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/help.html",
+      "timestamp": "2026-09-03T14:03:14.791Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/mcp.html",
-      "timestamp": "2026-08-31T19:06:44.169Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 1689,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/mcp.html",
+      "timestamp": "2026-09-03T14:03:16.157Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/diy-accounting-spreadsheets.html",
-      "timestamp": "2026-08-31T19:06:48.327Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 5431,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/diy-accounting-spreadsheets.html",
+      "timestamp": "2026-09-03T14:03:17.582Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/diy-accounting-limited.html",
-      "timestamp": "2026-08-31T19:06:53.290Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 2048,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/diy-accounting-limited.html",
+      "timestamp": "2026-09-03T14:03:18.974Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/spreadsheets.html",
-      "timestamp": "2026-08-31T19:06:57.356Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 5767,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/spreadsheets.html",
+      "timestamp": "2026-09-03T14:03:20.377Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/404-error-distribution.html",
-      "timestamp": "2026-08-31T19:07:02.270Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/404-error-distribution.html",
+      "timestamp": "2026-09-03T14:03:21.752Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/404-error-origin.html",
-      "timestamp": "2026-08-31T19:07:06.668Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/404-error-origin.html",
+      "timestamp": "2026-09-03T14:03:23.128Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/403.html",
-      "timestamp": "2026-08-31T19:07:10.309Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/403.html",
+      "timestamp": "2026-09-03T14:03:24.799Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/404.html",
-      "timestamp": "2026-08-31T19:07:13.564Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/404.html",
+      "timestamp": "2026-09-03T14:03:26.157Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/500.html",
-      "timestamp": "2026-08-31T19:07:17.402Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/500.html",
+      "timestamp": "2026-09-03T14:03:27.895Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/502.html",
-      "timestamp": "2026-08-31T19:07:20.970Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/502.html",
+      "timestamp": "2026-09-03T14:03:29.457Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/503.html",
-      "timestamp": "2026-08-31T19:07:24.655Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/503.html",
+      "timestamp": "2026-09-03T14:03:31.069Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     },
     {
-      "url": "https://submit.diyaccounting.co.uk/errors/504.html",
-      "timestamp": "2026-08-31T19:07:28.534Z",
-      "passed": false,
-      "clippedElements": [
-        {
-          "selector": "body",
-          "clippedX": true,
-          "clippedY": false,
-          "scrollWidth": 1114,
-          "clientWidth": 800,
-          "scrollHeight": 720,
-          "clientHeight": 720,
-          "textPreview": "Skip to main content\n    \n      \n        \n        "
-        }
-      ],
+      "url": "http://localhost:56573/errors/504.html",
+      "timestamp": "2026-09-03T14:03:32.585Z",
+      "passed": true,
+      "clippedElements": [],
       "error": null
     }
   ],
   "summary": {
     "total": 25,
-    "passed": 0,
-    "failed": 25,
+    "passed": 25,
+    "failed": 0,
     "errors": 0
   }
 }

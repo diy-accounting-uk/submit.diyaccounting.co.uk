@@ -162,10 +162,6 @@ button:focus {
 html,
 body {
   height: 100%;
-  /* The header's decorative background (header::after) extends past the
-     viewport edge by design (left/right: -5%) before its rotateX transform;
-     clip that instead of letting it add real horizontal scroll room. */
-  overflow-x: hidden;
 }
 
 body {
@@ -204,6 +200,16 @@ header {
   margin-bottom: var(--spacing-xl);
   text-align: center;
   position: relative;
+  /* The decorative background (header::after) extends past the header's
+     edge by design (left/right: -5%) before its rotateX transform; clip
+     that here instead of on body, so it can't hide real content that
+     grows wider than the viewport (e.g. under WCAG 1.4.12 text spacing). */
+  overflow-x: hidden;
+  /* body is a column flex container; a non-visible overflow drops a flex
+     item's automatic minimum size to 0, so without this the header can be
+     shrunk to zero height whenever the page's content is taller than the
+     viewport. Keep it at its content size like the other flex items. */
+  flex-shrink: 0;
 }
 
 /* Spreadsheet grid receding behind the header into the horizon */
@@ -232,8 +238,10 @@ header::after {
 /* Header navigation */
 .header-nav {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  row-gap: 0.5em;
   margin-bottom: 1em;
   position: relative;
 }
@@ -327,8 +335,10 @@ header::after {
 
 .auth-section {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--spacing-md);
+  row-gap: 0.3em;
 }
 
 .entitlement-status {
@@ -922,13 +932,6 @@ footer {
 
   h1 {
     font-size: 1.8em;
-  }
-
-  .header-nav {
-    flex-direction: row;
-    flex-wrap: wrap;
-    row-gap: 0.5em;
-    justify-content: space-between;
   }
 
   .auth-section {
