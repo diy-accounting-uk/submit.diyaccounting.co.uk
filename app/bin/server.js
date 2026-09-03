@@ -243,6 +243,7 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
 
+// 0 means ephemeral: the OS assigns a free port, read back below once the server is listening.
 const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
@@ -322,8 +323,11 @@ if (__runDirect) {
       logger.info(message);
     });
   } else {
-    app.listen(TEST_SERVER_HTTP_PORT, () => {
-      const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
+    const server = app.listen(TEST_SERVER_HTTP_PORT, () => {
+      // With TEST_SERVER_HTTP_PORT=0 (ephemeral), the requested port and the bound one differ —
+      // report the real one the OS actually assigned.
+      const actualPort = server.address().port;
+      const message = `Listening at http://127.0.0.1:${actualPort}`;
       console.log(message);
       logger.info(message);
     });
