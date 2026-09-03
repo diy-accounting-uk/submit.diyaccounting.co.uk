@@ -257,6 +257,24 @@ function populateVatLiabilitiesForm() {
   console.log("[Test Data] Populated VAT liabilities form with test data");
 }
 
+/**
+ * Populate the VAT payments form with test data
+ * Used in vatPayments.html
+ */
+function populateVatPaymentsForm() {
+  const vrnInput = document.getElementById("vrn");
+  const fromDateInput = document.getElementById("fromDate");
+  const toDateInput = document.getElementById("toDate");
+
+  const dateRange = generateTestDateRange();
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+  if (fromDateInput) fromDateInput.value = dateRange.from;
+  if (toDateInput) toDateInput.value = dateRange.to;
+
+  console.log("[Test Data] Populated VAT payments form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -270,5 +288,6 @@ if (typeof window !== "undefined") {
     populateViewVatReturnForm,
     populateVatObligationsForm,
     populateVatLiabilitiesForm,
+    populateVatPaymentsForm,
   };
 }

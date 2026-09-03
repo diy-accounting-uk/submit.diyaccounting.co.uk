@@ -20,6 +20,7 @@ import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcT
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
 import { apiEndpoint as hmrcVatLiabilitiesGetApiEndpoint } from "../functions/hmrc/hmrcVatLiabilitiesGet.js";
+import { apiEndpoint as hmrcVatPaymentsGetApiEndpoint } from "../functions/hmrc/hmrcVatPaymentsGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
@@ -225,6 +226,7 @@ hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
 hmrcVatLiabilitiesGetApiEndpoint(app);
+hmrcVatPaymentsGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 passGetApiEndpoint(app);
