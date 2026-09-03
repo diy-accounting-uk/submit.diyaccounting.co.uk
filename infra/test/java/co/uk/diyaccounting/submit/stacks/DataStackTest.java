@@ -96,6 +96,7 @@ class DataStackTest {
             dataStack.hmrcVatObligationGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcVatPaymentsGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatPenaltiesGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcApiRequestsTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.securityStateTable.getTableName(),

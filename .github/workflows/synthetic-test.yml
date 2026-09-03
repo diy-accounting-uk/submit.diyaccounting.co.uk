@@ -38,6 +38,7 @@ on:
           - 'getVatObligationsBehaviour'
           - 'getVatLiabilitiesBehaviour'
           - 'getVatPaymentsBehaviour'
+          - 'getVatPenaltiesBehaviour'
           - 'getVatReturnBehaviour'
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'

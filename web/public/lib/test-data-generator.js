@@ -275,6 +275,18 @@ function populateVatPaymentsForm() {
   console.log("[Test Data] Populated VAT payments form with test data");
 }
 
+/**
+ * Populate the VAT penalties form with test data
+ * Used in vatPenalties.html - VRN only, this endpoint has no date range
+ */
+function populateVatPenaltiesForm() {
+  const vrnInput = document.getElementById("vrn");
+
+  if (vrnInput) vrnInput.value = generateTestVrn();
+
+  console.log("[Test Data] Populated VAT penalties form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -289,5 +301,6 @@ if (typeof window !== "undefined") {
     populateVatObligationsForm,
     populateVatLiabilitiesForm,
     populateVatPaymentsForm,
+    populateVatPenaltiesForm,
   };
 }

@@ -1358,6 +1358,166 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
   });
 }
 
+/* VAT Penalties Journey Steps */
+
+export async function initVatPenalties(page, screenshotPath = defaultScreenshotPath) {
+  const activityButtonText = "VAT Penalties (HMRC)";
+  await test.step(`The user navigates to ${activityButtonText} and sees the penalties form`, async () => {
+    // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties.png` });
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Penalties", { screenshotPath, timeout: 60000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-penalties.png` });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-penalties.png` });
+    await expect(page.locator("#vatPenaltiesForm")).toBeVisible();
+  });
+}
+
+export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the VAT penalties form with VAT registration number", async () => {
+    const { hmrcVatNumber, testScenario, runFraudPreventionHeaderValidation } = penaltiesQuery || {};
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-fill-in.png` });
+
+    // Check if we're in sandbox mode and can use test data link
+    const testDataLink = page.locator("#testDataLink.visible");
+    const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
+
+    if (isSandboxMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in sandbox mode
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-penalties-click-test-data.png` });
+      await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-penalties-test-data-added.png` });
+
+      // Verify fields are populated
+      await expect(page.locator("#vrn")).not.toHaveValue("");
+    }
+
+    // Fill out the form manually - no date fields on this endpoint
+    await page.waitForTimeout(100);
+    await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-penalties-fill-in.png` });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
+      if (isSandboxMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      }
+      // Enable developer mode via sessionStorage and trigger UI update
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      console.log("Developer section visible (controlled by global developer mode)");
+      // Scroll, capture a pagedown
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-penalties-fill-in.png` });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-penalties-filled-in.png` });
+    }
+
+    await page.waitForTimeout(300);
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageUp");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-penalties-fill-in.png` });
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-penalties-fill-in-pagedown.png` });
+    await expect(page.locator("#retrieveBtn")).toBeVisible();
+  });
+}
+
+export async function submitVatPenaltiesForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the VAT penalties form", async () => {
+    // Take a focus change screenshot between last cell entry and submit
+    await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-submit.png` });
+    // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Submitting VAT penalties form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-penalties-submit.png` });
+  });
+}
+
+export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees VAT penalties results displayed", async () => {
+    // Back-compat: support verifyVatPenaltiesResults(page, screenshotPath)
+    if (arguments.length === 2 && typeof penaltiesQuery === "string") {
+      screenshotPath = penaltiesQuery;
+      penaltiesQuery = {};
+    }
+    const { testScenario } = penaltiesQuery || {};
+    const hasScenario = !!testScenario;
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "INSOLVENT_TRADER":
+        case "NOT_FOUND":
+          await page.waitForTimeout(500);
+          const penaltiesResults = page.locator("#penaltiesResults");
+          await expect(penaltiesResults).toBeHidden();
+          break;
+      }
+      return;
+    }
+    await waitForSuccessOrError(page, {
+      successSelector: "#penaltiesResults",
+      description: "VAT penalties results",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-penalties-results.png` });
+    const resultsContainer = page.locator("#penaltiesResults");
+    await expect(resultsContainer).toBeVisible();
+
+    // Either the overall empty-state message, or the summary block plus the two sub-tables,
+    // is displayed - never assert both shapes at once.
+    const lateSubmissionContainer = page.locator("#lateSubmissionPenaltiesTable");
+    await expect(lateSubmissionContainer).toBeVisible();
+    const noDataMessage = page.locator("#penaltiesResults .no-data");
+    const hasNoData = await noDataMessage.isVisible().catch(() => false);
+
+    if (hasNoData) {
+      console.log("[verifyVatPenaltiesResults] No penalties returned - acceptable for the default scenario");
+    } else {
+      console.log("[verifyVatPenaltiesResults] Penalties returned - validating summary and sub-table shape");
+      const summaryTable = page.locator("#penaltiesSummary table");
+      await expect(summaryTable).toBeVisible();
+    }
+
+    console.log("VAT penalties retrieval completed successfully");
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-penalties-success.png` });
+
+    // Scroll, capture a pagedown
+    await page.keyboard.press("PageDown");
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-penalties-results-pagedown.png` });
+  });
+}
+
 /* View VAT Return Journey Steps */
 
 export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {

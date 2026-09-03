@@ -230,6 +230,50 @@
         }
       }
     },
+    "/hmrc/vat/penalty" : {
+      "get" : {
+        "summary" : "Get VAT penalties from HMRC",
+        "description" : "Retrieves VAT penalties from HMRC for the authenticated user",
+        "operationId" : "getVatPenalties",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/hmrc/vat/payment" : {
       "get" : {
         "summary" : "Get VAT payments from HMRC",

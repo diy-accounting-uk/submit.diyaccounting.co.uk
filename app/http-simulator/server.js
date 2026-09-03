@@ -11,6 +11,7 @@ import { apiEndpoint as vatReturnsEndpoint } from "./routes/vat-returns.js";
 import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.js";
 import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
 import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
+import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
@@ -55,6 +56,7 @@ export function createApp() {
   vatObligationsEndpoint(app);
   vatLiabilitiesEndpoint(app);
   vatPaymentsEndpoint(app);
+  vatPenaltiesEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
 
