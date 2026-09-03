@@ -34,7 +34,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
 | B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | `agent-aa23d9d29041c29b6`, coding from `scratchpad/design-track-b.md` |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e; remainder: behaviour tests still say "Request Day Guest" (test run 33765563615 failed), fix in flight |
-| C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
+| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
 | D2 accessibility review | Sonnet | B27b.2, B27b.3 | `agent-aed74464c39bc8695`, reviewing (Opus overloaded) |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
@@ -60,28 +60,6 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   `GET /organisations/vat/{vrn}/penalties`, plus `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md`
   and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Sonnet. Follows B32.2 in the same track.
-
-#### Track C2 — Hygiene (B40e, B40a)
-
-- [ ] **B40e. Port the friendly-error branches, then delete the dead `submitVat` copy.** In
-  `web/public/hmrc/vat/submitVat.html` the inline `submitVat` (lines ~930–1000) is
-  overwritten at runtime by the module export from `web/public/lib/services/hmrc-service.js:244-297`,
-  so its `tokens_exhausted` (~972–982) and `hmrc_scope_insufficient` (~984–991) messages never
-  show; the backend still emits both reasons (`hmrcVatReturnPost.js:577`,
-  `app/lib/hmrcValidation.js:342`). Add those two cases to `hmrc-service.js` with unit tests,
-  then delete the inline copy, `submitVatWithCalculatedHeaders`'s call into it (~901–928) and
-  the `window.submitVat = submitVat` at ~1175. **Source**: BACKLOG 40e. **Owner**: Claude Code.
-  **Model**: Sonnet.
-- [ ] **B40a. Per-run ports for local behaviour tests.** Dynalite already takes
-  `DYNAMODB_PORT=0` for an ephemeral port (`app/bin/dynamodb.js:46-48`,
-  `behaviour-tests/helpers/behaviour-helpers.js:62-64`) but `.env.simulator` pins
-  `TEST_SERVER_HTTP_PORT=3000`, `TEST_HTTP_SIMULATOR_PORT=9000` and dynalite 9001, and
-  `scripts/start-simulator.sh` polls `localhost:9000/health`. Let `0` mean ephemeral for the
-  server (`app/bin/server.js:244`) and the simulator (`app/http-simulator/server.js:79`),
-  propagate the chosen ports to the spawned processes and the Playwright base URL in
-  `behaviour-helpers.js`, and make `start-simulator.sh` read the chosen port. Done when two
-  `npm run test:submitVatBehaviour-simulator` runs started together both pass. **Source**:
-  BACKLOG 40a. **Owner**: Claude Code. **Model**: Sonnet.
 
 #### Track D2 — Accessibility review (B27b)
 
