@@ -34,7 +34,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
 | B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; code complete, awaiting the branch deploy and its three new web-test jobs |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
-| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d, sandbox-obligations fix merged b02fcf43; remainder: same absent-means-true default in `hmrcVatReturnGet.js`, fix in flight |
+| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
 | D2 accessibility review | Sonnet | B27b.2, B27b.3 | merged 3ada9169; code complete, awaiting the branch deploy |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
