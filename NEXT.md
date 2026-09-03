@@ -24,7 +24,7 @@ unblock.
 
 ### Block 1 — Claude Code batch (dispatched 2026-09-03)
 
-Seven tracks, each an isolated worktree on its own `claude/*` branch, one PR per track with one
+Each track is an isolated worktree on its own `claude/*` branch, one PR per track with one
 commit per item, in the order listed. Tracks A, C and D touch some of the same pages in
 different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 `behaviour-helpers.js`); each brief names its region and the coordinator rebases at PR time.
@@ -35,9 +35,10 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
 | B vat-reads | Opus | B32b, B32.1, B32.2, B32.3 | started |
 | C catalogue-hygiene | Sonnet | B12a, B12b, B40e, B40a | started |
 | D accessibility | Opus | B27d, B27b.1, B27b.2, B27b.3 | started |
-| E docs-profiles | Sonnet | B11a.1, B27c.1, B32a.1 | started |
 | F itsa-test-user | Sonnet | B10a.1 | committed on `claude/itsa-test-user`; push needs a git credential with `workflow` scope |
 | G alarm-audit | Haiku | B30a | waits for `aws sso login` |
+| H privacy-fixes | Sonnet | B27c.3, B27c.4 | started |
+| I pipeline-cuts | Sonnet | B32a.2 | started |
 
 #### Track A — GA4 purchase funnel
 
@@ -159,34 +160,6 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
   Haiku. Follows B27b.1 and B27b.2 in the same track.
 
-#### Track E — Documents and profiles (B11a.1, B27c.1, B32a.1)
-
-- [ ] **B11a.1. Map HMRC's ITSA minimum functionality standards to the planned build.** Fetch
-  the published MTD ITSA software minimum functionality standards and the recognition
-  process pages from the developer hub, and write
-  `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`: one row per requirement, marked
-  planned-in-phase-1 (B10), planned-in-phase-2 (B11), or not planned. **Source**: BACKLOG 11a;
-  STRATEGY.md. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B27c.1. Write the ICO data-protection checklist and the breach-notification template.**
-  No single document exists; material is spread over `RUNBOOK_INFORMATION_SECURITY.md`,
-  `_developers/archive/PRIVACY_DUTIES.md` and `_developers/backlog/ALARM_VALIDATION_STRATEGY.md`
-  (open TODO at line ~1903: "Create ICO notification template"). Produce
-  `_developers/ICO_CHECKLIST.md` working through the ICO's small-business self-assessment
-  (lawful basis, privacy notice against `web/public/privacy.html`, retention: 28-day
-  `hmrc-api-requests` TTL and 7-year receipts, subject access and erasure via the two GDPR
-  workflows, processors: AWS, Stripe, Google, Telegram, breach process) with each line marked
-  met / gap, plus the 72-hour ICO breach template in the runbook. Leave a placeholder for the
-  registration number B27c.2 supplies. **Source**: BACKLOG 27c. **Owner**: Claude Code.
-  **Model**: Sonnet.
-- [ ] **B32a.1. Profile the deploy pipeline.** Pull per-job start/end from runs
-  33648185839 (prod, 61 min) and 33644482805 (ci, 23 min) with `gh api .../jobs`, and write
-  `_developers/PIPELINE_PROFILE_2026-09.md`: the critical path through `deploy.yml`'s DAG
-  (`push-images` → `deploy-auth|hmrc|account|billing` → `deploy-api` → `deploy-edge` →
-  `deploy-publish` → `set-origins` → `enable-native-auth` → 16 hand-listed `web-test-*` jobs →
-  `disable-native-auth` → `set-last-known-good-deployment` → `destroy-previous`), with minutes
-  per hop and the three largest cuts available. **Source**: BACKLOG 32a. **Owner**: Claude
-  Code. **Model**: Sonnet.
-
 #### Track F — ITSA test user (B10a.1)
 
 - [ ] **B10a.1. Make the `create-hmrc-test-user` workflow honour its `service-names` input.**
@@ -211,6 +184,35 @@ different regions (`submitVat.html`, `bundles.html`, `billingCheckoutPost.js`,
   **Source**: BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code.
   **Model**: Haiku.
 
+#### Track H — Privacy page and receipts retention (B27c remainder)
+
+- [ ] **B27c.3. Fix what the ICO checklist found in code.** `_developers/ICO_CHECKLIST.md`
+  lists: the receipts table never had TTL enabled (`app/data/dynamoDbReceiptRepository.js:46-49`
+  computes a 7-year TTL, `infra/.../stacks/DataStack.java:101-111` never calls
+  `ensureTimeToLive` for it, unlike every other table with a TTL); `web/public/privacy.html`
+  says the HMRC audit trail keeps 30 days (lines ~399–401) where code and runbook say 28;
+  Stripe and Telegram are live processors missing from its processor list; and lines ~624
+  and ~826 publish ICO registration ZB070902 as current when it expired 2026-05-23. Enable
+  the TTL (CDK test, `./mvnw clean verify`), fix the three privacy.html statements (leave the
+  ICO number in place for O3 to replace), unit tests where the pattern has them. **Source**:
+  BACKLOG 27c; Track E finding 2026-09-03. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B27c.4. Give subject access the same CI-wrapped path erasure has.** Erasure runs
+  through `delete-user-data.yml` and `delete-user-data-by-email.yml` (dry run, audited);
+  export is `scripts/export-user-data.js`, local only. Add `export-user-data.yml` mirroring
+  the erasure workflows' inputs, dry run and summary, uploading the export as a private
+  artifact. **Source**: BACKLOG 27c; Track E finding. **Owner**: Claude Code. **Model**:
+  Sonnet.
+
+#### Track I — Pipeline cuts (B32a.2)
+
+- [ ] **B32a.2. Make the three largest cuts** from `_developers/PIPELINE_PROFILE_2026-09.md`:
+  decouple `destroy-previous` from `set-last-known-good-deployment` in `deploy.yml` (~6.8 min
+  off prod's critical path); cut the push-triggered workflow fan-out that queued deploy.yml
+  for 13.7 min behind four sibling workflows (concurrency groups or trigger filters); and
+  confirm from `PublishStack.java` whether `deploy-publish` needs all of `deploy-edge` before
+  collapsing that hop. One PR per cut, each proven by the next run's timing. **Source**:
+  BACKLOG 32a. **Owner**: Claude Code. **Model**: Sonnet (Opus unavailable 2026-09-03).
+
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
 Browser and account work a workflow cannot do, plus the decisions that unblock Tier 2. Each
@@ -227,13 +229,20 @@ results back by pasting them into a Claude Code session or appending to the work
   recurring) and hand the two price ids to Claude Code, which puts them in `.env.ci` and
   `.env.prod` by PR; confirm the day pass numbers (3 tokens, 100 concurrent) or give new ones
   for B12a. **Source**: BACKLOG 12. **Owner**: Operator.
-- [ ] **O3 / B27c.2. Confirm the company's ICO registration** (data protection fee, controller
-  entry for DIY Accounting Limited, 06846849) and hand the registration number to Claude Code
-  for `_developers/ICO_CHECKLIST.md`; register if it has lapsed. **Source**: BACKLOG 27c.
-  **Owner**: Operator.
+- [ ] **O3 / B27c.2. Renew the company's ICO registration.** Registration ZB070902 (the
+  certificate PDF in the repo root) expired 2026-05-23 and `privacy.html` still publishes it
+  as current, so this is an active gap, not a check. Pay the fee for DIY Accounting Limited
+  (06846849) and hand the new number and expiry to Claude Code for
+  `_developers/ICO_CHECKLIST.md` and `privacy.html`. **Source**: BACKLOG 27c; Track E finding
+  2026-09-03. **Owner**: Operator.
 - [ ] **O4 / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not on
   the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
-  drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
+  drop it into `_developers/hmrc/`. In the same contact ask whether a production-credential
+  window for new ITSA quarterly-update products opens for 2027-28: HMRC's pages say the
+  2026-27 window is closed to new products
+  (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`; vendor contact
+  makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
+  and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
 - [ ] **O5 / B10a.2. Subscribe the sandbox application to the ITSA APIs and mint an ITSA test
   user.** In the HMRC developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in
   `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then, once Track
@@ -294,19 +303,15 @@ results back by pasting them into a Claude Code session or appending to the work
   routing rule or a runbook reads. CDK tests updated; `./mvnw clean verify`. **Source**:
   BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus. Blocked
   on B30a (Track G).
-- [ ] **B32a.2. Make the three largest cuts.** From B32a.1; likely candidates: a `matrix` for
-  the 16 `web-test-*` jobs, running `destroy-previous` alongside the tests instead of after
-  `set-last-known-good-deployment`, and collapsing the `deploy-edge` → `deploy-publish` serial
-  hop. One PR per cut, each proven by the next run's timing. **Source**: BACKLOG 32a.
-  **Owner**: Claude Code. **Model**: Opus. Blocked on B32a.1 (Track E).
 - [ ] **B12c remainder. Put the `resident-itsa` price ids into `.env.ci` and `.env.prod`** by
   PR once O2 hands them over. **Source**: BACKLOG 12. **Owner**: Claude Code. **Model**: Haiku.
   Blocked on O2.
-- [ ] **B27c.2 remainder. Record the ICO registration number in `_developers/ICO_CHECKLIST.md`**
-  once O3 hands it over. **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku.
-  Blocked on O3 and Track E.
+- [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
+  `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
+  **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
 
-Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 and B11a.1 exist; rows 34 and
+Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4 answers the
+production-window question; rows 34 and
 40d once O6 and O7 are answered.
 
 ## Discipline

@@ -81,20 +81,20 @@ and adjusts B12a if the numbers changed.
 
 ---
 
-## O3 / B27c.2 — ICO registration
+## O3 / B27c.2 — ICO registration (expired: renew)
 
-**Why.** The HMRC questionnaires commit the company to UK GDPR duties; the ICO checklist
-(Track E) needs the registration number and the renewal date.
+**Why.** Registration ZB070902 (certificate PDF in the repo root) expired on 23 May 2026 and
+`privacy.html` still publishes it as current. `_developers/ICO_CHECKLIST.md` marks this as
+the open gap. Renewal needs a payment, so the operator approves the final step.
 
 **Where.** https://ico.org.uk/ESDWebPages/Search (register of fee payers);
 https://ico.org.uk/for-organisations/data-protection-fee/ to pay or renew.
 
 **Steps.**
 1. Search the register for `DIY Accounting Limited` and separately for company number
-   `06846849`.
-2. If an entry exists: note the registration number (`Z…` or `ZA…`), tier, and expiry date.
-3. If nothing is found or it has expired: pay the fee (tier 1 for a company this size; the page shows the current
-   amount, with a small direct-debit discount). Operator approval needed before payment.
+   `06846849`, to confirm ZB070902 is no longer listed as current.
+2. Renew or re-register at the fee page (tier 1 for a company this size; the page shows the
+   current amount, with a small direct-debit discount). Operator approval needed before payment.
 
 **Hand back.** Registration number, tier, expiry date; or "registered today, number …".
 
@@ -120,9 +120,14 @@ questionnaire itself decides what evidence to prepare.
    existing VAT production credentials for "DIY Accounting Submit" and asking for the ITSA
    recognition questionnaire and the current minimum functionality standards document.
    Suggested subject: "ITSA software recognition questionnaire — DIY Accounting Submit".
-3. When the reply arrives, save attachments under `_developers/hmrc/`.
+3. In the same email ask whether a production-credential window for new ITSA
+   quarterly-update products opens for 2027-28. HMRC's pages say the 2026-27 window is
+   closed to new products (see `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`);
+   the vendor team address is makingtaxdigital-softwarevendors@hmrc.gov.uk.
+4. When the reply arrives, save attachments under `_developers/hmrc/`.
 
-**Hand back.** The file names dropped into `_developers/hmrc/`, or "emailed SDST on <date>".
+**Hand back.** The file names dropped into `_developers/hmrc/`, or "emailed SDST on <date>",
+and HMRC's answer on the 2027-28 window.
 
 ---
 
