@@ -35,8 +35,8 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | B vat-reads | Opus design, then Sonnet | B32.1, B32.2, B32.3 | design wave running; coder waits on `scratchpad/design-track-b.md` |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
-| D1 accessibility scans | Sonnet | B27d, B27b.1 | `agent-a9b1edbde8f87cb5b`, coding |
-| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | waits on D1 landing |
+| D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
+| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | dispatched after D1 |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
@@ -83,21 +83,8 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
   `npm run test:submitVatBehaviour-simulator` runs started together both pass. **Source**:
   BACKLOG 40a. **Owner**: Claude Code. **Model**: Sonnet.
 
-#### Tracks D1 and D2 — Accessibility (B27d, B27b)
+#### Track D2 — Accessibility review (B27b)
 
-- [ ] **B27d. Fix the text-spacing clipping regression.** `npm run
-  accessibility:text-spacing-prod` fails all 24 pages with `body (X overflow)`: with the WCAG
-  1.4.12 overrides injected by `scripts/text-spacing-test.js` (lines 81–90), some element with
-  `overflow: hidden` on every page clips. Reproduce on `-proxy`, find the shared CSS rule in
-  `web/public/css/` (never `web/public-simulator/`), fix it, re-run, and refresh
-  `web/public/tests/accessibility/text-spacing-results.json`. **Source**: BACKLOG 27d.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B27b.1. Re-run the automated WCAG 2.2 AA scans and fix what they find.** After B27d:
-  `npm run accessibility:proxy-report` (pa11y, axe 2.1/2.2, Lighthouse, text-spacing) against
-  the proxy variant, fix every finding in `web/public/`, and refresh the committed results
-  under `web/public/tests/accessibility/`. **Source**: BACKLOG 27b;
-  `_developers/hmrc/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md`. **Owner**:
-  Claude Code. **Model**: Sonnet. Follows B27d in the same track.
 - [ ] **B27b.2. Manual review of the criteria WCAG 2.2 added** (2.4.11 focus not obscured,
   2.5.7 dragging, 2.5.8 target size 24px, 3.2.6 consistent help, 3.3.7 redundant entry, 3.3.8
   accessible authentication) across the 24 pages in `scripts/text-spacing-test.js:51-77`,
@@ -107,7 +94,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 - [ ] **B27b.3. Refresh `web/public/accessibility.html`**: results table and date (currently
   "January 14, 2026"), and the `<meta name="description">` at line 9 that still says WCAG 2.1
   while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
-  Haiku. Follows B27b.1 and B27b.2 in the same track.
+  Haiku. Follows B27b.2 in the same track.
 
 #### Track G — Alarm audit (B30a)
 
