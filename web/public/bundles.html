@@ -548,6 +548,14 @@
         try {
           const bundleId = btn.getAttribute("data-bundle-id");
           const isSandbox = sessionStorage.getItem("hmrcAccount") === "sandbox";
+
+          if (typeof gtag === "function") {
+            gtag("event", "begin_checkout", {
+              currency: "GBP",
+              items: [{ item_id: bundleId, item_name: btn.getAttribute("data-bundle-name") || bundleId }],
+            });
+          }
+
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout-session", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1202,6 +1210,33 @@
         fetchMyGeneratedPasses(true);
       });
 
+      // --- GA4 purchase, reported on the Stripe redirect because that is where consent state lives
+      async function reportPurchase(sessionId) {
+        if (!sessionId || typeof gtag !== "function") return;
+        try {
+          const response = await window.fetchWithIdToken(
+            `/api/v1/billing/checkout-session/${encodeURIComponent(sessionId)}`,
+          );
+          if (!response.ok) return;
+          const session = await response.json();
+          gtag("event", "purchase", {
+            transaction_id: sessionId,
+            value: (session.amountTotal || 0) / 100,
+            currency: (session.currency || "gbp").toUpperCase(),
+            items: [
+              {
+                item_id: session.bundleId,
+                item_name: session.bundleId,
+                price: (session.amountTotal || 0) / 100,
+                quantity: 1,
+              },
+            ],
+          });
+        } catch (error) {
+          console.warn("Failed to report the purchase to analytics:", error);
+        }
+      }
+
       // --- page init
       try {
         sessionStorage.removeItem("currentActivity");
@@ -1218,9 +1253,11 @@
         const checkoutResult = urlParams.get("checkout");
         if (checkoutResult === "success") {
           showStatus("Subscription activated! Your bundle has been added.", "success");
+          reportPurchase(urlParams.get("session_id"));
           // Clear URL param without reload
           const url = new URL(window.location);
           url.searchParams.delete("checkout");
+          url.searchParams.delete("session_id");
           window.history.replaceState({}, "", url);
           // Invalidate bundle cache and re-fetch (retry if webhook hasn't fired yet)
           const refreshBundles = async () => {

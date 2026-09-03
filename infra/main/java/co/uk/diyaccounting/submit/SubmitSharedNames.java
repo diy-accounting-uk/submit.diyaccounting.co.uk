@@ -365,6 +365,15 @@ public class SubmitSharedNames {
     public boolean billingCheckoutPostLambdaJwtAuthorizer;
     public boolean billingCheckoutPostLambdaCustomAuthorizer;
 
+    public String billingCheckoutSessionGetIngestLambdaHandler;
+    public String billingCheckoutSessionGetIngestLambdaFunctionName;
+    public String billingCheckoutSessionGetIngestLambdaArn;
+    public String billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingCheckoutSessionGetLambdaHttpMethod;
+    public String billingCheckoutSessionGetLambdaUrlPath;
+    public boolean billingCheckoutSessionGetLambdaJwtAuthorizer;
+    public boolean billingCheckoutSessionGetLambdaCustomAuthorizer;
+
     public String billingPortalGetIngestLambdaHandler;
     public String billingPortalGetIngestLambdaFunctionName;
     public String billingPortalGetIngestLambdaArn;
@@ -1143,6 +1152,30 @@ public class SubmitSharedNames {
                 "Create billing checkout session",
                 "Creates a Stripe checkout session for subscription",
                 "createCheckoutSession"));
+
+        // Billing Checkout Session GET Lambda (JWT auth)
+        this.billingCheckoutSessionGetLambdaHttpMethod = HttpMethod.GET;
+        this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout-session/{id}";
+        this.billingCheckoutSessionGetLambdaJwtAuthorizer = true;
+        this.billingCheckoutSessionGetLambdaCustomAuthorizer = false;
+        var billingCheckoutSessionGetLambdaHandlerName = "billingCheckoutSessionGet.ingestHandler";
+        var billingCheckoutSessionGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingCheckoutSessionGetLambdaHandlerName);
+        this.billingCheckoutSessionGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingCheckoutSessionGetLambdaHandlerDashed);
+        this.billingCheckoutSessionGetIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingCheckoutSessionGetLambdaHandlerName);
+        this.billingCheckoutSessionGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingCheckoutSessionGetLambdaHandlerDashed);
+        this.billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.billingCheckoutSessionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingCheckoutSessionGetLambdaHttpMethod,
+                this.billingCheckoutSessionGetLambdaUrlPath,
+                "Retrieve a billing checkout session",
+                "Retrieves the amount, currency and bundle of the caller's own Stripe checkout session",
+                "getCheckoutSession",
+                List.of(new ApiParameter("id", "path", true, "The Stripe checkout session id"))));
 
         // Billing Portal GET Lambda (JWT auth)
         this.billingPortalGetLambdaHttpMethod = HttpMethod.GET;

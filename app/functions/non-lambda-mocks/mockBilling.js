@@ -15,7 +15,7 @@ export function apiEndpoint(app) {
   app.post("/api/v1/billing/checkout-session", async (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     const bundleId = req.body?.bundleId || "resident-pro";
-    const sessionId = `sim_cs_${Date.now()}`;
+    const sessionId = `cs_test_sim_${Date.now()}`;
 
     // Extract user sub from auth header so the GET /simulator/checkout can grant the bundle
     // (browser navigation to GET doesn't carry the Authorization header)
@@ -84,7 +84,13 @@ export function apiEndpoint(app) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
-    res.redirect(`${baseUrl}bundles.html?checkout=success`);
+    const sessionId = req.query.session || "";
+    res.redirect(`${baseUrl}bundles.html?checkout=success&session_id=${encodeURIComponent(sessionId)}`);
+  });
+
+  // Mock checkout session lookup — the values bundles.html reports as the GA4 purchase
+  app.get("/api/v1/billing/checkout-session/:id", (req, res) => {
+    res.json({ amountTotal: 999, currency: "gbp", bundleId: req.query.bundleId || "resident-pro" });
   });
 
   // Mock billing portal — redirects back to bundles page

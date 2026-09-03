@@ -491,6 +491,22 @@
         }
       }
     },
+    "/billing/checkout-session/{id}" : {
+      "get" : {
+        "summary" : "Retrieve a billing checkout session",
+        "description" : "Retrieves the amount, currency and bundle of the caller's own Stripe checkout session",
+        "operationId" : "getCheckoutSession",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Stripe checkout session id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/billing/recover" : {
       "post" : {
         "summary" : "Recover billing subscription",

@@ -702,22 +702,6 @@
           return;
         }
 
-        // GA4 ecommerce: begin_checkout when VAT return submission starts
-        if (typeof gtag === "function") {
-          gtag("event", "begin_checkout", {
-            currency: "GBP",
-            value: 0,
-            items: [
-              {
-                item_id: "vat-return",
-                item_name: "VAT Return",
-                price: 0,
-                currency: "GBP",
-              },
-            ],
-          });
-        }
-
         // Store submission data for the submission handler
         submissionData = {
           vatNumber,
@@ -1007,20 +991,10 @@
         // Handle both direct receipt object and wrapped response (from module's submitVat)
         const receipt = response.receipt ?? response;
 
-        // GA4 ecommerce: purchase when VAT return is successfully submitted
+        // A VAT return is the product being used, not a payment — `purchase` is reserved for Stripe checkout.
         if (typeof gtag === "function") {
-          gtag("event", "purchase", {
-            transaction_id: receipt.formBundleNumber || "",
-            value: 0,
-            currency: "GBP",
-            items: [
-              {
-                item_id: "vat-return",
-                item_name: "VAT Return",
-                price: 0,
-                currency: "GBP",
-              },
-            ],
+          gtag("event", "submit_vat_return", {
+            form_bundle_number: receipt.formBundleNumber || "",
           });
         }
 

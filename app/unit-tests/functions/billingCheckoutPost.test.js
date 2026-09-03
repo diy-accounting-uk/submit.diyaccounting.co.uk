@@ -109,7 +109,9 @@ describe("billingCheckoutPost", () => {
     expect(params.subscription_data.metadata.hashedSub).toBe(params.metadata.hashedSub);
     expect(params.subscription_data.metadata.bundleId).toBe("resident-pro");
     expect(params.line_items).toEqual([{ price: "price_test_123", quantity: 1 }]);
-    expect(params.success_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success");
+    expect(params.success_url).toBe(
+      "https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+    );
     expect(params.cancel_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=canceled");
   });
 

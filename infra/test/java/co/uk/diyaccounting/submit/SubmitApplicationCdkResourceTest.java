@@ -123,11 +123,12 @@ class SubmitApplicationCdkResourceTest {
         }
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
-        // 3 Lambdas: billingCheckoutPost(1), billingPortalGet(1), billingRecoverPost(1)
+        // 4 Lambdas: billingCheckoutPost(1), billingCheckoutSessionGet(1), billingPortalGet(1),
+        // billingRecoverPost(1)
         // billingWebhookPost moved to env-level BillingWebhookStack
         Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
-        billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
-        assertStackHealthAlarm(billingStackTemplate, 3, routedPrefixes);
+        billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 4);
+        assertStackHealthAlarm(billingStackTemplate, 4, routedPrefixes);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -163,7 +164,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 38);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 40);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
