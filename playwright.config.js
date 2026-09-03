@@ -44,7 +44,9 @@ export default defineConfig({
       testDir: "behaviour-tests",
       testMatch: ["**/submitVat.behaviour.test.js"],
       workers: 1,
-      outputDir: "./target/behaviour-test-results/",
+      // Overridable so two concurrent runs (see test:submitVatBehaviour-simulator) don't share
+      // one outputDir, where one run's cleanup can delete the other's in-flight trace artifacts.
+      outputDir: process.env.PLAYWRIGHT_SUBMITVAT_OUTPUT_DIR || "./target/behaviour-test-results/",
       timeout: 300_000,
     },
     {

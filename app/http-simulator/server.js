@@ -76,9 +76,13 @@ export function createApp() {
 
 // If run directly, start the server
 if (import.meta.url === `file://${process.argv[1]}`) {
+  // 0 means ephemeral: the OS assigns a free port, read back below once listening.
   const port = process.env.TEST_HTTP_SIMULATOR_PORT || 9000;
   const app = createApp();
-  app.listen(port, () => {
-    console.log(`[http-simulator] Server listening on http://localhost:${port}`);
+  const server = app.listen(port, () => {
+    // With TEST_HTTP_SIMULATOR_PORT=0 (ephemeral), the requested port and the bound one differ —
+    // report the real one the OS actually assigned.
+    const actualPort = server.address().port;
+    console.log(`[http-simulator] Server listening on http://localhost:${actualPort}`);
   });
 }
