@@ -32,7 +32,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | Track | Model | Items, in order | Worktree / status |
 |---|---|---|---|
 | A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e with the harness fix a9916f45 and the DataStack ordering fix a4b1af86; environment deploy 33775958480 and app deploy 33780222884 succeeded; remainder from tests-only run 33782787871 on ci: the shared wait helper hangs on stacked error banners, liabilities and payments pass HMRC's no-data 404 through as an error, view-return tries only the first fulfilled obligation, and the penalties test demands both penalty keys; fixes in flight |
+| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e with the harness fix a9916f45 and the DataStack ordering fix a4b1af86; environment deploy 33775958480 and app deploy 33780222884 succeeded; ci-lane fixes merged c5a82aa9 (wait helper, no-data 404 as empty result, sandbox return fallback, penalties assertion); code complete, awaiting the push deploy and a tests-only run with the sandbox lanes |
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
