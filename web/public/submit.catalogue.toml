@@ -119,6 +119,26 @@ allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
+# resident-itsa: ITSA (Income Tax Self Assessment) subscription — publicly visible, no pass required
+# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# Tokens: 100 granted, refreshing monthly
+# Enables: the self-employed activity (quarterly updates and annual declarations)
+# Hidden in all environments until the ITSA pages land (B10)
+[[bundles]]
+id = "resident-itsa"
+name = "Resident ITSA"
+description = "File Income Tax Self Assessment updates to HMRC. £0.99/month, cancel anytime."
+levelName = "Resident"
+enable = "always"
+hidden = false
+allocation = "on-subscription"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+# listedInEnvironments
+# ====================
+# Hidden in production until the ITSA pages (B10) exist to claim the self-employed activity
+
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
 # Payment: None (admin manually sends pass to verified customers via email support)
@@ -219,6 +239,16 @@ tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
 hmrcScopesRequired = ["read:vat"]
+
+[[activities]]
+id = "self-employed"
+name = "Self Assessment (HMRC)"
+display = "always-with-upsell"
+bundles = ["resident-itsa"]
+tokenCost = 1
+metered = true
+paths = ["hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 
 [[activities]]
 id = "my-receipts"
