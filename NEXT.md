@@ -36,7 +36,7 @@ on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from
 | C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e; code complete, awaiting the branch deploy |
 | C2 hygiene | Sonnet | B40e, B40a | `agent-a0d650c4b9cf036ab`, coding |
 | D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
-| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | dispatched after D1 |
+| D2 accessibility review | Opus, then Haiku | B27b.2, B27b.3 | `agent-a17f544dfa18ae6a4`, reviewing |
 | F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
 | G alarm-audit | Haiku | B30a | `agent-a653d9c0dd71393d8`, auditing |
 | H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
