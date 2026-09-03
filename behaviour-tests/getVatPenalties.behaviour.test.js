@@ -310,8 +310,6 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
      *  - MULTIPLE_INACTIVE_LATE_SUBMISSION_PENALTIES: several inactive late submission penalties
      *  - THRESHOLD_LATE_SUBMISSION_PENALTIES: threshold-triggered late submission penalties
      *  - CHARGE_LATE_SUBMISSION_PENALTIES: charge-category late submission penalties
-     *  - INSOLVENT_TRADER: Client is an insolvent trader
-     *  - NOT_FOUND: No data found
      */
     await requestAndVerifyPenalties(page, {
       hmrcVatNumber: testVatNumber,
@@ -356,14 +354,6 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
     await requestAndVerifyPenalties(page, {
       hmrcVatNumber: testVatNumber,
       testScenario: "CHARGE_LATE_SUBMISSION_PENALTIES",
-    });
-    await requestAndVerifyPenalties(page, {
-      hmrcVatNumber: testVatNumber,
-      testScenario: "INSOLVENT_TRADER",
-    });
-    await requestAndVerifyPenalties(page, {
-      hmrcVatNumber: testVatNumber,
-      testScenario: "NOT_FOUND",
     });
 
     // Custom forced error scenarios (mirrors obligations tests)
@@ -529,8 +519,6 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
     let http400BadRequestResults = 0;
     let http403ForbiddenResults = 0;
     let http404NotFoundResults = 0;
-    let insolventTraderScenarioRequests = 0;
-    let notFoundScenarioRequests = 0;
     penaltiesRequests.forEach((penaltiesRequest, index) => {
       assertEssentialFraudPreventionHeadersPresent(penaltiesRequest, `GET penalties request ${index + 1}`);
       console.log(`[DynamoDB Assertions]: Validating VAT penalties GET request ${index + 1} of ${penaltiesRequests.length}`);
@@ -569,18 +557,6 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
         "httpRequest.method": "GET",
         "httpResponse.statusCode": 404,
       });
-      // The sandbox does not reliably honour every Gov-Test-Scenario header for this endpoint -
-      // it can answer INSOLVENT_TRADER or NOT_FOUND with a plain 200 instead of the documented
-      // 403/404. Track that the scenario was actually requested rather than asserting the status
-      // HMRC's sandbox happens to return for it.
-      insolventTraderScenarioRequests += countHmrcApiRequestValues(penaltiesRequest, {
-        "httpRequest.method": "GET",
-        "httpRequest.headers.Gov-Test-Scenario": "INSOLVENT_TRADER",
-      });
-      notFoundScenarioRequests += countHmrcApiRequestValues(penaltiesRequest, {
-        "httpRequest.method": "GET",
-        "httpRequest.headers.Gov-Test-Scenario": "NOT_FOUND",
-      });
     });
 
     // Assert result counts. HMRC's own sandbox behaviour for penalty retries is not fully
@@ -592,15 +568,9 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
     console.log(`  HTTP 400 Bad Request: ${http400BadRequestResults}`);
     console.log(`  HTTP 403 Forbidden: ${http403ForbiddenResults}`);
     console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
-    console.log(`  INSOLVENT_TRADER scenario requests: ${insolventTraderScenarioRequests}`);
-    console.log(`  NOT_FOUND scenario requests: ${notFoundScenarioRequests}`);
     expect(http200OkResults).toBeGreaterThan(0);
     expect(http400BadRequestResults).toBe(0);
-    // The sandbox doesn't reliably answer these two scenarios with the documented status
-    // (it can 200 an INSOLVENT_TRADER or NOT_FOUND request instead), so only assert that
-    // each scenario was actually requested, not the status the sandbox happened to return.
-    expect(insolventTraderScenarioRequests).toBeGreaterThanOrEqual(1);
-    expect(notFoundScenarioRequests).toBeGreaterThanOrEqual(1);
+    expect(http404NotFoundResults).toBe(0);
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)

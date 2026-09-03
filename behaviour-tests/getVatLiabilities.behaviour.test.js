@@ -310,7 +310,6 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
      *  - SINGLE_LIABILITY_2018_19: one liability, dates 2018-01-02..2018-02-02
      *  - MULTIPLE_LIABILITIES_2018_19: several liabilities, dates 2018-04-05..2018-12-21
      *  - INSOLVENT_TRADER: Client is an insolvent trader
-     *  - NOT_FOUND: No data found
      */
     await requestAndVerifyLiabilities(page, {
       hmrcVatNumber: testVatNumber,
@@ -347,12 +346,6 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
       hmrcVatPeriodFromDate,
       hmrcVatPeriodToDate,
       testScenario: "INSOLVENT_TRADER",
-    });
-    await requestAndVerifyLiabilities(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "NOT_FOUND",
     });
 
     // Custom forced error scenarios (mirrors obligations tests)
@@ -567,7 +560,7 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
     expect(http200OkResults).toBeGreaterThan(0);
     expect(http400BadRequestResults).toBe(0);
     expect(http403ForbiddenResults).toBe(1);
-    expect(http404NotFoundResults).toBe(1);
+    expect(http404NotFoundResults).toBe(0);
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)

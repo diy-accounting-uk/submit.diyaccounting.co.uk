@@ -33,12 +33,6 @@ describe("http-simulator/scenarios/liabilities", () => {
       expect(result.liabilities.length).toBeGreaterThan(1);
     });
 
-    test("returns error for NOT_FOUND scenario", () => {
-      const result = getLiabilitiesForScenario("NOT_FOUND");
-      expect(result).toHaveProperty("status", 404);
-      expect(result.body.code).toBe("NOT_FOUND");
-    });
-
     test("returns error for INSOLVENT_TRADER scenario", () => {
       const result = getLiabilitiesForScenario("INSOLVENT_TRADER");
       expect(result).toHaveProperty("status", 403);

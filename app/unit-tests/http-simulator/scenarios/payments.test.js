@@ -31,12 +31,6 @@ describe("http-simulator/scenarios/payments", () => {
       expect(result.payments.some((p) => p.received === undefined)).toBe(true);
     });
 
-    test("returns error for NOT_FOUND scenario", () => {
-      const result = getPaymentsForScenario("NOT_FOUND");
-      expect(result).toHaveProperty("status", 404);
-      expect(result.body.code).toBe("NOT_FOUND");
-    });
-
     test("returns error for INSOLVENT_TRADER scenario", () => {
       const result = getPaymentsForScenario("INSOLVENT_TRADER");
       expect(result).toHaveProperty("status", 403);

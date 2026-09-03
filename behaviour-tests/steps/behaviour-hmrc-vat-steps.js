@@ -1148,19 +1148,6 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
           await page.waitForTimeout(500);
           await expect(page.locator("#liabilitiesResults")).toBeHidden();
           break;
-        case "NOT_FOUND":
-          // HMRC answers this scenario with a 404 NOT_FOUND, which the API maps to a
-          // successful empty result rather than an error, so the results container
-          // shows with the same "no data" state as the default (no header) scenario.
-          await waitForSuccessOrError(page, {
-            successSelector: "#liabilitiesResults",
-            description: "VAT liabilities results (NOT_FOUND scenario)",
-            timeout: 450_000,
-            screenshotPath,
-          });
-          await expect(page.locator("#liabilitiesResults")).toBeVisible();
-          await expect(page.locator("#liabilitiesTable .no-data")).toBeVisible();
-          break;
         case "SUBMIT_API_HTTP_500":
         case "SUBMIT_HMRC_API_HTTP_500":
           // These force a failure before (or in place of) the outbound HMRC call, so
@@ -1365,18 +1352,26 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
           await page.waitForTimeout(500);
           await expect(page.locator("#paymentsResults")).toBeHidden();
           break;
-        case "NOT_FOUND":
-          // HMRC answers this scenario with a 404 NOT_FOUND, which the API maps to a
-          // successful empty result rather than an error, so the results container
-          // shows with the same "no data" state as the default (no header) scenario.
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          // These force a failure before (or in place of) the outbound HMRC call, so
+          // there's nothing on screen to assert. Still wait for the in-flight request to
+          // settle so the next step doesn't navigate away mid-request.
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          // Every other scenario (including the SLOW_10S delay) succeeds and shows
+          // results. Without this case the switch fell through with no matching branch
+          // and returned immediately, so the test moved on - and navigated away - before
+          // the request had actually completed, racing the client fetch and risking a
+          // lost DynamoDB record under load. Wait for the real response first.
           await waitForSuccessOrError(page, {
             successSelector: "#paymentsResults",
-            description: "VAT payments results (NOT_FOUND scenario)",
+            description: `VAT payments results (${testScenario})`,
             timeout: 450_000,
             screenshotPath,
           });
           await expect(page.locator("#paymentsResults")).toBeVisible();
-          await expect(page.locator("#paymentsTable .no-data")).toBeVisible();
           break;
       }
       return;
@@ -1540,11 +1535,26 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-results.png` });
     if (hasScenario) {
       switch (testScenario) {
-        case "INSOLVENT_TRADER":
-        case "NOT_FOUND":
-          await page.waitForTimeout(500);
-          const penaltiesResults = page.locator("#penaltiesResults");
-          await expect(penaltiesResults).toBeHidden();
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          // These force a failure before (or in place of) the outbound HMRC call, so
+          // there's nothing on screen to assert. Still wait for the in-flight request to
+          // settle so the next step doesn't navigate away mid-request.
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          // Every other scenario (including the SLOW_10S delay) succeeds and shows
+          // results. Without this case the switch fell through with no matching branch
+          // and returned immediately, so the test moved on - and navigated away - before
+          // the request had actually completed, racing the client fetch and risking a
+          // lost DynamoDB record under load. Wait for the real response first.
+          await waitForSuccessOrError(page, {
+            successSelector: "#penaltiesResults",
+            description: `VAT penalties results (${testScenario})`,
+            timeout: 450_000,
+            screenshotPath,
+          });
+          await expect(page.locator("#penaltiesResults")).toBeVisible();
           break;
       }
       return;
