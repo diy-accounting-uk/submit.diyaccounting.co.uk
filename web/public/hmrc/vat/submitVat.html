@@ -839,6 +839,7 @@
           // Hide form while submitting
           hideForm();
           showLoading();
+          hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return with 9-box data

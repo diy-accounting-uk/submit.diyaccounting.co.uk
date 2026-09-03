@@ -287,6 +287,7 @@
           console.log("Retrieved pending request:", pendingRequest);
           hideSearchCriteria(); // Hide the form when retrieving payments after auth
           showLoading();
+          hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
           showStatus("Retrieving VAT payments...", "info");
 
           // Restore form values
@@ -450,6 +451,7 @@
           // We have an access token, proceed directly
           try {
             showLoading();
+            hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
             showStatus("Retrieving VAT payments...", "info");
 
             // Build query parameters
