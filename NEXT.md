@@ -7,35 +7,244 @@ to do next — completed work lives in `git log`). Plans of record: `PLAN_*.md` 
 ## Open items
 
 Items marked (Bn) are backlog rows in `BACKLOG.md`, which carries each one's full value
-reasoning. "Operator" steps are ones a workflow cannot do; "Claude Code" steps run once the
-operator step before them is done or when SSO is live.
+reasoning. Every item ends with a tag line: **Source** (backlog row, GitHub issue, plan doc, or
+none), **Owner** (`Operator` for steps a workflow cannot do, `Claude Code` for steps a sub-agent
+runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > Opus > Sonnet >
+Haiku; the lowest tier that fits). Items are sized so one sub-agent lands one item in one PR.
+Anything touching code goes through a `claude/*` branch and PR; the operator merges.
 
 **Prod runs deployment prod-6f1779b, the only app stack set standing.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
-- [ ] **Tag the Stripe purchase as the GA4 `purchase` event.** Today `purchase` fires in
-  `submitVat.html` when a VAT receipt is displayed, with `value: 0`, and nothing fires when
-  a Stripe checkout completes (`bundles.html?checkout=success` only shows a status line).
-  Move `purchase` to the checkout success with the real amount, currency, the checkout
-  session id as `transaction_id` and the bundle as the item; move `begin_checkout` to the
-  "Redirecting to checkout" click; retag the VAT submission as a custom event
-  (`submit_vat_return`) so the funnel is still visible. Decide client-side on the redirect
-  (has the consent state, misses users who never return) or server-side Measurement
-  Protocol from the `checkout.session.completed` webhook (always fires, no consent
-  context); say which in the PR.
-- [ ] **Prove the GA4 funnel synthetically against a ci property and BigQuery dataset.**
-  Synthetic runs consent to data collection (`consentToDataCollection`) yet none of their
-  traffic reaches the prod export (4 `submitVat.html` page views since 2026-08-25, all
-  real users). Find why (property filter, headless Chromium blocking `gtag/js`, or the
-  beacon lost when the page closes), give ci its own measurement id via `submit.env`
-  instead of the id hardcoded in `web/public/lib/analytics.js`, export that property to
-  its own BigQuery dataset, and have `paymentBehaviour-ci` assert a `purchase` row lands
-  there. Prod keeps `G-T81V5NL5MB` and `analytics_523400333`.
-- [ ] **Confirm a real `purchase` lands in prod** once the two items above ship: the next
-  live checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
-  (`bq --project_id=diyaccounting-ga4 --location=europe-west2`) or GA4 property
-  523400333. No event of that name has ever reached the export.
+### GA4 purchase funnel
+
+- [ ] **G1. Tag the Stripe purchase as the GA4 `purchase` event.** Today `purchase` fires in
+  `web/public/hmrc/vat/submitVat.html` `displayReceipt()` (lines ~1010–1024) with `value: 0`,
+  and nothing fires when a Stripe checkout completes (`bundles.html?checkout=success`, lines
+  ~1217–1235, only shows a status line). Do it client-side on the redirect, which has the
+  consent state: append `&session_id={CHECKOUT_SESSION_ID}` to `success_url` in
+  `app/functions/billing/billingCheckoutPost.js:116`; add `billingCheckoutSessionGet.js`
+  (`GET /api/v1/billing/checkout-session/{id}`, owner-checked against the session's
+  `metadata.hashedSub`, returns `amount_total`, `currency`, `bundleId`) with its Express route,
+  CDK function and unit test following the other billing Lambdas; `bundles.html` calls it and
+  fires `purchase` with `transaction_id` = session id, `value` = amount/100, `currency`, one
+  item = the bundle. Move `begin_checkout` from `handleFormSubmission` in `submitVat.html`
+  (lines ~705–719) to the checkout click in `bundles.html`. Retag the VAT submission as
+  `submit_vat_return` so the funnel stays visible. Done when `npm test` passes and a proxy run
+  of `paymentBehaviour` shows the three events in the `dataLayer`.
+  **Source**: none (found 2026-09-02 verifying the purchase event). **Owner**: Claude Code.
+  **Model**: Opus (new Lambda plus CDK route plus page logic).
+- [ ] **G2a. Find why consented synthetic traffic never reaches the GA4 export.** Synthetic
+  runs call `consentToDataCollection` yet none of their page views appear in
+  `diyaccounting-ga4.analytics_523400333.events_*` (4 `submitVat.html` views since
+  2026-08-25, all real users). Candidates: headless Chromium blocking `gtag/js`, the beacon
+  lost when Playwright closes the page, a GA4 property filter, or consent granted after
+  `config`. Reproduce locally with `paymentBehaviour-proxy` and the GA4 DebugView (or a
+  request log on `google-analytics.com/g/collect`), name the cause, and fix it in
+  `web/public/lib/analytics.js` or the test helpers. Done when a ci run's hits show in
+  DebugView. **Source**: none (same finding). **Owner**: Claude Code. **Model**: Opus.
+- [ ] **G2b. Create a ci GA4 property with its own BigQuery export.** In GA4 admin create a
+  property for `ci.submit.diyaccounting.co.uk`, add a web data stream, link it to BigQuery
+  project `diyaccounting-ga4` (daily export, `europe-west2`, its own dataset), and put the
+  measurement id in the `ci` GitHub Environment as a `SUBMIT_GA4_MEASUREMENT_ID` variable
+  (prod gets `G-T81V5NL5MB`). **Source**: none. **Owner**: Operator.
+- [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
+  After G2b: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
+  value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
+  environment variable), pass `GA4_BIGQUERY_DATASET_ID` for ci into
+  `app/functions/analytics/ga4EventExportPull.js`'s environment, and extend
+  `paymentBehaviour-ci` (or a post-run step in `synthetic-test.yml`) to query the ci dataset
+  for a `purchase` event with the run's transaction id. **Source**: none. **Owner**: Claude
+  Code. **Model**: Sonnet. Blocked on G1, G2a, G2b.
+- [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
+  checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
+  (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
+  ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
+  **Model**: Haiku. Blocked on G1, G2c and a live sale.
+
+### ITSA (B10a, B11a)
+
+- [ ] **B10a.1. Make the `create-hmrc-test-user` workflow honour its `service-names` input.**
+  `.github/workflows/create-hmrc-test-user.yml` offers `mtd-vat,mtd-income-tax` (lines
+  16–23) but never passes the choice to `scripts/create-hmrc-test-user.js`, whose `main()`
+  calls `createHmrcTestUser(id, secret)` with no options, so `serviceNames` always defaults to
+  `["mtd-vat"]`. Wire the input through as an env var, read it in `main()`, and add a unit
+  test that the request body carries both services. Also surface the NINO in the job summary
+  and artifact alongside the VRN. **Source**: BACKLOG 10a; repo find 2026-09-03. **Owner**:
+  Claude Code. **Model**: Sonnet.
+- [ ] **B10a.2. Subscribe the sandbox application to the ITSA APIs and mint an ITSA test
+  user.** In the HMRC developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in
+  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then run the
+  `create-hmrc-test-user` workflow with `mtd-vat,mtd-income-tax` and keep the credentials
+  artifact (NINO, user id, password). **Source**: BACKLOG 10a. **Owner**: Operator. Blocked on
+  B10a.1.
+- [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
+  Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
+  validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
+  rejection); log in on the proxy variant as the B10a.2 test user; call
+  `GET /individuals/business/details/{nino}/list` on `HMRC_SANDBOX_BASE_URI` with the token
+  and `app/lib/buildFraudHeaders.js` headers. Write `_developers/hmrc/ITSA_SPIKE.md`:
+  the raw response, whether the existing application and headers were accepted, and which of
+  `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
+  for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
+  **Owner**: Claude Code. **Model**: Opus. Blocked on B10a.2.
+- [ ] **B11a.1. Map HMRC's ITSA minimum functionality standards to the planned build.** Fetch
+  the published MTD ITSA software minimum functionality standards and the recognition
+  process pages from the developer hub, and write
+  `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`: one row per requirement, marked
+  planned-in-phase-1 (B10), planned-in-phase-2 (B11), or not planned. **Source**: BACKLOG 11a;
+  STRATEGY.md. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not on
+  the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
+  drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
+
+### Catalogue (B12)
+
+- [ ] **B12a. Line the `day-guest` bundle up with the strategy's day pass.**
+  `web/public/submit.catalogue.toml` already gives `day-guest` one active allocation per user,
+  `cap = 100` concurrent, `timeout = "P1D"` and `tokensGranted = 3`, which is the day pass
+  as STRATEGY.md defines it. Rename its display `name` to "Day pass", make the bundles page
+  and `about.html`/`guide.html` copy say "day pass", and add a unit test that
+  `bundlePost.js` refuses a second `day-guest` request from the same user within the day
+  (`incrementCounter` and the one-per-user rule, lines ~389–408). **Source**: BACKLOG 12;
+  STRATEGY.md pricing table. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B12b. Add the `resident-itsa` bundle.** Catalogue entry mirroring `resident-vat`
+  (£0.99/month, `tokensGranted = 100`, monthly refresh) granting a `self-employed` activity
+  that the ITSA pages will claim; listed on `bundles.html` and priced through the existing
+  `STRIPE_[TEST_]PRICE_ID_RESIDENT_ITSA` convention in
+  `app/functions/billing/billingCheckoutPost.js:resolveStripePriceId()`; webhook
+  `metadata.bundleId` already carries the id. Hide it in prod (`listedInEnvironments`) until
+  B10 lands. **Source**: BACKLOG 12; STRATEGY.md. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B12c. Create the Stripe prices for `resident-itsa`** (test and live, £0.99/month
+  recurring) and put the two price ids in `.env.ci` and `.env.prod` by PR; confirm the day
+  pass numbers (3 tokens, 100 concurrent) or give new ones for B12a. **Source**: BACKLOG 12.
+  **Owner**: Operator.
+
+### VAT read endpoints (B32, B32b)
+
+- [ ] **B32b. Gate obligations and view-return by activity.** `requireActivity()` from
+  `_developers/backlog/vat-api-operations.md` was never built; `hmrcVatObligationGet.js:148`
+  and `hmrcVatReturnGet.js:158` call `enforceBundles(event)` only. Check whether
+  `enforceBundles` (`app/services/bundleManagement.js:122`) tests the caller's bundles against
+  the catalogue's `bundlesForActivity("vat-obligations")`/`("view-vat-return")`; if not, add
+  that check to both handlers (403 with a JSON reason, matching `hmrcVatReturnPost.js`) and
+  unit-test it. Usage is already known (2026-08-06→31: obligations 616 calls / 208 users,
+  view-return 199 / 122), so no query step. **Source**: BACKLOG 32b;
+  `_developers/backlog/vat-api-operations.md`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B32.1. VAT liabilities page and Lambda.** `hmrcVatLiabilitiesGet.js` calling
+  `GET /organisations/vat/{vrn}/liabilities` with fraud headers, following
+  `hmrcVatObligationGet.js` (stub via `TEST_VAT_LIABILITY`, simulator route, CDK function and
+  API route in `HmrcStack.java`/`ApiStack`, `Gov-Test-Scenario` passthrough);
+  `web/public/hmrc/vat/vatLiabilities.html` following `vatObligations.html` (OAuth with
+  `read:vat`, table, empty state, back link); unit tests; `vatLiabilities.behaviour.test.js`
+  with `-proxy`/`-simulator`/`-ci` variants and a `synthetic-test.yml` entry. This one sets
+  the pattern for B32.2 and B32.3. **Source**: BACKLOG 32; issue #19;
+  `_developers/backlog/vat-api-operations.md`. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B32.2. VAT payments page and Lambda**, same shape as B32.1 for
+  `GET /organisations/vat/{vrn}/payments`. **Source**: BACKLOG 32; issue #19. **Owner**: Claude
+  Code. **Model**: Sonnet. Blocked on B32.1 (copy its pattern).
+- [ ] **B32.3. VAT penalties page and Lambda**, same shape for
+  `GET /organisations/vat/{vrn}/penalties`, plus `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md`
+  and `guide.html`/`help.html` sections listing all three. **Source**: BACKLOG 32; issue #19.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B32.1.
+
+### Accessibility and data protection (B27b, B27c, B27d)
+
+- [ ] **B27d. Fix the text-spacing clipping regression.** `npm run
+  accessibility:text-spacing-prod` fails all 24 pages with `body (X overflow)`: with the WCAG
+  1.4.12 overrides injected by `scripts/text-spacing-test.js` (lines 81–90), some element with
+  `overflow: hidden` on every page clips. Reproduce on `-proxy`, find the shared CSS rule in
+  `web/public/css/` (never `web/public-simulator/`), fix it, re-run, and refresh
+  `web/public/tests/accessibility/text-spacing-results.json`. **Source**: BACKLOG 27d.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B27b.1. Re-run the automated WCAG 2.2 AA scans and fix what they find.** After B27d:
+  `npm run accessibility:proxy-report` (pa11y, axe 2.1/2.2, Lighthouse, text-spacing) against
+  the proxy variant, fix every finding in `web/public/`, and refresh the committed results
+  under `web/public/tests/accessibility/`. **Source**: BACKLOG 27b;
+  `_developers/hmrc/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md`. **Owner**:
+  Claude Code. **Model**: Sonnet. Blocked on B27d.
+- [ ] **B27b.2. Manual review of the criteria WCAG 2.2 added** (2.4.11 focus not obscured,
+  2.5.7 dragging, 2.5.8 target size 24px, 3.2.6 consistent help, 3.3.7 redundant entry, 3.3.8
+  accessible authentication) across the 24 pages in `scripts/text-spacing-test.js:51-77`,
+  using Playwright to measure targets and focus visibility. Fix failures; record each
+  criterion's evidence in a new `_developers/hmrc/WCAG_2.2_AA_EVIDENCE.md`. **Source**:
+  BACKLOG 27b. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B27b.3. Refresh `web/public/accessibility.html`**: results table and date (currently
+  "January 14, 2026"), and the `<meta name="description">` at line 9 that still says WCAG 2.1
+  while the body claims 2.2 AA. **Source**: BACKLOG 27b. **Owner**: Claude Code. **Model**:
+  Haiku. Blocked on B27b.1 and B27b.2.
+- [ ] **B27c.1. Write the ICO data-protection checklist and the breach-notification template.**
+  No single document exists; material is spread over `RUNBOOK_INFORMATION_SECURITY.md`,
+  `_developers/archive/PRIVACY_DUTIES.md` and `_developers/backlog/ALARM_VALIDATION_STRATEGY.md`
+  (open TODO at line ~1903: "Create ICO notification template"). Produce
+  `_developers/ICO_CHECKLIST.md` working through the ICO's small-business self-assessment
+  (lawful basis, privacy notice against `web/public/privacy.html`, retention: 28-day
+  `hmrc-api-requests` TTL and 7-year receipts, subject access and erasure via the two GDPR
+  workflows, processors: AWS, Stripe, Google, Telegram, breach process) with each line marked
+  met / gap, plus the 72-hour ICO breach template in the runbook. **Source**: BACKLOG 27c.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B27c.2. Confirm the company's ICO registration** (data protection fee, controller
+  entry for DIY Accounting Limited, 06846849) and record the registration number in
+  `_developers/ICO_CHECKLIST.md`; register if it has lapsed. **Source**: BACKLOG 27c.
+  **Owner**: Operator.
+
+### Hygiene (B30, B32a, B40a, B40e)
+
+- [ ] **B40e. Port the friendly-error branches, then delete the dead `submitVat` copy.** In
+  `web/public/hmrc/vat/submitVat.html` the inline `submitVat` (lines ~930–1000) is
+  overwritten at runtime by the module export from `web/public/lib/services/hmrc-service.js:244-297`,
+  so its `tokens_exhausted` (~972–982) and `hmrc_scope_insufficient` (~984–991) messages never
+  show; the backend still emits both reasons (`hmrcVatReturnPost.js:577`,
+  `app/lib/hmrcValidation.js:342`). Add those two cases to `hmrc-service.js` with unit tests,
+  then delete the inline copy, `submitVatWithCalculatedHeaders`'s call into it (~901–928) and
+  the `window.submitVat = submitVat` at ~1175. **Source**: BACKLOG 40e. **Owner**: Claude Code.
+  **Model**: Sonnet.
+- [ ] **B40a. Per-run ports for local behaviour tests.** Dynalite already takes
+  `DYNAMODB_PORT=0` for an ephemeral port (`app/bin/dynamodb.js:46-48`,
+  `behaviour-tests/helpers/behaviour-helpers.js:62-64`) but `.env.simulator` pins
+  `TEST_SERVER_HTTP_PORT=3000`, `TEST_HTTP_SIMULATOR_PORT=9000` and dynalite 9001, and
+  `scripts/start-simulator.sh` polls `localhost:9000/health`. Let `0` mean ephemeral for the
+  server (`app/bin/server.js:244`) and the simulator (`app/http-simulator/server.js:79`),
+  propagate the chosen ports to the spawned processes and the Playwright base URL in
+  `behaviour-helpers.js`, and make `start-simulator.sh` read the chosen port. Done when two
+  `npm run test:submitVatBehaviour-simulator` runs started together both pass. **Source**:
+  BACKLOG 40a. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30a. Alarm history audit.** Read-only: for every prod `check-*` alarm (151, four per
+  Lambda from `infra/.../constructs/Lambda.java:138-227`: errors, throttles, p95 duration,
+  log-errors) and the 15 `AsyncApiLambda` extras, pull `describe-alarm-history` for the last
+  90 days and write `_developers/ALARM_AUDIT_2026-09.md`: a table by check type of alarms that
+  never changed state, ones that only flap on deploys, and ones that fired for a real fault;
+  plus the canary picture (`OpsStack` canaries at `rate(51 minutes)`, `synthetic-test.yml`
+  cron `57 */4 * * *`, `github-synthetic-failed` on a 2-hour period). **Source**: BACKLOG 30;
+  `PLAN_ALARM_CONSOLIDATION.md` open item 1. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
+  drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
+  `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
+  open item 2, one alert for stuck queue plus broken worker), and set the canary interval and
+  synthetic cron so they do not both cover the same 4-hour window. Keep every alarm the
+  routing rule or a runbook reads. CDK tests updated; `./mvnw clean verify`. **Source**:
+  BACKLOG 30; `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus. Blocked
+  on B30a.
+- [ ] **B32a.1. Profile the deploy pipeline.** Pull per-job start/end from runs
+  33648185839 (prod, 61 min) and 33644482805 (ci, 23 min) with `gh api .../jobs`, and write
+  `_developers/PIPELINE_PROFILE_2026-09.md`: the critical path through `deploy.yml`'s DAG
+  (`push-images` → `deploy-auth|hmrc|account|billing` → `deploy-api` → `deploy-edge` →
+  `deploy-publish` → `set-origins` → `enable-native-auth` → 16 hand-listed `web-test-*` jobs →
+  `disable-native-auth` → `set-last-known-good-deployment` → `destroy-previous`), with minutes
+  per hop and the three largest cuts available. **Source**: BACKLOG 32a. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B32a.2. Make the three largest cuts.** From B32a.1; likely candidates: a `matrix` for
+  the 16 `web-test-*` jobs, running `destroy-previous` alongside the tests instead of after
+  `set-last-known-good-deployment`, and collapsing the `deploy-edge` → `deploy-publish` serial
+  hop. One PR per cut, each proven by the next run's timing. **Source**: BACKLOG 32a.
+  **Owner**: Claude Code. **Model**: Opus. Blocked on B32a.1.
+
+### Operator-only
+
+- [ ] **B17a. Re-record and publish the demo videos** on https://www.youtube.com/@DIYAccountingSubmit,
+  capturing the main site rather than the simulator. **Source**: BACKLOG 17a;
+  `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code excluded by directive 2026-08-26).
 
 ## Discipline
 
