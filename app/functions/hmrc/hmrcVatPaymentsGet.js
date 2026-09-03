@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidVrn, isValidIsoDate, isValidDateRange } from "../../lib/hmrcValidation.js";
+import { isValidVrn, isValidIsoDate, isValidDateRange, extractHmrcErrorCode } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -532,6 +532,12 @@ export async function getVatPayments(
   }
 
   if (!hmrcResponse.ok) {
+    // HMRC answers 404 NOT_FOUND when the date range holds no payments, not when
+    // the VRN or endpoint itself is missing. Treat that as an empty result rather than
+    // an error so a user with a clean VAT record sees an empty table, not a failure.
+    if (hmrcResponse.status === 404 && extractHmrcErrorCode(hmrcResponse.data) === "NOT_FOUND") {
+      return { hmrcResponse: { ...hmrcResponse, ok: true }, payments: { payments: [] } };
+    }
     return { hmrcResponse, payments: null };
   }
   await publishActivityEvent({

@@ -186,6 +186,30 @@ describe("hmrcVatPaymentsGet ingestHandler", () => {
     expect([400, 500]).toContain(response.statusCode);
   });
 
+  test("returns 200 with an empty payments list when HMRC 404s with NOT_FOUND", async () => {
+    mockHmrcError(mockFetch, 404, { code: "NOT_FOUND", message: "The remote endpoint has indicated that no data can be found" });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatPaymentsGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.payments).toEqual([]);
+  });
+
+  test("returns 400 when HMRC 404s with a code other than NOT_FOUND", async () => {
+    mockHmrcError(mockFetch, 404, { code: "VRN_NOT_FOUND", message: "The VRN does not exist" });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatPaymentsGetHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+
   test("returns 400 for invalid VAT registration number format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "12345678" }, // 8 digits instead of 9
