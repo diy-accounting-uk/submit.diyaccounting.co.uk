@@ -84,6 +84,13 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
+// SUBMIT_HMRC_API_HTTP_SLOW_10S and the two forced-500 scenarios below are implemented only by
+// our own HTTP simulator (app/http-simulator/scenarios/liabilities.js), not by the real HMRC
+// sandbox. isSandboxMode() can't tell the two apart: .env.simulator also sets HMRC_ACCOUNT=sandbox
+// so it enables the same extended scenario list. TEST_HTTP_SIMULATOR=run is what .env.simulator
+// (and only .env.simulator) sets, so use that to gate the simulator-only scenarios out of any lane
+// that talks to the real sandbox, where they send a Gov-Test-Scenario value HMRC doesn't recognise.
+const usingHttpSimulator = getEnvVarAndLog("usingHttpSimulator", "TEST_HTTP_SIMULATOR", null) === "run";
 
 let mockOAuth2Process;
 let serverProcess;
@@ -348,37 +355,41 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
       testScenario: "INSOLVENT_TRADER",
     });
 
-    // Custom forced error scenarios (mirrors obligations tests)
-    await requestAndVerifyLiabilities(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "SUBMIT_API_HTTP_500",
-    });
-    await requestAndVerifyLiabilities(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "SUBMIT_HMRC_API_HTTP_500",
-    });
+    // Custom forced error scenarios and the slow scenario (mirrors obligations tests) are
+    // simulator-only (see the usingHttpSimulator comment above) - the real HMRC sandbox rejects
+    // these Gov-Test-Scenario values with a 400, so only run them against our own simulator.
+    if (usingHttpSimulator) {
+      await requestAndVerifyLiabilities(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        testScenario: "SUBMIT_API_HTTP_500",
+      });
+      await requestAndVerifyLiabilities(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        testScenario: "SUBMIT_HMRC_API_HTTP_500",
+      });
 
-    // Slow scenario should take >= 5s but < 60s end-to-end
-    const slowStartMs = Date.now();
-    await requestAndVerifyLiabilities(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-    });
-    const slowElapsedMs = Date.now() - slowStartMs;
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(4_500);
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeLessThan(60_000);
+      // Slow scenario should take >= 5s but < 60s end-to-end
+      const slowStartMs = Date.now();
+      await requestAndVerifyLiabilities(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+      });
+      const slowElapsedMs = Date.now() - slowStartMs;
+      expect(
+        slowElapsedMs,
+        `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
+      ).toBeGreaterThanOrEqual(4_500);
+      expect(
+        slowElapsedMs,
+        `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
+      ).toBeLessThan(60_000);
+    }
   }
 
   /* ****************** */

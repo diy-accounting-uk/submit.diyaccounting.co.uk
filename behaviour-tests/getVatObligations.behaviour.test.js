@@ -91,6 +91,13 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
+// SUBMIT_HMRC_API_HTTP_SLOW_10S and the two forced-500 scenarios below are implemented only by
+// our own HTTP simulator (app/http-simulator/scenarios/obligations.js), not by the real HMRC
+// sandbox. isSandboxMode() can't tell the two apart: .env.simulator also sets HMRC_ACCOUNT=sandbox
+// so it enables the same extended scenario list. TEST_HTTP_SIMULATOR=run is what .env.simulator
+// (and only .env.simulator) sets, so use that to gate the simulator-only scenarios out of any lane
+// that talks to the real sandbox, where they send a Gov-Test-Scenario value HMRC doesn't recognise.
+const usingHttpSimulator = getEnvVarAndLog("usingHttpSimulator", "TEST_HTTP_SIMULATOR", null) === "run";
 
 let mockOAuth2Process;
 let serverProcess;
@@ -476,52 +483,56 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
       testScenario: "NOT_FOUND",
     });
 
-    // Custom forced error scenarios (mirrors POST tests)
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      /* All status values */
-      testScenario: "SUBMIT_API_HTTP_500",
-    });
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      /* All status values */
-      testScenario: "SUBMIT_HMRC_API_HTTP_500",
-    });
-    // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 140s), so 12+ minutes to dlq
-    // with a client timeout 730_000 = 90s + 3 x 120s (Get VAT and Obligations) + 2 x 140s (visibility), minutes: 12+
-    // Set test timeout at top level
-    // 20 minutes for the timeout test
-    //test.setTimeout(1_200_000);
-    // await requestAndVerifyObligations(page, {
-    //   hmrcVatNumber: testVatNumber,
-    //   hmrcVatPeriodFromDate,
-    //   hmrcVatPeriodToDate,
-    //   /* All status values */
-    //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
-    // });
+    // Custom forced error scenarios and the slow scenario (mirrors POST tests) are simulator-only
+    // (see the usingHttpSimulator comment above) - the real HMRC sandbox rejects these
+    // Gov-Test-Scenario values with a 400, so only run them against our own simulator.
+    if (usingHttpSimulator) {
+      await requestAndVerifyObligations(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        /* All status values */
+        testScenario: "SUBMIT_API_HTTP_500",
+      });
+      await requestAndVerifyObligations(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        /* All status values */
+        testScenario: "SUBMIT_HMRC_API_HTTP_500",
+      });
+      // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 140s), so 12+ minutes to dlq
+      // with a client timeout 730_000 = 90s + 3 x 120s (Get VAT and Obligations) + 2 x 140s (visibility), minutes: 12+
+      // Set test timeout at top level
+      // 20 minutes for the timeout test
+      //test.setTimeout(1_200_000);
+      // await requestAndVerifyObligations(page, {
+      //   hmrcVatNumber: testVatNumber,
+      //   hmrcVatPeriodFromDate,
+      //   hmrcVatPeriodToDate,
+      //   /* All status values */
+      //   testScenario: "SUBMIT_HMRC_API_HTTP_503",
+      // });
 
-    // Slow scenario should take >= 10s but < 30s end-to-end
-    const slowStartMs = Date.now();
-    await requestAndVerifyObligations(page, {
-      hmrcVatNumber: testVatNumber,
-      hmrcVatPeriodFromDate,
-      hmrcVatPeriodToDate,
-      /* All status values */
-      testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
-    });
-    const slowElapsedMs = Date.now() - slowStartMs;
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeGreaterThanOrEqual(4_500);
-    expect(
-      slowElapsedMs,
-      `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
-    ).toBeLessThan(60_000);
+      // Slow scenario should take >= 10s but < 30s end-to-end
+      const slowStartMs = Date.now();
+      await requestAndVerifyObligations(page, {
+        hmrcVatNumber: testVatNumber,
+        hmrcVatPeriodFromDate,
+        hmrcVatPeriodToDate,
+        /* All status values */
+        testScenario: "SUBMIT_HMRC_API_HTTP_SLOW_10S",
+      });
+      const slowElapsedMs = Date.now() - slowStartMs;
+      expect(
+        slowElapsedMs,
+        `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
+      ).toBeGreaterThanOrEqual(4_500);
+      expect(
+        slowElapsedMs,
+        `Expected SUBMIT_HMRC_API_HTTP_SLOW_10S to take at least 4.5s (10% tolerance below the 5s nominal delay) but less than 60s, actual: ${slowElapsedMs}ms`,
+      ).toBeLessThan(60_000);
+    }
   }
 
   /* ****************** */
@@ -712,12 +723,13 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
     console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
     console.log(`  HTTP 500 Server Error: ${http500ServerErrorResults}`);
     console.log(`  HTTP 503 Service Unavailable: ${http503ServiceUnavailableResults}`);
-    // 20 = the initial retrieval before the scenario loop, the 17 named scenarios that
-    // return obligations data, the no-header default within the loop, and the slow
-    // scenario (which also succeeds, just delayed). Every other named scenario in the
-    // loop returns a non-200 (INSOLVENT_TRADER, NOT_FOUND) or isn't logged at all
-    // (the two forced-500 scenarios fail before any outbound HMRC call is made).
-    expect(http200OkResults).toBe(20);
+    // 19 = the initial retrieval before the scenario loop, the 17 named spec scenarios that
+    // return obligations data, and the no-header default within the loop. Every other named
+    // scenario in the loop returns a non-200 (INSOLVENT_TRADER, NOT_FOUND) or isn't logged at
+    // all (the two forced-500 scenarios fail before any outbound HMRC call is made). When
+    // running against our own simulator, the simulator-only slow scenario also succeeds
+    // (just delayed), adding one more 200; the real HMRC sandbox never sees that scenario.
+    expect(http200OkResults).toBe(usingHttpSimulator ? 20 : 19);
     expect(http400BadRequestResults).toBe(0);
     expect(http403ForbiddenResults).toBe(1);
     expect(http404NotFoundResults).toBe(1);
