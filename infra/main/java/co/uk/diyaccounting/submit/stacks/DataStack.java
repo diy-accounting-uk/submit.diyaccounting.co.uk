@@ -106,6 +106,8 @@ public class DataStack extends Stack {
                 props.sharedNames().receiptsTableName,
                 "hashedSub",
                 "receiptId");
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-ReceiptsTTL", props.sharedNames().receiptsTableName, "ttl");
         String receiptsStreamArn =
                 ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().receiptsTableName);
         infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);

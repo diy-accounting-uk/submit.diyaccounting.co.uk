@@ -81,6 +81,25 @@ class DataStackTest {
     }
 
     @Test
+    void receiptsTableGetsTimeToLiveEnabled() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // The receipt repository writes a 7-year TTL as the "ttl" attribute on every item
+        // (app/data/dynamoDbReceiptRepository.js); the table must have TTL enabled on that
+        // attribute or DynamoDB never expires the item.
+        template.hasResourceProperties(
+                "Custom::AWS",
+                Map.of(
+                        "Create",
+                        createContaining(
+                                "updateTimeToLive",
+                                dataStack.receiptsTable.getTableName(),
+                                "\"AttributeName\":\"ttl\"",
+                                "\"Enabled\":true")));
+    }
+
+    @Test
     void excludedTablesGetNoStreamUpdate() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
