@@ -8,11 +8,13 @@
  * Usage: node scripts/create-hmrc-test-user.js
  *
  * Environment variables:
- *   HMRC_SANDBOX_CLIENT_ID     - HMRC Sandbox application client ID
- *   HMRC_SANDBOX_CLIENT_SECRET - HMRC Sandbox application client secret
+ *   HMRC_SANDBOX_CLIENT_ID          - HMRC Sandbox application client ID
+ *   HMRC_SANDBOX_CLIENT_SECRET      - HMRC Sandbox application client secret
+ *   HMRC_TEST_USER_SERVICE_NAMES    - comma-separated HMRC services to enable
+ *                                     (defaults to mtd-vat)
  *
  * This script creates a test organisation user in the HMRC Sandbox environment
- * with MTD-VAT access enabled. The credentials can be used for:
+ * with the requested services enabled. The credentials can be used for:
  * - Manual testing against the HMRC Sandbox
  * - Behaviour tests that require HMRC authentication
  *
@@ -20,8 +22,32 @@
  * They are intended for testing purposes and have no access to real HMRC data.
  */
 
+import { fileURLToPath } from "node:url";
+
+const ALLOWED_SERVICE_NAMES = ["mtd-vat", "mtd-income-tax"];
+
+// Parse the comma-separated HMRC_TEST_USER_SERVICE_NAMES input into a validated array.
+export function parseServiceNames(raw) {
+  if (raw === undefined || raw === null || raw.trim() === "") {
+    return ["mtd-vat"];
+  }
+
+  const serviceNames = raw.split(",").map((name) => name.trim());
+
+  for (const name of serviceNames) {
+    if (name === "") {
+      throw new Error(`Invalid HMRC_TEST_USER_SERVICE_NAMES value: "${raw}" contains an empty entry`);
+    }
+    if (!ALLOWED_SERVICE_NAMES.includes(name)) {
+      throw new Error(`Invalid HMRC_TEST_USER_SERVICE_NAMES value: "${name}" is not one of ${ALLOWED_SERVICE_NAMES.join(", ")}`);
+    }
+  }
+
+  return serviceNames;
+}
+
 // Inline implementation to avoid module resolution issues in GitHub Actions
-async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
+export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
   const serviceNames = options.serviceNames || ["mtd-vat"];
   const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
   const endpoint = "/create-test-user/organisations";
@@ -109,7 +135,7 @@ async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) 
     }
 
     // Extract key information from response
-    // Note: HMRC uses 'vrn' (VAT Registration Number) in the response
+    // Note: HMRC uses 'vrn' (VAT Registration Number) and 'nino' (National Insurance number)
     const testUser = {
       userId: responseBody.userId,
       password: responseBody.password,
@@ -118,6 +144,7 @@ async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) 
       organisationDetails: responseBody.organisationDetails,
       vrn: responseBody.vrn,
       vatRegistrationNumber: responseBody.vrn, // Alias for convenience
+      nino: responseBody.nino,
       ...responseBody,
     };
 
@@ -130,7 +157,7 @@ async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) 
   }
 }
 
-async function main() {
+export async function main() {
   const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID;
   const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET;
 
@@ -153,7 +180,8 @@ async function main() {
   console.log("");
 
   try {
-    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret);
+    const serviceNames = parseServiceNames(process.env.HMRC_TEST_USER_SERVICE_NAMES);
+    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames });
 
     console.log("");
     console.log("=".repeat(70));
@@ -165,7 +193,12 @@ async function main() {
     console.log("-".repeat(70));
     console.log(`User ID:              ${testUser.userId}`);
     console.log(`Password:             ${testUser.password}`);
-    console.log(`VAT Number (VRN):     ${testUser.vrn}`);
+    if (testUser.vrn) {
+      console.log(`VAT Number (VRN):     ${testUser.vrn}`);
+    }
+    if (testUser.nino) {
+      console.log(`National Insurance (NINO): ${testUser.nino}`);
+    }
     console.log("-".repeat(70));
     console.log("");
     console.log("Organisation Details:");
@@ -184,8 +217,14 @@ async function main() {
     console.log(`      User ID:  ${testUser.userId}`);
     console.log(`      Password: ${testUser.password}`);
     console.log("3. Grant access to your application");
-    console.log("4. Use VAT Number (VRN) in your submission forms:");
-    console.log(`      VRN: ${testUser.vrn}`);
+    if (testUser.vrn) {
+      console.log("4. Use VAT Number (VRN) in your submission forms:");
+      console.log(`      VRN: ${testUser.vrn}`);
+    }
+    if (testUser.nino) {
+      console.log("5. Use National Insurance number (NINO) for Income Tax submissions:");
+      console.log(`      NINO: ${testUser.nino}`);
+    }
     console.log("");
     console.log("=".repeat(70));
 
@@ -195,7 +234,12 @@ async function main() {
       const outputFile = process.env.GITHUB_OUTPUT;
       fs.appendFileSync(outputFile, `hmrc-user-id=${testUser.userId}\n`);
       fs.appendFileSync(outputFile, `hmrc-password=${testUser.password}\n`);
-      fs.appendFileSync(outputFile, `hmrc-vat-number=${testUser.vrn}\n`);
+      if (testUser.vrn) {
+        fs.appendFileSync(outputFile, `hmrc-vat-number=${testUser.vrn}\n`);
+      }
+      if (testUser.nino) {
+        fs.appendFileSync(outputFile, `hmrc-nino=${testUser.nino}\n`);
+      }
       fs.appendFileSync(outputFile, `hmrc-org-name=${testUser.organisationDetails?.name || ""}\n`);
     }
 
@@ -215,4 +259,6 @@ async function main() {
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
