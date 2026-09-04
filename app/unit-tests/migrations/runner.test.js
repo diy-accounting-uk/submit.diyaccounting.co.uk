@@ -193,6 +193,31 @@ describe("migration runner", () => {
     expect(putInput.Item.environment).toBe("test");
   });
 
+  test("dry run applies the migration function but records nothing", async () => {
+    process.env.ENVIRONMENT_NAME = "test";
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
+    process.env.MIGRATION_DRY_RUN = "true";
+
+    // 004 already applied, so only 001 (pre-deploy, unapplied) runs
+    mockDynamoSend.mockResolvedValueOnce({
+      Items: [{ hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" }],
+    });
+
+    // 001's up() reads salt from Secrets Manager — return already-converted registry (idempotent path)
+    mockSmSend.mockResolvedValueOnce({
+      SecretString: JSON.stringify({ current: "v1", versions: { v1: "test-salt" } }),
+    });
+
+    const result = await runMigrations("pre-deploy");
+
+    expect(result.applied).toBe(1);
+    expect(result.skipped).toBe(1);
+    expect(result.total).toBe(4);
+
+    // Only the initial QueryCommand for already-applied migrations — no PutCommand recording 001
+    expect(mockDynamoSend).toHaveBeenCalledTimes(1);
+  });
+
   test("uses fallback table name from ENVIRONMENT_NAME", async () => {
     process.env.ENVIRONMENT_NAME = "ci";
     delete process.env.BUNDLE_DYNAMODB_TABLE_NAME;
