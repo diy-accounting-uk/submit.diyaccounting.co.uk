@@ -223,14 +223,12 @@ public class OpsStack extends Stack {
                         // rule is about to hand it a burst of the alarm-state-change events that
                         // rule was already generating (see AlarmStateChangeRule below). A fresh,
                         // cold-starting instance briefly absorbing that burst looks like errors
-                        // and slow p95 duration for one 5-minute period; that is deploy noise,
+                        // for one 5-minute period; that is deploy noise,
                         // not a fault. Require 2 of 3 periods (15 minutes) to breach before
                         // alarming, so a lone deploy-time period doesn't trip it while a sustained
                         // problem still does. See GitHub issues #77-82.
                         .errorsAlarmEvaluationPeriods(3)
                         .errorsAlarmDatapointsToAlarm(2)
-                        .highDurationP95AlarmEvaluationPeriods(3)
-                        .highDurationP95AlarmDatapointsToAlarm(2)
                         .build());
 
         // Single catch-all rule: the Lambda handles routing to the correct chat IDs
