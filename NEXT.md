@@ -140,8 +140,9 @@ results back by pasting them into a Claude Code session or appending to the work
   demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
   the design. First video: home, about, guide, help, bundles and accessibility with no login.
   The operator reviews the video and the pattern is refined before the authenticated ones.
-  **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude Code. **Model**: Opus
-  design, then Sonnet.
+  In flight: the Opus design pass with web research is running (2026-09-04); the build
+  follows from its design. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
+  Code. **Model**: Opus design, then Sonnet.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet. Blocked
   on B17a.1.
