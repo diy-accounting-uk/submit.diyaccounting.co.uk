@@ -1,0 +1,267 @@
+name: video-capture
+run-name: "record ${{ inputs.script }} video"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Records a scene script (videos/*.json) against a running deployment with
+# scripts/site-video-capture.js and uploads the mp4, vtt, transcript and stills as artifacts.
+# See the site-video-capture skill (.claude/skills/site-video-capture/SKILL.md) for the full
+# procedure — local iteration first, then this workflow for the real recording.
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        type: choice
+        description: 'Scene script to record (videos/<script>.json)'
+        required: false
+        options:
+          - 'tour'
+        default: 'tour'
+      environment-name:
+        type: choice
+        description: 'Environment to record against'
+        required: false
+        options:
+          - '(auto)'
+          - 'ci'
+          - 'prod'
+        default: '(auto)'
+      deployment-name:
+        type: string
+        description: 'Deployment name to use instead of computing from branch, e.g. ci-lambdas6 or prod-ea373de'
+        required: false
+        default: ''
+      skip-native-auth-disable:
+        type: boolean
+        description: 'Skip disabling native auth after the run (caller manages cleanup)'
+        required: false
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+
+  playwright-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: v
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
+
+  params:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Normalise params
+        id: normalise
+        shell: bash
+        run: |
+          X='${{ inputs.script }}'; echo "script=${X:-tour}" | tee -a "$GITHUB_OUTPUT"
+          ENV_NAME='${{ inputs.environment-name }}'; [[ "$ENV_NAME" == "(auto)" ]] && ENV_NAME=""
+          echo "environment-name=${ENV_NAME}" | tee -a "$GITHUB_OUTPUT"
+          GH_ENV="${ENV_NAME}"
+          if [ -z "$GH_ENV" ]; then
+            if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
+          fi
+          echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
+          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.skip-native-auth-disable }}'; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      script: ${{ steps.normalise.outputs.script }}
+      environment-name: ${{ steps.normalise.outputs.environment-name }}
+      deployment-name: ${{ steps.normalise.outputs.deployment-name }}
+      skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
+      github-environment: ${{ steps.normalise.outputs.github-environment }}
+
+  names:
+    needs: params
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Read back last known good deployment from SSM Parameter Store
+        if: ${{ needs.params.outputs.deployment-name == '' }}
+        run: |
+          PARAMETER_NAME="/submit/${{ needs.params.outputs.github-environment }}/last-known-good-deployment"
+          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+
+      - name: Resolve deployment name
+        id: deployment-name
+        run: |
+          if [ -s /tmp/last_known_good_deployment.txt ]; then
+            echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute environment name and apex URL
+        id: deployment-config
+        uses: './.github/actions/get-names'
+        with:
+          environment-name: ${{ needs.params.outputs.environment-name }}
+          deployment-name: ${{ steps.deployment-name.outputs.deployment-name }}
+    outputs:
+      environment-name: ${{ steps.deployment-config.outputs.environment-name }}
+      deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
+      public-url: ${{ steps.deployment-config.outputs.public-url }}
+
+  capture:
+    name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+    needs:
+      - params
+      - names
+      - playwright-version
+    runs-on: ubuntu-24.04
+    container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        # No --ignore-scripts here (unlike the behaviour-test workflows): ffmpeg-static's own
+        # postinstall must run to download its ffmpeg binary. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
+        # still stops @playwright/test re-downloading browsers the container already has.
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Read scene script auth mode
+        id: script-auth
+        run: |
+          AUTH=$(node -p "require('./videos/${{ needs.params.outputs.script }}.json').auth")
+          echo "auth=${AUTH}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Configure AWS role via GitHub OIDC (for native auth / test user)
+        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (for native auth / test user)
+        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        run: node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
+
+      - name: Ensure Cognito test user
+        id: cognito-test-user
+        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" videoCapture
+
+      - name: 'Record ${{ needs.params.outputs.script }}'
+        run: |
+          node scripts/site-video-capture.js \
+            --script "videos/${{ needs.params.outputs.script }}.json" \
+            --out "target/videos/${{ needs.params.outputs.script }}"
+        env:
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          HMRC_ACCOUNT: sandbox
+          HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
+          TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
+          TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+
+      - name: Check video timings
+        # Non-blocking on the first runs while the tolerances in check-video-timings.js settle
+        # against real recordings; flip to blocking once they have.
+        continue-on-error: true
+        run: node scripts/check-video-timings.js "target/videos/${{ needs.params.outputs.script }}/${{ needs.params.outputs.script }}.timeline.json"
+
+      - name: Configure AWS role via GitHub OIDC (for native auth cleanup)
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (for native auth cleanup)
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        run: node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
+
+      - name: List artefacts
+        if: ${{ !cancelled() }}
+        run: find "target/videos/${{ needs.params.outputs.script }}" -type f -exec ls -l {} \;
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: 'video-${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+          retention-days: 30
+          path: |
+            target/videos/${{ needs.params.outputs.script }}/
