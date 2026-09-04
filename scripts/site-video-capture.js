@@ -183,10 +183,11 @@ function describeStep(step, waitMs, values, now) {
 
 const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
-// Actions that can leave the page they started on. The overlay is reinstalled by every
-// navigation, so the chapter label, the suppressed elements and the caption all have to be put
-// back once these finish.
-const NAVIGATING_ACTIONS = new Set(["goto", "login", "ensureBundle", "hmrcAuthorise"]);
+// Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
+// started on. Every other action is judged by whether the URL moved. Either way the overlay was
+// reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
+// the caption all have to be put back.
+const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
 async function runWithWaitOverlay(page, step, unscaledPacing, capture, run) {
   let shown = false;
@@ -363,9 +364,10 @@ async function main() {
           if (group === 3 && hasNavigated) {
             await new Promise((resolve) => setTimeout(resolve, pauseForGroup(3, pacing)));
           }
+          const urlBeforeAction = page.url();
           const result = await runWithWaitOverlay(page, step, unscaledPacing, capture, () => executeAction(page, step, ctx));
           waitMs = result.waitMs;
-          if (NAVIGATING_ACTIONS.has(step.action)) {
+          if (ALWAYS_NAVIGATING_ACTIONS.has(step.action) || page.url() !== urlBeforeAction) {
             hasNavigated = true;
             await overlayChapter(page, scene.chapter);
             if (script.suppress?.length) await overlaySuppress(page, script.suppress);
