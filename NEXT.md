@@ -24,11 +24,6 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** On prod
-  with the durable synthetic user: obligations, view-return and penalties pass; the
-  liabilities and payments suites are re-running (33915447876, 33915450325) with PR #115's
-  assertion fix merged. Green closes B32. **Source**: BACKLOG 32; issue #19. **Owner**: Claude
-  Code. **Model**: Sonnet.
 - [ ] **B17a.1. Spike: a Playwright pattern for human-audience video, proven on one
   unauthenticated tour of the site, delivered as a GitHub Actions workflow.** Not test
   automation: the viewer is a person. Requirements set 2026-09-04: three consistent
@@ -56,6 +51,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## Ready: Claude Code
 
+- [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
+  2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
+  `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
+  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
@@ -167,10 +166,6 @@ workspace root); blocked operator items; blocked Claude Code items.
   Blocked on O1a.
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
-  2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
-  `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
-  **Owner**: Claude Code. **Model**: Haiku. Blocked on the B32 verification.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet. Blocked
   on B17a.1.
