@@ -11,12 +11,7 @@
 // exactly as it does for the behaviour tests, so the same script proves locally against the
 // simulator and records against a deployment through the Cognito Hosted UI.
 
-import {
-  createHmrcTestUser,
-  runLocalDynamoDb,
-  runLocalHttpServer,
-  runLocalOAuth2Server,
-} from "./behaviourSteps.js";
+import { createHmrcTestUser, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } from "./behaviourSteps.js";
 
 // Cognito's one-time code field, by every name its Hosted UI gives it. Masked on camera so a
 // recording never shows a code being typed, while the rest of the sign-in stays on screen.
@@ -25,7 +20,7 @@ const ONE_TIME_CODE_FIELDS = 'input[name="totpCode"], input[name="SOFTWARE_TOKEN
 export function authProviderFrom(env) {
   const provider = env.TEST_AUTH_PROVIDER;
   if (!provider) {
-    throw new Error("a scene script with auth \"user\" needs TEST_AUTH_PROVIDER (mock, simulator or cognito-native)");
+    throw new Error('a scene script with auth "user" needs TEST_AUTH_PROVIDER (mock, simulator or cognito-native)');
   }
   return provider;
 }
@@ -33,7 +28,7 @@ export function authProviderFrom(env) {
 export function authUsernameFrom(env) {
   const username = env.TEST_AUTH_USERNAME;
   if (!username) {
-    throw new Error("a scene script with auth \"user\" needs TEST_AUTH_USERNAME");
+    throw new Error('a scene script with auth "user" needs TEST_AUTH_USERNAME');
   }
   return username;
 }
