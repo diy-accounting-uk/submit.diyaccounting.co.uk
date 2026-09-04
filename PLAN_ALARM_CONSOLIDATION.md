@@ -2,13 +2,14 @@
 
 Design for backlog item B30, cut 3. `REPORT_ALARM_AUDIT.md` holds the audit that produced it.
 
-`Lambda.java` gives every Lambda construct four alarms: `check-{fn}-errors`,
-`check-{fn}-throttles`, `check-{fn}-high-duration-p95` and `check-{fn}-log-errors`. None of them
-has an SNS action. They reach Telegram and the GitHub-issue Lambda through `OpsStack.java`, an
+`Lambda.java` gives every Lambda construct two alarms: `check-{fn}-errors` and
+`check-{fn}-log-errors`. `AsyncApiLambda.java` adds three more to an async pair:
+`check-{dlq}-not-empty`, `check-{worker}-errors` and `check-{queue}-message-age`. None of them has
+an SNS action. They reach Telegram and the GitHub-issue Lambda through `OpsStack.java`, an
 EventBridge rule that matches `CloudWatch Alarm State Change` events by alarm-name prefix.
 
-One broken function used to produce four Telegram messages and four GitHub issues. Every deploy
-produced four more per function, because each new alarm emits an `INSUFFICIENT_DATA` to `OK`
+One broken function used to produce a Telegram message and a GitHub issue per alarm. Every deploy
+produced another set per function, because each new alarm emits an `INSUFFICIENT_DATA` to `OK`
 transition when CloudFormation creates it.
 
 ## The design in force: one composite per stack
@@ -16,7 +17,7 @@ transition when CloudFormation creates it.
 Each stack that builds Lambda constructs also builds one `CompositeAlarm` over every check of
 every function it owns. `Lambda.stackHealthAlarm` does the fan-in. The composite is named
 `{resourceNamePrefix}-{stackShortName}-stack-health`, so it carries the deployment or environment
-prefix the routing rule already matches, and the four children keep the `check-` prefix and stay
+prefix the routing rule already matches, and the children keep the `check-` prefix and stay
 outside it.
 
 Eight composites cover a prod deployment:
@@ -34,9 +35,9 @@ Eight composites cover a prod deployment:
 
 A ci deployment adds `{deployment}-app-self-destruct-stack-health`.
 
-A composite alarm costs $0.50 a month, a standard alarm $0.10. The 151 children stay, because
-they are the terms of the composite's rule. Per-stack costs about $4 a month across the estate.
-The Telegram title names the stack, so read `state.reason` to find which function broke.
+A composite alarm costs $0.50 a month, a standard alarm $0.10. The children stay, because they are
+the terms of the composite's rule. The Telegram title names the stack, so read `state.reason` to
+find which function broke.
 
 **The EventBridge pattern does not change.** This is the part that needs saying plainly, because
 the obvious design does not work. EventBridge treats a list of matchers on one field as OR, and
@@ -51,6 +52,20 @@ touches exactly the alarms we mean is the name itself. So the routing contract l
 **No app code changes.** `activityTelegramForwarder.js` reads the environment from
 `alarmName.match(/^(ci|prod)-/)`, and `alarmToGithubIssue.js` titles issues `[ALARM] {alarmName}`.
 The composite name keeps the prefix and both keep working.
+
+## The checks each stack composite fans in
+
+Two per Lambda construct, one for each way a function can be broken: `check-{fn}-errors` when the
+invocation itself failed, `check-{fn}-log-errors` when it returned a response and logged something
+that went wrong, which is what a handler's caught-and-returned 500 looks like. `check-{fn}-throttles`
+and `check-{fn}-high-duration-p95` are gone: a throttle at this traffic level is not reachable and
+surfaces as an API 5xx anyway, and p95 near timeout is a leading indicator for a timeout that
+arrives as an error.
+
+Three more on an async pair, all one alert: `check-{dlq}-not-empty`, `check-{worker}-errors` and
+`check-{queue}-message-age`. A stuck queue and a broken worker are the same incident from two
+angles and share one response, so they raise the stack's composite once and its `state.reason`
+names which of the three tripped.
 
 ## Verification criterion
 
@@ -68,7 +83,7 @@ aws --profile submit-ci cloudwatch describe-alarms --alarm-name-prefix check- \
   --query 'length(MetricAlarms)'
 ```
 
-returns four times the deployment's Lambda-construct count.
+returns twice the deployment's Lambda-construct count plus three per async pair.
 
 Then prove the routing, which needs operator approval because it writes to AWS:
 
@@ -83,17 +98,8 @@ Exactly one Telegram message arrives. It names `<deployment>-app-<stack>-stack-h
 same stack is set to ALARM while the composite is still in ALARM. Reset both children with
 `--state-value OK` and confirm one recovery message.
 
-## Open: whether all four checks earn their keep
+## Canary and synthetic schedule
 
-That is the change that would actually cut the bill. The input now exists:
-`_developers/ALARM_AUDIT_2026-09.md` holds the 90-day state history of all 146 prod alarms
-(141 never fired; the five that did are detection and analytics alarms). The cut is NEXT.md
-item B30b.
-
-## Open: the async pairs
-
-`AsyncApiLambda.java` adds three more alarms on top of the four it inherits: `{dlq}-not-empty`,
-`{worker}-errors` and `{queue}-message-age`. Five pairs use it, two in `AccountStack` and three in
-`HmrcStack`. Those three still notify individually. Folding them into their stack's composite is
-the natural follow-up, but the queue and DLQ are shared state rather than per-function health, so
-it needs its own decision about whether a stuck queue and a broken worker raise one alert or two.
+Both Synthetics canaries run `cron(27 * * * ? *)`. `synthetic-test.yml` runs `57 */4 * * *`, so a
+canary run always sits half an hour either side of a synthetic run and the offset cannot drift the
+way `rate(51 minutes)` did. Hourly keeps two datapoints inside the canary alarms' 2-hour period.
