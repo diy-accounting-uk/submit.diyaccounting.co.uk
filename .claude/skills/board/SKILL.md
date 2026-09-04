@@ -18,6 +18,10 @@ combined row). Columns:
 
 | # | Item | Tier | State | Status | GH issue |
 
+Rows run in board order: in-flight tasks, ready agent tasks, ready operator tasks,
+blocked operator tasks, blocked agent tasks. Within a group, keep `NEXT.md`'s order.
+Never group rows by backlog number or tier.
+
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
 - `Item`: a short name, not the row's full prose.
@@ -55,6 +59,12 @@ if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
 - No commentary beyond the table, the lists, and that closing line, unless something
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
+- **Keep `NEXT.md` in board order.** Its open items sit under five headings in this
+  sequence: `## In flight`, `## Ready: Claude Code`, `## Ready: operator`,
+  `## Blocked: operator`, `## Blocked: Claude Code`. Before rendering, move any item
+  whose owner and state no longer match its heading (an operator item whose blocker
+  landed moves up to `Ready: operator`; a Claude Code item that gained a blocker moves
+  down to `Blocked: Claude Code`). That move is part of the write-back below.
 - **Write the statuses back.** The explanatory status lives in `NEXT.md`, not just in
   the rendering: after rendering, update any `NEXT.md` item whose entry no longer
   matches the status you just printed (same facts, prose fitted to the entry), commit
