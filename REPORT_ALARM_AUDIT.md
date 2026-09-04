@@ -51,13 +51,12 @@ are added, is closer to 136.
 
 ### Per-Lambda alarms (the bulk: 123 of ~163)
 
-`infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java:124-203` creates 4 alarms for
-every Lambda/ApiLambda instance: `{fn}-errors`, `{fn}-throttles`, `{fn}-high-duration-p95`, and
-`{fn}-log-errors` (the last backed by a `MetricFilter` scanning logs for `ERROR|Exception|...`,
-which is also a billed custom metric, not just an alarm).
-`infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java:49-137` adds 3 more per
-async pair (ingest + worker): `{dlq}-not-empty`, `{worker}-errors`, `{queue}-message-age`, for 7
-total per async Lambda.
+`infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java:124-203` creates 2 alarms for
+every Lambda/ApiLambda instance: `{fn}-errors` and `{fn}-log-errors` (the latter backed by a
+`MetricFilter` scanning logs for `ERROR|Exception|...`, which is also a billed custom metric, not
+just an alarm).
+`infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java:49-137` adds
+`{dlq}-not-empty`, `{worker}-errors` and `{queue}-message-age`, for 3 total per async pair.
 
 27 Lambda-construct instances exist across the codebase: 19 sync (16 `ApiLambda`, 2 plain `Lambda`
 not HTTP-routed — `reconcileLambda` in AccountStack and `telegramForwarderLambda` in OpsStack — plus

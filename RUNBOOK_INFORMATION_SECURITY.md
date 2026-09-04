@@ -559,7 +559,7 @@ the evidence the ICO may ask for later.
 
 | Detection | Alarm Name Pattern | Response |
 |-----------|-------------------|----------|
-| Lambda health (errors, throttles, slow, log errors) | `{deployment}-app-{stack}-stack-health`, `{env}-env-{stack}-stack-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
+| Lambda health (errors, log errors), async queue/DLQ/worker checks | `{deployment}-app-{stack}-stack-health`, `{env}-env-{stack}-stack-health` | Open the composite in CloudWatch, read which child check is in ALARM, then follow that check's logs |
 | API 5xx errors | `{env}-submit-api-5xx` | Check API Gateway + Lambda logs |
 | Health check failures | `{env}-ops-health-check` | Check CloudFront, API, Lambda |
 
