@@ -561,11 +561,14 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
         // Real HMRC sandbox answers 404 NOT_FOUND when a fresh test user has no liabilities in
         // the queried range, not when the VRN or endpoint is missing. The handler (see
         // hmrcVatLiabilitiesGet.js) treats that specific code as an empty result for the
-        // browser, so confirm every 404 audit record is that no-data code rather than a real
-        // error slipping through as a false pass.
+        // browser, so confirm every 404 audit record is that no-data response rather than a
+        // real error slipping through as a false pass. The audit repository masks any field
+        // named "code" before persisting (app/lib/dataMasking.js), so `code` and
+        // `errors[0].code` always read back as "***MASKED***" here — the HMRC message text
+        // survives masking, so check that instead.
         const responseBody = liabilitiesRequest.httpResponse.body;
-        const errorCode = responseBody?.code ?? responseBody?.errors?.[0]?.code;
-        expect(errorCode).toBe("NOT_FOUND");
+        const errorMessage = responseBody?.message ?? responseBody?.errors?.[0]?.message;
+        expect(errorMessage).toMatch(/no data can be found/i);
       }
       http404NotFoundResults += thisRequestHttp404Results;
     });
@@ -587,7 +590,7 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
       expect(http404NotFoundResults).toBe(0);
     }
     // In the real sandbox, a fresh test user has no liabilities in range, so HMRC's 404
-    // NOT_FOUND is expected; each 404 record above was already confirmed to carry that code.
+    // NOT_FOUND is expected; each 404 record above was already confirmed to carry that message.
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
