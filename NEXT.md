@@ -24,9 +24,17 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Integration branch `claude/board-batch-2` (from main at cf887695). Each track runs in its own
-worktree off main; the coordinator merges each landed track into the batch branch, pushes in
-batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
+**Paused by the operator on 2026-09-04 (session limit); resumes on their word.** Integration
+branch `claude/board-batch-2` is PR #118 (draft) with four tracks landed; PR #119 (layer 2) and
+PR #120 (layer 1, stacked on #118) are open. Three agents were told to commit as
+"WIP (paused):" and stop; their worktrees under `.claude/worktrees/` hold the partial work and
+each track line below says what remains. To resume: read this section, `git worktree list`,
+and each WIP commit message, then re-dispatch each paused track from its worktree branch (or a
+fresh worktree that merges that branch) with the same brief.
+
+Each track runs in its own worktree off main; the coordinator merges each landed track into the
+batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
+starting.
 
 - [ ] **B17a.1 remainder. Make the video timing check honest about the timer.**
   `scripts/check-video-timings.js` requires `timerMarkers >= 1`, but a script whose only
