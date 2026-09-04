@@ -13,18 +13,23 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-03)
+## Live status (updated 2026-09-04)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
-truthfully on its own.
+truthfully on its own. Operator-only steps are briefed for Claude Cowork in
+`../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 
-- **In flight**: nothing.
-- **Tier 1 = `NEXT.md`**: every Tier 1 row below is refined on `NEXT.md` into sub-agent-sized
-  items with source, owner (Operator or Claude Code) and model. The GA4 `purchase` residuals
-  (G1–G3) are on `NEXT.md` only; they have no backlog row.
-- **Date-gated (Tier 3)**: 47 due 2026-09-06/07; 43 due from 2026-10-02 (GCP part now); 48 due the week of 2026-11-29.
-- **Blocked in Tier 2**: 10 and 11 wait on the 10a spike; 34 and 40d wait on operator decisions
-  named in their rows.
+- **In flight**: B32 verification (the three new VAT read suites on the real HMRC sandbox;
+  three of five suites green), B17a.1 (video capture pattern, design pass).
+- **Landed 2026-09-04 by PR #107**: 10a's workflow fix, 11a's standards map, 12's catalogue,
+  27d, 27b, 27c's checklist and code fixes, 32b, 32.1–3, 32a's profile, 40a, 40e, 30's audit.
+  Those rows are gone from Tier 1; what remains of each is the NEXT.md label in the table.
+- **Tier 1 = `NEXT.md`**: every Tier 1 row below is refined on `NEXT.md` into items with
+  source, owner and model. The GA4 `purchase` residuals (G2b as O1a–O1d, G2c, G3) are on
+  `NEXT.md` only; they have no backlog row.
+- **Date-gated (Tier 3)**: 47 due 2026-09-06/07 (O9); 43 due from 2026-10-02 (GCP part is
+  B43a); 48 due the week of 2026-11-29.
+- **Tier 2**: 10 and 11 wait on B10a.3 and O4b; 34 and 40d are refined as B34.1–3 and B40d.2.
 
 ## Tier 1: do next
 
@@ -32,19 +37,13 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 10a | B10a.1–3 | ITSA spike: make the test-user workflow honour `mtd-income-tax` (it silently ignores the input today), subscribe the sandbox app to the ITSA APIs, make one read-only Business Details call through our OAuth and fraud headers | Split from #10 | S | Revenue. Everything in #10 is guesswork until a sandbox call returns. |
-| 11a | B11a.1–2 | Map HMRC's ITSA minimum functionality standards and recognition questionnaire against phases 1 and 2 | Split from #11 | S | Revenue. The standards decide what #10 has to contain. |
-| 12 | B12a–c | Catalogue: `day-guest` is already the strategy's day pass (one per user, cap 100, P1D, 3 tokens) and only needs the name; add `resident-itsa`; operator creates its Stripe prices | Operator decision; STRATEGY.md | S | Revenue. The pricing model the strategy commits to. |
-| 32b | B32b | Activity-level gating on the obligations and view-return endpoints (`requireActivity()` was specced, never built; both call `enforceBundles` only) | Split from #32 | S | Trust. Two live read endpoints with bundle-only checks. |
-| 32 | B32.1–3 | Optional VAT endpoints: liabilities, payments, penalties. Demand signal 2026-08-06→31: obligations 616 calls / 208 users, view-return 199 / 122 | Issue #19, vat-api-operations | M | Revenue, minor. Completes the listed feature set. |
-| 27d | B27d | Text-spacing (WCAG 1.4.12) clipping regression on all 24 pages | Found during the 44 final gate | S | Trust. A live accessibility regression on every page. |
-| 27b | B27b.1–3 | WCAG 2.2 AA audit: automated scans, manual review of the six 2.2 criteria, statement refresh | Split from #27 | M | Trust. HMRC questionnaire commitments; ITSA recognition will re-ask. |
-| 27c | B27c.1–2 | ICO checklist and breach template; operator confirms the ICO registration | Split from #27 | S | Trust. The data-protection half of the same commitments. |
-| 40e | B40e | Port the two friendly-error branches the dead `submitVat` copy holds, then delete it | Repo find, fixing B6 | S | Hygiene, plus two error messages users never see today. |
-| 40a | B40a | Per-run ports for local behaviour tests | Demo-videos agent, batch 2 | S | Hygiene. Parallel agent runs kill each other's servers. |
-| 30 | B30a–b | Alarm history audit of the 151 `check-*` alarms and the 15 async extras, then cut and fold; canary cadence against the synthetic cron | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
-| 32a | B32a.1–2 | Pipeline profile (ci 23 min, prod 61 min on 2026-09-02), then the three largest cuts | Operator, 2026-09-02 | M | Hygiene, compounding. Every iteration pays this tax. |
-| 17a | B17a | Demo videos: redo and publish. Operator-owned; Claude Code excluded by directive 2026-08-26. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26 | M | Revenue. A usable walkthrough of the real product. |
+| 10a | O5a, O5b, B10a.3 | ITSA spike: subscribe the sandbox app to the ITSA APIs, mint a test user, make one read-only Business Details call through our OAuth and fraud headers Split from #10 | S | Revenue. Everything in #10 is guesswork until a sandbox call returns. |
+| 11a | O4a, O4b | ITSA recognition questionnaire from SDST, and HMRC's answer on a 2027-28 production window Split from #11 | S | Revenue. The standards decide what #10 has to contain. |
+| 12 | B12c | Catalogue: `resident-itsa` price ids created by the `stripe-catalogue-sync` skill, PR #114 lands them Operator decision; STRATEGY.md | S | Revenue. The pricing model the strategy commits to. |
+| 32 | B32 verification, B32.4 | Optional VAT endpoints: liabilities, payments, penalties are merged; verify on the real sandbox, then add the suites to the 4-hourly schedule Issue #19, vat-api-operations | M | Revenue, minor. Completes the listed feature set. |
+| 27c | O3, B27c.2 remainder | ICO registration renewal, then record the number Split from #27 | S | Trust. The data-protection half of the same commitments. |
+| 30 | B30b | Cut the alarms and canary runs the audit shows are dead weight Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
+| 17a | B17a.1–5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit Operator directive 2026-08-26 | M | Revenue. A usable walkthrough of the real product. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
@@ -54,8 +53,8 @@ Each row names what has to happen before it can start.
 |---|---|---|---|---|
 | 10 | ITSA build, phase 1: sandbox integration with self-employment quarterly update APIs (Business Details, Obligations, SE Business). **Ready when** B10a.3's spike report exists (the OAuth scope, application and fraud-header assumptions confirmed against the sandbox) and B11a.1 says which endpoints the minimum standards require, so the phase can be split into one item per endpoint the way B32 is. Design doc: `_developers/backlog/self-employed-api-operations.md`; issue #16 lists nine endpoints and acceptance criteria. | Issues #16, #20; strategy | L | Revenue. The strategic bet. Voluntary sign-up is open now and HMRC auto-enrolment starts September 2026. |
 | 11 | ITSA build, phase 2: annual summaries, final declaration, then the ITSA recognition application and finder listing. **Ready when** phase 1 files a quarterly update in the sandbox and B11a.2's questionnaire is in hand; the recognition application itself is an operator submission. | Strategy | L | Revenue. The recognition lead time is HMRC's; starting early is the only control we have over April 2027. |
-| 34 | Companies House / limited company filing. No code exists; `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` splits it into read-only company lookup (public API key, no accreditation) and accounts filing (Companies House software-filing accreditation, weeks of lead time). **Ready when** the operator decides two things: whether the read-only lookup alone is worth shipping first, and whether to apply for filing accreditation now (an operator application) so the filing half has a date. With those, the lookup half is a Sonnet-sized item. | Issue #15 | L | Revenue. Real demand signal (customers asked when the joint service closed); promoted by the operator 2026-08-31 to sit alongside ITSA rather than behind it. |
-| 40d | Mode-naming cleanup. The three names are two things: `hmrcAccount` = `sandbox`/`live` (HMRC routing, set in `web/public/developer-mode.js`) and Stripe's `test` flag, which `billingWebhookPost.js:142` folds into the same `qualifiers.sandbox` field; UI copy says "sandbox (test)". "Synthetic" already means synthetic monitoring (`synthetic-test.yml`, synthetic-traffic filters in the detectors and analytics), so renaming the modes to it would collide. **Ready when** the operator picks the target: keep `sandbox`/`live` for HMRC and give the Stripe flag its own name (recommended, smallest change), or rename the modes to `synthetic` and rename the monitoring vocabulary to something else. | Issue #12 (closed; the rename is still open) | S | Hygiene. One name per concept. |
+| 34 | Refined 2026-09-04 as NEXT.md B34.1 (lookup), B34.2 (accreditation, operator) and B34.3 (filing). Companies House / limited company filing. No code exists; `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` splits it into read-only company lookup (public API key, no accreditation) and accounts filing (Companies House software-filing accreditation, weeks of lead time). **Ready when** the operator decides two things: whether the read-only lookup alone is worth shipping first, and whether to apply for filing accreditation now (an operator application) so the filing half has a date. With those, the lookup half is a Sonnet-sized item. | Issue #15 | L | Revenue. Real demand signal (customers asked when the joint service closed); promoted by the operator 2026-08-31 to sit alongside ITSA rather than behind it. |
+| 40d | Decided 2026-09-04: rename the modes to `synthetic`, NEXT.md B40d.2. Mode-naming cleanup. The three names are two things: `hmrcAccount` = `sandbox`/`live` (HMRC routing, set in `web/public/developer-mode.js`) and Stripe's `test` flag, which `billingWebhookPost.js:142` folds into the same `qualifiers.sandbox` field; UI copy says "sandbox (test)". "Synthetic" already means synthetic monitoring (`synthetic-test.yml`, synthetic-traffic filters in the detectors and analytics), so renaming the modes to it would collide. **Ready when** the operator picks the target: keep `sandbox`/`live` for HMRC and give the Stripe flag its own name (recommended, smallest change), or rename the modes to `synthetic` and rename the monitoring vocabulary to something else. | Issue #12 (closed; the rename is still open) | S | Hygiene. One name per concept. |
 
 ## Tier 3: autonomy (ongoing workstream)
 
@@ -70,8 +69,8 @@ Each row names what has to happen before it can start.
 | 16a | Define the CSV contract: column names and their mapping to the nine VAT boxes, published as a fixture both repos test against | Split from #16 | S | Revenue. The interface spans two repos, so it is the part that cannot be changed cheaply later. Submit has an export path today and no import path, so the contract has to be written before either side builds. |
 | 40b | Work the PLAN_REDUCE simplification items | PLAN_REDUCE | S/M | Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler. |
 | 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
-| 43 | **Due: GCP part now; renewal and bill checks from 2026-10-02 (first monthly renewal of the 2026-09-02 subscription, then the September bill).** Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (all four cuts and the `invoice.paid` fix live in prod since 2026-09-02): confirm the next real renewal refreshes tokens (`subscription-renewed` published); a monthly check that the bill moved the way the plan predicted (steady-state target $64.77/month before VAT); and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
-| 47 | **Due 2026-09-06 (codeql) and 2026-09-07 (weekly crons).** Confirm the weekly `compliance` and `stack-drift` crons fire on their own on Monday 2026-09-07 06:00 UTC (both revival runs are green); watch `codeql` on 2026-09-06 and revive it the same way if it misses again | Schedule revival, 2026-08-31 | S | Hygiene. A schedule that only runs when poked is not a schedule; one self-fire closes it. |
+| 43 | **GCP part is NEXT.md B43a (automated after O1a); renewal and bill checks due from 2026-10-02.** **Due: GCP part now; renewal and bill checks from 2026-10-02 (first monthly renewal of the 2026-09-02 subscription, then the September bill).** Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (all four cuts and the `invoice.paid` fix live in prod since 2026-09-02): confirm the next real renewal refreshes tokens (`subscription-renewed` published); a monthly check that the bill moved the way the plan predicted (steady-state target $64.77/month before VAT); and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
+| 47 | **NEXT.md O9.** **Due 2026-09-06 (codeql) and 2026-09-07 (weekly crons).** Confirm the weekly `compliance` and `stack-drift` crons fire on their own on Monday 2026-09-07 06:00 UTC (both revival runs are green); watch `codeql` on 2026-09-06 and revive it the same way if it misses again | Schedule revival, 2026-08-31 | S | Hygiene. A schedule that only runs when poked is not a schedule; one self-fire closes it. |
 | 48 | **Due the week of 2026-11-29.** Manual `certbot renew`: run `aws sso login --sso-session diyaccounting` first, command in `_developers/SETUP.md`. The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed and cannot refresh unattended | Certbot setup | S | Hygiene. The local dev certificate lapses without it; date-gated, operator session needed. |
 
 ## Tier 4: hardening and compliance
@@ -84,7 +83,7 @@ Each row names what has to happen before it can start.
 | 33a | Rewrite one leaf stack in TypeScript, synthesise it, and diff the template against the Java synth | Split from #33 | S | Hygiene. Nineteen stack classes is a large commitment on an untested assumption. One stack says how faithful the rewrite is and how long the other eighteen will take, without touching a deployment. |
 | 36 | Social IdPs: Apple, Microsoft | Issue #14 | L | Revenue, marginal. No evidence login choice is losing users; revisit when funnel data (#13) exists. |
 | 37 | Merch (#17): simple storefront link version only | Issue #17 | S | Revenue, negligible. Do the link version if ever; skip the integrated build. |
-| 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
+| 39 | Multi-URL Lighthouse (#13); synthetic-test flakiness (first item: NEXT.md B39.1, the upload-results job) | Issue #13, CI audit | M | Hygiene. Quality gates; not blocking anything today. |
 | 41 | Doc hygiene: archive the two stale "in progress" plans that shipped, fix the dangling NEXT.md reference, close out PLAN_FLAGGED | Repo review | S | Hygiene. Stale plans mislead every future session. |
 | 46 | Stop the corpus index returning plaintext credentials in search excerpts: `drive/marketing/facebook.txt` came back with a live login verbatim, and two detection passes missed it (enumeration 2026-08-28, keyword scan 2026-08-31) because the file is just an address, a name and a password with no keywords around them. Enumeration is the wrong shape of fix — replace the enumerated exclude list in `index/corpus.toml` (workspace level) with directory-level exclusions covering `facilities/**`, `technology/**` and the service-named notes under `marketing/**`, then purge and re-index. | Cowork, 2026-08-31 | S | Trust. Live credentials in search results; matters more if the directors' assistant ever ships. |
 

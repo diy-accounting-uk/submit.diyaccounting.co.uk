@@ -46,6 +46,7 @@ results back by pasting them into a Claude Code session or appending to the work
   GA4 account, and in GCP project `diyaccounting-ga4` give it Owner (or IAM Admin plus
   BigQuery Admin). This is the last hand grant: after it, O1b applies grants from a file.
   **Source**: none. **Owner**: Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
   `analytics/google-roles.toml` listing the GA4 account and property access bindings
   (Analytics Admin API `accessBindings`) and the GCP project IAM bindings the analytics work
@@ -63,36 +64,38 @@ results back by pasting them into a Claude Code session or appending to the work
   Blocked on O1a.
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B12c. Create the Stripe prices for `resident-itsa` with the `stripe-catalogue-sync`
-  skill.** Test mode done 2026-09-04: product `prod_VCQszJB80cZ8X7`, price
-  `price_1UC216FdFHdRoTOjCEixPiQL` (£0.99/month), recorded on branch
-  `claude/resident-itsa-price-ids`. Live mode waits for the operator's separate go; its dry
-  run shows the same single product and price to create. Then land both ids in `.env.ci` and
-  `.env.prod` by PR. Confirm the day pass numbers (3 tokens, 100 concurrent) or give new ones
-  for B12a. **Source**: BACKLOG 12. **Owner**: Claude Code, with the operator's go for live
-  mode. **Model**: Haiku.
+- [ ] **B12c. Land the `resident-itsa` Stripe price ids.** Both modes done 2026-09-04 with the
+  `stripe-catalogue-sync` skill: test `price_1UC216FdFHdRoTOjCEixPiQL`, live
+  `price_1UC2SqCD0Ld2ukzIiRyB0xmy`; PR #114 carries them in `.env.ci` and `.env.prod` and
+  awaits merge. Day pass numbers (3 tokens, 100 concurrent) stand unless the operator gives
+  new ones. **Source**: BACKLOG 12. **Owner**: Operator merges. **Model**: —.
 - [ ] **O3 / B27c.2. Renew the company's ICO registration.** Registration ZB070902 (the
   certificate PDF in the repo root) expired 2026-05-23 and `privacy.html` still publishes it
   as current, so this is an active gap, not a check. Pay the fee for DIY Accounting Limited
   (06846849) and hand the new number and expiry to Claude Code for
   `_developers/ICO_CHECKLIST.md` and `privacy.html`. **Source**: BACKLOG 27c; Track E finding
   2026-09-03. **Owner**: Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O4a / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not
   on the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
   drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O4b / B11a.2. Ask HMRC whether a 2027-28 production-credential window opens for new
   ITSA quarterly-update products.** HMRC's pages say the 2026-27 window is closed to new
   products (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`; vendor contact
   makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O5a / B10a.2. Subscribe the sandbox application to the ITSA APIs.** In the HMRC
   developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in `.env.ci`) to Business
   Details (MTD) and Self Employment Business (MTD). **Source**: BACKLOG 10a. **Owner**:
   Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O5b / B10a.2. Mint an ITSA sandbox test user.** Run the `create-hmrc-test-user`
   workflow on main with `mtd-vat,mtd-income-tax` and keep the credentials artifact (NINO,
   user id, password) somewhere private. **Source**: BACKLOG 10a. **Owner**: Operator. Blocked
   on O5a.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
@@ -101,6 +104,7 @@ results back by pasting them into a Claude Code session or appending to the work
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
+  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
   BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
