@@ -49,7 +49,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: synthetic workflow (Sonnet, shared with B39.1). Worktree `.claude/worktrees/agent-a3d6b71310c4d4d10`, running; lands on `claude/board-batch-2`.
+  **Track**: synthetic workflow (Sonnet, shared with B39.1). Code complete on `claude/board-batch-2` (PR #118); verified when the next scheduled run on main runs all five suites.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
@@ -83,7 +83,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   and add a check that fails early with the paths it looked at. **Source**: BACKLOG 39
   (synthetic-test flakiness); repo find 2026-09-04. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: synthetic workflow (Sonnet, shared with B32.4). Worktree `.claude/worktrees/agent-a3d6b71310c4d4d10`, running; lands on `claude/board-batch-2`.
+  **Track**: synthetic workflow (Sonnet, shared with B32.4). Code complete on `claude/board-batch-2` (PR #118): the report file is now named after the suite the workflow passes, and the upload job fails early naming the paths it looked at. Verified when a prod dispatch of `getVatPenaltiesBehaviour` uploads its report.
 - [ ] **B40f. Make the Express dev server answer uncaught handler errors as JSON.** When
   `getAsyncRequest` threw `ResourceNotFoundException` locally, `app/bin/server.js` returned
   Express's default HTML 500 page and the page failed on `Unexpected token '<'`; the API rule
