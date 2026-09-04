@@ -29,7 +29,8 @@ first two blocks unblock.
   on prod 2026-09-04 with the durable synthetic user (`synthetic-test.yml` dispatch, one
   suite each): obligations, view-return and penalties pass; liabilities and payments fail
   only on the audit assertion that reads HMRC's error code from the stored record, which the
-  audit repository masks (`***MASKED***`); fix in flight, then re-dispatch those two suites.
+  audit repository masks (`***MASKED***`); the fix is PR #115 (message text instead of code); after
+  its merge re-dispatch those two suites.
   Green closes B32 and this block. **Source**: BACKLOG 32; issue #19. **Owner**: Claude Code.
   **Model**: Sonnet.
 
