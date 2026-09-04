@@ -55,7 +55,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House design (Opus design doc, then a Sonnet build track in wave 2). Worktree `.claude/worktrees/agent-a0cc2f25cc411d414`, running; lands on `claude/board-batch-2`.
+  **Track**: Companies House build (Sonnet) against `_developers/backlog/companies-house-api-operations.md`, on its own branch and PR because the deploy needs the operator's API key (O6). Worktree assigned on dispatch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -128,6 +128,12 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   Details (MTD) and Self Employment Business (MTD). **Source**: BACKLOG 10a. **Owner**:
   Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
+- [ ] **O6 / B34.1. Register two Companies House API keys and add them as GitHub environment
+  secrets.** Steps 1 to 7 under "Operator steps" in
+  `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
+  per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
+  the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
+  BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
