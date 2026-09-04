@@ -250,9 +250,7 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
 
-// Error-handling middleware for uncaught errors in route handlers.
-// Must be registered after all routes to catch both sync throws and rejected promises.
-// In Express, error middleware must be last, with four parameters (err, req, res, next).
+// Registered last so a throw or rejected promise from any route above answers as JSON.
 app.use(jsonErrorHandler);
 
 // 0 means ephemeral: the OS assigns a free port, read back below once the server is listening.

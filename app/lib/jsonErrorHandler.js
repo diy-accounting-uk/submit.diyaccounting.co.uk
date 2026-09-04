@@ -3,7 +3,7 @@
 
 // app/lib/jsonErrorHandler.js
 
-import { createLogger, context, sanitiseData } from "./logger.js";
+import { createLogger, context } from "./logger.js";
 
 const logger = createLogger({ source: "app/lib/jsonErrorHandler.js" });
 
