@@ -135,8 +135,6 @@ workspace root); blocked operator items; blocked Claude Code items.
   Operator (an upload via the YouTube Data API can follow once the pattern settles). Blocked
   on B17a.2–4.
 
-### Block 3 — opens as Blocks 1 and 2 land
-
 ## Blocked: Claude Code
 
 - [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
@@ -194,9 +192,6 @@ workspace root); blocked operator items; blocked Claude Code items.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
-
-Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4b answers the
-production-window question; rows 34 and 40d are now B34.1–3 and B40d.2 above.
 
 Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4b answers the
 production-window question; rows 34 and 40d are now B34.1–3 and B40d.2 above.
