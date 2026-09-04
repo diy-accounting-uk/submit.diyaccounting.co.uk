@@ -64,7 +64,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): worktree assigned on dispatch. Layer 1 (monitoring vocabulary to `probe`) starts once the alarm cuts land, because both edit `OpsStack.java`. Layers 3 (HMRC mode value, migrations 005 and 006) and 4 (docs and copy) follow in order.
+  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): worktree `.claude/worktrees/agent-ae4518f5f16b29070`, running. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): running, worktree assigned on dispatch, stacked on the batch branch. Layers 3 (HMRC mode value, migrations 005 and 006) and 4 (docs and copy) follow in order.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
@@ -74,7 +74,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
-  **Track**: alarm cuts (Opus). Worktree `.claude/worktrees/agent-a9ad6dd2892cdcc57`, running; lands on `claude/board-batch-2`.
+  **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 - [ ] **B39.1. Fix the synthetic runs' "upload web test results" job.** It fails with
   `jq: Could not open file target/behaviour-test-results/<suite>/test-report-<suite>.json`
   after a passing behaviour test (prod dispatches 33908160864 and 33908172202; main's
@@ -134,6 +134,10 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
   the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **B30b remainder, operator. Close the six `[ALARM]` issues for the deleted p95 alarms**:
+  #78, #80, #81, #83, #86, #89 (`…-activity-telegram-forwarder-high-duration-p95`). The alarm no
+  longer exists after the batch deploys, so no recovery event will close them. **Source**: BACKLOG
+  30. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
