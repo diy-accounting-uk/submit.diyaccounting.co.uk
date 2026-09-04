@@ -37,13 +37,13 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 10a | O5a, O5b, B10a.3 | ITSA spike: subscribe the sandbox app to the ITSA APIs, mint a test user, make one read-only Business Details call through our OAuth and fraud headers Split from #10 | S | Revenue. Everything in #10 is guesswork until a sandbox call returns. |
-| 11a | O4a, O4b | ITSA recognition questionnaire from SDST, and HMRC's answer on a 2027-28 production window Split from #11 | S | Revenue. The standards decide what #10 has to contain. |
-| 12 | B12c | Catalogue: `resident-itsa` price ids created by the `stripe-catalogue-sync` skill, PR #114 lands them Operator decision; STRATEGY.md | S | Revenue. The pricing model the strategy commits to. |
-| 32 | B32 verification, B32.4 | Optional VAT endpoints: liabilities, payments, penalties are merged; verify on the real sandbox, then add the suites to the 4-hourly schedule Issue #19, vat-api-operations | M | Revenue, minor. Completes the listed feature set. |
-| 27c | O3, B27c.2 remainder | ICO registration renewal, then record the number Split from #27 | S | Trust. The data-protection half of the same commitments. |
-| 30 | B30b | Cut the alarms and canary runs the audit shows are dead weight Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
-| 17a | B17a.1–5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit Operator directive 2026-08-26 | M | Revenue. A usable walkthrough of the real product. |
+| 10a | O5a, O5b, B10a.3 | ITSA spike: subscribe the sandbox app to the ITSA APIs, mint a test user, make one read-only Business Details call through our OAuth and fraud headers | Split from #10 | S | Revenue. Everything in #10 is guesswork until a sandbox call returns. |
+| 11a | O4a, O4b | ITSA recognition questionnaire from SDST, and HMRC's answer on a 2027-28 production window | Split from #11 | S | Revenue. The standards decide what #10 has to contain. |
+| 12 | B12c | Catalogue: `resident-itsa` price ids created by the `stripe-catalogue-sync` skill, PR #114 lands them | Operator decision; STRATEGY.md | S | Revenue. The pricing model the strategy commits to. |
+| 32 | B32 verification, B32.4 | Optional VAT endpoints: liabilities, payments, penalties are merged; verify on the real sandbox, then add the suites to the 4-hourly schedule | Issue #19, vat-api-operations | M | Revenue, minor. Completes the listed feature set. |
+| 27c | O3, B27c.2 remainder | ICO registration renewal, then record the number | Split from #27 | S | Trust. The data-protection half of the same commitments. |
+| 30 | B30b | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
+| 17a | B17a.1–5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
