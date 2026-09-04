@@ -29,6 +29,8 @@
     "hmrcSandboxClientId": "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
     "hmrcSandboxBaseUri": "https://test-api.service.hmrc.gov.uk",
     "hmrcSandboxApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
+    "companiesHouseBaseUri": "https://api.company-information.service.gov.uk",
+    "companiesHouseApiKeyArn": "",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "selfDestructDelayHours": "1",
     "certificateArn": "arn:aws:acm:us-east-1:972912397388:certificate/e465ad23-baf8-4b5c-94a4-33f73a266ec6",

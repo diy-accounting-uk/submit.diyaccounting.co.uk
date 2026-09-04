@@ -80,6 +80,11 @@ class SubmitApplicationCdkResourceTest {
         hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 14);
         assertStackHealthAlarm(hmrcStackTemplate, 8, routedPrefixes);
 
+        infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
+        Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 2, routedPrefixes);
+
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
         // passPost(1), passAdminPost(1), passGeneratePost(1), passMyPassesGet(1),
@@ -163,7 +168,13 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 46);
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/companies-house/search"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
+        // Each of the two new Companies House routes also gets ApiStack's automatic HEAD route.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 50);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
