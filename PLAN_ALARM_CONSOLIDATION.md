@@ -89,7 +89,7 @@ Then prove the routing, which needs operator approval because it writes to AWS:
 
 ```bash
 aws --profile submit-ci cloudwatch set-alarm-state \
-  --alarm-name check-<deployment>-app-<fn>-throttles \
+  --alarm-name check-<deployment>-app-<fn>-errors \
   --state-value ALARM --state-reason "routing check"
 ```
 
