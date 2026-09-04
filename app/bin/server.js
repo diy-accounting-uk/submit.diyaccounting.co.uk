@@ -245,14 +245,15 @@ billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
 
-// Error-handling middleware for uncaught errors in route handlers.
-// Must be registered after all routes to catch both sync throws and rejected promises.
-app.use(jsonErrorHandler);
-
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
+
+// Error-handling middleware for uncaught errors in route handlers.
+// Must be registered after all routes to catch both sync throws and rejected promises.
+// In Express, error middleware must be last, with four parameters (err, req, res, next).
+app.use(jsonErrorHandler);
 
 // 0 means ephemeral: the OS assigns a free port, read back below once the server is listening.
 const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;
