@@ -20,7 +20,7 @@ PR; the operator merges.
 
 The board is sequenced in three blocks. Block 1 holds what is still in flight from the
 2026-09-03 batch (PR #107, merged 2026-09-04). Block 2 is the operator batch, briefed for
-Claude Cowork in `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`. Block 3 is everything the
+Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root. Block 3 is everything the
 first two blocks unblock.
 
 ### Block 1 — in flight
@@ -35,7 +35,7 @@ first two blocks unblock.
   synthetic user) and record each result. Green closes B32 and this block. **Source**: BACKLOG
   32; issue #19. **Owner**: Claude Code. **Model**: Haiku.
 
-### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
+### Block 2 — Operator batch (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 Browser and account work a workflow cannot do, plus the decisions that unblock Tier 2. Each
 item's steps, URLs and hand-back are in the brief so Claude Cowork can drive the browser. Hand
