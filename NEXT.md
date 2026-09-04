@@ -58,7 +58,12 @@ results back by pasting them into a Claude Code session or appending to the work
   In flight: the design is done (`scratchpad/design-video-capture.md`: CDP screencast with
   per-frame timestamps to 60 fps H.264, captions 40px, no audio, waits compressed 8x past 6 s
   with a real-seconds timer, `ffmpeg-static`, plus a `.vtt` and transcript per video for WCAG
-  1.2.1) and the Sonnet build is running (2026-09-04). **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
+  1.2.1). The Sonnet build was dispatched 2026-09-04 in worktree
+  `.claude/worktrees/agent-ad7c8fb3474742b6e` (branch `claude/site-video-capture`); the
+  session that dispatched it ended, so the next session checks that worktree's `git log` and
+  `git status` first and resumes from the design (also kept at
+  `_developers/design/site-video-capture.md`) rather than re-designing. The operator has
+  said no further items go in flight without their explicit request. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet.
 
 ## Ready: Claude Code
