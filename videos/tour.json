@@ -11,7 +11,7 @@
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
-    "aroundMotionMs": 1200,
+    "aroundMotionMs": 600,
     "minResidualMs": 150,
     "timerThresholdMs": 250,
     "timerFullScaleMs": 5000,
@@ -46,7 +46,7 @@
           "waitFor": "#mainContent",
           "caption": "DIY Accounting Submit files VAT returns straight to HMRC."
         },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 600 },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         {
           "action": "scroll",
           "target": "#dynamicActivities",
@@ -58,7 +58,7 @@
           "target": { "text": "reviews on Google" },
           "caption": "DIY Accounting has run VAT submissions for years."
         },
-        { "action": "hold", "ms": 1200 }
+        { "action": "hold", "ms": 600 }
       ]
     },
     {
@@ -73,13 +73,13 @@
         },
         { "action": "click", "target": "a.info-link[href='about.html']" },
         { "action": "scroll", "target": { "text": "Why Choose DIY Accounting Submit?" } },
-        { "action": "hold", "ms": 1500 },
+        { "action": "hold", "ms": 750 },
         {
           "action": "scroll",
           "target": { "text": "Ready to Submit Your VAT Return?" },
           "caption": "Making Tax Digital compliant and recognised by HMRC."
         },
-        { "action": "hold", "ms": 1200 }
+        { "action": "hold", "ms": 600 }
       ]
     },
     {
@@ -93,19 +93,19 @@
           "caption": "The user guide walks through a return in three steps."
         },
         { "action": "scroll", "target": { "text": "Submit your VAT return in 3 steps" } },
-        { "action": "hold", "ms": 1800 },
+        { "action": "hold", "ms": 900 },
         {
           "action": "scroll",
           "target": "#obligations",
           "caption": "It also covers obligations, liabilities, payments and penalties."
         },
-        { "action": "hold", "ms": 1000 },
+        { "action": "hold", "ms": 500 },
         {
           "action": "scroll",
           "target": "#receipts",
           "caption": "Every submission leaves a receipt you can find again."
         },
-        { "action": "hold", "ms": 1400 }
+        { "action": "hold", "ms": 700 }
       ]
     },
     {
@@ -126,15 +126,15 @@
           "text": "receipt",
           "caption": "Type a word to filter the questions."
         },
-        { "action": "hold", "ms": 2000 },
+        { "action": "hold", "ms": 1000 },
         { "action": "point", "target": "#faq-list" },
-        { "action": "hold", "ms": 1200 },
+        { "action": "hold", "ms": 600 },
         {
           "action": "scroll",
           "target": "#open-support-form",
           "caption": "If nothing fits, the support form reaches a person."
         },
-        { "action": "hold", "ms": 1200 }
+        { "action": "hold", "ms": 600 }
       ]
     },
     {
@@ -150,9 +150,9 @@
         { "action": "await", "until": "#catalogBundles .service-item", "label": "Loading bundles" },
         { "action": "scroll", "target": "#catalogBundles" },
         { "action": "point", "target": "#catalogBundles .service-item:first-of-type" },
-        { "action": "hold", "ms": 1600 },
+        { "action": "hold", "ms": 800 },
         { "action": "scroll", "target": "#passEntryForm", "caption": "Got a pass? Redeem it here." },
-        { "action": "hold", "ms": 1200 }
+        { "action": "hold", "ms": 600 }
       ]
     },
     {
@@ -167,15 +167,15 @@
           "caption": "We publish an accessibility statement and the reports behind it."
         },
         { "action": "scroll", "target": { "text": "Conformance Status" } },
-        { "action": "hold", "ms": 1500 },
+        { "action": "hold", "ms": 750 },
         {
           "action": "scroll",
           "target": { "text": "Known Limitations" },
           "caption": "Including what still does not work."
         },
-        { "action": "hold", "ms": 1500 },
+        { "action": "hold", "ms": 750 },
         { "action": "scroll", "to": "top", "caption": "Start at submit.diyaccounting.co.uk." },
-        { "action": "hold", "ms": 2000 }
+        { "action": "hold", "ms": 1000 }
       ]
     }
   ]
