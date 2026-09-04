@@ -55,15 +55,13 @@ results back by pasting them into a Claude Code session or appending to the work
   demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
   the design. First video: home, about, guide, help, bundles and accessibility with no login.
   The operator reviews the video and the pattern is refined before the authenticated ones.
-  In flight: the design is done (`scratchpad/design-video-capture.md`: CDP screencast with
-  per-frame timestamps to 60 fps H.264, captions 40px, no audio, waits compressed 8x past 6 s
-  with a real-seconds timer, `ffmpeg-static`, plus a `.vtt` and transcript per video for WCAG
-  1.2.1). The Sonnet build was dispatched 2026-09-04 in worktree
-  `.claude/worktrees/agent-ad7c8fb3474742b6e` (branch `claude/site-video-capture`); the
-  session that dispatched it ended, so the next session checks that worktree's `git log` and
-  `git status` first and resumes from the design (also kept at
-  `_developers/design/site-video-capture.md`) rather than re-designing. The operator has
-  said no further items go in flight without their explicit request. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
+  In flight: built and recorded 2026-09-04, PR #116 open. The tour is at
+  `target/videos/tour/tour.mp4` (154 s, 1080p60) with stills, `.vtt` and transcript beside it;
+  the operator reviews pace and pointer, the pattern is refined from that review, then the
+  workflow is dispatched once against prod. Design kept at
+  `_developers/design/site-video-capture.md`. No further items go in flight without the
+  operator's explicit request.
+  **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet.
 
 ## Ready: Claude Code
