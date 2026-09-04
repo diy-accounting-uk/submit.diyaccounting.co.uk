@@ -28,6 +28,13 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## Ready: Claude Code
 
+- [ ] **B17a.1 remainder. Make the video timing check honest about the timer.**
+  `scripts/check-video-timings.js` requires `timerMarkers >= 1`, but a script whose only
+  backend wait finishes under the 250 ms threshold never draws the timer, so the prod tour run
+  (33918880298) printed exit code 1 while `video-capture.yml` marked the step continue-on-error
+  and the job green. Require a timer marker only when the timeline records a wait past the
+  threshold, and make the step fail the job when a check fails. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
