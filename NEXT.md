@@ -66,12 +66,13 @@ results back by pasting them into a Claude Code session or appending to the work
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
 - [ ] **B12c. Create the Stripe prices for `resident-itsa` with the `stripe-catalogue-sync`
-  skill.** The catalogue now carries the price (99 gbp/month) and `scripts/stripe-setup.js`
-  builds from it; the test-mode dry run shows resident-itsa as the one product to create.
-  Run test mode on the operator's go, live mode on a second go, then land the two price ids
-  in `.env.ci` and `.env.prod` by PR. Confirm the day pass numbers (3 tokens, 100 concurrent)
-  or give new ones for B12a. **Source**: BACKLOG 12. **Owner**: Claude Code, with the
-  operator's go for each mode. **Model**: Haiku.
+  skill.** Test mode done 2026-09-04: product `prod_VCQszJB80cZ8X7`, price
+  `price_1UC216FdFHdRoTOjCEixPiQL` (£0.99/month), recorded on branch
+  `claude/resident-itsa-price-ids`. Live mode waits for the operator's separate go; its dry
+  run shows the same single product and price to create. Then land both ids in `.env.ci` and
+  `.env.prod` by PR. Confirm the day pass numbers (3 tokens, 100 concurrent) or give new ones
+  for B12a. **Source**: BACKLOG 12. **Owner**: Claude Code, with the operator's go for live
+  mode. **Model**: Haiku.
 - [ ] **O3 / B27c.2. Renew the company's ICO registration.** Registration ZB070902 (the
   certificate PDF in the repo root) expired 2026-05-23 and `privacy.html` still publishes it
   as current, so this is an active gap, not a check. Pay the fee for DIY Accounting Limited
