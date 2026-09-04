@@ -24,31 +24,16 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-- [ ] **B17a.1. Spike: a Playwright pattern for human-audience video, proven on one
-  unauthenticated tour of the site, delivered as a GitHub Actions workflow.** Not test
-  automation: the viewer is a person. Requirements set 2026-09-04: three consistent
-  pacing groups in a config (per typed character; between form cells or clicks; before and
-  after a scroll or navigation), with backend wait time subtracted from the configured pause
-  and a scaled visible timer shown while waiting; a drawn pointer with trails and an
-  emphasis on each action; text annotations from a scene script (`videos/tour.json`: scenes,
-  targets, captions, holds) so a UI change means a rerun, not a re-edit; high frame rate
-  capture with fine scrubber control (a fixed-cadence frame sequence assembled by ffmpeg
-  rather than Playwright's variable-rate webm); 1920x1080 mp4 with a held final frame and
-  per-scene stills. The spike records against a local instance for fast iteration; the real
-  recording runs as `video-capture.yml` against prod using the HMRC sandbox account and the
-  synthetic user. Design first: web research on published guidance for website training and
-  demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
-  the design. First video: home, about, guide, help, bundles and accessibility with no login.
-  The operator reviews the video and the pattern is refined before the authenticated ones.
-  In flight: pattern merged (PR #116) and the halved pacing merged (PR #117); the operator
-  approved the v2 tour on 2026-09-04. One step left: a `video-capture.yml` dispatch on main
-  for `videos/tour.json` against prod, on the operator's word, which proves the runner path
-  and closes this item. Design kept at `_developers/design/site-video-capture.md`.
-  **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
-  Code. **Model**: Opus design, then Sonnet.
+(none)
 
 ## Ready: Claude Code
 
+- [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
+  B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -164,13 +149,6 @@ workspace root); blocked operator items; blocked Claude Code items.
   Blocked on O1a.
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
-  B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet. Blocked
-  on B17a.1.
-- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B17a.1.
-- [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B17a.1.
 - [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
   BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B43a. GCP billing tidy-up, automated.** In the roles/apply script from O1b (or a

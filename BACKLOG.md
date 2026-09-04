@@ -19,7 +19,7 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Operator-only steps are briefed for Claude Cowork in
 `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 
-- **In flight**: B17a.1 (video capture pattern, merged; the operator reviews the tour).
+- **In flight**: nothing. The video capture pattern (B17a.1) is merged and proven on a prod run; the three journey videos are ready to record.
 - **Landed 2026-09-04 by PR #107**: 10a's workflow fix, 11a's standards map, 12's catalogue,
   27d, 27b, 27c's checklist and code fixes, 32b, 32.1–3, 32a's profile, 40a, 40e, 30's audit.
   Those rows are gone from Tier 1; what remains of each is the NEXT.md label in the table.
@@ -41,7 +41,7 @@ Refined items live on `NEXT.md` under the labels in the second column.
 | 32 | B32.4 | Optional VAT endpoints: liabilities, payments, penalties are merged and verified on the real sandbox (2026-09-04); add the suites to the 4-hourly schedule | Issue #19, vat-api-operations | S | Revenue, minor. Completes the listed feature set. |
 | 27c | O3, B27c.2 remainder | ICO registration renewal, then record the number | Split from #27 | S | Trust. The data-protection half of the same commitments. |
 | 30 | B30b | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
-| 17a | B17a.1–5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
+| 17a | B17a.2–5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
