@@ -35,7 +35,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   and the job green. Require a timer marker only when the timeline records a wait past the
   threshold, and make the step fail the job when a check fails. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: timing check (Haiku). Worktree `.claude/worktrees/agent-a94227bc55e85fc6d`, running; lands on `claude/board-batch-2`.
+  **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: video auth (Opus; builds the login, HMRC-authorise and bundle steps the capture script lacks, proven on this script). Worktree `.claude/worktrees/agent-a5974bd506e008ad6`, running; lands on `claude/board-batch-2`.
