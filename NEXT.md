@@ -13,41 +13,34 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-6f1779b, the only app stack set standing.** Each extra
+**Prod runs deployment prod-ca55da7, the only app stack set standing; main's deploy run
+33903534280 (the PR #107 merge) is queued and will replace it.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
-The board is sequenced in three blocks. Block 1 is the Claude Code batch in flight since
-2026-09-03 on PR #107. Block 2 is the operator batch, briefed for Claude Cowork in
-`_developers/COWORK_BRIEF_OPERATOR_BATCH.md`. Block 3 is everything the first two blocks
-unblock.
+The board is sequenced in three blocks. Block 1 holds what is still in flight from the
+2026-09-03 batch (PR #107, merged 2026-09-04). Block 2 is the operator batch, briefed for
+Claude Cowork in `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`. Block 3 is everything the
+first two blocks unblock.
 
-### Block 1 — Claude Code batch (in flight)
+### Block 1 — in flight
 
-All tracks integrate on the single remote branch `claude/board-batch-1`; the coordinator merges
-each track's commits into it as they land, pushes in batches, and opens the PR once the branch
-is deploying. Each track runs in its own worktree under `.claude/worktrees/`. Design waves run
-on Opus and write to the session scratchpad; coding runs on Sonnet or Haiku from those designs.
-
-| Track | Model | Items, in order | Worktree / status |
-|---|---|---|---|
-| A funnel | Sonnet | G1, G2a | merged 50481414; code complete, awaiting the branch deploy |
-| B vat-reads | Sonnet design, then Sonnet | B32.1, B32.2, B32.3 | merged 8a62c21e; scenario, 400-mapping, return-fallback and verify-wait fixes merged (last dd7f5b7d); push deploy 33800795175 green on re-run (post-return timing flake fixed 011e3cd6); sandbox-lane run 33807881305: obligations, view-return and penalties now pass on the real sandbox; liabilities and payments audit assertion fixed dd8228e8. Non-prod deployments self-destruct 2 hours after deploy (SelfDestructStack), which ended the 22:07 sandbox run mid-way; a single dispatch that deploys and runs the sandbox lanes inside that window is the verification step; three such dispatches (33813432929, 33815471141, 33820815960; 22:31 to 00:12 UTC) failed on `npm ci` timeouts (exit 124) across unrelated jobs with the lockfile unchanged from main; retry when runners are healthy: `gh workflow run deploy.yml --ref claude/board-batch-1 -f skipTestScenarios=false` |
-| C1 catalogue | Sonnet | B12a, B12b | merged 3662f33e, test fix merged; code complete, awaiting the branch deploy |
-| C2 hygiene | Sonnet | B40e, B40a | merged 9a35e78d with both sandbox-obligations fixes; code complete, awaiting the branch deploy |
-| D1 accessibility scans | Sonnet | B27d, B27b.1 | merged c608583f; code complete, awaiting the branch deploy |
-| D2 accessibility review | Sonnet | B27b.2, B27b.3 | merged 3ada9169; code complete, awaiting the branch deploy |
-| F itsa-test-user | Sonnet | B10a.1 | merged 061ec001; code complete, awaiting the branch deploy |
-| G alarm-audit | Haiku | B30a | merged 5fc9f883; audit written |
-| H privacy-fixes | Sonnet | B27c.3, B27c.4 | merged 9e75260d; code complete, awaiting the branch deploy |
-| I pipeline-cuts | Sonnet design | B32a.2 | done: findings merged 5067f44d; the operator keeps the shared concurrency group |
+- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** The
+  liabilities, payments and penalties endpoints (B32.1–3) are merged and green in every
+  simulator lane, but their real-sandbox lanes ran only through hand dispatches that kept
+  hitting the non-prod 2-hour self-destruct and, overnight, `npm ci` timeouts on the runners.
+  Once main's deploy 33903534280 completes, dispatch `synthetic-test.yml` on main once per
+  suite (`getVatObligationsBehaviour`, `getVatReturnBehaviour`, `getVatLiabilitiesBehaviour`,
+  `getVatPaymentsBehaviour`, `getVatPenaltiesBehaviour`; environment auto = prod, durable
+  synthetic user) and record each result. Green closes B32 and this block. **Source**: BACKLOG
+  32; issue #19. **Owner**: Claude Code. **Model**: Haiku.
 
 ### Block 2 — Operator batch (brief: `_developers/COWORK_BRIEF_OPERATOR_BATCH.md`)
 
 Browser and account work a workflow cannot do, plus the decisions that unblock Tier 2. Each
 item's steps, URLs and hand-back are in the brief so Claude Cowork can drive the browser. Hand
 results back by pasting them into a Claude Code session or appending to the workspace
-`INBOX.md`. Merging Block 1's PRs as they open is also operator-only and unblocks Block 3.
+`INBOX.md`.
 
 - [ ] **O1 / G2b. Create a ci GA4 property with its own BigQuery export.** In GA4 admin create a
   property for `ci.submit.diyaccounting.co.uk`, add a web data stream, link it to BigQuery
@@ -74,10 +67,9 @@ results back by pasting them into a Claude Code session or appending to the work
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
 - [ ] **O5 / B10a.2. Subscribe the sandbox application to the ITSA APIs and mint an ITSA test
   user.** In the HMRC developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in
-  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then, once B10a.1
-  has deployed from the batch PR, run the `create-hmrc-test-user` workflow with `mtd-vat,mtd-income-tax`
-  and keep the credentials artifact (NINO, user id, password). **Source**: BACKLOG 10a.
-  **Owner**: Operator. The subscription step is ready now; the workflow run waits on B10a.1.
+  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then run the
+  `create-hmrc-test-user` workflow on main with `mtd-vat,mtd-income-tax` and keep the
+  credentials artifact (NINO, user id, password). **Source**: BACKLOG 10a. **Owner**: Operator.
 - [ ] **O6 / B34a. Decide the Companies House shape**: whether the read-only company lookup
   ships on its own first, and whether to apply for filing accreditation now. Either answer
   turns backlog row 34 into dispatchable items. **Source**: BACKLOG 34; issue #15. **Owner**:
@@ -94,6 +86,11 @@ results back by pasting them into a Claude Code session or appending to the work
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
+- [ ] **O11 / B32 schedule. Decide whether the three new read suites join the 4-hourly
+  synthetic schedule.** `synthetic-test.yml`'s cron runs only `submitVatBehaviour` and
+  `tokenRefreshBehaviour` against prod; the liabilities, payments and penalties suites exist as
+  dispatch options only, so nothing exercises them routinely. "Add" means three more prod runs
+  against the HMRC sandbox every four hours. **Source**: BACKLOG 32. **Owner**: Operator.
 - [ ] **O10 / B17a. Re-record and publish the demo videos** on
   https://www.youtube.com/@DIYAccountingSubmit, capturing the main site rather than the
   simulator. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code
@@ -113,7 +110,7 @@ results back by pasting them into a Claude Code session or appending to the work
   `HeadlessChrome` in the User-Agent Client Hints, which GA4's bot filter excludes, so the
   ci assertion run needs a browser that does not (Playwright `channel: "chromium"` new
   headless or `chrome`); prove the hit lands in DebugView before wiring the BigQuery check.
-  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1 and the batch PR #107 deploying.
+  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has

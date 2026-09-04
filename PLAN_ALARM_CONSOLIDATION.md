@@ -85,9 +85,10 @@ same stack is set to ALARM while the composite is still in ALARM. Reset both chi
 
 ## Open: whether all four checks earn their keep
 
-That is the change that would actually cut the bill, and it needs alarm history the audit could
-not read. The live check recorded in `NEXT.md` found about 45 app alarms with no state change in
-90 days. Pulling `describe-alarm-history` per check across a prod quarter is the input.
+That is the change that would actually cut the bill. The input now exists:
+`_developers/ALARM_AUDIT_2026-09.md` holds the 90-day state history of all 146 prod alarms
+(141 never fired; the five that did are detection and analytics alarms). The cut is NEXT.md
+item B30b.
 
 ## Open: the async pairs
 
