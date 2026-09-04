@@ -25,15 +25,13 @@ first two blocks unblock.
 
 ### Block 1 — in flight
 
-- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** The
-  liabilities, payments and penalties endpoints (B32.1–3) are merged and green in every
-  simulator lane, but their real-sandbox lanes ran only through hand dispatches that kept
-  hitting the non-prod 2-hour self-destruct and, overnight, `npm ci` timeouts on the runners.
-  Once main's deploy 33903534280 completes, dispatch `synthetic-test.yml` on main once per
-  suite (`getVatObligationsBehaviour`, `getVatReturnBehaviour`, `getVatLiabilitiesBehaviour`,
-  `getVatPaymentsBehaviour`, `getVatPenaltiesBehaviour`; environment auto = prod, durable
-  synthetic user) and record each result. Green closes B32 and this block. **Source**: BACKLOG
-  32; issue #19. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** Run
+  on prod 2026-09-04 with the durable synthetic user (`synthetic-test.yml` dispatch, one
+  suite each): obligations, view-return and penalties pass; liabilities and payments fail
+  only on the audit assertion that reads HMRC's error code from the stored record, which the
+  audit repository masks (`***MASKED***`); fix in flight, then re-dispatch those two suites.
+  Green closes B32 and this block. **Source**: BACKLOG 32; issue #19. **Owner**: Claude Code.
+  **Model**: Sonnet.
 
 ### Block 2 — Operator batch (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -195,6 +193,14 @@ results back by pasting them into a Claude Code session or appending to the work
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B39.1. Fix the synthetic runs' "upload web test results" job.** It fails with
+  `jq: Could not open file target/behaviour-test-results/<suite>/test-report-<suite>.json`
+  after a passing behaviour test (prod dispatches 33908160864 and 33908172202; main's
+  scheduled run 33814958075 failed the same way on submitVat), so the per-suite report is
+  written elsewhere or not at all in that job. Make the report path and the upload agree
+  and add a check that fails early with the paths it looked at. **Source**: BACKLOG 39
+  (synthetic-test flakiness); repo find 2026-09-04. **Owner**: Claude Code. **Model**:
+  Sonnet.
 - [ ] **B40f. Make the Express dev server answer uncaught handler errors as JSON.** When
   `getAsyncRequest` threw `ResourceNotFoundException` locally, `app/bin/server.js` returned
   Express's default HTML 500 page and the page failed on `Unexpected token '<'`; the API rule
