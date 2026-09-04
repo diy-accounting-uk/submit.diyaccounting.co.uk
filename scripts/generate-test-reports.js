@@ -505,12 +505,8 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
     artifacts,
   };
 
-  // Write report file under the CLI-provided testName, not testContext.testId: the
-  // upload-web-test-results job downloads the suite's artifact into
-  // target/behaviour-test-results/<suite>/ and looks for test-report-<suite>.json, where
-  // <suite> is the matrix suite name (the value passed as --testName). A testId that
-  // doesn't match the suite name (e.g. "getVatPenalties" for suite "getVatPenaltiesBehaviour")
-  // must not change the file the workflow looks for.
+  // Named after the suite the workflow passes as --testName, not testContext.testId, because the
+  // upload job looks for test-report-<suite>.json and some suites' testId drops the suffix.
   const reportFileName = `test-report-${testName}.json`;
   const reportPath = path.join(OUTPUT_DIR, reportFileName);
 
