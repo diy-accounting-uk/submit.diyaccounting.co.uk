@@ -62,6 +62,7 @@ convenience — gitignored, recreate with `ln -s` if missing.
 
 - `.claude/skills/plain-prose/SKILL.md` — writing rules for plain, human prose; follow this for all human-facing text (docs, comments, chat)
 - `.claude/skills/do-next/SKILL.md` — dispatch `NEXT.md`'s open items as worktree-isolated sub-agents
+- `.claude/skills/stripe-catalogue-sync/SKILL.md` — sync Stripe products and prices from the bundle catalogue, test then live, and land the price ids
 
 ## Permission Handling
 

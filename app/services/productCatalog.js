@@ -43,6 +43,14 @@ export function getCatalogBundleById(catalog, bundleId) {
   return catalog.bundles.find((b) => b.id === bundleId) || null;
 }
 
+// A bundle is Stripe-priced when the catalogue carries stripePriceAmount, stripeCurrency
+// and stripeInterval for it (resident-vat, resident-itsa: allocation "on-subscription";
+// resident-pro: allocation "on-pass-on-subscription" — both sell through Stripe Checkout).
+export function getStripeSubscriptionBundles(catalog) {
+  if (!catalog?.bundles) return [];
+  return catalog.bundles.filter((b) => Number.isFinite(b.stripePriceAmount) && typeof b.stripeCurrency === "string" && typeof b.stripeInterval === "string");
+}
+
 export function loadPassTypesFromRoot() {
   const filePath = path.join(process.cwd(), "submit.passes.toml");
   const raw = fs.readFileSync(filePath, "utf-8");

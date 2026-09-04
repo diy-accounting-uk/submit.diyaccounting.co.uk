@@ -4,41 +4,47 @@
 
 // scripts/stripe-setup.js
 //
-// Idempotent Stripe setup script. Creates products, prices, webhook endpoints,
-// and customer portal configuration. Requires STRIPE_SECRET_KEY env var.
+// Idempotent Stripe setup script. Creates products, prices and webhook endpoints from
+// the bundle catalogue (web/public/submit.catalogue.toml). Requires STRIPE_SECRET_KEY.
 //
-// Usage: STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+// Usage:
+//   STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js
+//
+// Options:
+//   --dry-run       Search and list only; print what exists and what would be
+//                   created, without writing anything to Stripe.
+//   --products-only Skip the webhook endpoints, only sync products and prices.
+//   --bundle <id>   Limit to a single bundle id.
 
 import Stripe from "stripe";
+import { fileURLToPath } from "node:url";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-if (!STRIPE_SECRET_KEY) {
-  console.error("STRIPE_SECRET_KEY environment variable is required");
-  process.exit(1);
+import { loadCatalogFromRoot } from "../app/services/productCatalog.js";
+import { buildStripeProductsFromCatalog } from "./lib/stripeCatalogue.js";
+
+export function parseArgs(argv) {
+  const opts = { dryRun: false, productsOnly: false, bundleId: undefined };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    switch (arg) {
+      case "--dry-run":
+        opts.dryRun = true;
+        break;
+      case "--products-only":
+        opts.productsOnly = true;
+        break;
+      case "--bundle":
+        opts.bundleId = argv[++i];
+        if (!opts.bundleId) throw new Error("--bundle requires a bundle id");
+        break;
+      default:
+        throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+  return opts;
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY);
-
-const PRODUCTS = [
-  {
-    bundleId: "resident-pro",
-    name: "Resident Pro",
-    description: "Monthly subscription for DIY Accounting Submit - unlimited VAT returns and pass generation",
-    priceAmount: 999, // £9.99
-    currency: "gbp",
-    interval: "month",
-  },
-  {
-    bundleId: "resident-vat",
-    name: "Resident VAT",
-    description: "Monthly subscription for DIY Accounting Submit - VAT returns",
-    priceAmount: 99, // £0.99
-    currency: "gbp",
-    interval: "month",
-  },
-];
-
-async function findOrCreateProduct(bundleId, name, description) {
+async function findOrCreateProduct(stripe, bundleId, name, description, dryRun) {
   const products = await stripe.products.search({
     query: `metadata["bundleId"]:"${bundleId}"`,
   });
@@ -46,6 +52,11 @@ async function findOrCreateProduct(bundleId, name, description) {
   if (products.data.length > 0) {
     console.log(`Product already exists for ${bundleId}:`, products.data[0].id);
     return products.data[0];
+  }
+
+  if (dryRun) {
+    console.log(`[dry-run] Would create product for ${bundleId}: ${name}`);
+    return { id: "(dry-run, not created)" };
   }
 
   const product = await stripe.products.create({
@@ -57,7 +68,12 @@ async function findOrCreateProduct(bundleId, name, description) {
   return product;
 }
 
-async function findOrCreatePrice(productId, bundleId, unitAmount, currency, interval) {
+async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, currency, interval, dryRun) {
+  if (dryRun && productId === "(dry-run, not created)") {
+    console.log(`[dry-run] Would create price for ${bundleId}: ${unitAmount} ${currency}/${interval}`);
+    return { id: "(dry-run, not created)" };
+  }
+
   const prices = await stripe.prices.list({
     product: productId,
     active: true,
@@ -68,6 +84,11 @@ async function findOrCreatePrice(productId, bundleId, unitAmount, currency, inte
   if (existing) {
     console.log(`Price already exists for ${bundleId}:`, existing.id);
     return existing;
+  }
+
+  if (dryRun) {
+    console.log(`[dry-run] Would create price for ${bundleId}: ${unitAmount} ${currency}/${interval}`);
+    return { id: "(dry-run, not created)" };
   }
 
   const price = await stripe.prices.create({
@@ -93,7 +114,7 @@ const DESIRED_EVENTS = [
   "charge.dispute.closed",
 ];
 
-async function findOrCreateWebhook(url, description) {
+async function findOrCreateWebhook(stripe, url, description, dryRun) {
   const webhooks = await stripe.webhookEndpoints.list();
   const existing = webhooks.data.find((w) => w.url === url);
   if (existing) {
@@ -105,6 +126,10 @@ async function findOrCreateWebhook(url, description) {
     const needsEventUpdate = currentEvents.length !== desiredEvents.length || currentEvents.some((e, i) => e !== desiredEvents[i]);
 
     if (needsEnable || needsEventUpdate) {
+      if (dryRun) {
+        console.log(`[dry-run] Webhook exists for ${url}: ${existing.id} — would update${needsEnable ? " (re-enable)" : ""}`);
+        return existing;
+      }
       const updates = { enabled_events: DESIRED_EVENTS };
       if (needsEnable) updates.disabled = false;
       console.log(`Webhook exists for ${url}: ${existing.id} — updating${needsEnable ? " (re-enabling)" : ""}`);
@@ -121,6 +146,11 @@ async function findOrCreateWebhook(url, description) {
     return existing;
   }
 
+  if (dryRun) {
+    console.log(`[dry-run] Would create webhook for ${url}`);
+    return { id: "(dry-run, not created)", secret: undefined };
+  }
+
   const webhook = await stripe.webhookEndpoints.create({
     url,
     enabled_events: DESIRED_EVENTS,
@@ -131,33 +161,59 @@ async function findOrCreateWebhook(url, description) {
   return webhook;
 }
 
-async function main() {
-  console.log("Setting up Stripe resources...\n");
+export async function main() {
+  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+  if (!STRIPE_SECRET_KEY) {
+    console.error("STRIPE_SECRET_KEY environment variable is required");
+    process.exit(1);
+    return;
+  }
+
+  const opts = parseArgs(process.argv.slice(2));
+  const stripe = new Stripe(STRIPE_SECRET_KEY);
+  const catalog = loadCatalogFromRoot();
+  const PRODUCTS = buildStripeProductsFromCatalog(catalog, { bundleId: opts.bundleId });
+
+  if (opts.bundleId && PRODUCTS.length === 0) {
+    console.error(`No on-subscription bundle "${opts.bundleId}" with Stripe price fields found in the catalogue`);
+    process.exit(1);
+    return;
+  }
+
+  console.log(`Setting up Stripe resources${opts.dryRun ? " (dry run)" : ""}...\n`);
 
   // Create products and prices for each bundle
   const results = [];
   for (const p of PRODUCTS) {
-    const product = await findOrCreateProduct(p.bundleId, p.name, p.description);
-    const price = await findOrCreatePrice(product.id, p.bundleId, p.priceAmount, p.currency, p.interval);
+    const product = await findOrCreateProduct(stripe, p.bundleId, p.name, p.description, opts.dryRun);
+    const price = await findOrCreatePrice(stripe, product.id, p.bundleId, p.priceAmount, p.currency, p.interval, opts.dryRun);
     results.push({ ...p, productId: product.id, priceId: price.id });
   }
 
-  // CI webhook — env-level endpoint, always available even when app stacks are torn down.
-  const ciWebhook = await findOrCreateWebhook(
-    "https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
-    "CI environment webhook (env-level, persistent)",
-  );
+  let ciWebhook;
+  let prodWebhook;
+  if (!opts.productsOnly) {
+    // CI webhook — env-level endpoint, always available even when app stacks are torn down.
+    ciWebhook = await findOrCreateWebhook(
+      stripe,
+      "https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
+      "CI environment webhook (env-level, persistent)",
+      opts.dryRun,
+    );
 
-  // Prod webhook — env-level endpoint, independent of app deployments.
-  const prodWebhook = await findOrCreateWebhook(
-    "https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
-    "Production environment webhook (env-level, persistent)",
-  );
+    // Prod webhook — env-level endpoint, independent of app deployments.
+    prodWebhook = await findOrCreateWebhook(
+      stripe,
+      "https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook",
+      "Production environment webhook (env-level, persistent)",
+      opts.dryRun,
+    );
+  }
 
   const mode = STRIPE_SECRET_KEY.startsWith("sk_live_") ? "LIVE" : "TEST";
   const secretEnvName = mode === "TEST" ? "STRIPE_TEST_WEBHOOK_SECRET" : "STRIPE_WEBHOOK_SECRET";
   const priceEnvPrefix = mode === "TEST" ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
-  console.log(`\n=== Stripe Setup Complete (${mode} mode) ===`);
+  console.log(`\n=== Stripe Setup Complete (${mode} mode${opts.dryRun ? ", dry run" : ""}) ===`);
   console.log("\nProducts & Prices:");
   for (const r of results) {
     const suffix = `_${r.bundleId.toUpperCase().replace(/-/g, "_")}`;
@@ -166,19 +222,23 @@ async function main() {
     console.log(`    Price ID:   ${r.priceId} (£${(r.priceAmount / 100).toFixed(2)}/${r.interval})`);
     console.log(`    Env var:    ${priceEnvPrefix}${suffix}=${r.priceId}`);
   }
-  console.log(`CI Webhook (${mode}):`);
-  console.log("  ID:", ciWebhook.id);
-  console.log("  Secret:", ciWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
-  console.log(`Prod Webhook (${mode}):`);
-  console.log("  ID:", prodWebhook.id);
-  console.log("  Secret:", prodWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
-  console.log(`\nStore webhook secrets as ${secretEnvName} per environment:`);
-  console.log(`  Proxy: set ${secretEnvName} in .env (gitignored)`);
-  console.log(`  CI:    set ${secretEnvName} in GitHub Environment "ci"`);
-  console.log(`  Prod:  set ${secretEnvName} in GitHub Environment "prod"`);
+  if (!opts.productsOnly) {
+    console.log(`CI Webhook (${mode}):`);
+    console.log("  ID:", ciWebhook.id);
+    console.log("  Secret:", ciWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
+    console.log(`Prod Webhook (${mode}):`);
+    console.log("  ID:", prodWebhook.id);
+    console.log("  Secret:", prodWebhook.secret || "(already exists — retrieve from Stripe Dashboard)");
+    console.log(`\nStore webhook secrets as ${secretEnvName} per environment:`);
+    console.log(`  Proxy: set ${secretEnvName} in .env (gitignored)`);
+    console.log(`  CI:    set ${secretEnvName} in GitHub Environment "ci"`);
+    console.log(`  Prod:  set ${secretEnvName} in GitHub Environment "prod"`);
+  }
 }
 
-main().catch((err) => {
-  console.error("Setup failed:", err.message);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error("Setup failed:", err.message);
+    process.exit(1);
+  });
+}
