@@ -64,7 +64,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Track**: mode rename design (Opus design doc, then Sonnet build tracks in wave 2, one per layer). Worktree `.claude/worktrees/agent-a43d926b454fc8123`, running; lands on `claude/board-batch-2`.
+  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): worktree assigned on dispatch. Layer 1 (monitoring vocabulary to `probe`) starts once the alarm cuts land, because both edit `OpsStack.java`. Layers 3 (HMRC mode value, migrations 005 and 006) and 4 (docs and copy) follow in order.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
