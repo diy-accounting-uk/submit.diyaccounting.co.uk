@@ -127,15 +127,23 @@ results back by pasting them into a Claude Code session or appending to the work
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on the B32 verification.
 - [ ] **B17a.1. Spike: a Playwright pattern for human-audience video, proven on one
-  unauthenticated tour of the site.** Not test automation: the viewer is a person. Build
-  `scripts/site-video-capture.js` and a `site-video-capture` skill that drive the real site
-  (the proxy variant locally, or ci) at human pace: deliberate cursor movement and scrolling,
-  a visible pointer, pauses on each screen, title cards and captions rendered into the page,
-  1920x1080, Playwright `recordVideo` then ffmpeg to mp4 with a held final frame. First
-  video: home, about, guide, help, bundles and accessibility pages with no login. Output under
-  `target/demo-videos/`; the operator reviews and the pattern is refined with them before
-  the authenticated videos. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
-  Code (directive of 2026-08-26 reversed 2026-09-04). **Model**: Opus design, then Sonnet.
+  unauthenticated tour of the site, delivered as a GitHub Actions workflow.** Not test
+  automation: the viewer is a person. Requirements set 2026-09-04: three consistent
+  pacing groups in a config (per typed character; between form cells or clicks; before and
+  after a scroll or navigation), with backend wait time subtracted from the configured pause
+  and a scaled visible timer shown while waiting; a drawn pointer with trails and an
+  emphasis on each action; text annotations from a scene script (`videos/tour.json`: scenes,
+  targets, captions, holds) so a UI change means a rerun, not a re-edit; high frame rate
+  capture with fine scrubber control (a fixed-cadence frame sequence assembled by ffmpeg
+  rather than Playwright's variable-rate webm); 1920x1080 mp4 with a held final frame and
+  per-scene stills. The spike records against a local instance for fast iteration; the real
+  recording runs as `video-capture.yml` against prod using the HMRC sandbox account and the
+  synthetic user. Design first: web research on published guidance for website training and
+  demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
+  the design. First video: home, about, guide, help, bundles and accessibility with no login.
+  The operator reviews the video and the pattern is refined before the authenticated ones.
+  **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude Code. **Model**: Opus
+  design, then Sonnet.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet. Blocked
   on B17a.1.
