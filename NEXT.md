@@ -126,10 +126,27 @@ results back by pasting them into a Claude Code session or appending to the work
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on the B32 verification.
-- [ ] **O10 / B17a. Re-record and publish the demo videos** on
-  https://www.youtube.com/@DIYAccountingSubmit, capturing the main site rather than the
-  simulator. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code
-  excluded by directive 2026-08-26).
+- [ ] **B17a.1. Spike: a Playwright pattern for human-audience video, proven on one
+  unauthenticated tour of the site.** Not test automation: the viewer is a person. Build
+  `scripts/site-video-capture.js` and a `site-video-capture` skill that drive the real site
+  (the proxy variant locally, or ci) at human pace: deliberate cursor movement and scrolling,
+  a visible pointer, pauses on each screen, title cards and captions rendered into the page,
+  1920x1080, Playwright `recordVideo` then ffmpeg to mp4 with a held final frame. First
+  video: home, about, guide, help, bundles and accessibility pages with no login. Output under
+  `target/demo-videos/`; the operator reviews and the pattern is refined with them before
+  the authenticated videos. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
+  Code (directive of 2026-08-26 reversed 2026-09-04). **Model**: Opus design, then Sonnet.
+- [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
+  B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet. Blocked
+  on B17a.1.
+- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B17a.1.
+- [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B17a.1.
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
+  titles and descriptions drafted from the captions. **Source**: BACKLOG 17a. **Owner**:
+  Operator (an upload via the YouTube Data API can follow once the pattern settles). Blocked
+  on B17a.2–4.
 
 ### Block 3 — opens as Blocks 1 and 2 land
 
