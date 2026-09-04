@@ -55,8 +55,10 @@ results back by pasting them into a Claude Code session or appending to the work
   demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
   the design. First video: home, about, guide, help, bundles and accessibility with no login.
   The operator reviews the video and the pattern is refined before the authenticated ones.
-  In flight: the Opus design pass with web research is running (2026-09-04); the build
-  follows from its design. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
+  In flight: the design is done (`scratchpad/design-video-capture.md`: CDP screencast with
+  per-frame timestamps to 60 fps H.264, captions 40px, no audio, waits compressed 8x past 6 s
+  with a real-seconds timer, `ffmpeg-static`, plus a `.vtt` and transcript per video for WCAG
+  1.2.1) and the Sonnet build is running (2026-09-04). **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet.
 
 ## Ready: Claude Code
