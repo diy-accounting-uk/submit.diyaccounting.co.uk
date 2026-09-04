@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, isActivityAvailable, getCatalogBundleById } from "../../services/productCatalog.js";
+import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, isActivityAvailable, getCatalogBundleById, getStripeSubscriptionBundles } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -69,5 +69,24 @@ describe("productCatalogHelper", () => {
     expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa"]);
     expect(isActivityAvailable(catalog, "self-employed", "resident-itsa")).toBe(true);
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
+  });
+
+  it("resident-pro, resident-vat and resident-itsa should carry Stripe price fields", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentPro = getCatalogBundleById(catalog, "resident-pro");
+    const residentVat = getCatalogBundleById(catalog, "resident-vat");
+    const residentItsa = getCatalogBundleById(catalog, "resident-itsa");
+
+    expect(residentPro).toMatchObject({ stripePriceAmount: 999, stripeCurrency: "gbp", stripeInterval: "month" });
+    expect(residentVat).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
+    expect(residentItsa).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
+  });
+
+  it("getStripeSubscriptionBundles should return exactly the three Stripe-priced bundles", () => {
+    const catalog = parseCatalog(tomlText);
+    const bundleIds = getStripeSubscriptionBundles(catalog)
+      .map((b) => b.id)
+      .sort();
+    expect(bundleIds).toEqual(["resident-itsa", "resident-pro", "resident-vat"]);
   });
 });
