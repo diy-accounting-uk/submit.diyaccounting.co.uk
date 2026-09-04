@@ -79,26 +79,29 @@ results back by pasting them into a Claude Code session or appending to the work
   (06846849) and hand the new number and expiry to Claude Code for
   `_developers/ICO_CHECKLIST.md` and `privacy.html`. **Source**: BACKLOG 27c; Track E finding
   2026-09-03. **Owner**: Operator.
-- [ ] **O4 / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not on
-  the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
-  drop it into `_developers/hmrc/`. In the same contact ask whether a production-credential
-  window for new ITSA quarterly-update products opens for 2027-28: HMRC's pages say the
-  2026-27 window is closed to new products
-  (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`; vendor contact
+- [ ] **O4a / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not
+  on the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
+  drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
+- [ ] **O4b / B11a.2. Ask HMRC whether a 2027-28 production-credential window opens for new
+  ITSA quarterly-update products.** HMRC's pages say the 2026-27 window is closed to new
+  products (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`; vendor contact
   makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
-- [ ] **O5 / B10a.2. Subscribe the sandbox application to the ITSA APIs and mint an ITSA test
-  user.** In the HMRC developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in
-  `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then run the
-  `create-hmrc-test-user` workflow on main with `mtd-vat,mtd-income-tax` and keep the
-  credentials artifact (NINO, user id, password). **Source**: BACKLOG 10a. **Owner**: Operator.
+- [ ] **O5a / B10a.2. Subscribe the sandbox application to the ITSA APIs.** In the HMRC
+  developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in `.env.ci`) to Business
+  Details (MTD) and Self Employment Business (MTD). **Source**: BACKLOG 10a. **Owner**:
+  Operator.
+- [ ] **O5b / B10a.2. Mint an ITSA sandbox test user.** Run the `create-hmrc-test-user`
+  workflow on main with `mtd-vat,mtd-income-tax` and keep the credentials artifact (NINO,
+  user id, password) somewhere private. **Source**: BACKLOG 10a. **Owner**: Operator. Blocked
+  on O5a.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-- [ ] **B34.2. Apply for Companies House software-filing accreditation.** An operator
-  submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
+- [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
+  An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
   BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
@@ -157,7 +160,7 @@ results back by pasting them into a Claude Code session or appending to the work
   the raw response, whether the existing application and headers were accepted, and which of
   `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
-  **Owner**: Claude Code. **Model**: Opus. Blocked on O5.
+  **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
@@ -178,7 +181,7 @@ results back by pasting them into a Claude Code session or appending to the work
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
 
-Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4 answers the
+Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4b answers the
 production-window question; rows 34 and 40d are now B34.1–3 and B40d.2 above.
 
 ## Discipline

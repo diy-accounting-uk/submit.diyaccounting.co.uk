@@ -1,186 +1,164 @@
-# Operator batch brief — for Claude Cowork
+# Operator tasks — brief for Claude Desktop (Cowork)
 
-This is the operator half of the board in `NEXT.md` (Block 2). Each item is browser or
-account work a GitHub workflow cannot do. Claude Cowork drives the browser; the operator
-approves anything that changes money, credentials or a registration. Claude Code has the
-matching code items running in parallel (Block 1) and picks up each hand-back as Block 3.
-
-**Hand-back channel.** For each item, paste the result into the Claude Code session working
-this repo, or append a block to `INBOX.md` at the workspace root:
+Seven tasks a workflow cannot do, each with the pages to open, the steps, and what to hand
+back. Claude Cowork drives the browser; the operator approves anything that spends money,
+grants access or submits a form to a third party. Every hand-back goes to the Claude Code
+session working `submit.diyaccounting.co.uk` (paste it there, or append a block to `INBOX.md`
+at the workspace root):
 
 ```
 ## [unread] <ISO-8601 UTC> — from: cowork
-O2 done: STRIPE_TEST_PRICE_ID_RESIDENT_ITSA=price_..., STRIPE_PRICE_ID_RESIDENT_ITSA=price_...
+O5b done: NINO QQ123456C, artifact saved to <private location>
 ```
 
-**Cowork constraints.** The Cowork VM cannot run the AWS or Stripe CLIs against this
-account's SSO, so everything below is a browser task. Never paste a secret key into a file in
-this repo; price ids, measurement ids and registration numbers are fine.
+Cowork's VM cannot run the AWS or HMRC CLIs against this account's SSO, so everything below is
+a browser task. Never paste a secret key or a password into a repo file; ids, NINOs of sandbox
+test users, reference numbers and dates are fine.
 
-**Order.** O1, O2, O3 and O6/O7 are independent and can start now. O5's second half waits for
-the Track F pull request (`claude/itsa-test-user`) to merge. O9 is date-gated. Merging Block 1
-PRs as they open is the single biggest unblocker and sits with the operator throughout.
+Order: O1a, O3, O4a, O4b, O5a and B34.2 are independent and can start now. O5b follows O5a.
 
 ---
 
-## O1a / G2b — grant the GA4 service account admin, once
+## O1a — grant the GA4 service account admin, once
 
-**Why.** Creating the ci GA4 property, its BigQuery export and every future grant will be
-done by scripts running as the Google service account the analytics jobs already use. That
-account needs admin rights first, and that first grant is the only step a person has to click.
+**Why.** The analytics jobs already run as a Google service account. Once it holds admin
+rights, Claude Code creates the ci GA4 property, its BigQuery export and every future grant
+from code (NEXT.md O1b–O1d). This is the last grant a person clicks.
 
-**Where.** https://analytics.google.com (Admin, Account access management) and
+**The account.** `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` (GCP project
+`diyaccounting-ga4`).
+
+**Where.** https://analytics.google.com → Admin → Account access management (for the account
+that holds the production property `G-T81V5NL5MB`); and
 https://console.cloud.google.com/iam-admin/iam?project=diyaccounting-ga4
 
 **Steps.**
-1. Find the service account's email: in AWS Secrets Manager (profile submit-prod) the secret
-   named by `GA4_SERVICE_ACCOUNT_ARN` holds a JSON key whose `client_email` is the address
-   (Claude Code can read it out for you without printing the key).
-2. GA4 Admin, Account access management: add that email with the Administrator role on the
-   DIY Accounting GA4 account (account level, not one property).
-3. GCP IAM on project `diyaccounting-ga4`: grant the same email Owner, or IAM Admin plus
-   BigQuery Admin.
+1. GA4 Admin → Account access management → Add users: the email above, role Administrator,
+   at the account level (not a single property).
+2. GCP IAM for `diyaccounting-ga4` → Grant access: the same email, role Owner. If you prefer
+   narrower: Project IAM Admin plus BigQuery Admin.
 
-**Hand back.** "granted" with the two roles given. Claude Code then builds the role file and
-CI apply (O1b), the property-sync skill (O1c) and creates the ci property (O1d).
+**Hand back.** "O1a granted: GA4 Administrator on account <name>; GCP <Owner or the two roles>".
 
 ---
 
-## O2 / B12c — Stripe prices for `resident-itsa` (now a skill run)
+## O3 — renew the ICO registration
 
-No dashboard work. Claude Code runs the `stripe-catalogue-sync` skill from the catalogue; you
-give a "go" for test mode and a second "go" for live mode, and confirm the day pass numbers
-(3 tokens, 100 concurrent) or supply new ones.
+**Why.** Registration ZB070902 (certificate PDF in the repo root) expired on 23 May 2026;
+`privacy.html` still shows the number. `_developers/ICO_CHECKLIST.md` carries this as the open
+gap.
 
----
-
-## O3 / B27c.2 — ICO registration (expired: renew)
-
-**Why.** Registration ZB070902 (certificate PDF in the repo root) expired on 23 May 2026 and
-`privacy.html` still publishes it as current. `_developers/ICO_CHECKLIST.md` marks this as
-the open gap. Renewal needs a payment, so the operator approves the final step.
-
-**Where.** https://ico.org.uk/ESDWebPages/Search (register of fee payers);
-https://ico.org.uk/for-organisations/data-protection-fee/ to pay or renew.
+**Where.** https://ico.org.uk/ESDWebPages/Search (register) and
+https://ico.org.uk/for-organisations/data-protection-fee/ (pay or renew).
 
 **Steps.**
-1. Search the register for `DIY Accounting Limited` and separately for company number
-   `06846849`, to confirm ZB070902 is no longer listed as current.
-2. Renew or re-register at the fee page (tier 1 for a company this size; the page shows the
-   current amount, with a small direct-debit discount). Operator approval needed before payment.
+1. Search the register for `DIY Accounting Limited` and for company number `06846849`; confirm
+   ZB070902 is no longer listed as current.
+2. Renew or re-register: tier 1 for a company this size; the page shows the current fee and a
+   small direct-debit discount. Operator approval before payment.
+3. Note the registration number (it may stay ZB070902), the tier and the new expiry date.
 
-**Hand back.** Registration number, tier, expiry date; or "registered today, number …".
-
-**Claude Code then** records it in `_developers/ICO_CHECKLIST.md` (Block 3, B27c.2 remainder).
+**Hand back.** "O3: number <…>, tier <…>, expires <date>". Claude Code updates the checklist
+and `privacy.html`.
 
 ---
 
-## O4 / B11a.2 — ITSA recognition questionnaire from HMRC SDST
+## O4a — obtain the ITSA recognition questionnaire from HMRC SDST
 
-**Why.** HMRC's software recognition for ITSA uses questionnaires like the VAT ones in
-`_developers/hmrc/hmrc_questionnaire_*`. Track E maps the published minimum standards; the
-questionnaire itself decides what evidence to prepare.
+**Why.** HMRC's software recognition for Income Tax Self Assessment uses questionnaires like the
+VAT ones in `_developers/hmrc/hmrc_questionnaire_*`. Track E mapped the published minimum
+standards (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`); the questionnaire says
+what evidence to prepare.
 
-**Where.** https://developer.service.hmrc.gov.uk/api-documentation/docs/using-the-hub
-(recognition process pages); Gmail for the SDST thread.
+**Where.** https://developer.service.hmrc.gov.uk/api-documentation/docs/using-the-hub (search
+"Making Tax Digital for Income Tax" recognition or production credentials checklist); Gmail.
 
 **Steps.**
-1. On the developer hub, look for "Making Tax Digital for Income Tax: software recognition"
-   or "production credentials checklist" for ITSA. If a downloadable questionnaire exists,
-   save it to `_developers/hmrc/` with the same naming as the VAT ones
-   (`hmrc_questionnaire_<n>_<topic>_diy_accounting_limited_v1`).
-2. If not, email `SDSTeam@hmrc.gov.uk` from antony@diyaccounting.co.uk, referencing the
-   existing VAT production credentials for "DIY Accounting Submit" and asking for the ITSA
-   recognition questionnaire and the current minimum functionality standards document.
-   Suggested subject: "ITSA software recognition questionnaire — DIY Accounting Submit".
-3. In the same email ask whether a production-credential window for new ITSA
-   quarterly-update products opens for 2027-28. HMRC's pages say the 2026-27 window is
-   closed to new products (see `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`);
-   the vendor team address is makingtaxdigital-softwarevendors@hmrc.gov.uk.
-4. When the reply arrives, save attachments under `_developers/hmrc/`.
+1. If the hub offers a downloadable ITSA questionnaire or checklist, save it under
+   `_developers/hmrc/` with the VAT files' naming
+   (`hmrc_questionnaire_<n>_<topic>_diy_accounting_limited_v1.<ext>`).
+2. If not, email `SDSTeam@hmrc.gov.uk` from antony@diyaccounting.co.uk, referencing the existing
+   VAT production credentials for "DIY Accounting Submit", asking for the ITSA recognition
+   questionnaire. Suggested subject: "ITSA software recognition questionnaire — DIY Accounting
+   Submit".
+3. Save any attachments from the reply under `_developers/hmrc/`.
 
-**Hand back.** The file names dropped into `_developers/hmrc/`, or "emailed SDST on <date>",
-and HMRC's answer on the 2027-28 window.
+**Hand back.** The file names saved, or "emailed SDST on <date>".
 
 ---
 
-## O5 / B10a.2 — Subscribe the sandbox app to the ITSA APIs and mint an ITSA test user
+## O4b — ask HMRC whether a 2027-28 production window opens for new ITSA products
 
-**Why.** Nothing in the ITSA plan is real until one sandbox call returns. That call (B10a.3)
-needs the sandbox application subscribed to the ITSA APIs and a test user with a NINO.
+**Why.** HMRC's pages say production-credential access for new 2026-27 quarterly-update
+products is closed (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`). Whether a
+2027-28 window opens decides whether backlog rows 10 and 11 keep their April 2027 target.
 
-**Where.** https://developer.service.hmrc.gov.uk/developer/applications (sign in as the
-account that owns the sandbox application with client id `uqMHA6RsDGGa7h8EG2VqfqAmv4tV`);
-https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions/workflows/create-hmrc-test-user.yml
+**Where.** Gmail. Vendor team: `makingtaxdigital-softwarevendors@hmrc.gov.uk` (the same email
+as O4a can carry this question; keep the answer as its own hand-back).
 
-**Steps, part 1 (ready now).**
+**Steps.**
+1. Ask: will production credentials for new MTD ITSA quarterly-update software reopen for
+   the 2027-28 tax year, and if so when and on what process.
+2. Record the reply verbatim.
+
+**Hand back.** HMRC's answer and date, or "asked on <date>, no reply yet".
+
+---
+
+## O5a — subscribe the sandbox application to the ITSA APIs
+
+**Why.** The first read-only ITSA sandbox call (NEXT.md B10a.3) needs the sandbox app
+subscribed to the Income Tax APIs.
+
+**Where.** https://developer.service.hmrc.gov.uk/developer/applications, signed in as the
+account that owns the sandbox application with client id `uqMHA6RsDGGa7h8EG2VqfqAmv4tV`
+(product name "DIY Accounting Submit").
+
+**Steps.**
 1. Open the sandbox application → API subscriptions.
-2. Subscribe to `Business Details (MTD)` (latest version) and `Self Employment Business (MTD)`
-   (latest version). Also subscribe to `Obligations (MTD)` if it is listed; it is on the phase
-   1 endpoint list. Sandbox subscriptions need no approval.
-3. Note which versions were subscribed.
+2. Subscribe to `Business Details (MTD)` and `Self Employment Business (MTD)` at their latest
+   versions; also `Obligations (MTD)` if listed. Sandbox subscriptions need no approval.
+3. Note the API versions subscribed.
 
-**Steps, part 2 (after the `claude/itsa-test-user` PR merges).**
-4. Actions → `create-hmrc-test-user` → Run workflow. Set `service-names` to
-   `mtd-vat,mtd-income-tax`. Run on `main`.
-5. When it completes, download the credentials artifact and read the job summary. It should
-   show a VRN and a NINO.
-6. Store the artifact somewhere private (not in the repo). It holds a sandbox user id and
+**Hand back.** "O5a: subscribed Business Details vX, Self Employment Business vY (Obligations
+vZ)".
+
+---
+
+## O5b — mint an ITSA sandbox test user
+
+**Why.** B10a.3 logs in as a sandbox user that has both VAT and Income Tax services. The
+`create-hmrc-test-user` workflow on main now honours the service choice and prints the NINO.
+
+**Where.** https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions/workflows/create-hmrc-test-user.yml
+
+**Steps.**
+1. Run workflow on `main` with `service-names` = `mtd-vat,mtd-income-tax`.
+2. When it completes, read the job summary (VRN and NINO) and download the credentials
+   artifact.
+3. Store the artifact somewhere private (not in the repo): it holds the sandbox user id and
    password.
 
-**Hand back.** API versions subscribed; then, after part 2, "test user created, artifact saved
-to <private location>" plus the NINO (sandbox test data, safe to paste).
-
-**Claude Code then** runs B10a.3, the read-only spike call, and writes
-`_developers/hmrc/ITSA_SPIKE.md`.
+**Hand back.** "O5b: test user created, NINO <…>, artifact saved to <private location>".
 
 ---
 
-## B34.2 — Apply for Companies House software-filing accreditation
+## B34.2 — apply for Companies House software-filing accreditation (accounts filing)
 
-**Why.** Decided 2026-09-04: the read-only lookup is a Claude Code item; accounts filing needs
-Companies House software-filing accreditation, which is an operator application with weeks
-of lead time.
+**Why.** Decided 2026-09-04: the read-only company lookup is a Claude Code item; filing
+accounts through the Companies House API needs software-filing accreditation, an operator
+application with weeks of lead time.
 
-**Where.** https://www.gov.uk/guidance/company-accounts-software-filing and
-`plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` for what the form asks.
-
-**Hand back.** The application date and reference; Claude Code starts the filing build when
-accreditation lands.
-
----
-
-## O9 / B47 — Watch the revived schedules fire on their own
-
-**Why.** The `codeql`, `compliance` and `stack-drift` workflows were revived by hand on
-2026-08-31. One unaided run each closes the item.
-
-**Where.** https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions
+**Where.** https://www.gov.uk/guidance/company-accounts-software-filing (process and form);
+`plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` for what the form asks and how the
+filing half is planned.
 
 **Steps.**
-1. On or after 2026-09-06: open the `codeql` workflow and confirm a run started by
-   `schedule` on that date.
-2. On or after 2026-09-07 06:00 UTC: same for `compliance` and `stack-drift`.
-3. If a workflow did not fire: open it, click Run workflow on `main` (that re-arms the
-   schedule, as on 2026-08-31), and tell Claude Code which one missed.
+1. Read the accreditation requirements and note anything the product must demonstrate before
+   applying (test submissions, a presenter id, contact details).
+2. Submit the application for DIY Accounting Limited (06846849) as the software vendor of
+   "DIY Accounting Submit". Operator approval before submitting.
+3. Record the application date and any reference or presenter id issued.
 
-**Hand back.** "all three fired on schedule" or which one missed and was re-run.
-
----
-
-## O10 / B17a — Demo videos
-
-Operator-owned end to end (Claude Code excluded by directive 2026-08-26). Channel:
-https://www.youtube.com/@DIYAccountingSubmit. Plan: `PLAN_DEMO_VIDEOS.md`. Capture the main
-site, not the simulator. Cowork can prepare the shot list from the plan and draft titles and
-descriptions; recording and publishing are the operator's.
-
----
-
-## Throughout — merge Block 1 pull requests
-
-Track branches: `claude/funnel`, `claude/vat-reads`, `claude/catalogue-hygiene`,
-`claude/accessibility`, `claude/docs-profiles`, `claude/itsa-test-user`, `claude/alarm-audit`.
-Each PR carries the test commands run and their counts. Merge when CI is green; the
-`deploy.yml` run on `main` reconciles prod. After each merge check `destroy-prod.yml` is
-named the previous prod app stack set, or it keeps costing $46.88/month.
+**Hand back.** "B34.2: applied <date>, reference <…>"; Claude Code starts the filing build
+(B34.3) when accreditation lands.
