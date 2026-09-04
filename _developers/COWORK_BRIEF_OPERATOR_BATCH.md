@@ -46,33 +46,11 @@ CI apply (O1b), the property-sync skill (O1c) and creates the ci property (O1d).
 
 ---
 
-## O2 / B12c — Stripe prices for `resident-itsa`, and confirm the day pass numbers
+## O2 / B12c — Stripe prices for `resident-itsa` (now a skill run)
 
-**Why.** Track C adds a `resident-itsa` bundle to the catalogue. It needs a test and a live
-recurring price so checkout can resolve `STRIPE_TEST_PRICE_ID_RESIDENT_ITSA` and
-`STRIPE_PRICE_ID_RESIDENT_ITSA`.
-
-**Where.** https://dashboard.stripe.com/products (live) and
-https://dashboard.stripe.com/test/products (test mode toggle, top right).
-
-**Steps.**
-1. In test mode: Products → Add product. Name `Resident ITSA`, description "Self-employed
-   quarterly updates and annual summary for one tax year". Pricing: recurring, £0.99, monthly,
-   GBP. Save. Copy the price id (`price_…`).
-2. Repeat in live mode with the same name, description and price. Copy the live price id.
-3. Existing products to match on layout: `Resident VAT` (test `price_1TEgZUFdFHdRoTOjBUo4A3XC`).
-4. Confirm or change the day pass numbers: 3 tokens per day pass, 100 concurrent passes. These
-   are already what `submit.catalogue.toml` says; Track C only renames the bundle to "Day pass".
-
-**Hand back.**
-```
-STRIPE_TEST_PRICE_ID_RESIDENT_ITSA=price_...
-STRIPE_PRICE_ID_RESIDENT_ITSA=price_...
-day pass: 3 tokens, 100 concurrent (confirmed)   # or the new numbers
-```
-
-**Claude Code then** puts the ids in `.env.ci` and `.env.prod` by PR (Block 3, B12c remainder)
-and adjusts B12a if the numbers changed.
+No dashboard work. Claude Code runs the `stripe-catalogue-sync` skill from the catalogue; you
+give a "go" for test mode and a second "go" for live mode, and confirm the day pass numbers
+(3 tokens, 100 concurrent) or supply new ones.
 
 ---
 
