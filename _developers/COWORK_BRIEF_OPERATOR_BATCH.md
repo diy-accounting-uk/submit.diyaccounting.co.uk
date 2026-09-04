@@ -136,61 +136,17 @@ to <private location>" plus the NINO (sandbox test data, safe to paste).
 
 ---
 
-## O6 / B34a — Companies House decision
+## B34.2 — Apply for Companies House software-filing accreditation
 
-**Why.** Backlog row 34 (limited-company filing, issue #15) is blocked on two operator
-decisions, and nothing can be dispatched until they are made.
+**Why.** Decided 2026-09-04: the read-only lookup is a Claude Code item; accounts filing needs
+Companies House software-filing accreditation, which is an operator application with weeks
+of lead time.
 
-**Inputs.** `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` splits the work into
-read-only company lookup (public API key, no accreditation, a Sonnet-sized item) and accounts
-filing (Companies House software-filing accreditation, weeks of lead time).
-https://developer.company-information.service.gov.uk/ for the public API;
-https://www.gov.uk/guidance/company-accounts-software-filing for accreditation.
+**Where.** https://www.gov.uk/guidance/company-accounts-software-filing and
+`plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` for what the form asks.
 
-**Decide.**
-1. Ship the read-only lookup on its own first? (yes / no)
-2. Apply for filing accreditation now so the filing half has a date? (yes / no / later, with a
-   date)
-
-**Hand back.** The two answers. If 2 is yes, Cowork can start the accreditation form with the
-operator; that becomes its own operator item.
-
----
-
-## O7 / B40d.1 — Mode-naming target
-
-**Why.** Backlog row 40d (issue #12) has three names for two things: `hmrcAccount` is
-`sandbox`/`live` (HMRC routing) and Stripe's `test` flag is folded into the same
-`qualifiers.sandbox` field. "Synthetic" already means synthetic monitoring, so renaming the
-modes to it collides.
-
-**Decide.** One of:
-- A (recommended, smallest change): keep `sandbox`/`live` for HMRC; give the Stripe test flag
-  its own name (for example `stripeMode: test|live`).
-- B: rename the modes to `synthetic`/`live` and rename the monitoring vocabulary
-  (`synthetic-test.yml`, synthetic-traffic filters) to something else.
-
-**Hand back.** "A" or "B", plus the Stripe flag name if A.
-
----
-
-## O8 / B43a — GCP billing tidy-up
-
-**Why.** The GA4 BigQuery export lives in GCP project `diyaccounting-ga4`. A budget alert was
-set on 2026-08-31 but never proven, and a stray auto-created project exists.
-
-**Where.** https://console.cloud.google.com/billing (budgets & alerts);
-https://console.cloud.google.com/cloud-resource-manager
-
-**Steps.**
-1. Billing → Budgets & alerts: confirm a budget exists on the billing account that holds
-   `diyaccounting-ga4`, with email alerts at 50/90/100 percent to antony@diyaccounting.co.uk.
-   Fix if missing.
-2. Resource manager: open project `valued-context-507200-m9`. Check APIs & Services →
-   Enabled APIs, BigQuery datasets, Cloud Storage buckets, Compute. If all empty, shut the
-   project down (Settings → Shut down). Operator approval before shutdown.
-
-**Hand back.** "budget confirmed (amount £…/month)" and "project deleted" or what it held.
+**Hand back.** The application date and reference; Claude Code starts the filing build when
+accreditation lands.
 
 ---
 
