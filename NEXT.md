@@ -55,7 +55,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet) against `_developers/backlog/companies-house-api-operations.md`, on its own branch and PR because the deploy needs the operator's API key (O6). Worktree assigned on dispatch.
+  **Track**: Companies House build (Sonnet) against `_developers/backlog/companies-house-api-operations.md`, on its own branch and PR because the deploy needs the operator's API key (O6). Worktree `.claude/worktrees/agent-aa57575e98796dbdc`, running.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
