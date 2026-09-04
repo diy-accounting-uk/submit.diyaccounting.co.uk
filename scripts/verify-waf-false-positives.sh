@@ -3,7 +3,7 @@
 # Copyright (C) 2025-2026 DIY Accounting Ltd
 #
 # Read-only check that the scan-detection WAF rules did not block real traffic. Run it straight
-# after a behaviour suite: a block during a synthetic run is a false positive by definition.
+# after a behaviour suite: a block during a probe run is a false positive by definition.
 #
 # Usage: scripts/verify-waf-false-positives.sh [environment-name] [minutes]
 #

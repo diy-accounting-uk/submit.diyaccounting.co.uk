@@ -69,7 +69,7 @@ public class DataQuality extends Construct {
                 Completeness "actor" > 0.99,
                 Completeness "flow" > 0.99,
                 Uniqueness "event_id" > 0.99,
-                ColumnValues "actor" in ["customer","test-user","synthetic","system","visitor","ai-agent"],
+                ColumnValues "actor" in ["customer","test-user","synthetic","probe","system","visitor","ai-agent"],
                 ColumnValues "flow" in ["user-journey","ci-pipeline","infrastructure","operational","unknown"],
                 ColumnValues "site" in ["submit"],
                 ColumnValues "outcome" in ["failure"] with threshold < 0.2,
