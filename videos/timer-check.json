@@ -1,0 +1,56 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "timer-check",
+  "title": "Timer overlay and wait-compression check",
+  "description": "One deliberately slow step against a local static server, to confirm the timer pill and the x8 compression marker render. Not a published video.",
+  "auth": "none",
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 1,
+  "fps": 60,
+
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 1200,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2000,
+
+  "scenes": [
+    {
+      "id": "delay-check",
+      "chapter": "Timer check",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "delayRoutePattern": "**/submit.catalogue.toml",
+          "delayRouteMs": 12000,
+          "caption": "Loading the home page."
+        },
+        { "action": "await", "until": "#dynamicActivities button", "label": "Loading activities" },
+        { "action": "hold", "ms": 1000 }
+      ]
+    }
+  ]
+}
