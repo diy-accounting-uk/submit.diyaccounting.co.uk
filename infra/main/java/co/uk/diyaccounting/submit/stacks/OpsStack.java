@@ -128,10 +128,15 @@ public class OpsStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
-        // Canary configuration
+        // Both canaries run on the hour at this minute. A fixed minute rather than a rate, so
+        // the offset from synthetic-test.yml's `57 */4 * * *` GitHub Actions run stays put
+        // instead of drifting into it: at :27 a canary run always sits half an hour either side
+        // of a synthetic run, and the two never check the site in the same window. Hourly also
+        // keeps two datapoints inside the canary alarms' 2-hour period, so a missing datapoint
+        // still means the canary has stopped rather than that the clocks slipped.
         @Value.Default
-        default int canaryIntervalMinutes() {
-            return 51;
+        default String canaryScheduleExpression() {
+            return "cron(27 * * * ? *)";
         }
 
         // Base URL for canaries (e.g., https://submit.diyaccounting.co.uk)
@@ -493,7 +498,7 @@ public class OpsStack extends Stack {
                         .handler("index.handler")
                         .code(Code.fromInline(generateHealthCheckCode(props.baseUrl())))
                         .build()))
-                .schedule(Schedule.rate(Duration.minutes(props.canaryIntervalMinutes())))
+                .schedule(Schedule.expression(props.canaryScheduleExpression()))
                 .role(canaryRole)
                 .artifactsBucketLocation(ArtifactsBucketLocation.builder()
                         .bucket(canaryBucket)
@@ -503,8 +508,8 @@ public class OpsStack extends Stack {
                 .build();
 
         // Health Check Alarm
-        // Period is 2 hours, not 5 minutes: the canary runs on a canaryIntervalMinutes (51min)
-        // cadence, so a 5-minute period spends most of its life with no datapoint at all, and
+        // Period is 2 hours, not 5 minutes: the canary runs hourly, so a 5-minute period spends
+        // most of its life with no datapoint at all, and
         // treatMissingData(BREACHING) turned that absence into a spurious breach almost every
         // cycle (verified in prod: alarms flapping between OK and ALARM off "no datapoints
         // received", not off real canary failures). A 2-hour period comfortably contains at
@@ -541,7 +546,7 @@ public class OpsStack extends Stack {
                         .handler("index.handler")
                         .code(Code.fromInline(generateApiCheckCode(props.baseUrl())))
                         .build()))
-                .schedule(Schedule.rate(Duration.minutes(props.canaryIntervalMinutes())))
+                .schedule(Schedule.expression(props.canaryScheduleExpression()))
                 .role(canaryRole)
                 .artifactsBucketLocation(ArtifactsBucketLocation.builder()
                         .bucket(canaryBucket)
