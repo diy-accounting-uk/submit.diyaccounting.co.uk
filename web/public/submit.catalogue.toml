@@ -118,6 +118,13 @@ allocation = "on-subscription"
 # Stripe Checkout creates the subscription; webhook grants the bundle.
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
+stripePriceAmount = 99
+# stripePriceAmount, stripeCurrency, stripeInterval
+# ===================================================
+# Source of truth for the Stripe product and price that scripts/stripe-setup.js
+# creates for this bundle. priceAmount is in minor units (pence).
+stripeCurrency = "gbp"
+stripeInterval = "month"
 
 # resident-itsa: ITSA (Income Tax Self Assessment) subscription — publicly visible, no pass required
 # Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
@@ -134,6 +141,9 @@ hidden = false
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
+stripePriceAmount = 99
+stripeCurrency = "gbp"
+stripeInterval = "month"
 listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
@@ -192,6 +202,9 @@ hidden = true
 allocation = "on-pass-on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
+stripePriceAmount = 999
+stripeCurrency = "gbp"
+stripeInterval = "month"
 #listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
