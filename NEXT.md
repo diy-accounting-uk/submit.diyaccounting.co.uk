@@ -24,21 +24,11 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** Run
-  on prod 2026-09-04 with the durable synthetic user (`synthetic-test.yml` dispatch, one
-  suite each): obligations, view-return and penalties pass; liabilities and payments fail
-  only on the audit assertion that reads HMRC's error code from the stored record, which the
-  audit repository masks (`***MASKED***`); the fix is PR #115 (message text instead of code); after
-  its merge re-dispatch those two suites.
-  Green closes B32 and this block. **Source**: BACKLOG 32; issue #19. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
-### Block 2 — Operator batch (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
-
-Browser and account work a workflow cannot do, plus the decisions that unblock Tier 2. Each
-item's steps, URLs and hand-back are in the brief so Claude Cowork can drive the browser. Hand
-results back by pasting them into a Claude Code session or appending to the workspace
-`INBOX.md`.
+- [ ] **B32 verification. Run the new VAT read suites against the real HMRC sandbox.** On prod
+  with the durable synthetic user: obligations, view-return and penalties pass; the
+  liabilities and payments suites are re-running (33915447876, 33915450325) with PR #115's
+  assertion fix merged. Green closes B32. **Source**: BACKLOG 32; issue #19. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B17a.1. Spike: a Playwright pattern for human-audience video, proven on one
   unauthenticated tour of the site, delivered as a GitHub Actions workflow.** Not test
   automation: the viewer is a person. Requirements set 2026-09-04: three consistent
@@ -55,7 +45,7 @@ results back by pasting them into a Claude Code session or appending to the work
   demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
   the design. First video: home, about, guide, help, bundles and accessibility with no login.
   The operator reviews the video and the pattern is refined before the authenticated ones.
-  In flight: built and recorded 2026-09-04, PR #116 open. The tour is at
+  In flight: built, recorded and merged 2026-09-04 (PR #116). The tour is at
   `target/videos/tour/tour.mp4` (154 s, 1080p60) with stills, `.vtt` and transcript beside it;
   the operator reviews pace and pointer, the pattern is refined from that review, then the
   workflow is dispatched once against prod. Design kept at
@@ -106,11 +96,6 @@ results back by pasting them into a Claude Code session or appending to the work
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **B12c. Land the `resident-itsa` Stripe price ids.** Both modes done 2026-09-04 with the
-  `stripe-catalogue-sync` skill: test `price_1UC216FdFHdRoTOjCEixPiQL`, live
-  `price_1UC2SqCD0Ld2ukzIiRyB0xmy`; PR #114 carries them in `.env.ci` and `.env.prod` and
-  awaits merge. Day pass numbers (3 tokens, 100 concurrent) stand unless the operator gives
-  new ones. **Source**: BACKLOG 12. **Owner**: Operator merges. **Model**: —.
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
   is code.** The analytics jobs already run as a Google service account (Secrets Manager
   `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
