@@ -24,6 +24,8 @@ import { apiEndpoint as hmrcVatPaymentsGetApiEndpoint } from "../functions/hmrc/
 import { apiEndpoint as hmrcVatPenaltiesGetApiEndpoint } from "../functions/hmrc/hmrcVatPenaltiesGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
+import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
+import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
@@ -231,6 +233,8 @@ hmrcVatPaymentsGetApiEndpoint(app);
 hmrcVatPenaltiesGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+companiesHouseSearchGetApiEndpoint(app);
+companiesHouseCompanyGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
