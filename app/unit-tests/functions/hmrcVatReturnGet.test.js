@@ -100,7 +100,10 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
-import { ingestHandler as hmrcVatReturnGetHandler } from "@app/functions/hmrc/hmrcVatReturnGet.js";
+import {
+  ingestHandler as hmrcVatReturnGetHandler,
+  extractAndValidateParameters,
+} from "@app/functions/hmrc/hmrcVatReturnGet.js";
 import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -370,6 +373,78 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(JSON.parse(response.body)).toEqual(vatReturn);
   });
 
+  test("allowSandboxObligations: falls back to the next fulfilled obligation when the first return 404s", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [
+          { periodKey: "18A1", start: "2020-01-01", end: "2020-03-31", status: "F" },
+          { periodKey: "17A2", start: "2020-04-01", end: "2020-06-30", status: "F" },
+        ],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    mockHmrcError(mockFetch, 404, {});
+    const vatReturn = { periodKey: "17A2", totalVatDue: 250 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSandboxObligations: "true",
+      },
+      headers: {
+        authorization: "Bearer test-token",
+        hmrcAccount: "sandbox",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  test("allowSandboxObligations: falls back to another fulfilled obligation when the exact date match 404s", async () => {
+    // The requested dates match "18A1" exactly, but the sandbox holds no canned return for it -
+    // the other fulfilled obligation in the same window ("17A2") must still be tried.
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [
+          { periodKey: "18A1", start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F" },
+          { periodKey: "17A2", start: "2020-04-01", end: "2020-06-30", status: "F" },
+        ],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    mockHmrcError(mockFetch, 404, {});
+    const vatReturn = { periodKey: "17A2", totalVatDue: 250 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSandboxObligations: "true",
+      },
+      headers: {
+        authorization: "Bearer test-token",
+        hmrcAccount: "sandbox",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
   test("poll after successful retrieval returns persisted result without re-resolving periodKey", async () => {
     const persistedVatReturn = { periodKey: TEST_PERIOD_KEY, totalVatDue: 100 };
 
@@ -456,5 +531,61 @@ describe("hmrcVatReturnGet worker", () => {
     const completedCall = updateCalls.find((call) => call[0].input.ExpressionAttributeValues[":status"] === "completed");
     expect(completedCall).toBeDefined();
     expect(completedCall[0].input.ExpressionAttributeValues[":data"].vatReturn).toEqual(vatReturn);
+  });
+});
+
+describe("hmrcVatReturnGet extractAndValidateParameters allowSandboxObligations", () => {
+  function buildParamsEvent(allowSandboxObligations, hmrcAccount) {
+    return buildHmrcEvent({
+      headers: hmrcAccount ? { hmrcAccount } : {},
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        ...(allowSandboxObligations === undefined ? {} : { allowSandboxObligations }),
+      },
+    });
+  }
+
+  test("keeps strict obligation matching in sandbox when the flag is absent from the request", () => {
+    const event = buildParamsEvent(undefined, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("keeps strict obligation matching in sandbox when the flag is explicitly false", () => {
+    const event = buildParamsEvent(false, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("allows any fulfilled obligation in sandbox when the flag is true", () => {
+    const event = buildParamsEvent(true, "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(true);
+  });
+
+  test("allows any fulfilled obligation in sandbox when the flag is the string 'true'", () => {
+    const event = buildParamsEvent("true", "sandbox");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(true);
+  });
+
+  test("ignores the flag outside sandbox even when set to true", () => {
+    const event = buildParamsEvent(true, "live");
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
+  });
+
+  test("ignores the flag when no hmrcAccount header is provided", () => {
+    const event = buildParamsEvent(true, undefined);
+    const errorMessages = [];
+    const result = extractAndValidateParameters(event, errorMessages);
+    expect(result.allowSandboxObligations).toBe(false);
   });
 });

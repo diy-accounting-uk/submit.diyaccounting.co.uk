@@ -13,6 +13,7 @@ import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
   http404NotFoundResponse,
+  http409ConflictResponse,
   http500ServerErrorResponse,
   parseRequestBody,
   getHeader,
@@ -252,6 +253,10 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "Qualifier mismatch", error: result });
   }
 
+  if (result?.status === "already_granted" || result?.error === "already_granted") {
+    return http409ConflictResponse({ request, headers: responseHeaders, message: "Bundle already granted", error: result });
+  }
+
   return asyncApiServices.respond({
     request,
     requestId,
@@ -315,24 +320,19 @@ export async function workerHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export async function grantBundle(userId, requestBody, decodedToken, requestId = null, { skipCapCheck = false, grantQualifiers } = {}) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers });
+export async function grantBundle(
+  userId,
+  requestBody,
+  decodedToken,
+  requestId = null,
+  { skipCapCheck = false, grantQualifiers, viaPass = false } = {},
+) {
+  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers, viaPass });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};
 
   const currentBundles = await getUserBundles(userId);
-
-  // If the user already has this bundle, remove it and grant a fresh one.
-  // This handles: expired bundles, partially consumed tokens from previous passes,
-  // and re-redemption of a new pass for the same bundle type.
-  const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
-  if (existingBundle) {
-    logger.info({ message: "Removing existing bundle before fresh grant", requestedBundle, expiry: existingBundle.expiry });
-    await deleteBundle(userId, requestedBundle);
-    const idx = currentBundles.indexOf(existingBundle);
-    if (idx !== -1) currentBundles.splice(idx, 1);
-  }
 
   const catalogBundle = getCatalogBundle(requestedBundle);
 
@@ -384,6 +384,41 @@ export async function grantBundle(userId, requestBody, decodedToken, requestId =
     return result;
   } else {
     logger.info({ message: "[Catalog bundle] Bundle requires manual allocation, proceeding:", requestedBundle });
+  }
+
+  // If the user already has this bundle, remove it and grant a fresh one.
+  // This handles: expired bundles, partially consumed tokens from previous passes,
+  // and re-redemption of a new pass for the same bundle type.
+  // Exception: a direct self-service (on-request) request such as day-guest grants once
+  // per user per timeout period — an unexpired existing allocation refuses the request
+  // instead of resetting it, so a user cannot top up tokens early by re-requesting.
+  // Redemption via a pass (viaPass) always falls through to delete-and-regrant: passPost.js
+  // uses this path to top up a test user's bundle whenever tokens run low.
+  const existingBundle = currentBundles.find((bundle) => bundle?.bundleId === requestedBundle);
+  if (existingBundle) {
+    const stillActive = existingBundle.expiry && new Date(existingBundle.expiry) > new Date();
+    if (catalogBundle.allocation === "on-request" && stillActive && !viaPass) {
+      logger.info({
+        message: "[Catalog bundle] Self-service bundle already granted and still active, refusing re-grant:",
+        requestedBundle,
+        expiry: existingBundle.expiry,
+      });
+      const result = {
+        status: "already_granted",
+        error: "already_granted",
+        message: `Bundle '${requestedBundle}' already granted, next available after ${existingBundle.expiry}`,
+        expiry: existingBundle.expiry,
+        statusCode: 409,
+      };
+      if (requestId && process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME) {
+        await putAsyncRequest(userId, requestId, "failed", result);
+      }
+      return result;
+    }
+    logger.info({ message: "Removing existing bundle before fresh grant", requestedBundle, expiry: existingBundle.expiry });
+    await deleteBundle(userId, requestedBundle);
+    const idx = currentBundles.indexOf(existingBundle);
+    if (idx !== -1) currentBundles.splice(idx, 1);
   }
 
   // Global bundle capacity cap enforcement via atomic counter table.

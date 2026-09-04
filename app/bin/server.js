@@ -19,6 +19,9 @@ import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bun
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
+import { apiEndpoint as hmrcVatLiabilitiesGetApiEndpoint } from "../functions/hmrc/hmrcVatLiabilitiesGet.js";
+import { apiEndpoint as hmrcVatPaymentsGetApiEndpoint } from "../functions/hmrc/hmrcVatPaymentsGet.js";
+import { apiEndpoint as hmrcVatPenaltiesGetApiEndpoint } from "../functions/hmrc/hmrcVatPenaltiesGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
@@ -29,6 +32,7 @@ import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
 import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
+import { apiEndpoint as billingCheckoutSessionGetApiEndpoint } from "../functions/billing/billingCheckoutSessionGet.js";
 import { apiEndpoint as billingPortalGetApiEndpoint } from "../functions/billing/billingPortalGet.js";
 import { apiEndpoint as billingRecoverPostApiEndpoint } from "../functions/billing/billingRecoverPost.js";
 import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billing/billingWebhookPost.js";
@@ -222,6 +226,9 @@ bundleDeleteApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);
+hmrcVatLiabilitiesGetApiEndpoint(app);
+hmrcVatPaymentsGetApiEndpoint(app);
+hmrcVatPenaltiesGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 passGetApiEndpoint(app);
@@ -232,6 +239,7 @@ passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
 billingCheckoutPostApiEndpoint(app);
+billingCheckoutSessionGetApiEndpoint(app);
 billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
@@ -241,6 +249,7 @@ app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
 
+// 0 means ephemeral: the OS assigns a free port, read back below once the server is listening.
 const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;
 
 // Only start the server if this file is being run directly (compare absolute paths) or under test harness
@@ -320,8 +329,11 @@ if (__runDirect) {
       logger.info(message);
     });
   } else {
-    app.listen(TEST_SERVER_HTTP_PORT, () => {
-      const message = `Listening at http://127.0.0.1:${TEST_SERVER_HTTP_PORT}`;
+    const server = app.listen(TEST_SERVER_HTTP_PORT, () => {
+      // With TEST_SERVER_HTTP_PORT=0 (ephemeral), the requested port and the bound one differ —
+      // report the real one the OS actually assigned.
+      const actualPort = server.address().port;
+      const message = `Listening at http://127.0.0.1:${actualPort}`;
       console.log(message);
       logger.info(message);
     });

@@ -113,9 +113,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // In sandbox mode, default to allowing sandbox obligations (use any available fulfilled obligation)
-  // unless explicitly disabled. This provides flexibility for unpredictable HMRC sandbox responses.
-  const allowSandboxObligationsBool = hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
+  // In sandbox mode, use any available fulfilled obligation only when the caller opts in. An absent
+  // or falsy value keeps strict obligation matching, since HMRC's sandbox can return an
+  // already-fulfilled period.
+  const allowSandboxObligationsBool =
+    hmrcAccount === "sandbox" && (allowSandboxObligations === true || allowSandboxObligations === "true");
 
   return {
     vrn,
@@ -236,6 +238,9 @@ export async function ingestHandler(event) {
   // Resolve periodKey: either use the directly provided periodKey or resolve from obligations.
   // Skip entirely on polls where we already have a persisted record — the result is cached.
   let normalizedPeriodKey = null;
+  // Sandbox-only: further fulfilled obligations to try in turn if normalizedPeriodKey's return 404s
+  // (the sandbox does not hold a canned return for every fulfilled obligation it lists).
+  let sandboxFallbackPeriodKeys = [];
   if (!persistedRequest) {
     if (directPeriodKey) {
       normalizedPeriodKey = directPeriodKey.toUpperCase();
@@ -273,16 +278,28 @@ export async function ingestHandler(event) {
         const matchedObligation = findObligationByDateRange(obligationsArray, periodStart, periodEnd);
         let resolvedPeriodKey = matchedObligation?.status === "F" ? matchedObligation.periodKey : null;
 
+        // The requested dates can match a fulfilled obligation exactly and still 404 in the
+        // sandbox - it doesn't hold a canned return for every fulfilled obligation it lists.
+        // Keep the other fulfilled obligations from the same window as fallbacks to try in turn.
+        if (resolvedPeriodKey && allowSandboxObligations) {
+          sandboxFallbackPeriodKeys = obligationsArray
+            .filter((o) => o.status === "F" && o.periodKey !== resolvedPeriodKey)
+            .map((o) => o.periodKey.toUpperCase());
+        }
+
         // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
-        // use the first available fulfilled obligation instead of erroring
+        // use the first available fulfilled obligation instead of erroring. The sandbox may hold
+        // no canned return for that period, so keep the rest as fallbacks to try in turn.
         if (!resolvedPeriodKey && allowSandboxObligations) {
           const fulfilledObligations = obligationsArray.filter((o) => o.status === "F");
           if (fulfilledObligations.length > 0) {
             resolvedPeriodKey = fulfilledObligations[0].periodKey;
+            sandboxFallbackPeriodKeys = fulfilledObligations.slice(1).map((o) => o.periodKey.toUpperCase());
             logger.info({
               message: "allowSandboxObligations: Using first available fulfilled obligation",
               requestedPeriod: { periodStart, periodEnd },
               usedObligation: fulfilledObligations[0],
+              fallbackCount: sandboxFallbackPeriodKeys.length,
             });
           }
         }
@@ -324,6 +341,8 @@ export async function ingestHandler(event) {
   const payload = {
     vrn,
     periodKey: normalizedPeriodKey,
+    sandboxFallbackPeriodKeys,
+    allowSandboxObligations,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -350,9 +369,9 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { vatReturn, hmrcResponse } = await getVatReturn(
+        const { vatReturn, hmrcResponse, periodKey: usedPeriodKey } = await getVatReturnWithSandboxFallback(
           payload.vrn,
-          payload.periodKey,
+          [payload.periodKey, ...(payload.sandboxFallbackPeriodKeys || [])],
           payload.hmrcAccessToken,
           payload.govClientHeaders,
           payload.testScenario,
@@ -362,6 +381,7 @@ export async function ingestHandler(event) {
           payload.requestId,
           payload.traceparent,
           payload.correlationId,
+          payload.allowSandboxObligations,
         );
 
         const serializableHmrcResponse = {
@@ -370,7 +390,7 @@ export async function ingestHandler(event) {
           statusText: hmrcResponse.statusText,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-        return { vatReturn, hmrcResponse: serializableHmrcResponse, periodKey: payload.periodKey };
+        return { vatReturn, hmrcResponse: serializableHmrcResponse, periodKey: usedPeriodKey };
       };
 
       result = await asyncApiServices.initiateProcessing({
@@ -469,9 +489,13 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
-      const { vatReturn, hmrcResponse } = await getVatReturn(
+      const {
+        vatReturn,
+        hmrcResponse,
+        periodKey: usedPeriodKey,
+      } = await getVatReturnWithSandboxFallback(
         payload.vrn,
-        payload.periodKey,
+        [payload.periodKey, ...(payload.sandboxFallbackPeriodKeys || [])],
         payload.hmrcAccessToken,
         payload.govClientHeaders,
         payload.testScenario,
@@ -481,6 +505,7 @@ export async function workerHandler(event) {
         payload.requestId,
         payload.traceparent,
         payload.correlationId,
+        payload.allowSandboxObligations,
       );
 
       const serializableHmrcResponse = {
@@ -490,7 +515,7 @@ export async function workerHandler(event) {
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
-      const result = { vatReturn, hmrcResponse: serializableHmrcResponse, periodKey: payload.periodKey };
+      const result = { vatReturn, hmrcResponse: serializableHmrcResponse, periodKey: usedPeriodKey };
 
       if (!hmrcResponse.ok) {
         // Distinguish retryable errors (e.g. 429, 503, 504)
@@ -640,4 +665,66 @@ export async function getVatReturn(
     userSub: auditForUserSub,
   });
   return { hmrcResponse, vatReturn: hmrcResponse.data, hmrcRequestUrl };
+}
+
+/**
+ * Look up a VAT return, trying each candidate periodKey in turn.
+ *
+ * With allowSandboxObligations, periodKey resolution falls back to "any fulfilled
+ * obligation" when none matches the requested date range exactly, but the sandbox
+ * does not hold a canned return for every fulfilled obligation it lists (one period
+ * key can 404 while another in the same obligations list has data). Only continue to
+ * the next candidate on a sandbox 404 - a live account's 404 is a genuine miss, and a
+ * non-404 error (403, 500, ...) is returned immediately rather than masked by a retry.
+ *
+ * @param {string} vrn
+ * @param {string[]} periodKeys - candidates in priority order; only the first is tried
+ *   outside the sandbox fallback case
+ * @returns {Promise<{hmrcResponse: object, vatReturn: object|null, periodKey: string}>}
+ */
+export async function getVatReturnWithSandboxFallback(
+  vrn,
+  periodKeys,
+  hmrcAccessToken,
+  govClientHeaders,
+  testScenario,
+  hmrcAccount,
+  auditForUserSub,
+  runFraudPreventionHeaderValidation = false,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+  allowSandboxObligations = false,
+) {
+  const candidates = (Array.isArray(periodKeys) ? periodKeys : [periodKeys]).filter(Boolean);
+  let attempt = null;
+  for (let i = 0; i < candidates.length; i++) {
+    const periodKey = candidates[i];
+    const outcome = await getVatReturn(
+      vrn,
+      periodKey,
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount,
+      auditForUserSub,
+      runFraudPreventionHeaderValidation,
+      requestId,
+      traceparent,
+      correlationId,
+    );
+    attempt = { ...outcome, periodKey };
+
+    const isSandboxNotFound = allowSandboxObligations && hmrcAccount === "sandbox" && attempt.hmrcResponse.status === 404;
+    const hasMoreCandidates = i < candidates.length - 1;
+    if (attempt.hmrcResponse.ok || !isSandboxNotFound || !hasMoreCandidates) {
+      return attempt;
+    }
+    logger.info({
+      message: "allowSandboxObligations: return lookup 404'd for period, trying next fulfilled obligation",
+      periodKey,
+      nextPeriodKey: candidates[i + 1],
+    });
+  }
+  return attempt;
 }

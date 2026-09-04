@@ -9,6 +9,9 @@ import { apiEndpoint as localOAuthEndpoint } from "./routes/local-oauth.js";
 import { apiEndpoint as hmrcOAuthEndpoint } from "./routes/hmrc-oauth.js";
 import { apiEndpoint as vatReturnsEndpoint } from "./routes/vat-returns.js";
 import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.js";
+import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
+import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
+import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
@@ -51,6 +54,9 @@ export function createApp() {
   // HMRC VAT API routes
   vatReturnsEndpoint(app);
   vatObligationsEndpoint(app);
+  vatLiabilitiesEndpoint(app);
+  vatPaymentsEndpoint(app);
+  vatPenaltiesEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
 
@@ -76,9 +82,13 @@ export function createApp() {
 
 // If run directly, start the server
 if (import.meta.url === `file://${process.argv[1]}`) {
+  // 0 means ephemeral: the OS assigns a free port, read back below once listening.
   const port = process.env.TEST_HTTP_SIMULATOR_PORT || 9000;
   const app = createApp();
-  app.listen(port, () => {
-    console.log(`[http-simulator] Server listening on http://localhost:${port}`);
+  const server = app.listen(port, () => {
+    // With TEST_HTTP_SIMULATOR_PORT=0 (ephemeral), the requested port and the bound one differ —
+    // report the real one the OS actually assigned.
+    const actualPort = server.address().port;
+    console.log(`[http-simulator] Server listening on http://localhost:${actualPort}`);
   });
 }

@@ -69,10 +69,7 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 // Load catalogue to determine bundle properties (hidden, enable, cap, etc.)
 const catalogue = loadCatalogFromRoot();
-const getCatalogBundle = (bundleName) => {
-  const bundleId = bundleName.toLowerCase().replace(/\s+/g, "-");
-  return catalogue.bundles?.find((b) => b.id === bundleId) || null;
-};
+const getCatalogBundle = (bundleName) => catalogue.bundles?.find((b) => b.name === bundleName) || null;
 const isBundleHidden = (bundleName) => !!getCatalogBundle(bundleName)?.hidden;
 
 let mockOAuth2Process;
@@ -188,10 +185,10 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   console.log(`[bundle-test]: Empty state - allocated bundles: ${emptyResponse?.bundles?.filter((b) => b.allocated)?.length ?? "?"}`);
   console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
 
-  // --- Step 3: Request Day Guest bundle (via test pass for sandbox routing) ---
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  // --- Step 3: Request Day pass bundle (via test pass for sandbox routing) ---
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
 
-  // --- Step 4: Check Day Guest capacity availability ---
+  // --- Step 4: Check Day pass capacity availability ---
   const dayGuestCapacity = await page
     .evaluate(async () => {
       const idToken = localStorage.getItem("cognitoIdToken");
@@ -210,12 +207,12 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       }
     })
     .catch(() => ({ found: false }));
-  console.log(`[bundle-test]: Day Guest capacity check: ${JSON.stringify(dayGuestCapacity)}`);
+  console.log(`[bundle-test]: Day pass capacity check: ${JSON.stringify(dayGuestCapacity)}`);
   expect(dayGuestCapacity.found).toBe(true);
 
   const isDayGuestAvailable = dayGuestCapacity.capacityAvailable === true;
   if (isDayGuestAvailable) {
-    await ensureBundlePresent(page, "Day Guest", screenshotPath, { isHidden: isBundleHidden("Day Guest") });
+    await ensureBundlePresent(page, "Day pass", screenshotPath, { isHidden: isBundleHidden("Day pass") });
 
     // Verify API response includes allocated bundles with correct structure
     const afterGrantResponse = await verifyBundleApiResponse(page, screenshotPath);
@@ -228,8 +225,8 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
 
-    // --- Step 6: Remove Day Guest bundle and verify it can be re-requested ---
-    await removeBundle(page, "Day Guest", screenshotPath);
+    // --- Step 6: Remove Day pass bundle and verify it can be re-requested ---
+    await removeBundle(page, "Day pass", screenshotPath);
 
     // Verify only Test remains allocated
     const afterRemoveResponse = await verifyBundleApiResponse(page, screenshotPath);
@@ -237,8 +234,8 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
     console.log(`[bundle-test]: After remove - allocated bundles: ${remainingAllocated.length}`);
     console.log(`[bundle-test]: After remove - bundle IDs: ${remainingAllocated.map((b) => b.bundleId).join(", ")}`);
 
-    // --- Step 7: Re-request Day Guest to verify re-requestability after removal ---
-    await ensureBundlePresent(page, "Day Guest", screenshotPath, { isHidden: isBundleHidden("Day Guest") });
+    // --- Step 7: Re-request Day pass to verify re-requestability after removal ---
+    await ensureBundlePresent(page, "Day pass", screenshotPath, { isHidden: isBundleHidden("Day pass") });
 
     // --- Step 8: Verify already-granted idempotency ---
     // Re-requesting the same bundle via API should return already_granted, not an error
@@ -303,7 +300,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
       userSub,
       observedTraceparent,
       testUrl,
-      bundlesTested: isDayGuestAvailable ? ["Test", "Day Guest"] : ["Test"],
+      bundlesTested: isDayGuestAvailable ? ["Test", "Day pass"] : ["Test"],
     },
     artefactsDir: outputDir,
     screenshotPath,

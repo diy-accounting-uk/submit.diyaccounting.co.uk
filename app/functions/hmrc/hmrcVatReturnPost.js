@@ -236,9 +236,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // In sandbox mode, default to allowing sandbox obligations (use any available open obligation)
-  // unless explicitly disabled. This provides flexibility for unpredictable HMRC sandbox responses.
-  const allowSandboxObligationsBool = hmrcAccount === "sandbox" && allowSandboxObligations !== false && allowSandboxObligations !== "false";
+  // In sandbox mode, use any available open obligation only when the caller opts in. An absent
+  // or falsy value keeps strict obligation matching, since HMRC's sandbox can return an
+  // already-fulfilled period.
+  const allowSandboxObligationsBool =
+    hmrcAccount === "sandbox" && (allowSandboxObligations === true || allowSandboxObligations === "true");
 
   return {
     vatNumber,

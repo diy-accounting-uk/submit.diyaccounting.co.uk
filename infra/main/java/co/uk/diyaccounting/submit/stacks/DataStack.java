@@ -32,6 +32,9 @@ public class DataStack extends Stack {
     public ITable hmrcVatReturnPostAsyncRequestsTable;
     public ITable hmrcVatReturnGetAsyncRequestsTable;
     public ITable hmrcVatObligationGetAsyncRequestsTable;
+    public ITable hmrcVatLiabilitiesGetAsyncRequestsTable;
+    public ITable hmrcVatPaymentsGetAsyncRequestsTable;
+    public ITable hmrcVatPenaltiesGetAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
     public ITable bundleCapacityTable;
@@ -108,6 +111,8 @@ public class DataStack extends Stack {
                 "receiptId");
         String receiptsStreamArn =
                 ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().receiptsTableName);
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-ReceiptsTTL", props.sharedNames().receiptsTableName, "ttl");
         infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
 
         // Bundles table for bundle storage
@@ -204,6 +209,54 @@ public class DataStack extends Stack {
         infof(
                 "Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+
+        // HMRC VAT Liabilities GET async request storage
+        this.hmrcVatLiabilitiesGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatLiabilitiesGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatLiabilitiesGetAsyncTTL",
+                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC VAT Liabilities GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName);
+
+        // HMRC VAT Payments GET async request storage
+        this.hmrcVatPaymentsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatPaymentsGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatPaymentsGetAsyncTTL",
+                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC VAT Payments GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName);
+
+        // HMRC VAT Penalties GET async request storage
+        this.hmrcVatPenaltiesGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatPenaltiesGetAsyncRequestsTable",
+                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatPenaltiesGetAsyncTTL",
+                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC VAT Penalties GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName);
 
         // HMRC API requests storage - audit trail for HMRC interactions
         // 28-day retention via TTL on "ttl" attribute
@@ -304,6 +357,30 @@ public class DataStack extends Stack {
                 this,
                 "HmrcVatObligationGetAsyncRequestsTableArn",
                 this.hmrcVatObligationGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatLiabilitiesGetAsyncRequestsTableName",
+                this.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatLiabilitiesGetAsyncRequestsTableArn",
+                this.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatPaymentsGetAsyncRequestsTableName",
+                this.hmrcVatPaymentsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatPaymentsGetAsyncRequestsTableArn",
+                this.hmrcVatPaymentsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatPenaltiesGetAsyncRequestsTableName",
+                this.hmrcVatPenaltiesGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatPenaltiesGetAsyncRequestsTableArn",
+                this.hmrcVatPenaltiesGetAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
         cfnOutput(this, "PassesTableName", this.passesTable.getTableName());

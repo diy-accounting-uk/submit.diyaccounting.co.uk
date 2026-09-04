@@ -735,6 +735,33 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
   });
 }
 
+export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
+  logger.warn({
+    message: "Bad request rejected by HMRC",
+    request: request?.toString(),
+    hmrcResponseCode: hmrcResponse.status,
+    responseBody: hmrcResponse.data,
+  });
+
+  const message = errorDetails ? errorDetails.userMessage : "HMRC rejected the request";
+  const errorResponse = {
+    hmrcResponseCode: hmrcResponse.status,
+    responseBody: hmrcResponse.data,
+  };
+
+  if (errorDetails) {
+    errorResponse.userMessage = errorDetails.userMessage;
+    errorResponse.actionAdvice = errorDetails.actionAdvice;
+  }
+
+  return http400BadRequestResponse({
+    request,
+    headers: { ...govClientHeaders },
+    message,
+    error: errorResponse,
+  });
+}
+
 export function http500ServerErrorFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.error({
     message: "HMRC request failed for request",

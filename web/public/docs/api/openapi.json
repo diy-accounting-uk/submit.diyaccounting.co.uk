@@ -230,6 +230,112 @@
         }
       }
     },
+    "/hmrc/vat/penalty" : {
+      "get" : {
+        "summary" : "Get VAT penalties from HMRC",
+        "description" : "Retrieves VAT penalties from HMRC for the authenticated user",
+        "operationId" : "getVatPenalties",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/payment" : {
+      "get" : {
+        "summary" : "Get VAT payments from HMRC",
+        "description" : "Retrieves VAT payments from HMRC for the authenticated user",
+        "operationId" : "getVatPayments",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/pass/generate" : {
       "post" : {
         "summary" : "Generate a pass using tokens",
@@ -491,6 +597,22 @@
         }
       }
     },
+    "/billing/checkout-session/{id}" : {
+      "get" : {
+        "summary" : "Retrieve a billing checkout session",
+        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
+        "operationId" : "getCheckoutSession",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Stripe checkout session id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/billing/recover" : {
       "post" : {
         "summary" : "Recover billing subscription",
@@ -550,6 +672,68 @@
           "schema" : {
             "type" : "string",
             "example" : "2025-03-31-123456789012.json"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/liability" : {
+      "get" : {
+        "summary" : "Get VAT liabilities from HMRC",
+        "description" : "Retrieves VAT liabilities from HMRC for the authenticated user",
+        "operationId" : "getVatLiabilities",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "tags" : [ "HMRC" ],

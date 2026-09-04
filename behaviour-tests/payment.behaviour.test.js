@@ -53,6 +53,7 @@ import {
   verifySubscriptionDeletionWebhook,
 } from "./steps/behaviour-bundle-steps.js";
 import { fillInVat } from "./steps/behaviour-hmrc-vat-steps.js";
+import { waitForSuccessOrError } from "./helpers/waitForSuccessOrError.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -96,6 +97,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = isSandboxMode();
+const allowSandboxObligations = isSandboxMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -428,19 +430,27 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
+      allowSandboxObligations,
     );
 
-    // Submit the form — scope enforcement fetches the catalogue asynchronously
-    // before redirecting to HMRC OAuth, so wait for the HMRC auth page or receipt
+    // Submit the form — scope enforcement fetches the catalogue asynchronously before
+    // redirecting to HMRC OAuth, and a successful submission's own polling can run far
+    // longer than a short fixed wait, so wait - with a long budget and fail-fast on a
+    // new error banner - for whichever of the HMRC consent redirect or the VAT
+    // submission receipt appears first.
     await page.locator("#submitBtn").click();
-    const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
-    await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
-
-    // Handle HMRC OAuth if redirected
+    await waitForSuccessOrError(page, {
+      successSelector: "#appNameParagraph, #receiptDisplay",
+      description: "HMRC consent page or VAT submission receipt",
+      timeout: 1_000_000,
+      screenshotPath,
+    }).catch(() => {});
     const isHmrcAuthPage = await page
       .locator("#appNameParagraph")
       .isVisible()
       .catch(() => false);
+
+    // Handle HMRC OAuth if redirected
     if (isHmrcAuthPage) {
       await acceptCookiesHmrc(page, screenshotPath);
       await goToHmrcAuth(page, screenshotPath);

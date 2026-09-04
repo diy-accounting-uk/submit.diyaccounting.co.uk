@@ -94,6 +94,9 @@ class DataStackTest {
             dataStack.hmrcVatReturnPostAsyncRequestsTable.getTableName(),
             dataStack.hmrcVatReturnGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcVatObligationGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatPaymentsGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatPenaltiesGetAsyncRequestsTable.getTableName(),
             dataStack.hmrcApiRequestsTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
@@ -110,6 +113,56 @@ class DataStackTest {
                             .size(),
                     "expected no stream update for " + tableName);
         }
+    }
+
+    @Test
+    void receiptsTableGetsTimeToLiveOnTtlAttribute() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // The receipt repository writes a 7-year "ttl" attribute on every item; DynamoDB only
+        // expires items once TTL is enabled on that attribute for the table.
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        dataStack.receiptsTable.getTableName(),
+                                        "\"AttributeName\":\"ttl\"",
+                                        "\"Enabled\":true"))));
+        assertEquals(1, resource.size());
+    }
+
+    @Test
+    void ttlCustomResourceDependsOnPitrCustomResource() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // DynamoDB allows one control-plane change per table at a time. Without an explicit
+        // dependency, TTL's UpdateTimeToLive call can race the table's own UpdateContinuousBackups
+        // (PITR) call and fail with "Attempt to change a resource which is still in use".
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTimeToLive",
+                                        dataStack.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName(),
+                                        "\"Enabled\":true"))));
+        assertEquals(1, resource.size());
+        var ttlResource = resource.values().iterator().next();
+        Object dependsOn = ((Map<?, ?>) ttlResource).get("DependsOn");
+        assertTrue(dependsOn != null, "expected the TTL custom resource to declare a DependsOn");
+        var dependsOnIds = (java.util.List<?>) dependsOn;
+        assertTrue(
+                dependsOnIds.stream().anyMatch(dependencyId -> dependencyId.toString().contains("EnsurePITR")),
+                "expected the TTL custom resource's DependsOn to include its table's EnsurePITR resource, got: "
+                        + dependsOnIds);
     }
 
     @Test

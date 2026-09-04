@@ -52,6 +52,7 @@ import {
   assertFraudPreventionHeaders,
   assertHmrcApiRequestExists,
   assertHmrcApiRequestValues,
+  countHmrcApiRequestValues,
   intentionallyNotSuppliedHeaders,
   readDynamoDbExport,
 } from "./helpers/dynamodb-assertions.js";
@@ -197,7 +198,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   if (envName !== "prod") {
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
@@ -408,6 +409,26 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
       assertHmrcApiRequestValues(vatGetRequest, { "httpRequest.method": "GET" });
       // TODO: Deeper inspection of expected responses based on getVatObligations.behaviour.test.js
     });
+
+    // The GET return handler always resolves periodKey by querying obligations first when no
+    // periodKey is supplied directly (see hmrcVatReturnGet.js). In sandbox mode HMRC sometimes
+    // has no canned return for the period that lookup resolves, even though the lookup itself
+    // succeeded (see verifyViewVatReturnResults' handling of the resulting "not found" outcome).
+    // Assert that lookup succeeded, so a "not found" return retrieval is attributable to that
+    // known sandbox data gap rather than a broken obligations call.
+    const obligationsUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/obligations`);
+    const obligationsRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      obligationsUrlPattern,
+      "VAT obligations retrieval for period resolution",
+    );
+    const obligationsHttp200Count = obligationsRequests.reduce(
+      (count, obligationsRequest) =>
+        count + countHmrcApiRequestValues(obligationsRequest, { "httpRequest.method": "GET", "httpResponse.statusCode": 200 }),
+      0,
+    );
+    expect(obligationsHttp200Count, "Expected at least one obligations lookup for period resolution to succeed").toBeGreaterThan(0);
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)

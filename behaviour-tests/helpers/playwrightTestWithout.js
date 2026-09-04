@@ -7,7 +7,17 @@ import { test as base } from "@playwright/test";
 // Blocks RUM / GA / gtag / GTM endpoints / HMRC all.js so behaviour tests aren't
 // slowed down or polluted by real analytics calls. Shared by any fixture that
 // creates its own context (e.g. playwrightTestForCapture.js).
+//
+// The match for Google's legacy analytics.js is a full URL prefix, not a bare substring:
+// this app also serves its own web/public/lib/analytics.js, and a substring match blocked
+// that file too, so no behaviour-test browser ever defined gtag or a dataLayer.
+//
+// Set DIY_SUBMIT_ALLOW_REAL_ANALYTICS=true to skip this interception entirely for a run
+// that must send real analytics hits.
 export function blockAnalyticsRequests(context) {
+  if (process.env.DIY_SUBMIT_ALLOW_REAL_ANALYTICS === "true") {
+    return Promise.resolve();
+  }
   return context.route("**/*", (route) => {
     const url = route.request().url();
     if (
@@ -15,11 +25,11 @@ export function blockAnalyticsRequests(context) {
       url.startsWith("https://test-www.tax.service.gov.uk/api-test-login/assets/lib/govuk-frontend/dist/govuk/all.js") ||
       url.startsWith("https://www.google-analytics.com/g/collect") ||
       url.startsWith("https://www.googletagmanager.com/") ||
-      url.includes("analytics.js") ||
+      url.startsWith("https://www.google-analytics.com/analytics.js") ||
       url.includes("gtag/js")
     ) {
       const isGaScript =
-        url.includes("analytics.js") ||
+        url.startsWith("https://www.google-analytics.com/analytics.js") ||
         url.includes("gtag/js") ||
         url.includes("/gtm.js") ||
         url.includes("/all.js") ||

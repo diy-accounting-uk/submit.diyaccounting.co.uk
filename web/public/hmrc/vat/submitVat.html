@@ -86,7 +86,6 @@
               pattern="[0-9]{9}"
               aria-describedby="vatNumber-hint"
               spellcheck="false"
-              autocomplete="off"
             />
           </div>
 
@@ -96,11 +95,11 @@
             <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
               <div>
                 <label for="periodStart">Period start</label>
-                <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" autocomplete="off" />
+                <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
               </div>
               <div>
                 <label for="periodEnd">Period end</label>
-                <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" autocomplete="off" />
+                <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
               </div>
             </div>
             <!-- Hidden fields for backwards compatibility -->
@@ -702,22 +701,6 @@
           return;
         }
 
-        // GA4 ecommerce: begin_checkout when VAT return submission starts
-        if (typeof gtag === "function") {
-          gtag("event", "begin_checkout", {
-            currency: "GBP",
-            value: 0,
-            items: [
-              {
-                item_id: "vat-return",
-                item_name: "VAT Return",
-                price: 0,
-                currency: "GBP",
-              },
-            ],
-          });
-        }
-
         // Store submission data for the submission handler
         submissionData = {
           vatNumber,
@@ -856,6 +839,7 @@
           // Hide form while submitting
           hideForm();
           showLoading();
+          hideStatus(); // Clear stale banners from an earlier failed attempt before showing the new one
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return with 9-box data
@@ -908,95 +892,12 @@
 
         // Get Gov-Client headers
         const govClientHeaders = await getGovClientHeaders();
-
-        const requestHeaders = {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          ...govClientHeaders,
-        };
         if (testScenario) {
-          requestHeaders["Gov-Test-Scenario"] = testScenario;
-        }
-        return await submitVat(
-          vatNumber,
-          vatData,
-          accessToken,
-          requestHeaders,
-          runFraudPreventionHeaderValidation,
-          allowSandboxObligations,
-        );
-      }
-
-      async function submitVat(vatNumber, vatData, accessToken, headers, runFraudPreventionHeaderValidation, allowSandboxObligations) {
-        const url = "/api/v1/hmrc/vat/return";
-        const body = JSON.stringify({
-          vatNumber,
-          periodStart: vatData.periodStart,
-          periodEnd: vatData.periodEnd,
-          // Include all 9-box fields
-          vatDueSales: vatData.vatDueSales,
-          vatDueAcquisitions: vatData.vatDueAcquisitions,
-          totalVatDue: vatData.totalVatDue,
-          vatReclaimedCurrPeriod: vatData.vatReclaimedCurrPeriod,
-          netVatDue: vatData.netVatDue,
-          totalValueSalesExVAT: vatData.totalValueSalesExVAT,
-          totalValuePurchasesExVAT: vatData.totalValuePurchasesExVAT,
-          totalValueGoodsSuppliedExVAT: vatData.totalValueGoodsSuppliedExVAT,
-          totalAcquisitionsExVAT: vatData.totalAcquisitionsExVAT,
-          finalised: vatData.finalised,
-          accessToken,
-          runFraudPreventionHeaderValidation,
-          allowSandboxObligations,
-        });
-        console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
-
-        const requestHeaders = {
-          "Content-Type": "application/json",
-          ...headers,
-        };
-
-        // Add hmrcAccount header if present
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        if (hmrcAccount) {
-          requestHeaders["hmrcAccount"] = hmrcAccount;
+          govClientHeaders["Gov-Test-Scenario"] = testScenario;
         }
 
-        const response = await window.authorizedFetch(url, {
-          method: "POST",
-          headers: requestHeaders,
-          body,
-        });
-        const responseJson = await response.json();
-        if (!response.ok) {
-          // Handle token exhaustion with a user-friendly message
-          if (response.status === 403 && responseJson?.error?.reason === "tokens_exhausted") {
-            const tokenInfoEl = document.getElementById("tokenCostInfo");
-            if (tokenInfoEl) {
-              tokenInfoEl.innerHTML = 'No tokens remaining. <a href="/bundles.html" style="color:#c00;">View Bundles</a>';
-              tokenInfoEl.style.display = "";
-              tokenInfoEl.style.color = "#c00";
-            }
-            throw new Error(
-              "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.",
-            );
-          }
-          // Handle HMRC scope insufficient — clear token and advise re-authorization
-          if (responseJson?.error?.reason === "hmrc_scope_insufficient") {
-            console.warn("HMRC scope insufficient, clearing token for re-authorization");
-            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
-            throw new Error(
-              responseJson.error.userMessage ||
-                "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.",
-            );
-          }
-          const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-          console.error(message);
-          throw new Error(message);
-        }
-
-        console.log(`Submitted VAT. Remote call completed successfully: POST ${url}`, responseJson, responseJson.receipt);
-        // Return the receipt object when present (production), otherwise return the full body (tests/mocks)
-        return responseJson?.receipt ?? responseJson;
+        // submitVat is the hmrc-service module's export (exposed on window by web/public/lib/services/hmrc-service.js)
+        return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSandboxObligations);
       }
 
       function displayReceipt(response) {
@@ -1007,9 +908,9 @@
         // Handle both direct receipt object and wrapped response (from module's submitVat)
         const receipt = response.receipt ?? response;
 
-        // GA4 ecommerce: purchase when VAT return is successfully submitted
+        // GA4: submit_vat_return when a VAT return is successfully submitted
         if (typeof gtag === "function") {
-          gtag("event", "purchase", {
+          gtag("event", "submit_vat_return", {
             transaction_id: receipt.formBundleNumber || "",
             value: 0,
             currency: "GBP",
@@ -1172,7 +1073,6 @@
       }
 
       // Expose page-specific functions to window for testing
-      window.submitVat = submitVat;
       window.handleOAuthCallback = handleOAuthCallback;
       window.continueSubmission = continueVatSubmission;
       window.displayReceipt = displayReceipt;

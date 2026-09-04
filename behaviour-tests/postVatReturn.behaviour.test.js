@@ -27,6 +27,7 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, ensureBundleViaPassApi, getTokensRemaining, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
 import { completeVat, fillInVat, initSubmitVat, submitFormVat, verifyVatSubmission } from "./steps/behaviour-hmrc-vat-steps.js";
+import { waitForSuccessOrError } from "./helpers/waitForSuccessOrError.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,
@@ -78,6 +79,8 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 // Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSandboxMode();
+// Use any available open obligation in sandbox mode, since the fixed 2017 period may already be fulfilled
+const allowSandboxObligations = isSandboxMode();
 
 const hmrcVatDueAmount = "1000.00";
 
@@ -145,20 +148,28 @@ async function refreshBundleIfTokensLow(page, minTokens = 1) {
   console.log(`[token-refresh] Tokens after re-grant: ${after}`);
 }
 
-async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation }) {
+async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation, allowSandboxObligations }) {
   // Ensure sufficient tokens before each submission (day-guest has tokensGranted=3)
   await refreshBundleIfTokensLow(page);
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   // Click submit. The HMRC access token may or may not be cached:
   // - Cached (first resubmission after success): client calls API directly
   // - Cleared (after a failed submission): client redirects to HMRC OAuth
-  // Scope enforcement fetches the catalogue asynchronously before redirecting,
-  // so wait for the HMRC auth page or receipt/error instead of a fixed timeout.
+  // Scope enforcement fetches the catalogue asynchronously before redirecting, and a
+  // successful submission's own polling can run far longer than a short fixed wait,
+  // so wait - with a long budget and fail-fast on a new error banner - for whichever
+  // of the HMRC consent redirect or the VAT submission receipt appears first. A new
+  // error banner is the expected terminal state for the sandbox failure scenarios
+  // below, so catch it here rather than treat it as a test failure - completeVat()
+  // and verifyVatSubmission() make the real assertions on the resulting page state.
   await page.locator("#submitBtn").click();
-  const hmrcAuthOrResult = page.locator("#appNameParagraph, #receiptDisplay, #statusMessagesContainer:has-text('failed')");
-  await hmrcAuthOrResult.first().waitFor({ state: "visible", timeout: 30_000 });
-  // Check whether we landed on the HMRC OAuth consent page
+  await waitForSuccessOrError(page, {
+    successSelector: "#appNameParagraph, #receiptDisplay",
+    description: "HMRC consent page or VAT submission receipt",
+    timeout: 1_000_000,
+    screenshotPath,
+  }).catch(() => {});
   const isHmrcAuthPage = await page
     .locator("#appNameParagraph")
     .isVisible()
@@ -226,7 +237,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   if (envName !== "prod") {
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
@@ -238,7 +249,7 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath);
+  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSandboxObligations);
   await submitFormVat(page, screenshotPath);
 
   /* ************ */
@@ -278,36 +289,42 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_VRN",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PERIODKEY",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "INVALID_PAYLOAD",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "DUPLICATE_SUBMISSION",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "TAX_PERIOD_NOT_ENDED",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "INSOLVENT_TRADER",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
 
     // Custom forced error scenarios
@@ -316,12 +333,14 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_API_HTTP_500",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     await requestAndVerifySubmitReturn(page, {
       vatNumber: testVatNumber,
       vatDue: hmrcVatDueAmount,
       testScenario: "SUBMIT_HMRC_API_HTTP_500",
       runFraudPreventionHeaderValidation,
+      allowSandboxObligations,
     });
     // VERY EXPENSIVE: Triggers after 1 HTTP 503, this triggers 2 retries (visibility delay 320s), so 27+ minutes to dlq
     // with a client timeout  = 1_630_000; // 90s + 3 x 300s (Submit VAT) + 2 x 320s (visibility)

@@ -113,7 +113,7 @@ export async function ingestHandler(event) {
         metadata: { hashedSub, bundleId },
       },
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}bundles.html?checkout=success`,
+      success_url: `${baseUrl}bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}bundles.html?checkout=canceled`,
     });
 

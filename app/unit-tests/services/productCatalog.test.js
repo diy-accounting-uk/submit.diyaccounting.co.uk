@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, isActivityAvailable } from "../../services/productCatalog.js";
+import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, isActivityAvailable, getCatalogBundleById } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -50,5 +50,24 @@ describe("productCatalogHelper", () => {
     const catalog = parseCatalog(tomlText);
     expect(isActivityAvailable(catalog, "submit-vat", "day-guest")).toBe(true);
     expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
+  });
+
+  it("resident-itsa should mirror resident-vat's pricing shape and be hidden in prod", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentVat = getCatalogBundleById(catalog, "resident-vat");
+    const residentItsa = getCatalogBundleById(catalog, "resident-itsa");
+    expect(residentItsa).toBeTruthy();
+    expect(residentItsa.allocation).toBe("on-subscription");
+    expect(residentItsa.tokensGranted).toBe(residentVat.tokensGranted);
+    expect(residentItsa.tokenRefreshInterval).toBe(residentVat.tokenRefreshInterval);
+    expect(residentItsa.enable).toBe("always");
+    expect(residentItsa.listedInEnvironments).not.toContain("prod");
+  });
+
+  it("self-employed activity should be granted by resident-itsa", () => {
+    const catalog = parseCatalog(tomlText);
+    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa"]);
+    expect(isActivityAvailable(catalog, "self-employed", "resident-itsa")).toBe(true);
+    expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 });

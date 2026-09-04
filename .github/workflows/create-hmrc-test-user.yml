@@ -19,6 +19,7 @@ on:
         required: false
         options:
           - 'mtd-vat'
+          - 'mtd-income-tax'
           - 'mtd-vat,mtd-income-tax'
         default: 'mtd-vat'
 
@@ -62,6 +63,7 @@ jobs:
         env:
           HMRC_SANDBOX_CLIENT_ID: ${{ env.HMRC_SANDBOX_CLIENT_ID }}
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          HMRC_TEST_USER_SERVICE_NAMES: ${{ inputs.service-names }}
 
       - name: Write Job Summary with Credentials
         if: success()
@@ -78,6 +80,7 @@ jobs:
           | **User ID** | `${{ steps.create-user.outputs.hmrc-user-id }}` |
           | **Password** | `${{ steps.create-user.outputs.hmrc-password }}` |
           | **VAT Number (VRN)** | `${{ steps.create-user.outputs.hmrc-vat-number }}` |
+          | **National Insurance (NINO)** | `${{ steps.create-user.outputs.hmrc-nino }}` |
           | **Organisation** | ${{ steps.create-user.outputs.hmrc-org-name }} |
 
           ### How to Use

@@ -17,6 +17,7 @@ import { test } from "@playwright/test";
 import { gotoWithRetries } from "./gotoWithRetries.js";
 import fs from "node:fs";
 import path from "node:path";
+import net from "node:net";
 import { createLogger, sanitiseString, sanitiseData } from "../../app/lib/logger.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
@@ -119,6 +120,15 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const hmrcVatObligationGetAsyncTable = process.env.HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcVatObligationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatObligationGetAsyncTable, endpoint);
+
+    const hmrcVatLiabilitiesGetAsyncTable = process.env.HMRC_VAT_LIABILITIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatLiabilitiesGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatLiabilitiesGetAsyncTable, endpoint);
+
+    const hmrcVatPaymentsGetAsyncTable = process.env.HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatPaymentsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatPaymentsGetAsyncTable, endpoint);
+
+    const hmrcVatPenaltiesGetAsyncTable = process.env.HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatPenaltiesGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatPenaltiesGetAsyncTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
@@ -275,11 +285,13 @@ export async function runLocalOAuth2Server(runMockOAuth2) {
 /**
  * Start the HTTP simulator that replaces both Docker mock-oauth2-server and HMRC API
  * @param {string} runSimulator - 'run' to start, any other value to skip
- * @param {number} port - Port to listen on (default from TEST_HTTP_SIMULATOR_PORT or 9000)
+ * @param {number} port - Port to listen on (default from TEST_HTTP_SIMULATOR_PORT, or an ephemeral free port if neither is set)
  * @returns {Promise<{stop: Function, endpoint: string}|null>}
  */
 export async function runLocalHttpSimulator(runSimulator, port) {
-  const simulatorPort = port || process.env.TEST_HTTP_SIMULATOR_PORT || 9000;
+  // Ephemeral by default (0), matching the dynalite pattern in runLocalDynamoDb above,
+  // so concurrent runs don't collide on a pinned port.
+  const simulatorPort = port || process.env.TEST_HTTP_SIMULATOR_PORT || 0;
   logger.info(`[http-simulator]: runSimulator=${runSimulator}, port=${simulatorPort}`);
 
   if (runSimulator === "run") {
@@ -975,4 +987,25 @@ export function generatePeriodDates() {
     periodStart: "2017-04-01",
     periodEnd: "2017-06-30",
   };
+}
+
+/**
+ * Resolve a free TCP port by briefly binding to port 0 and releasing it. Behaviour test files
+ * read TEST_SERVER_HTTP_PORT and DIY_SUBMIT_BASE_URL into module-level consts at import time,
+ * before their beforeAll hook runs — too early for runLocalHttpServer to fix up in-process. The
+ * test:submitVatBehaviour-simulator npm script resolves a port this same way, in a plain `node`
+ * one-liner run before the test process starts (see package.json), so two concurrent runs bind
+ * different ports instead of colliding on TEST_SERVER_HTTP_PORT=3000.
+ * @returns {Promise<number>}
+ */
+export function getFreeTcpPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.on("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
 }
