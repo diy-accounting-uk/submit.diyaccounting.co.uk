@@ -35,27 +35,27 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   and the job green. Require a timer marker only when the timeline records a wait past the
   threshold, and make the step fail the job when a check fails. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: timing check (Haiku). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: timing check (Haiku). Worktree `.claude/worktrees/agent-a94227bc55e85fc6d`, running; lands on `claude/board-batch-2`.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus; builds the login, HMRC-authorise and bundle steps the capture script lacks, proven on this script). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: video auth (Opus; builds the login, HMRC-authorise and bundle steps the capture script lacks, proven on this script). Worktree `.claude/worktrees/agent-a5974bd506e008ad6`, running; lands on `claude/board-batch-2`.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet, wave 2 after video auth lands). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: journey videos (Sonnet, wave 2 after video auth lands). Not yet dispatched; starts when video auth lands.
 - [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet, wave 2 after video auth lands). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: journey videos (Sonnet, wave 2 after video auth lands). Not yet dispatched; starts when video auth lands.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: synthetic workflow (Sonnet, shared with B39.1). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: synthetic workflow (Sonnet, shared with B39.1). Worktree `.claude/worktrees/agent-a3d6b71310c4d4d10`, running; lands on `claude/board-batch-2`.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House design (Opus design doc, then a Sonnet build track in wave 2). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: Companies House design (Opus design doc, then a Sonnet build track in wave 2). Worktree `.claude/worktrees/agent-a0cc2f25cc411d414`, running; lands on `claude/board-batch-2`.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -64,7 +64,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Track**: mode rename design (Opus design doc, then Sonnet build tracks in wave 2, one per layer). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: mode rename design (Opus design doc, then Sonnet build tracks in wave 2, one per layer). Worktree `.claude/worktrees/agent-a43d926b454fc8123`, running; lands on `claude/board-batch-2`.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
@@ -74,7 +74,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   (`_developers/ALARM_AUDIT_2026-09.md`) found 141 of 146 alarms never fired in 90 days and the
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
-  **Track**: alarm cuts (Opus). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: alarm cuts (Opus). Worktree `.claude/worktrees/agent-a9ad6dd2892cdcc57`, running; lands on `claude/board-batch-2`.
 - [ ] **B39.1. Fix the synthetic runs' "upload web test results" job.** It fails with
   `jq: Could not open file target/behaviour-test-results/<suite>/test-report-<suite>.json`
   after a passing behaviour test (prod dispatches 33908160864 and 33908172202; main's
@@ -83,7 +83,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   and add a check that fails early with the paths it looked at. **Source**: BACKLOG 39
   (synthetic-test flakiness); repo find 2026-09-04. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: synthetic workflow (Sonnet, shared with B32.4). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: synthetic workflow (Sonnet, shared with B32.4). Worktree `.claude/worktrees/agent-a3d6b71310c4d4d10`, running; lands on `claude/board-batch-2`.
 - [ ] **B40f. Make the Express dev server answer uncaught handler errors as JSON.** When
   `getAsyncRequest` threw `ResourceNotFoundException` locally, `app/bin/server.js` returned
   Express's default HTML 500 page and the page failed on `Unexpected token '<'`; the API rule
@@ -91,7 +91,7 @@ batches, and opens the PR. Wave 2 tracks merge the batch branch before starting.
   a JSON error handler to the dev server and a system test that a throwing route returns a
   JSON 500. **Source**: repo find 2026-09-03 fixing B32. **Owner**: Claude Code. **Model**:
   Haiku.
-  **Track**: dev server JSON (Haiku). Worktree: dispatched from main, merged into `claude/board-batch-2`.
+  **Track**: dev server JSON (Haiku). Code complete, merging into `claude/board-batch-2`; verified once the batch PR is green.
 
 ## Ready: Claude Code
 
