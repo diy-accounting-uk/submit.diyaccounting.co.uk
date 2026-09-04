@@ -180,6 +180,17 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_sandbox_456");
   });
 
+  test("qualifiers.stripeTestMode on an existing bundle does not affect checkout mode", async () => {
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", qualifiers: { sandbox: false, stripeTestMode: true } }]);
+    const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
+    await ingestHandler(event);
+
+    // Checkout reads qualifiers.sandbox only — a user in live HMRC mode must never be
+    // charged for real just because a past subscription happened to be bought in Stripe test mode.
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_test_123");
+  });
+
   test("uses STRIPE_PRICE_ID_RESIDENT_VAT for resident-vat checkout", async () => {
     process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
     const event = buildEventWithToken(validToken, { bundleId: "resident-vat" });

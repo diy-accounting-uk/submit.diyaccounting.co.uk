@@ -332,7 +332,7 @@ export function createSimulatorServer() {
       existing.tokensRemaining = tg;
       existing.tokensConsumed = 0;
       existing.tokenEvents = [];
-      existing.qualifiers = { sandbox: true };
+      existing.qualifiers = { sandbox: true, stripeTestMode: true };
     } else {
       userBundles.push({
         bundleId,
@@ -344,7 +344,7 @@ export function createSimulatorServer() {
         tokensRemaining: tg,
         tokensConsumed: 0,
         tokenEvents: [],
-        qualifiers: { sandbox: true },
+        qualifiers: { sandbox: true, stripeTestMode: true },
       });
       bundles.set(req.user.sub, userBundles);
     }

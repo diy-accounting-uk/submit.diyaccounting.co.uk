@@ -5,34 +5,13 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 
-// Mock Stripe SDK
+// Mock the Stripe client factory directly, so the test can assert which mode
+// (test vs. live) billingPortalGet.js asked for without fighting stripeClient.js's
+// own client-caching-by-secret-key.
 const mockBillingPortalSessionsCreate = vi.fn();
-vi.mock("stripe", () => {
-  return {
-    default: class Stripe {
-      constructor() {
-        this.billingPortal = {
-          sessions: {
-            create: mockBillingPortalSessionsCreate,
-          },
-        };
-      }
-    },
-  };
-});
-
-// Mock Secrets Manager (stripeClient.js uses it)
-vi.mock("@aws-sdk/client-secrets-manager", () => ({
-  SecretsManagerClient: class {
-    send() {
-      return { SecretString: "sk_test_mock" };
-    }
-  },
-  GetSecretValueCommand: class {
-    constructor(input) {
-      this.input = input;
-    }
-  },
+const mockGetStripeClient = vi.fn();
+vi.mock("@app/lib/stripeClient.js", () => ({
+  getStripeClient: (...args) => mockGetStripeClient(...args),
 }));
 
 // Mock EventBridge (activityAlert.js uses it)
@@ -64,10 +43,14 @@ describe("billingPortalGet", () => {
 
   beforeEach(() => {
     mockBillingPortalSessionsCreate.mockReset();
+    mockGetStripeClient.mockReset();
     mockGetUserBundles.mockReset();
 
     mockBillingPortalSessionsCreate.mockResolvedValue({
       url: "https://billing.stripe.com/p/session/test_portal_session",
+    });
+    mockGetStripeClient.mockResolvedValue({
+      billingPortal: { sessions: { create: mockBillingPortalSessionsCreate } },
     });
 
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
@@ -119,6 +102,28 @@ describe("billingPortalGet", () => {
     const params = mockBillingPortalSessionsCreate.mock.calls[0][0];
     expect(params.customer).toBe("cus_test_789");
     expect(params.return_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html");
+  });
+
+  test("picks the Stripe test client when the bundle's qualifiers.stripeTestMode is true", async () => {
+    mockGetUserBundles.mockResolvedValue([
+      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { sandbox: false, stripeTestMode: true } },
+    ]);
+
+    const event = buildEventWithToken(validToken);
+    await ingestHandler(event);
+
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: true });
+  });
+
+  test("picks the Stripe live client when qualifiers.stripeTestMode is absent, even if qualifiers.sandbox is true", async () => {
+    mockGetUserBundles.mockResolvedValue([
+      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { sandbox: true } },
+    ]);
+
+    const event = buildEventWithToken(validToken);
+    await ingestHandler(event);
+
+    expect(mockGetStripeClient).toHaveBeenCalledWith({ test: false });
   });
 
   test("returns 500 when Stripe API fails", async () => {
