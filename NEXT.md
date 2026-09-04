@@ -40,12 +40,10 @@ workspace root); blocked operator items; blocked Claude Code items.
   demo videos (GOV.UK and WCAG video and caption guidance, pointer emphasis, pacing) feeds
   the design. First video: home, about, guide, help, bundles and accessibility with no login.
   The operator reviews the video and the pattern is refined before the authenticated ones.
-  In flight: pattern merged (PR #116); the operator reviewed the first tour as fine but a
-  bit slow, so PR #117 halves the motion pauses and holds (typing and backend waits
-  unchanged) and the re-recording is at `target/videos/tour-v2/tour.mp4` (114 s). Remaining:
-  the operator watches v2, then one `video-capture.yml` dispatch against prod for the tour.
-  Design kept at `_developers/design/site-video-capture.md`. No further items go in flight
-  without the operator's explicit request.
+  In flight: pattern merged (PR #116) and the halved pacing merged (PR #117); the operator
+  approved the v2 tour on 2026-09-04. One step left: a `video-capture.yml` dispatch on main
+  for `videos/tour.json` against prod, on the operator's word, which proves the runner path
+  and closes this item. Design kept at `_developers/design/site-video-capture.md`.
   **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet.
 
