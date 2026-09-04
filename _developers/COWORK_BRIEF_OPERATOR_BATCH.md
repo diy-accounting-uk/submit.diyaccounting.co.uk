@@ -23,31 +23,26 @@ PRs as they open is the single biggest unblocker and sits with the operator thro
 
 ---
 
-## O1 / G2b — ci GA4 property with its own BigQuery export
+## O1a / G2b — grant the GA4 service account admin, once
 
-**Why.** Prod's GA4 property (`G-T81V5NL5MB`, BigQuery dataset `analytics_523400333`) mixes
-real users and synthetic runs. A ci property lets Claude Code assert a `purchase` row from a
-ci run without polluting prod numbers.
+**Why.** Creating the ci GA4 property, its BigQuery export and every future grant will be
+done by scripts running as the Google service account the analytics jobs already use. That
+account needs admin rights first, and that first grant is the only step a person has to click.
 
-**Where.** https://analytics.google.com (admin), https://console.cloud.google.com (project
-`diyaccounting-ga4`), https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments
+**Where.** https://analytics.google.com (Admin, Account access management) and
+https://console.cloud.google.com/iam-admin/iam?project=diyaccounting-ga4
 
 **Steps.**
-1. GA4 Admin → Create → Property. Name `DIY Accounting Submit ci`, time zone United Kingdom,
-   currency GBP. Industry and size do not matter.
-2. Add a data stream: Web, URL `https://ci.submit.diyaccounting.co.uk`, stream name `ci`.
-   Copy the Measurement ID (`G-…`).
-3. Admin → Product links → BigQuery links → Link. Pick project `diyaccounting-ga4`, location
-   `europe-west2` (London), daily export, no streaming. Leave the dataset name GA4 assigns
-   (`analytics_<property id>`); note the property id.
-4. Admin → Data settings → Data collection: leave Google signals off (matches prod).
-5. GitHub → Settings → Environments → `ci` → Environment variables → add
-   `SUBMIT_GA4_MEASUREMENT_ID` = the Measurement ID from step 2.
+1. Find the service account's email: in AWS Secrets Manager (profile submit-prod) the secret
+   named by `GA4_SERVICE_ACCOUNT_ARN` holds a JSON key whose `client_email` is the address
+   (Claude Code can read it out for you without printing the key).
+2. GA4 Admin, Account access management: add that email with the Administrator role on the
+   DIY Accounting GA4 account (account level, not one property).
+3. GCP IAM on project `diyaccounting-ga4`: grant the same email Owner, or IAM Admin plus
+   BigQuery Admin.
 
-**Hand back.** Measurement ID and the BigQuery dataset name (`analytics_<id>`).
-
-**Claude Code then** runs G2c: reads the id from `submit.env`, points the ci export pull at
-the new dataset, and asserts a `purchase` row in ci.
+**Hand back.** "granted" with the two roles given. Claude Code then builds the role file and
+CI apply (O1b), the property-sync skill (O1c) and creates the ci property (O1d).
 
 ---
 

@@ -42,11 +42,29 @@ item's steps, URLs and hand-back are in the brief so Claude Cowork can drive the
 results back by pasting them into a Claude Code session or appending to the workspace
 `INBOX.md`.
 
-- [ ] **O1 / G2b. Create a ci GA4 property with its own BigQuery export.** In GA4 admin create a
-  property for `ci.submit.diyaccounting.co.uk`, add a web data stream, link it to BigQuery
-  project `diyaccounting-ga4` (daily export, `europe-west2`, its own dataset), and put the
-  measurement id in the `ci` GitHub Environment as a `SUBMIT_GA4_MEASUREMENT_ID` variable
-  (prod gets `G-T81V5NL5MB`). **Source**: none. **Owner**: Operator.
+- [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
+  is code.** The analytics jobs already run as a Google service account (Secrets Manager
+  `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
+  GA4 account, and in GCP project `diyaccounting-ga4` give it Owner (or IAM Admin plus
+  BigQuery Admin). This is the last hand grant: after it, O1b applies grants from a file.
+  **Source**: none. **Owner**: Operator.
+- [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
+  `analytics/google-roles.toml` listing the GA4 account and property access bindings
+  (Analytics Admin API `accessBindings`) and the GCP project IAM bindings the analytics work
+  needs, a script `scripts/google-roles-apply.js` that reconciles them idempotently with a
+  `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
+  file and applies on push to main, authenticating with the service account from Secrets
+  Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  O1a.
+- [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
+  that, given an environment name and hostname, finds or creates the GA4 property, its web
+  data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
+  export) through the Analytics Admin API, then sets `SUBMIT_GA4_MEASUREMENT_ID` on the
+  matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
+  name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O1a.
+- [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
+  **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
 - [ ] **O2 / B12c. Create the Stripe prices for `resident-itsa`** (test and live, £0.99/month
   recurring) and hand the two price ids to Claude Code, which puts them in `.env.ci` and
   `.env.prod` by PR; confirm the day pass numbers (3 tokens, 100 concurrent) or give new ones
@@ -110,7 +128,7 @@ results back by pasting them into a Claude Code session or appending to the work
   `HeadlessChrome` in the User-Agent Client Hints, which GA4's bot filter excludes, so the
   ci assertion run needs a browser that does not (Playwright `channel: "chromium"` new
   headless or `chrome`); prove the hit lands in DebugView before wiring the BigQuery check.
-  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1.
+  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1d.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
