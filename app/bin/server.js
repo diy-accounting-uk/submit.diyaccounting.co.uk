@@ -39,6 +39,7 @@ import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billi
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 import { detectVendorPublicIp } from "../lib/buildFraudHeaders.js";
+import { jsonErrorHandler } from "../lib/jsonErrorHandler.js";
 
 const logger = createLogger({ source: "app/bin/server.js" });
 
@@ -243,6 +244,10 @@ billingCheckoutSessionGetApiEndpoint(app);
 billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
+
+// Error-handling middleware for uncaught errors in route handlers.
+// Must be registered after all routes to catch both sync throws and rejected promises.
+app.use(jsonErrorHandler);
 
 // fallback to index.html for SPA routing (if needed)
 app.get(/.*/, (req, res) => {
