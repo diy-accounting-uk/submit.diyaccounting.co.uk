@@ -44,7 +44,7 @@ data — see "Recommended follow-up" at the end.
 | Distinct alarm-generating call sites (stacks + constructs) | 12 |
 
 The backlog item's "~123" is the Lambda-construct figure alone. The true per-deployment total,
-once ApiStack's API-level alarms, OpsStack's canary/synthetic alarms, and EdgeStack's WAF alarms
+once ApiStack's API-level alarms, OpsStack's canary/probe alarms, and EdgeStack's WAF alarms
 are added, is closer to 136.
 
 ## 1. Where the alarms come from
@@ -80,12 +80,12 @@ Lambda instances are HTTP-routed and get both alarms. **Bug/oddity**: `ApiStack.
 `Lambda.java:124` alarm on the same metric under two different names with no functional difference
 between them.
 
-### OpsStack: canaries, GitHub synthetic, and an unfiltered Telegram fan-out (3 alarms + 1 rule of note)
+### OpsStack: canaries, GitHub probe, and an unfiltered Telegram fan-out (3 alarms + 1 rule of note)
 
 `OpsStack.java:412` (`HealthAlarm`) and `OpsStack.java:450` (`ApiAlarm`) watch the two Synthetics
 canaries (health check, API check), each on a 51-minute schedule (`OpsStack.java:120-122`, default
 `canaryIntervalMinutes() = 51`, matching `AWS_COSTS.md`'s stated post-optimization cadence).
-`OpsStack.java:300` (`GithubSyntheticAlarm`) watches a custom metric fed by the synthetic-test
+`OpsStack.java:300` (`GithubProbeAlarm`) watches a custom metric fed by the probe-test
 GitHub Actions workflow, 2-hour window.
 
 **Bug/oddity, more significant**: `OpsStack.java:272-281` creates `AlarmStateChangeRule`, an

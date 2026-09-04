@@ -59,7 +59,7 @@ proves the individual check works, and now also proves the composite fans in.
 |-------|-----------|--------------|
 | `{prefix}-health-failed` | <90% success/5min | Break web endpoint |
 | `{prefix}-api-failed` | <90% success/5min | Break API endpoint |
-| `{prefix}-github-synthetic-failed` | ≥1 (2hr window, missing=breaching) | Skip synthetic workflow |
+| `{prefix}-github-probe-failed` | ≥1 (2hr window, missing=breaching) | Skip probe workflow |
 
 ### RUM Alarms
 | Alarm | Threshold | Testable Via |
@@ -186,7 +186,7 @@ steps:
 |------|--------|-----------------|
 | Health endpoint down | Return 500 from health Lambda | `{prefix}-health-failed` → ALARM |
 | API endpoint down | Return 500 from API Lambda | `{prefix}-api-failed` → ALARM |
-| GitHub synthetic gap | Skip synthetic-test workflow | `{prefix}-github-synthetic-failed` → ALARM |
+| GitHub probe gap | Skip probe-test workflow | `{prefix}-github-probe-failed` → ALARM |
 
 **CI Implementation:**
 ```yaml
@@ -716,7 +716,7 @@ The workflow generates a JSON report:
 | `{prefix}-api-5xx` | CloudWatch Alarms | API Gateway logs | None (silent) | eu-west-2 |
 | `{prefix}-health-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
 | `{prefix}-api-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
-| `{prefix}-github-synthetic-failed` | CloudWatch Alarms | GitHub Actions runs | alertTopic | eu-west-2 |
+| `{prefix}-github-probe-failed` | CloudWatch Alarms | GitHub Actions runs | alertTopic | eu-west-2 |
 | `{prefix}-rum-lcp-p75` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
 | `{prefix}-rum-js-errors` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
 | `{prefix}-waf-rate-limit` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
@@ -778,7 +778,7 @@ filter action = "BLOCK"
 | ApiStack.java | `{prefix}-api-5xx` | ≥1/5min | None (silent) |
 | OpsStack.java | `{prefix}-health-failed` | <90%/5min (2 periods) | alertTopic |
 | OpsStack.java | `{prefix}-api-failed` | <90%/5min (2 periods) | alertTopic |
-| OpsStack.java | `{prefix}-github-synthetic-failed` | ≥1 (2hr, missing=breaching) | alertTopic |
+| OpsStack.java | `{prefix}-github-probe-failed` | ≥1 (2hr, missing=breaching) | alertTopic |
 | ObservabilityStack.java | `{prefix}-rum-lcp-p75` | >4000ms | None (silent) |
 | ObservabilityStack.java | `{prefix}-rum-js-errors` | ≥5/5min | None (silent) |
 | EdgeStack.java | `{prefix}-waf-rate-limit` | ≥50/5min | None (us-east-1) |

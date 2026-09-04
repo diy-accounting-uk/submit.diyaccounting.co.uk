@@ -611,7 +611,7 @@ Two alerts, both in the ops Telegram chat.
 | `Scan blocked: <method> <uri> from <ip> (<country>) on <deployment>` | A request to a sensitive path (`/.env`, `/wp-admin`, `.php`, and the rest of `EdgeStack`'s regex pattern set) was blocked with a 403 before it reached any origin. | Informational — the request already failed. |
 | `404 scan: <ip> made <n> 404s in one minute on distribution <id>` | One IP raised more than the configured threshold (default 20) of 404s in one minute against one distribution. WAF never sees a response status, so this request was **not** blocked. | Needs a decision — see below. |
 
-**Check whether it is synthetic first.** Resolve the distribution id in the `404 scan` alert:
+**Check whether it is a probe first.** Resolve the distribution id in the `404 scan` alert:
 
 ```bash
 aws --profile submit-prod cloudfront get-distribution --id <id> \
@@ -619,15 +619,15 @@ aws --profile submit-prod cloudfront get-distribution --id <id> \
 ```
 
 A ci distribution is a test run. On the prod distribution, check the user agent in the alert's
-detail: behaviour-test traffic carries a ` DIYAccountingSynthetic/1` token appended to a real
+detail: behaviour-test traffic carries a ` DIYAccountingProbe/1` token appended to a real
 desktop Chrome UA (`playwright.config.js`). That token is a convenience, not proof — anyone can
-send it — so on a prod alert also check whether a synthetic run was in flight:
+send it — so on a prod alert also check whether a probe run was in flight:
 
 ```bash
-gh run list --workflow synthetic-test.yml --limit 5
+gh run list --workflow probe-test.yml --limit 5
 ```
 
-**If it is not synthetic**, add the IP to the manual block IP set:
+**If it is not a probe**, add the IP to the manual block IP set:
 
 ```bash
 aws --profile submit-prod --region us-east-1 wafv2 update-ip-set \
@@ -662,7 +662,7 @@ command above, with the address removed from `--addresses`) and the `wafManualBl
 **False-positive check**: `scripts/verify-waf-false-positives.sh <env> [minutes]` reads
 `AWS/WAFV2` `BlockedRequests` for `SensitivePathScan` and the two AWS managed rule groups over the
 last N minutes and exits non-zero if any of them blocked anything. Run it straight after a
-behaviour suite — a block during a synthetic run is a false positive by definition.
+behaviour suite — a block during a probe run is a false positive by definition.
 
 ---
 
