@@ -91,27 +91,37 @@ results back by pasting them into a Claude Code session or appending to the work
   `.env.ci`) to Business Details (MTD) and Self Employment Business (MTD). Then run the
   `create-hmrc-test-user` workflow on main with `mtd-vat,mtd-income-tax` and keep the
   credentials artifact (NINO, user id, password). **Source**: BACKLOG 10a. **Owner**: Operator.
-- [ ] **O6 / B34a. Decide the Companies House shape**: whether the read-only company lookup
-  ships on its own first, and whether to apply for filing accreditation now. Either answer
-  turns backlog row 34 into dispatchable items. **Source**: BACKLOG 34; issue #15. **Owner**:
-  Operator.
-- [ ] **O7 / B40d.1. Pick the mode-naming target**: keep `sandbox`/`live` for HMRC and give the
-  Stripe test flag its own name (recommended, smallest change), or rename the modes to
-  `synthetic` and rename the monitoring vocabulary. Turns backlog row 40d into a Sonnet item.
-  **Source**: BACKLOG 40d; issue #12. **Owner**: Operator.
-- [ ] **O8 / B43a. GCP billing tidy-up**: confirm the budget alert on the billing account that
-  holds the GA4 export is armed, and confirm the stray auto-created project
-  `valued-context-507200-m9` is empty and delete it. **Source**: BACKLOG 43. **Owner**:
-  Operator.
+- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
+  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
+  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
+  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
+- [ ] **B34.2. Apply for Companies House software-filing accreditation.** An operator
+  submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
+  BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
+  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
+- [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
+  new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
+  `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
+  ("sandbox (test)") and every `HMRC_ACCOUNT`/`allowSandboxObligations` reader; the Stripe
+  test flag gets its own field; `synthetic-test.yml`, the synthetic-traffic filters in the
+  detectors and analytics, and the `synthetic-*` test users move to a name that does not
+  collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
+  #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
+- [ ] **B43a. GCP billing tidy-up, automated.** In the roles/apply script from O1b (or a
+  sibling `scripts/gcp-billing-assert.js`): assert a budget with 50/90/100 percent alerts on
+  the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
+  `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
+  compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1a.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
-- [ ] **O11 / B32 schedule. Decide whether the three new read suites join the 4-hourly
-  synthetic schedule.** `synthetic-test.yml`'s cron runs only `submitVatBehaviour` and
-  `tokenRefreshBehaviour` against prod; the liabilities, payments and penalties suites exist as
-  dispatch options only, so nothing exercises them routinely. "Add" means three more prod runs
-  against the HMRC sandbox every four hours. **Source**: BACKLOG 32. **Owner**: Operator.
+- [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
+  2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
+  `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
+  **Owner**: Claude Code. **Model**: Haiku. Blocked on the B32 verification.
 - [ ] **O10 / B17a. Re-record and publish the demo videos** on
   https://www.youtube.com/@DIYAccountingSubmit, capturing the main site rather than the
   simulator. **Source**: BACKLOG 17a; `PLAN_DEMO_VIDEOS.md`. **Owner**: Operator (Claude Code
@@ -168,8 +178,7 @@ results back by pasting them into a Claude Code session or appending to the work
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
 
 Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4 answers the
-production-window question; rows 34 and
-40d once O6 and O7 are answered.
+production-window question; rows 34 and 40d are now B34.1–3 and B40d.2 above.
 
 ## Discipline
 
