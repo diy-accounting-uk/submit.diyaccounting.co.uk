@@ -80,7 +80,7 @@ export function apiEndpoint(app) {
         const bundleRecord = {
           bundleId,
           expiry: periodEnd,
-          qualifiers: { sandbox: true },
+          qualifiers: { sandbox: true, stripeTestMode: true },
           tokensGranted,
           tokensConsumed: 0,
           tokenResetAt: periodEnd,

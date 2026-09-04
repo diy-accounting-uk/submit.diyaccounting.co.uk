@@ -105,6 +105,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
   if (q.requiresTransactionId) known.add("transactionId");
   if (Object.prototype.hasOwnProperty.call(q, "subscriptionTier")) known.add("subscriptionTier");
   known.add("sandbox"); // System qualifier: test mode for sandbox passes
+  known.add("stripeTestMode"); // System qualifier: the Stripe mode a subscription was bought in
   for (const k of Object.keys(requestQualifiers || {})) {
     if (!known.has(k)) {
       logger.warn({ message: "Unknown qualifier in bundle request:", qualifier: k });
