@@ -1,0 +1,315 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://submit.diyaccounting.co.uk/videos/scene-script.schema.json",
+  "title": "site-video-capture scene script",
+  "description": "One JSON file per video under videos/. See PLAN section 3 in the site-video-capture design for the full write-up. Enforced at load time by scripts/lib/video/scriptSchema.js, since this file is documentation and a $schema pointer, not itself the runtime validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "title", "description", "auth", "viewport", "fps", "pacing", "captions", "scenes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "description": { "type": "string", "minLength": 1 },
+    "auth": { "type": "string", "enum": ["none", "cognito-native"] },
+    "viewport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "deviceScaleFactor": { "type": "number", "exclusiveMinimum": 0 },
+    "fps": { "type": "integer", "minimum": 1 },
+    "pacing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "perCharMs",
+        "betweenActionsMs",
+        "aroundMotionMs",
+        "minResidualMs",
+        "timerThresholdMs",
+        "timerFullScaleMs",
+        "waitCompressionAfterMs",
+        "waitCompressionFactor"
+      ],
+      "properties": {
+        "perCharMs": { "type": "number", "minimum": 0 },
+        "betweenActionsMs": { "type": "number", "minimum": 0 },
+        "aroundMotionMs": { "type": "number", "minimum": 0 },
+        "minResidualMs": { "type": "number", "minimum": 0 },
+        "timerThresholdMs": { "type": "number", "minimum": 0 },
+        "timerFullScaleMs": { "type": "number", "exclusiveMinimum": 0 },
+        "waitCompressionAfterMs": { "type": "number", "minimum": 0 },
+        "waitCompressionFactor": { "type": "number", "exclusiveMinimum": 1 }
+      }
+    },
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fontPx", "lineHeightPx", "maxLines", "maxCharsPerLine", "charsPerSecond", "minMs", "fadeMs", "safeArea"],
+      "properties": {
+        "fontPx": { "type": "number", "exclusiveMinimum": 0 },
+        "lineHeightPx": { "type": "number", "exclusiveMinimum": 0 },
+        "maxLines": { "type": "integer", "minimum": 1 },
+        "maxCharsPerLine": { "type": "integer", "minimum": 1 },
+        "charsPerSecond": { "type": "number", "exclusiveMinimum": 0 },
+        "minMs": { "type": "number", "minimum": 0 },
+        "fadeMs": { "type": "number", "minimum": 0 },
+        "safeArea": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["topPct", "bottomPct", "sidePct"],
+          "properties": {
+            "topPct": { "type": "number", "minimum": 0, "maximum": 50 },
+            "bottomPct": { "type": "number", "minimum": 0, "maximum": 50 },
+            "sidePct": { "type": "number", "minimum": 0, "maximum": 50 }
+          }
+        }
+      }
+    },
+    "suppress": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "finalHoldMs": { "type": "number", "minimum": 0 },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/scene" }
+    }
+  },
+  "definitions": {
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "chapter", "steps"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9-]*$" },
+        "chapter": { "type": "string", "minLength": 1 },
+        "still": { "type": "boolean" },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/step" }
+        }
+      }
+    },
+    "target": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "name"],
+          "properties": { "role": { "type": "string", "minLength": 1 }, "name": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["text"],
+          "properties": { "text": { "type": "string", "minLength": 1 } }
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "required": ["action"],
+      "allOf": [
+        {
+          "if": { "properties": { "action": { "const": "goto" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "url"],
+            "properties": {
+              "action": {},
+              "url": { "type": "string", "minLength": 1 },
+              "waitFor": { "type": "string" },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" },
+              "delayRoutePattern": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Playwright route glob to intercept and delay before navigating. For rehearsing the timer overlay and wait-compression against a local instance with no slow backend of its own — not for the tour scripts."
+              },
+              "delayRouteMs": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "click" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "point" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "dwellMs": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "type" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target", "text"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "text": { "type": "string" },
+              "clear": { "type": "boolean" },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "press" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "key"],
+            "properties": {
+              "action": {},
+              "key": { "type": "string", "minLength": 1 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "tab" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "properties": {
+              "action": {},
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "select" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target", "value"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "value": { "type": "string" },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "scroll" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "to": { "enum": ["top", "bottom"] },
+              "durationMs": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "highlight" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target"],
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "holdMs": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "caption" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "text"],
+            "properties": {
+              "action": {},
+              "text": { "type": "string", "minLength": 1 },
+              "holdMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "hold" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "ms"],
+            "properties": {
+              "action": {},
+              "ms": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "await" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "until"],
+            "properties": {
+              "action": {},
+              "until": { "type": "string", "minLength": 1 },
+              "label": { "type": "string" },
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "still" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "name"],
+            "properties": {
+              "action": {},
+              "name": { "type": "string", "minLength": 1 },
+              "note": { "type": "string" }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
