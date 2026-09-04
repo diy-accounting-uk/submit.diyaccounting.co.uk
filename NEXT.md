@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-ca55da7, the only app stack set standing; main's deploy run
-33903534280 (the PR #107 merge) is queued and will replace it.** Each extra
+**Prod runs deployment prod-a0f41c7 (the PR #107 merge, deployed 2026-09-04), the only app
+stack set standing; prod-ca55da7 was destroyed by that deploy.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
