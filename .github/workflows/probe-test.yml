@@ -1,9 +1,9 @@
-name: synthetic-test
-run-name: "synthetic test of ${{ github.ref_name }}"
+name: probe-test
+run-name: "probe test of ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #concurrency:
-#  group: synthetic-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+#  group: probe-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
 #  cancel-in-progress: false
 
 # bump 00
