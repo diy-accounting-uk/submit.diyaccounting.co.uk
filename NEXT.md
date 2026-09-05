@@ -47,12 +47,24 @@ items below wait on a later event to verify.
   prod-cea27f8 or ci-claudf375 comments on an existing family issue instead of opening one.
 ## Ready: Claude Code
 
-- [ ] **B10.1 remainder. Record the ITSA Business Details page on prod.** The endpoint,
-  page, simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is
-  green; the last step is a prod recording of the page in the site-video-capture pattern
-  (`videos/*.json`, `auth: "user"`), once main's deploy of the merge is live. Every later ITSA
-  endpoint needs the `businessId` this one returns. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
+  catalogue once carried `listedInEnvironments` on a bundle (commented out in
+  `web/public/submit.catalogue.toml`) and nothing honours it now. Add an `environments` field
+  on activities, read by `catalog-service.js` so the UI lists the activity only in a named
+  environment, and by `enforceBundles` in `app/services/bundleManagement.js` so its paths
+  answer 403 elsewhere (the Lambda has `ENVIRONMENT_NAME`; the browser reads the environment
+  from `submit.env`). Set it to `["local", "proxy", "ci"]` on `vat-liabilities`,
+  `vat-payments`, `vat-penalties` and `self-employed`, and on every new activity from now on
+  until the operator has tried it on ci and lifts the gate; the Companies House `company-lookup`
+  reached prod in PR #118 and joins the same gate. Unit tests on both readers, and the ci
+  behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
+  32. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
+  simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
+  the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
+  `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
+  has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
+  **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **O1d / G2b. Create the ci GA4 property with the `ga4-property-sync` skill** (merged in
   PR #132; its dry run plans the property, web stream and BigQuery link) and record the dataset
   id. This is a real write to GA4 and to the `SUBMIT_GA4_MEASUREMENT_ID` GitHub variable.
@@ -111,13 +123,6 @@ items below wait on a later event to verify.
   that detector counts, so it returns to OK on its own. Close #131 now: it is the self-destruct
   log-errors check on ci-claudeboa, a set built before the fix that is self-destructing.
   **Source**: PR #118. **Owner**: Operator.
-- [ ] **B30f remainder. Post the HMRC answer on issue #111.** The three failures behind the
-  alarm (requests 23143b62-e10c-4309-b76c-89f8512a0a13 at 2026-09-03 21:44:22 UTC, then 21:46
-  and 21:48) were HTTP 403 "The client and/or agent is not authorised" from HMRC on the
-  obligations lookup: the customer's Government Gateway login is not linked to MTD VAT for that
-  VRN, not a fault in our code. The customer was emailed the enrolment steps on 2026-09-05.
-  Paste the request ids and HMRC's message on #111 and close it; nothing that identifies the
-  customer, the issue is public. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
