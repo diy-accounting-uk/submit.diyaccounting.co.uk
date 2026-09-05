@@ -176,11 +176,14 @@ starting.
   for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
   finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
   and authority steps. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
-- [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
-  An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **B34.2. Get the Companies House filing route for accounts.** The REST filing API does
+  not cover accounts; the route is a presenter account on gov.uk plus test presenter credentials
+  requested by email to xml@companieshouse.gov.uk (replies reported at 17 to 40 working days).
+  The April 2027 software-only mandate is paused with no new date. Apply for the presenter
+  account and the test credentials, record the presenter id and the date, and hand them to
+  Claude Code for B34.3. **Source**: BACKLOG 34; issue #15; Cowork brief 2026-09-05.
+  **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-
 ## Blocked: operator
 
 - [ ] **O5b / B10a.2. Mint an ITSA sandbox test user.** Run the `create-hmrc-test-user`
@@ -203,7 +206,8 @@ starting.
 
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
+- [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc, against the
+  presenter (XML gateway) route rather than the REST API. **Source**:
   BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
