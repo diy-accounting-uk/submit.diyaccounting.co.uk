@@ -46,10 +46,10 @@ starting.
   **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. A Sonnet track (worktree `.claude/worktrees/agent-aa406b7b95b37cc0b`) is making the capture record `navigated` and `timerShown` per step and the check count only on-page waits; then the prod recording re-runs and a passing blocking check verifies this item and B17a.1.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
+  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
 - [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
+  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
