@@ -35,7 +35,7 @@ starting.
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. A Sonnet track (worktree `.claude/worktrees/agent-ad614f21c78cd7197`) adds an off-camera scene and a `submitReturn` journey action so the video submits, then views, the return; verified by a prod recording passing the blocking check.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; a Sonnet track (worktree `.claude/worktrees/agent-a459137b741199532`) routes the submission through the obligation's own "Submit Return" button instead, the path the submit-return video already proved on prod. Verified by a prod recording passing the blocking check.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
