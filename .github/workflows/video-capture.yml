@@ -24,6 +24,8 @@ on:
         options:
           - 'tour'
           - 'view-obligations'
+          - 'view-return'
+          - 'submit-return'
         default: 'tour'
       environment-name:
         type: choice
