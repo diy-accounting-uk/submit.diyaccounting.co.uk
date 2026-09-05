@@ -1,0 +1,63 @@
+name: 'Wait for ci deploys'
+description: >
+  Waits until every deploy.yml, deploy-app.yml, destroy-ci.yml and video-capture.yml run
+  on a non-main branch that was created before this run has finished, so ci runs queue in
+  creation order instead of overlapping or having an older one dropped by a concurrency group.
+inputs:
+  github-token:
+    description: 'Token with actions:read, used to list other workflow runs'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for older ci deploy runs to finish
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        CURRENT_RUN_ID: ${{ github.run_id }}
+      run: |
+        set -euo pipefail
+
+        WORKFLOWS=(deploy.yml deploy-app.yml destroy-ci.yml video-capture.yml)
+        POLL_SECONDS="${WAIT_FOR_CI_DEPLOYS_POLL_SECONDS:-60}"
+        CEILING_SECONDS="${WAIT_FOR_CI_DEPLOYS_CEILING_SECONDS:-5400}"
+        START_EPOCH=$(date +%s)
+
+        CURRENT_CREATED_AT=$(gh run view "$CURRENT_RUN_ID" --json createdAt -q .createdAt)
+        echo "This run (id $CURRENT_RUN_ID) was created at $CURRENT_CREATED_AT."
+        echo "Waiting for any ci deploy run created earlier than that to finish first."
+
+        while true; do
+          OLDER_FILE=$(mktemp)
+          for WORKFLOW in "${WORKFLOWS[@]}"; do
+            gh run list --workflow "$WORKFLOW" --limit 100 \
+              --json databaseId,createdAt,headBranch,status,workflowName \
+              | jq -r --arg created "$CURRENT_CREATED_AT" --arg id "$CURRENT_RUN_ID" '
+                .[]
+                | select(.headBranch != "main")
+                | select(.status == "in_progress" or .status == "queued" or .status == "pending" or .status == "waiting" or .status == "requested")
+                | select((.databaseId | tostring) != $id)
+                | select(.createdAt < $created)
+                | "\(.workflowName)#\(.databaseId) (\(.headBranch), created \(.createdAt))"
+              ' >> "$OLDER_FILE"
+          done
+
+          if [ ! -s "$OLDER_FILE" ]; then
+            echo "No older ci deploy runs left in progress or queued. Proceeding."
+            rm -f "$OLDER_FILE"
+            break
+          fi
+
+          ELAPSED=$(( $(date +%s) - START_EPOCH ))
+          if [ "$ELAPSED" -ge "$CEILING_SECONDS" ]; then
+            echo "::error::Waited $((CEILING_SECONDS / 60)) minutes for older ci deploy runs to finish; still running or queued:"
+            cat "$OLDER_FILE"
+            rm -f "$OLDER_FILE"
+            exit 1
+          fi
+
+          echo "Still waiting on older ci deploy runs (elapsed ${ELAPSED}s):"
+          cat "$OLDER_FILE"
+          rm -f "$OLDER_FILE"
+          sleep "$POLL_SECONDS"
+        done

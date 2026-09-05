@@ -89,7 +89,7 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
  * and business metrics all agree on whether a submission came from a real customer.
  *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
- * @returns {"customer"|"test-user"|"synthetic"|"system"}
+ * @returns {"customer"|"test-user"|"probe"|"system"}
  */
 export function resolveActorClass(explicitActor) {
   if (explicitActor) return explicitActor;
@@ -150,13 +150,13 @@ export async function publishActivityFailureEvent({ event, site = "submit", summ
  * Classify an actor based on email and auth method.
  * @param {string} email
  * @param {string} [authMethod] - e.g. "cognito-native", "cognito-federated"
- * @returns {"customer"|"test-user"|"synthetic"|"system"}
+ * @returns {"customer"|"test-user"|"probe"|"system"}
  */
 export function classifyActor(email, authMethod) {
   if (!email) return "system";
   if (email.endsWith("@test.diyaccounting.co.uk")) return "test-user";
   if (authMethod === "cognito-native") return "test-user";
-  if (email.startsWith("synthetic-") || email.includes("+synthetic")) return "synthetic";
+  if (email.startsWith("probe-") || email.includes("+probe")) return "probe";
   return "customer";
 }
 

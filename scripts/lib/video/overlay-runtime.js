@@ -357,12 +357,19 @@
     log("scroll", { x, y });
   }
 
+  // A stylesheet rule rather than an inline style on each match. The elements a script suppresses
+  // are usually the ones a page reveals later from its own script, and an inline display:none set
+  // now loses to the display:block that arrives after the feature flag resolves.
   function suppress(selectors) {
-    for (const selector of selectors || []) {
-      document.querySelectorAll(selector).forEach((el) => {
-        el.style.display = "none";
-      });
+    const list = selectors || [];
+    if (list.length === 0) return;
+    let sheet = document.getElementById("__svc-suppress");
+    if (!sheet) {
+      sheet = document.createElement("style");
+      sheet.id = "__svc-suppress";
+      document.head.appendChild(sheet);
     }
+    sheet.textContent = list.map((selector) => `${selector}{display:none !important}`).join("\n");
   }
 
   function mark(name, detail) {

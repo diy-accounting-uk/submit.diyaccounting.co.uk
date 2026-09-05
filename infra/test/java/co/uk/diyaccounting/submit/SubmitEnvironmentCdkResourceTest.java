@@ -92,8 +92,26 @@ class SubmitEnvironmentCdkResourceTest {
         Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 51);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
-        Template.fromStack(env.observabilityStack).resourceCountIs("AWS::CloudTrail::Trail", 1);
-        assertTrailLogsDynamoDbDataEventsExceptGetRecords(Template.fromStack(env.observabilityStack));
+        Template observability = Template.fromStack(env.observabilityStack);
+        observability.resourceCountIs("AWS::CloudTrail::Trail", 1);
+        assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
+
+        // One alarm per environment for the GitHub Actions probe test, not one per deployment:
+        // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
+        // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
+        // Alongside RumLcpP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm and
+        // HmrcSubmissionFailureAlarm, that's 5 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-github-probe-failed",
+                        "Namespace", "test-submit.diyaccounting.co.uk",
+                        "MetricName", "behaviour-test",
+                        "Period", 18000,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "breaching")));
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
@@ -137,7 +155,7 @@ class SubmitEnvironmentCdkResourceTest {
         // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
         // hardcoded above).
         List<String> envRoutedPrefixes = List.of("test-env-");
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
         // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
@@ -160,7 +178,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, envRoutedPrefixes);
+            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,

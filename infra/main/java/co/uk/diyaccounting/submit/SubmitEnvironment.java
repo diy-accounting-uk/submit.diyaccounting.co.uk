@@ -221,7 +221,7 @@ public class SubmitEnvironment {
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .cloudTrailLogGroupRetentionPeriodDays(appProps.cloudTrailLogGroupRetentionPeriodDays)
                         .accessLogGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
-                        .apexDomain(sharedNames.hostedZoneName)
+                        .apexDomain(sharedNames.envDomainName)
                         .securityServicesEnabled(securityServicesEnabled)
                         .build());
 

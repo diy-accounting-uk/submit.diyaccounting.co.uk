@@ -179,7 +179,7 @@ function transformHtmlFile(filePath) {
         // Set HMRC token in sessionStorage (with full scope so pages skip OAuth redirect)
         sessionStorage.setItem('hmrcAccessToken', 'simulator-hmrc-token');
         sessionStorage.setItem('hmrcTokenScope', 'write:vat read:vat');
-        sessionStorage.setItem('hmrcAccount', 'sandbox');
+        sessionStorage.setItem('hmrcAccount', 'synthetic');
       }
     })();
   </script>

@@ -23,11 +23,14 @@ import path from "path";
 
 import { validateScript } from "./lib/video/scriptSchema.js";
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
-import { installOverlay, caption as overlayCaption, chapter as overlayChapter, suppress as overlaySuppress, timerStart, timerSetCompressing, timerStop, readEvents } from "./lib/video/overlay.js";
+import { installOverlay, caption as overlayCaption, chapter as overlayChapter, suppress as overlaySuppress, readEvents } from "./lib/video/overlay.js";
 import { executeAction, SceneStepError } from "./lib/video/actions.js";
+import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline } from "./lib/video/captions.js";
+import { substituteValues } from "./lib/video/values.js";
+import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
 
@@ -129,7 +132,15 @@ function describeTarget(target) {
   return String(target);
 }
 
-function describeStep(step, waitMs) {
+// The transcript is a published artefact, so a step marked secret is described by what it did,
+// never by what it typed. Everything else is described with its placeholders already resolved,
+// so a reader sees the VAT registration number the run actually used.
+function describeValue(step, field, values, now) {
+  if (step.secret) return "a hidden value";
+  return `"${substituteValues(step[field], values, now)}"`;
+}
+
+function describeStep(step, waitMs, values, now) {
   const waitSuffix = waitMs && waitMs > 500 ? ` (waits ${(waitMs / 1000).toFixed(1)}s)` : "";
   switch (step.action) {
     case "goto":
@@ -139,7 +150,9 @@ function describeStep(step, waitMs) {
     case "point":
       return `points at ${describeTarget(step.target)}`;
     case "type":
-      return `types "${step.text}" into ${describeTarget(step.target)}`;
+      return `types ${describeValue(step, "text", values, now)} into ${describeTarget(step.target)}`;
+    case "fill":
+      return `fills ${describeTarget(step.target)} with ${describeValue(step, "value", values, now)}`;
     case "press":
       return `presses ${step.key}`;
     case "tab":
@@ -156,41 +169,26 @@ function describeStep(step, waitMs) {
       return "pauses";
     case "still":
       return "captures a still";
+    case "login":
+      return `signs in${waitSuffix}`;
+    case "consent":
+      return "answers the analytics consent prompt";
+    case "ensureBundle":
+      return `takes out the ${step.bundle} bundle${waitSuffix}`;
+    case "hmrcAuthorise":
+      return `signs in at HMRC and grants authority${waitSuffix}`;
     default:
       return step.action;
   }
 }
 
-const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await"]);
+const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
-async function runWithWaitOverlay(page, step, unscaledPacing, capture, run) {
-  let shown = false;
-  let compressing = false;
-  const showTimer = WAIT_CAPABLE_ACTIONS.has(step.action)
-    ? setTimeout(() => {
-        shown = true;
-        timerStart(page, step.label || step.action, unscaledPacing.timerFullScaleMs).catch(() => {});
-      }, unscaledPacing.timerThresholdMs)
-    : null;
-  const compressTimer = WAIT_CAPABLE_ACTIONS.has(step.action)
-    ? setTimeout(() => {
-        compressing = true;
-        capture?.setCompression(true, unscaledPacing.waitCompressionFactor);
-        timerSetCompressing(page, true).catch(() => {});
-      }, unscaledPacing.waitCompressionAfterMs)
-    : null;
-
-  const result = await run();
-
-  if (showTimer) clearTimeout(showTimer);
-  if (compressTimer) clearTimeout(compressTimer);
-  if (compressing) {
-    capture?.setCompression(false);
-    await timerSetCompressing(page, false).catch(() => {});
-  }
-  if (shown) await timerStop(page).catch(() => {});
-  return result;
-}
+// Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
+// started on. Every other action is judged by whether the URL moved. Either way the overlay was
+// reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
+// the caption all have to be put back.
+const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -208,6 +206,32 @@ async function main() {
   const unscaledPacing = script.pacing;
   const scaledPacing = scalePacing(script.pacing, args.speed);
 
+  // One clock for the whole run, so a date placeholder resolves to the same day in the browser,
+  // the transcript and the timeline even if the recording straddles midnight.
+  const now = new Date();
+  const stepScreenshotDir = path.resolve("target/behaviour-test-results/screenshots", `video-${script.name}`);
+
+  const needsUser = script.auth === "user";
+  const usesHmrcAuthorise = script.scenes.some((scene) => scene.steps.some((step) => step.action === "hmrcAuthorise"));
+  let localServices = { stop: async () => {} };
+  let journey = null;
+  let installCredentialFieldMask = null;
+  if (needsUser) {
+    const journeyModule = await import("./lib/video/journey.js");
+    installCredentialFieldMask = journeyModule.installCredentialFieldMask;
+    localServices = await journeyModule.startLocalServices(process.env);
+    journey = {
+      authProvider: journeyModule.authProviderFrom(process.env),
+      authUsername: journeyModule.authUsernameFrom(process.env),
+      authPassword: process.env.TEST_AUTH_PASSWORD || null,
+      hmrcUser: usesHmrcAuthorise ? await journeyModule.resolveHmrcTestUser(process.env) : null,
+    };
+    console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
+  }
+
+  const values = { hmrcVatNumber: journey?.hmrcUser?.vatNumber };
+  const secrets = collectSecrets(process.env, [journey?.hmrcUser?.password, journey?.hmrcUser?.username].filter(Boolean));
+
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
@@ -223,6 +247,7 @@ async function main() {
 
   const page = await context.newPage();
   await installOverlay(page);
+  if (installCredentialFieldMask) await installCredentialFieldMask(page);
 
   const captureEnabled = !args.stillsOnly;
   const encodeEnabled = !args.stillsOnly && !args.noEncode;
@@ -241,7 +266,19 @@ async function main() {
   const captionEvents = [];
   const sceneRecords = [];
   let elapsedMs = 0;
-  let overlayEvents = [];
+  // The overlay's event log lives on the page and is wiped by every navigation (a new document,
+  // a fresh window.__svc), so reading it once at the end would only ever return what the very
+  // last document logged. Reading it after every step instead, and keeping only what is new
+  // since the last read, carries each document's events across into a run-long record before
+  // the next navigation can erase them.
+  const overlayEvents = [];
+  let lastReadEventCount = 0;
+  async function collectNewOverlayEvents() {
+    const events = await readEvents(page).catch(() => null);
+    if (!events) return;
+    if (events.length > lastReadEventCount) overlayEvents.push(...events.slice(lastReadEventCount));
+    lastReadEventCount = events.length;
+  }
   const wallStart = Date.now();
   // The overlay only exists once a document has actually loaded — addInitScript does not run
   // against the initial about:blank page. Every overlay call before the tour's first `goto` is
@@ -263,7 +300,20 @@ async function main() {
 
       for (let stepIndex = 0; stepIndex < scene.steps.length; stepIndex++) {
         const step = scene.steps[stepIndex];
-        const ctx = { baseUrl: args.baseUrl, pacing, stillsDir, sceneId: scene.id, stepIndex, timeoutMs: 30000 };
+        const waitPhaseCtl = createWaitPhase(page, step, unscaledPacing, capture, WAIT_CAPABLE_ACTIONS.has(step.action));
+        const ctx = {
+          baseUrl: args.baseUrl,
+          pacing,
+          stillsDir,
+          stepScreenshotDir,
+          sceneId: scene.id,
+          stepIndex,
+          timeoutMs: 30000,
+          values,
+          now,
+          journey,
+          waitPhase: waitPhaseCtl.run,
+        };
         const startMs = Date.now() - wallStart;
         const frameStart = capture?.frames.length ?? null;
         const group = groupFor(step.action);
@@ -286,6 +336,8 @@ async function main() {
         }
 
         let waitMs = 0;
+        let navigated = false;
+        let timerShown = false;
         if (step.action === "caption") {
           const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
           await overlayCaption(page, step.text);
@@ -300,23 +352,36 @@ async function main() {
           if (group === 3 && hasNavigated) {
             await new Promise((resolve) => setTimeout(resolve, pauseForGroup(3, pacing)));
           }
-          const result = await runWithWaitOverlay(page, step, unscaledPacing, capture, () => executeAction(page, step, ctx));
+          const urlBeforeAction = page.url();
+          const result = await executeAction(page, step, ctx);
           waitMs = result.waitMs;
-          if (step.action === "goto") {
+          timerShown = waitPhaseCtl.shown;
+          // The document is judged by whether the URL moved, not by the action's name — a goto
+          // is navigated by definition, everything else stands or falls on the URL check alone.
+          navigated = step.action === "goto" || page.url() !== urlBeforeAction;
+          if (ALWAYS_NAVIGATING_ACTIONS.has(step.action) || page.url() !== urlBeforeAction) {
             hasNavigated = true;
+            // A fresh document starts its own window.__svc.events at zero, so the count read
+            // back after the last document must not carry over — carrying it over holds the
+            // threshold too high and drops every event this new document logs until its own
+            // count happens to exceed the old one, silently losing a timer marker a same-URL
+            // reload (e.g. ensureBundle's) logs on the document it lands on.
+            lastReadEventCount = 0;
             await overlayChapter(page, scene.chapter);
             if (script.suppress?.length) await overlaySuppress(page, script.suppress);
             if (step.caption) {
               await overlayCaption(page, step.caption);
-              const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
-              captionHideAt = () => Date.now() - wallStart + minMs;
-              captionEvents.push({
-                startMs,
-                text: step.caption,
-                maxCharsPerLine: script.captions.maxCharsPerLine,
-                maxLines: script.captions.maxLines,
-                _minMs: minMs,
-              });
+              if (!captionHideAt) {
+                const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
+                captionHideAt = () => Date.now() - wallStart + minMs;
+                captionEvents.push({
+                  startMs,
+                  text: step.caption,
+                  maxCharsPerLine: script.captions.maxCharsPerLine,
+                  maxLines: script.captions.maxLines,
+                  _minMs: minMs,
+                });
+              }
             }
           }
         }
@@ -336,9 +401,14 @@ async function main() {
           last.endMs = Date.now() - wallStart;
         }
 
+        // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
+        // only place a flush is needed — every other action leaves the current document alone,
+        // and its own events (e.g. a "type" step's typeChar events) ride along in the next flush.
+        if (WAIT_CAPABLE_ACTIONS.has(step.action)) await collectNewOverlayEvents();
+
         const endMs = Date.now() - wallStart;
         const frameEnd = capture?.frames.length ?? null;
-        const description = describeStep(step, waitMs);
+        const description = describeStep(step, waitMs, values, now);
         entries.push({ caption: step.caption || null, description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
@@ -352,6 +422,8 @@ async function main() {
           waitMs,
           residualMs,
           compressedOnScreenMs: compression?.compressed ? compression.onScreenMs : null,
+          navigated,
+          timerShown,
           startMs,
           endMs,
           frameStart,
@@ -371,7 +443,7 @@ async function main() {
 
     elapsedMs = Date.now() - wallStart;
     await new Promise((resolve) => setTimeout(resolve, script.finalHoldMs));
-    overlayEvents = await readEvents(page).catch(() => []);
+    await collectNewOverlayEvents();
   } catch (err) {
     if (err instanceof SceneStepError) {
       console.error(`\nsite-video-capture failed: ${err.message}`);
@@ -380,6 +452,7 @@ async function main() {
   } finally {
     if (capture) await capture.stop();
     await browser.close();
+    await localServices.stop();
   }
 
   // Close each caption event still missing an endMs (a caption whose hold never resolved because
@@ -396,6 +469,12 @@ async function main() {
     description: script.description,
     sceneRecords,
   });
+
+  // Last gate before any of this can be published: nothing the run was handed as a credential
+  // may appear in a text artefact that ships with the video.
+  for (const artefact of [`${script.name}.vtt`, `${script.name}.transcript.md`, `${script.name}.timeline.json`, `${script.name}.overlay-events.json`]) {
+    assertNoSecrets(artefact, fs.readFileSync(path.join(outDir, artefact), "utf8"), secrets);
+  }
 
   const stillPaths = fs
     .readdirSync(stillsDir)

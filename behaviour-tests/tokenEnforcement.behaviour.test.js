@@ -13,7 +13,7 @@ import {
   createHmrcTestUser,
   generatePeriodDates,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -70,8 +70,8 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-const runFraudPreventionHeaderValidation = isSandboxMode();
-const allowSandboxObligations = isSandboxMode();
+const runFraudPreventionHeaderValidation = isSyntheticMode();
+const allowSyntheticObligations = isSyntheticMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -179,7 +179,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 2: Ensure Day pass bundle is present (via test pass for sandbox routing)
+  // STEP 2: Ensure Day pass bundle is present (via test pass for synthetic routing)
   // ============================================================
   await test.step("Ensure Day pass bundle is present", async () => {
     console.log("\n" + "=".repeat(60));
@@ -209,7 +209,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
   });
 
   // ============================================================
-  // STEP 4: Submit VAT return via sandbox
+  // STEP 4: Submit VAT return via synthetic mode
   // ============================================================
   await test.step("Submit VAT return (consumes 1 token)", async () => {
     console.log("\n" + "=".repeat(60));
@@ -226,7 +226,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
-      allowSandboxObligations,
+      allowSyntheticObligations,
     );
 
     // Submit the form — scope enforcement fetches the catalogue asynchronously
@@ -557,7 +557,7 @@ test("Token consumption for resident-vat (100 tokens)", async ({ page }, testInf
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
-      allowSandboxObligations,
+      allowSyntheticObligations,
     );
 
     // Submit the form — scope enforcement fetches the catalogue asynchronously
