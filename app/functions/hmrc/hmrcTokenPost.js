@@ -143,7 +143,7 @@ export async function prepareTokenExchangeRequest(code, hmrcAccount) {
 }
 
 async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
-  logger.info("Retrieving HMRC client secret from arn " + secretArn);
+  logger.info("Retrieving HMRC client secret");
   if (overrideSecret) {
     cachedHmrcClientSecret = overrideSecret;
     logger.info(`Secret retrieved from override and cached`);
@@ -152,7 +152,7 @@ async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
     const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
     const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
     cachedHmrcClientSecret = data.SecretString;
-    logger.info(`Secret retrieved from Secrets Manager with Arn ${secretArn} and cached`);
+    logger.info("Secret retrieved from Secrets Manager and cached");
   }
   return cachedHmrcClientSecret;
 }
