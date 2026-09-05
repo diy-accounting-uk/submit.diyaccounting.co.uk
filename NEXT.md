@@ -35,18 +35,12 @@ starting.
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; a Sonnet track (worktree `.claude/worktrees/agent-a459137b741199532`) routes the submission through the obligation's own "Submit Return" button instead, the path the submit-return video already proved on prod. Verified by a prod recording passing the blocking check.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; the submission goes through the obligation's own "Submit Return" button; a table row's "View Return" sends its period key directly and HMRC's sandbox answers 404 with no fallback, so the final scene asks the View VAT Return page by VAT number, the path `getVatReturn.behaviour.test.js` proves on prod, over the same eleven-month window as the obligations query (a ten-year window made HMRC answer 400: the range is capped at 366 days). On `claude/board-batch-2` (PR #118); the prod recording is running, and a passing blocking check verifies this item.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku.
   **Track**: synthetic workflow (Sonnet, shared with B39.1). Code complete on `claude/board-batch-2` (PR #118); verified when the next scheduled run on main runs all five suites.
-- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
-  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
-  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
-  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
-  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Its deploy fails secret validation until the operator's key (O6) exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B30c. Stop the GitHub probe alarm firing on its own cadence.** `OpsStack.java`
   (`githubSyntheticAlarm`, renamed `githubProbeAlarm` in PR #120) evaluates a 2-hour period with
   missing data treated as breaching, but `synthetic-test.yml` publishes the metric every 4 hours,
@@ -62,13 +56,6 @@ starting.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
-- [ ] **B39.3. Fix the redirect stall behind the flaky `postVatReturnBehaviour` simulator lane.**
-  After a scenario submission clears the HMRC token, the browser's redirect to the local OAuth
-  simulator page sometimes never completes and the test hangs; the batch now bounds those waits
-  at 90 s so it fails fast, but the stall remains and the CI job fails about one run in two.
-  **Source**: BACKLOG 39; CI on the batch 2026-09-05. **Owner**: Claude Code. **Model**: Opus.
-  **Track**: redirect stall (Opus), worktree `.claude/worktrees/agent-a5754bd1f68b849db`, running,
-  lands on the batch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -222,6 +209,12 @@ starting.
   (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
   `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
+- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
+  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
+  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
+  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
+  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Blocked on O6: its deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.

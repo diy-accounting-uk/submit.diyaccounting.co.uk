@@ -37,8 +37,8 @@ const vatSteps = await import("../../../behaviour-tests/steps/behaviour-hmrc-vat
 const helpers = await import("../../../behaviour-tests/helpers/behaviour-helpers.js");
 
 export const { loginWithCognitoOrMockAuth, verifyLoggedInStatus } = loginSteps;
-export const { consentToDataCollection } = siteSteps;
+export const { consentToDataCollection, goToHomePageUsingMainNav } = siteSteps;
 export const { ensureBundlePresent } = bundleSteps;
 export const { acceptCookiesHmrc, goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } = hmrcSteps;
-export const { clickObligationSubmitReturn, fillInVat9Box, submitFormVat, completeVat, verifyVatSubmission } = vatSteps;
+export const { initSubmitVat, fillInVat, submitFormVat, completeVat, verifyVatSubmission } = vatSteps;
 export const { addOnPageLogging, createHmrcTestUser, isSandboxMode, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } = helpers;
