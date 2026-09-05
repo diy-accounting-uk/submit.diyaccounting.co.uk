@@ -24,42 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-`claude/board-batch-3` is PR #132, merged with main. Two PR #118 items below still wait on a
-later event to verify.
+PR #132 merged 2026-09-05; main's deploy (run 33993674183) replaces prod-cea27f8. The two
+items below wait on a later event to verify.
 
-Each track runs in its own worktree off main; the coordinator merges each landed track into the
-batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
-starting.
-
-- [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
-  that, given an environment name and hostname, finds or creates the GA4 property, its web
-  data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
-  export) through the Analytics Admin API, then sets `SUBMIT_GA4_MEASUREMENT_ID` on the
-  matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
-  name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
-  O1a granted 2026-09-05.
-  **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
-  `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Verified: the live dry run as the
-  service account plans the ci property, its data stream and BigQuery link. On PR #132.
-- [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
-  (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
-  `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
-  `read:self-assessment` granted as requested. Build `hmrcItsaBusinessDetailsGet.js` shaped like
-  `hmrcVatObligationGet.js`, mounted at `/api/v1/hmrc/itsa/business/details` behind the
-  `self-employed` activity, with a simulator route, unit and behaviour tests. Two departures the
-  spike found: `buildHmrcHeaders` hardcodes the v1.0 Accept header, so the API version becomes a
-  parameter; and nothing in the app carries a NINO yet. Every later ITSA endpoint needs the
-  `businessId` this one returns. `_developers/backlog/self-employed-api-operations.md` has the
-  wrong paths for v5.0; the spike lists the right ones. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Sonnet. Operator decision 2026-09-05: build against HMRC's test APIs and get
-  something running before asking HMRC about production windows (O4a and O4b are back on the
-  backlog, row 11a).
-  **Track**: ITSA business details (Sonnet). On PR #132: handler in the VAT reads'
-  async shape, `buildHmrcHeaders` takes an API version, NINO validation, simulator route and
-  scenarios, the Business Details page, and unit, system, browser and behaviour tests (1343,
-  153, 69, simulator lane 1 passed; CDK 94), all on PR #132 with its
-  `itsaBusinessDetailsBehaviour-ci` job in `deploy.yml`; that suite passed against ci-claudf375
-  (run 33991540605). Remainder after the merge: a prod recording of the page, the next video.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -80,6 +47,16 @@ starting.
   prod-cea27f8 or ci-claudf375 comments on an existing family issue instead of opening one.
 ## Ready: Claude Code
 
+- [ ] **B10.1 remainder. Record the ITSA Business Details page on prod.** The endpoint,
+  page, simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is
+  green; the last step is a prod recording of the page in the site-video-capture pattern
+  (`videos/*.json`, `auth: "user"`), once main's deploy of the merge is live. Every later ITSA
+  endpoint needs the `businessId` this one returns. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **O1d / G2b. Create the ci GA4 property with the `ga4-property-sync` skill** (merged in
+  PR #132; its dry run plans the property, web stream and BigQuery link) and record the dataset
+  id. This is a real write to GA4 and to the `SUBMIT_GA4_MEASUREMENT_ID` GitHub variable.
+  **Source**: none. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
@@ -156,8 +133,6 @@ starting.
 
 ## Blocked: Claude Code
 
-- [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
-  **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the

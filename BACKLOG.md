@@ -22,16 +22,16 @@ truthfully on its own. Operator-only steps are briefed for Claude Cowork in
 - **PR #118** merged and deployed to prod (prod-cea27f8) on 2026-09-05 with its three
   migrations run: videos, probe schedule, alarm cuts, the mode rename, the ci pipeline fixes, the
   Companies House lookup. Two of its items wait on a later event to verify (B32.4, B30d).
-- **`claude/board-batch-3`** carries the work started after it: Google roles as code, the GA4
-  property sync (both verified by live dry run as the service account), the GCP billing assert
-  (waits on two grants outside the project, O1e), the ITSA spike report, and the first ITSA
-  endpoint in flight (B10.1).
+- **PR #132** merged 2026-09-05: Google roles, GA4 property sync and the GCP billing assert as
+  code (the stray project is gone and the budget stands), the first ITSA endpoint (B10.1, whose
+  prod recording remains), deploy.yml running every suite, and the Companies House authorizer
+  fix. No integration branch is open; the next one starts from main.
 - **Tier 1 = `NEXT.md`**: every Tier 1 row below is refined on `NEXT.md` into items with
   source, owner and model. 27c waits in Tier 3 on the ICO register's certificate search. The GA4 `purchase` residuals (G2b as O1b–O1e, G2c, G3) are on
   `NEXT.md` only; they have no backlog row.
 - **Date-gated (Tier 3)**: 47 due 2026-09-06/07 (O9); 43 due from 2026-10-02 (GCP part is
   B43a); 48 due the week of 2026-11-29.
-- **Tier 2**: 10 is in flight (B10.1); 11a moved here on the operator's decision of 2026-09-05
+- **Tier 2**: 10's first endpoint is merged (B10.1 remainder on NEXT.md); 11a moved here on the operator's decision of 2026-09-05
   to build against HMRC's test APIs first; 34 is B34.1 and B34.3a on `NEXT.md` with the XML Gateway half parked as 34b; 40d is B40d.2.
 
 ## Tier 1: do next
