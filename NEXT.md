@@ -118,7 +118,7 @@ items below wait on a later event to verify.
   workflow runs on a 4-hour cron and the env alarm `prod-env-github-probe-failed` evaluates a
   5-hour window, so one full cycle is one scheduled probe run plus the window that scores it:
   about five hours after the deploy. When that window has passed with the probe alarm and the
-  four B30e alarms (#95, #97, #128, #129) in OK, close those four issues; #95 went to ALARM at
+  two prod B30e alarms (#95, #97) in OK, close those two issues; #95 went to ALARM at
   20:05 UTC on 2026-09-05 because migration 006's scan of `prod-env-bundles` is exactly what
   that detector counts, and it returned to OK at 21:43 UTC. **Source**: PR #118. **Owner**:
   Operator.
