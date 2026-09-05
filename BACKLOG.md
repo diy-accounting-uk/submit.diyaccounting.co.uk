@@ -24,8 +24,9 @@ truthfully on its own. Operator-only steps are briefed for Claude Cowork in
   pipeline fixes, the Companies House lookup. Its deploy needs the Companies House key in
   Secrets Manager (done for ci; prod waits on the operator).
 - **`claude/board-batch-3`** carries the work started after it: Google roles as code, the GA4
-  property sync, the GCP billing assert (all three stop at Google APIs the operator has to
-  enable, O1e), the ITSA spike report, and the first ITSA endpoint in flight (B10.1).
+  property sync (both verified by live dry run as the service account), the GCP billing assert
+  (waits on two grants outside the project, O1e), the ITSA spike report, and the first ITSA
+  endpoint in flight (B10.1).
 - **Tier 1 = `NEXT.md`**: every Tier 1 row below is refined on `NEXT.md` into items with
   source, owner and model. The GA4 `purchase` residuals (G2b as O1b–O1e, G2c, G3) are on
   `NEXT.md` only; they have no backlog row.

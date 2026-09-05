@@ -25,9 +25,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 **Resumed 2026-09-05.** PR #118 (`claude/board-batch-2`) is complete and ready for review; work started after it lands
-on `claude/board-batch-3`, the next single branch and PR. Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. The
-Companies House lookup is folded in too, so PR #118's deploy fails secret validation until the
-operator's API key (O6) exists.
+on `claude/board-batch-3`, the next single branch and PR. The stacked PRs #119, #120, #125 and
+#126 are closed and folded in. PR #118's last ci deploy (run 33980220915) stood up every stack,
+Companies House included, and failed only in the probe workflow's test-data export step; that
+step is fixed on the branch tip (824df7d3), which no ci deploy has run yet.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -61,10 +62,10 @@ starting.
   to run from that branch: ci now, prod after the operator's go, then `manage-secrets` action
   `check` on each. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: none, a
   workflow dispatch.
-  **Track**: ci done 2026-09-05 (`ci/submit/companies-house/api_key` checks OK, 36 chars), and a
-  ci deploy of the batch is running to prove `companiesHouseBehaviour-ci`. Prod waits on the
-  operator's go, because running the workflow from the branch applies the batch's env stacks to
-  prod ahead of the merge; the alternative is merging PR #118 first and running it from main.
+  **Track**: ci done 2026-09-05 (`ci/submit/companies-house/api_key` checks OK, 36 chars). Prod
+  waits on the operator's go, because running the workflow from the branch applies the batch's
+  env stacks to prod ahead of the merge; the alternative is merging PR #118 first and running it
+  from main (O7 step 5).
 - [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
   (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
   `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
@@ -81,8 +82,11 @@ starting.
   **Track**: ITSA business details (Sonnet). On `claude/board-batch-3`: handler in the VAT reads'
   async shape, `buildHmrcHeaders` takes an API version, NINO validation, simulator route and
   scenarios, the Business Details page, and unit, system, browser and behaviour tests (1343,
-  153, 69, simulator lane 1 passed; CDK 94). Verified by `itsaBusinessDetailsBehaviour-ci` once
-  batch 3 deploys to ci, then a prod recording of the page is the next video.
+  153, 69, simulator lane 1 passed; CDK 94). Remainder: `deploy.yml` has no
+  `itsaBusinessDetailsBehaviour-ci` job (the suite is only listed as allowed in
+  `synthetic-test.yml`), so add one shaped like `getVatObligationsBehaviour-ci`. Verified when
+  that job is green on a ci deploy of batch 3; then a prod recording of the page is the next
+  video.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -150,6 +154,16 @@ starting.
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
+- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
+  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
+  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
+  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
+  **Track**: Companies House build (Sonnet). Folded into `claude/board-batch-2` (PR #118); the
+  ci key exists and run 33980220915 deployed `CompaniesHouseStack`. Remainder: `deploy.yml` has
+  no `companiesHouseBehaviour-ci` job (the suite is only listed as allowed in `probe-test.yml`),
+  so add one shaped like `getVatObligationsBehaviour-ci`. Verified when that job is green on a
+  ci deploy of PR #118.
 ## Ready: Claude Code
 
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
@@ -165,10 +179,11 @@ starting.
   splits the Stripe flag, so three one-off migrations on the bundles table go with it
   (`scripts/migrations/004`, `005`, `006`; design in `PLAN_MODE_RENAME.md`, "Stored data"). The
   new code never reads the old field names, and `deploy.yml` does not run migrations itself.
-  1. Wait for a ci deploy of the branch to finish green. The first one (run 33980220915)
-     deployed the Companies House stack but failed its submitVat suite in the workflow's
-     test-data export step, which lacked `ENVIRONMENT_NAME` after B30e's salt lookup; that is
-     fixed on the branch and the probe re-run is the evidence to wait for.
+  1. Get one green ci deploy of the branch tip. Run 33980220915 deployed every stack but
+     failed its submitVat suite in the probe workflow's test-data export step, which lacked
+     `ENVIRONMENT_NAME` after B30e's salt lookup; its retry re-ran the same commit and failed
+     the same way. The fix is on the tip (824df7d3): dispatch `deploy.yml` on the branch once,
+     or merge and let main's first deploy prove it.
   2. Run `run migrations` on main for `ci`, phase `pre-deploy`, with `dry-run` ticked, then again
      for real; then the same pair for `prod`. 004 and 005 only add fields, so today's code
      ignores them and this is safe before the merge.
@@ -177,7 +192,9 @@ starting.
      `post-deploy`, dry run then real: 006 removes the old field.
   5. Run `deploy-environment` on main for `prod`, then `manage-secrets` action `check`, to write
      the Companies House key into prod Secrets Manager (the ci copy is already done).
-  6. Close alarm issues that the deploy supersedes as the board lists them.
+  6. Close alarm issues the deploy supersedes: #130 now (its trigger is a per-function
+     duration check that PR #118 deletes), and #95, #97, #128, #129 once B30e's fix has held
+     through a probe cycle.
   **Source**: PR #118; `PLAN_MODE_RENAME.md`. **Owner**: Operator.
 - [ ] **O1e / G2b. Two grants only your own Google identity can make.** The service account
   now enables the project's APIs itself (`scripts/gcp-enable-apis.js`, first step of
@@ -188,13 +205,6 @@ starting.
   (project number 747057870039): grant it Owner so the assert can inventory and delete it, or
   delete that project by hand once the console shows it empty. **Source**: none. **Owner**:
   Operator.
-- [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
-  is code.** The analytics jobs already run as a Google service account (Secrets Manager
-  `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
-  GA4 account, and in GCP project `diyaccounting-ga4` give it Owner (or IAM Admin plus
-  BigQuery Admin). This is the last hand grant: after it, O1b applies grants from a file.
-  **Source**: none. **Owner**: Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
@@ -252,12 +262,6 @@ starting.
   once PR #118 deploys. That off-camera submission and the table's "View Return" on the fulfilled period are on
   `claude/board-batch-2` (PR #118), green on the simulator. Blocked on PR #118 deploying to
   prod; verified by a prod recording passing the blocking check.
-- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
-  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
-  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
-  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
-  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet). Folded into `claude/board-batch-2` (PR #118). Blocked on O6: the deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)
