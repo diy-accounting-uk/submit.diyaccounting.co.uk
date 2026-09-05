@@ -46,18 +46,16 @@ function checkTimings(timelineSteps, script) {
         });
       }
     }
-    if (step.waitMs > script.pacing.timerThresholdMs) {
-      // See the note at the top of this file: exact per-step attribution against the overlay
-      // event log needs a shared clock between the browser and Node, which screencast capture
-      // does not have (performance.now() resets every navigation). checkTimerMarkers below does
-      // a count-based check across the whole run instead.
-    }
   }
   return failures;
 }
 
 function checkTimerMarkers(timelineSteps, overlayEvents, script) {
-  const expectedCount = timelineSteps.filter((s) => s.waitMs > script.pacing.timerThresholdMs).length;
+  // Count only steps that can show a timer: await and click. Goto is excluded because the
+  // overlay does not exist during navigation (the document unloads and is reinstalled after
+  // the new one loads). Use count-based check rather than per-step attribution because the
+  // overlay clock resets on every navigation, so a shared clock with Node is unavailable.
+  const expectedCount = timelineSteps.filter((s) => s.waitMs > script.pacing.timerThresholdMs && (s.action === "await" || s.action === "click")).length;
   const actualCount = overlayEvents.filter((e) => e.type === "timerStart").length;
   if (actualCount < expectedCount) {
     return [{ check: "timerMarkers", expected: `>= ${expectedCount}`, actual: actualCount }];
