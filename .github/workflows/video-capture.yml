@@ -8,6 +8,10 @@ run-name: "record ${{ inputs.script }} video"
 # See the site-video-capture skill (.claude/skills/site-video-capture/SKILL.md) for the full
 # procedure — local iteration first, then this workflow for the real recording.
 
+concurrency:
+  group: video-capture-${{ github.ref_name }}
+  cancel-in-progress: false
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +21,9 @@ on:
         required: false
         options:
           - 'tour'
+          - 'view-obligations'
+          - 'view-return'
+          - 'submit-return'
         default: 'tour'
       environment-name:
         type: choice
@@ -41,6 +48,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   NODE_VERSION: '24'
@@ -174,7 +182,7 @@ jobs:
           echo "auth=${AUTH}" | tee -a "$GITHUB_OUTPUT"
 
       - name: Configure AWS role via GitHub OIDC (for native auth / test user)
-        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        if: ${{ steps.script-auth.outputs.auth == 'user' }}
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -186,7 +194,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role (for native auth / test user)
-        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        if: ${{ steps.script-auth.outputs.auth == 'user' }}
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -197,13 +205,19 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ steps.script-auth.outputs.auth == 'user' && needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+
       - name: Enable native auth on Cognito Hosted UI
-        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        if: ${{ steps.script-auth.outputs.auth == 'user' }}
         run: node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
 
       - name: Ensure Cognito test user
         id: cognito-test-user
-        if: ${{ steps.script-auth.outputs.auth == 'cognito-native' }}
+        if: ${{ steps.script-auth.outputs.auth == 'user' }}
         run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" videoCapture
 
       - name: 'Record ${{ needs.params.outputs.script }}'
@@ -213,20 +227,20 @@ jobs:
             --out "target/videos/${{ needs.params.outputs.script }}"
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
+          # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
+          HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          TEST_AUTH_PROVIDER: cognito-native
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
 
       - name: Check video timings
-        # Non-blocking on the first runs while the tolerances in check-video-timings.js settle
-        # against real recordings; flip to blocking once they have.
-        continue-on-error: true
         run: node scripts/check-video-timings.js "target/videos/${{ needs.params.outputs.script }}/${{ needs.params.outputs.script }}.timeline.json"
 
       - name: Configure AWS role via GitHub OIDC (for native auth cleanup)
-        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && needs.params.outputs.skip-native-auth-disable != 'true' }}
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -238,7 +252,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role (for native auth cleanup)
-        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && needs.params.outputs.skip-native-auth-disable != 'true' }}
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -250,7 +264,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Disable native auth on Cognito Hosted UI
-        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && needs.params.outputs.skip-native-auth-disable != 'true' }}
         run: node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
 
       - name: List artefacts

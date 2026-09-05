@@ -1019,10 +1019,10 @@ footer {
 }
 
 /* ============================================
-   Indicators - Sandbox Mode
+   Indicators - Synthetic Mode
    ============================================ */
 
-.sandbox-indicator {
+.synthetic-indicator {
   background-color: var(--color-warning-bg);
   border: 2px solid var(--color-warning);
   color: var(--color-warning-text);
@@ -1034,11 +1034,11 @@ footer {
   display: none;
 }
 
-.sandbox-indicator.visible {
+.synthetic-indicator.visible {
   display: block;
 }
 
-/* Test data link (sandbox mode only) */
+/* Test data link (synthetic mode only) */
 .test-data-link {
   display: none;
   text-align: right;

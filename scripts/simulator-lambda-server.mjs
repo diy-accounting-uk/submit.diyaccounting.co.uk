@@ -48,7 +48,7 @@ const submittedReturns = new Map();
 bundles.set("demo-user-12345", [
   { bundleId: "default", expiry: null },
   { bundleId: "test", expiry: "2099-12-31" },
-  { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31" },
+  { bundleId: "hmrc-vat-synthetic", expiry: "2099-12-31" },
 ]);
 
 // Default obligations (with randomized period keys)
@@ -284,7 +284,7 @@ async function handleRequest(req, res) {
   // Auth URL
   if (path === "/api/v1/auth/url" && req.method === "GET") {
     const redirectUri = url.searchParams.get("redirectUri") || "/";
-    const account = url.searchParams.get("account") || "sandbox";
+    const account = url.searchParams.get("account") || "synthetic";
     const authUrl = `/oauth/authorize?response_type=code&client_id=simulator&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:vat+write:vat&state=simulator-state&autoGrant=true`;
     return sendJson(res, 200, { url: authUrl, account });
   }

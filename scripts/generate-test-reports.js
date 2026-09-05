@@ -505,8 +505,9 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
     artifacts,
   };
 
-  // Write report file
-  const reportFileName = `test-report-${finalTestName}.json`;
+  // Named after the suite the workflow passes as --testName, not testContext.testId, because the
+  // upload job looks for test-report-<suite>.json and some suites' testId drops the suffix.
+  const reportFileName = `test-report-${testName}.json`;
   const reportPath = path.join(OUTPUT_DIR, reportFileName);
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });

@@ -17,19 +17,27 @@ const GROUP_PAUSE_KEY = {
 // Which pacing group settles after each action finishes. "type" paces per character while it
 // runs (group 1, applied directly with perCharMs, not through this table) and then settles with
 // group 2 like any other completed action. "await" measures a real wait and then settles with
-// the group 2 residual. Actions with no group of their own (caption, hold, still) return null:
-// their timing is either explicit (hold's ms) or carried by the caption/still write itself.
+// the group 2 residual, and so do the journey actions (login, consent, ensureBundle,
+// hmrcAuthorise), which spend most of their time waiting on a backend or an identity provider.
+// Actions with no group of their own (caption, hold, still) return null: their timing is either
+// explicit (hold's ms) or carried by the caption/still write itself.
 const STEP_GROUP = {
   goto: 3,
   click: 2,
   point: 2,
   type: 2,
+  fill: 2,
   press: 2,
   tab: 2,
   select: 2,
   scroll: 3,
   highlight: 2,
   await: 2,
+  login: 2,
+  consent: 2,
+  ensureBundle: 2,
+  hmrcAuthorise: 2,
+  submitReturn: 2,
   caption: null,
   hold: null,
   still: null,

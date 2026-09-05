@@ -51,14 +51,14 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
     }
   });
 
-  it("should handle sandbox account in auth flow", async () => {
-    // Step 1: Generate auth URL for sandbox - performed client side
-    // Step 2: Exchange code for token in sandbox
+  it("should handle synthetic account in auth flow", async () => {
+    // Step 1: Generate auth URL for synthetic - performed client side
+    // Step 2: Exchange code for token in synthetic
     const tokenEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/hmrc/token",
-      body: { code: "sandbox-code" },
-      headers: { hmrcaccount: "sandbox" },
+      body: { code: "synthetic-code" },
+      headers: { hmrcaccount: "synthetic" },
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);

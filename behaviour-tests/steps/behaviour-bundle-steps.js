@@ -200,8 +200,8 @@ export async function ensureBundlePresent(
         .catch(() => true));
 
     if (testPass) {
-      // testPass requested: always use pass API to ensure sandbox qualifier is set
-      console.log(`testPass=true for ${bundleName}, using pass API for sandbox-qualified grant...`);
+      // testPass requested: always use pass API to ensure synthetic qualifier is set
+      console.log(`testPass=true for ${bundleName}, using pass API for synthetic-qualified grant...`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
       await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
     } else if (isRequestEnabled) {
@@ -352,14 +352,14 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     // This bypasses Stripe for tests that need the bundle but aren't testing payment
     const data = redeemResult?.data || redeemResult;
     if (data?.requiresSubscription) {
-      const isSandbox = data?.testPass || testPass;
-      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup (sandbox=${isSandbox})`);
+      const isSynthetic = data?.testPass || testPass;
+      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup (synthetic=${isSynthetic})`);
       const grantResult = await page.evaluate(
-        async ({ bid, sandbox }) => {
+        async ({ bid, synthetic }) => {
           const idToken = localStorage.getItem("cognitoIdToken");
           if (!idToken) return { ok: false, error: "No auth token" };
           try {
-            const qualifiers = sandbox ? { sandbox: true } : {};
+            const qualifiers = synthetic ? { synthetic: true } : {};
             const response = await fetch("/api/v1/bundle", {
               method: "POST",
               headers: {
@@ -375,7 +375,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
             return { ok: false, error: err.message };
           }
         },
-        { bid: bundleId, sandbox: isSandbox },
+        { bid: bundleId, synthetic: isSynthetic },
       );
       console.log(`Direct bundle grant result: ${JSON.stringify(grantResult)}`);
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03b-direct-grant.png` });
@@ -491,7 +491,7 @@ export async function ensureBundleViaCheckout(
     } // end if (!skipPass)
 
     // Step 3: Call checkout session API
-    // Server auto-detects sandbox mode from bundle qualifiers (no explicit sandbox flag needed)
+    // Server auto-detects synthetic mode from bundle qualifiers (no explicit synthetic flag needed)
     const checkoutResult = await page.evaluate(
       async ({ bid }) => {
         const idToken = localStorage.getItem("cognitoIdToken");
