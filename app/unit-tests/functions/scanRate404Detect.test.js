@@ -137,7 +137,7 @@ describe("functions/security/scanRate404Detect", () => {
   });
 
   describe("buildQuery", () => {
-    test("keeps date and time double-quoted and excludes the synthetic user agent", () => {
+    test("keeps date and time double-quoted and excludes the probe user agent", () => {
       const sql = buildQuery({
         distributionIds: ["EDFXAMPLE1"],
         dateStr: "2026-08-31",
@@ -148,7 +148,7 @@ describe("functions/security/scanRate404Detect", () => {
 
       expect(sql).toContain('"date"');
       expect(sql).toContain('"time"');
-      expect(sql).toContain("NOT LIKE '%DIYAccountingSynthetic%'");
+      expect(sql).toContain("NOT LIKE '%DIYAccountingProbe%'");
       expect(sql).toContain("year  = 2026 AND month = 8 AND day = 31");
       expect(sql).toContain("HAVING   count(*) > 20");
     });

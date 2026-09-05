@@ -256,10 +256,10 @@ the repo root.
 21. **`playwright.config.js`** — a `getVatObligationsBehaviour` project (`testMatch:
     ["**/getVatObligations.behaviour.test.js"]`, `workers: 1`, 300s timeout), and the test file
     is also listed in the `allBehaviour` project's `testMatch` array.
-22. **`.github/workflows/synthetic-test.yml`** line 38 — `getVatObligationsBehaviour` as one
+22. **`.github/workflows/probe-test.yml`** line 38 — `getVatObligationsBehaviour` as one
     `behaviour-test-suite` dropdown option (`workflow_dispatch` and `workflow_call` inputs).
 23. **`.github/workflows/deploy.yml`** lines 1905-1930 — job `web-test-obligation-sandbox`
-    calling `synthetic-test.yml` with `behaviour-test-suite: 'getVatObligationsBehaviour'`
+    calling `probe-test.yml` with `behaviour-test-suite: 'getVatObligationsBehaviour'`
     after deploy; and line 2136 — the job is listed in `disable-native-auth`'s `needs:` array
     so native Cognito auth doesn't get disabled until this job (and all its siblings) finish.
 24. **`.github/workflows/test.yml`** lines 629-662 — job
@@ -539,12 +539,12 @@ section handling for `#testScenario`/`#runFraudPreventionHeaderValidation`),
   (rename `getVatObligations`→`getVatLiabilities` throughout, new log file names).
 - `playwright.config.js`: new `getVatLiabilitiesBehaviour` project entry; add the test file to
   `allBehaviour`'s `testMatch` array too.
-- `.github/workflows/synthetic-test.yml`: add `'getVatLiabilitiesBehaviour'` to the
+- `.github/workflows/probe-test.yml`: add `'getVatLiabilitiesBehaviour'` to the
   `behaviour-test-suite` dropdown options (both `workflow_dispatch.inputs` and
   `workflow_call.inputs`).
 - `.github/workflows/deploy.yml`: new job `web-test-liability-sandbox` mirroring
   `web-test-obligation-sandbox` (lines 1905-1930) — same `needs:`, same `uses:
-  ./.github/workflows/synthetic-test.yml`, `behaviour-test-suite: 'getVatLiabilitiesBehaviour'`.
+  ./.github/workflows/probe-test.yml`, `behaviour-test-suite: 'getVatLiabilitiesBehaviour'`.
   Add its job id to `disable-native-auth`'s `needs:` array (~line 2136).
 - `.github/workflows/test.yml`: new job `behaviour-test-simulator-get-vat-liabilities`
   mirroring lines 629-662 (`npm run test:getVatLiabilitiesBehaviour-simulator`).
@@ -807,7 +807,7 @@ sibling tracks — re-read before editing):
 - `web/public/submit.catalogue.toml`
 - `package.json`
 - `playwright.config.js`
-- `.github/workflows/synthetic-test.yml`
+- `.github/workflows/probe-test.yml`
 - `.github/workflows/deploy.yml`
 - `.github/workflows/test.yml`
 - `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md`

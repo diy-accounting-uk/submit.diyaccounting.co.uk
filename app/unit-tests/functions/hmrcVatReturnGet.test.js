@@ -373,7 +373,7 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(JSON.parse(response.body)).toEqual(vatReturn);
   });
 
-  test("allowSandboxObligations: falls back to the next fulfilled obligation when the first return 404s", async () => {
+  test("allowSyntheticObligations: falls back to the next fulfilled obligation when the first return 404s", async () => {
     mockGetVatObligations.mockResolvedValue({
       obligations: {
         obligations: [
@@ -393,11 +393,11 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         vrn: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
-        allowSandboxObligations: "true",
+        allowSyntheticObligations: "true",
       },
       headers: {
         authorization: "Bearer test-token",
-        hmrcAccount: "sandbox",
+        hmrcAccount: "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -408,8 +408,8 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
-  test("allowSandboxObligations: falls back to another fulfilled obligation when the exact date match 404s", async () => {
-    // The requested dates match "18A1" exactly, but the sandbox holds no canned return for it -
+  test("allowSyntheticObligations: falls back to another fulfilled obligation when the exact date match 404s", async () => {
+    // The requested dates match "18A1" exactly, but HMRC's sandbox holds no canned return for it -
     // the other fulfilled obligation in the same window ("17A2") must still be tried.
     mockGetVatObligations.mockResolvedValue({
       obligations: {
@@ -430,11 +430,11 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         vrn: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
-        allowSandboxObligations: "true",
+        allowSyntheticObligations: "true",
       },
       headers: {
         authorization: "Bearer test-token",
-        hmrcAccount: "sandbox",
+        hmrcAccount: "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -534,58 +534,58 @@ describe("hmrcVatReturnGet worker", () => {
   });
 });
 
-describe("hmrcVatReturnGet extractAndValidateParameters allowSandboxObligations", () => {
-  function buildParamsEvent(allowSandboxObligations, hmrcAccount) {
+describe("hmrcVatReturnGet extractAndValidateParameters allowSyntheticObligations", () => {
+  function buildParamsEvent(allowSyntheticObligations, hmrcAccount) {
     return buildHmrcEvent({
       headers: hmrcAccount ? { hmrcAccount } : {},
       queryStringParameters: {
         vrn: "111222333",
         periodStart: TEST_PERIOD_START,
         periodEnd: TEST_PERIOD_END,
-        ...(allowSandboxObligations === undefined ? {} : { allowSandboxObligations }),
+        ...(allowSyntheticObligations === undefined ? {} : { allowSyntheticObligations }),
       },
     });
   }
 
-  test("keeps strict obligation matching in sandbox when the flag is absent from the request", () => {
-    const event = buildParamsEvent(undefined, "sandbox");
+  test("keeps strict obligation matching in synthetic when the flag is absent from the request", () => {
+    const event = buildParamsEvent(undefined, "synthetic");
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(false);
+    expect(result.allowSyntheticObligations).toBe(false);
   });
 
-  test("keeps strict obligation matching in sandbox when the flag is explicitly false", () => {
-    const event = buildParamsEvent(false, "sandbox");
+  test("keeps strict obligation matching in synthetic when the flag is explicitly false", () => {
+    const event = buildParamsEvent(false, "synthetic");
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(false);
+    expect(result.allowSyntheticObligations).toBe(false);
   });
 
-  test("allows any fulfilled obligation in sandbox when the flag is true", () => {
-    const event = buildParamsEvent(true, "sandbox");
+  test("allows any fulfilled obligation in synthetic when the flag is true", () => {
+    const event = buildParamsEvent(true, "synthetic");
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(true);
+    expect(result.allowSyntheticObligations).toBe(true);
   });
 
-  test("allows any fulfilled obligation in sandbox when the flag is the string 'true'", () => {
-    const event = buildParamsEvent("true", "sandbox");
+  test("allows any fulfilled obligation in synthetic when the flag is the string 'true'", () => {
+    const event = buildParamsEvent("true", "synthetic");
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(true);
+    expect(result.allowSyntheticObligations).toBe(true);
   });
 
-  test("ignores the flag outside sandbox even when set to true", () => {
+  test("ignores the flag outside synthetic even when set to true", () => {
     const event = buildParamsEvent(true, "live");
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(false);
+    expect(result.allowSyntheticObligations).toBe(false);
   });
 
   test("ignores the flag when no hmrcAccount header is provided", () => {
     const event = buildParamsEvent(true, undefined);
     const errorMessages = [];
     const result = extractAndValidateParameters(event, errorMessages);
-    expect(result.allowSandboxObligations).toBe(false);
+    expect(result.allowSyntheticObligations).toBe(false);
   });
 });

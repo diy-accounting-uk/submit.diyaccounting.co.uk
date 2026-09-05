@@ -172,7 +172,7 @@ class SubmitApplicationCdkResourceTest {
         // GitHub token ARN is configured, and this test's config doesn't set one.
         assertStackHealthAlarm(opsStackTemplateForRouting, null, 0, routedPrefixes);
 
-        // Both canaries run on the hour, half an hour off synthetic-test.yml's `57 */4 * * *`, so
+        // Both canaries run on the hour, half an hour off probe-test.yml's `57 */4 * * *`, so
         // the two never check the site in the same window and the offset cannot drift.
         opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 2);
         opsStackTemplateForRouting.hasResourceProperties(

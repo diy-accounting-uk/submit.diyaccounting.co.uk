@@ -96,7 +96,7 @@ export function resolveTargetChatIds(detail, chatConfig) {
     return chatConfig.live ? [chatConfig.live] : [];
   }
 
-  // test-user, synthetic, ci-pipeline, system → test channel
+  // test-user, probe, ci-pipeline, system → test channel
   return chatConfig.test ? [chatConfig.test] : [];
 }
 

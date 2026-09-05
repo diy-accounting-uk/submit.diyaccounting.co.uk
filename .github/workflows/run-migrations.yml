@@ -1,5 +1,5 @@
 name: run migrations
-run-name: "${{ inputs.phase }} migrations for ${{ inputs.environment-name }}"
+run-name: "${{ inputs.phase }} migrations for ${{ inputs.environment-name }}${{ inputs.dry-run && ' (dry run)' || '' }}"
 
 on:
   workflow_dispatch:
@@ -20,6 +20,11 @@ on:
           - 'post-deploy'
         required: true
         default: 'all'
+      dry-run:
+        description: 'Run pending migrations without writing or recording them'
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       environment-name:
@@ -29,6 +34,10 @@ on:
         type: string
         required: false
         default: 'all'
+      dry-run:
+        type: boolean
+        required: false
+        default: false
 
 env:
   NODE_VERSION: '24'
@@ -92,3 +101,4 @@ jobs:
           ENVIRONMENT_NAME: ${{ inputs.environment-name }}
           AWS_REGION: ${{ env.AWS_REGION }}
           COGNITO_USER_POOL_ID: ${{ steps.lookup-resources.outputs.cognito-user-pool-id }}
+          MIGRATION_DRY_RUN: ${{ inputs.dry-run }}

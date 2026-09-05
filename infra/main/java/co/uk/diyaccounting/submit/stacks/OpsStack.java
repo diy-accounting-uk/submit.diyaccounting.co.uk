@@ -54,7 +54,7 @@ import software.constructs.Construct;
 public class OpsStack extends Stack {
 
     public final Topic alertTopic;
-    public final Alarm githubSyntheticAlarm;
+    public final Alarm githubProbeAlarm;
     public Canary healthCanary;
     public Canary apiCanary;
     public Alarm healthCheckAlarm;
@@ -129,9 +129,9 @@ public class OpsStack extends Stack {
         }
 
         // Both canaries run on the hour at this minute. A fixed minute rather than a rate, so
-        // the offset from synthetic-test.yml's `57 */4 * * *` GitHub Actions run stays put
+        // the offset from probe-test.yml's `57 */4 * * *` GitHub Actions run stays put
         // instead of drifting into it: at :27 a canary run always sits half an hour either side
-        // of a synthetic run, and the two never check the site in the same window. Hourly also
+        // of a probe run, and the two never check the site in the same window. Hourly also
         // keeps two datapoints inside the canary alarms' 2-hour period, so a missing datapoint
         // still means the canary has stopped rather than that the clocks slipped.
         @Value.Default
@@ -145,7 +145,7 @@ public class OpsStack extends Stack {
             return "";
         }
 
-        // Apex domain for GitHub synthetic metrics namespace (e.g., submit.diyaccounting.co.uk)
+        // Apex domain for GitHub probe metrics namespace (e.g., submit.diyaccounting.co.uk)
         @Value.Default
         default String apexDomain() {
             return "";
@@ -398,17 +398,17 @@ public class OpsStack extends Stack {
         }
 
         // ============================================================================
-        // GitHub Actions Synthetic Test Alarm
+        // GitHub Actions Probe Test Alarm
         // ============================================================================
         String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
                 ? props.apexDomain()
                 : "submit.diyaccounting.co.uk";
 
-        this.githubSyntheticAlarm = Alarm.Builder.create(this, "GithubSyntheticAlarm")
-                .alarmName(props.resourceNamePrefix() + "-github-synthetic-failed")
-                .alarmDescription("GitHub Actions synthetic test has not succeeded in 2 hours. "
+        this.githubProbeAlarm = Alarm.Builder.create(this, "GithubProbeAlarm")
+                .alarmName(props.resourceNamePrefix() + "-github-probe-failed")
+                .alarmDescription("GitHub Actions probe test has not succeeded in 2 hours. "
                         + "The behaviour-test metric is published per environment, not per deployment, "
-                        + "so a synthetic failure on any deployment in this environment trips this alarm.")
+                        + "so a probe failure on any deployment in this environment trips this alarm.")
                 .metric(Metric.Builder.create()
                         .namespace(apexDomain)
                         .metricName("behaviour-test")
@@ -422,8 +422,8 @@ public class OpsStack extends Stack {
                 .treatMissingData(TreatMissingData.BREACHING)
                 .build();
 
-        this.githubSyntheticAlarm.addAlarmAction(new SnsAction(this.alertTopic));
-        this.githubSyntheticAlarm.addOkAction(new SnsAction(this.alertTopic));
+        this.githubProbeAlarm.addAlarmAction(new SnsAction(this.alertTopic));
+        this.githubProbeAlarm.addOkAction(new SnsAction(this.alertTopic));
 
         // ============================================================================
         // Security Detection Alarms - Phase 1.1 & 2.3 (Deferred)
@@ -443,7 +443,7 @@ public class OpsStack extends Stack {
         // Outputs
         // ============================================================================
         cfnOutput(this, "AlertTopicArn", this.alertTopic.getTopicArn());
-        cfnOutput(this, "GithubSyntheticAlarmArn", this.githubSyntheticAlarm.getAlarmArn());
+        cfnOutput(this, "GithubProbeAlarmArn", this.githubProbeAlarm.getAlarmArn());
 
         if (this.healthCanary != null) {
             cfnOutput(this, "HealthCanaryName", this.healthCanary.getCanaryName());
@@ -515,7 +515,7 @@ public class OpsStack extends Stack {
         // received", not off real canary failures). A 2-hour period comfortably contains at
         // least one real run regardless of clock-alignment drift, so BREACHING-on-missing-data
         // now means what it says: the canary has genuinely stopped reporting. Mirrors the
-        // existing githubSyntheticAlarm's 2-hour/1-period shape below. Trade-off: worst-case
+        // existing githubProbeAlarm's 2-hour/1-period shape below. Trade-off: worst-case
         // detection latency for a real failure rises from a nominal (but not real) ~10 minutes
         // to just under 2 hours.
         this.healthCheckAlarm = Alarm.Builder.create(this, "HealthAlarm")
@@ -601,7 +601,7 @@ public class OpsStack extends Stack {
                 // Step 1: Check main page loads
                 log.info('Step 1: Checking main page...');
                 let page = await synthetics.getPage();
-                await page.setUserAgent('DIYAccounting-Synthetic-Monitor/1.0');
+                await page.setUserAgent('DIYAccounting-Probe-Monitor/1.0');
                 const response = await page.goto(baseUrl, {
                     waitUntil: 'domcontentloaded',
                     timeout: 30000
@@ -649,7 +649,7 @@ public class OpsStack extends Stack {
 
                     const req = client.get(urlString, {
                         timeout: 10000,
-                        headers: { 'User-Agent': 'DIYAccounting-Synthetic-Monitor/1.0' }
+                        headers: { 'User-Agent': 'DIYAccounting-Probe-Monitor/1.0' }
                     }, (res) => {
                         let data = '';
                         res.on('data', chunk => data += chunk);

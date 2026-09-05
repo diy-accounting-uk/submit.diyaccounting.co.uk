@@ -10,7 +10,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
@@ -210,7 +210,7 @@ test("Click through: Cognito Auth", async ({ page }, testInfo) => {
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
     },
     artefactsDir: outputDir,
     screenshotPath,
