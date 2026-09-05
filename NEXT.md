@@ -118,8 +118,12 @@ verify.
   Verified when `prod-env-dynamodb-customer-table-scan` stays in OK across a day. **Source**:
   BACKLOG 30; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Opus design,
   then Sonnet.
-  **Track**: wave 1, bundle-reconcile-design (Opus) writes `PLAN_BUNDLE_CAPACITY_RECONCILE.md`,
-  started; the Sonnet build follows in wave 2.
+  **Track**: `PLAN_BUNDLE_CAPACITY_RECONCILE.md` is on `claude/board-batch-4` (bd6d402e): a
+  sparse GSI `bundleId-expiry-index` queried once per capped bundle, no counter, no backfill,
+  the schedule stays hourly. Wave 2 build track bundle-reconcile-build (Sonnet) started
+  2026-09-06 00:05 UTC in `.claude/worktrees/agent-a4861cfbe2b6e6c84`; it also moves
+  `restore-test.yml` off the source-table scan and removes the pass repository's scan fallback,
+  the two other scan sources the design found.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
@@ -140,8 +144,11 @@ verify.
   developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
   34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
   Sonnet.
-  **Track**: wave 1, companies-house-filing-design (Opus) writes
-  `PLAN_COMPANIES_HOUSE_REST_FILING.md`, started; the Sonnet build follows in wave 2.
+  **Track**: `PLAN_COMPANIES_HOUSE_REST_FILING.md` is on `claude/board-batch-4` (ca7a800a):
+  eight Lambdas, tokens in the browser session like HMRC's, both activities free on `default`
+  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) started
+  2026-09-06 00:15 UTC; tracks 2 (filings) and 3 (web, simulator journeys, behaviour tests)
+  follow as each lands. The ci behaviour runs need the operator steps below (O11).
 ## Ready: Claude Code
 
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
@@ -167,6 +174,15 @@ verify.
 
   Then tell Claude Code the property id, so G2c can carry the `analytics_<propertyId>` dataset
   id. **Source**: none. **Owner**: Operator.
+- [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
+  Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
+  register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
+  `/companies-house/filingCallback.html`, for localhost:3000, local.submit:3443, ci-submit and
+  submit). Put `COMPANIES_HOUSE_CLIENT_ID` (variable) and `COMPANIES_HOUSE_CLIENT_SECRET`
+  (secret) on the GitHub `ci` environment. Say whether the application is sandbox-only, which
+  decides whether prod needs a second application. The build lands and proves itself on the
+  simulator without these; the ci behaviour runs wait on them. **Source**: BACKLOG 34; issue
+  #15. **Owner**: Operator.
 
 ## Blocked: operator
 
