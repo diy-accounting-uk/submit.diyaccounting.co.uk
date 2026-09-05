@@ -86,8 +86,8 @@ describe("activityTelegramForwarder", () => {
       expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
-    test("routes synthetic events to test channel", () => {
-      const detail = { actor: "synthetic", flow: "user-journey" };
+    test("routes probe events to test channel", () => {
+      const detail = { actor: "probe", flow: "user-journey" };
       expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
@@ -387,7 +387,7 @@ describe("activityTelegramForwarder", () => {
       const event = {
         source: "aws.cloudwatch",
         detail: {
-          alarmName: "prod-app-github-synthetic-failed",
+          alarmName: "prod-app-github-probe-failed",
           state: { value: "OK" },
           previousState: { value: "ALARM" },
         },

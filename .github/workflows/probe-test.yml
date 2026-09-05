@@ -1,9 +1,9 @@
-name: synthetic-test
-run-name: "synthetic test of ${{ github.ref_name }}"
+name: probe-test
+run-name: "probe test of ${{ github.ref_name }}"
 # SPDX-FileCopyrightText: 2025 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #concurrency:
-#  group: synthetic-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+#  group: probe-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
 #  cancel-in-progress: false
 
 # bump 00
@@ -171,7 +171,7 @@ jobs:
           # colliding artifact names, and the report-generating call downloads a suite's
           # artifact built by an invocation that generated no report.
           if [ "${{ github.event_name }}" = "schedule" ] && [ -z "${{ inputs.behaviour-test-suite }}" ]; then
-            SUITES_JSON='["submitVatBehaviour","tokenRefreshBehaviour"]'
+            SUITES_JSON='["submitVatBehaviour","tokenRefreshBehaviour","getVatLiabilitiesBehaviour","getVatPaymentsBehaviour","getVatPenaltiesBehaviour"]'
           else
             SUITES_JSON=$(printf '["%s"]' "${SUITE}")
           fi
@@ -389,7 +389,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
@@ -409,7 +409,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
@@ -647,6 +647,22 @@ jobs:
             echo "Found origin bucket: ${BUCKET_NAME}"
             echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Check downloaded test report exists
+        if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
+        shell: bash
+        run: |
+          REPORT_PATH="target/behaviour-test-results/${{ matrix.suite }}/test-report-${{ matrix.suite }}.json"
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "::error::Downloaded test report not found at ${REPORT_PATH}"
+            echo "Looked for: ${REPORT_PATH}"
+            echo "Contents of target/behaviour-test-results/${{ matrix.suite }}/:"
+            find "target/behaviour-test-results/${{ matrix.suite }}/" -type f 2>/dev/null || echo "  (directory does not exist)"
+            echo "All test-report-* files under target/:"
+            find target -name 'test-report-*'
+            exit 1
+          fi
+          echo "Found test report: ${REPORT_PATH}"
 
       - name: Publish test results to local directory and upload to S3
         if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}

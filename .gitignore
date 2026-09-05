@@ -397,3 +397,6 @@ web/www.diyaccounting.co.uk/redirect-function.js
 /cdk-app-invocation.drawio.bak
 /cdk-app-ops.drawio
 /cdk-app-ops.drawio.bak
+
+# Agent worktrees created by Claude Code sessions
+.claude/worktrees/

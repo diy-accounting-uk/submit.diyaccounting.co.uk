@@ -237,7 +237,7 @@ Created per deployment by `deploy.yml`:
 | `deploy-cdk-stack.yml` | Deploy individual CDK stack (reusable) | workflow_call |
 | `deploy-app.yml` | Lean app deployment (Lambda + S3 without CDK) | Manual only |
 | `test.yml` | Run all tests (reusable) | Push, schedule, workflow_call |
-| `synthetic-test.yml` | Run synthetic monitoring tests | Schedule, manual |
+| `probe-test.yml` | Run probe monitoring tests | Schedule, manual |
 | `generate-pass.yml` | Generate invitation passes | Schedule (9am UTC), push, manual, workflow_call |
 | `destroy-ci.yml` | Tear down CI deployments | Manual only |
 | `destroy-prod.yml` | Tear down prod deployments | Manual only |

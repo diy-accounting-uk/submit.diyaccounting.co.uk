@@ -16,6 +16,17 @@
 import fs from "fs";
 import path from "path";
 import * as overlay from "./overlay.js";
+import { substituteValues } from "./values.js";
+
+// The journey actions (login, consent, ensureBundle, hmrcAuthorise) run the behaviour tests' own
+// step functions. Loading that bridge registers a process-wide module resolution hook and pulls
+// in the app's data layer, so an unauthenticated script never pays for it: the import happens the
+// first time a journey action actually runs.
+let behaviourStepsModule = null;
+function behaviourSteps() {
+  if (!behaviourStepsModule) behaviourStepsModule = import("./behaviourSteps.js");
+  return behaviourStepsModule;
+}
 
 export class SceneStepError extends Error {
   constructor(message, { sceneId, stepIndex, target }) {
@@ -75,10 +86,14 @@ async function doGoto(page, step, ctx) {
     });
   }
   const start = Date.now();
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  if (step.waitFor) {
-    await page.waitForSelector(step.waitFor, { state: "visible", timeout: ctx.timeoutMs });
-  }
+  // A goto's own wait is the navigation itself, with nothing on screen to animate first, so the
+  // whole body is the wait phase.
+  await ctx.waitPhase(async () => {
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    if (step.waitFor) {
+      await page.waitForSelector(step.waitFor, { state: "visible", timeout: ctx.timeoutMs });
+    }
+  });
   const waitMs = Date.now() - start;
   // Deliberately not unrouted here: the delayed request this targets (e.g. a page script's own
   // fetch call) is often dispatched slightly after `waitFor`'s selector already resolves, so an
@@ -92,8 +107,11 @@ async function doClick(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
   const rect = await pointAndReturnRect(page, locator);
   await overlay.click(page, rect);
+  // The pointer animation and the ripple above already took at least 450ms of on-screen motion;
+  // the wait phase brackets only the click itself, or the pill would arm during that motion
+  // rather than during an actual wait on the site.
   const start = Date.now();
-  await locator.click();
+  await ctx.waitPhase(() => locator.click());
   return { waitMs: Date.now() - start, rect };
 }
 
@@ -107,15 +125,31 @@ async function doPoint(page, step, ctx) {
 async function doType(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
   const rect = await pointAndReturnRect(page, locator);
-  const totalTypingMs = step.text.length * ctx.pacing.perCharMs;
+  const text = substituteValues(step.text, ctx.values, ctx.now);
+  const totalTypingMs = text.length * ctx.pacing.perCharMs;
   await overlay.highlight(page, rect, totalTypingMs + 200);
   if (step.clear) await locator.fill("");
   await locator.click();
-  for (const char of step.text) {
+  for (const char of text) {
     await page.keyboard.type(char);
     await overlay.typeChar(page, rect);
     await new Promise((resolve) => setTimeout(resolve, ctx.pacing.perCharMs));
   }
+  return { waitMs: 0, rect };
+}
+
+// A date picker and a masked field take their value whole: typing "2026-08-01" into a date input
+// lands digit by digit in the browser's own segment order and produces a different date. The
+// pointer moves to the field and the highlight fires as usual, so it still reads as a person
+// filling the form in.
+async function doFill(page, step, ctx) {
+  const locator = await requireLocator(page, step, ctx);
+  const rect = await pointAndReturnRect(page, locator);
+  const value = substituteValues(step.value, ctx.values, ctx.now);
+  const holdMs = step.holdMs ?? 600;
+  await overlay.highlight(page, rect, holdMs);
+  await locator.fill(value);
+  await new Promise((resolve) => setTimeout(resolve, holdMs));
   return { waitMs: 0, rect };
 }
 
@@ -183,7 +217,7 @@ async function doAwait(page, step, ctx) {
   const locator = page.locator(step.until).first();
   const start = Date.now();
   try {
-    await locator.waitFor({ state: "visible", timeout: step.timeoutMs || 30000 });
+    await ctx.waitPhase(() => locator.waitFor({ state: "visible", timeout: step.timeoutMs || 30000 }));
   } catch (err) {
     await writeFailureStill(page, ctx);
     throw new SceneStepError(
@@ -194,17 +228,97 @@ async function doAwait(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+function requireJourney(step, ctx) {
+  if (!ctx.journey) {
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (${step.action}): the run has no signed-in journey context`, {
+      sceneId: ctx.sceneId,
+      stepIndex: ctx.stepIndex,
+      target: null,
+    });
+  }
+  return ctx.journey;
+}
+
+// The identity provider comes from the run, not the script. Credentials are typed by the
+// behaviour test's own step function, so they never appear in the scene script, the timeline or
+// the transcript.
+async function doLogin(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const journey = requireJourney(step, ctx);
+  const start = Date.now();
+  // Entering credentials is on-camera content, a person filling in a form, not a wait. Only the
+  // round trip back to the app once they are submitted has nothing to show on screen.
+  await steps.loginWithCognitoOrMockAuth(page, journey.authProvider, journey.authUsername, ctx.stepScreenshotDir, journey.authPassword);
+  await ctx.waitPhase(() => steps.verifyLoggedInStatus(page, ctx.stepScreenshotDir));
+  return { waitMs: Date.now() - start, rect: null };
+}
+
+async function doConsent(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const start = Date.now();
+  await ctx.waitPhase(() => steps.consentToDataCollection(page, ctx.stepScreenshotDir));
+  return { waitMs: Date.now() - start, rect: null };
+}
+
+async function doEnsureBundle(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const start = Date.now();
+  // The whole call is the pass-granting round trip (create pass, redeem, poll for allocation) —
+  // there is no on-camera interaction ahead of it to protect the pill from.
+  await ctx.waitPhase(() =>
+    steps.ensureBundlePresent(page, step.bundle, ctx.stepScreenshotDir, {
+      testPass: step.testPass === true,
+      isHidden: step.hidden === true,
+    }),
+  );
+  return { waitMs: Date.now() - start, rect: null };
+}
+
+// HMRC's own authorise pages: cookies, continue, sign in, grant permission, back to the app. The
+// step waits for the browser to leave the site's origin first, because the click that triggers
+// the redirect is a separate scene step and returns as soon as the click lands.
+async function doHmrcAuthorise(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const journey = requireJourney(step, ctx);
+  const appOrigin = new URL(ctx.baseUrl).origin;
+  const start = Date.now();
+  try {
+    // Only this redirect is a wait with nothing on screen yet. The behaviour steps that follow
+    // put HMRC's own pages on camera — a person signing in and granting access, not a wait.
+    await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
+  } catch (err) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (hmrcAuthorise): the browser stayed on ${appOrigin}, so HMRC never asked for authority. ` +
+        `A run whose account already holds an HMRC token skips the authorise pages; record with an account that has not granted authority yet (${err.message})`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
+    );
+  }
+  await steps.acceptCookiesHmrc(page, ctx.stepScreenshotDir);
+  await steps.goToHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.initHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.fillInHmrcAuth(page, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
+  await steps.submitHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.grantPermissionHmrcAuth(page, ctx.stepScreenshotDir);
+  return { waitMs: Date.now() - start, rect: null };
+}
+
 const HANDLERS = {
   goto: doGoto,
   click: doClick,
   point: doPoint,
   type: doType,
+  fill: doFill,
   press: doPress,
   tab: doTab,
   select: doSelect,
   scroll: doScroll,
   highlight: doHighlight,
   await: doAwait,
+  login: doLogin,
+  consent: doConsent,
+  ensureBundle: doEnsureBundle,
+  hmrcAuthorise: doHmrcAuthorise,
 };
 
 // Returns { waitMs, rect }. waitMs is the measured backend wait for pacing's wait subtraction
