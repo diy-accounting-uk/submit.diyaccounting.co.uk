@@ -4,7 +4,7 @@
 #
 # End-to-end check of the activity event pipeline: EventBridge to Firehose to S3 to Athena.
 #
-# Publishes one synthetic activity event, waits out the Firehose buffer, confirms an object
+# Publishes one probe activity event, waits out the Firehose buffer, confirms an object
 # landed in today's partition and queries it back through the Athena workgroup. Read-only
 # apart from that one event.
 #
@@ -42,7 +42,7 @@ const detail = {
   event: "pipeline-verification",
   site: "submit",
   summary: "pipeline verification",
-  actor: "synthetic",
+  actor: "probe",
   flow: "operational",
   timestamp: now,
 };

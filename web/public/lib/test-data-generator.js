@@ -2,7 +2,7 @@
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
 // test-data-generator.js
-// Generates test data for VAT forms in sandbox mode
+// Generates test data for VAT forms in synthetic mode
 
 /**
  * Generate a standard test VAT registration number
@@ -142,7 +142,7 @@ function populateSubmitVatForm() {
 
   // Set default period dates based on the simulator's default open obligation
   // Both the simulator and HMRC sandbox use Q1 2017 (2017-01-01 to 2017-03-31) as the default open period
-  // Note: allowSandboxObligations is also enabled so the backend will use whatever
+  // Note: allowSyntheticObligations is also enabled so the backend will use whatever
   // open obligation is available if these dates don't match exactly
   if (periodStartInput) periodStartInput.value = "2017-01-01";
   if (periodEndInput) periodEndInput.value = "2017-03-31";
@@ -152,7 +152,7 @@ function populateSubmitVatForm() {
     // Add a test option to the dropdown
     const testOption = document.createElement("option");
     testOption.value = testPeriodKey;
-    testOption.textContent = "Test Period (Sandbox)";
+    testOption.textContent = "Test Period (Synthetic)";
     testOption.selected = true;
     obligationSelect.innerHTML = ""; // Clear existing options
     obligationSelect.appendChild(testOption);
@@ -187,19 +187,19 @@ function populateSubmitVatForm() {
     console.log("[Test Data] Populated legacy VAT submission form with test data");
   }
 
-  // Auto-check allowSandboxObligations in sandbox mode - this allows the backend
+  // Auto-check allowSyntheticObligations in synthetic mode - this allows the backend
   // to use any available open obligation if the test dates don't match HMRC's actual obligations
-  const allowSandboxObligationsCheckbox = document.getElementById("allowSandboxObligations");
-  if (allowSandboxObligationsCheckbox) {
-    allowSandboxObligationsCheckbox.checked = true;
-    console.log("[Test Data] Auto-checked allowSandboxObligations for sandbox testing");
+  const allowSyntheticObligationsCheckbox = document.getElementById("allowSyntheticObligations");
+  if (allowSyntheticObligationsCheckbox) {
+    allowSyntheticObligationsCheckbox.checked = true;
+    console.log("[Test Data] Auto-checked allowSyntheticObligations for synthetic testing");
   }
 
-  // Show the sandbox obligations option and developer section for test data
-  const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
+  // Show the synthetic obligations option and developer section for test data
+  const syntheticObligationsOption = document.getElementById("syntheticObligationsOption");
   const developerSection = document.getElementById("developerSection");
-  if (sandboxObligationsOption) {
-    sandboxObligationsOption.style.display = "block";
+  if (syntheticObligationsOption) {
+    syntheticObligationsOption.style.display = "block";
   }
   if (developerSection) {
     developerSection.style.display = "block";

@@ -144,11 +144,11 @@ describe("Auth URL Generation", () => {
     expect(url).toContain("redirect_uri=" + encodeURIComponent("https://submit.example.com/activities/submitVatCallback.html"));
   });
 
-  it("buildHmrcAuthUrl generates correct URL for sandbox", async () => {
+  it("buildHmrcAuthUrl generates correct URL for synthetic", async () => {
     respondWithEnv();
     loadScripts();
 
-    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("def456", "write:vat", "sandbox");
+    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("def456", "write:vat", "synthetic");
 
     expect(url).toContain("https://test-api.service.hmrc.gov.uk/oauth/authorize");
     expect(url).toContain("client_id=hmrc-sandbox-id");

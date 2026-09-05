@@ -104,20 +104,20 @@ export function createSimulatorServer() {
   // In-memory bundle store (no DynamoDB)
   const bundles = new Map();
   // Pre-populate with a demo bundle that grants all activities
-  // qualifiers.sandbox drives developer tools (wrench icon) and HMRC sandbox routing
+  // qualifiers.synthetic drives developer tools (wrench icon) and HMRC sandbox routing
   bundles.set("demo-user-12345", [
-    { bundleId: "default", expiry: null, allocated: true, qualifiers: { sandbox: true } },
+    { bundleId: "default", expiry: null, allocated: true, qualifiers: { synthetic: true } },
     {
       bundleId: "day-guest",
       expiry: "2099-12-31",
       allocated: true,
-      qualifiers: { sandbox: true },
+      qualifiers: { synthetic: true },
       tokensGranted: 3,
       tokensRemaining: 3,
       tokensConsumed: 0,
       tokenEvents: [],
     },
-    { bundleId: "hmrc-vat-sandbox", expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true } },
+    { bundleId: "hmrc-vat-synthetic", expiry: "2099-12-31", allocated: true, qualifiers: { synthetic: true } },
   ]);
 
   // In-memory pass store (no DynamoDB)
@@ -237,14 +237,14 @@ export function createSimulatorServer() {
         existing.tokenEvents = [];
       }
       existing.allocated = true;
-      existing.qualifiers = pass.testPass ? { sandbox: true } : {};
+      existing.qualifiers = pass.testPass ? { synthetic: true } : {};
     } else {
       const tg = bundleTokenGrants[pass.bundleId];
       const newBundle = {
         bundleId: pass.bundleId,
         expiry: pass.validUntil || "2099-12-31",
         allocated: true,
-        qualifiers: pass.testPass ? { sandbox: true } : {},
+        qualifiers: pass.testPass ? { synthetic: true } : {},
       };
       if (tg !== undefined) {
         newBundle.tokensGranted = tg;
@@ -278,7 +278,7 @@ export function createSimulatorServer() {
     const userBundles = bundles.get(req.user.sub) || [];
     if (!userBundles.some((b) => b.bundleId === bundleId)) {
       const tg = bundleTokenGrants[bundleId];
-      const newBundle = { bundleId, expiry: "2099-12-31", allocated: true, qualifiers: { sandbox: true } };
+      const newBundle = { bundleId, expiry: "2099-12-31", allocated: true, qualifiers: { synthetic: true } };
       if (tg !== undefined) {
         newBundle.tokensGranted = tg;
         newBundle.tokensRemaining = tg;
@@ -332,7 +332,7 @@ export function createSimulatorServer() {
       existing.tokensRemaining = tg;
       existing.tokensConsumed = 0;
       existing.tokenEvents = [];
-      existing.qualifiers = { sandbox: true };
+      existing.qualifiers = { synthetic: true, stripeTestMode: true };
     } else {
       userBundles.push({
         bundleId,
@@ -344,7 +344,7 @@ export function createSimulatorServer() {
         tokensRemaining: tg,
         tokensConsumed: 0,
         tokenEvents: [],
-        qualifiers: { sandbox: true },
+        qualifiers: { synthetic: true, stripeTestMode: true },
       });
       bundles.set(req.user.sub, userBundles);
     }
@@ -380,7 +380,7 @@ export function createSimulatorServer() {
   app.get("/api/v1/auth/url", (req, res) => {
     const { redirectUri, account } = req.query;
     const authUrl = `/oauth/authorize?response_type=code&client_id=simulator&redirect_uri=${encodeURIComponent(redirectUri || "/")}&scope=read:vat+write:vat&state=simulator-state&autoGrant=true`;
-    res.json({ url: authUrl, account: account || "sandbox" });
+    res.json({ url: authUrl, account: account || "synthetic" });
   });
 
   // Mock token endpoint - always returns success for simulator

@@ -98,7 +98,7 @@ export async function ingestHandler(event) {
 
     // Pass is valid — grant the bundle to the user
     const { grantBundle } = await import("./bundlePost.js");
-    const grantQualifiers = result.pass?.testPass ? { sandbox: true } : undefined;
+    const grantQualifiers = result.pass?.testPass ? { synthetic: true } : undefined;
     const grantResult = await grantBundle(userId, { bundleId: result.bundleId, qualifiers: {} }, decodedToken, null, {
       skipCapCheck: true,
       grantQualifiers,

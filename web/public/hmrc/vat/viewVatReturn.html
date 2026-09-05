@@ -53,7 +53,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -116,7 +116,7 @@
                 >add test data</a
               >
             </div>
-            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
             <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
@@ -190,7 +190,7 @@
       // Global variables
       let returnData = null;
 
-      // Check if we're in sandbox/test mode to show developer options
+      // Check if we're in synthetic/test mode to show developer options
       async function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
         const vrn = urlParams.get("vrn");
@@ -215,11 +215,11 @@
           document.getElementById("periodEnd").value = periodEnd;
         }
 
-        // Show sandbox indicator if hmrcAccount=sandbox
-        if (hmrcAccount === "sandbox") {
-          const sandboxIndicator = document.getElementById("sandboxIndicator");
-          if (sandboxIndicator) {
-            sandboxIndicator.classList.add("visible");
+        // Show synthetic indicator if hmrcAccount=synthetic
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
           }
           const testDataLink = document.getElementById("testDataLink");
           if (testDataLink) {
@@ -335,7 +335,7 @@
           });
           if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
           if (pendingRequest.runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
-          if (pendingRequest.allowSandboxObligations) params.append("allowSandboxObligations", "true");
+          if (pendingRequest.allowSyntheticObligations) params.append("allowSyntheticObligations", "true");
 
           // Get Gov-Client headers
           const govClientHeaders = await getGovClientHeaders();
@@ -435,9 +435,9 @@
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
 
-        // Check hmrcAccount for sandbox mode (set by bundle qualifiers via sessionStorage)
+        // Check hmrcAccount for synthetic mode (set by bundle qualifiers via sessionStorage)
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
-        const allowSandboxObligations = hmrcAccount === "sandbox";
+        const allowSyntheticObligations = hmrcAccount === "synthetic";
 
         if (!scopeSufficient) {
           if (accessToken) {
@@ -456,7 +456,7 @@
               periodEnd,
               testScenario,
               runFraudPreventionHeaderValidation,
-              allowSandboxObligations,
+              allowSyntheticObligations,
             };
 
             const currentActivity = `${location.pathname}`;
@@ -496,7 +496,7 @@
             if (urlPeriodKey) params.append("periodKey", urlPeriodKey);
             if (testScenario) params.append("Gov-Test-Scenario", testScenario);
             if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
-            if (allowSandboxObligations) params.append("allowSandboxObligations", "true");
+            if (allowSyntheticObligations) params.append("allowSyntheticObligations", "true");
 
             // Get Gov-Client headers
             const govClientHeaders = await getGovClientHeaders();

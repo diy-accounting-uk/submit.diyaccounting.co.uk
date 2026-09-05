@@ -324,8 +324,16 @@ async function emptyBucket(bucketName) {
       }
       continuationToken = list.IsTruncated ? list.NextContinuationToken : undefined;
     } catch (error) {
-      console.error(`Error retrieving bucket contents for bucket ${bucketName}: ${error.message}`);
-      console.log(`Error retrieving bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
+      // A deployment's origin bucket name is a synth-time literal with no CloudFormation
+      // dependency forcing EdgeStack to finish first, so self-destruct can run (and try to
+      // empty this bucket) while EdgeStack is still creating it. That is a normal state for a
+      // young deployment, not a failure, so it is logged at warn rather than error.
+      if (error.name === "NoSuchBucket" || error.message?.includes("does not exist")) {
+        console.warn(`Bucket ${bucketName} does not exist yet, nothing to empty: ${error.message}`);
+      } else {
+        console.error(`Error retrieving bucket contents for bucket ${bucketName}: ${error.message}`);
+        console.log(`Error retrieving bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
+      }
       continuationToken = undefined;
     }
   } while (continuationToken);

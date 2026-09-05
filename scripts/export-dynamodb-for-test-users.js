@@ -25,7 +25,7 @@
  */
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { hashSub, initializeSalt } from "../app/services/subHasher.js";
 import fs from "fs";
 import path from "path";
@@ -44,44 +44,37 @@ function makeDocClient(region) {
 }
 
 /**
- * Scan a DynamoDB table and filter by hashed subs
+ * Query a DynamoDB table's hashedSub partition key for each given hashed sub. Every table
+ * here (bundles, receipts, hmrc-api-requests) is keyed by hashedSub, so this never reads
+ * rows belonging to any other user, unlike a Scan filtered client-side.
  * @param {DynamoDBDocumentClient} docClient
  * @param {string} tableName
  * @param {string[]} hashedSubs
  * @returns {Promise<Array>}
  */
-async function scanTableForHashedSubs(docClient, tableName, hashedSubs) {
+async function queryTableForHashedSubs(docClient, tableName, hashedSubs) {
   const allItems = [];
-  let lastEvaluatedKey = undefined;
-  const filterByHash = hashedSubs && hashedSubs.length > 0;
 
-  console.log(
-    `Scanning table: ${tableName}${filterByHash ? ` (filtering by ${hashedSubs.length} hashed subs)` : " (no filter - salt not available)"}`,
-  );
+  console.log(`Querying table: ${tableName} (${hashedSubs.length} hashed sub(s))`);
 
   try {
-    do {
-      const params = {
-        TableName: tableName,
-        ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
-      };
+    for (const hashedSub of hashedSubs) {
+      let lastEvaluatedKey = undefined;
+      do {
+        const response = await docClient.send(
+          new QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: "hashedSub = :hashedSub",
+            ExpressionAttributeValues: { ":hashedSub": hashedSub },
+            ...(lastEvaluatedKey ? { ExclusiveStartKey: lastEvaluatedKey } : {}),
+          }),
+        );
+        allItems.push(...(response.Items || []));
+        lastEvaluatedKey = response.LastEvaluatedKey;
+      } while (lastEvaluatedKey);
+    }
 
-      const response = await docClient.send(new ScanCommand(params));
-      const items = response.Items || [];
-
-      if (filterByHash) {
-        // Filter items by hashedSub
-        const filteredItems = items.filter((item) => item.hashedSub && hashedSubs.includes(item.hashedSub));
-        allItems.push(...filteredItems);
-      } else {
-        // No filtering - include all items (for diagnostic purposes)
-        allItems.push(...items);
-      }
-
-      lastEvaluatedKey = response.LastEvaluatedKey;
-    } while (lastEvaluatedKey);
-
-    console.log(`  Found ${allItems.length} items${filterByHash ? " for specified users" : " (all items)"} in ${tableName}`);
+    console.log(`  Found ${allItems.length} items for specified users in ${tableName}`);
     return allItems;
   } catch (error) {
     if (error.name === "ResourceNotFoundException") {
@@ -102,23 +95,14 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
   console.log(`Output dir: ${outputDir}`);
   console.log(`Region: ${region}\n`);
 
-  // Initialize salt before hashing (required for hashSub)
-  let saltAvailable = false;
-  try {
-    await initializeSalt();
-    saltAvailable = true;
-    console.log("Salt initialized successfully");
-  } catch (error) {
-    console.warn(`Salt initialization failed: ${error.message}`);
-    console.warn("Will skip user-specific filtering - exporting all data from tables");
-  }
+  // Initialize salt before hashing (required for hashSub). Every table this script reads is
+  // keyed by hashedSub, so without the salt there is no key to query -- fail rather than
+  // fall back to an unfiltered Scan of customer data.
+  await initializeSalt();
+  console.log("Salt initialized successfully");
 
-  // Hash all user subs (only if salt is available)
-  let hashedSubs = [];
-  if (saltAvailable) {
-    hashedSubs = userSubs.map((sub) => hashSub(sub));
-    console.log(`Hashed ${hashedSubs.length} user sub(s) for filtering`);
-  }
+  const hashedSubs = userSubs.map((sub) => hashSub(sub));
+  console.log(`Hashed ${hashedSubs.length} user sub(s) for filtering`);
 
   // Create DynamoDB client
   const docClient = makeDocClient(region);
@@ -146,7 +130,7 @@ async function exportDynamoDBData(deploymentName, userSubs, outputDir, region) {
   for (const [tableType, tableName] of Object.entries(tableNames)) {
     const outputFilePath = path.join(outputDir, fileNames[tableType]);
     try {
-      const items = await scanTableForHashedSubs(docClient, tableName, hashedSubs);
+      const items = await queryTableForHashedSubs(docClient, tableName, hashedSubs);
       totalItems += items.length;
 
       if (items.length > 0) {

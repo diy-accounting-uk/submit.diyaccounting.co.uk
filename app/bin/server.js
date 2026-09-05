@@ -25,6 +25,8 @@ import { apiEndpoint as hmrcVatPenaltiesGetApiEndpoint } from "../functions/hmrc
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
 import { apiEndpoint as hmrcItsaBusinessDetailsGetApiEndpoint } from "../functions/hmrc/hmrcItsaBusinessDetailsGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
+import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
+import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
@@ -40,6 +42,7 @@ import { apiEndpoint as billingWebhookPostApiEndpoint } from "../functions/billi
 import { dotenvConfigIfNotBlank, validateEnv } from "../lib/env.js";
 import { context, createLogger } from "../lib/logger.js";
 import { detectVendorPublicIp } from "../lib/buildFraudHeaders.js";
+import { jsonErrorHandler } from "../lib/jsonErrorHandler.js";
 
 const logger = createLogger({ source: "app/bin/server.js" });
 
@@ -233,6 +236,8 @@ hmrcVatPenaltiesGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
 hmrcItsaBusinessDetailsGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
+companiesHouseSearchGetApiEndpoint(app);
+companiesHouseCompanyGetApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);
@@ -250,6 +255,9 @@ billingWebhookPostApiEndpoint(app);
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
 });
+
+// Registered last so a throw or rejected promise from any route above answers as JSON.
+app.use(jsonErrorHandler);
 
 // 0 means ephemeral: the OS assigns a free port, read back below once the server is listening.
 const TEST_SERVER_HTTP_PORT = process.env.TEST_SERVER_HTTP_PORT || 3000;

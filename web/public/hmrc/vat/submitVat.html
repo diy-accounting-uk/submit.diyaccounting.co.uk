@@ -55,7 +55,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -317,7 +317,7 @@
                 >add test data</a
               >
             </div>
-            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox error scenarios</p>
             <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
@@ -339,10 +339,10 @@
                 >Validate Fraud Prevention Headers</label
               >
             </div>
-            <div id="sandboxObligationsOption" style="margin-top: 10px; display: none">
-              <input type="checkbox" id="allowSandboxObligations" name="allowSandboxObligations" />
-              <label for="allowSandboxObligations" style="display: inline; font-weight: normal"
-                >Allow any open obligation (Sandbox only - uses first available period if dates don't match)</label
+            <div id="syntheticObligationsOption" style="margin-top: 10px; display: none">
+              <input type="checkbox" id="allowSyntheticObligations" name="allowSyntheticObligations" />
+              <label for="allowSyntheticObligations" style="display: inline; font-weight: normal"
+                >Allow any open obligation (Synthetic only - uses first available period if dates don't match)</label
               >
             </div>
           </div>
@@ -669,7 +669,7 @@
         const declaration = document.getElementById("declaration").checked;
         const testScenario = (document.getElementById("testScenario")?.value || "").trim();
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
-        const allowSandboxObligations = document.getElementById("allowSandboxObligations")?.checked || false;
+        const allowSyntheticObligations = document.getElementById("allowSyntheticObligations")?.checked || false;
 
         // Collect 9-box data
         const vatBoxData = collect9BoxData();
@@ -709,7 +709,7 @@
           ...vatBoxData,
           testScenario,
           runFraudPreventionHeaderValidation,
-          allowSandboxObligations,
+          allowSyntheticObligations,
         };
 
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
@@ -887,8 +887,8 @@
         const testScenario = (document.getElementById("testScenario")?.value || storedData?.testScenario || "").trim();
         const runFraudPreventionHeaderValidation =
           document.getElementById("runFraudPreventionHeaderValidation")?.checked || storedData?.runFraudPreventionHeaderValidation || false;
-        const allowSandboxObligations =
-          document.getElementById("allowSandboxObligations")?.checked || storedData?.allowSandboxObligations || false;
+        const allowSyntheticObligations =
+          document.getElementById("allowSyntheticObligations")?.checked || storedData?.allowSyntheticObligations || false;
 
         // Get Gov-Client headers
         const govClientHeaders = await getGovClientHeaders();
@@ -897,7 +897,7 @@
         }
 
         // submitVat is the hmrc-service module's export (exposed on window by web/public/lib/services/hmrc-service.js)
-        return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSandboxObligations);
+        return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSyntheticObligations);
       }
 
       function displayReceipt(response) {
@@ -983,11 +983,11 @@
           document.getElementById("periodKey").value = periodKey;
         }
 
-        // Show sandbox indicator if in sandbox mode (determined by bundle qualifiers via sessionStorage)
-        if (hmrcAccount === "sandbox") {
-          const sandboxIndicator = document.getElementById("sandboxIndicator");
-          if (sandboxIndicator) {
-            sandboxIndicator.classList.add("visible");
+        // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
           }
           const testDataLink = document.getElementById("testDataLink");
           if (testDataLink) {
@@ -998,7 +998,7 @@
         // Developer mode is now controlled by the global toggle via developer-mode.js
         // Show developer section based on sessionStorage and listen for changes
         const devSection = document.getElementById("developerSection");
-        const sandboxObligationsOption = document.getElementById("sandboxObligationsOption");
+        const syntheticObligationsOption = document.getElementById("syntheticObligationsOption");
         // hmrcAccount was already declared above from urlParams
 
         function updateDeveloperSectionVisibility() {
@@ -1008,11 +1008,11 @@
           if (devSection) {
             devSection.style.display = developerModeEnabled ? "block" : "none";
           }
-          // Show sandbox obligations option only in sandbox mode when developer mode is on
-          if (sandboxObligationsOption && currentHmrcAccount === "sandbox" && developerModeEnabled) {
-            sandboxObligationsOption.style.display = "block";
-          } else if (sandboxObligationsOption) {
-            sandboxObligationsOption.style.display = "none";
+          // Show synthetic obligations option only in synthetic mode when developer mode is on
+          if (syntheticObligationsOption && currentHmrcAccount === "synthetic" && developerModeEnabled) {
+            syntheticObligationsOption.style.display = "block";
+          } else if (syntheticObligationsOption) {
+            syntheticObligationsOption.style.display = "none";
           }
         }
 
@@ -1262,7 +1262,7 @@
           cancelRequest();
         });
 
-        // Initialize page state (e.g., show sandbox indicator when applicable)
+        // Initialize page state (e.g., show synthetic indicator when applicable)
         await initializePage();
         // Check if we're returning from OAuth
         handleOAuthCallback();

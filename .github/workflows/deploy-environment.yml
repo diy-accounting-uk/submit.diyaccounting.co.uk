@@ -1,4 +1,4 @@
-# deploy-environment: public-url fix for synthetic test (bump)
+# deploy-environment: public-url fix for probe test (bump)
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
@@ -216,6 +216,17 @@ jobs:
           fi
         env:
           HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
+
+      - name: Create secret in AWS from secrets.COMPANIES_HOUSE_API_KEY
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/api_key"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating secret $SECRET_NAME"
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_API_KEY }}" --region ${{ env.AWS_REGION }}
+          else
+            echo "Secret $SECRET_NAME already exists, updating"
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_API_KEY }}" --region ${{ env.AWS_REGION }}
+          fi
 
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
         run: |

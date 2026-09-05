@@ -205,15 +205,22 @@ public class SecurityDetectionStack extends Stack {
         // (see SubmitSharedNames' *-app-* / *-env-* naming), so this fires on a console read, an
         // SSO session, or any role created outside the deployment pipeline. It is expected to
         // fire during salt backup and rotation -- runbook section 6.6 documents that.
+        //
+        // The GitHub Actions deployment role is named "submit-<env>-deployment-role" (see
+        // scripts/aws-accounts/bootstrap-account.sh), which does not match the "<env>-*" pattern
+        // above, so it is excluded by exact name too: the CDK deploy itself reads the salt
+        // secret's resource policy grant.
         // ----------------------------------------------------------------------------------
+        String deploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
         String saltReadMetricName = "SaltSecretUnexpectedRead";
         MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-SaltSecretReadMetricFilter")
                 .logGroup(cloudTrailLogGroup)
                 .filterPattern(FilterPattern.literal(
-                        "{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
-                                + " && ($.requestParameters.secretId = \"*user-sub-hash-salt*\")"
-                                + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\") }"
-                                        .formatted(props.envName())))
+                        ("{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
+                                        + " && ($.requestParameters.secretId = \"*user-sub-hash-salt*\")"
+                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\")"
+                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") }")
+                                .formatted(props.envName(), deploymentRoleName)))
                 .metricNamespace("Submit/Security")
                 .metricName(saltReadMetricName)
                 .metricValue("1")

@@ -659,6 +659,7 @@ jobs:
           echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="
           delete_stack_in_region "${DEPLOYMENT}-app-AuthStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-HmrcStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-CompaniesHouseStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
 

@@ -83,11 +83,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!vrn) errorMessages.push("Missing VAT registration number parameter");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
 
-  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
-  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
-    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
   const runFraudPreventionHeaderValidationBool =
@@ -458,8 +458,8 @@ export async function getVatPenalties(
   traceparent = undefined,
   correlationId = undefined,
 ) {
-  // Validate fraud prevention headers for sandbox accounts
-  if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
+  // Validate fraud prevention headers for synthetic accounts
+  if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
     logger.info("Validating fraud prevention headers for HMRC API request", hmrcAccount, runFraudPreventionHeaderValidation);
     try {
       await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);

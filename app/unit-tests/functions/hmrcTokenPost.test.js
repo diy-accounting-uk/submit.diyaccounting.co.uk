@@ -58,11 +58,11 @@ describe("hmrcTokenPost ingestHandler", () => {
     }
   });
 
-  test("accepts hmrcAccount header for sandbox", async () => {
+  test("accepts hmrcAccount header for synthetic", async () => {
     const event = buildLambdaEvent({
       method: "POST",
       body: { code: "test-code" },
-      headers: { hmrcaccount: "sandbox" },
+      headers: { hmrcaccount: "synthetic" },
     });
     const response = await hmrcTokenPostHandler(event);
     expect([200, 500]).toContain(response.statusCode);

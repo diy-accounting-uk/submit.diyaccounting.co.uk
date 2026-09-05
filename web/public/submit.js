@@ -30,6 +30,7 @@ import { checkAuthStatus, checkTokenExpiry, ensureSession } from "./lib/services
 import { authorizedFetch, fetchWithIdToken, handle403Error, executeAsyncRequestPolling } from "./lib/services/api-client.js";
 import { submitVat, getGovClientHeaders, getClientIP, getIPViaWebRTC } from "./lib/services/hmrc-service.js";
 import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCatalogText } from "./lib/services/catalog-service.js";
+import { searchCompanies, getCompanyProfile, normaliseCompanyNumber } from "./lib/services/companies-house-service.js";
 
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
@@ -341,6 +342,11 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
 
+  // Companies House service
+  window.searchCompanies = searchCompanies;
+  window.getCompanyProfile = getCompanyProfile;
+  window.normaliseCompanyNumber = normaliseCompanyNumber;
+
   // RUM functions
   window.hasRumConsent = hasRumConsent;
   window.maybeInitRum = maybeInitRum;
@@ -421,6 +427,10 @@ export {
   activitiesForBundle,
   isActivityAvailable,
   fetchCatalogText,
+  // Companies House service
+  searchCompanies,
+  getCompanyProfile,
+  normaliseCompanyNumber,
   // RUM
   hasRumConsent,
   maybeInitRum,

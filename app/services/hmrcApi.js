@@ -36,10 +36,10 @@ import { getHmrcErrorMessage, extractHmrcErrorCode } from "../lib/hmrcValidation
 const logger = createLogger({ source: "app/services/hmrcApi.js" });
 
 export function getHmrcBaseUrl(hmrcAccount) {
-  const isSandbox = hmrcAccount === "sandbox";
-  const base = isSandbox ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
+  const isSynthetic = hmrcAccount === "synthetic";
+  const base = isSynthetic ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   if (!base || String(base).trim() === "") {
-    throw new Error(`Missing required environment variable ${isSandbox ? "HMRC_SANDBOX_BASE_URI" : "HMRC_BASE_URI"}`);
+    throw new Error(`Missing required environment variable ${isSynthetic ? "HMRC_SANDBOX_BASE_URI" : "HMRC_BASE_URI"}`);
   }
   return base;
 }
@@ -63,7 +63,7 @@ export function buildHmrcHeaders(
     ...govClientHeaders,
   };
 
-  // Add Gov-Test-Scenario header // && isSandboxBase(getHmrcBaseUrl()) if provided and we're in sandbox
+  // Add Gov-Test-Scenario header // && isSyntheticBase(getHmrcBaseUrl()) if provided and we're in synthetic mode
   if (testScenario) {
     headers["Gov-Test-Scenario"] = testScenario;
   }
@@ -114,7 +114,7 @@ export function validateHmrcAccessToken(hmrcAccessToken) {
 }
 
 /**
- * Validate fraud prevention headers for sandbox HMRC accounts.
+ * Validate fraud prevention headers for synthetic HMRC accounts.
  * Calls the HMRC Test Fraud Prevention Headers API to validate headers before making actual API calls.
  *
  * This is a fire-and-forget validation that logs results but does not block the main API request.

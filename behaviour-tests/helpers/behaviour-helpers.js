@@ -36,18 +36,18 @@ export function getEnvVarAndLog(name, envKey, defaultValue) {
 }
 
 /**
- * Determine if we're running against HMRC sandbox or production API
+ * Determine if we're running against HMRC's sandbox or production API
  * based on the HMRC_BASE_URI environment variable
- * @returns {boolean} true if using sandbox, false otherwise
+ * @returns {boolean} true if using HMRC's sandbox, false otherwise
  */
-export function isSandboxMode() {
+export function isSyntheticMode() {
   // Prefer explicit HMRC_ACCOUNT when provided
   const hmrcAccount = (process.env.HMRC_ACCOUNT || "").toLowerCase();
-  if (hmrcAccount === "sandbox") {
-    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=true`);
+  if (hmrcAccount === "synthetic") {
+    logger.info(`Synthetic mode detection: HMRC_ACCOUNT=${hmrcAccount} => synthetic=true`);
     return true;
   } else {
-    logger.info(`Sandbox mode detection: HMRC_ACCOUNT=${hmrcAccount} => sandbox=false`);
+    logger.info(`Synthetic mode detection: HMRC_ACCOUNT=${hmrcAccount} => synthetic=false`);
     return false;
   }
 }
@@ -308,6 +308,7 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.TEST_MOCK_OAUTH2_BASE = result.baseUrl;
       process.env.HMRC_BASE_URI = result.baseUrl;
       process.env.HMRC_SANDBOX_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_BASE_URI = result.baseUrl;
 
       return {
         stop: result.stop,
@@ -919,7 +920,7 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
 }
 
 /**
- * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
+ * Fetch and log HMRC fraud prevention header validation feedback for synthetic tests.
  * This is a shared helper used by multiple behavior tests.
  * Returns the validation feedback result for inclusion in test reports.
  *
@@ -933,7 +934,7 @@ export function saveHmrcTestUserToFiles(testUser, outputDir, repoRoot) {
  * @param {string} requestId - Optional request ID for auditing to DynamoDB
  * @param {string} traceparent - Optional traceparent for auditing to DynamoDB
  * @param {string} correlationId - Optional correlation ID for auditing to DynamoDB
- * @returns {Object|null} The validation feedback result, or null if not in sandbox mode or no token
+ * @returns {Object|null} The validation feedback result, or null if not in synthetic mode or no token
  */
 export async function checkFraudPreventionHeadersFeedback(
   page,
@@ -944,8 +945,8 @@ export async function checkFraudPreventionHeadersFeedback(
   traceparent = undefined,
   correlationId = undefined,
 ) {
-  if (!isSandboxMode()) {
-    console.log("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-sandbox mode");
+  if (!isSyntheticMode()) {
+    console.log("[HMRC Fraud Prevention] Skipping fraud prevention header validation feedback check in non-synthetic mode");
     return null;
   } else {
     console.log(`[HMRC Fraud Prevention] Checking fraud prevention header validation feedback for user sub: ${auditForUserSub}`);

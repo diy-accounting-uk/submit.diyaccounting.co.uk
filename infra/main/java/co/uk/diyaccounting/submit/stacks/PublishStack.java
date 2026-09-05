@@ -223,6 +223,7 @@ public class PublishStack extends Stack {
                 .distributionPaths(List.of(
                         "/activities/*",
                         "/auth/*",
+                        "/companies-house/*",
                         "/docs/*",
                         "/errors/*",
                         "/hmrc/*",

@@ -91,7 +91,7 @@ describe("bundleEnforcement.js", () => {
       await expect(enforceBundles(event)).rejects.toThrow(BundleAuthorizationError);
     });
 
-    test("should allow sandbox access with test bundle", async () => {
+    test("should allow synthetic access with test bundle", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle");
       const authorizerContext = {
@@ -111,7 +111,7 @@ describe("bundleEnforcement.js", () => {
       expect(getUserBundles).toHaveBeenCalledWith("user-with-test-bundle");
     });
 
-    test("should allow sandbox access with test bundle with expiry", async () => {
+    test("should allow synthetic access with test bundle with expiry", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const token = makeJWT("user-with-test-bundle-expiry");
       const authorizerContext = {

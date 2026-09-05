@@ -3,7 +3,7 @@
 //
 // Developer Mode Toggle Script
 // Provides a global developer mode toggle that persists in sessionStorage.
-// The toggle icon only appears if the user has a sandbox bundle (qualifiers.sandbox === true).
+// The toggle icon only appears if the user has a synthetic bundle (qualifiers.synthetic === true).
 // When enabled:
 // - Adds 'developer-mode' class to <body>
 // - Shows header dev info (traceparent, x-request-id, entitlement) with terminal styling
@@ -16,8 +16,8 @@
   // Read current state
   const isEnabled = () => sessionStorage.getItem(KEY) === "true";
 
-  // Check if user has a sandbox bundle (granted via test pass)
-  async function userHasSandboxBundle() {
+  // Check if user has a synthetic bundle (granted via test pass)
+  async function userHasSyntheticBundle() {
     try {
       const idToken = localStorage.getItem("cognitoIdToken");
       if (!idToken) return false;
@@ -29,9 +29,9 @@
 
       const data = await response.json();
       const bundles = Array.isArray(data?.bundles) ? data.bundles : [];
-      return bundles.some((b) => b?.qualifiers?.sandbox === true);
+      return bundles.some((b) => b?.qualifiers?.synthetic === true);
     } catch (e) {
-      console.warn("Failed to check sandbox bundle for developer mode:", e);
+      console.warn("Failed to check synthetic bundle for developer mode:", e);
       return false;
     }
   }
@@ -182,7 +182,7 @@
     window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled } }));
   }
 
-  // Inject toggle icon into header-left (only if user has a sandbox bundle)
+  // Inject toggle icon into header-left (only if user has a synthetic bundle)
   async function injectToggle() {
     const headerLeft = document.querySelector(".header-left");
     if (!headerLeft) return;
@@ -190,17 +190,17 @@
     // Don't inject twice
     if (headerLeft.querySelector(".developer-mode-toggle")) return;
 
-    // Only show icon if user has a sandbox bundle
-    const hasSandboxBundle = await userHasSandboxBundle();
+    // Only show icon if user has a synthetic bundle
+    const hasSyntheticBundle = await userHasSyntheticBundle();
 
-    // Set sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
-    if (hasSandboxBundle) {
-      sessionStorage.setItem("hmrcAccount", "sandbox");
+    // Set sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
+    if (hasSyntheticBundle) {
+      sessionStorage.setItem("hmrcAccount", "synthetic");
     } else {
       sessionStorage.removeItem("hmrcAccount");
     }
 
-    if (!hasSandboxBundle) return;
+    if (!hasSyntheticBundle) return;
 
     const toggle = document.createElement("a");
     toggle.href = "#";
@@ -486,8 +486,8 @@
         box-shadow: 0 0 12px rgba(0, 255, 0, 0.2);
       }
 
-      /* Sandbox obligations option - nested terminal styling */
-      body.developer-mode #sandboxObligationsOption {
+      /* Synthetic obligations option - nested terminal styling */
+      body.developer-mode #syntheticObligationsOption {
         display: block;
         margin-top: 10px;
         padding: 8px;
@@ -498,26 +498,26 @@
     document.head.appendChild(style);
   }
 
-  // Re-check sandbox bundle and inject/remove icon as needed
+  // Re-check synthetic bundle and inject/remove icon as needed
   async function refreshToggleVisibility() {
     const headerLeft = document.querySelector(".header-left");
     if (!headerLeft) return;
 
     const existingToggle = headerLeft.querySelector(".developer-mode-toggle");
-    const hasSandboxBundle = await userHasSandboxBundle();
+    const hasSyntheticBundle = await userHasSyntheticBundle();
 
-    // Update sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
-    if (hasSandboxBundle) {
-      sessionStorage.setItem("hmrcAccount", "sandbox");
+    // Update sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
+    if (hasSyntheticBundle) {
+      sessionStorage.setItem("hmrcAccount", "synthetic");
     } else {
       sessionStorage.removeItem("hmrcAccount");
     }
 
-    if (hasSandboxBundle && !existingToggle) {
-      // User now has sandbox bundle, inject the icon
+    if (hasSyntheticBundle && !existingToggle) {
+      // User now has synthetic bundle, inject the icon
       await injectToggle();
-    } else if (!hasSandboxBundle && existingToggle) {
-      // User no longer has sandbox bundle, remove the icon
+    } else if (!hasSyntheticBundle && existingToggle) {
+      // User no longer has synthetic bundle, remove the icon
       existingToggle.remove();
       // Also disable developer mode
       sessionStorage.setItem(KEY, "");

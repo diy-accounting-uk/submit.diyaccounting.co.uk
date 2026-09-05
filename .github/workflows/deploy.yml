@@ -100,6 +100,7 @@ permissions:
   contents: read
   pull-requests: read
   pages: write
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -485,6 +486,15 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -582,6 +592,7 @@ jobs:
             "$ENV_NAME/submit/google/client_secret"
             "$ENV_NAME/submit/hmrc/client_secret"
             "$ENV_NAME/submit/hmrc/sandbox_client_secret"
+            "$ENV_NAME/submit/companies-house/api_key"
           )
 
           for SECRET in "${SECRETS[@]}"; do
@@ -962,6 +973,32 @@ jobs:
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
+  deploy-companies-house:
+    name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
+    needs:
+      - names
+      - skip-deploy-check
+      - push-images
+      - validate-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.deployment-name }}-app-CompaniesHouseStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      #self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+      base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
   deploy-account:
     name: 'deploy AccountStack via deploy-cdk-stack.yml'
     needs:
@@ -1023,6 +1060,7 @@ jobs:
       - push-images
       - deploy-auth
       - deploy-hmrc
+      - deploy-companies-house
       - deploy-account
       - deploy-billing
     runs-on: ubuntu-24.04
@@ -1629,7 +1667,7 @@ jobs:
             echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
-      # Each suite rotates its own durable Cognito user via synthetic-test.yml. One user per
+      # Each suite rotates its own durable Cognito user via probe-test.yml. One user per
       # suite, so parallel suites never clear each other's bundles or each other's password.
 
   verify-api:
@@ -1704,14 +1742,14 @@ jobs:
 
   web-test-auth:
     if: ${{ !cancelled() }}
-    name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - names
       - params
       - set-origins
       - enable-native-auth
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1727,14 +1765,14 @@ jobs:
 
   web-test-token-enforcement:
     if: ${{ !cancelled() }}
-    name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1750,14 +1788,14 @@ jobs:
 
   web-test-payment:
     if: ${{ !cancelled() }}
-    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1773,14 +1811,14 @@ jobs:
 
   web-test:
     if: ${{ !cancelled() }}
-    name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
       - set-origins
       - enable-native-auth
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1796,7 +1834,7 @@ jobs:
 
   web-test-bundle:
     if: ${{ !cancelled() }}
-    name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1807,7 +1845,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1823,7 +1861,7 @@ jobs:
 
   web-test-pass-redemption:
     if: ${{ !cancelled() }}
-    name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1834,7 +1872,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1848,9 +1886,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-post-vat-return-sandbox:
+  web-test-post-vat-return-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1861,7 +1899,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1875,9 +1913,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-get-vat-return-sandbox:
+  web-test-get-vat-return-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1888,7 +1926,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1902,9 +1940,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-obligation-sandbox:
+  web-test-obligation-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1915,7 +1953,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1929,9 +1967,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-liability-sandbox:
+  web-test-liability-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1942,7 +1980,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1956,9 +1994,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-vat-payment-sandbox:
+  web-test-vat-payment-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1969,7 +2007,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -1983,9 +2021,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-vat-penalty-sandbox:
+  web-test-vat-penalty-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -1996,7 +2034,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2010,9 +2048,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-fraud-prevention-headers-vat-sandbox:
+  web-test-fraud-prevention-headers-vat-synthetic:
     if: ${{ !cancelled() }}
-    name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2023,7 +2061,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2037,9 +2075,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-compliance-sandbox:
+  web-test-compliance-synthetic:
     if: ${{ !cancelled() }}
-    name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2050,7 +2088,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2064,9 +2102,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-help-sandbox:
+  web-test-help-synthetic:
     if: ${{ !cancelled() }}
-    name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2077,7 +2115,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2091,9 +2129,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-vatValidation-sandbox:
+  web-test-vatValidation-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2104,7 +2142,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2118,9 +2156,9 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-vatSchemes-sandbox:
+  web-test-vatSchemes-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
-    name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2131,7 +2169,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2147,7 +2185,7 @@ jobs:
 
   web-test-simulator:
     if: ${{ !cancelled() }}
-    name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2158,7 +2196,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2174,7 +2212,7 @@ jobs:
 
   web-test-generate-pass-activity:
     if: ${{ !cancelled() }}
-    name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via synthetic test'
+    name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
       - names
@@ -2185,7 +2223,7 @@ jobs:
       #- web-test-payment
       #- web-test
       - verify-api
-    uses: ./.github/workflows/synthetic-test.yml
+    uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
       packages: read
@@ -2212,17 +2250,17 @@ jobs:
       - web-test-token-enforcement
       - web-test-payment
       - web-test
-      - web-test-post-vat-return-sandbox
-      - web-test-get-vat-return-sandbox
-      - web-test-obligation-sandbox
-      - web-test-liability-sandbox
-      - web-test-vat-payment-sandbox
-      - web-test-vat-penalty-sandbox
-      - web-test-fraud-prevention-headers-vat-sandbox
-      - web-test-compliance-sandbox
-      - web-test-help-sandbox
-      - web-test-vatValidation-sandbox
-      - web-test-vatSchemes-sandbox
+      - web-test-post-vat-return-synthetic
+      - web-test-get-vat-return-synthetic
+      - web-test-obligation-synthetic
+      - web-test-liability-synthetic
+      - web-test-vat-payment-synthetic
+      - web-test-vat-penalty-synthetic
+      - web-test-fraud-prevention-headers-vat-synthetic
+      - web-test-compliance-synthetic
+      - web-test-help-synthetic
+      - web-test-vatValidation-synthetic
+      - web-test-vatSchemes-synthetic
       - web-test-simulator
       - web-test-generate-pass-activity
     runs-on: ubuntu-24.04

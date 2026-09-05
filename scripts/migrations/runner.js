@@ -90,9 +90,12 @@ export async function runMigrations(targetPhase = "all") {
     throw new Error("ENVIRONMENT_NAME is required");
   }
 
+  const dryRun = process.env.MIGRATION_DRY_RUN === "true";
+
   console.log(`\n=== Migration Runner ===`);
   console.log(`Environment: ${envName}`);
   console.log(`Phase: ${targetPhase}`);
+  if (dryRun) console.log(`Dry run: true (no writes, nothing recorded)`);
   console.log();
 
   const tableName = getBundlesTableName();
@@ -120,11 +123,15 @@ export async function runMigrations(targetPhase = "all") {
       continue;
     }
 
-    console.log(`  [RUN]  ${migration.id} — ${migration.description}`);
+    console.log(`  [RUN]  ${migration.id} — ${migration.description}${dryRun ? " (dry run)" : ""}`);
     try {
       await migration.up({ envName, tableName });
-      await recordMigration(docClient, PutCommand, tableName, migration.id, envName);
-      console.log(`  [DONE] ${migration.id}`);
+      if (dryRun) {
+        console.log(`  [DRY RUN] ${migration.id} (not recorded)`);
+      } else {
+        await recordMigration(docClient, PutCommand, tableName, migration.id, envName);
+        console.log(`  [DONE] ${migration.id}`);
+      }
       applied++;
     } catch (error) {
       console.error(`  [FAIL] ${migration.id}: ${error.message}`);
@@ -133,7 +140,9 @@ export async function runMigrations(targetPhase = "all") {
   }
 
   console.log();
-  console.log(`Summary: ${applied} applied, ${skipped} already done, ${allMigrations.length} total`);
+  console.log(
+    `Summary: ${applied} applied${dryRun ? " (dry run, not recorded)" : ""}, ${skipped} already done, ${allMigrations.length} total`,
+  );
   console.log(`=== Migration Runner Complete ===\n`);
 
   return { applied, skipped, total: allMigrations.length };

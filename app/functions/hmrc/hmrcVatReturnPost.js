@@ -106,8 +106,8 @@ export function extractAndValidateParameters(event, errorMessages) {
     periodEnd,
     accessToken,
     runFraudPreventionHeaderValidation,
-    // Sandbox-only option: allow using any available open obligation if dates don't match
-    allowSandboxObligations,
+    // Synthetic-only option: allow using any available open obligation if dates don't match
+    allowSyntheticObligations,
     // Legacy single-field format
     vatDue,
     // New 9-box format fields
@@ -226,21 +226,21 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid vatNumber format - must be 9 digits");
   }
 
-  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
-  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
-    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // In sandbox mode, use any available open obligation only when the caller opts in. An absent
+  // In synthetic mode, use any available open obligation only when the caller opts in. An absent
   // or falsy value keeps strict obligation matching, since HMRC's sandbox can return an
   // already-fulfilled period.
-  const allowSandboxObligationsBool =
-    hmrcAccount === "sandbox" && (allowSandboxObligations === true || allowSandboxObligations === "true");
+  const allowSyntheticObligationsBool =
+    hmrcAccount === "synthetic" && (allowSyntheticObligations === true || allowSyntheticObligations === "true");
 
   return {
     vatNumber,
@@ -251,24 +251,24 @@ export function extractAndValidateParameters(event, errorMessages) {
     requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
-    allowSandboxObligations: allowSandboxObligationsBool,
+    allowSyntheticObligations: allowSyntheticObligationsBool,
     declarationConfirmed,
   };
 }
 
 /**
- * Sandbox escape hatch: HMRC's sandbox hands out obligations that have nothing to do with the
+ * Synthetic escape hatch: HMRC's sandbox hands out obligations that have nothing to do with the
  * dates a tester types, so a period key is derived from whatever open obligation is on offer.
  * Never reached against the live HMRC account.
  */
-function periodKeyFromAnySandboxObligation(obligations, periodStart) {
+function periodKeyFromAnySyntheticObligation(obligations, periodStart) {
   const year = periodStart.substring(2, 4);
   const openObligations = obligations.filter((o) => o.status === "O");
   if (openObligations.length > 0) {
     const rawPeriodKey = openObligations[0].periodKey;
     const periodKey = `${year}${rawPeriodKey.substring(2, 4)}`;
     logger.info({
-      message: "allowSandboxObligations: Using first available open obligation with the requested year injected",
+      message: "allowSyntheticObligations: Using first available open obligation with the requested year injected",
       requestedPeriod: { periodStart },
       rawPeriodKey,
       usedObligation: periodKey,
@@ -279,7 +279,7 @@ function periodKeyFromAnySandboxObligation(obligations, periodStart) {
   const quarter = Math.floor((month - 1) / 3) + 1;
   const periodKey = `A${year}${quarter}`;
   logger.info({
-    message: "allowSandboxObligations: No open obligations found, generating periodKey from periodStart",
+    message: "allowSyntheticObligations: No open obligations found, generating periodKey from periodStart",
     requestedPeriod: { periodStart },
     usedObligation: periodKey,
   });
@@ -303,7 +303,7 @@ async function resolvePeriodKeyFromObligations({
   govClientHeaders,
   govTestScenarioHeader,
   hmrcAccount,
-  allowSandboxObligations,
+  allowSyntheticObligations,
   userSub,
   runFraudPreventionHeaderValidation,
   requestId,
@@ -348,8 +348,8 @@ async function resolvePeriodKeyFromObligations({
   if (matchedObligation?.status === "O") {
     return { periodKey: matchedObligation.periodKey };
   }
-  if (allowSandboxObligations) {
-    return { periodKey: periodKeyFromAnySandboxObligation(obligationsArray, periodStart) };
+  if (allowSyntheticObligations) {
+    return { periodKey: periodKeyFromAnySyntheticObligation(obligationsArray, periodStart) };
   }
 
   if (matchedObligation?.status === "F") {
@@ -459,7 +459,7 @@ export async function ingestHandler(event) {
     requestFormat,
     hmrcAccount,
     runFraudPreventionHeaderValidation,
-    allowSandboxObligations,
+    allowSyntheticObligations,
   } = extractAndValidateParameters(event, errorMessages);
 
   // Generate Gov-Client headers and collect any header-related validation errors
@@ -530,7 +530,7 @@ export async function ingestHandler(event) {
         govClientHeaders,
         govTestScenarioHeader,
         hmrcAccount,
-        allowSandboxObligations,
+        allowSyntheticObligations,
         userSub,
         runFraudPreventionHeaderValidation,
         requestId,
@@ -938,9 +938,9 @@ export async function submitVat(
   traceparent = undefined,
   correlationId = undefined,
 ) {
-  // Validate fraud prevention headers for sandbox accounts
-  if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
-    logger.info({ message: "Validating fraud prevention headers for sandbox account", hmrcAccount, runFraudPreventionHeaderValidation });
+  // Validate fraud prevention headers for synthetic accounts
+  if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
+    logger.info({ message: "Validating fraud prevention headers for synthetic account", hmrcAccount, runFraudPreventionHeaderValidation });
     try {
       await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);
     } catch (error) {
@@ -962,7 +962,7 @@ export async function submitVat(
   let hmrcResponseBody;
   let hmrcResponse = {};
 
-  const hmrcBase = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
+  const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/organisations/vat/${vatNumber}/returns`;
   /* v8 ignore start */
   if (govTestScenarioHeader === "SUBMIT_HMRC_API_HTTP_500") {

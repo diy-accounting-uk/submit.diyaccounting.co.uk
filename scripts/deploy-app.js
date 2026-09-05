@@ -31,6 +31,7 @@ const AWS_REGION_UE1 = "us-east-1";
 const CLOUDFRONT_INVALIDATION_PATHS = [
   "/activities/*",
   "/auth/*",
+  "/companies-house/*",
   "/docs/*",
   "/errors/*",
   "/hmrc/*",

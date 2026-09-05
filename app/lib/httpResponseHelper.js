@@ -99,6 +99,22 @@ export function http404NotFoundResponse({ request, headers, message, error }) {
   });
 }
 
+export function http429TooManyRequestsResponse({ request, headers, message, retryAfterSeconds }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  if (retryAfterSeconds !== undefined && retryAfterSeconds !== null) merged["Retry-After"] = String(retryAfterSeconds);
+  return httpResponse({
+    statusCode: 429,
+    request,
+    headers: merged,
+    data: { message },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http401UnauthorizedResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");

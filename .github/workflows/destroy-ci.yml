@@ -34,6 +34,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -480,6 +481,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Wait for older ci deploy runs to finish
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
@@ -630,6 +636,7 @@ jobs:
           echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="
           delete_stack_in_region "${DEPLOYMENT}-app-AuthStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-HmrcStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-CompaniesHouseStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
 

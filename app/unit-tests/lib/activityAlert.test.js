@@ -47,9 +47,9 @@ describe("lib/activityAlert", () => {
       expect(classifyActor("user@example.com", "cognito-native")).toBe("test-user");
     });
 
-    test("returns 'synthetic' for synthetic email patterns", () => {
-      expect(classifyActor("synthetic-abc@example.com")).toBe("synthetic");
-      expect(classifyActor("user+synthetic@example.com")).toBe("synthetic");
+    test("returns 'probe' for probe email patterns", () => {
+      expect(classifyActor("probe-abc@example.com")).toBe("probe");
+      expect(classifyActor("user+probe@example.com")).toBe("probe");
     });
 
     test("returns 'system' when email is not provided", () => {
@@ -58,8 +58,8 @@ describe("lib/activityAlert", () => {
       expect(classifyActor("")).toBe("system");
     });
 
-    test("test-user domain takes priority over synthetic prefix", () => {
-      expect(classifyActor("synthetic-abc@test.diyaccounting.co.uk")).toBe("test-user");
+    test("test-user domain takes priority over probe prefix", () => {
+      expect(classifyActor("probe-abc@test.diyaccounting.co.uk")).toBe("test-user");
     });
   });
 
@@ -303,7 +303,7 @@ describe("lib/activityAlert", () => {
     test("returns the explicit actor when one is supplied", async () => {
       await context.run(new Map(), async () => {
         context.set("requestId", "test_abc-123");
-        expect(resolveActorClass("synthetic")).toBe("synthetic");
+        expect(resolveActorClass("probe")).toBe("probe");
       });
     });
 

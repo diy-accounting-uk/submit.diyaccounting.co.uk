@@ -88,7 +88,7 @@ describe("services/hmrcApi", () => {
       hmrcRequestHeaders,
       govClientHeaders,
       "SCENARIO",
-      "sandbox",
+      "synthetic",
       { a: "1", b: "", c: null, d: undefined },
       auditForUserSub,
     );
