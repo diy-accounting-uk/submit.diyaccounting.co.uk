@@ -43,7 +43,7 @@ starting.
   **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording is dispatched from the batch branch instead, and its mp4 with the timing check passing as a blocking step verifies this item and B17a.1.
+  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. A Sonnet track (worktree `.claude/worktrees/agent-aa406b7b95b37cc0b`) is making the capture record `navigated` and `timerShown` per step and the check count only on-page waits; then the prod recording re-runs and a passing blocking check verifies this item and B17a.1.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
@@ -61,6 +61,16 @@ starting.
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
   **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
+- [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
+  share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
+  both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
+  `ci-submit.diyaccounting.co.uk` apex that the ci behaviour suites hit, so PRs #119 and #120
+  failed thirteen ci suites with no code fault. Fix in `get-names`: a per-branch unique name of the
+  same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
+  serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
+  Sonnet.
+  **Track**: pipeline fix (Sonnet), running, lands on `claude/board-batch-2`; then PRs #119 and #120
+  re-run one at a time.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
