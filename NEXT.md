@@ -13,7 +13,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-cea27f8 (the PR #118 merge deploy of 2026-09-05), the only app
+**Prod runs deployment prod-0f68ed8 (the PR #132 merge deploy of 2026-09-05), the only app
 stack set standing.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -24,8 +24,7 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-PR #132 merged 2026-09-05; main's deploy (run 33993674183) replaces prod-cea27f8. The two
-items below wait on a later event to verify.
+The two items below wait on a later event to verify.
 
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
@@ -44,7 +43,7 @@ items below wait on a later event to verify.
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: deployed with PR #118 (`app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>`
   to `<env>-app-<rest>` for the issue title and search). Verified when the next alarm on
-  prod-cea27f8 or ci-claudf375 comments on an existing family issue instead of opening one.
+  prod-0f68ed8 comments on an existing family issue instead of opening one.
 ## Ready: Claude Code
 
 - [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
@@ -85,9 +84,11 @@ items below wait on a later event to verify.
   job is wrong. Design pass: count bundle
   take-up without a scan (a sparse GSI on `bundleId` queried per catalogue bundle, or a counter
   item the grant and expiry paths maintain), then rebuild the reconcile on it; CDK test on the
-  index or the counter, unit test on the reconcile. Verified when #95 stays in OK across a
-  day. **Source**: BACKLOG 30; issue #95; CloudTrail lookup 2026-09-05. **Owner**: Claude
-  Code. **Model**: Opus design, then Sonnet.
+  index or the counter, unit test on the reconcile. The operator closed #95 on 2026-09-05;
+  the next hourly scan opens a fresh family issue, which is the one to close when this lands.
+  Verified when `prod-env-dynamodb-customer-table-scan` stays in OK across a day. **Source**:
+  BACKLOG 30; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Opus design,
+  then Sonnet.
 - [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
   (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
   already reach Telegram through the same rule. In `OpsStack.java` the
@@ -136,13 +137,6 @@ items below wait on a later event to verify.
   Sonnet.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O10. Close the B30e alarm issues once the PR #118 deployment holds.** The probe
-  workflow runs on a 4-hour cron and the env alarm `prod-env-github-probe-failed` evaluates a
-  5-hour window, so one full cycle is one scheduled probe run plus the window that scores it:
-  about five hours after the deploy. When that window has passed with the probe alarm and
-  `prod-env-salt-secret-unexpected-read` (#97) in OK, close #97; its last firing was 19:22 UTC
-  on 2026-09-05, before the fix reached prod. #95 is B30j's now. **Source**: PR #118.
-  **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
