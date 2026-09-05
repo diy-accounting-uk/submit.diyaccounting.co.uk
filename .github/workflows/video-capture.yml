@@ -48,6 +48,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   NODE_VERSION: '24'
@@ -203,6 +204,12 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ steps.script-auth.outputs.auth == 'user' && needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
 
       - name: Enable native auth on Cognito Hosted UI
         if: ${{ steps.script-auth.outputs.auth == 'user' }}

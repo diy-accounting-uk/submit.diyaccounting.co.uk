@@ -100,6 +100,7 @@ permissions:
   contents: read
   pull-requests: read
   pages: write
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -485,6 +486,15 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
