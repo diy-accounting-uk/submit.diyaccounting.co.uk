@@ -53,7 +53,11 @@ verify.
   produced one, or carry the report through the artifact the same way the two older suites do.
   Verified when the next scheduled run is green end to end. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, probe-upload (Sonnet), started.
+  **Track**: code complete on `claude/board-batch-4` (58051590, aa57a597). The cause was the
+  four newer suites' `testId` lacking the `Behaviour` suffix, so the publish script looked for
+  the html-report under the wrong directory; the ids now equal the suite names. The scheduled
+  prod matrix drops the three read suites and `deploy.yml` runs the gated suites only on ci.
+  Verified when the first scheduled probe run after the PR merges is green end to end.
 - [ ] **B30l. Canary alarms fire on every new prod set before the canary has run.**
   `-api-failed` and `-health-failed` in `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`
   treat missing data as breaching and are evaluated within two minutes of the OpsStack landing,
@@ -64,7 +68,9 @@ verify.
   creation, or treat missing data as not breaching on these two alarms and leave the
   stopped-canary case to `prod-env-github-probe-failed`; CDK test on whichever. **Source**:
   BACKLOG 30; issue #133. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, opsstack-alarms (Sonnet), shared with B30k, started.
+  **Track**: code complete on `claude/board-batch-4` (fe4eff98): both canary alarms treat
+  missing data as not breaching, pinned by `OpsStackTest`. Verified when the prod deploy after
+  the PR merges opens no `api-failed` or `health-failed` alarm at creation.
 - [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
   (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
   already reach Telegram through the same rule. In `OpsStack.java` the
@@ -73,7 +79,9 @@ verify.
   `prod` (the Telegram target stays for both), and pin it with a CDK test that a ci synth has
   one target and a prod synth two. **Source**: BACKLOG 30; operator decision 2026-09-05.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, opsstack-alarms (Sonnet), shared with B30l, started.
+  **Track**: code complete on `claude/board-batch-4` (fe4eff98): the issue Lambda is a rule
+  target only when the environment is `prod`, pinned by `OpsStackTest` (one target on ci, two on
+  prod). Verified when the next ci alarm reaches Telegram and opens no issue.
 - [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
   catalogue once carried `listedInEnvironments` on a bundle (commented out in
   `web/public/submit.catalogue.toml`) and nothing honours it now. Add an `environments` field
@@ -87,11 +95,6 @@ verify.
   behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
   32. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: wave 1, ci-only-gate (Sonnet), started.
-- [ ] **O1d / G2b. Create the ci GA4 property with the `ga4-property-sync` skill** (merged in
-  PR #132; its dry run plans the property, web stream and BigQuery link) and record the dataset
-  id. This is a real write to GA4 and to the `SUBMIT_GA4_MEASUREMENT_ID` GitHub variable.
-  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, ga4-ci-property (Sonnet), started; G2c unblocks when it lands.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
@@ -149,6 +152,21 @@ verify.
   Runs in wave 2 against the ci deployment the first batch-4 push creates. **Source**: BACKLOG
   10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
+
+- [ ] **O1d / G2b. Create the ci GA4 property.** The `ga4-property-sync` dry run for ci is
+  clean (account `DIY Accounting`, property `DIY Accounting Submit (ci)`, stream for
+  `https://ci-submit.diyaccounting.co.uk`, BigQuery link to `diyaccounting-ga4` in
+  europe-west2, then the `SUBMIT_GA4_MEASUREMENT_ID` variable on the `ci` GitHub Environment).
+  Claude Code's permission classifier refuses the real run, from a sub-agent and from the main
+  session alike, so the operator runs it from a terminal in the repo (an SSO session is needed):
+
+  ```bash
+  GA4_SERVICE_ACCOUNT_JSON="$(aws --profile submit-prod secretsmanager get-secret-value --secret-id prod/submit/ga4/service_account --query SecretString --output text)" node scripts/ga4-property-sync.js --environment ci --hostname ci-submit.diyaccounting.co.uk
+  gh variable list --env ci --repo diy-accounting-uk/submit.diyaccounting.co.uk
+  ```
+
+  Then tell Claude Code the property id, so G2c can carry the `analytics_<propertyId>` dataset
+  id. **Source**: none. **Owner**: Operator.
 
 ## Blocked: operator
 
