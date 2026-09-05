@@ -457,6 +457,7 @@ jobs:
           scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'prod-env' || format('{0}-env', needs.names.outputs.environment-name) }}
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           RESULTS_DIR: target/behaviour-test-results
 
       - name: Generate test report JSON files
