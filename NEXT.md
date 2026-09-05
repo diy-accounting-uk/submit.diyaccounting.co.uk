@@ -25,9 +25,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 **Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
-direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
-the Companies House lookup (PR #124) stays separate, because its deploy cannot pass until the
-operator's API key exists.
+direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. The
+Companies House lookup is folded in too, so PR #118's deploy fails secret validation until the
+operator's API key (O6) exists.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -123,7 +123,7 @@ starting.
   secrets.** Steps 1 to 7 under "Operator steps" in
   `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
-  the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
+  the deploy-environment workflow for each. PR #118 cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
@@ -226,7 +226,7 @@ starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Blocked on O6: its deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
+  **Track**: Companies House build (Sonnet). Folded into `claude/board-batch-2` (PR #118). Blocked on O6: the deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
