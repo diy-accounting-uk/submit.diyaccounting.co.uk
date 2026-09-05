@@ -307,6 +307,27 @@ public class OpsStack extends Stack {
                     .resources(List.of(githubSecretArnWithWildcard))
                     .build());
 
+            // Reads the environment's last-known-good deployment slug for an
+            // environment-scoped alarm (one with no deployment slug of its own), so its
+            // evidence links can still point at the deployment whose Lambda wrote the logs.
+            alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("ReadLastKnownGoodDeployment")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("ssm:GetParameter"))
+                    .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/last-known-good-deployment"
+                            .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                    .build());
+
+            // Reads a "-stack-health" composite alarm's own AlarmRule so its evidence links
+            // can name the child functions behind it instead of widening to a broad prefix.
+            alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("ReadCompositeAlarmRules")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("cloudwatch:DescribeAlarms"))
+                    .resources(
+                            List.of("arn:aws:cloudwatch:*:%s:alarm:%s-*".formatted(this.getAccount(), props.envName())))
+                    .build());
+
             cfnOutput(this, "AlarmToGithubIssueLambdaArn", alarmToGithubIssueLambda.getFunctionArn());
             infof(
                     "Created Alarm-to-GitHub-Issue Lambda %s for repo %s",
