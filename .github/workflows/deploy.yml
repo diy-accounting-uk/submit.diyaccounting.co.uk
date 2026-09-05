@@ -2183,8 +2183,8 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-companies-house-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+  web-test-companies-house:
+    if: ${{ !cancelled() }}
     name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2314,7 +2314,7 @@ jobs:
       - web-test-compliance-synthetic
       - web-test-help-synthetic
       - web-test-vatValidation-synthetic
-      - web-test-companies-house-synthetic
+      - web-test-companies-house
       - web-test-itsa-business-details-synthetic
       - web-test-vatSchemes-synthetic
       - web-test-simulator
