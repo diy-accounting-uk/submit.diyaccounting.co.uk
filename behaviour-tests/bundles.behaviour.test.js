@@ -352,11 +352,16 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   if (runDynamoDb === "run" && dynamoControl?.endpoint) {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
+      const exportResults = await exportAllTables(
+        outputDir,
+        dynamoControl.endpoint,
+        {
+          bundleTableName,
+          hmrcApiRequestsTableName,
+          receiptsTableName,
+        },
+        userSub,
+      );
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);

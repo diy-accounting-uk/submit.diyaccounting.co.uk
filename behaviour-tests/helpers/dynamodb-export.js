@@ -4,21 +4,25 @@
 // behaviour-tests/helpers/dynamodb-export.js
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import fs from "node:fs";
 import path from "node:path";
 import { createLogger } from "@app/lib/logger.js";
+import { hashSub, initializeSalt, isSaltInitialized } from "@app/services/subHasher.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/dynamodb-export.js" });
 
 /**
- * Export all items from a DynamoDB table to a JSONLines file
+ * Export one user's items from a DynamoDB table to a JSONLines file. Every table here is
+ * keyed by hashedSub, so this queries the partition instead of scanning the whole table --
+ * in ci/prod the table holds every real customer's rows, not just this test run's.
  * @param {string} tableName - Name of the DynamoDB table to export
  * @param {string} endpoint - DynamoDB endpoint URL (e.g., http://127.0.0.1:9000)
  * @param {string} outputPath - Full path to the output .jsonl file
+ * @param {string} hashedSub - The hashed sub to query the table's hashedSub partition key for
  * @returns {Promise<{itemCount: number, filePath: string}>} Export statistics
  */
-export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
+export async function exportTableToJsonLines(tableName, endpoint, outputPath, hashedSub) {
   logger.info(`[dynamodb-export]: Exporting table '${tableName}' from endpoint '${endpoint}' to '${outputPath}'`);
 
   // When an explicit endpoint is provided (local dynalite), use dummy credentials.
@@ -51,14 +55,18 @@ export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
   const writeStream = fs.createWriteStream(outputPath, { encoding: "utf-8" });
 
   try {
-    // Scan the table in pages
+    // Query the hashedSub partition in pages
     do {
-      const scanCommand = new ScanCommand({
+      const queryCommand = new QueryCommand({
         TableName: tableName,
+        KeyConditionExpression: "hashedSub = :hashedSub",
+        ExpressionAttributeValues: {
+          ":hashedSub": hashedSub,
+        },
         ExclusiveStartKey: lastEvaluatedKey,
       });
 
-      const response = await docClient.send(scanCommand);
+      const response = await docClient.send(queryCommand);
 
       // Write each item as a JSON line
       if (response.Items && response.Items.length > 0) {
@@ -122,24 +130,31 @@ export async function exportTableToJsonLines(tableName, endpoint, outputPath) {
 }
 
 /**
- * Export all configured DynamoDB tables to JSONLines format
+ * Export all configured DynamoDB tables to JSONLines format, scoped to one test user
  * @param {string} outputDir - Directory to write export files to
  * @param {string} endpoint - DynamoDB endpoint URL
  * @param {Object} tableNames - Object containing table names
  * @param {string} tableNames.bundleTableName - Bundle table name
  * @param {string} tableNames.hmrcApiRequestsTableName - HMRC API requests table name
  * @param {string} tableNames.receiptsTableName - Receipts table name
+ * @param {string} userSub - The current test's user sub, hashed here to query each table's
+ *     hashedSub partition key
  * @returns {Promise<Array>} Array of export results
  */
-export async function exportAllTables(outputDir, endpoint, tableNames) {
+export async function exportAllTables(outputDir, endpoint, tableNames, userSub) {
   logger.info(`[dynamodb-export]: Starting export of all tables to '${outputDir}'`);
+
+  if (!isSaltInitialized()) {
+    await initializeSalt();
+  }
+  const hashedSub = hashSub(userSub);
 
   const results = [];
 
   // Export bundles table
   if (tableNames.bundleTableName) {
     try {
-      const result = await exportTableToJsonLines(tableNames.bundleTableName, endpoint, path.join(outputDir, "bundles.jsonl"));
+      const result = await exportTableToJsonLines(tableNames.bundleTableName, endpoint, path.join(outputDir, "bundles.jsonl"), hashedSub);
       results.push({ table: "bundles", ...result });
     } catch (error) {
       logger.error(`[dynamodb-export]: Failed to export bundles table:`, error);
@@ -154,6 +169,7 @@ export async function exportAllTables(outputDir, endpoint, tableNames) {
         tableNames.hmrcApiRequestsTableName,
         endpoint,
         path.join(outputDir, "hmrc-api-requests.jsonl"),
+        hashedSub,
       );
       results.push({ table: "hmrc-api-requests", ...result });
     } catch (error) {
@@ -165,7 +181,12 @@ export async function exportAllTables(outputDir, endpoint, tableNames) {
   // Export receipts table
   if (tableNames.receiptsTableName) {
     try {
-      const result = await exportTableToJsonLines(tableNames.receiptsTableName, endpoint, path.join(outputDir, "receipts.jsonl"));
+      const result = await exportTableToJsonLines(
+        tableNames.receiptsTableName,
+        endpoint,
+        path.join(outputDir, "receipts.jsonl"),
+        hashedSub,
+      );
       results.push({ table: "receipts", ...result });
     } catch (error) {
       logger.error(`[dynamodb-export]: Failed to export receipts table:`, error);
