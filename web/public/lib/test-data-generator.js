@@ -14,6 +14,15 @@ function generateTestVrn() {
 }
 
 /**
+ * Generate a standard test National Insurance number
+ * Always returns the placeholder value used throughout the application
+ * @returns {string} NINO in AA999999A format
+ */
+function generateTestNino() {
+  return "AB123456C";
+}
+
+/**
  * Generate a random period key in YYXZ format
  * Format: 2-digit year + letter + alphanumeric (e.g., 24A1, 25B3, 17NB)
  * The last character can be either a digit or a letter per HMRC specification.
@@ -287,10 +296,23 @@ function populateVatPenaltiesForm() {
   console.log("[Test Data] Populated VAT penalties form with test data");
 }
 
+/**
+ * Populate the ITSA business details form with test data
+ * Used in businessDetails.html - NINO only
+ */
+function populateItsaBusinessDetailsForm() {
+  const ninoInput = document.getElementById("nino");
+
+  if (ninoInput) ninoInput.value = generateTestNino();
+
+  console.log("[Test Data] Populated ITSA business details form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
     generateTestVrn,
+    generateTestNino,
     generateTestPeriodKey,
     generateTestVatAmount,
     generateTest9BoxData,
@@ -302,5 +324,6 @@ if (typeof window !== "undefined") {
     populateVatLiabilitiesForm,
     populateVatPaymentsForm,
     populateVatPenaltiesForm,
+    populateItsaBusinessDetailsForm,
   };
 }

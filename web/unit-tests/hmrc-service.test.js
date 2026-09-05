@@ -10,7 +10,7 @@ vi.mock("../public/lib/services/api-client.js", () => ({
 }));
 
 import { authorizedFetch } from "../public/lib/services/api-client.js";
-import { submitVat } from "../public/lib/services/hmrc-service.js";
+import { submitVat, getBusinessDetails } from "../public/lib/services/hmrc-service.js";
 
 describe("hmrc-service submitVat error handling", () => {
   const vatData = {
@@ -87,5 +87,62 @@ describe("hmrc-service submitVat error handling", () => {
     });
 
     await expect(submitVat("111222333", vatData, "test-token")).rejects.toThrow(/Failed to submit VAT/);
+  });
+});
+
+describe("hmrc-service getBusinessDetails", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("returns the parsed business list on success", async () => {
+    const listOfBusinesses = [{ typeOfBusiness: "self-employment", businessId: "XBIS12345678901", tradingName: "Company X" }];
+    authorizedFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ listOfBusinesses }),
+    });
+
+    const result = await getBusinessDetails("AB123456C", "test-token");
+    expect(result).toEqual({ listOfBusinesses });
+    expect(authorizedFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/hmrc/itsa/business/details?nino=AB123456C"),
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  test("throws a friendly message and clears the stored token when the HMRC scope is insufficient", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: () =>
+        Promise.resolve({
+          message: "Forbidden",
+          reason: "hmrc_scope_insufficient",
+          userMessage: "Your HMRC authorization does not include the required permissions for this action",
+        }),
+    });
+
+    const clearHmrcToken = vi.fn();
+    global.window = { hmrcScopeCheck: { clearHmrcToken } };
+
+    await expect(getBusinessDetails("AB123456C", "test-token")).rejects.toThrow(
+      "Your HMRC authorization does not include the required permissions for this action",
+    );
+    expect(clearHmrcToken).toHaveBeenCalledTimes(1);
+
+    delete global.window;
+  });
+
+  test("throws the raw response for unrecognised failure reasons", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({ message: "Something else went wrong" }),
+    });
+
+    await expect(getBusinessDetails("AB123456C", "test-token")).rejects.toThrow(/Failed to retrieve business details/);
   });
 });

@@ -339,4 +339,49 @@ describe("test-data-generator", () => {
       expect(() => nullDocGenerator.populateVatObligationsForm()).not.toThrow();
     });
   });
+
+  describe("generateTestNino", () => {
+    test("returns the standard placeholder National Insurance number", () => {
+      const nino = testDataGenerator.generateTestNino();
+      expect(nino).toBe("AB123456C");
+    });
+
+    test("returns consistent value on multiple calls", () => {
+      const nino1 = testDataGenerator.generateTestNino();
+      const nino2 = testDataGenerator.generateTestNino();
+      expect(nino1).toBe(nino2);
+    });
+  });
+
+  describe("populateItsaBusinessDetailsForm", () => {
+    let mockElements;
+    let localTestDataGenerator;
+
+    beforeEach(() => {
+      mockElements = {
+        nino: { value: "" },
+      };
+
+      const mockDocument = {
+        getElementById: vi.fn((id) => {
+          if (id === "nino") return mockElements.nino;
+          return null;
+        }),
+      };
+
+      localTestDataGenerator = createTestDataGenerator(mockDocument);
+    });
+
+    test("populates National Insurance number field", () => {
+      localTestDataGenerator.populateItsaBusinessDetailsForm();
+      expect(mockElements.nino.value).toBe("AB123456C");
+    });
+
+    test("handles missing elements gracefully", () => {
+      const nullDocGenerator = createTestDataGenerator({
+        getElementById: vi.fn(() => null),
+      });
+      expect(() => nullDocGenerator.populateItsaBusinessDetailsForm()).not.toThrow();
+    });
+  });
 });
