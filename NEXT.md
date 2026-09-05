@@ -33,9 +33,6 @@ Each track runs in its own worktree off main; the coordinator merges each landed
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
 starting.
 
-- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
-  **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; the submission goes through the obligation's own "Submit Return" button; a table row's "View Return" sends its period key directly and HMRC's sandbox answers 404 with no fallback, so the final scene asks the View VAT Return page by VAT number, the path `getVatReturn.behaviour.test.js` proves on prod, over the same eleven-month window as the obligations query (a ten-year window made HMRC answer 400: the range is capped at 366 days). On `claude/board-batch-2` (PR #118); the prod recording is running, and a passing blocking check verifies this item.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -209,6 +206,15 @@ starting.
   (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
   `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
+- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
+  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned obligations and never
+  flips the open one to fulfilled, so a return is viewable only for the period the run itself
+  submits through the submit page's date fields, the way `getVatReturn.behaviour.test.js` does;
+  that behaviour step waits for the page to report the `synthetic` mode, which prod only does
+  once PR #118 deploys. A Sonnet track (worktree `.claude/worktrees/agent-aa20fccc2c1974f5c`) restores that off-camera
+  submission and the table's "View Return" on the fulfilled period, proven on the simulator.
+  Blocked on PR #118 deploying to prod; verified by a prod recording passing the blocking check.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
