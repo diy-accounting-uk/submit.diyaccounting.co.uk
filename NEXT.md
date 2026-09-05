@@ -33,17 +33,6 @@ Each track runs in its own worktree off main; the coordinator merges each landed
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
 starting.
 
-- [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
-  `analytics/google-roles.toml` listing the GA4 account and property access bindings
-  (Analytics Admin API `accessBindings`) and the GCP project IAM bindings the analytics work
-  needs, a script `scripts/google-roles-apply.js` that reconciles them idempotently with a
-  `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
-  file and applies on push to main, authenticating with the service account from Secrets
-  Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: google roles (Sonnet). On `claude/board-batch-3`: `analytics/google-roles.toml`,
-  `scripts/google-roles-apply.js`, `google-roles.yml` (dry run on pull requests, apply on main,
-  the billing assert dry-runs alongside), 21 unit tests. Its live dry run stopped at the same
-  disabled APIs (O1e); verified by a dry run reporting no changes once O1e is done.
 - [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
   that, given an environment name and hostname, finds or creates the GA4 property, its web
   data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
@@ -62,9 +51,9 @@ starting.
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
   **Track**: gcp billing (Sonnet). On `claude/board-batch-3`: `scripts/gcp-billing-assert.js`, 28
   unit tests; the budget defaults to GBP 10 a month unless the hand-made one is found. Its live dry
-  run stopped twice: the Cloud Billing API is disabled on `diyaccounting-ga4`, and the service
-  account holds no role on `valued-context-507200-m9` (O1e covers both); verified by a dry run
-  that finds the hand-made budget and inventories the stray project once O1e is done.
+  run now reaches the billing account (`019D7D-B02D59-ED7738`) and stops at 403 there, and holds
+  no role on `valued-context-507200-m9`: both are O1e. Verified by a dry run that finds the
+  hand-made budget and inventories the stray project once O1e is done.
 - [ ] **O6 remainder / B34.1. Write the Companies House keys into Secrets Manager.** The
   operator registered the keys and set `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub
   environments on 2026-09-05. The step that copies a GitHub secret into Secrets Manager lives in
@@ -190,13 +179,14 @@ starting.
      the Companies House key into prod Secrets Manager (the ci copy is already done).
   6. Close alarm issues that the deploy supersedes as the board lists them.
   **Source**: PR #118; `PLAN_MODE_RENAME.md`. **Owner**: Operator.
-- [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
-  `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin, Cloud Billing and
-  Cloud Resource Manager APIs: `gcloud services enable analyticsadmin.googleapis.com
-  cloudbilling.googleapis.com cloudresourcemanager.googleapis.com --project diyaccounting-ga4` (or the console's API library). On the stray project
-  `valued-context-507200-m9` (project number 747057870039) grant the GA4 service account Viewer
-  plus Project Deleter, or delete that project by hand once the console shows it holds nothing.
-  The property-sync, roles and billing scripts all stop at these. **Source**: none. **Owner**:
+- [ ] **O1e / G2b. Two grants only your own Google identity can make.** The service account
+  now enables the project's APIs itself (`scripts/gcp-enable-apis.js`, first step of
+  `google-roles.yml`) and its roles dry run reports no changes, but it holds nothing on two
+  resources outside the project: (1) billing account `019D7D-B02D59-ED7738`: grant
+  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` Billing Account Costs Manager so
+  the budget assert can read and set budgets; (2) the stray project `valued-context-507200-m9`
+  (project number 747057870039): grant it Owner so the assert can inventory and delete it, or
+  delete that project by hand once the console shows it empty. **Source**: none. **Owner**:
   Operator.
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
   is code.** The analytics jobs already run as a Google service account (Secrets Manager
