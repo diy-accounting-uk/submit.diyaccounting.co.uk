@@ -35,6 +35,7 @@ public class DataStack extends Stack {
     public ITable hmrcVatLiabilitiesGetAsyncRequestsTable;
     public ITable hmrcVatPaymentsGetAsyncRequestsTable;
     public ITable hmrcVatPenaltiesGetAsyncRequestsTable;
+    public ITable hmrcItsaBusinessDetailsGetAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
     public ITable bundleCapacityTable;
@@ -258,6 +259,22 @@ public class DataStack extends Stack {
                 "Ensured HMRC VAT Penalties GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName);
 
+        // HMRC ITSA Business Details GET async request storage
+        this.hmrcItsaBusinessDetailsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBusinessDetailsGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBusinessDetailsGetAsyncTTL",
+                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Business Details GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName);
+
         // HMRC API requests storage - audit trail for HMRC interactions
         // 28-day retention via TTL on "ttl" attribute
         this.hmrcApiRequestsTable = ensureTable(
@@ -381,6 +398,14 @@ public class DataStack extends Stack {
                 this,
                 "HmrcVatPenaltiesGetAsyncRequestsTableArn",
                 this.hmrcVatPenaltiesGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaBusinessDetailsGetAsyncRequestsTableName",
+                this.hmrcItsaBusinessDetailsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaBusinessDetailsGetAsyncRequestsTableArn",
+                this.hmrcItsaBusinessDetailsGetAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
         cfnOutput(this, "PassesTableName", this.passesTable.getTableName());

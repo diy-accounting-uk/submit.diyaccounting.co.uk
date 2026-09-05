@@ -8,6 +8,14 @@
 > - **#580b — Companies House filings** (weeks of accreditation before code, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580b_companies_house_filings.md`.
 > - **#580c — HMRC Corporation Tax MTD** (no production API yet, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
 >
+> **Correction 2026-09-05.** The Companies House REST filing API does not file accounts: it covers
+> transactions, registered office address, registered email address and insolvency. Accounts go
+> through the XML Gateway as iXBRL in an XML envelope, with test presenter credentials obtained by
+> email from xml@companieshouse.gov.uk. The April 2027 software-only mandate is paused with no new
+> date. The filing half is therefore two items on `NEXT.md`: B34.3a (registered office and email
+> changes via the REST filing API, buildable now against the sandbox with an OAuth client) and
+> B34.3b (micro-entity accounts via the XML Gateway, blocked on presenter credentials).
+>
 > Existing plans: none specific in `_developers/`. Related: `_developers/backlog/self-employed-api-operations.md` (pattern to follow).
 > External: HMRC's Corporation Tax (CT) MTD is still pre-mandate (as of 2026 knowledge cutoff); Companies House filing is the other strand.
 

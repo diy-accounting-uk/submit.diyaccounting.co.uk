@@ -51,10 +51,11 @@ export function buildHmrcHeaders(
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
+  apiVersion = "1.0",
 ) {
   const headers = {
     "Content-Type": "application/json",
-    "Accept": "application/vnd.hmrc.1.0+json",
+    "Accept": `application/vnd.hmrc.${apiVersion}+json`,
     "Authorization": `Bearer ${accessToken}`,
     "x-request-id": requestId,
     "traceparent": traceparent,

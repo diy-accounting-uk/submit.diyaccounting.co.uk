@@ -290,7 +290,7 @@ display = "always-with-upsell"
 bundles = ["resident-itsa"]
 tokenCost = 1
 metered = true
-paths = ["hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
+paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 
 [[activities]]

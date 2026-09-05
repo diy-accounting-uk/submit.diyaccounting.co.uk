@@ -40,7 +40,10 @@ starting.
   `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
   file and applies on push to main, authenticating with the service account from Secrets
   Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: google roles (Sonnet), worktree `.claude/worktrees/agent-ab637e01e6c753dbf`, lands on `claude/board-batch-3`.
+  **Track**: google roles (Sonnet). On `claude/board-batch-3`: `analytics/google-roles.toml`,
+  `scripts/google-roles-apply.js`, `google-roles.yml` (dry run on pull requests, apply on main,
+  the billing assert dry-runs alongside), 21 unit tests. Its live dry run stopped at the same
+  disabled APIs (O1e); verified by a dry run reporting no changes once O1e is done.
 - [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
   that, given an environment name and hostname, finds or creates the GA4 property, its web
   data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
@@ -48,13 +51,31 @@ starting.
   matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
   name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
   O1a granted 2026-09-05.
-  **Track**: ga4 property sync (Sonnet), worktree `.claude/worktrees/agent-ac953be772e167497`, lands on `claude/board-batch-3`.
+  **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
+  `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Its live dry run stopped because the
+  Analytics Admin API is not enabled on the project (O1e); verified by a dry run that plans the
+  ci property once O1e is done.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
   `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: gcp billing (Sonnet), worktree `.claude/worktrees/agent-a4333a6c92fe5225d`, lands on `claude/board-batch-3`.
+  **Track**: gcp billing (Sonnet). On `claude/board-batch-3`: `scripts/gcp-billing-assert.js`, 28
+  unit tests; the budget defaults to GBP 10 a month unless the hand-made one is found. Its live dry
+  run stopped twice: the Cloud Billing API is disabled on `diyaccounting-ga4`, and the service
+  account holds no role on `valued-context-507200-m9` (O1e covers both); verified by a dry run
+  that finds the hand-made budget and inventories the stray project once O1e is done.
+- [ ] **O6 remainder / B34.1. Write the Companies House keys into Secrets Manager.** The
+  operator registered the keys and set `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub
+  environments on 2026-09-05. The step that copies a GitHub secret into Secrets Manager lives in
+  `deploy-environment.yml` on `claude/board-batch-2` (PR #118), not on main, so the workflow has
+  to run from that branch: ci now, prod after the operator's go, then `manage-secrets` action
+  `check` on each. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: none, a
+  workflow dispatch.
+  **Track**: ci done 2026-09-05 (`ci/submit/companies-house/api_key` checks OK, 36 chars), and a
+  ci deploy of the batch is running to prove `companiesHouseBehaviour-ci`. Prod waits on the
+  operator's go, because running the workflow from the branch applies the batch's env stacks to
+  prod ahead of the merge; the alternative is merging PR #118 first and running it from main.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -124,10 +145,36 @@ starting.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 ## Ready: Claude Code
 
-(none)
+- [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
+  The REST filing API covers transactions, registered office address, registered email address
+  and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
+  `api-sandbox.company-information.service.gov.uk` with the "DIY Accounting Submit - test"
+  developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
+  34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
+  Sonnet.
+- [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
+  (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
+  `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
+  `read:self-assessment` granted as requested. Build `hmrcItsaBusinessDetailsGet.js` shaped like
+  `hmrcVatObligationGet.js`, mounted at `/api/v1/hmrc/itsa/business/details` behind the
+  `self-employed` activity, with a simulator route, unit and behaviour tests. Two departures the
+  spike found: `buildHmrcHeaders` hardcodes the v1.0 Accept header, so the API version becomes a
+  parameter; and nothing in the app carries a NINO yet. Every later ITSA endpoint needs the
+  `businessId` this one returns. `_developers/backlog/self-employed-api-operations.md` has the
+  wrong paths for v5.0; the spike lists the right ones. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet, after the coordinator's go: it opens the ITSA build
+  and O4b (the 2027-28 production window) sets its target date.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
+  `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin, Cloud Billing and
+  Cloud Resource Manager APIs: `gcloud services enable analyticsadmin.googleapis.com
+  cloudbilling.googleapis.com cloudresourcemanager.googleapis.com --project diyaccounting-ga4` (or the console's API library). On the stray project
+  `valued-context-507200-m9` (project number 747057870039) grant the GA4 service account Viewer
+  plus Project Deleter, or delete that project by hand once the console shows it holds nothing.
+  The property-sync, roles and billing scripts all stop at these. **Source**: none. **Owner**:
+  Operator.
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
   is code.** The analytics jobs already run as a Google service account (Secrets Manager
   `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
@@ -145,17 +192,6 @@ starting.
   makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O5a / B10a.2. Subscribe the sandbox application to the ITSA APIs.** In the HMRC
-  developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in `.env.ci`) to Business
-  Details (MTD) and Self Employment Business (MTD). **Source**: BACKLOG 10a. **Owner**:
-  Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O6 / B34.1. Register two Companies House API keys and add them as GitHub environment
-  secrets.** Steps 1 to 7 under "Operator steps" in
-  `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
-  per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
-  the deploy-environment workflow for each. PR #118 cannot deploy until this lands. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
@@ -179,11 +215,6 @@ starting.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 ## Blocked: operator
 
-- [ ] **O5b / B10a.2. Mint an ITSA sandbox test user.** Run the `create-hmrc-test-user`
-  workflow on main with `mtd-vat,mtd-income-tax` and keep the credentials artifact (NINO,
-  user id, password) somewhere private. **Source**: BACKLOG 10a. **Owner**: Operator. Blocked
-  on O5a.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
@@ -199,9 +230,6 @@ starting.
 
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc, against the
-  presenter (XML gateway) route rather than the REST API. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
@@ -220,16 +248,9 @@ starting.
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
   ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
-- [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
-  Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
-  validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
-  rejection); log in on the proxy variant as the O5 test user; call
-  `GET /individuals/business/details/{nino}/list` on `HMRC_SANDBOX_BASE_URI` with the token
-  and `app/lib/buildFraudHeaders.js` headers. Write `_developers/hmrc/ITSA_SPIKE.md`:
-  the raw response, whether the existing application and headers were accepted, and which of
-  `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
-  for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
-  **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
+- [ ] **B34.3b. Companies House micro-entity accounts through the XML Gateway** (iXBRL in an XML
+  envelope, test presenter credentials from xml@companieshouse.gov.uk). **Source**: BACKLOG 34;
+  issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: HMRC's sandbox holds no return for a fresh test user's canned obligations and never

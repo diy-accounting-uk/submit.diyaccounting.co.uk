@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-// app/functions/hmrc/hmrcVatPenaltiesGet.js
+// app/functions/hmrc/hmrcItsaBusinessDetailsGet.js
 
 import { createLogger, context } from "../../lib/logger.js";
 import {
@@ -20,7 +20,6 @@ import {
   validateHmrcAccessToken,
   hmrcHttpGet,
   extractHmrcAccessTokenFromLambdaEvent,
-  http400BadRequestFromHmrcResponse,
   http403ForbiddenFromHmrcResponse,
   http404NotFoundFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
@@ -29,17 +28,21 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidVrn } from "../../lib/hmrcValidation.js";
+import { isValidNino } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
-const logger = createLogger({ source: "app/functions/hmrc/hmrcVatPenaltiesGet.js" });
+const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaBusinessDetailsGet.js" });
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
+
+// Business Details v2.0 - the API version this endpoint requires, unlike the VAT reads
+// which all use v1.0.
+const HMRC_API_VERSION = "2.0";
 
 /**
  * Serialize response headers to a plain object with lowercase keys
@@ -64,12 +67,12 @@ function serializeResponseHeaders(headers) {
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/hmrc/vat/penalty", async (httpRequest, httpResponse) => {
+  app.get("/api/v1/hmrc/itsa/business/details", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
   });
-  app.head("/api/v1/hmrc/vat/penalty", async (httpRequest, httpResponse) => {
+  app.head("/api/v1/hmrc/itsa/business/details", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
 }
@@ -77,11 +80,11 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, runFraudPreventionHeaderValidation } = queryParams;
+  const { nino, runFraudPreventionHeaderValidation } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
-  if (!vrn) errorMessages.push("Missing VAT registration number parameter");
-  if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
+  if (!nino) errorMessages.push("Missing National Insurance number parameter");
+  if (nino && !isValidNino(nino)) errorMessages.push("Invalid National Insurance number format");
 
   // Extract HMRC account (sandbox/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -94,7 +97,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
   return {
-    vrn,
+    nino,
     testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
@@ -102,7 +105,6 @@ export function extractAndValidateParameters(event, errorMessages) {
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
-// TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
   await detectVendorPublicIp();
@@ -111,13 +113,13 @@ export async function ingestHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
     "SQS_QUEUE_URL",
   ]);
 
   const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
-  const asyncRequestsTableName = process.env.HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
   const sqsQueueUrl = process.env.SQS_QUEUE_URL;
 
   let errorMessages = [];
@@ -144,7 +146,7 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { vrn, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(event, errorMessages);
+  const { nino, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -175,7 +177,7 @@ export async function ingestHandler(event) {
   // Keep local override for test scenarios in a consistent variable name
   const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario") || testScenario;
 
-  // Simulate an immediate API (this lambda) failure for testing, mirroring POST ingestHandler
+  // Simulate an immediate API (this lambda) failure for testing, mirroring the VAT reads
   logger.info({ "Checking for test scenario": govTestScenarioHeader });
   if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
     return http500ServerErrorResponse({
@@ -188,7 +190,7 @@ export async function ingestHandler(event) {
   const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
   const payload = {
-    vrn,
+    nino,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -221,8 +223,8 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { penalties, hmrcResponse } = await getVatPenalties(
-          payload.vrn,
+        const { businessDetails, hmrcResponse } = await getItsaBusinessDetails(
+          payload.nino,
           payload.hmrcAccessToken,
           payload.govClientHeaders,
           payload.testScenario,
@@ -238,12 +240,10 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
-          // HMRC's own code/message live in the response body - carry it through the async
-          // round-trip so http400/403/404FromHmrcResponse can report it to the caller.
           data: hmrcResponse.data,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-        return { penalties, hmrcResponse: serializableHmrcResponse };
+        return { businessDetails, hmrcResponse: serializableHmrcResponse };
       };
 
       result = await asyncApiServices.initiateProcessing({
@@ -273,7 +273,7 @@ export async function ingestHandler(event) {
     if (error instanceof asyncApiServices.RequestFailedError) {
       result = error.data;
     } else {
-      logger.error({ message: "Unexpected error during VAT penalties retrieval", error: error.message, stack: error.stack });
+      logger.error({ message: "Unexpected error during ITSA business details retrieval", error: error.message, stack: error.stack });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -288,7 +288,6 @@ export async function ingestHandler(event) {
     const status = result.hmrcResponse.status;
     if (status === 403) return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
     if (status === 404) return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
-    if (status === 400) return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
     return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
   }
 
@@ -296,11 +295,7 @@ export async function ingestHandler(event) {
     request,
     requestId,
     responseHeaders,
-    // HMRC's own penalties response has no wrapper key (totalisations/lateSubmissionPenalty/
-    // latePaymentPenalty sit at the top level), so this endpoint needs dataKey to get the
-    // "penalties" envelope the page (and every other VAT-read page) destructures from.
-    dataKey: "penalties",
-    data: result ? result.penalties : null,
+    data: result ? result.businessDetails : null,
   });
 }
 
@@ -312,10 +307,10 @@ export async function workerHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
   ]);
 
-  const asyncRequestsTableName = process.env.HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
 
   logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
@@ -347,8 +342,8 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
-      const { penalties, hmrcResponse } = await getVatPenalties(
-        payload.vrn,
+      const { businessDetails, hmrcResponse } = await getItsaBusinessDetails(
+        payload.nino,
         payload.hmrcAccessToken,
         payload.govClientHeaders,
         payload.testScenario,
@@ -368,7 +363,7 @@ export async function workerHandler(event) {
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
-      const result = { penalties, hmrcResponse: serializableHmrcResponse };
+      const result = { businessDetails, hmrcResponse: serializableHmrcResponse };
 
       if (!hmrcResponse.ok) {
         // Distinguish retryable errors (e.g. 429, 503, 504)
@@ -446,8 +441,8 @@ function isRetryableError(error) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function getVatPenalties(
-  vrn,
+export async function getItsaBusinessDetails(
+  nino,
   hmrcAccessToken,
   govClientHeaders,
   testScenario,
@@ -474,7 +469,7 @@ export async function getVatPenalties(
     });
   }
 
-  const hmrcRequestUrl = `/organisations/vat/${vrn}/penalties`;
+  const hmrcRequestUrl = `/individuals/business/details/${nino}/list`;
   let hmrcResponse = {};
   /* v8 ignore start */
   if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {
@@ -486,14 +481,6 @@ export async function getVatPenalties(
     hmrcResponse.ok = false;
     hmrcResponse.status = 503;
   } else {
-    if (testScenario === "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
-      // Strip Gov-Test-Scenario from headers to avoid triggering reject from HMRC
-      delete govClientHeaders["Gov-Test-Scenario"];
-      const slowTime = 10000;
-      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waiting...): ${testScenario}`, slowTime });
-      await new Promise((resolve) => setTimeout(resolve, slowTime));
-      logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
-    }
     const hmrcRequestHeaders = buildHmrcHeaders(
       hmrcAccessToken,
       govClientHeaders,
@@ -501,27 +488,19 @@ export async function getVatPenalties(
       requestId,
       traceparent,
       correlationId,
-      "1.0",
+      HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    hmrcResponse = await hmrcHttpGet(
-      hmrcRequestUrl,
-      hmrcRequestHeaders,
-      govClientHeaders,
-      testScenario === "SUBMIT_HMRC_API_HTTP_SLOW_10S" ? null : testScenario,
-      hmrcAccount,
-      {},
-      auditForUserSub,
-    );
+    hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
   }
 
   if (!hmrcResponse.ok) {
-    return { hmrcResponse, penalties: null };
+    return { hmrcResponse, businessDetails: null };
   }
   await publishActivityEvent({
-    event: "vat-penalties-queried",
-    summary: "VAT penalties queried",
+    event: "itsa-business-details-queried",
+    summary: "ITSA business details queried",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, penalties: hmrcResponse.data, hmrcRequestUrl };
+  return { hmrcResponse, businessDetails: hmrcResponse.data, hmrcRequestUrl };
 }
