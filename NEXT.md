@@ -110,10 +110,14 @@ verify.
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: the five failed prod runs of 2026-09-05 all predate the fix on main (186b657a,
-  the off-camera submission now uses the period the table later shows as Fulfilled); the
-  simulator run of the fixed script shows the return on screen. Prod recording run 33998196356
-  dispatched 23:15 UTC on 2026-09-05; verified when its artifact shows the return.
+  **Track**: six prod runs failed the same way, the last (33998196356) after the submission fix:
+  the table's "View Return" button carries one quarter's dates, the GET handler's obligation
+  window pads only seven days, so it has no fallback period when the sandbox holds no return
+  for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
+  the View VAT Return form over the same wide window the behaviour test uses; green on the
+  simulator. Next: dispatch `video-capture.yml -f script=view-return -f environment-name=prod
+  --ref claude/board-batch-4` after the second push; verified when the artifact shows the
+  return.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -165,9 +169,14 @@ verify.
   Sonnet.
   **Track**: `PLAN_COMPANIES_HOUSE_REST_FILING.md` is on `claude/board-batch-4` (ca7a800a):
   eight Lambdas, tokens in the browser session like HMRC's, both activities free on `default`
-  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) started
-  2026-09-06 00:15 UTC; tracks 2 (filings) and 3 (web, simulator journeys, behaviour tests)
-  follow as each lands. The ci behaviour runs need the operator steps below (O11).
+  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) is
+  merged (a88c2459: token exchange Lambda with the client secret scoped to it alone, callback
+  page, simulator OAuth routes, env and CDK plumbing; `COMPANIES_HOUSE_CLIENT_ID` is blank in
+  `.env.ci` and `.env.prod` until the operator fills it). Track 2 (the seven filing Lambdas,
+  simulator scenarios, system test) started 2026-09-06 01:45 UTC; track 3 (web, catalogue,
+  behaviour tests) follows it. Track 3 also has to fill the two OAuth base URIs for the
+  simulator lane in `behaviour-tests/helpers/behaviour-helpers.js`, which no track owns yet.
+  The ci behaviour runs need the operator steps below (O11).
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
