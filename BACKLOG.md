@@ -28,7 +28,7 @@ truthfully on its own. Operator-only steps are briefed for Claude Cowork in
   (waits on two grants outside the project, O1e), the ITSA spike report, and the first ITSA
   endpoint in flight (B10.1).
 - **Tier 1 = `NEXT.md`**: every Tier 1 row below is refined on `NEXT.md` into items with
-  source, owner and model. The GA4 `purchase` residuals (G2b as O1b–O1e, G2c, G3) are on
+  source, owner and model. 27c waits in Tier 3 on the ICO register's certificate search. The GA4 `purchase` residuals (G2b as O1b–O1e, G2c, G3) are on
   `NEXT.md` only; they have no backlog row.
 - **Date-gated (Tier 3)**: 47 due 2026-09-06/07 (O9); 43 due from 2026-10-02 (GCP part is
   B43a); 48 due the week of 2026-11-29.
@@ -42,7 +42,6 @@ Refined items live on `NEXT.md` under the labels in the second column.
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
 | 32 | B32.4 (on PR #118) | Optional VAT endpoints: liabilities, payments, penalties are merged and verified on the real sandbox (2026-09-04); add the suites to the 4-hourly schedule | Issue #19, vat-api-operations | S | Revenue, minor. Completes the listed feature set. |
-| 27c | B27c.2 remainder (operator: the certificate PDF) | ICO registration renewal, then record the number | Split from #27 | S | Trust. The data-protection half of the same commitments. |
 | 30 | B30b–B30g (on PR #118), B30f (operator) | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
 | 17a | B17a.3 (on PR #118, prod recording after its deploy), B17a.5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
 
@@ -74,6 +73,7 @@ Each row names what has to happen before it can start.
 | 40c | Refresh the TODO inventory: re-scan the tree, drop entries that no longer exist, add new ones | TODO_INVENTORY | S | Hygiene. The inventory only steers work while it matches the code. Good sub-agent filler. |
 | 43 | **GCP part is NEXT.md B43a (automated after O1a); renewal and bill checks due from 2026-10-02.** **Due: GCP part now; renewal and bill checks from 2026-10-02 (first monthly renewal of the 2026-09-02 subscription, then the September bill).** Cost optimisation, remainder after `PLAN_COST_OPTIMISATION.md` (all four cuts and the `invoice.paid` fix live in prod since 2026-09-02): confirm the next real renewal refreshes tokens (`subscription-renewed` published); a monthly check that the bill moved the way the plan predicted (steady-state target $64.77/month before VAT); and the GCP billing account holding the GA4 export (budget alert set 2026-08-31, effectiveness unconfirmed; the stray auto-created project `valued-context-507200-m9` needs confirming empty and deleting). Feeds and is fed by #30. | Operator, this session; Cowork 2026-08-31 | S | Hygiene. Closes the loop on the plan's numbers. |
 | 47 | **NEXT.md O9.** **Due 2026-09-06 (codeql) and 2026-09-07 (weekly crons).** Confirm the weekly `compliance` and `stack-drift` crons fire on their own on Monday 2026-09-07 06:00 UTC (both revival runs are green); watch `codeql` on 2026-09-06 and revive it the same way if it misses again | Schedule revival, 2026-08-31 | S | Hygiene. A schedule that only runs when poked is not a schedule; one self-fire closes it. |
+| 27c | **Ready when** the ICO register's certificate search works again (the ICO posted an error notice on the site, 2026-09-05). Replace the year-old ICO certificate PDF in the repo root with the current one (registration ZB070902, expiry 2027-05-23; the certificate sits behind the fee-payer login), same filename, commit | Split from #27 | S | Trust. The data-protection half of the same commitments. |
 | 48 | **Due the week of 2026-11-29.** Manual `certbot renew`: run `aws sso login --sso-session diyaccounting` first, command in `_developers/SETUP.md`. The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed and cannot refresh unattended | Certbot setup | S | Hygiene. The local dev certificate lapses without it; date-gated, operator session needed. |
 
 ## Tier 4: hardening and compliance

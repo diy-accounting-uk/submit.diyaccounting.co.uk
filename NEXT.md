@@ -185,10 +185,6 @@ starting.
   for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
   finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
   and authority steps. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
-- [ ] **B27c.2 remainder, operator. Replace the year-old ICO certificate PDF in the repo root**
-  with the current one (registration ZB070902, expiry 2027-05-23): the register of fee payers
-  only serves the certificate behind a login. Same filename, then commit. **Source**: BACKLOG
-  27c. **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
