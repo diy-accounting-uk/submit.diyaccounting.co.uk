@@ -2183,6 +2183,60 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-companies-house:
+    if: ${{ !cancelled() }}
+    name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'companiesHouseBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-itsa-business-details-synthetic:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaBusinessDetailsBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-simulator:
     if: ${{ !cancelled() }}
     name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
@@ -2260,6 +2314,8 @@ jobs:
       - web-test-compliance-synthetic
       - web-test-help-synthetic
       - web-test-vatValidation-synthetic
+      - web-test-companies-house
+      - web-test-itsa-business-details-synthetic
       - web-test-vatSchemes-synthetic
       - web-test-simulator
       - web-test-generate-pass-activity

@@ -19,6 +19,20 @@ export function isValidVrn(vrn) {
 }
 
 /**
+ * Validates a National Insurance number (NINO).
+ * Two letters (excluding D, F, I, Q, U, V as either letter, and O as the second letter,
+ * and excluding the reserved prefixes BG, GB, NK, KN, TN, NT, ZZ), six digits, then a
+ * suffix letter A-D. Spaces are ignored.
+ * @see https://www.gov.uk/hmrc-internal-manuals/national-insurance-manual/nim39110
+ * @param {string} nino - The NINO to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidNino(nino) {
+  const normalized = String(nino).replace(/\s+/g, "").toUpperCase();
+  return /^(?!BG|GB|NK|KN|TN|NT|ZZ)[ABCEGHJ-PRSTW-Z][ABCEGHJ-NPRSTW-Z]\d{6}[A-D]$/.test(normalized);
+}
+
+/**
  * Validates HMRC period key format per HMRC MTD VAT API specification.
  * Period keys are 4 characters and can be in several formats:
  *

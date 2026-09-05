@@ -4,7 +4,7 @@
 // Companies House lookup service - search and company profile reads.
 // Holds no HMRC concepts; small on purpose.
 
-import { authorizedFetch } from "./api-client.js";
+import { fetchWithIdToken } from "./api-client.js";
 
 /**
  * Uppercase and left-pad a numeric company number to eight digits, matching the server's
@@ -49,7 +49,7 @@ async function errorFromResponse(response, body) {
  */
 export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0 } = {}) {
   const params = new URLSearchParams({ q: query, itemsPerPage: String(itemsPerPage), startIndex: String(startIndex) });
-  const response = await authorizedFetch(`/api/v1/companies-house/search?${params}`, { method: "GET" });
+  const response = await fetchWithIdToken(`/api/v1/companies-house/search?${params}`, { method: "GET" });
   const body = await response.json();
   if (!response.ok) {
     throw await errorFromResponse(response, body);
@@ -63,7 +63,7 @@ export async function searchCompanies(query, { itemsPerPage = 20, startIndex = 0
  * @returns {Promise<object>} the company profile
  */
 export async function getCompanyProfile(companyNumber) {
-  const response = await authorizedFetch(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}`, { method: "GET" });
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}`, { method: "GET" });
   const body = await response.json();
   if (!response.ok) {
     throw await errorFromResponse(response, body);

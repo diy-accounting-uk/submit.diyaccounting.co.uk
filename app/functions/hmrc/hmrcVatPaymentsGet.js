@@ -524,7 +524,15 @@ export async function getVatPayments(
       await new Promise((resolve) => setTimeout(resolve, slowTime));
       logger.warn({ message: `Simulating slow HMRC API response for testing scenario (waited): ${testScenario}`, slowTime });
     }
-    const hmrcRequestHeaders = buildHmrcHeaders(hmrcAccessToken, govClientHeaders, testScenario, requestId, traceparent, correlationId);
+    const hmrcRequestHeaders = buildHmrcHeaders(
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      requestId,
+      traceparent,
+      correlationId,
+      "1.0",
+    );
     /* v8 ignore stop */
     hmrcResponse = await hmrcHttpGet(
       hmrcRequestUrl,

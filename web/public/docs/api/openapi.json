@@ -371,6 +371,48 @@
         "operationId" : "redeemPass"
       }
     },
+    "/hmrc/itsa/business/details" : {
+      "get" : {
+        "summary" : "Get ITSA business details from HMRC",
+        "description" : "Retrieves the authenticated user's self-employment and property business list from HMRC, including the businessId every other ITSA endpoint needs",
+        "operationId" : "getItsaBusinessDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/hmrc/vat/obligation" : {
       "get" : {
         "summary" : "Get VAT obligations from HMRC",

@@ -1,0 +1,49 @@
+# Google roles as code.
+#
+# This file is the source of truth for what the analytics service account can do in Google
+# Analytics 4 and in Google Cloud. scripts/google-roles-apply.js reads it, lists the live
+# bindings through the GA4 Analytics Admin API and the GCP Resource Manager IAM API, diffs
+# them against what is written here, and applies the difference. A grant that is not in this
+# file does not exist as far as this repo is concerned. Add it here before asking for it, and
+# remove it here before revoking it.
+#
+# The service account is ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com. Its key
+# lives in AWS Secrets Manager (ci/submit/ga4/service_account, prod/submit/ga4/service_account)
+# and is read by app/functions/analytics/ga4ReportPull.js (GA4 Data API) and
+# app/functions/analytics/ga4EventExportPull.js (GA4's BigQuery event export).
+
+[service_account]
+email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
+
+# GA4 Analytics Admin API access bindings (accounts/*/accessBindings). Account 1035014 is
+# "DIY Accounting" (see google-analytics.toml), holding property 523400333 (live, what
+# ga4ReportPull.js queries) and the trashed property 395628828. A binding at account level
+# covers every property under the account, which is what was granted: admin on the account,
+# not a binding scoped to one property.
+#
+# One entry per (account_id, user) pair, with the full set of roles that user should hold on
+# that account. To revoke a role, remove it from this list; to stop tracking a user on an
+# account entirely, delete its entry. The script then leaves that user's live grants alone
+# instead of removing them, so an intentional revoke edits the roles list rather than deleting
+# the entry.
+[[ga4.account_bindings]]
+account_id = "1035014" # GA4 account "DIY Accounting"
+user = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
+roles = ["predefinedRoles/admin"]
+
+# GCP Resource Manager IAM bindings on project diyaccounting-ga4, which hosts the GA4 BigQuery
+# event export dataset analytics_523400333 (ga4EventExportPull.js's GA4_BIGQUERY_PROJECT_ID and
+# GA4_BIGQUERY_DATASET_ID). Owner lets the service account manage the BigQuery link and export
+# config from the GCP side; bigquery.jobUser lets ga4EventExportPull.js run the query jobs that
+# read the daily export tables (Owner already carries this, the role is listed explicitly in
+# case Owner is ever narrowed).
+#
+# One entry per (project_id, member) pair, with the full set of roles that member should hold
+# on that project. To revoke a role, remove it from this list; to stop tracking a member on a
+# project entirely, delete its entry. The script then leaves that member's live grants alone
+# instead of removing them, so an intentional revoke edits the roles list rather than deleting
+# the entry.
+[[gcp.project_bindings]]
+project_id = "diyaccounting-ga4"
+member = "serviceAccount:ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
+roles = ["roles/owner", "roles/bigquery.jobUser"]

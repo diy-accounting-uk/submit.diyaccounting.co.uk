@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Business Details - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Business Details</h1>
+      <p class="subtitle">Retrieve your self-employment and property business list from HMRC</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Business Details Form -->
+      <div id="businessDetailsForm" class="form-container">
+        <div class="form-toggle-buttons">
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
+            Show Search Criteria
+          </button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2>Retrieve Business Details</h2>
+          <form id="itsaBusinessDetailsForm">
+            <div class="form-group">
+              <label for="nino">National Insurance number</label>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example AB123456C. You can find it on your National
+                Insurance card, payslip or P60.
+              </p>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                placeholder="e.g., AB123456C"
+                maxlength="9"
+                aria-describedby="nino-hint"
+                spellcheck="false"
+                autocapitalize="characters"
+              />
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a
+                  href="#"
+                  onclick="
+                    event.preventDefault();
+                    window.testDataGenerator.populateItsaBusinessDetailsForm();
+                  "
+                  >add test data</a
+                >
+              </div>
+              <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+              <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+                <option value="">Default (self-employment business)</option>
+                <option value="PROPERTY">Property business only</option>
+                <option value="FOREIGN_PROPERTY">Foreign property business only</option>
+                <option value="BUSINESS_AND_PROPERTY">Self-employment and property</option>
+                <option value="UNSPECIFIED">Unspecified business type</option>
+                <option value="STATEFUL">Stateful (reflects test user's actual businesses)</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div style="margin-top: 10px">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                  >Validate Fraud Prevention Headers</label
+                >
+              </div>
+            </div>
+
+            <button type="submit" id="retrieveBtn" class="btn">Retrieve Business Details</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="businessDetailsResults" class="results-container" style="display: none">
+        <h3>Businesses</h3>
+        <div id="businessDetailsTable"></div>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script>
+      // Global variables
+      let searchCriteriaHidden = false;
+
+      function hideSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
+          searchCriteriaHidden = true;
+        }
+      }
+
+      function showSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
+          searchCriteriaHidden = false;
+        }
+      }
+
+      function cancelRequest() {
+        sessionStorage.removeItem("pendingBusinessDetailsRequest");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        showSearchCriteria();
+        document.getElementById("businessDetailsResults").style.display = "none";
+        hideStatus();
+        console.log("Request cancelled, session data cleared");
+      }
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
+          }
+          const testDataLink = document.getElementById("testDataLink");
+          if (testDataLink) {
+            testDataLink.classList.add("visible");
+          }
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) {
+          console.log("OAuth callback handler (accessToken found)");
+          continueBusinessDetailsRetrieval();
+        } else {
+          console.log("OAuth callback handler (no accessToken found)");
+        }
+      }
+
+      async function continueBusinessDetailsRetrieval() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingBusinessDetailsRequest") || "null");
+
+          if (!pendingRequest) {
+            console.log("No pending business details request found");
+            return;
+          }
+
+          console.log("Retrieved pending request:", pendingRequest);
+          hideSearchCriteria();
+          showLoading();
+          hideStatus();
+          showStatus("Retrieving business details...", "info");
+
+          if (pendingRequest.nino) document.getElementById("nino").value = pendingRequest.nino;
+          if (pendingRequest.testScenario) document.getElementById("testScenario").value = pendingRequest.testScenario;
+          if (pendingRequest.runFraudPreventionHeaderValidation)
+            document.getElementById("runFraudPreventionHeaderValidation").checked = pendingRequest.runFraudPreventionHeaderValidation;
+
+          const params = new URLSearchParams({ nino: pendingRequest.nino });
+          if (pendingRequest.testScenario) params.append("Gov-Test-Scenario", pendingRequest.testScenario);
+          if (pendingRequest.runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+
+          const govClientHeaders = await getGovClientHeaders();
+
+          const requestHeaders = {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            ...govClientHeaders,
+          };
+
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          if (hmrcAccount) {
+            requestHeaders["hmrcAccount"] = hmrcAccount;
+          }
+
+          const response = await window.authorizedFetch(`/api/v1/hmrc/itsa/business/details?${params}`, {
+            method: "GET",
+            headers: {
+              ...requestHeaders,
+              "x-wait-time-ms": "0",
+            },
+            pollPendingMessage: "Still processing...",
+            pollSuccessMessage: "Business details retrieved.",
+            pollErrorMessage: "Failed to retrieve business details.",
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              sessionStorage.removeItem("hmrcAccessToken");
+              sessionStorage.removeItem("hmrcTokenScope");
+              showStatus("Access token expired. Please re-authenticate.", "error");
+              showSearchCriteria();
+              return;
+            }
+            throw new Error(result.message || "Failed to retrieve business details");
+          }
+
+          displayBusinesses(result.listOfBusinesses || []);
+          document.getElementById("businessDetailsResults").style.display = "block";
+          hideStatus();
+
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingBusinessDetailsRequest");
+          sessionStorage.removeItem("oauth_state");
+          console.log("Business details retrieval completed successfully");
+        } catch (error) {
+          console.error("Error retrieving business details:", error);
+          showStatus(`Failed to retrieve business details: ${error.message}`, "error");
+          showSearchCriteria();
+          sessionStorage.removeItem("pendingBusinessDetailsRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+          console.log("Business details retrieval failed, cleared session storage to prevent retry loop");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const nino = formData.get("nino").trim().toUpperCase();
+        const testScenario = formData.get("testScenario");
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino) {
+          showStatus("Please enter a National Insurance number.", "error");
+          return;
+        }
+
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken) {
+            console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
+            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          }
+          try {
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            const state = generateRandomState();
+            const requestData = { nino, testScenario, runFraudPreventionHeaderValidation };
+
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+            const currentActivity = `${location.pathname}`;
+
+            sessionStorage.setItem("oauth_state", state);
+            sessionStorage.setItem("pendingBusinessDetailsRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("currentActivity", currentActivity);
+            console.log("Stored pending request and current activity:", requestData, currentActivity, hmrcAccount);
+
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
+
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+            console.log("Generated HMRC Auth URL:", authResponseUrl);
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+            try {
+              window.__correlation?.prepareRedirect?.();
+            } catch {}
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            console.error("Authentication error:", error);
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
+        } else {
+          try {
+            showLoading();
+            hideStatus();
+            showStatus("Retrieving business details...", "info");
+
+            const params = new URLSearchParams({ nino });
+            if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+            if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+
+            const govClientHeaders = await getGovClientHeaders();
+
+            const requestHeaders = {
+              "Authorization": `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+              ...govClientHeaders,
+            };
+
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+            if (hmrcAccount) {
+              requestHeaders["hmrcAccount"] = hmrcAccount;
+            }
+
+            const response = await window.authorizedFetch(`/api/v1/hmrc/itsa/business/details?${params}`, {
+              method: "GET",
+              headers: {
+                ...requestHeaders,
+                "x-wait-time-ms": "0",
+              },
+              pollPendingMessage: "Still processing...",
+              pollSuccessMessage: "Business details retrieved.",
+              pollErrorMessage: "Failed to retrieve business details.",
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              if (response.status === 401) {
+                sessionStorage.removeItem("hmrcAccessToken");
+                sessionStorage.removeItem("hmrcTokenScope");
+                showStatus("Access token expired. Please try again.", "error");
+                return;
+              }
+              throw new Error(result.message || "Failed to retrieve business details");
+            }
+
+            displayBusinesses(result.listOfBusinesses || []);
+            document.getElementById("businessDetailsResults").style.display = "block";
+            hideStatus();
+          } catch (error) {
+            console.error("Error retrieving business details:", error);
+            showStatus(`Failed to retrieve business details: ${error.message}`, "error");
+          } finally {
+            hideLoading();
+          }
+        }
+      }
+
+      function displayBusinesses(businesses) {
+        const tableContainer = document.getElementById("businessDetailsTable");
+
+        if (!businesses || businesses.length === 0) {
+          tableContainer.innerHTML = '<p class="no-data">No businesses found for the specified National Insurance number.</p>';
+          return;
+        }
+
+        let tableHtml = `
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Business type</th>
+                <th>Trading name</th>
+                <th>Business ID</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        businesses.forEach((business) => {
+          tableHtml += `
+            <tr>
+              <td>${escapeHtml(business.typeOfBusiness)}</td>
+              <td>${escapeHtml(business.tradingName || "-")}</td>
+              <td>${escapeHtml(business.businessId)}</td>
+            </tr>
+          `;
+        });
+
+        tableHtml += "</tbody></table>";
+        tableContainer.innerHTML = tableHtml;
+      }
+
+      function escapeHtml(text) {
+        if (!text) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
+        showSearchCriteria();
+      });
+
+      document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+        cancelRequest();
+      });
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        const form = document.getElementById("itsaBusinessDetailsForm");
+        const resultsContainer = document.getElementById("businessDetailsResults");
+        form.reset();
+        resultsContainer.style.display = "none";
+        showSearchCriteria();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.getElementById("itsaBusinessDetailsForm").addEventListener("submit", handleFormSubmission);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("JS block started loading: DOMContentLoaded event handler");
+        initializePage();
+        handleOAuthCallback();
+        console.log("JS block finished loading: DOMContentLoaded event handler");
+      });
+
+      console.log("JS block finished loading.");
+    </script>
+  </body>
+</html>

@@ -12,6 +12,7 @@ import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.
 import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
 import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
 import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
+import { apiEndpoint as itsaBusinessDetailsEndpoint } from "./routes/itsa-business-details.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
@@ -58,6 +59,7 @@ export function createApp() {
   vatLiabilitiesEndpoint(app);
   vatPaymentsEndpoint(app);
   vatPenaltiesEndpoint(app);
+  itsaBusinessDetailsEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
   companiesHouseEndpoint(app);

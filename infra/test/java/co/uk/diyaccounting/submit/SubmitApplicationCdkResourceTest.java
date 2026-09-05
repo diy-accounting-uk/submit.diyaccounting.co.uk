@@ -78,8 +78,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 14);
-        assertStackHealthAlarm(hmrcStackTemplate, 8, 6, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 16);
+        assertStackHealthAlarm(hmrcStackTemplate, 9, 7, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -175,7 +175,7 @@ class SubmitApplicationCdkResourceTest {
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         // Each of the two new Companies House routes also gets ApiStack's automatic HEAD route.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 50);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 52);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

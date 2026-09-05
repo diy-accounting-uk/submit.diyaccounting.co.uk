@@ -87,6 +87,7 @@ public class SubmitSharedNames {
     public String hmrcVatLiabilitiesGetAsyncRequestsTableName;
     public String hmrcVatPaymentsGetAsyncRequestsTableName;
     public String hmrcVatPenaltiesGetAsyncRequestsTableName;
+    public String hmrcItsaBusinessDetailsGetAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
     public String bundleCapacityTableName;
@@ -313,6 +314,21 @@ public class SubmitSharedNames {
     public String hmrcVatReturnGetLambdaUrlPath;
     public boolean hmrcVatReturnGetLambdaJwtAuthorizer;
     public boolean hmrcVatReturnGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaBusinessDetailsGetIngestLambdaHandler;
+    public String hmrcItsaBusinessDetailsGetIngestLambdaFunctionName;
+    public String hmrcItsaBusinessDetailsGetIngestLambdaArn;
+    public String hmrcItsaBusinessDetailsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBusinessDetailsGetWorkerLambdaHandler;
+    public String hmrcItsaBusinessDetailsGetWorkerLambdaFunctionName;
+    public String hmrcItsaBusinessDetailsGetWorkerLambdaArn;
+    public String hmrcItsaBusinessDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBusinessDetailsGetLambdaQueueName;
+    public String hmrcItsaBusinessDetailsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaBusinessDetailsGetLambdaHttpMethod;
+    public String hmrcItsaBusinessDetailsGetLambdaUrlPath;
+    public boolean hmrcItsaBusinessDetailsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaBusinessDetailsGetLambdaCustomAuthorizer;
 
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
@@ -625,6 +641,8 @@ public class SubmitSharedNames {
                 "%s-hmrc-vat-payments-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcVatPenaltiesGetAsyncRequestsTableName =
                 "%s-hmrc-vat-penalties-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaBusinessDetailsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-business-details-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
         this.passesTableName = "%s-passes".formatted(this.envResourceNamePrefix);
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
@@ -1105,6 +1123,50 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("periodKey", "path", true, "The VAT period key to retrieve"),
                         new ApiParameter("vrn", "query", true, "VAT registration number (9 digits)"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaBusinessDetailsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaBusinessDetailsGetLambdaUrlPath = "/api/v1/hmrc/itsa/business/details";
+        this.hmrcItsaBusinessDetailsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaBusinessDetailsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaBusinessDetailsGetLambdaHandlerName = "hmrcItsaBusinessDetailsGet.ingestHandler";
+        var hmrcItsaBusinessDetailsGetLambdaWorkerHandlerName = "hmrcItsaBusinessDetailsGet.workerHandler";
+        var hmrcItsaBusinessDetailsGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaBusinessDetailsGetLambdaHandlerName);
+        this.hmrcItsaBusinessDetailsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaBusinessDetailsGetLambdaHandlerDashed);
+        this.hmrcItsaBusinessDetailsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBusinessDetailsGetLambdaHandlerName);
+        this.hmrcItsaBusinessDetailsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBusinessDetailsGetLambdaHandlerDashed);
+        this.hmrcItsaBusinessDetailsGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaBusinessDetailsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBusinessDetailsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaBusinessDetailsGetIngestLambdaFunctionName);
+        this.hmrcItsaBusinessDetailsGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBusinessDetailsGetLambdaWorkerHandlerName);
+        this.hmrcItsaBusinessDetailsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaBusinessDetailsGetIngestLambdaArn);
+        this.hmrcItsaBusinessDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaBusinessDetailsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBusinessDetailsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaBusinessDetailsGetIngestLambdaFunctionName);
+        this.hmrcItsaBusinessDetailsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaBusinessDetailsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaBusinessDetailsGetLambdaHttpMethod,
+                this.hmrcItsaBusinessDetailsGetLambdaUrlPath,
+                "Get ITSA business details from HMRC",
+                "Retrieves the authenticated user's self-employment and property business list from HMRC, "
+                        + "including the businessId every other ITSA endpoint needs",
+                "getItsaBusinessDetails",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

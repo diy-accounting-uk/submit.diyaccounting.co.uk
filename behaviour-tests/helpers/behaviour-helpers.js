@@ -129,6 +129,9 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const hmrcVatPenaltiesGetAsyncTable = process.env.HMRC_VAT_PENALTIES_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcVatPenaltiesGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatPenaltiesGetAsyncTable, endpoint);
+
+    const hmrcItsaBusinessDetailsGetAsyncTable = process.env.HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBusinessDetailsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBusinessDetailsGetAsyncTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
@@ -627,7 +630,8 @@ export function timestamp() {
  * @param {Object} options - Additional options
  * @param {string[]} options.serviceNames - Service names to enroll (default: ["mtd-vat"])
  * @param {string} [options.scope] - Optional OAuth2 scope for the client credentials request
- * @returns {Promise<Object>} Test user details including userId, password, and vrn
+ * @returns {Promise<Object>} Test user details including userId, password, and vrn (and nino
+ *   when serviceNames includes "mtd-income-tax")
  */
 export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options = {}) {
   const serviceNames = options.serviceNames || ["mtd-vat"];

@@ -23,6 +23,7 @@ import { apiEndpoint as hmrcVatLiabilitiesGetApiEndpoint } from "../functions/hm
 import { apiEndpoint as hmrcVatPaymentsGetApiEndpoint } from "../functions/hmrc/hmrcVatPaymentsGet.js";
 import { apiEndpoint as hmrcVatPenaltiesGetApiEndpoint } from "../functions/hmrc/hmrcVatPenaltiesGet.js";
 import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hmrcVatReturnGet.js";
+import { apiEndpoint as hmrcItsaBusinessDetailsGetApiEndpoint } from "../functions/hmrc/hmrcItsaBusinessDetailsGet.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
@@ -233,6 +234,7 @@ hmrcVatLiabilitiesGetApiEndpoint(app);
 hmrcVatPaymentsGetApiEndpoint(app);
 hmrcVatPenaltiesGetApiEndpoint(app);
 hmrcVatReturnGetApiEndpoint(app);
+hmrcItsaBusinessDetailsGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);

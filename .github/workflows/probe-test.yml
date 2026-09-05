@@ -39,6 +39,7 @@ on:
           - 'getVatLiabilitiesBehaviour'
           - 'getVatPaymentsBehaviour'
           - 'getVatPenaltiesBehaviour'
+          - 'itsaBusinessDetailsBehaviour'
           - 'getVatReturnBehaviour'
           - 'postVatReturnFraudPreventionHeadersBehaviour'
           - 'submitVatBehaviour'
