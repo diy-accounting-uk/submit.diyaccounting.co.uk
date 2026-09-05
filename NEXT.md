@@ -33,23 +33,9 @@ Each track runs in its own worktree off main; the coordinator merges each landed
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
 starting.
 
-- [ ] **B17a.1 remainder. Make the video timing check honest about the timer.**
-  `scripts/check-video-timings.js` requires `timerMarkers >= 1`, but a script whose only
-  backend wait finishes under the 250 ms threshold never draws the timer, so the prod tour run
-  (33918880298) printed exit code 1 while `video-capture.yml` marked the step continue-on-error
-  and the job green. Require a timer marker only when the timeline records a wait past the
-  threshold, and make the step fail the job when a check fails. **Source**: BACKLOG 17a.
-  **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
-- [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
-  B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. The capture now records `navigated` and `timerShown` per step and the check counts only on-page waits (`claude/video-timing-navigated`), which exposed a second defect: the timer pill is armed at step start, so it shows during every click's pointer animation instead of only during a backend wait. The timer now arms only during an action's real wait phase (`claude/board-batch-2`, PR #118), and all three scripts pass the check on the simulator. Prod recordings: `view-obligations` passed its blocking check on prod (run at 07:25 UTC); `view-return` failed on prod because HMRC's sandbox holds no return for the fulfilled obligation the script clicked, and a Sonnet track (worktree `.claude/worktrees/agent-a2ba6d7b005b5a241`) is making the script reach a real return the way `getVatReturn.behaviour.test.js` does; `submit-return` is queued. A passing blocking check on each verifies this item, B17a.1, B17a.3 and B17a.4.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
-- [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
-  **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
+  **Track**: the script passes on the simulator but the prod recording found no return for the fulfilled obligation it clicked, because HMRC's sandbox holds none for it. A Sonnet track (worktree `.claude/worktrees/agent-a2ba6d7b005b5a241`) is making the script reach a real return the way `getVatReturn.behaviour.test.js` does; verified by a prod recording passing the blocking check.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -177,9 +163,11 @@ starting.
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. **Source**: BACKLOG 17a. **Owner**:
-  Operator (an upload via the YouTube Data API can follow once the pattern settles). Blocked
-  on B17a.2–4.
+  titles and descriptions drafted from the captions. The prod recordings are workflow
+  artifacts: `video-view-obligations-prod` on run 33952515598 and `video-submit-return-prod` on
+  run 33953044775 (mp4, vtt, transcript and stills together; 30-day retention). **Source**:
+  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
+  pattern settles). Blocked on B17a.3.
 
 ## Blocked: Claude Code
 
