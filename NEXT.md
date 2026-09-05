@@ -41,16 +41,6 @@ starting.
   **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
   `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Verified: the live dry run as the
   service account plans the ci property, its data stream and BigQuery link. On PR #132.
-- [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
-  `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
-  the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
-  `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
-  compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: gcp billing (Sonnet). On PR #132: `scripts/gcp-billing-assert.js`, 28
-  unit tests; the budget defaults to GBP 10 a month unless the hand-made one is found. Its live dry
-  run now reaches the billing account (`019D7D-B02D59-ED7738`) and stops at 403 there, and holds
-  no role on `valued-context-507200-m9`: both are O1e. Verified by a dry run that finds the
-  hand-made budget and inventories the stray project once O1e is done.
 - [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
   (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
   `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
@@ -126,16 +116,6 @@ starting.
   that detector counts, so it returns to OK on its own. Close #131 now: it is the self-destruct
   log-errors check on ci-claudeboa, a set built before the fix that is self-destructing.
   **Source**: PR #118. **Owner**: Operator.
-- [ ] **O1e / G2b. Two grants only your own Google identity can make.** The service account
-  now enables the project's APIs itself (`scripts/gcp-enable-apis.js`, first step of
-  `google-roles.yml`) and its roles dry run reports no changes, but it holds nothing on two
-  resources outside the project: (1) billing account `019D7D-B02D59-ED7738`: grant
-  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` Billing Account Costs Manager so
-  the budget assert can read and set budgets; (2) the stray project `valued-context-507200-m9`
-  (project number 747057870039): grant it Owner so the assert can inventory and delete it, or
-  delete that project by hand once the console shows it empty. Or run `gcloud auth login` as
-  antony@diyaccounting.co.uk in the Claude Code session and let it apply both grants.
-  **Source**: none. **Owner**: Operator.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
@@ -144,7 +124,9 @@ starting.
   session. That message is HMRC saying the customer's Government Gateway account is not enrolled
   for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
   finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
-  and authority steps. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
+  and authority steps. The lookup that found all this is the
+  `vat-submission-failure-alarm-user-lookup` skill; the customer's identity is in the chat
+  record of 2026-09-05, not here. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and

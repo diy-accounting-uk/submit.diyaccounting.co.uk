@@ -64,6 +64,7 @@ convenience — gitignored, recreate with `ln -s` if missing.
 - `.claude/skills/do-next/SKILL.md` — dispatch `NEXT.md`'s open items as worktree-isolated sub-agents
 - `.claude/skills/stripe-catalogue-sync/SKILL.md` — sync Stripe products and prices from the bundle catalogue, test then live, and land the price ids
 - `.claude/skills/site-video-capture/SKILL.md` — record a video of the real site from a scene script (`videos/*.json`)
+- `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
 
 ## Permission Handling
 
