@@ -2,11 +2,6 @@
 
 This document explains how passes, bundles, and tokens work together in DIY Accounting Submit.
 
-```
-When you get all this stabilised again and you have run the behaviour tests that have been changed against the simulator, re-test submitVatBehaviours test the payment behaviour test in
-  proxy mode, which would ideally be invoking the real stripe apis using the stripe tes
-```
-
 ## Overview
 
 The system uses a three-tier model:

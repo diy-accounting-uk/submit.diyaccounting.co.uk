@@ -69,10 +69,10 @@ export async function resolveHmrcTestUser(env) {
     };
   }
 
-  if (env.HMRC_ACCOUNT !== "sandbox") {
+  if (env.HMRC_ACCOUNT !== "synthetic") {
     throw new Error(
       "a scene script with an hmrcAuthorise step needs TEST_HMRC_USERNAME, TEST_HMRC_PASSWORD and TEST_HMRC_VAT_NUMBER, " +
-        "or HMRC_ACCOUNT=sandbox so the run can mint a test user",
+        "or HMRC_ACCOUNT=synthetic so the run can mint a test user",
     );
   }
 
