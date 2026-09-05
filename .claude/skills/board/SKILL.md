@@ -1,6 +1,6 @@
 ---
 name: board
-description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, tiers 2-5 as one-line lists, then the open alarm issues grouped by family with a recommended action each. Invoke when the operator asks for the board, the open items, or "what's in flight".
+description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, tiers 2-5 as one-line lists, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Invoke when the operator asks for the board, the open items, or "what's in flight".
 ---
 
 # board
@@ -10,7 +10,7 @@ root). Read both files fresh every time — never render from memory of an earli
 
 ## Output shape
 
-Exactly three parts, in this order.
+Exactly five parts, in this order.
 
 **Part 1 — a table** covering every open item in `NEXT.md` plus every row in the
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
@@ -63,6 +63,48 @@ family, deployment-scoped and environment-scoped kept apart:
   pending elsewhere), `investigate` (needs logs or CloudTrail; say what).
 - `NEXT.md item`: the label of the item that carries the action, or `new` when this render
   creates one.
+
+**Part 4 — deployments.** Read-only AWS; needs an SSO session (`aws sso login --sso-session
+diyaccounting`), otherwise render the part as "unverified: no SSO session" and move on. For
+each of `submit-ci` and `submit-prod`:
+`aws --profile <p> cloudformation list-stacks --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE --query "StackSummaries[?contains(StackName,'-app-')].[StackName,CreationTime]" --output text`
+grouped by deployment name (the part before `-app-`), and
+`aws --profile <p> ssm get-parameter --name /submit/<env>/last-known-good-deployment --query Parameter.Value --output text`
+for the one that is live (the apex and the probes point at it). One row per deployment set:
+
+| Env | Deployment | Stacks | Created (UTC) | Live | Goes when | Follow-up |
+
+- ci sets self-destruct on their own: `SelfDestructStack` fires on the schedule
+  `selfDestructDelayHours` hours after creation (`cdk-application/cdk.json`), and
+  `destroy-ci.yml` sweeps leftovers on its cron (`34 2,4,6,8,10,12 * * *` UTC). `Goes when` is
+  creation plus the delay, or the next sweep if that has passed.
+- prod sets never go on their own: only `destroy-prod.yml` with the deployment name removes
+  one. A spare prod set costs $35.28 a month (`PLAN_COST_OPTIMISATION.md`). `Goes when` for a
+  spare prod set is "on destroy-prod", and `Follow-up` names the dispatch:
+  `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run.
+- A live set's `Follow-up` is none. A ci set past its self-destruct time that is still
+  standing, or a live prod set with a stack in a failed state, is a follow-up: say what.
+- Keep `NEXT.md`'s prod line ("**Prod runs deployment …**") matching the live set; that edit is
+  part of the write-back.
+
+**Part 5 — branch audit.** `git fetch --prune origin`, then for every local branch and every
+`origin/*` branch except `main`, compute: commits ahead of `main`; whether the branch tip is an
+ancestor of the current integration branch (`git merge-base --is-ancestor <ref> <batch>`); and
+for branches with commits nowhere else, whether their content already exists on `main`
+(`git diff main <ref> -- $(git diff --name-only main...<ref>)` empty means it does). Classify:
+
+| Branch | Where | Ahead of main | Last commit | Class | Action |
+
+- `open`: content not on `main`, carried by an open PR (say which) or the integration branch.
+- `unique, desirable`: content not on `main`, not on any open PR, and it belongs to an open
+  `NEXT.md` item or backlog row (name it): needs a PR or folding into the batch.
+- `stale`: every commit on `main`, or content identical to `main` (merged under other commits),
+  or an abandoned design superseded by a plan doc on `main`. Action: delete (local: the
+  coordinator may delete a merged worktree branch; origin: the operator deletes).
+- Summarise `worktree-agent-*` branches as one line (count, how many carry content not on
+  `main` or the batch, and those names) rather than one row each.
+Never delete an origin branch from this skill; the operator does. Local branches whose tip is
+on `main` or the batch may be pruned with `git branch -d` (never `-D`).
 
 ## Rules
 
