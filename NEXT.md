@@ -149,9 +149,12 @@ verify.
   **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
   **Track**: `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` is on `claude/board-batch-4` (605e45ef):
   rules keyed on metric namespace rather than a row per alarm, the window read from the event's
-  `reasonData`, composite alarms resolved through `DescribeAlarms`. Wave 2 track A (Sonnet,
-  the mapping, link builders, CLI and Lambda changes) started 2026-09-06 00:30 UTC. The two
-  console links get a manual browser check at merge.
+  `reasonData`, composite alarms resolved through `DescribeAlarms`. Code complete on
+  `claude/board-batch-4` (bd85b797): `app/lib/alarmEvidence.js`, `alarmWindow.js` and
+  `consoleLinks.js`, the Lambda's revised body, `scripts/resolve-alarm-evidence.mjs`, and the two
+  OpsStack policy statements; the CLI reproduces the plan's worked-example URLs byte for byte.
+  Verified when the first prod alarm issue after the merge carries a Logs Insights link and an
+  X-Ray link that open on the right window in the console.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
