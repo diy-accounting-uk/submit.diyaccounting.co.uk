@@ -53,6 +53,16 @@ starting.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
+- [ ] **B30g. Stop the self-destruct Lambda tripping its log-errors check on every fresh ci
+  deployment.** Every ci deployment's `self-destruct-stack-health` composite goes to ALARM within
+  hours of creation because `check-<deployment>-app-app-self-destruct-log-errors` fires (#122 for
+  ci-claudeboa, #127 for ci-claudff66, the first family-titled issue). Read
+  `app/functions/ops/selfDestruct*.js` for what it logs at error level on a deployment that has
+  nothing to destroy yet, and either stop logging an expected condition as an error or narrow the
+  metric filter in `Lambda.java`; the alarm name's doubled `app-app` is a naming slip to fix in
+  the same pass. **Source**: BACKLOG 30; issues #122, #127. **Owner**: Claude Code. **Model**:
+  Sonnet.
+  **Track**: self-destruct log errors (Sonnet), worktree `.claude/worktrees/agent-ad9c2f23a291c4743`, running, lands on the batch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -116,8 +126,8 @@ starting.
 - [ ] **B30b remainder, operator. Close 22 stale `[ALARM]` issues.** Their deployment is
   destroyed or the alarm type is deleted by PR #118, so no recovery event will ever close them:
   #77, #78, #79, #80, #81, #82, #83, #84, #85, #86, #87, #88, #89, #90, #96, #103, #108, #109,
-  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111 and #123 open; the items below act
-  on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
+  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111, #123 and #127 open; the items
+  below act on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
