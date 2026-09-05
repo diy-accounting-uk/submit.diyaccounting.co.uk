@@ -178,7 +178,7 @@
           "action": "await",
           "until": "#returnResults",
           "label": "Waiting for HMRC",
-          "timeoutMs": 60000,
+          "timeoutMs": 450000,
           "caption": "HMRC sends back exactly what was filed."
         },
         { "action": "scroll", "target": "#returnDetails" },
