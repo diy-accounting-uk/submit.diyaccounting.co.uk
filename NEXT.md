@@ -72,8 +72,10 @@ starting.
   to run from that branch: ci now, prod after the operator's go, then `manage-secrets` action
   `check` on each. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: none, a
   workflow dispatch.
-  **Track**: ci run dispatched; prod waits on the operator's go because it applies the batch's
-  env stacks to prod ahead of the merge.
+  **Track**: ci done 2026-09-05 (`ci/submit/companies-house/api_key` checks OK, 36 chars), and a
+  ci deploy of the batch is running to prove `companiesHouseBehaviour-ci`. Prod waits on the
+  operator's go, because running the workflow from the branch applies the batch's env stacks to
+  prod ahead of the merge; the alternative is merging PR #118 first and running it from main.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
