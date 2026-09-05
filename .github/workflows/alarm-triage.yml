@@ -104,15 +104,33 @@ jobs:
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ github.event.issue.number }}
     steps:
+      # The triage role is created by the environment's CDK deploy and its ARN is set on the
+      # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
+      # no-op here rather than a failed run.
+      - name: Stop when the triage role is not configured for this environment
+        id: role
+        env:
+          TRIAGE_ROLE_ARN: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+        run: |
+          if [ -z "${TRIAGE_ROLE_ARN}" ]; then
+            echo "SUBMIT_ALARM_TRIAGE_ROLE_ARN is not set on the ${ENV_NAME} environment, so triage waits" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "configured=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
+        if: steps.role.outputs.configured == 'true'
         uses: actions/checkout@v7
 
       - name: Set up Node
+        if: steps.role.outputs.configured == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure AWS role via GitHub OIDC
+        if: steps.role.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -124,6 +142,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume the read-only alarm triage role
+        if: steps.role.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
@@ -135,6 +154,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Read the guardrail identifiers
+        if: steps.role.outputs.configured == 'true'
         id: guardrail
         run: |
           set -euo pipefail
@@ -146,6 +166,7 @@ jobs:
           echo "version=$(cat /tmp/guardrail-version.txt)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Resolve the evidence links for this alarm
+        if: steps.role.outputs.configured == 'true'
         run: |
           node scripts/resolve-alarm-evidence.mjs \
             --alarm-name "$ALARM_NAME" --deployment "$DEPLOYMENT_NAME" \
@@ -153,9 +174,11 @@ jobs:
             2>&1 | tee /tmp/evidence.json
 
       - name: Install Claude Code
+        if: steps.role.outputs.configured == 'true'
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       - name: Run triage
+        if: steps.role.outputs.configured == 'true'
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'
           AWS_REGION: ${{ env.AWS_REGION }}
@@ -175,12 +198,14 @@ jobs:
             2>&1 | tee /tmp/triage.json
 
       - name: Filter the output
+        if: steps.role.outputs.configured == 'true'
         id: filter
         run: |
           node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md
           echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Apply the Bedrock guardrail
+        if: steps.role.outputs.configured == 'true'
         id: guardrail-check
         run: |
           set -euo pipefail
@@ -201,7 +226,7 @@ jobs:
         run: gh issue comment "$ISSUE_NUMBER" --body-file /tmp/triage-comment.md
 
       - name: Say the guardrail blocked the comment
-        if: steps.guardrail-check.outputs.action != 'NONE'
+        if: steps.role.outputs.configured == 'true' && steps.guardrail-check.outputs.action != 'NONE'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

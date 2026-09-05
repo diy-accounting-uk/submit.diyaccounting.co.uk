@@ -109,8 +109,10 @@ verify.
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, view-return-prod-video (Sonnet), started; dispatches `video-capture.yml`
-  on prod and reviews the artifact.
+  **Track**: the five failed prod runs of 2026-09-05 all predate the fix on main (186b657a,
+  the off-camera submission now uses the period the table later shows as Fulfilled); the
+  simulator run of the fixed script shows the return on screen. Prod recording run 33998196356
+  dispatched 23:15 UTC on 2026-09-05; verified when its artifact shows the return.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -128,10 +130,12 @@ verify.
   then Sonnet.
   **Track**: `PLAN_BUNDLE_CAPACITY_RECONCILE.md` is on `claude/board-batch-4` (bd6d402e): a
   sparse GSI `bundleId-expiry-index` queried once per capped bundle, no counter, no backfill,
-  the schedule stays hourly. Wave 2 build track bundle-reconcile-build (Sonnet) started
-  2026-09-06 00:05 UTC in `.claude/worktrees/agent-a4861cfbe2b6e6c84`; it also moves
-  `restore-test.yml` off the source-table scan and removes the pass repository's scan fallback,
-  the two other scan sources the design found.
+  the schedule stays hourly. Code complete on `claude/board-batch-4` (6ebea8ee, 6dca64bb,
+  a13db2db, ce25b350): the index, the reconcile's per-bundle count query, the Scan grant gone,
+  `restore-test.yml` reading `ItemCount` instead of scanning the source table, and the pass
+  repository's scan fallback removed. The index and the new reconcile land in one deploy; a
+  reconcile run against a still-building index throws and the next hourly run succeeds.
+  Verified when `prod-env-dynamodb-customer-table-scan` stays OK for a day after the merge.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
@@ -234,7 +238,9 @@ verify.
   dispatch: Sonnet 4.5 pinned and measured first, guardrail action BLOCK, comment-only with no
   PR write permissions, resources for both environments. Wave 2 tracks B (CDK: role, guardrail,
   budget and budget action) and C (the workflow, prompt and redaction script) started 2026-09-06
-  00:30 UTC alongside track A; C merges last. Operator steps after the first ci deploy:
+  00:30 UTC alongside track A. C is merged (a28ab599, plus a guard that makes the run a quiet
+  no-op while `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is unset on the environment). Operator steps after
+  the first ci deploy:
   `gh label create triage`, the `SUBMIT_ALARM_TRIAGE_ROLE_ARN` variable on the `ci` and `prod`
   environments, and a `set-alarm-state` on one ci alarm to prove the chain.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
