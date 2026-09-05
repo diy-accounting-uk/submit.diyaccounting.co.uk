@@ -238,9 +238,13 @@ verify.
   dispatch: Sonnet 4.5 pinned and measured first, guardrail action BLOCK, comment-only with no
   PR write permissions, resources for both environments. Wave 2 tracks B (CDK: role, guardrail,
   budget and budget action) and C (the workflow, prompt and redaction script) started 2026-09-06
-  00:30 UTC alongside track A. C is merged (a28ab599, plus a guard that makes the run a quiet
-  no-op while `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is unset on the environment). Operator steps after
-  the first ci deploy:
+  00:30 UTC alongside track A. B is merged (0501fc94: the role trusts
+  `submit-<env>-github-actions-role`, the guardrail blocks PII, the daily USD 5 budget's action
+  attaches the Bedrock deny) and C is merged (a28ab599, plus a guard that makes the run a quiet
+  no-op while `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is unset on the environment). Remainder: the
+  budget action needs a subscriber, so `<env>-env-bedrock-budget-alerts` is a new SNS topic in
+  `ObservabilityUE1Stack` that nothing reads yet; subscribe it to the Telegram forwarder or the
+  operator subscribes an address. Operator steps after the first ci deploy:
   `gh label create triage`, the `SUBMIT_ALARM_TRIAGE_ROLE_ARN` variable on the `ci` and `prod`
   environments, and a `set-alarm-state` on one ci alarm to prove the chain.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
