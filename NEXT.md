@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a0f41c7 (the PR #107 merge, deployed 2026-09-04), the only app
-stack set standing; prod-ca55da7 was destroyed by that deploy.** Each extra
+**Prod runs deployment prod-b2bad16 (the PR #116 merge, deployed 2026-09-04 20:16). Whether
+that deploy destroyed prod-a0f41c7 needs a stack list once an SSO session exists.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -61,6 +61,21 @@ starting.
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
   **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
+- [ ] **B30c. Stop the GitHub probe alarm firing on its own cadence.** `OpsStack.java`
+  (`githubSyntheticAlarm`, renamed `githubProbeAlarm` in PR #120) evaluates a 2-hour period with
+  missing data treated as breaching, but `synthetic-test.yml` publishes the metric every 4 hours,
+  so about half of all windows are empty and every prod deployment inherits a false alarm
+  (#103, #109, #123). Widen the period to straddle the cron, or move the alarm to the env stack
+  so it is not recreated per deployment; CDK test updated. **Source**: BACKLOG 30; issues #123.
+  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: probe alarm period (Sonnet), running, stacked on PR #120.
+- [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
+  `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
+  carry the deployment slug, so each new deployment opens a fresh issue for the same check
+  (19 of the 30 open alarm issues). Strip the deployment segment before the title search so a
+  family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
+  2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: alarm issue dedupe (Sonnet), running, lands on `claude/board-batch-2`.
 - [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
   share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
   both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
@@ -141,10 +156,11 @@ starting.
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
   the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B30b remainder, operator. Close the six `[ALARM]` issues for the deleted p95 alarms**:
-  #78, #80, #81, #83, #86, #89 (`…-activity-telegram-forwarder-high-duration-p95`). The alarm no
-  longer exists after the batch deploys, so no recovery event will close them. **Source**: BACKLOG
-  30. **Owner**: Operator.
+- [ ] **B30b remainder, operator. Close 22 stale `[ALARM]` issues.** Their deployment is
+  destroyed or the alarm type is deleted by PR #118, so no recovery event will ever close them:
+  #77, #78, #79, #80, #81, #82, #83, #84, #85, #86, #87, #88, #89, #90, #96, #103, #108, #109,
+  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111 and #123 open; the items below act
+  on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
@@ -220,6 +236,17 @@ starting.
   `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
   **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
+- [ ] **B30e. Name the principal behind the salt-read and customer-table-scan alarms.** Issues
+  #93 and #97 (`salt-secret-unexpected-read`, ci many times a day) and #94 and #95
+  (`dynamodb-customer-table-scan`): run the CloudTrail lookup in runbook section 6.6 for each
+  environment and record whether the reads come from a role the `SecurityDetectionStack.java`
+  filter should allow (then tune the filter) or from something real. **Source**: BACKLOG 30;
+  issues #93, #94, #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
+  session (`aws sso login --sso-session diyaccounting`).
+- [ ] **B30f. Read what HMRC returned for the customer submission failure of 2026-09-03 21:30**
+  (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
+  `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
+  **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
