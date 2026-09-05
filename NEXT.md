@@ -55,6 +55,19 @@ starting.
   `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
   **Track**: gcp billing (Sonnet), worktree `.claude/worktrees/agent-a4333a6c92fe5225d`, lands on `claude/board-batch-3`.
+- [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
+  Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
+  validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
+  rejection); log in on the proxy variant as the O5 test user; call
+  `GET /individuals/business/details/{nino}/list` on `HMRC_SANDBOX_BASE_URI` with the token
+  and `app/lib/buildFraudHeaders.js` headers. Write `_developers/hmrc/ITSA_SPIKE.md`:
+  the raw response, whether the existing application and headers were accepted, and which of
+  `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
+  for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
+  **Owner**: Claude Code. **Model**: Opus. O5a and O5b done 2026-09-05: the sandbox app holds Business Details v2.0, Self Employment
+  Business v5.0 and Obligations v3.0, and the test user (VRN and NINO enrolled) is the
+  `hmrc-test-user-credentials` artifact on run 33977271581 (7-day retention).
+  **Track**: ITSA spike (Opus), worktree assigned on dispatch, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -145,11 +158,6 @@ starting.
   makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O5a / B10a.2. Subscribe the sandbox application to the ITSA APIs.** In the HMRC
-  developer hub, subscribe the sandbox app (`HMRC_SANDBOX_CLIENT_ID` in `.env.ci`) to Business
-  Details (MTD) and Self Employment Business (MTD). **Source**: BACKLOG 10a. **Owner**:
-  Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O6 / B34.1. Register two Companies House API keys and add them as GitHub environment
   secrets.** Steps 1 to 7 under "Operator steps" in
   `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
@@ -179,11 +187,6 @@ starting.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 ## Blocked: operator
 
-- [ ] **O5b / B10a.2. Mint an ITSA sandbox test user.** Run the `create-hmrc-test-user`
-  workflow on main with `mtd-vat,mtd-income-tax` and keep the credentials artifact (NINO,
-  user id, password) somewhere private. **Source**: BACKLOG 10a. **Owner**: Operator. Blocked
-  on O5a.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
@@ -220,16 +223,6 @@ starting.
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
   ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
-- [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
-  Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
-  validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
-  rejection); log in on the proxy variant as the O5 test user; call
-  `GET /individuals/business/details/{nino}/list` on `HMRC_SANDBOX_BASE_URI` with the token
-  and `app/lib/buildFraudHeaders.js` headers. Write `_developers/hmrc/ITSA_SPIKE.md`:
-  the raw response, whether the existing application and headers were accepted, and which of
-  `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
-  for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
-  **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: HMRC's sandbox holds no return for a fresh test user's canned obligations and never
