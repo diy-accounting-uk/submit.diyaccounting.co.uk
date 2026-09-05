@@ -67,7 +67,7 @@ starting.
   **Owner**: Claude Code. **Model**: Opus. O5a and O5b done 2026-09-05: the sandbox app holds Business Details v2.0, Self Employment
   Business v5.0 and Obligations v3.0, and the test user (VRN and NINO enrolled) is the
   `hmrc-test-user-credentials` artifact on run 33977271581 (7-day retention).
-  **Track**: ITSA spike (Opus), worktree assigned on dispatch, lands on `claude/board-batch-3`.
+  **Track**: ITSA spike (Opus), worktree `.claude/worktrees/agent-aa1cb7f7075c5b8f7`, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
