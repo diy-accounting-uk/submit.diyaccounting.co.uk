@@ -88,6 +88,14 @@ items below wait on a later event to verify.
   index or the counter, unit test on the reconcile. Verified when #95 stays in OK across a
   day. **Source**: BACKLOG 30; issue #95; CloudTrail lookup 2026-09-05. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet.
+- [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
+  (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
+  already reach Telegram through the same rule. In `OpsStack.java` the
+  `<deployment>-app-alarm-state-change` rule targets both the Telegram forwarder and
+  `alarmToGithubIssue`; add the issue Lambda as a target only when `props.envName()` is
+  `prod` (the Telegram target stays for both), and pin it with a CDK test that a ci synth has
+  one target and a prod synth two. **Source**: BACKLOG 30; operator decision 2026-09-05.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
