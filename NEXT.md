@@ -89,7 +89,11 @@ starting.
   **Owner**: Claude Code. **Model**: Sonnet. Operator decision 2026-09-05: build against HMRC's test APIs and get
   something running before asking HMRC about production windows (O4a and O4b are back on the
   backlog, row 11a).
-  **Track**: ITSA business details (Sonnet), worktree `.claude/worktrees/agent-ade59b9681b6469eb`, running, lands on `claude/board-batch-3`.
+  **Track**: ITSA business details (Sonnet). On `claude/board-batch-3`: handler in the VAT reads'
+  async shape, `buildHmrcHeaders` takes an API version, NINO validation, simulator route and
+  scenarios, the Business Details page, and unit, system, browser and behaviour tests (1343,
+  153, 69, simulator lane 1 passed; CDK 94). Verified by `itsaBusinessDetailsBehaviour-ci` once
+  batch 3 deploys to ci, then a prod recording of the page is the next video.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
