@@ -168,6 +168,21 @@ starting.
   Sonnet.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O7. Merge PR #118 in this order.** The batch renames the stored HMRC mode value and
+  splits the Stripe flag, so three one-off migrations on the bundles table go with it
+  (`scripts/migrations/004`, `005`, `006`; design in `PLAN_MODE_RENAME.md`, "Stored data"). The
+  new code never reads the old field names, and `deploy.yml` does not run migrations itself.
+  1. Wait for the ci deploy of the branch to finish green (`companiesHouseBehaviour-ci` included).
+  2. Run `run migrations` on main for `ci`, phase `pre-deploy`, with `dry-run` ticked, then again
+     for real; then the same pair for `prod`. 004 and 005 only add fields, so today's code
+     ignores them and this is safe before the merge.
+  3. Merge #118. Main deploys to prod on its own.
+  4. When the prod deploy lands, run `run migrations` for `prod` (then `ci`), phase
+     `post-deploy`, dry run then real: 006 removes the old field.
+  5. Run `deploy-environment` on main for `prod`, then `manage-secrets` action `check`, to write
+     the Companies House key into prod Secrets Manager (the ci copy is already done).
+  6. Close alarm issues that the deploy supersedes as the board lists them.
+  **Source**: PR #118; `PLAN_MODE_RENAME.md`. **Owner**: Operator.
 - [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
   `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin, Cloud Billing and
   Cloud Resource Manager APIs: `gcloud services enable analyticsadmin.googleapis.com
