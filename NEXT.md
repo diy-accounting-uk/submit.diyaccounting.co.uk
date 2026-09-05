@@ -57,7 +57,11 @@ starting.
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
   `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: gcp billing (Sonnet), worktree `.claude/worktrees/agent-a4333a6c92fe5225d`, lands on `claude/board-batch-3`.
+  **Track**: gcp billing (Sonnet). On `claude/board-batch-3`: `scripts/gcp-billing-assert.js`, 28
+  unit tests; the budget defaults to GBP 10 a month unless the hand-made one is found. Its live dry
+  run stopped twice: the Cloud Billing API is disabled on `diyaccounting-ga4`, and the service
+  account holds no role on `valued-context-507200-m9` (O1e covers both); verified by a dry run
+  that finds the hand-made budget and inventories the stray project once O1e is done.
 - [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
   Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
   validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
@@ -144,11 +148,14 @@ starting.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O1e / G2b. Enable the Google Analytics Admin API on GCP project `diyaccounting-ga4`**
-  (project number 958354756046): in the console at
-  https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=958354756046
-  or with `gcloud services enable analyticsadmin.googleapis.com --project diyaccounting-ga4`. The
-  property-sync and roles scripts both call that API. **Source**: none. **Owner**: Operator.
+- [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
+  `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin API and the Cloud
+  Billing API: `gcloud services enable analyticsadmin.googleapis.com cloudbilling.googleapis.com
+  --project diyaccounting-ga4` (or the console's API library). On the stray project
+  `valued-context-507200-m9` (project number 747057870039) grant the GA4 service account Viewer
+  plus Project Deleter, or delete that project by hand once the console shows it holds nothing.
+  The property-sync, roles and billing scripts all stop at these. **Source**: none. **Owner**:
+  Operator.
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
   is code.** The analytics jobs already run as a Google service account (Secrets Manager
   `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
