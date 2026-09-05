@@ -69,6 +69,40 @@ vi.mock("@aws-sdk/client-cloudwatch-logs", () => {
   return { CloudWatchLogsClient: MockLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand };
 });
 
+// Mock S3 client to simulate the origin bucket not existing yet (EdgeStack still creating it)
+class MockS3Client {
+  async send(cmd) {
+    if (cmd.constructor.name === "ListObjectsV2Command") {
+      const err = new Error("The specified bucket does not exist");
+      err.name = "NoSuchBucket";
+      throw err;
+    }
+    if (cmd.constructor.name === "GetBucketLocationCommand") {
+      return { LocationConstraint: "eu-west-2" };
+    }
+    return {};
+  }
+}
+
+vi.mock("@aws-sdk/client-s3", () => {
+  const GetBucketLocationCommand = class GetBucketLocationCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const ListObjectsV2Command = class ListObjectsV2Command {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const DeleteObjectsCommand = class DeleteObjectsCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { S3Client: MockS3Client, GetBucketLocationCommand, ListObjectsV2Command, DeleteObjectsCommand };
+});
+
 function makeEvent() {
   return {
     requestContext: { http: { method: "POST", path: "/ops/self-destruct" } },
@@ -128,5 +162,22 @@ describe("functions/infra/selfDestruct", () => {
       status: "deleted",
       error: null,
     });
+  });
+
+  it("warns, not errors, when the origin bucket does not exist yet on a young deployment", async () => {
+    process.env.EDGE_ORIGIN_BUCKET = "ci-branch-origin-bucket";
+    const errorSpy = vi.spyOn(console, "error");
+    const warnSpy = vi.spyOn(console, "warn");
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("ci-branch-origin-bucket does not exist yet, nothing to empty"),
+    );
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    delete process.env.EDGE_ORIGIN_BUCKET;
   });
 });

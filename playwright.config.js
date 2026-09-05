@@ -21,6 +21,7 @@ export default defineConfig({
         "**/getVatPenalties.behaviour.test.js",
         "**/passRedemption.behaviour.test.js",
         "**/tokenEnforcement.behaviour.test.js",
+        "**/companiesHouse.behaviour.test.js",
       ],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
@@ -189,6 +190,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "companiesHouseBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/companiesHouse.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "captureDemo",
       testDir: "behaviour-tests",
       testMatch: ["**/captureDemo.behaviour.test.js"],
@@ -217,7 +226,7 @@ export default defineConfig({
     // scan alert against a real environment. This is a telemetry filter, not a security control
     // — anyone can send this user agent — see RUNBOOK_INFORMATION_SECURITY.md section 7.5.
     userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingSynthetic/1",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
     // Save a video for every test
     video: {
       mode: "on", // 'on', 'retain-on-failure', or 'off'

@@ -1262,7 +1262,7 @@ jobs:
           ; exit ${exit_code:-0} \
           ;
         env:
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_SERVER_TLS: run
           TEST_SERVER_TLS_CERT: ${{ runner.temp }}/local-tls.pem

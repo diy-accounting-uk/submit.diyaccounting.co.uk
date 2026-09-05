@@ -185,7 +185,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   console.log(`[bundle-test]: Empty state - allocated bundles: ${emptyResponse?.bundles?.filter((b) => b.allocated)?.length ?? "?"}`);
   console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
 
-  // --- Step 3: Request Day pass bundle (via test pass for sandbox routing) ---
+  // --- Step 3: Request Day pass bundle (via test pass for synthetic routing) ---
   await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
 
   // --- Step 4: Check Day pass capacity availability ---

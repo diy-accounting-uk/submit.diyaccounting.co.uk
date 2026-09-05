@@ -139,7 +139,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
   const bundleRecord = {
     bundleId,
     expiry: currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    qualifiers: { sandbox: test },
+    qualifiers: { synthetic: test, stripeTestMode: test },
     tokensGranted,
     tokensConsumed: 0,
     tokenResetAt: tokenRefreshDate,

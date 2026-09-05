@@ -334,22 +334,22 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
     expect(one).toHaveProperty("createdAt");
   }, 30000);
 
-  // it("should handle sandbox environment in complete journey", async () => {
-  //   // Step 1: Get sandbox authorization URL - performed client side
-  //   // Step 2: Exchange code in sandbox
+  // it("should handle synthetic environment in complete journey", async () => {
+  //   // Step 1: Get synthetic authorization URL - performed client side
+  //   // Step 2: Exchange code in synthetic
   //   const tokenEvent = buildLambdaEvent({
   //     method: "POST",
   //     path: "/api/v1/hmrc/token",
-  //     body: { code: "sandbox-auth-code" },
-  //     headers: { hmrcaccount: "sandbox" },
+  //     body: { code: "synthetic-auth-code" },
+  //     headers: { hmrcaccount: "synthetic" },
   //   });
   //
   //   const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
   //   expect(tokenResponse.statusCode).toBe(200);
-  //   const sandboxTokenBody = parseResponseBody(tokenResponse);
-  //   const sandboxAccessToken = sandboxTokenBody?.accessToken || sandboxTokenBody?.hmrcAccessToken || "mock-sandbox-token";
+  //   const syntheticTokenBody = parseResponseBody(tokenResponse);
+  //   const syntheticAccessToken = syntheticTokenBody?.accessToken || syntheticTokenBody?.hmrcAccessToken || "mock-synthetic-token";
   //
-  //   // Step 3: Submit VAT return in sandbox
+  //   // Step 3: Submit VAT return in synthetic
   //   const submitEvent = buildLambdaEvent({
   //     method: "POST",
   //     path: "/api/v1/hmrc/vat/return",
@@ -357,11 +357,11 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   //       vatNumber: "987654321",
   //       periodKey: "25B1",
   //       vatDue: 750.25,
-  //       accessToken: sandboxAccessToken,
+  //       accessToken: syntheticAccessToken,
   //     },
   //     headers: {
   //       ...buildGovClientHeaders(),
-  //       hmrcaccount: "sandbox",
+  //       hmrcaccount: "synthetic",
   //     },
   //     authorizer: {
   //       authorizer: {
@@ -369,7 +369,7 @@ describe("System Journey: HMRC VAT Submission End-to-End", () => {
   //           jwt: {
   //             claims: {
   //               "sub": testUserSub,
-  //               "cognito:username": "sandboxuser",
+  //               "cognito:username": "syntheticuser",
   //             },
   //           },
   //         },

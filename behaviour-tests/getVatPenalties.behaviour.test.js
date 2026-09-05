@@ -12,7 +12,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -80,11 +80,11 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-// Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
-const runFraudPreventionHeaderValidation = isSandboxMode();
+// Enable fraud prevention header validation in synthetic mode (required for HMRC API compliance testing)
+const runFraudPreventionHeaderValidation = isSyntheticMode();
 // SUBMIT_HMRC_API_HTTP_SLOW_10S and the two forced-500 scenarios below are implemented only by
 // our own HTTP simulator (app/http-simulator/scenarios/penalties.js), not by the real HMRC
-// sandbox. isSandboxMode() can't tell the two apart: .env.simulator also sets HMRC_ACCOUNT=sandbox
+// sandbox. isSyntheticMode() can't tell the two apart: .env.simulator also sets HMRC_ACCOUNT=synthetic
 // so it enables the same extended scenario list. TEST_HTTP_SIMULATOR=run is what .env.simulator
 // (and only .env.simulator) sets, so use that to gate the simulator-only scenarios out of any lane
 // that talks to the real sandbox, where they send a Gov-Test-Scenario value HMRC doesn't recognise.
@@ -191,9 +191,9 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
   let testPassword = hmrcTestPassword;
   let testVatNumber = hmrcTestVatNumber;
 
-  // If in sandbox mode and credentials are not provided, create a test user
+  // If in synthetic mode and credentials are not provided, create a test user
   if (!hmrcTestUsername) {
-    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    console.log("[HMRC Test User] Synthetic mode detected without full credentials - creating test user");
     // Get HMRC client ID from environment (sandbox or default)
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
@@ -258,7 +258,7 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
 
   await goToBundlesPage(page, screenshotPath);
   await ensureBundlePresent(page, "Day Guest", screenshotPath, { testPass: true });
-  // TODO: Support testing in non-sandbox mode with production credentials
+  // TODO: Support testing in non-synthetic mode with production credentials
   if (envName !== "prod") {
     await goToHomePage(page, screenshotPath);
     await goToBundlesPage(page, screenshotPath);
@@ -302,7 +302,7 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
   /* ************************************* */
   /*  GET PENALTIES WITH TEST SCENARIOS     */
   /* ************************************* */
-  if (isSandboxMode()) {
+  if (isSyntheticMode()) {
     /**
      * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
@@ -440,11 +440,11 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
       hmrcTestVatNumber: testVatNumber,
       hmrcTestUsername: testUsername,
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      testUserGenerated: isSyntheticMode() && !hmrcTestUsername,
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
       intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,

@@ -43,8 +43,79 @@ with `--scene <id>` to check just that scene.
 
 The tour is unauthenticated, so a bare static server is enough: the only backend call is the
 bundles catalogue fetch, served from the static `submit.catalogue.toml` file. A script whose
-`auth` is `cognito-native` needs the proxy variant (`npm run start:proxy`, in another
-terminal) or a deployed environment instead.
+`auth` is `user` needs a real site behind it. Prove it on the simulator variant instead, which
+runs the whole journey locally with no Docker and no AWS:
+
+```bash
+npm run video:view-obligations-simulator -- --stills-only
+```
+
+The capture starts dynalite, the HTTP simulator and the site in its own process whenever the
+environment says `TEST_SERVER_HTTP=run`, so there is no second terminal and no port to look up.
+The simulator answers HMRC's create-test-user, OAuth and obligations endpoints and serves
+stand-ins for HMRC's own authorise pages, so the journey runs end to end. Everything the run
+prints, including the site's own log, is teed to `videoCapture-simulator.log`.
+
+The simulator's obligations are canned 2017 periods and it ignores the date range, so it proves
+the journey and the targets, not the data. The real HMRC sandbox proves the data, and that is
+what the workflow records against.
+
+## Step 2a — a logged-in scene script
+
+Set `"auth": "user"` and five journey actions unlock: `login`, `consent`, `ensureBundle`,
+`hmrcAuthorise` and `submitReturn`. Each runs the behaviour tests' own step function, so the
+sign-in and HMRC flows have one implementation and a markup change is fixed once for both.
+
+**The script never names an identity provider.** It comes from `TEST_AUTH_PROVIDER` at run time,
+the same way the behaviour tests pick one: the simulator and proxy variants sign in through the
+mock provider on screen, ci and prod through the Cognito Hosted UI with a password and a one-time
+code. One script therefore proves locally and records on a deployment with no edit.
+
+**No credential ever appears in a scene script.** `login` reads `TEST_AUTH_USERNAME`,
+`TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`. `hmrcAuthorise` reads `TEST_HMRC_USERNAME`,
+`TEST_HMRC_PASSWORD` and `TEST_HMRC_VAT_NUMBER`, or mints a fresh HMRC sandbox test user when
+those are unset and `HMRC_ACCOUNT=synthetic`. The sign-in and authorise pages stay on camera,
+because a customer sees them, but the run refuses to finish if a credential reached the `.vtt`,
+the transcript, the timeline or the overlay event log, and the Cognito one-time code field is
+masked on screen. A `type` or `fill` step that has to carry a credential of its own marks itself
+`"secret": true`, which keeps the value out of the transcript and the timeline.
+
+Two values a logged-in script cannot hard-code come from `{{...}}` placeholders.
+`{{hmrcVatNumber}}` is the VAT registration number of the test user this run actually got.
+`{{today}}`, `{{daysAgo:N}}`, `{{monthsAgo:N}}` and `{{yearsAgo:N}}` are dates from one clock
+fixed at the start of the run. `videos/view-obligations.json` asks for `{{monthsAgo:11}}` to
+`{{today}}`, which stays inside HMRC's 366-day limit without naming a period.
+
+Three things to know before writing the next one:
+
+- Run `ensureBundle` while the browser is on the bundles page. Navigate there with an ordinary
+  `click` step so the pointer and the ripple stay on camera, then let the action grant the
+  bundle.
+- HMRC redirects once per scope tier, so a script has one `hmrcAuthorise` per tier, each placed
+  directly after the click that triggers its redirect: a read-only journey has one; a journey
+  that queries obligations (`read:vat`) and then submits (`write:vat read:vat`) has two, as
+  `videos/submit-return.json` shows. A run whose account already holds a token for that tier
+  fails the step by design, rather than recording a journey with the authorise chapter silently
+  missing.
+- Type into text fields and `fill` date pickers. Typing digits into an `input type="date"` lands
+  them in the browser's own segment order and produces a different date.
+
+## Step 2b — an off-camera scene
+
+Mark a scene `"offCamera": true` when a real step has to happen but a viewer never needs to see
+it — for instance, submitting a return before viewing one, so the account has something on file
+to show. The scene runs at zero pacing, shows no caption and no chapter label, takes no still,
+and pauses frame capture for its whole duration: nothing from it reaches the encoded video, the
+`.vtt` or the `.transcript.md`. Its steps still land in the timeline, each carrying
+`offCamera: true`, so the acceptance checks can see what ran; `check-video-timings.js` skips
+timer and residual expectations for them, since a step run at zero pacing has neither.
+
+`submitReturn` is built for this: it submits a VAT return the way `getVatReturn.behaviour.test.js`
+does — the home nav, the submit VAT form's own date fields, fill the nine boxes with round
+figures, tick the declaration, the write:vat scope authorise with HMRC, and the receipt — with
+`allowSyntheticObligations` so the server resolves the period from HMRC's own open obligation,
+never a hard-coded period key. `videos/view-return.json` uses it between an on-camera obligations
+query and a second one, so the return it then opens on camera is real.
 
 ## Step 3 — record for real against the proxy variant or a deployment
 
@@ -77,9 +148,10 @@ gh workflow run video-capture.yml -f script=tour -f environment-name=prod
 ```
 
 Download the artifact once it completes — the mp4, the `.vtt`, the `.transcript.md` and the
-stills all travel together. A script whose `auth` is `cognito-native` runs against **prod
-with the HMRC sandbox account**, writing rows as the synthetic test user — never point it at
-a real customer account.
+stills all travel together. A script whose `auth` is `user` runs against **prod with the HMRC
+sandbox account**, writing rows as the synthetic test user — never point it at a real customer
+account. The workflow turns Cognito native auth on for the run and off again afterwards, and
+rotates the synthetic user's password and one-time code device first.
 
 ## Step 6 — publish accessibly
 
@@ -94,6 +166,10 @@ committing.
 ## Reference
 
 - `videos/scene-script.schema.json` — the format: scenes, steps, targets, pacing, captions.
+- `scripts/lib/video/behaviourSteps.js` — the bridge to the behaviour tests' step functions,
+  including the two things that stand between plain `node` and them.
+- `scripts/lib/video/journey.js` — local services, the HMRC test user, the one-time code mask.
+- `scripts/lib/video/secrets.js` / `values.js` — the credential scan and the `{{...}}` values.
 - `scripts/lib/video/pacing.js` — the three pacing groups, wait subtraction, time
   compression for a wait past six seconds, caption minimum hold.
 - `scripts/lib/video/overlay-runtime.js` / `overlay.js` — the in-page pointer, trail,

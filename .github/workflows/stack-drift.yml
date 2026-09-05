@@ -285,6 +285,7 @@ jobs:
           for STACK in \
             "${DEPLOYMENT_NAME}-app-AuthStack" \
             "${DEPLOYMENT_NAME}-app-HmrcStack" \
+            "${DEPLOYMENT_NAME}-app-CompaniesHouseStack" \
             "${DEPLOYMENT_NAME}-app-AccountStack" \
             "${DEPLOYMENT_NAME}-app-BillingStack" \
             "${DEPLOYMENT_NAME}-app-ApiStack" \
