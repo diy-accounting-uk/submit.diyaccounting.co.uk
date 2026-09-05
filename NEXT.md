@@ -75,6 +75,19 @@ items below wait on a later event to verify.
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
+  CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
+  ALARM every hour at about :35 past, and each one is
+  `app/functions/account/bundleCapacityReconcile.js` running `Scan` on `prod-env-bundles` on
+  its `rate(1 hour)` schedule (AccountStack); the deployment role's scans stopped with B30e
+  and the last of them was migration 006 at 20:05 UTC. The scan detector exempts no caller by
+  design, because app code should never scan a customer table; the detector is right and the
+  job is wrong. Design pass: count bundle
+  take-up without a scan (a sparse GSI on `bundleId` queried per catalogue bundle, or a counter
+  item the grant and expiry paths maintain), then rebuild the reconcile on it; CDK test on the
+  index or the counter, unit test on the reconcile. Verified when #95 stays in OK across a
+  day. **Source**: BACKLOG 30; issue #95; CloudTrail lookup 2026-09-05. **Owner**: Claude
+  Code. **Model**: Opus design, then Sonnet.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
@@ -92,11 +105,12 @@ items below wait on a later event to verify.
   alarm name, timestamp, region and deployment from the issue body, and derives the log groups
   with the mapping B30h builds. Repeat alarms only comment on the family issue, so they never
   re-trigger; the operator re-runs one by adding a `triage` label (`issues: labeled`). Budget:
-  the first step counts this workflow's runs in the last 24 hours through the GitHub API and
-  exits at five; `concurrency: alarm-triage`, `timeout-minutes`, a pinned Sonnet model and
-  `--max-turns` bound each run. An AWS Budget on Bedrock spend for the account, with a budget
-  action that attaches a deny on `bedrock:InvokeModel` to the triage role when the monthly
-  figure is crossed, is the hard stop, not an alert. The job checks out the repo, assumes a
+  USD 5 a day. An AWS Budget on Bedrock spend for the account with a daily period and that
+  limit, with a budget action that attaches a deny on `bedrock:InvokeModel` to the triage role
+  when the figure is crossed, is the hard stop, not an alert. Beneath it the first step counts
+  this workflow's runs in the last 24 hours through the GitHub API and exits at three, and
+  `concurrency: alarm-triage`, `timeout-minutes`, a pinned Sonnet model and `--max-turns` keep
+  a run near a dollar, so the budget action is the backstop, not the normal path. The job checks out the repo, assumes a
   read-only OIDC role scoped to the deployment's log groups, X-Ray and CloudWatch alarm history
   (no customer tables), and runs Claude Code with `CLAUDE_CODE_USE_BEDROCK=1`. Its one write is
   a comment on the issue (or a draft PR when it can name the change): the text passes Bedrock
@@ -117,11 +131,10 @@ items below wait on a later event to verify.
 - [ ] **O10. Close the B30e alarm issues once the PR #118 deployment holds.** The probe
   workflow runs on a 4-hour cron and the env alarm `prod-env-github-probe-failed` evaluates a
   5-hour window, so one full cycle is one scheduled probe run plus the window that scores it:
-  about five hours after the deploy. When that window has passed with the probe alarm and the
-  two prod B30e alarms (#95, #97) in OK, close those two issues; #95 went to ALARM at
-  20:05 UTC on 2026-09-05 because migration 006's scan of `prod-env-bundles` is exactly what
-  that detector counts, and it returned to OK at 21:43 UTC. **Source**: PR #118. **Owner**:
-  Operator.
+  about five hours after the deploy. When that window has passed with the probe alarm and
+  `prod-env-salt-secret-unexpected-read` (#97) in OK, close #97; its last firing was 19:22 UTC
+  on 2026-09-05, before the fix reached prod. #95 is B30j's now. **Source**: PR #118.
+  **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
