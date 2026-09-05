@@ -434,11 +434,16 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
+      const exportResults = await exportAllTables(
+        outputDir,
+        dynamoControl.endpoint,
+        {
+          bundleTableName,
+          hmrcApiRequestsTableName,
+          receiptsTableName,
+        },
+        userSub,
+      );
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);

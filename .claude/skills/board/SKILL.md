@@ -1,6 +1,6 @@
 ---
 name: board
-description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, then tiers 2-5 as one-line lists. Invoke when the operator asks for the board, the open items, or "what's in flight".
+description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, tiers 2-5 as one-line lists, then the open alarm issues grouped by family with a recommended action each. Invoke when the operator asks for the board, the open items, or "what's in flight".
 ---
 
 # board
@@ -10,7 +10,7 @@ root). Read both files fresh every time — never render from memory of an earli
 
 ## Output shape
 
-Exactly two parts, in this order.
+Exactly three parts, in this order.
 
 **Part 1 — a table** covering every open item in `NEXT.md` plus every row in the
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
@@ -44,6 +44,26 @@ currently has), each headed `**Tier N**`, one line per item, items separated by 
 Each entry: row number, short name, then a parenthesised compact status and issue ref
 if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
 
+**Part 3 — the open alarm issues, grouped.** Run
+`gh issue list --state open --label alarm --limit 200 --json number,title,createdAt,updatedAt`
+(titles are `[ALARM] <alarm name>`). Parse each name into environment (`ci`/`prod`), scope
+(`env` or a deployment name such as `prod-b2bad16`), and family (the alarm name with the
+deployment segment removed, e.g. `app-api-5xx`, `env-salt-secret-unexpected-read`). One row per
+family, deployment-scoped and environment-scoped kept apart:
+
+| Family | Issues | Exists now | Recommended action | NEXT.md item |
+
+- `Exists now`: whether the alarm still exists — a deployment-scoped alarm on a destroyed
+  deployment does not (`gh run list --workflow destroy-ci.yml` and `NEXT.md`'s prod line say
+  which deployments are gone; a read-only `aws cloudwatch describe-alarms` settles it when an
+  SSO session exists, otherwise say "unverified").
+- `Recommended action`: exactly one of `close as stale` (deployment gone or alarm type deleted),
+  `close as superseded` (renamed or moved by landed work; name the new alarm), `fix` (name the
+  file), `tune` (name the threshold or filter), `keep open and watch` (real signal, action
+  pending elsewhere), `investigate` (needs logs or CloudTrail; say what).
+- `NEXT.md item`: the label of the item that carries the action, or `new` when this render
+  creates one.
+
 ## Rules
 
 - Open and in-flight work only. Nothing done, decided-against, or removed.
@@ -65,6 +85,14 @@ if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
   whose owner and state no longer match its heading (an operator item whose blocker
   landed moves up to `Ready: operator`; a Claude Code item that gained a blocker moves
   down to `Blocked: Claude Code`). That move is part of the write-back below.
+- **Every alarm family has a home on `NEXT.md`.** A family whose action is `close as stale`
+  or `close as superseded` joins the operator item that lists issues to close (create it if
+  missing; keep the list current, adding new numbers and dropping closed ones). A family whose
+  action is `fix`, `tune` or `investigate` gets its own Claude Code item under BACKLOG row 30
+  (`B30<letter>`, next free letter) with the file or lookup it needs, the owner and the model
+  tier, in the ready or blocked section its blocker dictates (an AWS lookup with no SSO session
+  is blocked on `aws sso login --sso-session diyaccounting`). `keep open and watch` needs no
+  item. Never close, label or comment on an issue from this skill; the operator closes them.
 - **Write the statuses back.** The explanatory status lives in `NEXT.md`, not just in
   the rendering: after rendering, update any `NEXT.md` item whose entry no longer
   matches the status you just printed (same facts, prose fitted to the entry), commit

@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b2bad16 (the PR #116 merge, deployed 2026-09-04 20:16). Whether
-that deploy destroyed prod-a0f41c7 needs a stack list once an SSO session exists.** Each extra
+**Prod runs deployment prod-13704ea (main's scheduled deploy of 2026-09-05), the only app
+stack set standing.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -25,9 +25,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 **Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
-direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
-the Companies House lookup (PR #124) stays separate, because its deploy cannot pass until the
-operator's API key exists.
+direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. The
+Companies House lookup is folded in too, so PR #118's deploy fails secret validation until the
+operator's API key (O6) exists.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -53,6 +53,18 @@ starting.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
+- [ ] **B30g. Stop the self-destruct Lambda tripping its log-errors check on every fresh ci
+  deployment.** Every ci deployment's `self-destruct-stack-health` composite goes to ALARM within
+  hours of creation because `check-<deployment>-app-app-self-destruct-log-errors` fires (#122 for
+  ci-claudeboa, #127 for ci-claudff66, the first family-titled issue). Read
+  `app/functions/ops/selfDestruct*.js` for what it logs at error level on a deployment that has
+  nothing to destroy yet, and either stop logging an expected condition as an error or narrow the
+  metric filter in `Lambda.java`; the alarm name's doubled `app-app` is a naming slip to fix in
+  the same pass. **Source**: BACKLOG 30; issues #122, #127. **Owner**: Claude Code. **Model**:
+  Sonnet.
+  **Track**: self-destruct log errors (Sonnet). On `claude/board-batch-2` (PR #118): a bucket the
+  edge stack has not created yet is logged as a warning, and the function name drops the doubled
+  `app`. Verified when a fresh ci deployment's self-destruct composite stays in OK.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -111,13 +123,8 @@ starting.
   secrets.** Steps 1 to 7 under "Operator steps" in
   `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
-  the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
+  the deploy-environment workflow for each. PR #118 cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B30b remainder, operator. Close 22 stale `[ALARM]` issues.** Their deployment is
-  destroyed or the alarm type is deleted by PR #118, so no recovery event will ever close them:
-  #77, #78, #79, #80, #81, #82, #83, #84, #85, #86, #87, #88, #89, #90, #96, #103, #108, #109,
-  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111 and #123 open; the items below act
-  on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
@@ -196,11 +203,10 @@ starting.
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
   **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
 - [ ] **B30e. Name the principal behind the salt-read and customer-table-scan alarms.** Issues
-  #93 and #97 (`salt-secret-unexpected-read`, ci many times a day) and #94 and #95
-  (`dynamodb-customer-table-scan`): run the CloudTrail lookup in runbook section 6.6 for each
-  environment and record whether the reads come from a role the `SecurityDetectionStack.java`
-  filter should allow (then tune the filter) or from something real. **Source**: BACKLOG 30;
-  issues #93, #94, #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
+  #97 (`prod-env-salt-secret-unexpected-read`) and #95 (`prod-env-dynamodb-customer-table-scan`),
+  both still updating daily: run the CloudTrail lookup in runbook section 6.6 for prod and record
+  whether the reads come from a role the `SecurityDetectionStack.java` filter should allow (then
+  tune the filter) or from something real. **Source**: BACKLOG 30; issues #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
   session (`aws sso login --sso-session diyaccounting`).
 - [ ] **B30f. Read what HMRC returned for the customer submission failure of 2026-09-03 21:30**
   (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
@@ -212,15 +218,15 @@ starting.
   flips the open one to fulfilled, so a return is viewable only for the period the run itself
   submits through the submit page's date fields, the way `getVatReturn.behaviour.test.js` does;
   that behaviour step waits for the page to report the `synthetic` mode, which prod only does
-  once PR #118 deploys. A Sonnet track (worktree `.claude/worktrees/agent-aa20fccc2c1974f5c`) restores that off-camera
-  submission and the table's "View Return" on the fulfilled period, proven on the simulator.
-  Blocked on PR #118 deploying to prod; verified by a prod recording passing the blocking check.
+  once PR #118 deploys. That off-camera submission and the table's "View Return" on the fulfilled period are on
+  `claude/board-batch-2` (PR #118), green on the simulator. Blocked on PR #118 deploying to
+  prod; verified by a prod recording passing the blocking check.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Blocked on O6: its deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
+  **Track**: Companies House build (Sonnet). Folded into `claude/board-batch-2` (PR #118). Blocked on O6: the deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
