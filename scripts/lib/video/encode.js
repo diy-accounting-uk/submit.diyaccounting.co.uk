@@ -112,14 +112,19 @@ export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, h
 }
 
 // A 3-across montage of the per-scene stills, so the operator reviews one image instead of nine.
-export function buildContactSheet({ ffmpegBin, stillPaths, outputPath, columns = 3 }) {
+// The tile filter reads consecutive frames of a single stream, so the stills are concatenated
+// into one stream first; feeding tile several inputs directly draws only the first of them.
+export function buildContactSheet({ ffmpegBin, stillPaths, outputPath, columns = 3, scaleDivisor = 2 }) {
   if (stillPaths.length === 0) throw new Error("buildContactSheet: no stills to tile");
   const rows = Math.ceil(stillPaths.length / columns);
+  const inputs = stillPaths.map((_, index) => `[${index}:v]`).join("");
   const args = [
     "-y",
     ...stillPaths.flatMap((p) => ["-i", p]),
     "-filter_complex",
-    `tile=${columns}x${rows}`,
+    `${inputs}concat=n=${stillPaths.length}:v=1:a=0,scale=iw/${scaleDivisor}:ih/${scaleDivisor},tile=${columns}x${rows}`,
+    "-frames:v",
+    "1",
     outputPath,
   ];
   return runOrThrow(ffmpegBin, args);
