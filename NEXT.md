@@ -76,6 +76,20 @@ starting.
   ci deploy of the batch is running to prove `companiesHouseBehaviour-ci`. Prod waits on the
   operator's go, because running the workflow from the branch applies the batch's env stacks to
   prod ahead of the merge; the alternative is merging PR #118 first and running it from main.
+- [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
+  (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
+  `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
+  `read:self-assessment` granted as requested. Build `hmrcItsaBusinessDetailsGet.js` shaped like
+  `hmrcVatObligationGet.js`, mounted at `/api/v1/hmrc/itsa/business/details` behind the
+  `self-employed` activity, with a simulator route, unit and behaviour tests. Two departures the
+  spike found: `buildHmrcHeaders` hardcodes the v1.0 Accept header, so the API version becomes a
+  parameter; and nothing in the app carries a NINO yet. Every later ITSA endpoint needs the
+  `businessId` this one returns. `_developers/backlog/self-employed-api-operations.md` has the
+  wrong paths for v5.0; the spike lists the right ones. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet. Operator decision 2026-09-05: build against HMRC's test APIs and get
+  something running before asking HMRC about production windows (O4a and O4b are back on the
+  backlog, row 11a).
+  **Track**: ITSA business details (Sonnet), worktree `.claude/worktrees/agent-ade59b9681b6469eb`, running, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -152,19 +166,6 @@ starting.
   developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
   34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
   Sonnet.
-- [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
-  (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
-  `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
-  `read:self-assessment` granted as requested. Build `hmrcItsaBusinessDetailsGet.js` shaped like
-  `hmrcVatObligationGet.js`, mounted at `/api/v1/hmrc/itsa/business/details` behind the
-  `self-employed` activity, with a simulator route, unit and behaviour tests. Two departures the
-  spike found: `buildHmrcHeaders` hardcodes the v1.0 Accept header, so the API version becomes a
-  parameter; and nothing in the app carries a NINO yet. Every later ITSA endpoint needs the
-  `businessId` this one returns. `_developers/backlog/self-employed-api-operations.md` has the
-  wrong paths for v5.0; the spike lists the right ones. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Sonnet, after the coordinator's go: it opens the ITSA build
-  and O4b (the 2027-28 production window) sets its target date.
-
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
@@ -182,16 +183,6 @@ starting.
   BigQuery Admin). This is the last hand grant: after it, O1b applies grants from a file.
   **Source**: none. **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O4a / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not
-  on the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
-  drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O4b / B11a.2. Ask HMRC whether a 2027-28 production-credential window opens for new
-  ITSA quarterly-update products.** HMRC's pages say the 2026-27 window is closed to new
-  products (`_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`; vendor contact
-  makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
-  and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
@@ -205,16 +196,14 @@ starting.
   with the current one (registration ZB070902, expiry 2027-05-23): the register of fee payers
   only serves the certificate behind a login. Same filename, then commit. **Source**: BACKLOG
   27c. **Owner**: Operator.
-- [ ] **B34.2. Get the Companies House filing route for accounts.** The REST filing API does
-  not cover accounts; the route is a presenter account on gov.uk plus test presenter credentials
-  requested by email to xml@companieshouse.gov.uk (replies reported at 17 to 40 working days).
-  The April 2027 software-only mandate is paused with no new date. Apply for the presenter
-  account and the test credentials, record the presenter id and the date, and hand them to
-  Claude Code for B34.3. **Source**: BACKLOG 34; issue #15; Cowork brief 2026-09-05.
-  **Owner**: Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 ## Blocked: operator
 
+- [ ] **B34.2. Test presenter credentials from Companies House.** The presenter account exists
+  (presenter ID E0000052288; the code stays in the operator's credentials store and reaches the
+  build as a GitHub environment secret when B34.3b needs it), and xml@companieshouse.gov.uk was
+  emailed on 2026-09-05 for test presenter credentials and the accounts specification (FRS 105
+  micro-entity first). Companies House states ten working days; chase on 2026-09-21 if silent.
+  **Source**: BACKLOG 34; issue #15. **Owner**: Operator. Blocked on the reply.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
