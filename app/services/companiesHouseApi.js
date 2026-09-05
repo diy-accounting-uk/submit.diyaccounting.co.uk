@@ -44,12 +44,15 @@ export async function resolveApiKey() {
   }
   if (!cachedCompaniesHouseApiKey) {
     const secretArn = process.env.COMPANIES_HOUSE_API_KEY_ARN;
-    logger.info(`Retrieving Companies House API key from arn ${secretArn}`);
+    if (!secretArn) {
+      throw new Error("Missing required environment variable COMPANIES_HOUSE_API_KEY or COMPANIES_HOUSE_API_KEY_ARN");
+    }
+    logger.info("Retrieving Companies House API key from Secrets Manager");
     const client = await getSecretsClient();
     const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
     const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
     cachedCompaniesHouseApiKey = data.SecretString;
-    logger.info(`Companies House API key retrieved from Secrets Manager with Arn ${secretArn} and cached`);
+    logger.info("Companies House API key retrieved from Secrets Manager and cached");
   }
   return cachedCompaniesHouseApiKey;
 }
