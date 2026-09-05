@@ -101,8 +101,9 @@ verify.
   environment from `submit.environment-name.txt` (PublishStack writes it at synth, prod serves
   `prod`), and `enforceBundles` answers 403 with `ACTIVITY_ENVIRONMENT_RESTRICTED` elsewhere. The
   three VAT read activities' path patterns narrowed to their own routes so the gate cannot leak
-  onto other VAT endpoints. Verified when the ci deployment lists the five activities and prod
-  after the merge does not.
+  onto other VAT endpoints. The ci deployment ci-claud063e (deploy run 33998025585, green)
+  serves the catalogue with the field on all five activities; verified when prod after the
+  merge hides them and the operator has looked at them on ci.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
@@ -167,15 +168,17 @@ verify.
   behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) started
   2026-09-06 00:15 UTC; tracks 2 (filings) and 3 (web, simulator journeys, behaviour tests)
   follow as each lands. The ci behaviour runs need the operator steps below (O11).
-## Ready: Claude Code
-
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
   `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
   has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
-  Runs in wave 2 against the ci deployment the first batch-4 push creates. **Source**: BACKLOG
-  10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+  **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 2, itsa-video (Sonnet) writes `videos/itsa-business-details.json` and its npm
+  scripts, proving it on the simulator; started 2026-09-06 01:20 UTC. The coordinator then
+  records it with `video-capture.yml` from the integration branch against ci-claud063e.
+## Ready: Claude Code
+
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1d / G2b. Create the ci GA4 property.** The `ga4-property-sync` dry run for ci is
