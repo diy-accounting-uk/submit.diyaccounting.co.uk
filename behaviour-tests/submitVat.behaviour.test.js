@@ -12,7 +12,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
@@ -108,10 +108,10 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-// Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
-const runFraudPreventionHeaderValidation = isSandboxMode();
-// Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
-const allowSandboxObligations = isSandboxMode();
+// Enable fraud prevention header validation in synthetic mode (required for HMRC API compliance testing)
+const runFraudPreventionHeaderValidation = isSyntheticMode();
+// Enable synthetic obligation fallback - allows test to use any available open obligation if dates don't match
+const allowSyntheticObligations = isSyntheticMode();
 
 const hmrcVatDueAmount = "1000.00";
 // Period keys are unpredictable per HMRC documentation - they cannot be calculated, only validated.
@@ -236,9 +236,9 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   let testPassword = hmrcTestPassword;
   let testVatNumber = hmrcTestVatNumber;
 
-  // If in sandbox mode and credentials are not provided, create a test user
+  // If in synthetic mode and credentials are not provided, create a test user
   if (!hmrcTestUsername) {
-    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    console.log("[HMRC Test User] Synthetic mode detected without full credentials - creating test user");
 
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
@@ -317,10 +317,10 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /* ********* */
 
   await goToBundlesPage(page, screenshotPath);
-  if (isSandboxMode()) {
+  if (isSyntheticMode()) {
     await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   }
-  // TODO: Support testing in non-sandbox mode with production credentials
+  // TODO: Support testing in non-synthetic mode with production credentials
   // if (envName !== "prod") {
   //   await ensureBundlePresent(page, "Guest", screenshotPath);
   //   await goToHomePage(page, screenshotPath);
@@ -332,7 +332,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /*  TOKEN BALANCE (BEFORE)  */
   /* ************************ */
 
-  const tokensBefore = isSandboxMode() ? await getTokensRemaining(page, "day-guest") : null;
+  const tokensBefore = isSyntheticMode() ? await getTokensRemaining(page, "day-guest") : null;
   if (tokensBefore !== null) {
     console.log(`[Token check] Tokens before submission: ${tokensBefore}`);
     expect(tokensBefore).toBeGreaterThan(0);
@@ -393,7 +393,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     null,
     runFraudPreventionHeaderValidation,
     screenshotPath,
-    allowSandboxObligations,
+    allowSyntheticObligations,
   );
   await submitFormVat(page, screenshotPath);
 
@@ -514,7 +514,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   /*  TOKEN USAGE        */
   /* ******************* */
 
-  if (isSandboxMode()) {
+  if (isSyntheticMode()) {
     await goToUsagePage(page, screenshotPath);
     await verifyTokenSources(page, [{ bundleId: "day-guest" }], screenshotPath);
     await verifyTokenConsumption(page, [{ activity: "submit-vat", minCount: 1, tokensUsed: 1 }], screenshotPath);
@@ -572,11 +572,11 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
       resolvedPeriodKey, // Actual periodKey resolved from HMRC obligations
       hmrcVatDueAmount,
       s3Endpoint,
-      testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
+      testUserGenerated: isSyntheticMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
       intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
@@ -628,11 +628,16 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
+      const exportResults = await exportAllTables(
+        outputDir,
+        dynamoControl.endpoint,
+        {
+          bundleTableName,
+          hmrcApiRequestsTableName,
+          receiptsTableName,
+        },
+        userSub,
+      );
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);
@@ -684,7 +689,7 @@ test("Click through: Submit a VAT return to HMRC", async ({ page }, testInfo) =>
     });
 
     // Assert VAT return GET request exists and validate key fields
-    // BE FLEXIBLE: periodKey may differ between submission and viewing due to sandbox obligation fallback
+    // BE FLEXIBLE: periodKey may differ between submission and viewing due to synthetic obligation fallback
     // Always use regex pattern to match any valid periodKey format
     const vatGetUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
 

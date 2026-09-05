@@ -24,7 +24,7 @@ const QUERY_END_LAG_MINUTES = 5;
 // A telemetry filter, not a security control: it keeps our own behaviour-test traffic out of
 // our own alerts and nothing more, because anyone can send this user agent. playwright.config.js
 // appends this token to a real desktop Chrome UA rather than replacing it.
-const SYNTHETIC_USER_AGENT_MARKER = "DIYAccountingSynthetic";
+const PROBE_USER_AGENT_MARKER = "DIYAccountingProbe";
 
 let cachedS3Client = null;
 let cachedSsmClient = null;
@@ -172,7 +172,7 @@ WHERE    distribution_id IN (${idList})
   AND    sc_status = '404'
   AND    concat("date", 'T', "time") >  '${formatMinute(startExclusive)}'
   AND    concat("date", 'T', "time") <= '${formatMinute(endInclusive)}'
-  AND    cs_user_agent NOT LIKE '%${SYNTHETIC_USER_AGENT_MARKER}%'
+  AND    cs_user_agent NOT LIKE '%${PROBE_USER_AGENT_MARKER}%'
 GROUP BY 1, 2, 3
 HAVING   count(*) > ${threshold}`;
 }

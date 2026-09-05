@@ -181,7 +181,7 @@ answer = """
 A bundle saves your VAT submission settings:
 
 - Your **VAT registration number**
-- Whether to use **sandbox** (testing) or **production** (real HMRC)
+- Whether to use **synthetic** (testing — calls go to HMRC's sandbox) or **production** (real HMRC)
 - Your **HMRC authorisation** for submitting returns
 
 If you submit VAT for multiple businesses, create a separate bundle for each. Each bundle maintains its own HMRC connection.
@@ -327,9 +327,10 @@ priority = 18
 [[faq]]
 id = "sandbox-vs-production"
 category = "connection"
-question = "What's the difference between sandbox and production?"
+question = "What's the difference between synthetic and production?"
 answer = """
-**Sandbox** is HMRC's test environment:
+Our mode is called **synthetic**. In synthetic mode, calls go to HMRC's sandbox, its test
+environment:
 - Uses test credentials (any VAT registration number works)
 - Submissions don't affect real tax records
 - Useful for learning how the app works
@@ -341,7 +342,7 @@ answer = """
 
 Most users should use **Production** for their actual VAT returns.
 """
-keywords = ["sandbox", "production", "test", "live", "real", "difference"]
+keywords = ["synthetic", "sandbox", "production", "test", "live", "real", "difference"]
 priority = 19
 
 [[faq]]

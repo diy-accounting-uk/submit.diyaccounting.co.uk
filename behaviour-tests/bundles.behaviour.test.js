@@ -185,7 +185,7 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   console.log(`[bundle-test]: Empty state - allocated bundles: ${emptyResponse?.bundles?.filter((b) => b.allocated)?.length ?? "?"}`);
   console.log(`[bundle-test]: Empty state - tokensRemaining: ${emptyResponse?.tokensRemaining ?? "?"}`);
 
-  // --- Step 3: Request Day pass bundle (via test pass for sandbox routing) ---
+  // --- Step 3: Request Day pass bundle (via test pass for synthetic routing) ---
   await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
 
   // --- Step 4: Check Day pass capacity availability ---
@@ -352,11 +352,16 @@ test("Click through: Adding and removing bundles", async ({ page }, testInfo) =>
   if (runDynamoDb === "run" && dynamoControl?.endpoint) {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
+      const exportResults = await exportAllTables(
+        outputDir,
+        dynamoControl.endpoint,
+        {
+          bundleTableName,
+          hmrcApiRequestsTableName,
+          receiptsTableName,
+        },
+        userSub,
+      );
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);

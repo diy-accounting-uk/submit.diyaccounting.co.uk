@@ -33,6 +33,7 @@ const moduleFiles = [
   "lib/services/api-client.js",
   "lib/services/hmrc-service.js",
   "lib/services/catalog-service.js",
+  "lib/services/companies-house-service.js",
   // Main entry point
   "submit.js",
 ];

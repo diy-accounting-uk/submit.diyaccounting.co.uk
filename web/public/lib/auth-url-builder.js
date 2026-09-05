@@ -30,11 +30,11 @@
   async function buildHmrcAuthUrl(state, scope = "write:vat read:vat", account = "live") {
     const env = await window.envReady;
 
-    const sandbox = account.toLowerCase() === "sandbox";
+    const synthetic = account.toLowerCase() === "synthetic";
 
-    const base = sandbox ? env.HMRC_SANDBOX_BASE_URI : env.HMRC_BASE_URI;
+    const base = synthetic ? env.HMRC_SANDBOX_BASE_URI : env.HMRC_BASE_URI;
 
-    const clientId = sandbox ? env.HMRC_SANDBOX_CLIENT_ID : env.HMRC_CLIENT_ID;
+    const clientId = synthetic ? env.HMRC_SANDBOX_CLIENT_ID : env.HMRC_CLIENT_ID;
 
     const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/activities/submitVatCallback.html";
 

@@ -107,6 +107,19 @@ describe("waitForSuccessOrError", () => {
     await expect(waitForSuccessOrError(page, { successSelector: "#result", pollIntervalMs: 1 })).resolves.toBeUndefined();
   });
 
+  test("a page query that never answers still lets the wait reach its own timeout", async () => {
+    // Playwright actions carry no timeout of their own in this repo, so a query for an element
+    // the browser has navigated away from never settles and never rejects. The wait must not be
+    // stuck inside one poll when that happens.
+    const neverAnswers = () => new Promise(() => {});
+    const page = {
+      locator: vi.fn(() => ({ all: neverAnswers, isVisible: neverAnswers, innerText: neverAnswers })),
+      waitForTimeout: vi.fn().mockResolvedValue(undefined),
+    };
+
+    await expect(waitForSuccessOrError(page, { successSelector: "#result", timeout: 1, pollIntervalMs: 1 })).rejects.toThrow(/Timed out/);
+  });
+
   test("a new error banner after the wait starts still fails fast even with a pre-existing one present", async () => {
     // One error banner was already up when the wait began (and stays up); a second, different
     // one appears on the next poll — that second one must still fail fast.

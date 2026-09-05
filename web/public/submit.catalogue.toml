@@ -184,7 +184,7 @@ tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
 # resident-pro: Pro subscription access
-# Unlocked by: resident-pro-test-pass (sandbox), resident-pro-pass (production), Stripe monthly subscription
+# Unlocked by: resident-pro-test-pass (synthetic), resident-pro-pass (production), Stripe monthly subscription
 # Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
 # Tokens: 100 granted, refreshing monthly
 # Enables: all activities including generating digital/physical passes (costs 10 tokens each)
@@ -292,6 +292,14 @@ tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+
+[[activities]]
+id = "company-lookup"
+name = "Company Lookup (Companies House)"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["companies-house/companySearch.html", "^/api/v1/companies-house.*"]
 
 [[activities]]
 id = "my-receipts"

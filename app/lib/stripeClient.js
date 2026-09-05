@@ -60,8 +60,8 @@ function buildStripeOptions() {
 /**
  * Get a lazy-initialized Stripe SDK client.
  * Caches the client across Lambda warm starts.
- * Supports test/live mode switching — same pattern as HMRC sandbox/live selection.
- * @param {{ test?: boolean }} options - Set test=true for sandbox/test mode
+ * Supports test/live mode switching — same pattern as HMRC synthetic/live selection.
+ * @param {{ test?: boolean }} options - Set test=true for Stripe test mode
  * @returns {Promise<Stripe>}
  */
 export async function getStripeClient({ test = false } = {}) {

@@ -30,7 +30,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Retrieve a Stripe Checkout Session, trying the live client then the sandbox client.
+ * Retrieve a Stripe Checkout Session, trying the live client then the test-mode client.
  * A session id is only ever valid in the mode it was created in, so the wrong client
  * raises a "resource_missing" error, which is treated as not found rather than a failure.
  */

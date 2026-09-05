@@ -122,10 +122,12 @@ class SecurityDetectionStackTest {
             var filterPattern = (String) properties.get("FilterPattern");
             return filterPattern.contains("\"GetSecretValue\"")
                     && filterPattern.contains("user-sub-hash-salt")
-                    && filterPattern.contains("docs-*");
+                    && filterPattern.contains("docs-*")
+                    && filterPattern.contains("submit-docs-deployment-role");
         });
         assertTrue(saltReadFilterScoped, "expected the salt-read metric filter pattern to reference GetSecretValue,"
-                + " the salt secret, and the docs-* environment role prefix");
+                + " the salt secret, the docs-* environment role prefix, and the"
+                + " submit-docs-deployment-role exception");
     }
 
     @Test

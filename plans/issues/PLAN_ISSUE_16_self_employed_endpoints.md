@@ -53,7 +53,7 @@ Follow `self-employed-api-operations.md` section "Back-end functions":
   - View + edit annual.
   - View cumulative.
 - Use the HMRC Create Test User API to provision a NINO for CI smoke tests.
-- Extend the synthetic test matrix once sandbox testing is stable.
+- Extend the probe test matrix once sandbox testing is stable.
 
 ## Likely docs to change
 
