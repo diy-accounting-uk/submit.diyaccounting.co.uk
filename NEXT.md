@@ -116,17 +116,13 @@ starting.
   that detector counts, so it returns to OK on its own. Close #131 now: it is the self-destruct
   log-errors check on ci-claudeboa, a set built before the fix that is self-destructing.
   **Source**: PR #118. **Owner**: Operator.
-- [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
-  `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
-  HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
-  2026-09-03 21:44:22 UTC (request 23143b62-e10c-4309-b76c-89f8512a0a13), retried at 21:46 and
-  21:48 with the same answer; the submission failure the alarm counted at 21:30 sits in the same
-  session. That message is HMRC saying the customer's Government Gateway account is not enrolled
-  for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
-  finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
-  and authority steps. The lookup that found all this is the
-  `vat-submission-failure-alarm-user-lookup` skill; the customer's identity is in the chat
-  record of 2026-09-05, not here. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
+- [ ] **B30f remainder. Post the HMRC answer on issue #111.** The three failures behind the
+  alarm (requests 23143b62-e10c-4309-b76c-89f8512a0a13 at 2026-09-03 21:44:22 UTC, then 21:46
+  and 21:48) were HTTP 403 "The client and/or agent is not authorised" from HMRC on the
+  obligations lookup: the customer's Government Gateway login is not linked to MTD VAT for that
+  VRN, not a fault in our code. The customer was emailed the enrolment steps on 2026-09-05.
+  Paste the request ids and HMRC's message on #111 and close it; nothing that identifies the
+  customer, the issue is public. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
