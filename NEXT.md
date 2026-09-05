@@ -136,8 +136,8 @@ starting.
   **Track**: deployment role and probe export (Sonnet). On `claude/board-batch-2` (PR #118): the
   salt filter accepts the environment's deployment role, and both test-data exports query the test
   user's `hashedSub` instead of scanning (the behaviour-test export had been dumping every
-  customer's rows in ci and prod). Verified when #95 and #97 stay in OK across a probe cycle
-  after the prod deploy.
+  customer's rows in ci and prod). ci twins #128 and #129 opened 2026-09-05 during the ci env deploy from the batch. Verified
+  when #95, #97, #128 and #129 stay in OK across a probe cycle after the deploys.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
