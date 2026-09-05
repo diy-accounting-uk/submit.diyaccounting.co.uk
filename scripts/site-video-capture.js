@@ -215,7 +215,7 @@ async function runWithWaitOverlay(page, step, unscaledPacing, capture, run) {
     await timerSetCompressing(page, false).catch(() => {});
   }
   if (shown) await timerStop(page).catch(() => {});
-  return result;
+  return { ...result, shown };
 }
 
 async function main() {
@@ -294,7 +294,19 @@ async function main() {
   const captionEvents = [];
   const sceneRecords = [];
   let elapsedMs = 0;
-  let overlayEvents = [];
+  // The overlay's event log lives on the page and is wiped by every navigation (a new document,
+  // a fresh window.__svc), so reading it once at the end would only ever return what the very
+  // last document logged. Reading it after every step instead, and keeping only what is new
+  // since the last read, carries each document's events across into a run-long record before
+  // the next navigation can erase them.
+  const overlayEvents = [];
+  let lastReadEventCount = 0;
+  async function collectNewOverlayEvents() {
+    const events = await readEvents(page).catch(() => null);
+    if (!events) return;
+    if (events.length > lastReadEventCount) overlayEvents.push(...events.slice(lastReadEventCount));
+    lastReadEventCount = events.length;
+  }
   const wallStart = Date.now();
   // The overlay only exists once a document has actually loaded — addInitScript does not run
   // against the initial about:blank page. Every overlay call before the tour's first `goto` is
@@ -350,6 +362,8 @@ async function main() {
         }
 
         let waitMs = 0;
+        let navigated = false;
+        let timerShown = false;
         if (step.action === "caption") {
           const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
           await overlayCaption(page, step.text);
@@ -367,6 +381,10 @@ async function main() {
           const urlBeforeAction = page.url();
           const result = await runWithWaitOverlay(page, step, unscaledPacing, capture, () => executeAction(page, step, ctx));
           waitMs = result.waitMs;
+          timerShown = result.shown;
+          // The document is judged by whether the URL moved, not by the action's name — a goto
+          // is navigated by definition, everything else stands or falls on the URL check alone.
+          navigated = step.action === "goto" || page.url() !== urlBeforeAction;
           if (ALWAYS_NAVIGATING_ACTIONS.has(step.action) || page.url() !== urlBeforeAction) {
             hasNavigated = true;
             await overlayChapter(page, scene.chapter);
@@ -403,6 +421,11 @@ async function main() {
           last.endMs = Date.now() - wallStart;
         }
 
+        // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
+        // only place a flush is needed — every other action leaves the current document alone,
+        // and its own events (e.g. a "type" step's typeChar events) ride along in the next flush.
+        if (WAIT_CAPABLE_ACTIONS.has(step.action)) await collectNewOverlayEvents();
+
         const endMs = Date.now() - wallStart;
         const frameEnd = capture?.frames.length ?? null;
         const description = describeStep(step, waitMs, values, now);
@@ -419,6 +442,8 @@ async function main() {
           waitMs,
           residualMs,
           compressedOnScreenMs: compression?.compressed ? compression.onScreenMs : null,
+          navigated,
+          timerShown,
           startMs,
           endMs,
           frameStart,
@@ -438,7 +463,7 @@ async function main() {
 
     elapsedMs = Date.now() - wallStart;
     await new Promise((resolve) => setTimeout(resolve, script.finalHoldMs));
-    overlayEvents = await readEvents(page).catch(() => []);
+    await collectNewOverlayEvents();
   } catch (err) {
     if (err instanceof SceneStepError) {
       console.error(`\nsite-video-capture failed: ${err.message}`);

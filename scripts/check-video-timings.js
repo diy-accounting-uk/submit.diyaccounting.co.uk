@@ -21,63 +21,11 @@ import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
 import { validateScript } from "./lib/video/scriptSchema.js";
-import { groupFor, pauseForGroup, residualAfterWait } from "./lib/video/pacing.js";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
+import { checkTimings, checkTimerMarkers, checkTypingCadence } from "./lib/video/checks.js";
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
-}
-
-// --- 10.1: timings match the config ---
-
-function checkTimings(timelineSteps, script) {
-  const failures = [];
-  for (const step of timelineSteps) {
-    if (step.group === 2 || step.group === 3) {
-      const expectedResidual = residualAfterWait(step.configuredMs, step.waitMs, script.pacing);
-      const diff = Math.abs(expectedResidual - step.residualMs);
-      if (diff > 60) {
-        failures.push({
-          step: `${step.sceneId}#${step.stepIndex}`,
-          check: "residualAfterWait",
-          expected: expectedResidual,
-          actual: step.residualMs,
-          toleranceMs: 60,
-        });
-      }
-    }
-  }
-  return failures;
-}
-
-function checkTimerMarkers(timelineSteps, overlayEvents, script) {
-  // Count only steps that can show a timer: await and click. Goto is excluded because the
-  // overlay does not exist during navigation (the document unloads and is reinstalled after
-  // the new one loads). Use count-based check rather than per-step attribution because the
-  // overlay clock resets on every navigation, so a shared clock with Node is unavailable.
-  const expectedCount = timelineSteps.filter((s) => s.waitMs > script.pacing.timerThresholdMs && (s.action === "await" || s.action === "click")).length;
-  const actualCount = overlayEvents.filter((e) => e.type === "timerStart").length;
-  if (actualCount < expectedCount) {
-    return [{ check: "timerMarkers", expected: `>= ${expectedCount}`, actual: actualCount }];
-  }
-  return [];
-}
-
-function checkTypingCadence(overlayEvents, script) {
-  const typeEvents = overlayEvents.filter((e) => e.type === "typeChar").map((e) => e.t);
-  if (typeEvents.length < 2) return [];
-  const intervals = [];
-  for (let i = 1; i < typeEvents.length; i++) {
-    const gap = typeEvents[i] - typeEvents[i - 1];
-    if (gap > 0 && gap < script.pacing.perCharMs * 5) intervals.push(gap); // drop cross-step gaps
-  }
-  if (intervals.length === 0) return [];
-  const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-  const diff = Math.abs(mean - script.pacing.perCharMs);
-  if (diff > 25) {
-    return [{ check: "typingCadence", expected: script.pacing.perCharMs, actual: Math.round(mean), toleranceMs: 25 }];
-  }
-  return [];
 }
 
 // --- 10.2: the file is what it claims ---
