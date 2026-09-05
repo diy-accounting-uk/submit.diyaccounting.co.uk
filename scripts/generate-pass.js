@@ -14,9 +14,9 @@
 //   . ./scripts/aws-assume-submit-deployment-role.sh
 //
 // Pass types (from submit.passes.toml):
-//   day-guest-test-pass    - Day guest sandbox access (1 day, 1 use, testPass: true)
+//   day-guest-test-pass    - Day guest synthetic access (1 day, 1 use, testPass: true)
 //   day-guest-pass         - Day guest production access (1 day, 1 use)
-//   resident-pro-test-pass - Resident pro sandbox access (1 day, 1 use, testPass: true)
+//   resident-pro-test-pass - Resident pro synthetic access (1 day, 1 use, testPass: true)
 //   resident-pro-pass      - Resident pro production access (1 day, 1 use)
 //   invited-guest          - Month-long access for invited users (1 month, 1 use, email required)
 //   resident-guest         - Ongoing free access (unlimited, 1 use, email required)

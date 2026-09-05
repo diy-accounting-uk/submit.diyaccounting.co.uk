@@ -153,7 +153,7 @@ Reads from: CLI argument, `TEST_AUTH_TOTP_SECRET` env var, or `cognito-native-te
 
 | Workflow | Change |
 |----------|--------|
-| `synthetic-test.yml` | `test-auth-totp-secret` input/output/passthrough + `TEST_AUTH_TOTP_SECRET` env |
+| `probe-test.yml` | `test-auth-totp-secret` input/output/passthrough + `TEST_AUTH_TOTP_SECRET` env |
 | `deploy-app.yml` | `TEST_AUTH_TOTP_SECRET` env on behaviour test step |
 | `generate-pass.yml` | TOTP secret + `oathtool` command in job summary |
 
@@ -279,7 +279,7 @@ npm run test:disableCognitoNative   # Clean up
 | `scripts/enable-cognito-native-test.js` | Capture/save TOTP secret |
 | `scripts/totp-code.js` | TOTP code generator helper |
 | `behaviour-tests/steps/behaviour-login-steps.js` | TOTP challenge handler for Playwright |
-| `.github/workflows/synthetic-test.yml` | TOTP secret passthrough |
+| `.github/workflows/probe-test.yml` | TOTP secret passthrough |
 | `.github/workflows/deploy-app.yml` | TOTP secret env var |
 | `.github/workflows/generate-pass.yml` | TOTP secret in job summary |
 | `package.json` | `otpauth` v9.5.0 + `test:totpCode` script |
