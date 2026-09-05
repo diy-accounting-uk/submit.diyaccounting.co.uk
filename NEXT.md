@@ -86,7 +86,23 @@ starting.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 ## Ready: Claude Code
 
-(none)
+- [ ] **B30e. Stop the prod detection alarms firing on our own deployment role.** Both
+  `prod-env-salt-secret-unexpected-read` (#97) and `prod-env-dynamodb-customer-table-scan` (#95)
+  fire on `submit-prod-deployment-role`, the GitHub Actions role, which the detector's `prod-*`
+  role-name exception in `SecurityDetectionStack.java` does not cover. The salt reads are the
+  deploy pipeline reading the salt (five in a day, all that role): exclude the deployment role
+  from that filter. The table scans are 412 of 450 in a day from that role across all three
+  customer tables, which is the probe workflow's "Export DynamoDB data for test users" step
+  (`scripts/export-test-dynamodb.sh`) scanning whole prod tables every four hours: make that
+  export query by the test users' keys instead of scanning, and leave the scan detector as it is,
+  since catching exactly that is its purpose. CDK test and a script test. **Source**: BACKLOG 30;
+  issues #95, #97; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30f. Record what HMRC returned for the customer submission failure of 2026-09-03 21:30**
+  (issue #111). The Lambda log group of that deployment is gone, so the record is the
+  `prod-env-hmrc-api-requests` table, which stores every HMRC call and response: query it for the
+  POST to `/organisations/vat/*/returns` around that minute, and put the HMRC status, error code
+  and message on the issue (read-only; the operator posts it). **Source**: BACKLOG 30; issue #111.
+  **Owner**: Claude Code. **Model**: Haiku.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -202,16 +218,6 @@ starting.
   `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
   **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
-- [ ] **B30e. Name the principal behind the salt-read and customer-table-scan alarms.** Issues
-  #97 (`prod-env-salt-secret-unexpected-read`) and #95 (`prod-env-dynamodb-customer-table-scan`),
-  both still updating daily: run the CloudTrail lookup in runbook section 6.6 for prod and record
-  whether the reads come from a role the `SecurityDetectionStack.java` filter should allow (then
-  tune the filter) or from something real. **Source**: BACKLOG 30; issues #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
-  session (`aws sso login --sso-session diyaccounting`).
-- [ ] **B30f. Read what HMRC returned for the customer submission failure of 2026-09-03 21:30**
-  (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
-  `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
-  **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: HMRC's sandbox holds no return for a fresh test user's canned obligations and never
