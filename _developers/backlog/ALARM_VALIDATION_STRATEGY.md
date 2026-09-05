@@ -38,8 +38,6 @@ proves the individual check works, and now also proves the composite fans in.
 | Alarm | Threshold | Testable Via |
 |-------|-----------|--------------|
 | `check-{fn}-errors` | ≥1 error/5min | Mutation testing, chaos injection |
-| `check-{fn}-throttles` | ≥1 throttle/5min | Reserved concurrency + load |
-| `check-{fn}-high-duration-p95` | ≥80% timeout | Slow code injection |
 | `check-{fn}-log-errors` | ≥1 ERROR pattern/5min | Log injection |
 
 ### API Gateway Alarms
@@ -59,7 +57,7 @@ proves the individual check works, and now also proves the composite fans in.
 |-------|-----------|--------------|
 | `{prefix}-health-failed` | <90% success/5min | Break web endpoint |
 | `{prefix}-api-failed` | <90% success/5min | Break API endpoint |
-| `{prefix}-github-synthetic-failed` | ≥1 (2hr window, missing=breaching) | Skip synthetic workflow |
+| `{prefix}-github-probe-failed` | ≥1 (2hr window, missing=breaching) | Skip probe workflow |
 
 ### RUM Alarms
 | Alarm | Threshold | Testable Via |
@@ -70,7 +68,9 @@ proves the individual check works, and now also proves the composite fans in.
 ### Async/SQS Alarms
 | Alarm | Threshold | Testable Via |
 |-------|-----------|--------------|
-| `{queue}-not-empty` (DLQ) | >1 message | Fail queue processor |
+| `check-{dlq}-not-empty` | >1 message | Fail queue processor |
+| `check-{worker}-errors` | ≥1 error/5min | Mutation testing, chaos injection |
+| `check-{queue}-message-age` | ≥30min oldest message | Stall the worker |
 
 ### Security EventBridge Rules → SNS
 | Rule | Trigger | Testable Via |
@@ -127,7 +127,7 @@ proves the individual check works, and now also proves the composite fans in.
 |------|--------|-----------------|
 | Lambda throws exception | Deploy mutant with `throw new Error()` | `check-{fn}-errors` → ALARM |
 | Lambda logs ERROR | Deploy mutant with `console.error('ERROR')` | `check-{fn}-log-errors` → ALARM |
-| Lambda timeout | Deploy mutant with `await sleep(30000)` | `check-{fn}-high-duration-p95` → ALARM |
+| Lambda timeout | Deploy mutant with `await sleep(30000)` | `check-{fn}-errors` → ALARM |
 | API 5xx response | Break API Lambda | `{prefix}-api-5xx` → ALARM |
 
 **CI Implementation:**
@@ -186,7 +186,7 @@ steps:
 |------|--------|-----------------|
 | Health endpoint down | Return 500 from health Lambda | `{prefix}-health-failed` → ALARM |
 | API endpoint down | Return 500 from API Lambda | `{prefix}-api-failed` → ALARM |
-| GitHub synthetic gap | Skip synthetic-test workflow | `{prefix}-github-synthetic-failed` → ALARM |
+| GitHub probe gap | Skip probe-test workflow | `{prefix}-github-probe-failed` → ALARM |
 
 **CI Implementation:**
 ```yaml
@@ -486,24 +486,6 @@ cleanup:
   - Redeploy original Lambda code
 ```
 
-#### Test CQ-3: Lambda Duration (Approaching Timeout)
-```yaml
-name: Lambda Duration Alarm
-id: CQ-3
-category: code-quality-gate
-alarm: "check-{functionName}-high-duration-p95"
-mutation:
-  file: "app/functions/{targetFunction}.js"
-  type: "slow-response"
-  # Inject 25s delay (Lambda timeout typically 30s, alarm at 80% = 24s)
-execution:
-  - Deploy mutated Lambda
-  - Invoke Lambda 5 times (for p95 significance)
-  - Wait 6 minutes
-verification:
-  - Alarm state = ALARM
-```
-
 ### 4.2 Secret Detection Tests
 
 #### Test SD-1: IAM Policy Change Detection
@@ -676,8 +658,7 @@ The workflow generates a JSON report:
   "results": {
     "code-quality-gate": {
       "CQ-1": { "passed": true, "alarmTriggered": true, "snsDelivered": true },
-      "CQ-2": { "passed": true, "alarmTriggered": true, "snsDelivered": true },
-      "CQ-3": { "passed": false, "alarmTriggered": false, "reason": "Duration not high enough" }
+      "CQ-2": { "passed": true, "alarmTriggered": true, "snsDelivered": true }
     },
     "throttling": {
       "TH-1": { "passed": true, "alarmTriggered": true, "blockedRequests": 487 },
@@ -710,19 +691,19 @@ The workflow generates a JSON report:
 | Alarm | Console Location | Logs/Details | SNS Topic | Region |
 |-------|------------------|--------------|-----------|--------|
 | `check-{fn}-errors` | CloudWatch Alarms | Lambda logs in CloudWatch | None (silent) | eu-west-2 |
-| `check-{fn}-throttles` | CloudWatch Alarms | Lambda metrics | None (silent) | eu-west-2 |
-| `check-{fn}-high-duration-p95` | CloudWatch Alarms | Lambda metrics, X-Ray | None (silent) | eu-west-2 |
 | `check-{fn}-log-errors` | CloudWatch Alarms | Lambda logs (search ERROR) | None (silent) | eu-west-2 |
 | `{prefix}-api-5xx` | CloudWatch Alarms | API Gateway logs | None (silent) | eu-west-2 |
 | `{prefix}-health-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
 | `{prefix}-api-failed` | CloudWatch Alarms | Synthetics canary runs | alertTopic | eu-west-2 |
-| `{prefix}-github-synthetic-failed` | CloudWatch Alarms | GitHub Actions runs | alertTopic | eu-west-2 |
+| `{prefix}-github-probe-failed` | CloudWatch Alarms | GitHub Actions runs | alertTopic | eu-west-2 |
 | `{prefix}-rum-lcp-p75` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
 | `{prefix}-rum-js-errors` | CloudWatch Alarms | RUM console | None (silent) | eu-west-2 |
 | `{prefix}-waf-rate-limit` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
 | `{prefix}-waf-attack-signatures` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
 | `{prefix}-waf-known-bad-inputs` | CloudWatch Alarms | WAF sampled requests | None | **us-east-1** |
-| `{queue}-not-empty` (DLQ) | CloudWatch Alarms | SQS console, dead letters | None (silent) | eu-west-2 |
+| `check-{dlq}-not-empty` | CloudWatch Alarms | SQS console, dead letters | None (silent) | eu-west-2 |
+| `check-{worker}-errors` | CloudWatch Alarms | Lambda logs in CloudWatch | None (silent) | eu-west-2 |
+| `check-{queue}-message-age` | CloudWatch Alarms | SQS console | None (silent) | eu-west-2 |
 | `{prefix}-dynamodb-scan-detected` | CloudWatch Alarms | CloudTrail | securityFindingsTopic | eu-west-2 |
 | GuardDuty findings | GuardDuty console | GuardDuty finding details | securityFindingsTopic | eu-west-2 |
 | Security Hub findings | Security Hub console | Finding details | securityFindingsTopic | eu-west-2 |
@@ -771,20 +752,20 @@ filter action = "BLOCK"
 | Stack | Alarm Name Pattern | Threshold | SNS Topic |
 |-------|-------------------|-----------|-----------|
 | Lambda.java | `check-{fn}-errors` | ≥1/5min | None (silent) |
-| Lambda.java | `check-{fn}-throttles` | ≥1/5min | None (silent) |
-| Lambda.java | `check-{fn}-high-duration-p95` | ≥80% timeout | None (silent) |
 | Lambda.java | `check-{fn}-log-errors` | ≥1/5min | None (silent) |
 | Lambda.java | `{prefix}-{stack}-stack-health` (composite, `anyOf` every `check-` alarm in the stack) | n/a | routed via OpsStack's AlarmStateChangeRule |
 | ApiStack.java | `{prefix}-api-5xx` | ≥1/5min | None (silent) |
 | OpsStack.java | `{prefix}-health-failed` | <90%/5min (2 periods) | alertTopic |
 | OpsStack.java | `{prefix}-api-failed` | <90%/5min (2 periods) | alertTopic |
-| OpsStack.java | `{prefix}-github-synthetic-failed` | ≥1 (2hr, missing=breaching) | alertTopic |
+| OpsStack.java | `{prefix}-github-probe-failed` | ≥1 (2hr, missing=breaching) | alertTopic |
 | ObservabilityStack.java | `{prefix}-rum-lcp-p75` | >4000ms | None (silent) |
 | ObservabilityStack.java | `{prefix}-rum-js-errors` | ≥5/5min | None (silent) |
 | EdgeStack.java | `{prefix}-waf-rate-limit` | ≥50/5min | None (us-east-1) |
 | EdgeStack.java | `{prefix}-waf-attack-signatures` | ≥5/5min | None (us-east-1) |
 | EdgeStack.java | `{prefix}-waf-known-bad-inputs` | ≥5/5min | None (us-east-1) |
-| AsyncApiLambda.java | `{queue}-not-empty` | >1 message | None (silent) |
+| AsyncApiLambda.java | `check-{dlq}-not-empty` | >1 message | None (silent) |
+| AsyncApiLambda.java | `check-{worker}-errors` | ≥1/5min | None (silent) |
+| AsyncApiLambda.java | `check-{queue}-message-age` | ≥30min oldest message | None (silent) |
 
 ## Appendix C: EventBridge Security Rules
 

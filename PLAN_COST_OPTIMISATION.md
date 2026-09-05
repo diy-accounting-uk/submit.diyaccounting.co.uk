@@ -112,10 +112,6 @@ yet.
 
 Per-stack composites collapse those 26 to 8, so $15.10 + $4.00 = $19.10.
 
-A further $5.20 sits in the 52 `-throttles` and `-high-duration-p95` child alarms across the 26
-functions. `PLAN_ALARM_CONSOLIDATION.md` says that cut needs 90 days of `describe-alarm-history`
-first, so it is not counted in the after total.
-
 Item 6's saving is small today and large if item 1 is not done. Without item 1 the log group
 ingests 228 GB a month with no expiry, so storage alone climbs by about $6.80 a month, every
 month.

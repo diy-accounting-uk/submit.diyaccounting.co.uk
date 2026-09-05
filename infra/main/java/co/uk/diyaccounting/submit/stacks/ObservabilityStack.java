@@ -96,7 +96,7 @@ public class ObservabilityStack extends Stack {
 
         int accessLogGroupRetentionPeriodDays();
 
-        // Apex domain for GitHub synthetic metrics namespace (e.g., submit.diyaccounting.co.uk)
+        // Apex domain for GitHub probe metrics namespace (e.g., submit.diyaccounting.co.uk)
         @Value.Default
         default String apexDomain() {
             return "";
@@ -518,7 +518,7 @@ public class ObservabilityStack extends Stack {
         // This dashboard provides a single view across all deployments in this environment
         List<List<IWidget>> dashboardRows = new ArrayList<>();
 
-        // Determine apex domain for GitHub synthetic metrics namespace
+        // Determine apex domain for GitHub probe metrics namespace
         String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
                 ? props.apexDomain()
                 : props.sharedNames().hostedZoneName;
@@ -557,10 +557,10 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 2: GitHub Synthetic Tests
-        // GitHub synthetic test metrics (sent from synthetic-test.yml), one series per suite
+        // Row 2: GitHub Probe Tests
+        // GitHub probe test metrics (sent from probe-test.yml), one series per suite
         dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("GitHub Synthetic Tests")
+                .title("GitHub Probe Tests")
                 .left(List.of(MathExpression.Builder.create()
                         .expression(String.format(
                                 "SEARCH('{%s,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)", apexDomain))

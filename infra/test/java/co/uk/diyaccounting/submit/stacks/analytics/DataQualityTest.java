@@ -80,7 +80,7 @@ class DataQualityTest {
                         Map.of(
                                 "Ruleset",
                                 Match.stringLikeRegexp(
-                                        "[\\s\\S]*customer[\\s\\S]*test-user[\\s\\S]*synthetic[\\s\\S]*system[\\s\\S]*visitor[\\s\\S]*ai-agent[\\s\\S]*"))));
+                                        "[\\s\\S]*customer[\\s\\S]*test-user[\\s\\S]*synthetic[\\s\\S]*probe[\\s\\S]*system[\\s\\S]*visitor[\\s\\S]*ai-agent[\\s\\S]*"))));
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(

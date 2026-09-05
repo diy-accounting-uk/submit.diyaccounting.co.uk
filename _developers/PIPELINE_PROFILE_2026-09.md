@@ -11,7 +11,7 @@ gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs/<id>
 Raw JSON teed to `target/run-33648185839-prod-jobs.json`, `target/run-33644482805-ci-jobs.json`,
 and the matching `-meta.json` files. The prod run (push to main) ran 144 jobs across 61m16s; the
 ci run (workflow_dispatch) ran 143 jobs across 23m19s. Both counts are inflated by reusable
-workflow calls — `test.yml`, `deploy-cdk-stack.yml` (called 5 times), and `synthetic-test.yml`
+workflow calls — `test.yml`, `deploy-cdk-stack.yml` (called 5 times), and `probe-test.yml`
 (called 16 times, once per `web-test-*` job) each expand into 3-6 sub-jobs of their own. Tables
 below group those sub-jobs back under the top-level job name that calls them, matching the names
 and `needs:` graph in `deploy.yml` — confirmed against the file with `js-yaml` rather than by eye.
