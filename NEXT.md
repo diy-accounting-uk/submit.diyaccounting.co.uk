@@ -97,13 +97,6 @@ starting.
   export query by the test users' keys instead of scanning, and leave the scan detector as it is,
   since catching exactly that is its purpose. CDK test and a script test. **Source**: BACKLOG 30;
   issues #95, #97; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B30f. Record what HMRC returned for the customer submission failure of 2026-09-03 21:30**
-  (issue #111). The Lambda log group of that deployment is gone, so the record is the
-  `prod-env-hmrc-api-requests` table, which stores every HMRC call and response: query it for the
-  POST to `/organisations/vat/*/returns` around that minute, and put the HMRC status, error code
-  and message on the issue (read-only; the operator posts it). **Source**: BACKLOG 30; issue #111.
-  **Owner**: Claude Code. **Model**: Haiku.
-
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
@@ -141,6 +134,15 @@ starting.
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
   the deploy-environment workflow for each. PR #118 cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
+  `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
+  HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
+  2026-09-03 21:44:22 UTC (request 23143b62-e10c-4309-b76c-89f8512a0a13), retried at 21:46 and
+  21:48 with the same answer; the submission failure the alarm counted at 21:30 sits in the same
+  session. That message is HMRC saying the customer's Government Gateway account is not enrolled
+  for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
+  finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
+  and authority steps. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
