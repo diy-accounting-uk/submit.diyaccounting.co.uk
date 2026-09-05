@@ -63,6 +63,10 @@ public class HmrcStack extends Stack {
     public Function hmrcVatReturnGetLambda;
     public ILogGroup hmrcVatReturnGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcItsaBusinessDetailsGetLambdaProps;
+    public Function hmrcItsaBusinessDetailsGetLambda;
+    public ILogGroup hmrcItsaBusinessDetailsGetLambdaLogGroup;
+
     public AbstractApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
     public ILogGroup receiptGetLambdaLogGroup;
@@ -147,6 +151,12 @@ public class HmrcStack extends Stack {
                 this,
                 "ImportedHmrcVatReturnGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Business Details GET async request table
+        ITable hmrcItsaBusinessDetailsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaBusinessDetailsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName);
 
         // Lookup existing DynamoDB HMRC VAT Obligation GET async request table
         ITable hmrcVatObligationGetAsyncRequestsTable = Table.fromTableName(
@@ -746,6 +756,82 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnGetLambda.getFunctionName());
 
+        // ITSA Business Details GET
+        var itsaBusinessDetailsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaBusinessDetailsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaBusinessDetailsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBusinessDetailsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBusinessDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaCustomAuthorizer)
+                        .environment(itsaBusinessDetailsGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaBusinessDetailsGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaBusinessDetailsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaBusinessDetailsGetLambdaProps = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaBusinessDetailsGetLambda = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaBusinessDetailsGetLambdaLogGroup = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaBusinessDetailsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA business details with ingestHandler %s and worker %s",
+                this.hmrcItsaBusinessDetailsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaHandler);
+
+        // Grant the ITSA business details Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaBusinessDetailsGetLambda, hmrcItsaBusinessDetailsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaBusinessDetailsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaBusinessDetailsGetLambda.getFunctionName());
+
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -824,6 +910,7 @@ public class HmrcStack extends Stack {
                         hmrcVatPaymentsGetLambdaUrlOrigin,
                         hmrcVatPenaltiesGetLambdaUrlOrigin,
                         hmrcVatReturnGetLambdaUrlOrigin,
+                        hmrcItsaBusinessDetailsGetLambdaUrlOrigin,
                         myReceiptsLambdaUrlOrigin));
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());
