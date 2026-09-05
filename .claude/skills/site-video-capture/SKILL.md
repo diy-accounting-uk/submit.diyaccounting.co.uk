@@ -91,10 +91,12 @@ Three things to know before writing the next one:
 - Run `ensureBundle` while the browser is on the bundles page. Navigate there with an ordinary
   `click` step so the pointer and the ripple stay on camera, then let the action grant the
   bundle.
-- Only the first HMRC call of a journey redirects, so a script has at most one `hmrcAuthorise`,
-  placed directly after the click that triggers the redirect. A run whose account already holds
-  an HMRC token fails that step by design, rather than recording a journey with the authorise
-  chapter silently missing.
+- HMRC redirects once per scope tier, so a script has one `hmrcAuthorise` per tier, each placed
+  directly after the click that triggers its redirect: a read-only journey has one; a journey
+  that queries obligations (`read:vat`) and then submits (`write:vat read:vat`) has two, as
+  `videos/submit-return.json` shows. A run whose account already holds a token for that tier
+  fails the step by design, rather than recording a journey with the authorise chapter silently
+  missing.
 - Type into text fields and `fill` date pickers. Typing digits into an `input type="date"` lands
   them in the browser's own segment order and produces a different date.
 

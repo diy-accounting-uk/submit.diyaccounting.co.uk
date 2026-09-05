@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a0f41c7 (the PR #107 merge, deployed 2026-09-04), the only app
-stack set standing; prod-ca55da7 was destroyed by that deploy.** Each extra
+**Prod runs deployment prod-b2bad16 (the PR #116 merge, deployed 2026-09-04 20:16). Whether
+that deploy destroyed prod-a0f41c7 needs a stack list once an SSO session exists.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -43,13 +43,13 @@ starting.
   **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording is dispatched from the batch branch instead, and its mp4 with the timing check passing as a blocking step verifies this item and B17a.1.
+  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. A Sonnet track (worktree `.claude/worktrees/agent-aa406b7b95b37cc0b`) is making the capture record `navigated` and `timerShown` per step and the check count only on-page waits; then the prod recording re-runs and a passing blocking check verifies this item and B17a.1.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
+  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
 - [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
+  **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -60,7 +60,31 @@ starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
+  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Its deploy fails secret validation until the operator's key (O6) exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
+- [ ] **B30c. Stop the GitHub probe alarm firing on its own cadence.** `OpsStack.java`
+  (`githubSyntheticAlarm`, renamed `githubProbeAlarm` in PR #120) evaluates a 2-hour period with
+  missing data treated as breaching, but `synthetic-test.yml` publishes the metric every 4 hours,
+  so about half of all windows are empty and every prod deployment inherits a false alarm
+  (#103, #109, #123). Widen the period to straddle the cron, or move the alarm to the env stack
+  so it is not recreated per deployment; CDK test updated. **Source**: BACKLOG 30; issues #123.
+  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: probe alarm period (Sonnet). Code complete on `claude/probe-alarm-period` (PR opening, stacked on #120): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
+- [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
+  `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
+  carry the deployment slug, so each new deployment opens a fresh issue for the same check
+  (19 of the 30 open alarm issues). Strip the deployment segment before the title search so a
+  family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
+  2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
+- [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
+  share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
+  both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
+  `ci-submit.diyaccounting.co.uk` apex that the ci behaviour suites hit, so PRs #119 and #120
+  failed thirteen ci suites with no code fault. Fix in `get-names`: a per-branch unique name of the
+  same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
+  serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
+  Sonnet.
+  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Verified when PRs #119 and #120, re-run with it merged in, deploy under distinct names and their ci suites pass.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -131,10 +155,11 @@ starting.
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
   the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B30b remainder, operator. Close the six `[ALARM]` issues for the deleted p95 alarms**:
-  #78, #80, #81, #83, #86, #89 (`…-activity-telegram-forwarder-high-duration-p95`). The alarm no
-  longer exists after the batch deploys, so no recovery event will close them. **Source**: BACKLOG
-  30. **Owner**: Operator.
+- [ ] **B30b remainder, operator. Close 22 stale `[ALARM]` issues.** Their deployment is
+  destroyed or the alarm type is deleted by PR #118, so no recovery event will ever close them:
+  #77, #78, #79, #80, #81, #82, #83, #84, #85, #86, #87, #88, #89, #90, #96, #103, #108, #109,
+  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111 and #123 open; the items below act
+  on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
@@ -210,6 +235,17 @@ starting.
   `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
   **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
+- [ ] **B30e. Name the principal behind the salt-read and customer-table-scan alarms.** Issues
+  #93 and #97 (`salt-secret-unexpected-read`, ci many times a day) and #94 and #95
+  (`dynamodb-customer-table-scan`): run the CloudTrail lookup in runbook section 6.6 for each
+  environment and record whether the reads come from a role the `SecurityDetectionStack.java`
+  filter should allow (then tune the filter) or from something real. **Source**: BACKLOG 30;
+  issues #93, #94, #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
+  session (`aws sso login --sso-session diyaccounting`).
+- [ ] **B30f. Read what HMRC returned for the customer submission failure of 2026-09-03 21:30**
+  (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
+  `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
+  **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.

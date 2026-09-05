@@ -5,9 +5,7 @@ run-name: "deploy from ${{ github.ref_name }}"
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 concurrency:
-  # One deploy at a time per target environment, not per branch: two branches that both
-  # deploy to ci used to run in parallel and race to repoint the shared ci apex.
-  group: ${{ github.ref_name == 'main' && 'deploy-prod' || 'deploy-ci' }}
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 # Bump25
@@ -102,6 +100,7 @@ permissions:
   contents: read
   pull-requests: read
   pages: write
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -487,6 +486,15 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
