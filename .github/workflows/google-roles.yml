@@ -10,6 +10,7 @@ on:
     paths:
       - 'analytics/google-roles.toml'
       - 'scripts/google-roles-apply.js'
+      - 'scripts/gcp-billing-assert.js'
       - '.github/workflows/google-roles.yml'
   push:
     branches:
@@ -17,6 +18,7 @@ on:
     paths:
       - 'analytics/google-roles.toml'
       - 'scripts/google-roles-apply.js'
+      - 'scripts/gcp-billing-assert.js'
       - '.github/workflows/google-roles.yml'
 
 env:
@@ -92,6 +94,12 @@ jobs:
             node scripts/google-roles-apply.js 2>&1 | tee google-roles-apply.log
           fi
 
+      - name: Dry-run gcp-billing-assert
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: node scripts/gcp-billing-assert.js --dry-run 2>&1 | tee gcp-billing-assert.log
+
       - name: Generate step summary
         if: always()
         run: |
@@ -100,5 +108,11 @@ jobs:
           if [ -f google-roles-apply.log ]; then
             echo '```' >> "$GITHUB_STEP_SUMMARY"
             cat google-roles-apply.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f gcp-billing-assert.log ]; then
+            echo "# GCP billing (dry run)" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat gcp-billing-assert.log >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
