@@ -7,9 +7,7 @@ run-name: "lean deploy ${{ inputs.deployment-name || '(auto)' }} from ${{ github
 # without running CDK. Bypasses full deploy.yml for rapid iteration (~5-8 min vs 15-25 min).
 
 concurrency:
-  # Serialise per target environment, not per branch, so two branches' lean deploys can't
-  # race each other's Lambda updates and S3 syncs on the same live environment.
-  group: ${{ github.ref_name == 'main' && 'deploy-app-prod' || 'deploy-app-ci' }}
+  group: deploy-app-${{ github.ref_name }}
   cancel-in-progress: false
 
 on:

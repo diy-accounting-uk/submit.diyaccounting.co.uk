@@ -9,9 +9,7 @@ run-name: "record ${{ inputs.script }} video"
 # procedure — local iteration first, then this workflow for the real recording.
 
 concurrency:
-  # Recording toggles Cognito native auth on the target environment, the same shared
-  # setting a deploy toggles for its own behaviour tests — serialise per environment.
-  group: ${{ github.ref_name == 'main' && 'video-capture-prod' || 'video-capture-ci' }}
+  group: video-capture-${{ github.ref_name }}
   cancel-in-progress: false
 
 on:

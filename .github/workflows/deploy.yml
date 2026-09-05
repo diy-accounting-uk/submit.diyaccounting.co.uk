@@ -5,9 +5,7 @@ run-name: "deploy from ${{ github.ref_name }}"
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 concurrency:
-  # One deploy at a time per target environment, not per branch: two branches that both
-  # deploy to ci used to run in parallel and race to repoint the shared ci apex.
-  group: ${{ github.ref_name == 'main' && 'deploy-prod' || 'deploy-ci' }}
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 # Bump25
