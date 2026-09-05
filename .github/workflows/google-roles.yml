@@ -11,6 +11,7 @@ on:
       - 'analytics/google-roles.toml'
       - 'scripts/google-roles-apply.js'
       - 'scripts/gcp-billing-assert.js'
+      - 'scripts/gcp-enable-apis.js'
       - '.github/workflows/google-roles.yml'
   push:
     branches:
@@ -19,6 +20,7 @@ on:
       - 'analytics/google-roles.toml'
       - 'scripts/google-roles-apply.js'
       - 'scripts/gcp-billing-assert.js'
+      - 'scripts/gcp-enable-apis.js'
       - '.github/workflows/google-roles.yml'
 
 env:
@@ -83,6 +85,11 @@ jobs:
           } >> "$GITHUB_OUTPUT"
         env:
           GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
+
+      - name: Enable the Google APIs the scripts need
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: node scripts/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
 
       - name: Run google-roles-apply
         env:
