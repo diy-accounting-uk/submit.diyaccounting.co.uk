@@ -74,7 +74,7 @@ code. One script therefore proves locally and records on a deployment with no ed
 **No credential ever appears in a scene script.** `login` reads `TEST_AUTH_USERNAME`,
 `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`. `hmrcAuthorise` reads `TEST_HMRC_USERNAME`,
 `TEST_HMRC_PASSWORD` and `TEST_HMRC_VAT_NUMBER`, or mints a fresh HMRC sandbox test user when
-those are unset and `HMRC_ACCOUNT=sandbox`. The sign-in and authorise pages stay on camera,
+those are unset and `HMRC_ACCOUNT=synthetic`. The sign-in and authorise pages stay on camera,
 because a customer sees them, but the run refuses to finish if a credential reached the `.vtt`,
 the transcript, the timeline or the overlay event log, and the Cognito one-time code field is
 masked on screen. A `type` or `fill` step that has to carry a credential of its own marks itself

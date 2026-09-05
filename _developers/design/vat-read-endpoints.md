@@ -131,7 +131,7 @@ the repo root.
      needs its own async-table env var name in this list.
    - Query params handled: `vrn` (required), `from`/`to` (**optional**, defaulted to
      1 Jan of current year → today when absent), `status` (`O`/`F`), `Gov-Test-Scenario`,
-     `hmrcAccount` header (`sandbox`/`live`), `runFraudPreventionHeaderValidation`.
+     `hmrcAccount` header (`synthetic`/`live`), `runFraudPreventionHeaderValidation`.
 2. **`app/bin/server.js`** line 21 (import) and line 224 (`hmrcVatObligationGetApiEndpoint(app)`)
    — registers the Express route for local/proxy dev.
 3. **`app/bin/dynamodb.js`** lines 343-346 — reads
@@ -237,12 +237,12 @@ the repo root.
 19. **`behaviour-tests/getVatObligations.behaviour.test.js`** (731 lines) — one Playwright
     test, full journey: creates/reuses an HMRC sandbox test user if credentials aren't
     supplied, logs in, ensures a `day-guest` bundle, walks the obligations form, does the full
-    HMRC OAuth dance via `behaviour-hmrc-steps.js` helpers, verifies results, then (in sandbox
+    HMRC OAuth dance via `behaviour-hmrc-steps.js` helpers, verifies results, then (in synthetic
     mode) re-runs against a battery of named `Gov-Test-Scenario` values. Uses page-object step
     functions from `behaviour-tests/steps/behaviour-hmrc-vat-steps.js`:
     `initVatObligations` (click the catalogue button, wait for `#vatObligationsForm`),
     `fillInVatObligations` (fills `#vrn`/`#fromDate`/`#toDate`/`#status`, optionally uses the
-    sandbox "add test data" link, optionally opens the developer section to pick
+    synthetic-mode "add test data" link, optionally opens the developer section to pick
     `#testScenario` and check `#runFraudPreventionHeaderValidation`), `submitVatObligationsForm`
     (clicks `#retrieveBtn`, races the click against `waitForURL` because it may trigger an
     OAuth redirect), `verifyVatObligationsResults`. Screenshots at every step to
@@ -250,7 +250,7 @@ the repo root.
 20. **`package.json`** lines 104-110 — six script variants:
     `test:getVatObligationsBehaviour` (bare `playwright test --project=...`, tees to
     `getVatObligationsBehaviour.log`), `-proxy`, `-proxy-report` (also runs
-    `test-report`/`publish-web-test-local.sh`), `-proxy-sandbox` (`HMRC_ACCOUNT=sandbox`),
+    `test-report`/`publish-web-test-local.sh`), `-proxy-synthetic` (`HMRC_ACCOUNT=synthetic`),
     `-ci`, `-prod`, `-simulator` — each just wraps the bare script with `npx dotenv -e
     .env.<variant>` and its own log file name.
 21. **`playwright.config.js`** — a `getVatObligationsBehaviour` project (`testMatch:
@@ -258,7 +258,7 @@ the repo root.
     is also listed in the `allBehaviour` project's `testMatch` array.
 22. **`.github/workflows/probe-test.yml`** line 38 — `getVatObligationsBehaviour` as one
     `behaviour-test-suite` dropdown option (`workflow_dispatch` and `workflow_call` inputs).
-23. **`.github/workflows/deploy.yml`** lines 1905-1930 — job `web-test-obligation-sandbox`
+23. **`.github/workflows/deploy.yml`** lines 1905-1930 — job `web-test-obligation-synthetic`
     calling `probe-test.yml` with `behaviour-test-suite: 'getVatObligationsBehaviour'`
     after deploy; and line 2136 — the job is listed in `disable-native-auth`'s `needs:` array
     so native Cognito auth doesn't get disabled until this job (and all its siblings) finish.
@@ -524,7 +524,7 @@ specific). Rename the imported handler and adjust:
 
 Copy `getVatObligations.behaviour.test.js`. Same skeleton (env var reads, `beforeAll`/
 `afterAll` server/dynamo/oauth2 bootstrap, HMRC test-user creation, login, bundle, HMRC OAuth,
-sandbox-mode scenario sweep). Add step functions to
+synthetic-mode scenario sweep). Add step functions to
 `behaviour-tests/steps/behaviour-hmrc-vat-steps.js` mirroring `initVatObligations`/
 `fillInVatObligations`/`submitVatObligationsForm`/`verifyVatObligationsResults`:
 `initVatLiabilities` (click `"VAT Liabilities (HMRC)"`, wait for `#vatLiabilitiesForm`),
@@ -542,8 +542,8 @@ section handling for `#testScenario`/`#runFraudPreventionHeaderValidation`),
 - `.github/workflows/probe-test.yml`: add `'getVatLiabilitiesBehaviour'` to the
   `behaviour-test-suite` dropdown options (both `workflow_dispatch.inputs` and
   `workflow_call.inputs`).
-- `.github/workflows/deploy.yml`: new job `web-test-liability-sandbox` mirroring
-  `web-test-obligation-sandbox` (lines 1905-1930) — same `needs:`, same `uses:
+- `.github/workflows/deploy.yml`: new job `web-test-liability-synthetic` mirroring
+  `web-test-obligation-synthetic` (lines 1905-1930) — same `needs:`, same `uses:
   ./.github/workflows/probe-test.yml`, `behaviour-test-suite: 'getVatLiabilitiesBehaviour'`.
   Add its job id to `disable-native-auth`'s `needs:` array (~line 2136).
 - `.github/workflows/test.yml`: new job `behaviour-test-simulator-get-vat-liabilities`
