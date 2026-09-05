@@ -32,10 +32,10 @@ runs:
           for WORKFLOW in "${WORKFLOWS[@]}"; do
             gh run list --workflow "$WORKFLOW" --limit 100 \
               --json databaseId,createdAt,headBranch,status,workflowName \
-              --jq --arg created "$CURRENT_CREATED_AT" --arg id "$CURRENT_RUN_ID" '
+              | jq -r --arg created "$CURRENT_CREATED_AT" --arg id "$CURRENT_RUN_ID" '
                 .[]
                 | select(.headBranch != "main")
-                | select(.status == "in_progress" or .status == "queued")
+                | select(.status == "in_progress" or .status == "queued" or .status == "pending" or .status == "waiting" or .status == "requested")
                 | select((.databaseId | tostring) != $id)
                 | select(.createdAt < $created)
                 | "\(.workflowName)#\(.databaseId) (\(.headBranch), created \(.createdAt))"
