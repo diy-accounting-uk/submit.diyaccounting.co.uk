@@ -41,12 +41,6 @@ starting.
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku.
   **Track**: synthetic workflow (Sonnet, shared with B39.1). Code complete on `claude/board-batch-2` (PR #118); verified when the next scheduled run on main runs all five suites.
-- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
-  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
-  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
-  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
-  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Its deploy fails secret validation until the operator's key (O6) exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B30c. Stop the GitHub probe alarm firing on its own cadence.** `OpsStack.java`
   (`githubSyntheticAlarm`, renamed `githubProbeAlarm` in PR #120) evaluates a 2-hour period with
   missing data treated as breaching, but `synthetic-test.yml` publishes the metric every 4 hours,
@@ -224,6 +218,12 @@ starting.
   (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
   `hmrcVatReturnPost` logs, and record it on the issue. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO session.
+- [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
+  `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
+  search and profile behind an activity, page plus Lambda following the VAT read endpoints'
+  shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
+  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Blocked on O6: its deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
   `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
   **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
