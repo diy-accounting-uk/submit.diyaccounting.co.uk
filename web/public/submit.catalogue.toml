@@ -294,6 +294,14 @@ paths = ["hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 
 [[activities]]
+id = "company-lookup"
+name = "Company Lookup (Companies House)"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["companies-house/companySearch.html", "^/api/v1/companies-house.*"]
+
+[[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
 display = "on-entitlement"

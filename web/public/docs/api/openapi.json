@@ -478,6 +478,22 @@
         }
       }
     },
+    "/companies-house/company/{companyNumber}" : {
+      "get" : {
+        "summary" : "Get a Companies House company profile",
+        "description" : "Retrieves the Companies House profile for a company number",
+        "operationId" : "getCompanyProfile",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/billing/webhook" : {
       "post" : {
         "summary" : "Stripe webhook",
@@ -683,6 +699,38 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/companies-house/search" : {
+      "get" : {
+        "summary" : "Search Companies House",
+        "description" : "Searches Companies House for a company by name or number",
+        "operationId" : "searchCompanies",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : true,
+          "description" : "Company name or number search term",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "itemsPerPage",
+          "in" : "query",
+          "required" : false,
+          "description" : "Results per page (1-50, default 20)",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startIndex",
+          "in" : "query",
+          "required" : false,
+          "description" : "Zero-based offset into the result set",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/hmrc/vat/liability" : {

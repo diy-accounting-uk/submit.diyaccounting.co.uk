@@ -50,6 +50,7 @@ on:
           - 'simulatorBehaviour'
           - 'generatePassActivityBehaviour'
           - 'paymentBehaviour'
+          - 'companiesHouseBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:

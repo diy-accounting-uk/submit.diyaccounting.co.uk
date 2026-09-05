@@ -305,6 +305,7 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.TEST_MOCK_OAUTH2_BASE = result.baseUrl;
       process.env.HMRC_BASE_URI = result.baseUrl;
       process.env.HMRC_SANDBOX_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_BASE_URI = result.baseUrl;
 
       return {
         stop: result.stop,
