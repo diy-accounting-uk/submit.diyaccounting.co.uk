@@ -71,6 +71,13 @@ starting.
   serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
   Sonnet.
   **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Remainder: the per-environment concurrency group drops deploys instead of queueing them (GitHub keeps one pending run per group and cancelled the batch and layer-2 deploys when later branches pushed), so a second track restored per-branch groups and added `wait-for-ci-deploys`, a step that blocks a ci deploy until every earlier-created deploy, destroy or recording run on another branch has finished; landed on the batch, then fixed once more because the step passed a jq flag to `gh` and treated pending runs as finished. Verified when two consecutive pushes to the batch each deploy without a cancelled run and the ci suites pass.
+- [ ] **B39.3. Fix the redirect stall behind the flaky `postVatReturnBehaviour` simulator lane.**
+  After a scenario submission clears the HMRC token, the browser's redirect to the local OAuth
+  simulator page sometimes never completes and the test hangs; the batch now bounds those waits
+  at 90 s so it fails fast, but the stall remains and the CI job fails about one run in two.
+  **Source**: BACKLOG 39; CI on the batch 2026-09-05. **Owner**: Claude Code. **Model**: Opus.
+  **Track**: redirect stall (Opus), worktree `.claude/worktrees/agent-a5754bd1f68b849db`, running,
+  lands on the batch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
