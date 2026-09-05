@@ -1,8 +1,10 @@
-# deploy-environment: public-url fix for synthetic test (bump)
+# deploy-environment: public-url fix for probe test (bump)
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  # Serialise per target environment, not per branch: two branches both targeting ci used
+  # to race each other's ECR repo, Cognito pool and secret writes.
+  group: ${{ github.ref_name == 'main' && 'deploy-environment-prod' || 'deploy-environment-ci' }}
   cancel-in-progress: false
 
 # bump12

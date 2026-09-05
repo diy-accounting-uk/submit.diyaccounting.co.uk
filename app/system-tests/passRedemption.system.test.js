@@ -274,7 +274,7 @@ describe("System: pass creation and redemption", () => {
     });
   });
 
-  describe("test pass with sandbox qualifier", () => {
+  describe("test pass with synthetic qualifier", () => {
     let testPassCode;
 
     it("should create a test pass with testPass: true", async () => {
@@ -296,7 +296,7 @@ describe("System: pass creation and redemption", () => {
       testPassCode = body.code;
     });
 
-    it("should redeem test pass and store sandbox qualifier on bundle", async () => {
+    it("should redeem test pass and store synthetic qualifier on bundle", async () => {
       const token = makeJWT("test-pass-user-1");
       const event = buildRedeemEvent(token, testPassCode);
       const res = await passPostHandler(event);
@@ -307,7 +307,7 @@ describe("System: pass creation and redemption", () => {
       expect(body.bundleId).toBe("day-guest");
     });
 
-    it("should show sandbox qualifier on bundle via GET", async () => {
+    it("should show synthetic qualifier on bundle via GET", async () => {
       const token = makeJWT("test-pass-user-1");
       const event = buildBundleGetEvent(token);
       const res = await bundleGetHandler(event);
@@ -316,7 +316,7 @@ describe("System: pass creation and redemption", () => {
       expect(res.statusCode).toBe(200);
       const dayGuest = body.bundles.find((b) => b.bundleId === "day-guest" && b.allocated);
       expect(dayGuest).toBeTruthy();
-      expect(dayGuest.qualifiers).toEqual({ sandbox: true });
+      expect(dayGuest.qualifiers).toEqual({ synthetic: true });
     });
   });
 

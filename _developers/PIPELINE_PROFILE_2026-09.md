@@ -11,7 +11,7 @@ gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs/<id>
 Raw JSON teed to `target/run-33648185839-prod-jobs.json`, `target/run-33644482805-ci-jobs.json`,
 and the matching `-meta.json` files. The prod run (push to main) ran 144 jobs across 61m16s; the
 ci run (workflow_dispatch) ran 143 jobs across 23m19s. Both counts are inflated by reusable
-workflow calls — `test.yml`, `deploy-cdk-stack.yml` (called 5 times), and `synthetic-test.yml`
+workflow calls — `test.yml`, `deploy-cdk-stack.yml` (called 5 times), and `probe-test.yml`
 (called 16 times, once per `web-test-*` job) each expand into 3-6 sub-jobs of their own. Tables
 below group those sub-jobs back under the top-level job name that calls them, matching the names
 and `needs:` graph in `deploy.yml` — confirmed against the file with `js-yaml` rather than by eye.
@@ -149,20 +149,7 @@ What is safe: `set-last-known-good-deployment` has `disable-native-auth` in its 
 
 ### Cut 2 — sibling workflow fan-out
 
-Source: `.github/workflows/deploy.yml` (lines 7–9) and `.github/workflows/deploy-environment.yml` (lines 3–5). Both workflows share the identical concurrency group string `deploy-${{ github.ref_name }}`. GitHub Actions concurrency groups are enforced repo-wide; with `cancel-in-progress: false`, the second run queues entirely until the first releases it. On the 2026-09-02 15:23 push, both workflows started within 1–2 seconds. `deploy-environment.yml` finished at 15:36:41; `deploy.yml`'s `params` job started at 15:36:44 — exactly matching the 13.7-minute queue gap.
-
-This may be intentional (both workflows read env-level resources ECR and Cognito pool by domain convention; concurrent updates could race) or accidental (group string likely copy-pasted). Decoupling requires a real decision first.
-
-**Option B** (if accidental): one-line change in `deploy-environment.yml` line 4:
-```yaml
-concurrency:
-  group: deploy-environment-${{ github.ref_name }}
-  cancel-in-progress: false
-```
-
-**Saving: up to 13.7 minutes off prod critical path if safe.** Before landing, confirm that `deploy.yml`'s `push-images`, `deploy-auth`, etc. steps already tolerate a mid-update ECR repo or Cognito pool (or add guards).
-
-**Viable: Yes, pending confirmation.** Real fork with two answers: serialize with a documenting comment, or decouple with resource-race guards.
+`deploy.yml` and `deploy-environment.yml` shared the identical concurrency group string `deploy-${{ github.ref_name }}`, which only serialized them against each other when triggered from the same branch — different branches deploying to ci at the same time still raced each other's shared ci apex, Cognito pool and ECR repo. Both workflows now key their own group on the target environment instead of the branch (`deploy.yml` uses `deploy-ci`/`deploy-prod`, `deploy-environment.yml` uses `deploy-environment-ci`/`deploy-environment-prod`), so every deploy to a given environment serializes against same-workflow runs from any branch. The two workflows no longer share a group, so this doesn't resolve whether they still need to serialize against each other — that decision is still open.
 
 ### Cut 3 — deploy-edge → deploy-publish
 

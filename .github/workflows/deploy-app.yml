@@ -7,7 +7,9 @@ run-name: "lean deploy ${{ inputs.deployment-name || '(auto)' }} from ${{ github
 # without running CDK. Bypasses full deploy.yml for rapid iteration (~5-8 min vs 15-25 min).
 
 concurrency:
-  group: deploy-app-${{ github.ref_name }}
+  # Serialise per target environment, not per branch, so two branches' lean deploys can't
+  # race each other's Lambda updates and S3 syncs on the same live environment.
+  group: ${{ github.ref_name == 'main' && 'deploy-app-prod' || 'deploy-app-ci' }}
   cancel-in-progress: false
 
 on:
@@ -741,7 +743,7 @@ jobs:
           ;
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}

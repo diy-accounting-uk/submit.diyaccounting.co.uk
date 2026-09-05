@@ -79,7 +79,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodStart, periodEnd, periodKey, runFraudPreventionHeaderValidation, allowSandboxObligations } = queryParams;
+  const { vrn, periodStart, periodEnd, periodKey, runFraudPreventionHeaderValidation, allowSyntheticObligations } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Collect validation errors for required fields and formats
@@ -103,21 +103,21 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push(`Invalid periodEnd format '${periodEnd}' - must be YYYY-MM-DD`);
   }
 
-  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
-  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
-    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // In sandbox mode, use any available fulfilled obligation only when the caller opts in. An absent
+  // In synthetic mode, use any available fulfilled obligation only when the caller opts in. An absent
   // or falsy value keeps strict obligation matching, since HMRC's sandbox can return an
   // already-fulfilled period.
-  const allowSandboxObligationsBool =
-    hmrcAccount === "sandbox" && (allowSandboxObligations === true || allowSandboxObligations === "true");
+  const allowSyntheticObligationsBool =
+    hmrcAccount === "synthetic" && (allowSyntheticObligations === true || allowSyntheticObligations === "true");
 
   return {
     vrn,
@@ -127,7 +127,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
-    allowSandboxObligations: allowSandboxObligationsBool,
+    allowSyntheticObligations: allowSyntheticObligationsBool,
   };
 }
 
@@ -183,7 +183,7 @@ export async function ingestHandler(event) {
     testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation,
-    allowSandboxObligations,
+    allowSyntheticObligations,
   } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
@@ -238,9 +238,9 @@ export async function ingestHandler(event) {
   // Resolve periodKey: either use the directly provided periodKey or resolve from obligations.
   // Skip entirely on polls where we already have a persisted record — the result is cached.
   let normalizedPeriodKey = null;
-  // Sandbox-only: further fulfilled obligations to try in turn if normalizedPeriodKey's return 404s
-  // (the sandbox does not hold a canned return for every fulfilled obligation it lists).
-  let sandboxFallbackPeriodKeys = [];
+  // Synthetic-only: further fulfilled obligations to try in turn if normalizedPeriodKey's return 404s
+  // (HMRC's sandbox does not hold a canned return for every fulfilled obligation it lists).
+  let syntheticFallbackPeriodKeys = [];
   if (!persistedRequest) {
     if (directPeriodKey) {
       normalizedPeriodKey = directPeriodKey.toUpperCase();
@@ -278,28 +278,28 @@ export async function ingestHandler(event) {
         const matchedObligation = findObligationByDateRange(obligationsArray, periodStart, periodEnd);
         let resolvedPeriodKey = matchedObligation?.status === "F" ? matchedObligation.periodKey : null;
 
-        // The requested dates can match a fulfilled obligation exactly and still 404 in the
-        // sandbox - it doesn't hold a canned return for every fulfilled obligation it lists.
+        // The requested dates can match a fulfilled obligation exactly and still 404 in
+        // HMRC's sandbox - it doesn't hold a canned return for every fulfilled obligation it lists.
         // Keep the other fulfilled obligations from the same window as fallbacks to try in turn.
-        if (resolvedPeriodKey && allowSandboxObligations) {
-          sandboxFallbackPeriodKeys = obligationsArray
+        if (resolvedPeriodKey && allowSyntheticObligations) {
+          syntheticFallbackPeriodKeys = obligationsArray
             .filter((o) => o.status === "F" && o.periodKey !== resolvedPeriodKey)
             .map((o) => o.periodKey.toUpperCase());
         }
 
-        // If no matching obligation found and allowSandboxObligations is enabled (sandbox only),
-        // use the first available fulfilled obligation instead of erroring. The sandbox may hold
+        // If no matching obligation found and allowSyntheticObligations is enabled (synthetic only),
+        // use the first available fulfilled obligation instead of erroring. HMRC's sandbox may hold
         // no canned return for that period, so keep the rest as fallbacks to try in turn.
-        if (!resolvedPeriodKey && allowSandboxObligations) {
+        if (!resolvedPeriodKey && allowSyntheticObligations) {
           const fulfilledObligations = obligationsArray.filter((o) => o.status === "F");
           if (fulfilledObligations.length > 0) {
             resolvedPeriodKey = fulfilledObligations[0].periodKey;
-            sandboxFallbackPeriodKeys = fulfilledObligations.slice(1).map((o) => o.periodKey.toUpperCase());
+            syntheticFallbackPeriodKeys = fulfilledObligations.slice(1).map((o) => o.periodKey.toUpperCase());
             logger.info({
-              message: "allowSandboxObligations: Using first available fulfilled obligation",
+              message: "allowSyntheticObligations: Using first available fulfilled obligation",
               requestedPeriod: { periodStart, periodEnd },
               usedObligation: fulfilledObligations[0],
-              fallbackCount: sandboxFallbackPeriodKeys.length,
+              fallbackCount: syntheticFallbackPeriodKeys.length,
             });
           }
         }
@@ -310,7 +310,7 @@ export async function ingestHandler(event) {
             periodStart,
             periodEnd,
             obligations: obligationsArray,
-            allowSandboxObligations,
+            allowSyntheticObligations,
           });
           const stillOpen = matchedObligation?.status === "O";
           const detail = stillOpen
@@ -341,8 +341,8 @@ export async function ingestHandler(event) {
   const payload = {
     vrn,
     periodKey: normalizedPeriodKey,
-    sandboxFallbackPeriodKeys,
-    allowSandboxObligations,
+    syntheticFallbackPeriodKeys,
+    allowSyntheticObligations,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -369,9 +369,9 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { vatReturn, hmrcResponse, periodKey: usedPeriodKey } = await getVatReturnWithSandboxFallback(
+        const { vatReturn, hmrcResponse, periodKey: usedPeriodKey } = await getVatReturnWithSyntheticFallback(
           payload.vrn,
-          [payload.periodKey, ...(payload.sandboxFallbackPeriodKeys || [])],
+          [payload.periodKey, ...(payload.syntheticFallbackPeriodKeys || [])],
           payload.hmrcAccessToken,
           payload.govClientHeaders,
           payload.testScenario,
@@ -381,7 +381,7 @@ export async function ingestHandler(event) {
           payload.requestId,
           payload.traceparent,
           payload.correlationId,
-          payload.allowSandboxObligations,
+          payload.allowSyntheticObligations,
         );
 
         const serializableHmrcResponse = {
@@ -493,9 +493,9 @@ export async function workerHandler(event) {
         vatReturn,
         hmrcResponse,
         periodKey: usedPeriodKey,
-      } = await getVatReturnWithSandboxFallback(
+      } = await getVatReturnWithSyntheticFallback(
         payload.vrn,
-        [payload.periodKey, ...(payload.sandboxFallbackPeriodKeys || [])],
+        [payload.periodKey, ...(payload.syntheticFallbackPeriodKeys || [])],
         payload.hmrcAccessToken,
         payload.govClientHeaders,
         payload.testScenario,
@@ -505,7 +505,7 @@ export async function workerHandler(event) {
         payload.requestId,
         payload.traceparent,
         payload.correlationId,
-        payload.allowSandboxObligations,
+        payload.allowSyntheticObligations,
       );
 
       const serializableHmrcResponse = {
@@ -606,9 +606,9 @@ export async function getVatReturn(
   traceparent = undefined,
   correlationId = undefined,
 ) {
-  // Validate fraud prevention headers for sandbox accounts
-  if (hmrcAccount === "sandbox" && runFraudPreventionHeaderValidation) {
-    logger.info({ message: "Validating fraud prevention headers for sandbox account", hmrcAccount, runFraudPreventionHeaderValidation });
+  // Validate fraud prevention headers for synthetic accounts
+  if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
+    logger.info({ message: "Validating fraud prevention headers for synthetic account", hmrcAccount, runFraudPreventionHeaderValidation });
     try {
       await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);
     } catch (error) {
@@ -670,19 +670,20 @@ export async function getVatReturn(
 /**
  * Look up a VAT return, trying each candidate periodKey in turn.
  *
- * With allowSandboxObligations, periodKey resolution falls back to "any fulfilled
- * obligation" when none matches the requested date range exactly, but the sandbox
+ * With allowSyntheticObligations, periodKey resolution falls back to "any fulfilled
+ * obligation" when none matches the requested date range exactly, but HMRC's sandbox
  * does not hold a canned return for every fulfilled obligation it lists (one period
  * key can 404 while another in the same obligations list has data). Only continue to
- * the next candidate on a sandbox 404 - a live account's 404 is a genuine miss, and a
- * non-404 error (403, 500, ...) is returned immediately rather than masked by a retry.
+ * the next candidate on a 404 from HMRC's sandbox - a live account's 404 is a genuine
+ * miss, and a non-404 error (403, 500, ...) is returned immediately rather than masked
+ * by a retry.
  *
  * @param {string} vrn
  * @param {string[]} periodKeys - candidates in priority order; only the first is tried
- *   outside the sandbox fallback case
+ *   outside the synthetic fallback case
  * @returns {Promise<{hmrcResponse: object, vatReturn: object|null, periodKey: string}>}
  */
-export async function getVatReturnWithSandboxFallback(
+export async function getVatReturnWithSyntheticFallback(
   vrn,
   periodKeys,
   hmrcAccessToken,
@@ -694,7 +695,7 @@ export async function getVatReturnWithSandboxFallback(
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
-  allowSandboxObligations = false,
+  allowSyntheticObligations = false,
 ) {
   const candidates = (Array.isArray(periodKeys) ? periodKeys : [periodKeys]).filter(Boolean);
   let attempt = null;
@@ -715,13 +716,13 @@ export async function getVatReturnWithSandboxFallback(
     );
     attempt = { ...outcome, periodKey };
 
-    const isSandboxNotFound = allowSandboxObligations && hmrcAccount === "sandbox" && attempt.hmrcResponse.status === 404;
+    const isSyntheticNotFound = allowSyntheticObligations && hmrcAccount === "synthetic" && attempt.hmrcResponse.status === 404;
     const hasMoreCandidates = i < candidates.length - 1;
-    if (attempt.hmrcResponse.ok || !isSandboxNotFound || !hasMoreCandidates) {
+    if (attempt.hmrcResponse.ok || !isSyntheticNotFound || !hasMoreCandidates) {
       return attempt;
     }
     logger.info({
-      message: "allowSandboxObligations: return lookup 404'd for period, trying next fulfilled obligation",
+      message: "allowSyntheticObligations: return lookup 404'd for period, trying next fulfilled obligation",
       periodKey,
       nextPeriodKey: candidates[i + 1],
     });

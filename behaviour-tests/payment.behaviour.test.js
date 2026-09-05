@@ -19,7 +19,7 @@ import {
   createHmrcTestUser,
   generatePeriodDates,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -96,8 +96,8 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-const runFraudPreventionHeaderValidation = isSandboxMode();
-const allowSandboxObligations = isSandboxMode();
+const runFraudPreventionHeaderValidation = isSyntheticMode();
+const allowSyntheticObligations = isSyntheticMode();
 
 let mockOAuth2Process;
 let serverProcess;
@@ -305,7 +305,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home-exhausted.png` });
 
     // The Submit VAT button should be disabled with "Insufficient tokens"
-    // day-guest bundle maps to "Submit VAT (HMRC)" activity, not the sandbox variant
+    // day-guest bundle maps to "Submit VAT (HMRC)" activity, not the synthetic variant
     const activityButtonText = "Submit VAT (HMRC)";
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
     await expect(submitButton).toBeVisible({ timeout: 10_000 });
@@ -414,8 +414,8 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("=".repeat(60));
 
     await goToHomePageUsingMainNav(page, screenshotPath);
-    // Navigate to Submit VAT — sandbox mode is set in sessionStorage by index.html
-    // because the user's bundle has qualifiers.sandbox = true (from test pass)
+    // Navigate to Submit VAT — synthetic mode is set in sessionStorage by index.html
+    // because the user's bundle has qualifiers.synthetic = true (from test pass)
     const submitVatButton = page.locator(`button:has-text('Submit VAT (HMRC)')`);
     await expect(submitVatButton).toBeVisible({ timeout: 10_000 });
     await submitVatButton.click();
@@ -430,7 +430,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       undefined,
       runFraudPreventionHeaderValidation,
       screenshotPath,
-      allowSandboxObligations,
+      allowSyntheticObligations,
     );
 
     // Submit the form — scope enforcement fetches the catalogue asynchronously before
@@ -642,7 +642,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     title: "Payment Funnel (App UI)",
     description:
       "Exercises the full conversion funnel (The Human Test Journey): day-guest pass → token exhaustion → upgrade to resident-vat via checkout → VAT submission → token usage verification.",
-    hmrcApi: isSandboxMode() ? "sandbox" : "live",
+    hmrcApi: isSyntheticMode() ? "synthetic" : "live",
     env: {
       envName,
       baseUrl,
