@@ -213,7 +213,7 @@ jobs:
             --out "target/videos/${{ needs.params.outputs.script }}"
         env:
           DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
-          HMRC_ACCOUNT: sandbox
+          HMRC_ACCOUNT: synthetic
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
