@@ -123,11 +123,6 @@ starting.
   per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
   the deploy-environment workflow for each. The lookup PR cannot deploy until this lands. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B30b remainder, operator. Close 22 stale `[ALARM]` issues.** Their deployment is
-  destroyed or the alarm type is deleted by PR #118, so no recovery event will ever close them:
-  #77, #78, #79, #80, #81, #82, #83, #84, #85, #86, #87, #88, #89, #90, #96, #103, #108, #109,
-  #110, #113, #121, #122. Keep #91, #93, #94, #95, #97, #111, #123 and #127 open; the items
-  below act on them. **Source**: BACKLOG 30; alarm-issue review 2026-09-05. **Owner**: Operator.
 - [ ] **B34.2. Apply for Companies House software-filing accreditation, for accounts filing.**
   An operator submission with weeks of lead time; the plan doc lists what it asks for. **Source**:
   BACKLOG 34; issue #15. **Owner**: Operator.
@@ -206,11 +201,10 @@ starting.
   for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
   **Owner**: Claude Code. **Model**: Opus. Blocked on O5b.
 - [ ] **B30e. Name the principal behind the salt-read and customer-table-scan alarms.** Issues
-  #93 and #97 (`salt-secret-unexpected-read`, ci many times a day) and #94 and #95
-  (`dynamodb-customer-table-scan`): run the CloudTrail lookup in runbook section 6.6 for each
-  environment and record whether the reads come from a role the `SecurityDetectionStack.java`
-  filter should allow (then tune the filter) or from something real. **Source**: BACKLOG 30;
-  issues #93, #94, #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
+  #97 (`prod-env-salt-secret-unexpected-read`) and #95 (`prod-env-dynamodb-customer-table-scan`),
+  both still updating daily: run the CloudTrail lookup in runbook section 6.6 for prod and record
+  whether the reads come from a role the `SecurityDetectionStack.java` filter should allow (then
+  tune the filter) or from something real. **Source**: BACKLOG 30; issues #95, #97. **Owner**: Claude Code. **Model**: Haiku. Blocked on an AWS SSO
   session (`aws sso login --sso-session diyaccounting`).
 - [ ] **B30f. Read what HMRC returned for the customer submission failure of 2026-09-03 21:30**
   (issue #111, `prod-env-hmrc-submission-failure`, scoped to real customers) from the
