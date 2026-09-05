@@ -65,6 +65,19 @@ starting.
   **Track**: self-destruct log errors (Sonnet). On `claude/board-batch-2` (PR #118): a bucket the
   edge stack has not created yet is logged as a warning, and the function name drops the doubled
   `app`. Verified when a fresh ci deployment's self-destruct composite stays in OK.
+- [ ] **B30e. Stop the prod detection alarms firing on our own deployment role.** Both
+  `prod-env-salt-secret-unexpected-read` (#97) and `prod-env-dynamodb-customer-table-scan` (#95)
+  fire on `submit-prod-deployment-role`, the GitHub Actions role, which the detector's `prod-*`
+  role-name exception in `SecurityDetectionStack.java` does not cover. The salt reads are the
+  deploy pipeline reading the salt (five in a day, all that role): exclude the deployment role
+  from that filter. The table scans are 412 of 450 in a day from that role across all three
+  customer tables, which is the probe workflow's "Export DynamoDB data for test users" step
+  (`scripts/export-test-dynamodb.sh`) scanning whole prod tables every four hours: make that
+  export query by the test users' keys instead of scanning, and leave the scan detector as it is,
+  since catching exactly that is its purpose. CDK test and a script test. **Source**: BACKLOG 30;
+  issues #95, #97; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: deployment role and probe export (Sonnet), worktree
+  `.claude/worktrees/agent-a9fd2eae254a64ea7`, running, lands on the batch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -86,17 +99,8 @@ starting.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 ## Ready: Claude Code
 
-- [ ] **B30e. Stop the prod detection alarms firing on our own deployment role.** Both
-  `prod-env-salt-secret-unexpected-read` (#97) and `prod-env-dynamodb-customer-table-scan` (#95)
-  fire on `submit-prod-deployment-role`, the GitHub Actions role, which the detector's `prod-*`
-  role-name exception in `SecurityDetectionStack.java` does not cover. The salt reads are the
-  deploy pipeline reading the salt (five in a day, all that role): exclude the deployment role
-  from that filter. The table scans are 412 of 450 in a day from that role across all three
-  customer tables, which is the probe workflow's "Export DynamoDB data for test users" step
-  (`scripts/export-test-dynamodb.sh`) scanning whole prod tables every four hours: make that
-  export query by the test users' keys instead of scanning, and leave the scan detector as it is,
-  since catching exactly that is its purpose. CDK test and a script test. **Source**: BACKLOG 30;
-  issues #95, #97; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+(none)
+
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
