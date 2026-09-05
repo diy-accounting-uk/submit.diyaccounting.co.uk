@@ -68,7 +68,7 @@ starting.
   (#103, #109, #123). Widen the period to straddle the cron, or move the alarm to the env stack
   so it is not recreated per deployment; CDK test updated. **Source**: BACKLOG 30; issues #123.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: probe alarm period (Sonnet), running, stacked on PR #120.
+  **Track**: probe alarm period (Sonnet). Code complete on `claude/probe-alarm-period` (PR opening, stacked on #120): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
