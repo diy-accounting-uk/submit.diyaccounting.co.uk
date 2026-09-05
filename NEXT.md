@@ -55,9 +55,6 @@ starting.
   `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Its live dry run stopped because the
   Analytics Admin API is not enabled on the project (O1e); verified by a dry run that plans the
   ci property once O1e is done.
-- [ ] **B34.3b. Companies House micro-entity accounts through the XML Gateway** (iXBRL in an XML
-  envelope, test presenter credentials from xml@companieshouse.gov.uk). **Source**: BACKLOG 34;
-  issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
@@ -249,6 +246,9 @@ starting.
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
   ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
+- [ ] **B34.3b. Companies House micro-entity accounts through the XML Gateway** (iXBRL in an XML
+  envelope, test presenter credentials from xml@companieshouse.gov.uk). **Source**: BACKLOG 34;
+  issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: HMRC's sandbox holds no return for a fresh test user's canned obligations and never
