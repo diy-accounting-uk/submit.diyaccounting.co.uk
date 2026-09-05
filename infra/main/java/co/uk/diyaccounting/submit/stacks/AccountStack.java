@@ -857,6 +857,9 @@ public class AccountStack extends Stack {
         this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
         // Reconciliation counts live bundles, which is the one legitimate Scan in the system.
         bundlesTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:Scan");
+        bundlesTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:Query");
+        grantTableIndexActions(
+                bundlesTable, this.bundleCapacityReconcileLambda, "bundleId-expiry-index", "dynamodb:Query");
         bundleCapacityTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:PutItem");
         this.bundleCapacityReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
