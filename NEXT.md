@@ -84,7 +84,7 @@ starting.
   same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
   serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Verified when PRs #119 and #120, re-run with it merged in, deploy under distinct names and their ci suites pass.
+  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Remainder: the per-environment concurrency group drops deploys instead of queueing them (GitHub keeps one pending run per group and cancelled the batch and layer-2 deploys when later branches pushed), so a second track restores per-branch groups and adds a wait step that queues ci deploys by creation time; running, lands on the batch. Verified when PRs #118, #119 and #120 each deploy under distinct names without a cancelled run and their ci suites pass.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
