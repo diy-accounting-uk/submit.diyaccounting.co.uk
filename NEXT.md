@@ -35,7 +35,7 @@ starting.
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; a Sonnet track (worktree `.claude/worktrees/agent-a459137b741199532`) routes the submission through the obligation's own "Submit Return" button instead, the path the submit-return video already proved on prod. Verified by a prod recording passing the blocking check.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; the submission now goes through the obligation's own "Submit Return" button (WIP commit 2cdba6c2 on `worktree-agent-a459137b741199532`) and succeeds on the simulator, but the on-camera "View Return" click that follows lands on a blank document with no API call; a Sonnet track (worktree `.claude/worktrees/agent-aa9eaa9f5b3f9ee0a`) is instrumenting the page to find why. Verified by a prod recording passing the blocking check.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -67,8 +67,10 @@ starting.
   simulator page sometimes never completes and the test hangs; the batch now bounds those waits
   at 90 s so it fails fast, but the stall remains and the CI job fails about one run in two.
   **Source**: BACKLOG 39; CI on the batch 2026-09-05. **Owner**: Claude Code. **Model**: Opus.
-  **Track**: redirect stall (Opus), worktree `.claude/worktrees/agent-a5754bd1f68b849db`, running,
-  lands on the batch.
+  **Track**: redirect stall (Opus). Cause found and fixed on `claude/board-batch-2` (PR #118): the
+  poll helper's own progress query had no action timeout, so on the consent page it hung the loop;
+  every query in `waitForSuccessOrError.js` is now bounded, six consecutive local runs green.
+  Verified when CI's `simulator - postVatReturnBehaviour` job passes on the batch's next test run.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
