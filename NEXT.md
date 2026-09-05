@@ -35,7 +35,7 @@ starting.
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: the script passes on the simulator but the prod recording found no return for the fulfilled obligation it clicked, because HMRC's sandbox holds none for it. A Sonnet track (worktree `.claude/worktrees/agent-a2ba6d7b005b5a241`) is making the script reach a real return the way `getVatReturn.behaviour.test.js` does; verified by a prod recording passing the blocking check.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. A Sonnet track (worktree `.claude/worktrees/agent-ad614f21c78cd7197`) adds an off-camera scene and a `submitReturn` journey action so the video submits, then views, the return; verified by a prod recording passing the blocking check.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
