@@ -62,7 +62,9 @@ starting.
   metric filter in `Lambda.java`; the alarm name's doubled `app-app` is a naming slip to fix in
   the same pass. **Source**: BACKLOG 30; issues #122, #127. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: self-destruct log errors (Sonnet), worktree `.claude/worktrees/agent-ad9c2f23a291c4743`, running, lands on the batch.
+  **Track**: self-destruct log errors (Sonnet). On `claude/board-batch-2` (PR #118): a bucket the
+  edge stack has not created yet is logged as a warning, and the function name drops the doubled
+  `app`. Verified when a fresh ci deployment's self-destruct composite stays in OK.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
