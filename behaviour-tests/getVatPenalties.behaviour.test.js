@@ -412,7 +412,7 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
 
   // Build and write testContext.json
   const testContext = {
-    testId: "getVatPenalties",
+    testId: "getVatPenaltiesBehaviour",
     name: testInfo.title,
     title: "View VAT Penalties (HMRC: VAT Penalties GET)",
     description: "Retrieves VAT penalties from HMRC MTD VAT API and verifies the results flow in the UI.",

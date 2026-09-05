@@ -410,7 +410,7 @@ test("Click through: View VAT payments from HMRC", async ({ page }, testInfo) =>
 
   // Build and write testContext.json
   const testContext = {
-    testId: "getVatPayments",
+    testId: "getVatPaymentsBehaviour",
     name: testInfo.title,
     title: "View VAT Payments (HMRC: VAT Payments GET)",
     description: "Retrieves VAT payments from HMRC MTD VAT API and verifies the results flow in the UI.",
