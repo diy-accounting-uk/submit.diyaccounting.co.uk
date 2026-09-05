@@ -24,10 +24,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Resumed 2026-09-05.** Integration branch `claude/board-batch-2` is PR #118 (draft, all checks
-green) with five tracks landed; PR #119 (layer 2) and PR #120 (layer 1, stacked on #118) are open
-with ci behaviour-suite failures under diagnosis. The two paused tracks resumed from their `-wip`
-branches in fresh worktrees.
+**Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
+direction 2026-09-05); the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
+the Companies House lookup (PR #124) stays separate, because its deploy cannot pass until the
+operator's API key exists.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -43,7 +43,7 @@ starting.
   **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. A Sonnet track (worktree `.claude/worktrees/agent-aa406b7b95b37cc0b`) is making the capture record `navigated` and `timerShown` per step and the check count only on-page waits; then the prod recording re-runs and a passing blocking check verifies this item and B17a.1.
+  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. The ci recording (run 33948656157) failed before the first frame because the ci deployment had self-destructed overnight and `ci-submit.diyaccounting.co.uk` no longer resolved; the prod recording (run 33948895801) produced the full 132 s mp4 but the blocking timing check failed on `timerMarkers`: four clicks that leave the page waited past the threshold and the overlay cannot draw during a navigation. The capture now records `navigated` and `timerShown` per step and the check counts only on-page waits (`claude/video-timing-navigated`), which exposed a second defect: the timer pill is armed at step start, so it shows during every click's pointer animation instead of only during a backend wait. The timer now arms only during an action's real wait phase (`claude/board-batch-2`, PR #118), and all three scripts pass the check on the simulator. The three prod recordings are running one after another from the batch branch; a passing blocking check on each verifies this item, B17a.1, B17a.3 and B17a.4.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: journey videos (Sonnet). Code complete on `claude/board-batch-2` (PR #118): the script runs end to end on the simulator variant with the timing check green. Verified by the prod recording through `video-capture.yml` once the navigation-aware timing check lands.
@@ -68,7 +68,7 @@ starting.
   (#103, #109, #123). Widen the period to straddle the cron, or move the alarm to the env stack
   so it is not recreated per deployment; CDK test updated. **Source**: BACKLOG 30; issues #123.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: probe alarm period (Sonnet). Code complete on `claude/probe-alarm-period` (PR opening, stacked on #120): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
+  **Track**: probe alarm period (Sonnet). Folded into `claude/board-batch-2` (PR #118): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -84,7 +84,7 @@ starting.
   same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
   serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Remainder: the per-environment concurrency group drops deploys instead of queueing them (GitHub keeps one pending run per group and cancelled the batch and layer-2 deploys when later branches pushed), so a second track restores per-branch groups and adds a wait step that queues ci deploys by creation time; running, lands on the batch. Verified when PRs #118, #119 and #120 each deploy under distinct names without a cancelled run and their ci suites pass.
+  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Remainder: the per-environment concurrency group drops deploys instead of queueing them (GitHub keeps one pending run per group and cancelled the batch and layer-2 deploys when later branches pushed), so a second track restored per-branch groups and added `wait-for-ci-deploys`, a step that blocks a ci deploy until every earlier-created deploy, destroy or recording run on another branch has finished; landed on the batch. Verified when PRs #118, #119 and #120 each deploy under distinct names without a cancelled run and their ci suites pass.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -93,7 +93,7 @@ starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): code complete on `claude/mode-rename-2-stripe-flag` (PR #119); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): code complete on `claude/mode-rename-1-probe` (PR #120, stacked on the batch branch); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): code complete on `claude/mode-rename-3-synthetic` (PR #126, stacked on #120 and carrying #119): unit 1271, system 148, CDK 94, simulator behaviour lane green, residue sweep clean. Verified after the operator runs migration 005 before its deploy and 006 after, on ci then prod, and `submitVatBehaviour-ci` passes in synthetic mode. Layer 4 (docs and copy, plus the recount of the alarm arithmetic in `REPORT_ALARM_AUDIT.md` and `PLAN_COST_OPTIMISATION.md`): running, stacked on layer 3.
+  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): folded into `claude/board-batch-2` (PR #118); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): folded into `claude/board-batch-2` (PR #118); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): folded into `claude/board-batch-2` (PR #118): unit 1271, system 148, CDK 94, simulator behaviour lane green, residue sweep clean. Verified after the operator runs migration 005 before its deploy and 006 after, on ci then prod, and `submitVatBehaviour-ci` passes in synthetic mode. Layer 4 (docs and copy, alarm arithmetic recounted): folded into `claude/board-batch-2` (PR #118). The whole rename is verified after PR #118 deploys and the migrations run.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
