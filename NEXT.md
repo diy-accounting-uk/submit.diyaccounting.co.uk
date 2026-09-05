@@ -48,7 +48,10 @@ starting.
   matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
   name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
   O1a granted 2026-09-05.
-  **Track**: ga4 property sync (Sonnet), worktree `.claude/worktrees/agent-ac953be772e167497`, lands on `claude/board-batch-3`.
+  **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
+  `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Its live dry run stopped because the
+  Analytics Admin API is not enabled on the project (O1e); verified by a dry run that plans the
+  ci property once O1e is done.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
@@ -141,6 +144,11 @@ starting.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O1e / G2b. Enable the Google Analytics Admin API on GCP project `diyaccounting-ga4`**
+  (project number 958354756046): in the console at
+  https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=958354756046
+  or with `gcloud services enable analyticsadmin.googleapis.com --project diyaccounting-ga4`. The
+  property-sync and roles scripts both call that API. **Source**: none. **Owner**: Operator.
 - [ ] **O1a / G2b bootstrap. Grant the GA4 service account admin once, so every later grant
   is code.** The analytics jobs already run as a Google service account (Secrets Manager
   `GA4_SERVICE_ACCOUNT_ARN`). In GA4 admin give that account the Administrator role on the
