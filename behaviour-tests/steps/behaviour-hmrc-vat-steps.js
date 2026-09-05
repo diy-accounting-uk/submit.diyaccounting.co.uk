@@ -406,8 +406,11 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
     await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
-      // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 1_000_000 });
+      // Wait for terminal status (failed or error). Every sandbox scenario exercised here
+      // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
+      // genuine stall into a fast, attributable failure instead of quietly spending the
+      // whole test timeout on it.
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -514,8 +517,11 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
     await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
-      // Increase timeout and wait for terminal status (failed or error)
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 1_000_000 });
+      // Wait for terminal status (failed or error). Every sandbox scenario exercised here
+      // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
+      // genuine stall into a fast, attributable failure instead of quietly spending the
+      // whole test timeout on it.
+      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });

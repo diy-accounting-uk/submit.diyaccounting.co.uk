@@ -148,6 +148,27 @@ async function refreshBundleIfTokensLow(page, minTokens = 1) {
   console.log(`[token-refresh] Tokens after re-grant: ${after}`);
 }
 
+// Races `promise` against a timer so a genuine stall (e.g. a redirect the browser never
+// finishes loading, which leaves every subsequent page.locator() call on it waiting with
+// no timeout of its own) fails fast with an attributable message instead of silently
+// spending the whole test timeout on it. The raced-out work is abandoned, not cancelled -
+// harmless here since the page/browser are torn down at the end of the test regardless.
+function withTimeout(promise, ms, message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations }) {
   // Ensure sufficient tokens before each submission (day-guest has tokensGranted=3)
   await refreshBundleIfTokensLow(page);
@@ -156,33 +177,42 @@ async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScena
   // Click submit. The HMRC access token may or may not be cached:
   // - Cached (first resubmission after success): client calls API directly
   // - Cleared (after a failed submission): client redirects to HMRC OAuth
-  // Scope enforcement fetches the catalogue asynchronously before redirecting, and a
-  // successful submission's own polling can run far longer than a short fixed wait,
-  // so wait - with a long budget and fail-fast on a new error banner - for whichever
-  // of the HMRC consent redirect or the VAT submission receipt appears first. A new
-  // error banner is the expected terminal state for the HMRC sandbox failure scenarios
-  // below, so catch it here rather than treat it as a test failure - completeVat()
-  // and verifyVatSubmission() make the real assertions on the resulting page state.
-  await page.locator("#submitBtn").click();
-  await waitForSuccessOrError(page, {
-    successSelector: "#appNameParagraph, #receiptDisplay",
-    description: "HMRC consent page or VAT submission receipt",
-    timeout: 1_000_000,
-    screenshotPath,
-  }).catch(() => {});
-  const isHmrcAuthPage = await page
-    .locator("#appNameParagraph")
-    .isVisible()
-    .catch(() => false);
-  if (isHmrcAuthPage) {
-    // Token was cleared by a previous failed submission - re-authenticate
-    await acceptCookiesHmrc(page, screenshotPath);
-    await goToHmrcAuth(page, screenshotPath);
-    await initHmrcAuth(page, screenshotPath);
-    await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
-    await submitHmrcAuth(page, screenshotPath);
-    await grantPermissionHmrcAuth(page, screenshotPath);
-  }
+  // Scope enforcement fetches the catalogue asynchronously before redirecting, so wait
+  // - and fail-fast on a new error banner - for whichever of the HMRC consent redirect
+  // or the VAT submission receipt appears first. A new error banner is the expected
+  // terminal state for the HMRC sandbox failure scenarios below, so catch it here
+  // rather than treat it as a test failure - completeVat() and verifyVatSubmission()
+  // make the real assertions on the resulting page state.
+  // Every scenario this helper is called with (see the calls below) resolves within
+  // seconds - the SLOW_10S/503 scenarios that genuinely need minutes are not exercised
+  // here - so the whole submit-and-maybe-reauth cycle is bounded below: a stalled
+  // redirect fails fast with a clear message instead of hanging until the test timeout.
+  await withTimeout(
+    (async () => {
+      await page.locator("#submitBtn").click({ timeout: 15_000 });
+      await waitForSuccessOrError(page, {
+        successSelector: "#appNameParagraph, #receiptDisplay",
+        description: "HMRC consent page or VAT submission receipt",
+        timeout: 60_000,
+        screenshotPath,
+      }).catch(() => {});
+      const isHmrcAuthPage = await page
+        .locator("#appNameParagraph")
+        .isVisible()
+        .catch(() => false);
+      if (isHmrcAuthPage) {
+        // Token was cleared by a previous failed submission - re-authenticate
+        await acceptCookiesHmrc(page, screenshotPath);
+        await goToHmrcAuth(page, screenshotPath);
+        await initHmrcAuth(page, screenshotPath);
+        await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
+        await submitHmrcAuth(page, screenshotPath);
+        await grantPermissionHmrcAuth(page, screenshotPath);
+      }
+    })(),
+    90_000,
+    `Timed out waiting for the submit/HMRC-redirect cycle for scenario ${testScenario}`,
+  );
   await completeVat(page, baseUrl, testScenario, screenshotPath);
   await verifyVatSubmission(page, testScenario, screenshotPath);
   await goToHomePageUsingMainNav(page, screenshotPath);
