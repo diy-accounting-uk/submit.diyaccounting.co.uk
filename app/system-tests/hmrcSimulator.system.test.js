@@ -220,6 +220,74 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Business Details", () => {
+    it("should return a business list for a valid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/details/AB123456C/list`, {
+        headers: {
+          Accept: "application/vnd.hmrc.2.0+json",
+          Authorization: "Bearer test-token",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+
+      expect(data).toHaveProperty("listOfBusinesses");
+      expect(Array.isArray(data.listOfBusinesses)).toBe(true);
+      expect(data.listOfBusinesses.length).toBeGreaterThan(0);
+
+      const business = data.listOfBusinesses[0];
+      expect(business).toHaveProperty("typeOfBusiness");
+      expect(business).toHaveProperty("businessId");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/details/invalid-nino/list`);
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/details/AB123456C/list`, {
+        headers: {
+          "Gov-Test-Scenario": "NOT_FOUND",
+        },
+      });
+
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("NOT_FOUND");
+    });
+
+    it("should return a property business for Gov-Test-Scenario PROPERTY", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/details/AB123456C/list`, {
+        headers: {
+          "Gov-Test-Scenario": "PROPERTY",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.listOfBusinesses[0].typeOfBusiness).toBe("uk-property");
+    });
+
+    it("should return both business types for Gov-Test-Scenario BUSINESS_AND_PROPERTY", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/details/AB123456C/list`, {
+        headers: {
+          "Gov-Test-Scenario": "BUSINESS_AND_PROPERTY",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const types = data.listOfBusinesses.map((b) => b.typeOfBusiness);
+      expect(types).toContain("self-employment");
+      expect(types).toContain("uk-property");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions
