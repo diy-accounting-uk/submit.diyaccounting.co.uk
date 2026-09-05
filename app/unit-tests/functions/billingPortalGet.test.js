@@ -106,7 +106,7 @@ describe("billingPortalGet", () => {
 
   test("picks the Stripe test client when the bundle's qualifiers.stripeTestMode is true", async () => {
     mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { sandbox: false, stripeTestMode: true } },
+      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { synthetic: false, stripeTestMode: true } },
     ]);
 
     const event = buildEventWithToken(validToken);
@@ -115,9 +115,9 @@ describe("billingPortalGet", () => {
     expect(mockGetStripeClient).toHaveBeenCalledWith({ test: true });
   });
 
-  test("picks the Stripe live client when qualifiers.stripeTestMode is absent, even if qualifiers.sandbox is true", async () => {
+  test("picks the Stripe live client when qualifiers.stripeTestMode is absent, even if qualifiers.synthetic is true", async () => {
     mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { sandbox: true } },
+      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { synthetic: true } },
     ]);
 
     const event = buildEventWithToken(validToken);

@@ -223,7 +223,7 @@ describe("billingWebhookPost", () => {
     expect(bundle.stripeSubscriptionId).toBe("sub_test_456");
     expect(bundle.stripeCustomerId).toBe("cus_test_789");
     expect(bundle.cancelAtPeriodEnd).toBe(false);
-    expect(bundle.qualifiers).toEqual({ sandbox: false, stripeTestMode: false });
+    expect(bundle.qualifiers).toEqual({ synthetic: false, stripeTestMode: false });
 
     // Verify subscription record was stored
     expect(mockPutSubscription).toHaveBeenCalledTimes(1);
@@ -491,7 +491,7 @@ describe("billingWebhookPost", () => {
     expect(mockWebhooksConstructEvent.mock.calls[0][2]).toBe("whsec_test_mock");
 
     const bundle = mockPutBundleByHashedSub.mock.calls[0][1];
-    expect(bundle.qualifiers).toEqual({ sandbox: true, stripeTestMode: true });
+    expect(bundle.qualifiers).toEqual({ synthetic: true, stripeTestMode: true });
   });
 
   test("uses live webhook secret for live-mode events (livemode: true)", async () => {
@@ -509,7 +509,7 @@ describe("billingWebhookPost", () => {
     expect(mockWebhooksConstructEvent.mock.calls[0][2]).toBe("whsec_live_mock");
 
     const bundle = mockPutBundleByHashedSub.mock.calls[0][1];
-    expect(bundle.qualifiers).toEqual({ sandbox: false, stripeTestMode: false });
+    expect(bundle.qualifiers).toEqual({ synthetic: false, stripeTestMode: false });
   });
 
   test("returns 500 when bundle grant fails", async () => {
