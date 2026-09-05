@@ -344,8 +344,8 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{yearsAgo:10}}",
-          "caption": "And a stretch of time that covers the period."
+          "value": "{{monthsAgo:11}}",
+          "caption": "And the same stretch of time as before."
         },
         {
           "action": "fill",
