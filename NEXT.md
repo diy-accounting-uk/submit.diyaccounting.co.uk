@@ -24,7 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 4 runs on integration branch `claude/board-batch-4` (a PR follows; the operator merges).
+Batch 4 runs on integration branch `claude/board-batch-4`, PR #136 (the operator merges). Its
+first push at 23:12 UTC on 2026-09-05 started ci deploy run 33998025585; the ITSA recording
+(B10.1) and the operator's look at the gated activities use that ci deployment.
 Each track works in its own worktree under `.claude/worktrees/` on a `worktree-agent-*` branch
 and never edits this file. The coordinator merges tracks as they land and pushes in batches,
 with pipeline fixes riding on the next push. Wave 1 started 2026-09-05 22:45 UTC; design tracks
@@ -94,15 +96,28 @@ verify.
   reached prod in PR #118 and joins the same gate. Unit tests on both readers, and the ci
   behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
   32. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, ci-only-gate (Sonnet), started.
+  **Track**: code complete on `claude/board-batch-4` (b72324d8). Activities carry
+  `environments = ["local", "test", "simulator", "proxy", "ci"]`; the home page reads the
+  environment from `submit.environment-name.txt` (PublishStack writes it at synth, prod serves
+  `prod`), and `enforceBundles` answers 403 with `ACTIVITY_ENVIRONMENT_RESTRICTED` elsewhere. The
+  three VAT read activities' path patterns narrowed to their own routes so the gate cannot leak
+  onto other VAT endpoints. The ci deployment ci-claud063e (deploy run 33998025585, green)
+  serves the catalogue with the field on all five activities; verified when prod after the
+  merge hides them and the operator has looked at them on ci.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1, view-return-prod-video (Sonnet), started; dispatches `video-capture.yml`
-  on prod and reviews the artifact.
+  **Track**: six prod runs failed the same way, the last (33998196356) after the submission fix:
+  the table's "View Return" button carries one quarter's dates, the GET handler's obligation
+  window pads only seven days, so it has no fallback period when the sandbox holds no return
+  for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
+  the View VAT Return form over the same wide window the behaviour test uses; green on the
+  simulator. Next: dispatch `video-capture.yml -f script=view-return -f environment-name=prod
+  --ref claude/board-batch-4` after the second push; verified when the artifact shows the
+  return.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -120,10 +135,12 @@ verify.
   then Sonnet.
   **Track**: `PLAN_BUNDLE_CAPACITY_RECONCILE.md` is on `claude/board-batch-4` (bd6d402e): a
   sparse GSI `bundleId-expiry-index` queried once per capped bundle, no counter, no backfill,
-  the schedule stays hourly. Wave 2 build track bundle-reconcile-build (Sonnet) started
-  2026-09-06 00:05 UTC in `.claude/worktrees/agent-a4861cfbe2b6e6c84`; it also moves
-  `restore-test.yml` off the source-table scan and removes the pass repository's scan fallback,
-  the two other scan sources the design found.
+  the schedule stays hourly. Code complete on `claude/board-batch-4` (6ebea8ee, 6dca64bb,
+  a13db2db, ce25b350): the index, the reconcile's per-bundle count query, the Scan grant gone,
+  `restore-test.yml` reading `ItemCount` instead of scanning the source table, and the pass
+  repository's scan fallback removed. The index and the new reconcile land in one deploy; a
+  reconcile run against a still-building index throws and the next hourly run succeeds.
+  Verified when `prod-env-dynamodb-customer-table-scan` stays OK for a day after the merge.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
@@ -135,8 +152,14 @@ verify.
   pass: alarm names carry the function name for per-function checks and the metric namespace
   for business metrics. Unit tests on the two builders. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Track**: wave 1, alarm-evidence-design (Opus) writes `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`
-  covering B30h and B30i, started; the Sonnet builds follow in wave 2.
+  **Track**: `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` is on `claude/board-batch-4` (605e45ef):
+  rules keyed on metric namespace rather than a row per alarm, the window read from the event's
+  `reasonData`, composite alarms resolved through `DescribeAlarms`. Code complete on
+  `claude/board-batch-4` (bd85b797): `app/lib/alarmEvidence.js`, `alarmWindow.js` and
+  `consoleLinks.js`, the Lambda's revised body, `scripts/resolve-alarm-evidence.mjs`, and the two
+  OpsStack policy statements; the CLI reproduces the plan's worked-example URLs byte for byte.
+  Verified when the first prod alarm issue after the merge carries a Logs Insights link and an
+  X-Ray link that open on the right window in the console.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -146,18 +169,25 @@ verify.
   Sonnet.
   **Track**: `PLAN_COMPANIES_HOUSE_REST_FILING.md` is on `claude/board-batch-4` (ca7a800a):
   eight Lambdas, tokens in the browser session like HMRC's, both activities free on `default`
-  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) started
-  2026-09-06 00:15 UTC; tracks 2 (filings) and 3 (web, simulator journeys, behaviour tests)
-  follow as each lands. The ci behaviour runs need the operator steps below (O11).
-## Ready: Claude Code
-
+  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) is
+  merged (a88c2459: token exchange Lambda with the client secret scoped to it alone, callback
+  page, simulator OAuth routes, env and CDK plumbing; `COMPANIES_HOUSE_CLIENT_ID` is blank in
+  `.env.ci` and `.env.prod` until the operator fills it). Track 2 (the seven filing Lambdas,
+  simulator scenarios, system test) started 2026-09-06 01:45 UTC; track 3 (web, catalogue,
+  behaviour tests) follows it. Track 3 also has to fill the two OAuth base URIs for the
+  simulator lane in `behaviour-tests/helpers/behaviour-helpers.js`, which no track owns yet.
+  The ci behaviour runs need the operator steps below (O11).
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
   `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
   has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
-  Runs in wave 2 against the ci deployment the first batch-4 push creates. **Source**: BACKLOG
-  10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+  **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 2, itsa-video (Sonnet) writes `videos/itsa-business-details.json` and its npm
+  scripts, proving it on the simulator; started 2026-09-06 01:20 UTC. The coordinator then
+  records it with `video-capture.yml` from the integration branch against ci-claud063e.
+## Ready: Claude Code
+
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1d / G2b. Create the ci GA4 property.** The `ga4-property-sync` dry run for ci is
@@ -217,9 +247,21 @@ verify.
   Guardrails' sensitive-information filter plus a regex deny-list for IPs, emails, VRNs and
   64-hex hashes before posting, and log content is treated as data, never instructions. Design
   pass first: the alarm-to-log-group mapping shared with B30h, the role's resource list, the
-  triage prompt. The wave 1 alarm-evidence-design track covers this design too. **Source**:
-  BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**: Claude Code. **Model**: Opus
-  design, then Sonnet. Blocked on B30h.
+  triage prompt. **Source**: BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**:
+  Claude Code. **Model**: Sonnet.
+  **Track**: designed in `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Parts 6 to 8. Decisions taken at
+  dispatch: Sonnet 4.5 pinned and measured first, guardrail action BLOCK, comment-only with no
+  PR write permissions, resources for both environments. Wave 2 tracks B (CDK: role, guardrail,
+  budget and budget action) and C (the workflow, prompt and redaction script) started 2026-09-06
+  00:30 UTC alongside track A. B is merged (0501fc94: the role trusts
+  `submit-<env>-github-actions-role`, the guardrail blocks PII, the daily USD 5 budget's action
+  attaches the Bedrock deny) and C is merged (a28ab599, plus a guard that makes the run a quiet
+  no-op while `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is unset on the environment). Remainder: the
+  budget action needs a subscriber, so `<env>-env-bedrock-budget-alerts` is a new SNS topic in
+  `ObservabilityUE1Stack` that nothing reads yet; subscribe it to the Telegram forwarder or the
+  operator subscribes an address. Operator steps after the first ci deploy:
+  `gh label create triage`, the `SUBMIT_ALARM_TRIAGE_ROLE_ARN` variable on the `ci` and `prod`
+  environments, and a `set-alarm-state` on one ci alarm to prove the chain.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
