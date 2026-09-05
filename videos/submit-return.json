@@ -1,0 +1,288 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "submit-return",
+  "title": "Submit a VAT return to HMRC",
+  "description": "A signed-in walk through submitting a VAT return: sign in, take out a day pass, ask HMRC for the periods, authorise, then fill in the nine boxes for an open period and submit.",
+  "auth": "user",
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 1,
+  "fps": 60,
+
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 3000,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "You can send a VAT return straight to HMRC."
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use."
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your submissions in one place."
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "day-pass",
+      "chapter": "Day pass",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run."
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Day pass",
+          "testPass": true,
+          "caption": "A day pass opens the VAT activities for a day."
+        },
+        { "action": "hold", "ms": 700 },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Activities" },
+          "caption": "Every activity starts from the home page."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "obligations-form",
+      "chapter": "Ask HMRC",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "button:has-text('VAT Obligations (HMRC)')",
+          "caption": "Ask HMRC what you still owe before you submit."
+        },
+        { "action": "await", "until": "#vatObligationsForm", "label": "Opening the obligations form" },
+        {
+          "action": "type",
+          "target": "#vrn",
+          "text": "{{hmrcVatNumber}}",
+          "clear": true,
+          "caption": "Type the VAT registration number."
+        },
+        {
+          "action": "fill",
+          "target": "#fromDate",
+          "value": "{{monthsAgo:11}}",
+          "caption": "Then the stretch of time to look at."
+        },
+        { "action": "fill", "target": "#toDate", "value": "{{today}}" },
+        { "action": "hold", "ms": 700 }
+      ]
+    },
+    {
+      "id": "authorise",
+      "chapter": "Authorise with HMRC",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "The first request sends you to HMRC to grant access."
+        },
+        {
+          "action": "hmrcAuthorise",
+          "caption": "Sign in to HMRC and say yes once.",
+          "timeoutMs": 60000
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "results",
+      "chapter": "The periods on file",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#obligationsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 180000,
+          "caption": "HMRC answers with every period it holds."
+        },
+        { "action": "scroll", "target": "#obligationsTable" },
+        { "action": "hold", "ms": 1000 },
+        {
+          "action": "point",
+          "target": "#obligationsTable",
+          "caption": "An open period is still waiting for a return.",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 1200 }
+      ]
+    },
+    {
+      "id": "submit-form",
+      "chapter": "Fill in the return",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Submit Return" },
+          "caption": "Start a return for that open period."
+        },
+        { "action": "await", "until": "#vatSubmissionForm", "label": "Opening the submission form" },
+        {
+          "action": "type",
+          "target": "#vatDueSales",
+          "text": "1000.00",
+          "clear": true,
+          "caption": "Box 1 is the VAT due on your sales."
+        },
+        {
+          "action": "type",
+          "target": "#vatDueAcquisitions",
+          "text": "0.00",
+          "clear": true,
+          "caption": "Box 2 is VAT on EU acquisitions, usually zero now."
+        },
+        {
+          "action": "point",
+          "target": "#totalVatDue",
+          "caption": "Box 3 adds boxes 1 and 2 for you.",
+          "dwellMs": 500
+        },
+        {
+          "action": "type",
+          "target": "#vatReclaimedCurrPeriod",
+          "text": "200.00",
+          "clear": true,
+          "caption": "Box 4 is VAT you can reclaim on purchases."
+        },
+        {
+          "action": "point",
+          "target": "#netVatDue",
+          "caption": "Box 5 works out what you owe overall.",
+          "dwellMs": 500
+        },
+        {
+          "action": "type",
+          "target": "#totalValueSalesExVAT",
+          "text": "5000",
+          "clear": true,
+          "caption": "Box 6 is your total sales, without VAT."
+        },
+        {
+          "action": "type",
+          "target": "#totalValuePurchasesExVAT",
+          "text": "1000",
+          "clear": true,
+          "caption": "Box 7 is your total purchases, without VAT."
+        },
+        {
+          "action": "type",
+          "target": "#totalValueGoodsSuppliedExVAT",
+          "text": "0",
+          "clear": true,
+          "caption": "Boxes 8 and 9 cover EU trade, usually zero now."
+        },
+        {
+          "action": "type",
+          "target": "#totalAcquisitionsExVAT",
+          "text": "0",
+          "clear": true
+        },
+        {
+          "action": "click",
+          "target": "#declaration",
+          "caption": "Tick the declaration to confirm the return is accurate."
+        },
+        { "action": "hold", "ms": 700 }
+      ]
+    },
+    {
+      "id": "authorise-submit",
+      "chapter": "Authorise again",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "Submitting needs a wider grant, so HMRC asks once more."
+        },
+        {
+          "action": "hmrcAuthorise",
+          "caption": "Sign in to HMRC and say yes again.",
+          "timeoutMs": 60000
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "receipt",
+      "chapter": "Submitted",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#receiptDisplay",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC confirms the return is filed."
+        },
+        { "action": "scroll", "target": "#receiptDisplay" },
+        { "action": "hold", "ms": 1500 },
+        {
+          "action": "point",
+          "target": "#receiptDisplay",
+          "caption": "The receipt is your record that it went through.",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        { "action": "still", "name": "receipt" },
+        { "action": "hold", "ms": 1500 }
+      ]
+    }
+  ]
+}
