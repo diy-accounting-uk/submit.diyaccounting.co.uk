@@ -5,16 +5,11 @@ owners and sole traders](https://ico.org.uk/for-organisations/advice-for-small-o
 and the [controllers checklist](https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-started-with-gdpr/data-protection-self-assessment-medium-businesses/controllers-checklist/)
 (ico.org.uk, checked 2026-09-03). Each line: met or gap, with the file:line or URL that supports it.
 
-## Registration — action needed now
+## Registration — Met
 
-**The ICO registration has expired.** `ICO Registration Certificate - ZB070902 - Diy Accounting
-Limited.pdf` (repo root) shows registration reference `ZB070902`, registered 24 May 2021,
-**expired 23 May 2026**. Today is 2026-09-03: the company has been trading without a current ICO
-registration for over three months. `web/public/privacy.html:624,826` still publishes ZB070902 as
-current. This is not a placeholder — it is a gap. The fee tier isn't shown on the certificate
-(it's self-assessed by turnover/staff count on the ICO's own form); the operator needs to renew at
-[ico.org.uk/registration](https://ico.org.uk/for-organisations/data-protection-fee/) and confirm
-the tier and new expiry date, then this line updates to met.
+Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027-05-23. The registration renews automatically each May (renewal reminder arrives ~11 April, collection ~20 May). `web/public/privacy.html:624,826` publishes ZB070902 as current. `ICO Registration Certificate - ZB070902 - Diy Accounting Limited.pdf` (repo root) is dated 2024 and should be refreshed with the 2026 renewal certificate by download from the ICO register.
+
+**Method**: Before declaring a registration lapsed, check the mailbox's renewal confirmation emails (ICO sends them to the registered contact each May; search `diyaccounting.co.uk` domain emails for "registration renewal" or "direct debit").
 
 ## Lawful basis
 
