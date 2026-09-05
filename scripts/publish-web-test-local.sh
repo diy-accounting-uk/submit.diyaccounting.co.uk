@@ -43,8 +43,7 @@ fi
 # [local run variant] Copy target/test-reports/html-report (if it exists) to web/public/tests/test-reports/web-test-local
 if [[ -d "target/test-reports/html-report" ]]; then
   cp -rv "target/test-reports/html-report" "${targetTestReportDir?}"
-fi
 # [GitHub Actions run variant] Copy "target/test-reports/${sourceTestName?}/html-report" (if it exists) to web/public/tests/test-reports/web-test-local
-if [[ -d "target/test-reports/${sourceTestName?}/html-report" ]]; then
+elif [[ -d "target/test-reports/${sourceTestName?}/html-report" ]]; then
   cp -rv "target/test-reports/${sourceTestName?}/html-report" "${targetTestReportDir?}"
 fi

@@ -337,7 +337,7 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
   /* ****************** */
 
   const testContext = {
-    testId: "itsaBusinessDetails",
+    testId: "itsaBusinessDetailsBehaviour",
     name: testInfo.title,
     title: "View ITSA Business Details (HMRC: Business Details GET)",
     description: "Retrieves the ITSA Business Details list from HMRC and verifies the results flow in the UI.",
