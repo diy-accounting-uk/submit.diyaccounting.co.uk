@@ -137,7 +137,7 @@ class SubmitEnvironmentCdkResourceTest {
         // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
         // hardcoded above).
         List<String> envRoutedPrefixes = List.of("test-env-");
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
         // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
@@ -160,7 +160,7 @@ class SubmitEnvironmentCdkResourceTest {
         // certificate is configured; this test's config doesn't set one.
         if (env.billingWebhookStack != null) {
             Template billingWebhook = Template.fromStack(env.billingWebhookStack);
-            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, envRoutedPrefixes);
+            SubmitApplicationCdkResourceTest.assertStackHealthAlarm(billingWebhook, 1, 0, envRoutedPrefixes);
         }
 
         // Every Lambda function across the environment stacks must route its logs to an explicit,

@@ -79,7 +79,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, periodStart, periodEnd, periodKey, runFraudPreventionHeaderValidation, allowSandboxObligations } = queryParams;
+  const { vrn, periodStart, periodEnd, periodKey, runFraudPreventionHeaderValidation, allowSyntheticObligations } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
   // Collect validation errors for required fields and formats
@@ -103,21 +103,21 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push(`Invalid periodEnd format '${periodEnd}' - must be YYYY-MM-DD`);
   }
 
-  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
-  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
-    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
   const runFraudPreventionHeaderValidationBool =
     runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
 
-  // In sandbox mode, use any available fulfilled obligation only when the caller opts in. An absent
+  // In synthetic mode, use any available fulfilled obligation only when the caller opts in. An absent
   // or falsy value keeps strict obligation matching, since HMRC's sandbox can return an
   // already-fulfilled period.
-  const allowSandboxObligationsBool =
-    hmrcAccount === "sandbox" && (allowSandboxObligations === true || allowSandboxObligations === "true");
+  const allowSyntheticObligationsBool =
+    hmrcAccount === "synthetic" && (allowSyntheticObligations === true || allowSyntheticObligations === "true");
 
   return {
     vrn,
@@ -127,7 +127,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
-    allowSandboxObligations: allowSandboxObligationsBool,
+    allowSyntheticObligations: allowSyntheticObligationsBool,
   };
 }
 

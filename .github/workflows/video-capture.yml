@@ -220,9 +220,6 @@ jobs:
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
 
       - name: Check video timings
-        # Non-blocking on the first runs while the tolerances in check-video-timings.js settle
-        # against real recordings; flip to blocking once they have.
-        continue-on-error: true
         run: node scripts/check-video-timings.js "target/videos/${{ needs.params.outputs.script }}/${{ needs.params.outputs.script }}.timeline.json"
 
       - name: Configure AWS role via GitHub OIDC (for native auth cleanup)

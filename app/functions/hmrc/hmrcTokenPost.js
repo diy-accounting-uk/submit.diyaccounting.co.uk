@@ -54,11 +54,11 @@ export function extractAndValidateParameters(event, errorMessages) {
   // Collect validation errors for required fields
   if (!code) errorMessages.push("Missing code from event body");
 
-  // Extract HMRC account (sandbox/live) from header hmrcAccount
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
-  if (hmrcAccount && hmrcAccount !== "sandbox" && hmrcAccount !== "live") {
-    errorMessages.push("Invalid hmrcAccount header. Must be either 'sandbox' or 'live' if provided.");
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
   }
 
   return { code, hmrcAccount };
@@ -124,11 +124,11 @@ export async function ingestHandler(event) {
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // Prepares the URL and body for a token exchange request, but does not execute the exchange itself
 export async function prepareTokenExchangeRequest(code, hmrcAccount) {
-  const secretArn = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
-  const overrideSecret = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
+  const secretArn = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
   const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
-  const hmrcBaseUri = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcClientId = hmrcAccount === "sandbox" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
+  const hmrcBaseUri = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
+  const hmrcClientId = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
   const url = `${hmrcBaseUri}/oauth/token`;
   const maybeSlash = process.env.DIY_SUBMIT_BASE_URL?.endsWith("/") ? "" : "/";
   const body = {
