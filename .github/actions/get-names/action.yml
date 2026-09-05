@@ -88,9 +88,20 @@ runs:
           # whether it's a direct push, merged PR, or re-run of tests
           DEPLOYMENT_NAME="prod-${GET_NAMES_GITHUB_SHA::7}"
         else
-          # CI: Always use branch name for predictable feature branch deployments
-          # This ensures tests run against the same deployment that was just created
-          DEPLOYMENT_NAME="ci-${CLEANED:0:9}"
+          # CI: branch name plus a hash of the full ref name, so two branches that clean
+          # down to the same first few characters (e.g. two "claude/mode-rename-*" branches)
+          # still get different deployment names instead of overwriting each other's stacks.
+          if command -v sha1sum >/dev/null 2>&1; then
+            REF_HASH=$(printf '%s' "$REF_NAME" | sha1sum | cut -c1-4)
+          elif command -v shasum >/dev/null 2>&1; then
+            REF_HASH=$(printf '%s' "$REF_NAME" | shasum | cut -c1-4)
+          elif command -v md5sum >/dev/null 2>&1; then
+            REF_HASH=$(printf '%s' "$REF_NAME" | md5sum | cut -c1-4)
+          else
+            echo "::error::No hash tool (sha1sum, shasum, md5sum) found on this runner" >&2
+            exit 1
+          fi
+          DEPLOYMENT_NAME="ci-${CLEANED:0:5}${REF_HASH}"
         fi
         if [ -n "${GET_NAMES_DEPLOYMENT_NAME:-}" ]; then
           DEPLOYMENT_NAME="${GET_NAMES_DEPLOYMENT_NAME?}"

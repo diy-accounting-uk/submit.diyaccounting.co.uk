@@ -44,6 +44,9 @@ public class Lambda {
 
     public static final String HEALTH_ALARM_NAME_SUFFIX = "-stack-health";
 
+    /** How many checks every Lambda construct carries. */
+    public static final int HEALTH_CHECK_COUNT = 2;
+
     /** CloudWatch accepts at most this many operands in one composite alarm rule. */
     private static final int ALARM_RULE_MAX_OPERANDS = 100;
 
@@ -55,8 +58,8 @@ public class Lambda {
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
 
-    /** The four checks on this function, for the owning stack to fan into its health alarm. */
-    public final List<IAlarm> healthChecks;
+    /** The checks on this function, for the owning stack to fan into its health alarm. */
+    public final List<IAlarm> healthChecks = new ArrayList<>();
 
     public Lambda(final Construct scope, AbstractLambdaProps props) {
         this.props = props;
@@ -135,7 +138,10 @@ public class Lambda {
                 this.ingestLambdaVersion.getVersion(),
                 props.ingestProvisionedConcurrencyAliasArn());
 
-        // Alarms: a small set of useful, actionable Lambda alarms
+        // Two checks per function, one per way a function can be broken: the invocation failed
+        // (Errors), or it returned a response while logging something that went wrong (log
+        // errors, which the handlers' caught-and-returned 500s produce without an Errors
+        // datapoint).
         // 1) Errors >= 1 in a 5-minute period
         Alarm errorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-errors")
@@ -152,43 +158,7 @@ public class Lambda {
                 .alarmDescription("Lambda errors >= 1 for function " + this.ingestLambda.getFunctionName())
                 .build();
 
-        // 2) Throttles >= 1 in a 5-minute period
-        Alarm throttlesAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-ThrottlesAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-throttles")
-                .metric(this.ingestLambda
-                        .metricThrottles()
-                        .with(MetricOptions.builder()
-                                .period(Duration.minutes(5))
-                                .build()))
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Lambda throttles >= 1 for function " + this.ingestLambda.getFunctionName())
-                .build();
-
-        // 3) High duration (p95) approaching timeout (>= 80% of configured timeout)
-        // Lambda Duration metric unit is milliseconds. Convert timeout to ms and apply 80% threshold.
-        double timeoutMs = props.ingestLambdaTimeout().toSeconds().doubleValue() * 1000.0;
-        double highDurationThresholdMs = timeoutMs * 0.8;
-        Alarm highDurationP95Alarm = Alarm.Builder.create(scope, props.idPrefix() + "-HighDurationP95Alarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-high-duration-p95")
-                .metric(this.ingestLambda
-                        .metricDuration()
-                        .with(MetricOptions.builder()
-                                .statistic("p95")
-                                .period(Duration.minutes(5))
-                                .build()))
-                .threshold(highDurationThresholdMs)
-                .evaluationPeriods(props.highDurationP95AlarmEvaluationPeriods())
-                .datapointsToAlarm(props.highDurationP95AlarmDatapointsToAlarm())
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription(
-                        "Lambda p95 duration >= 80% of timeout for function " + this.ingestLambda.getFunctionName())
-                .build();
-
-        // 4) Log-based error detection using a CloudWatch Logs Metric Filter
+        // 2) Log-based error detection using a CloudWatch Logs Metric Filter
         // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
         String logErrorMetricNamespace = "Submit/LambdaLogs";
         String logErrorMetricName = this.ingestLambda.getFunctionName() + "-log-errors";
@@ -224,11 +194,12 @@ public class Lambda {
                         + this.ingestLambda.getFunctionName())
                 .build();
 
-        this.healthChecks = List.of(errorsAlarm, throttlesAlarm, highDurationP95Alarm, logErrorsAlarm);
+        this.healthChecks.addAll(List.of(errorsAlarm, logErrorsAlarm));
     }
 
     /**
-     * Fans every check of every Lambda in one stack into a single composite alarm. The children
+     * Fans every check of every Lambda in one stack into a single composite alarm, including the
+     * queue, DLQ and worker checks an {@link AsyncApiLambda} adds. The children
      * keep the "check-" prefix and stay outside OpsStack's routing rule; only this composite
      * carries the deployment or environment prefix that rule matches on, so a stack full of broken
      * functions raises one Telegram message and one GitHub issue. The composite's state reason
@@ -244,8 +215,8 @@ public class Lambda {
                 .compositeAlarmName(resourceNamePrefix + "-" + stackShortName + HEALTH_ALARM_NAME_SUFFIX)
                 .alarmRule(anyOf(checks))
                 .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
-                        + "reported errors, throttles, p95 duration near timeout, or error-like log lines. "
-                        + "The alarm state reason names the check that tripped.")
+                        + "reported errors or error-like log lines, or one of its async pairs has a stuck queue "
+                        + "or a failing worker. The alarm state reason names the check that tripped.")
                 .build();
     }
 
