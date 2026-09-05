@@ -58,8 +58,8 @@ starting.
   async shape, `buildHmrcHeaders` takes an API version, NINO validation, simulator route and
   scenarios, the Business Details page, and unit, system, browser and behaviour tests (1343,
   153, 69, simulator lane 1 passed; CDK 94), all on PR #132 with its
-  `itsaBusinessDetailsBehaviour-ci` job in `deploy.yml`. Verified when that job is green on the
-  PR's ci deploy; then a prod recording of the page is the next video.
+  `itsaBusinessDetailsBehaviour-ci` job in `deploy.yml`; that suite passed against ci-claudf375
+  (run 33991540605). Remainder after the merge: a prod recording of the page, the next video.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -78,10 +78,6 @@ starting.
   **Track**: deployed with PR #118 (`app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>`
   to `<env>-app-<rest>` for the issue title and search). Verified when the next alarm on
   prod-cea27f8 or ci-claudf375 comments on an existing family issue instead of opening one.
-- [ ] **B34.1 remainder. `deploy.yml` runs `companiesHouseBehaviour-ci`.** The lookup is live
-  in prod (prod-cea27f8, `CompaniesHouseStack`); PR #132 adds the job, shaped like the other
-  probe suites. Verified when it is green on the PR's ci deploy. **Source**: BACKLOG 34; issue
-  #15. **Owner**: Claude Code. **Model**: Haiku.
 ## Ready: Claude Code
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
