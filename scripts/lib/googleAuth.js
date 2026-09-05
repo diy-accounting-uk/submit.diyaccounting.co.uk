@@ -3,22 +3,79 @@
 
 // scripts/lib/googleAuth.js
 //
-// Shared Google API auth helper for one-off scripts that call a Google API with a
-// service-account key. The key JSON never touches a log line: callers pass it straight
-// through from an environment variable (itself populated from AWS Secrets Manager), and
-// this module hands it only to google-auth-library, which attaches the bearer token to
-// each request internally.
+// Shared helper for scripts that call Google Cloud REST APIs with a service-account key held
+// in AWS Secrets Manager. Resolves the key the same way app/functions/analytics/ga4EventExportPull.js
+// resolves the GA4 service account: an env var holding the raw JSON wins for local runs,
+// otherwise a Secrets Manager ARN env var is read.
 
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { GoogleAuth } from "google-auth-library";
 
+let cachedSecretsManagerClient = null;
+
+function getSecretsManagerClient() {
+  if (!cachedSecretsManagerClient) {
+    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return cachedSecretsManagerClient;
+}
+
 /**
- * Build an authorized Google API client from a service-account key.
+ * Resolve a Google service-account key JSON from an env var holding the raw JSON, or else
+ * from AWS Secrets Manager via an env var holding the secret's ARN.
+ *
+ * @param {{ jsonEnvVar: string, arnEnvVar: string }} envVarNames
+ * @returns {Promise<string>}
+ */
+export async function resolveServiceAccountCredentialsJson({ jsonEnvVar, arnEnvVar }) {
+  const rawJson = process.env[jsonEnvVar];
+  if (rawJson) {
+    return rawJson;
+  }
+  const arn = process.env[arnEnvVar];
+  if (!arn) {
+    throw new Error(`Neither ${jsonEnvVar} nor ${arnEnvVar} is set`);
+  }
+  const result = await getSecretsManagerClient().send(new GetSecretValueCommand({ SecretId: arn }));
+  return result.SecretString;
+}
+
+/**
+ * Build a google-auth-library client for a service-account key JSON. The cloud-platform scope
+ * covers every Google Cloud REST API a script needs, provided the service account's IAM roles
+ * grant the underlying permission for the call it makes.
+ *
+ * @param {string} credentialsJson
+ * @param {string[]} [scopes]
+ * @returns {GoogleAuth}
+ */
+export function createGoogleAuthClient(credentialsJson, scopes = ["https://www.googleapis.com/auth/cloud-platform"]) {
+  const credentials = JSON.parse(credentialsJson);
+  return new GoogleAuth({ credentials, scopes });
+}
+
+/**
+ * Get a bearer access token for a plain `fetch` call against a Google Cloud REST API.
+ *
+ * @param {GoogleAuth} googleAuth
+ * @returns {Promise<string>}
+ */
+export async function getAccessToken(googleAuth) {
+  const client = await googleAuth.getClient();
+  const { token } = await client.getAccessToken();
+  if (!token) {
+    throw new Error("Google auth client returned no access token");
+  }
+  return token;
+}
+
+/**
+ * Build an authorized Google API client whose `.request({url, method, params, data})` attaches the
+ * bearer token and returns `{ data }`; used by scripts that prefer a client over a raw token.
  *
  * @param {string} credentialsJson - the service-account key, as JSON text
- * @param {string[]} scopes - OAuth scopes to request, e.g.
- *   ["https://www.googleapis.com/auth/analytics.edit"]
- * @returns {Promise<import("google-auth-library").JWT>} a client whose `.request({url, method, params, data})`
- *   call attaches the bearer token and returns `{ data }` on success
+ * @param {string[]} scopes - OAuth scopes to request
+ * @returns {Promise<import("google-auth-library").JWT>}
  */
 export async function createGoogleAuthorizedClient(credentialsJson, scopes) {
   const credentials = JSON.parse(credentialsJson);
