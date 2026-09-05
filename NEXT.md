@@ -60,7 +60,7 @@ starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
+  **Track**: Companies House build (Sonnet). Code complete on `claude/companies-house-lookup` (PR opening): CDK 101 tests, unit 1263, system 154, browser 72, simulator behaviour lane green. Its deploy fails secret validation until the operator's key (O6) exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
 - [ ] **B30c. Stop the GitHub probe alarm firing on its own cadence.** `OpsStack.java`
   (`githubSyntheticAlarm`, renamed `githubProbeAlarm` in PR #120) evaluates a 2-hour period with
   missing data treated as breaching, but `synthetic-test.yml` publishes the metric every 4 hours,
@@ -84,8 +84,7 @@ starting.
   same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
   serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
   Sonnet.
-  **Track**: pipeline fix (Sonnet), running, lands on `claude/board-batch-2`; then PRs #119 and #120
-  re-run one at a time.
+  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Verified when PRs #119 and #120, re-run with it merged in, deploy under distinct names and their ci suites pass.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
