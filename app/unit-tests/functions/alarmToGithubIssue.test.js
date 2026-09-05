@@ -17,15 +17,44 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
+const mockCloudWatchSend = vi.fn();
+vi.mock("@aws-sdk/client-cloudwatch", () => ({
+  CloudWatchClient: class {
+    send(...args) {
+      return mockCloudWatchSend(...args);
+    }
+  },
+  DescribeAlarmsCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 import {
   resolveAlarmDetail,
-  buildAlarmConsoleLink,
   buildIssueTitle,
   buildIssueBody,
   buildCommentBody,
   findOpenIssueByAlarmFamily,
   createGitHubIssue,
   commentOnGitHubIssue,
+  resolveDeploymentSlug,
+  resolveCompositeChildFunctionNames,
   handler,
 } from "@app/functions/ops/alarmToGithubIssue.js";
 import { alarmFamilyKey } from "@app/lib/alarmName.js";
@@ -81,19 +110,46 @@ describe("alarmToGithubIssue", () => {
       const detail = resolveAlarmDetail({ time: "2026-08-31T13:00:00Z", detail: { alarmName: "x", state: { value: "OK" } } });
       expect(detail.timestamp).toBe("2026-08-31T13:00:00Z");
     });
-  });
 
-  describe("buildAlarmConsoleLink", () => {
-    test("builds a region-scoped CloudWatch alarm console URL", () => {
-      const link = buildAlarmConsoleLink("eu-west-2", "ci-app-health-failed");
-      expect(link).toBe(
-        "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:alarm/ci-app-health-failed",
-      );
+    test("reads namespace, metric name and dimensions out of configuration.metrics[0].metricStat.metric", () => {
+      const detail = resolveAlarmDetail({
+        detail: {
+          alarmName: "prod-env-stripe-reconcile-errors",
+          state: { value: "ALARM" },
+          previousState: { value: "OK" },
+          configuration: {
+            metrics: [
+              {
+                metricStat: {
+                  period: 300,
+                  metric: {
+                    namespace: "AWS/Lambda",
+                    name: "Errors",
+                    dimensions: { FunctionName: "prod-env-stripe-reconcile" },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      });
+
+      expect(detail.namespace).toBe("AWS/Lambda");
+      expect(detail.metricName).toBe("Errors");
+      expect(detail.dimensions).toEqual({ FunctionName: "prod-env-stripe-reconcile" });
+      expect(detail.periodSeconds).toBe(300);
     });
 
-    test("encodes special characters in the alarm name", () => {
-      const link = buildAlarmConsoleLink("eu-west-2", "ci alarm/with special");
-      expect(link).toContain(encodeURIComponent("ci alarm/with special"));
+    test("parses reasonData from its JSON string, and yields null for malformed JSON without throwing", () => {
+      const withReasonData = resolveAlarmDetail({
+        detail: { alarmName: "x", state: { value: "ALARM", reasonData: '{"period":900}' }, previousState: { value: "OK" } },
+      });
+      expect(withReasonData.reasonData).toEqual({ period: 900 });
+
+      const withMalformedReasonData = resolveAlarmDetail({
+        detail: { alarmName: "x", state: { value: "ALARM", reasonData: "{not json" }, previousState: { value: "OK" } },
+      });
+      expect(withMalformedReasonData.reasonData).toBeNull();
     });
   });
 
@@ -121,48 +177,199 @@ describe("alarmToGithubIssue", () => {
     });
   });
 
+  function evidenceFixture(overrides = {}) {
+    return {
+      ruleId: 1,
+      logGroupNamePrefixes: ["/aws/lambda/prod-0f68ed8-app-hmrc-vat-return-post"],
+      tableNames: ["prod-env-hmrc-api-requests"],
+      xrayFilterExpression: 'service("prod-0f68ed8-app-hmrc-vat-return-post-worker") { fault = true OR error = true }',
+      insightsQuery: "SOURCE logGroups(namePrefix: ['/aws/lambda/prod-0f68ed8-app-hmrc-vat-return-post'])",
+      noEvidenceReason: null,
+      extraLinks: [],
+      ...overrides,
+    };
+  }
+
+  function linksFixture(overrides = {}) {
+    return {
+      alarmConsole: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:alarm/x",
+      logsInsights: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#logsV2:logs-insights",
+      xray: "https://eu-west-2.console.aws.amazon.com/xray/home?region=eu-west-2#/traces",
+      ...overrides,
+    };
+  }
+
+  const windowFixture = {
+    startIso: "2026-09-03T21:25:00.000Z",
+    endIso: "2026-09-03T21:50:23.618Z",
+    periodSeconds: 900,
+    evaluatedPeriods: 1,
+    marginSeconds: 300,
+  };
+
   describe("buildIssueBody / buildCommentBody", () => {
-    test("issue body includes state transition, reason, timestamp, and console link", () => {
+    test("issue body includes state transition, reason, timestamp, window, region, deployment, and evidence links", () => {
       const body = buildIssueBody({
-        alarmName: "ci-app-health-failed",
+        alarmName: "prod-env-hmrc-submission-failure",
+        familyKey: "prod-env-hmrc-submission-failure",
         state: "ALARM",
         previousState: "OK",
         reason: "Threshold crossed",
-        timestamp: "2026-08-31T12:00:00Z",
-        consoleLink: "https://example.com/alarm",
+        timestamp: "2026-09-03T21:45:23.618+0000",
+        region: "eu-west-2",
+        deployment: "prod-0f68ed8",
+        window: windowFixture,
+        evidence: evidenceFixture(),
+        links: linksFixture(),
       });
-      expect(body).toContain("ci-app-health-failed");
+
+      expect(body).toContain("prod-env-hmrc-submission-failure");
       expect(body).toContain("OK → ALARM");
       expect(body).toContain("Threshold crossed");
-      expect(body).toContain("2026-08-31T12:00:00Z");
-      expect(body).toContain("https://example.com/alarm");
+      expect(body).toContain("2026-09-03T21:45:23.618+0000");
+      expect(body).toContain("2026-09-03T21:25:00.000Z to 2026-09-03T21:50:23.618Z");
+      expect(body).toContain("**Region:** eu-west-2");
+      expect(body).toContain("**Deployment:** prod-0f68ed8");
+      expect(body).toContain(linksFixture().alarmConsole);
+      expect(body).toContain(linksFixture().logsInsights);
+      expect(body).toContain(linksFixture().xray);
+      expect(body).not.toContain("**Family:**");
+    });
+
+    test("issue body shows the Family line only when the family key differs from the alarm name", () => {
+      const body = buildIssueBody({
+        alarmName: "prod-9050bb5-app-api-5xx",
+        familyKey: "prod-app-api-5xx",
+        state: "ALARM",
+        previousState: "OK",
+        reason: "Threshold crossed",
+        timestamp: "t",
+        region: "eu-west-2",
+        deployment: "prod-9050bb5",
+        window: windowFixture,
+        evidence: evidenceFixture(),
+        links: linksFixture(),
+      });
+      expect(body).toContain("**Family:** prod-app-api-5xx");
     });
 
     test("issue body falls back when reason is missing", () => {
       const body = buildIssueBody({
         alarmName: "x",
+        familyKey: "x",
         state: "ALARM",
         previousState: "OK",
         reason: "",
         timestamp: "t",
-        consoleLink: "l",
+        region: "eu-west-2",
+        deployment: null,
+        window: windowFixture,
+        evidence: evidenceFixture(),
+        links: linksFixture(),
       });
       expect(body).toContain("not provided");
     });
 
-    test("comment body reports the new transition and names the exact alarm", () => {
+    test("issue body replaces a missing Logs Insights link with the stated reason, and names the RUM monitor extra link", () => {
+      const body = buildIssueBody({
+        alarmName: "prod-env-rum-js-errors",
+        familyKey: "prod-env-rum-js-errors",
+        state: "ALARM",
+        previousState: "OK",
+        reason: "Threshold crossed",
+        timestamp: "t",
+        region: "eu-west-2",
+        deployment: "prod-0f68ed8",
+        window: windowFixture,
+        evidence: evidenceFixture({
+          logGroupNamePrefixes: [],
+          tableNames: [],
+          xrayFilterExpression: "fault = true OR error = true",
+          insightsQuery: null,
+          noEvidenceReason: "RUM events are not written to CloudWatch Logs.",
+          extraLinks: [{ label: "RUM app monitor", url: "https://example.com/rum" }],
+        }),
+        links: linksFixture({ logsInsights: null }),
+      });
+
+      expect(body).toContain("No log group applies: RUM events are not written to CloudWatch Logs.");
+      expect(body).toContain("[RUM app monitor](https://example.com/rum)");
+      expect(body).not.toContain("Logs Insights for this window");
+    });
+
+    test("comment body reports the new transition, names the exact alarm, and carries the same evidence links", () => {
       const body = buildCommentBody({
         alarmName: "prod-9050bb5-app-cognito-token-post-health",
         state: "ALARM",
         previousState: "OK",
         reason: "Still failing",
         timestamp: "2026-08-31T12:05:00Z",
-        consoleLink: "https://example.com/alarm",
+        window: windowFixture,
+        evidence: evidenceFixture(),
+        links: linksFixture(),
       });
       expect(body).toContain("OK → ALARM");
       expect(body).toContain("Still failing");
-      expect(body).toContain("https://example.com/alarm");
+      expect(body).toContain(linksFixture().alarmConsole);
       expect(body).toContain("prod-9050bb5-app-cognito-token-post-health");
+    });
+  });
+
+  describe("resolveDeploymentSlug", () => {
+    beforeEach(() => {
+      mockSsmSend.mockReset();
+    });
+
+    test("returns the slug from a deployment-scoped alarm name and makes no SSM call", async () => {
+      const slug = await resolveDeploymentSlug({ alarmName: "prod-9050bb5-app-api-5xx", env: "prod" });
+      expect(slug).toBe("9050bb5");
+      expect(mockSsmSend).not.toHaveBeenCalled();
+    });
+
+    test("calls SSM once for an environment-scoped alarm and caches the answer across two invocations", async () => {
+      mockSsmSend.mockResolvedValue({ Parameter: { Value: "prod-cached-slug" } });
+
+      const first = await resolveDeploymentSlug({ alarmName: "prod-env-hmrc-submission-failure", env: "prod-test-cache" });
+      const second = await resolveDeploymentSlug({ alarmName: "prod-env-bundle-cap-reached", env: "prod-test-cache" });
+
+      expect(first).toBe("prod-cached-slug");
+      expect(second).toBe("prod-cached-slug");
+      expect(mockSsmSend).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("resolveCompositeChildFunctionNames", () => {
+    afterEach(() => {
+      mockCloudWatchSend.mockReset();
+    });
+
+    test("parses a real AlarmRule string into function names", async () => {
+      mockCloudWatchSend.mockResolvedValue({
+        CompositeAlarms: [
+          {
+            AlarmRule:
+              'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors")',
+          },
+        ],
+      });
+
+      const names = await resolveCompositeChildFunctionNames({
+        region: "eu-west-2",
+        alarmName: "prod-0f68ed8-app-hmrc-stack-health",
+      });
+
+      expect(names).toEqual(["prod-0f68ed8-app-hmrc-vat-return-post"]);
+    });
+
+    test("returns [] and logs a warning when DescribeAlarms rejects", async () => {
+      mockCloudWatchSend.mockRejectedValue(new Error("boom"));
+
+      const names = await resolveCompositeChildFunctionNames({
+        region: "eu-west-2",
+        alarmName: "prod-0f68ed8-app-hmrc-stack-health",
+      });
+
+      expect(names).toEqual([]);
     });
   });
 
@@ -276,6 +483,12 @@ describe("alarmToGithubIssue", () => {
       process.env.GITHUB_REPO = "diy-accounting-uk/submit.diyaccounting.co.uk";
       process.env.OPS_GITHUB_TOKEN_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:367191799875:secret:ci/submit/github/token";
       mockSecretsSend.mockReset();
+      mockSsmSend.mockReset();
+      // Every alarm the handler tests fire is either deployment-scoped (its slug comes
+      // straight off the alarm name, no SSM call) or shares this fallback answer for the
+      // environment-scoped ones; no test here asserts on the resolved slug's value.
+      mockSsmSend.mockResolvedValue({ Parameter: { Value: "ci-mockdeploy" } });
+      mockCloudWatchSend.mockReset();
     });
 
     afterEach(() => {
@@ -389,6 +602,105 @@ describe("alarmToGithubIssue", () => {
 
       expect(global.fetch).not.toHaveBeenCalled();
       expect(mockSecretsSend).not.toHaveBeenCalled();
+    });
+
+    test("posts an issue body containing both the Logs Insights and the X-Ray URL for a submission-failure alarm", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 111, html_url: "https://github.com/x/y/issues/111" }),
+        });
+
+      await handler(deploymentAlarmEvent("prod-env-hmrc-submission-failure"));
+
+      const [, createOptions] = global.fetch.mock.calls[1];
+      const createBody = JSON.parse(createOptions.body);
+      expect(createBody.body).toContain("logsV2:logs-insights");
+      expect(createBody.body).toContain("/xray/home");
+    });
+
+    test("posts an issue body with no Logs Insights link and the stated reason for a RUM alarm", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 112, html_url: "https://github.com/x/y/issues/112" }),
+        });
+
+      const event = {
+        source: "aws.cloudwatch",
+        region: "eu-west-2",
+        resources: ["arn:aws:cloudwatch:eu-west-2:367191799875:alarm:prod-env-rum-js-errors"],
+        detail: {
+          alarmName: "prod-env-rum-js-errors",
+          state: { value: "ALARM", reason: "Threshold crossed", timestamp: "2026-08-31T12:00:00.000+0000" },
+          previousState: { value: "OK" },
+          configuration: {
+            metrics: [{ metricStat: { period: 300, metric: { namespace: "AWS/RUM", name: "JsErrorCount", dimensions: {} } } }],
+          },
+        },
+      };
+
+      await handler(event);
+
+      const [, createOptions] = global.fetch.mock.calls[1];
+      const createBody = JSON.parse(createOptions.body);
+      expect(createBody.body).not.toContain("logsV2:logs-insights");
+      expect(createBody.body).toContain("No log group applies:");
+    });
+
+    test("comments with both links on a repeat alarm, and the comment body carries no log text", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ items: [{ number: 55, title: "[ALARM] prod-env-hmrc-submission-failure" }] }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
+
+      await handler(deploymentAlarmEvent("prod-env-hmrc-submission-failure"));
+
+      const [, commentOptions] = global.fetch.mock.calls[1];
+      const commentBody = JSON.parse(commentOptions.body).body;
+      expect(commentBody).toContain("logsV2:logs-insights");
+      expect(commentBody).toContain("/xray/home");
+    });
+
+    test("no issue or comment body ever contains the string reasonData", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 113, html_url: "https://github.com/x/y/issues/113" }),
+        });
+
+      const event = {
+        ...deploymentAlarmEvent("prod-env-hmrc-submission-failure"),
+      };
+      event.detail.state.reasonData = JSON.stringify({
+        version: "1.0",
+        queryDate: "2026-09-05T22:04:50.762+0000",
+        statistic: "Average",
+        period: 7200,
+        recentDatapoints: [],
+        threshold: 90.0,
+        evaluatedDatapoints: [{ timestamp: "2026-09-05T20:04:00.000Z" }],
+      });
+
+      await handler(event);
+
+      const [, createOptions] = global.fetch.mock.calls[1];
+      const createBody = JSON.parse(createOptions.body);
+      expect(createBody.body).not.toContain("reasonData");
+      expect(createBody.body).not.toContain("recentDatapoints");
     });
   });
 });
