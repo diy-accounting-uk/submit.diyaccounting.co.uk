@@ -89,14 +89,6 @@ starting.
   (synthetic-test flakiness); repo find 2026-09-04. **Owner**: Claude Code. **Model**:
   Sonnet.
   **Track**: synthetic workflow (Sonnet, shared with B32.4). Code complete on `claude/board-batch-2` (PR #118): the report file is now named after the suite the workflow passes, and the upload job fails early naming the paths it looked at. Verified when a prod dispatch of `getVatPenaltiesBehaviour` uploads its report.
-- [ ] **B40f. Make the Express dev server answer uncaught handler errors as JSON.** When
-  `getAsyncRequest` threw `ResourceNotFoundException` locally, `app/bin/server.js` returned
-  Express's default HTML 500 page and the page failed on `Unexpected token '<'`; the API rule
-  is JSON always, and the deployed Lambdas already answer through `httpResponseHelper.js`. Add
-  a JSON error handler to the dev server and a system test that a throwing route returns a
-  JSON 500. **Source**: repo find 2026-09-03 fixing B32. **Owner**: Claude Code. **Model**:
-  Haiku.
-  **Track**: dev server JSON (Haiku). Code complete, merging into `claude/board-batch-2`; verified once the batch PR is green.
 
 ## Ready: Claude Code
 
