@@ -360,10 +360,13 @@ public class OpsStack extends Stack {
         // functions are broken, and the alarm state reason names the check that tripped.
         // EventBridge cannot AND a prefix match with a suffix exclusion on one field, so the
         // split is carried by the names. `SubmitApplicationCdkResourceTest` enforces it.
+        // The GitHub issue target is prod-only: ci alarms already reach Telegram through this
+        // same rule, and a ci set self-destructs within hours, so an issue opened for it is
+        // stale before anyone can act on it.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
         alarmStateChangeTargets.add(
                 LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());
-        if (alarmToGithubIssueLambda != null) {
+        if (alarmToGithubIssueLambda != null && "prod".equals(props.envName())) {
             alarmStateChangeTargets.add(
                     LambdaFunction.Builder.create(alarmToGithubIssueLambda).build());
         }
@@ -472,16 +475,17 @@ public class OpsStack extends Stack {
                 .build();
 
         // Health Check Alarm
-        // Period is 2 hours, not 5 minutes: the canary runs hourly, so a 5-minute period spends
-        // most of its life with no datapoint at all, and
-        // treatMissingData(BREACHING) turned that absence into a spurious breach almost every
-        // cycle (verified in prod: alarms flapping between OK and ALARM off "no datapoints
-        // received", not off real canary failures). A 2-hour period comfortably contains at
-        // least one real run regardless of clock-alignment drift, so BREACHING-on-missing-data
-        // now means what it says: the canary has genuinely stopped reporting. Mirrors the
-        // existing githubProbeAlarm's 2-hour/1-period shape below. Trade-off: worst-case
-        // detection latency for a real failure rises from a nominal (but not real) ~10 minutes
-        // to just under 2 hours.
+        // Period is 2 hours: the canary runs once an hour, so a 2-hour period always contains
+        // at least one scheduled run regardless of clock-alignment drift, and a missing
+        // datapoint means the canary has genuinely stopped rather than that a shorter period
+        // caught it between runs.
+        //
+        // Missing data is NOT_BREACHING: a stack lands and this alarm starts evaluating within
+        // about two minutes, long before the canary's first cron-scheduled run, so treating
+        // that startup gap as a breach put every new deployment through a spurious ALARM before
+        // the first real datapoint arrived. A canary that then stops running for good is still
+        // caught by the env-level GithubProbeAlarm (see ObservabilityStack), which exercises the
+        // same site on its own 4-hourly schedule independent of this canary.
         this.healthCheckAlarm = Alarm.Builder.create(this, "HealthAlarm")
                 .alarmName(props.resourceNamePrefix() + "-health-failed")
                 .alarmDescription("Health check canary is failing - application may be down")
@@ -495,7 +499,7 @@ public class OpsStack extends Stack {
                 .threshold(90)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.BREACHING)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
         this.healthCheckAlarm.addAlarmAction(new SnsAction(this.alertTopic));
@@ -519,7 +523,7 @@ public class OpsStack extends Stack {
                 .startAfterCreation(true)
                 .build();
 
-        // API Check Alarm - same 2-hour period fix and rationale as HealthAlarm above.
+        // API Check Alarm - same 2-hour period and NOT_BREACHING rationale as HealthAlarm above.
         this.apiCheckAlarm = Alarm.Builder.create(this, "ApiAlarm")
                 .alarmName(props.resourceNamePrefix() + "-api-failed")
                 .alarmDescription("API check canary is failing - API endpoints may be unavailable")
@@ -533,7 +537,7 @@ public class OpsStack extends Stack {
                 .threshold(90)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.BREACHING)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
         this.apiCheckAlarm.addAlarmAction(new SnsAction(this.alertTopic));
