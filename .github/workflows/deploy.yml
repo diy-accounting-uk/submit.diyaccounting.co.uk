@@ -1968,7 +1968,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-liability-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -1995,7 +1996,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vat-payment-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2022,7 +2024,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vat-penalty-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2184,7 +2187,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-companies-house:
-    if: ${{ !cancelled() }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
     name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2211,7 +2215,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-itsa-business-details-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
