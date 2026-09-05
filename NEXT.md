@@ -40,7 +40,10 @@ starting.
   `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
   file and applies on push to main, authenticating with the service account from Secrets
   Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: google roles (Sonnet), worktree `.claude/worktrees/agent-ab637e01e6c753dbf`, lands on `claude/board-batch-3`.
+  **Track**: google roles (Sonnet). On `claude/board-batch-3`: `analytics/google-roles.toml`,
+  `scripts/google-roles-apply.js`, `google-roles.yml` (dry run on pull requests, apply on main,
+  the billing assert dry-runs alongside), 21 unit tests. Its live dry run stopped at the same
+  disabled APIs (O1e); verified by a dry run reporting no changes once O1e is done.
 - [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
   that, given an environment name and hostname, finds or creates the GA4 property, its web
   data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
@@ -149,9 +152,9 @@ starting.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O1e / G2b. Three Google switches the scripts cannot flip themselves.** On GCP project
-  `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin API and the Cloud
-  Billing API: `gcloud services enable analyticsadmin.googleapis.com cloudbilling.googleapis.com
-  --project diyaccounting-ga4` (or the console's API library). On the stray project
+  `diyaccounting-ga4` (project number 958354756046) enable the Analytics Admin, Cloud Billing and
+  Cloud Resource Manager APIs: `gcloud services enable analyticsadmin.googleapis.com
+  cloudbilling.googleapis.com cloudresourcemanager.googleapis.com --project diyaccounting-ga4` (or the console's API library). On the stray project
   `valued-context-507200-m9` (project number 747057870039) grant the GA4 service account Viewer
   plus Project Deleter, or delete that project by hand once the console shows it holds nothing.
   The property-sync, roles and billing scripts all stop at these. **Source**: none. **Owner**:
