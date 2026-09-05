@@ -64,8 +64,11 @@ starting.
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
   **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: deployed with PR #118; verified when the next scheduled probe run on main
-  (`57 */4 * * *` UTC) runs all five suites.
+  **Track**: deployed with PR #118. The renamed `probe-test.yml` missed its first cron slot
+  (20:57 UTC on 2026-09-05) because a workflow that has never run under a live actor does not
+  fire on schedule; one dispatch on main (run 33992278768) arms it, the same fix as the
+  2026-08-31 revival. Verified when the 00:57 UTC slot on 2026-09-06 fires on its own and runs
+  all five suites; if it misses, the schedule needs a second look, not another dispatch.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
