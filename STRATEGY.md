@@ -8,7 +8,7 @@ An income-generating tax filing service that runs with minimal human interventio
 
 ## Where we stand
 
-**The asset.** A live, HMRC-recognised MTD VAT filing service. Production API credentials granted March 2026. Listed on HMRC's software finder. Passed the fraud prevention header evaluation. Stripe subscription billing works in production. Deployment, teardown, and synthetic testing are already automated end to end.
+**The asset.** A live, HMRC-recognised MTD VAT filing service. Production API credentials granted March 2026. Listed on HMRC's software finder. Passed the fraud prevention header evaluation. Stripe subscription billing works in production. Deployment, teardown, and probe testing are already automated end to end.
 
 **The numbers.** About 30 registered users. A handful of real VAT filers, known by name. June 2026 had zero production HMRC traffic. AWS costs about $100/month across the whole organisation. Revenue is spreadsheet donations, a steady trickle between £1 and £100. Submit subscription revenue is effectively zero.
 
@@ -45,7 +45,7 @@ The proven restore also unlocks a decided change: migrating the CDK from Java to
 
 ### W2. Measure and monetise (ongoing)
 
-You cannot grow what you cannot see. Tag every receipt and event with its actor class (customer, test, synthetic). Emit business metrics: submissions per day, signups per day, revenue per day. Build the usage data pipeline (below). Get the "free version" flag added to our HMRC listing. Finish GA4 conversions and consent. Then the growth levers: referral and campaign passes (already specced), demo videos, tighter spreadsheet-to-Submit flow so a DIY spreadsheet files without re-keying.
+You cannot grow what you cannot see. Tag every receipt and event with its actor class (customer, test-user, probe). Emit business metrics: submissions per day, signups per day, revenue per day. Build the usage data pipeline (below). Get the "free version" flag added to our HMRC listing. Finish GA4 conversions and consent. Then the growth levers: referral and campaign passes (already specced), demo videos, tighter spreadsheet-to-Submit flow so a DIY spreadsheet files without re-keying.
 
 ### W3. ITSA build (deadline-driven)
 

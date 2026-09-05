@@ -250,13 +250,13 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Allocated bundles: ${allocatedBundles.map((b) => b.bundleId).join(", ")}`);
   expect(testBundle).toBeTruthy();
 
-  // --- Step 7b: Verify sandbox qualifier is set on the bundle ---
-  const sandboxBundle = allocatedBundles.find((b) => b.qualifiers?.sandbox === true);
-  console.log(`[pass-test]: Sandbox qualifier bundle: ${sandboxBundle?.bundleId || "none"}`);
-  expect(sandboxBundle).toBeTruthy();
+  // --- Step 7b: Verify synthetic qualifier is set on the bundle ---
+  const syntheticBundle = allocatedBundles.find((b) => b.qualifiers?.synthetic === true);
+  console.log(`[pass-test]: Synthetic qualifier bundle: ${syntheticBundle?.bundleId || "none"}`);
+  expect(syntheticBundle).toBeTruthy();
 
   // --- Step 7c: Verify developer tools wrench icon appears ---
-  // The wrench icon is injected by developer-mode.js when a sandbox bundle is detected.
+  // The wrench icon is injected by developer-mode.js when a synthetic bundle is detected.
   // Navigate to home page where the header with the wrench is rendered.
   const currentOrigin = new URL(page.url()).origin;
   await page.goto(`${currentOrigin}/`, { waitUntil: "domcontentloaded", timeout: 30000 });

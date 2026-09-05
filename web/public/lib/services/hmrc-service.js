@@ -238,8 +238,8 @@ export async function getGovClientHeaders() {
  * @param {object} vatData - VAT submission data containing periodStart, periodEnd, and 9-box fields
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
- * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
- * @param {boolean} allowSandboxObligations - Sandbox-only option: use any available open obligation if dates don't match
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (synthetic only)
+ * @param {boolean} allowSyntheticObligations - Synthetic-only option: use any available open obligation if dates don't match
  * @returns {Promise<object>} Submission response
  */
 export async function submitVat(
@@ -248,7 +248,7 @@ export async function submitVat(
   accessToken,
   govClientHeaders = {},
   runFraudPreventionHeaderValidation = false,
-  allowSandboxObligations = false,
+  allowSyntheticObligations = false,
 ) {
   const url = "/api/v1/hmrc/vat/return";
 
@@ -280,7 +280,7 @@ export async function submitVat(
     finalised: vatData.finalised,
     accessToken,
     runFraudPreventionHeaderValidation,
-    allowSandboxObligations,
+    allowSyntheticObligations,
   });
   console.log(`Submitting VAT. Remote call initiated: POST ${url} ++ Body: ${body}`);
 

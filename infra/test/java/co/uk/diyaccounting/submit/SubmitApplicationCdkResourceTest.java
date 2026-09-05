@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +65,7 @@ class SubmitApplicationCdkResourceTest {
         infof("CDK synth complete");
 
         // One composite health alarm per stack routes to Telegram/GitHub through OpsStack's
-        // AlarmStateChangeRule; the four "check-" children of each function deliberately do not.
+        // AlarmStateChangeRule; the "check-" children of each function deliberately do not.
         // The rule's own alarmName prefix matchers are the ground truth for what "routed" means,
         // so read them from the synthesized template rather than hardcoding them here.
         Template opsStackTemplateForRouting = Template.fromStack(submitApplication.opsStack);
@@ -73,12 +74,12 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.authStack.getStackName());
         Template authStackTemplate = Template.fromStack(submitApplication.authStack);
         authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertStackHealthAlarm(authStackTemplate, 2, routedPrefixes);
+        assertStackHealthAlarm(authStackTemplate, 2, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
         hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 14);
-        assertStackHealthAlarm(hmrcStackTemplate, 8, routedPrefixes);
+        assertStackHealthAlarm(hmrcStackTemplate, 8, 6, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -86,7 +87,7 @@ class SubmitApplicationCdkResourceTest {
         // bundleCapacityReconcile(1), sessionBeaconPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
         accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
-        assertStackHealthAlarm(accountStackTemplate, 11, routedPrefixes);
+        assertStackHealthAlarm(accountStackTemplate, 11, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -127,7 +128,7 @@ class SubmitApplicationCdkResourceTest {
         // billingWebhookPost moved to env-level BillingWebhookStack
         Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
         billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 4);
-        assertStackHealthAlarm(billingStackTemplate, 4, routedPrefixes);
+        assertStackHealthAlarm(billingStackTemplate, 4, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -169,13 +170,21 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.opsStack.getStackName());
         // No Lambda-construct count: the second one (alarm-to-GitHub-issue) only exists when a
         // GitHub token ARN is configured, and this test's config doesn't set one.
-        assertStackHealthAlarm(opsStackTemplateForRouting, null, routedPrefixes);
+        assertStackHealthAlarm(opsStackTemplateForRouting, null, 0, routedPrefixes);
+
+        // Both canaries run on the hour, half an hour off probe-test.yml's `57 */4 * * *`, so
+        // the two never check the site in the same window and the offset cannot drift.
+        opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 2);
+        opsStackTemplateForRouting.hasResourceProperties(
+                "AWS::Synthetics::Canary",
+                Match.objectLike(Map.of(
+                        "Schedule", Match.objectLike(Map.of("Expression", "cron(27 * * * ? *)")))));
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
         // The WAF scan-detect Lambda is this stack's only Lambda construct.
-        assertStackHealthAlarm(edgeStackTemplate, 1, routedPrefixes);
+        assertStackHealthAlarm(edgeStackTemplate, 1, 0, routedPrefixes);
 
         // Access logs reach the analytics lake only through the v2 Parquet delivery below; the
         // distribution itself must carry no classic standard-logging configuration.
@@ -284,7 +293,7 @@ class SubmitApplicationCdkResourceTest {
             // Only the self-destruct function: its log group belongs to the environment stack.
             Template selfDestructStackTemplate = Template.fromStack(submitApplication.selfDestructStack);
             selfDestructStackTemplate.resourceCountIs("AWS::Lambda::Function", 1);
-            assertStackHealthAlarm(selfDestructStackTemplate, 1, routedPrefixes);
+            assertStackHealthAlarm(selfDestructStackTemplate, 1, 0, routedPrefixes);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log
@@ -327,12 +336,14 @@ class SubmitApplicationCdkResourceTest {
     /**
      * Asserts a stack's health-alarm shape: exactly one {@code {stack}-health} composite alarm,
      * whose rule names every one of the stack's {@code check-}-prefixed alarms, none of which is
-     * itself routed. {@code expectedConstructs} pins the number of Lambda constructs, four checks
-     * each; pass {@code null} when that count depends on optional config (e.g. a GitHub token
-     * ARN).
+     * itself routed. {@code expectedConstructs} pins the number of Lambda constructs and
+     * {@code expectedAsyncPairs} how many of them are {@link AsyncApiLambda}s, which carry their
+     * queue, DLQ and worker checks on top; pass {@code null} for the construct count when it
+     * depends on optional config (e.g. a GitHub token ARN).
      */
     @SuppressWarnings("unchecked")
-    static void assertStackHealthAlarm(Template template, Integer expectedConstructs, List<String> routedPrefixes) {
+    static void assertStackHealthAlarm(
+            Template template, Integer expectedConstructs, int expectedAsyncPairs, List<String> routedPrefixes) {
         template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
 
         Map<String, Map<String, Object>> composites = template.findResources("AWS::CloudWatch::CompositeAlarm");
@@ -365,14 +376,16 @@ class SubmitApplicationCdkResourceTest {
         }
 
         if (expectedConstructs != null) {
+            int expectedChecks = Lambda.HEALTH_CHECK_COUNT * expectedConstructs
+                    + AsyncApiLambda.ASYNC_HEALTH_CHECK_COUNT * expectedAsyncPairs;
             org.junit.jupiter.api.Assertions.assertEquals(
-                    4 * expectedConstructs,
+                    expectedChecks,
                     checkAlarmLogicalIds.size(),
-                    "Expected four check- alarms for each of " + expectedConstructs + " Lambda constructs, found "
-                            + checkAlarmLogicalIds.size());
+                    "Expected " + expectedChecks + " check- alarms for " + expectedConstructs + " Lambda constructs of "
+                            + "which " + expectedAsyncPairs + " are async pairs, found " + checkAlarmLogicalIds.size());
         }
 
-        // A function whose stack forgot to fan it in has four alarms nobody is watching.
+        // A function whose stack forgot to fan it in has alarms nobody is watching.
         var referenced = new ArrayList<String>();
         collectGetAttTargets(compositeProps.get("AlarmRule"), referenced);
         var unreferenced = new ArrayList<>(checkAlarmLogicalIds);

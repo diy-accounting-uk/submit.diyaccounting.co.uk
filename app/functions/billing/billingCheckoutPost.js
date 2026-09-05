@@ -31,16 +31,16 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Resolve the Stripe price ID based on bundleId and sandbox mode.
+ * Resolve the Stripe price ID based on bundleId and synthetic mode.
  * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO, STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
  */
-function resolveStripePriceId(bundleId, isSandbox) {
+function resolveStripePriceId(bundleId, isSynthetic) {
   const suffix = `_${bundleId.toUpperCase().replace(/-/g, "_")}`;
-  const prefix = isSandbox ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
+  const prefix = isSynthetic ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
   const envVar = `${prefix}${suffix}`;
   const price = process.env[envVar];
   if (price) return price;
-  logger.warn({ message: `No ${envVar} configured`, bundleId, isSandbox });
+  logger.warn({ message: `No ${envVar} configured`, bundleId, isSynthetic });
   return undefined;
 }
 
@@ -75,24 +75,24 @@ export async function ingestHandler(event) {
     await initializeSalt();
     const hashedSub = hashSub(userSub);
 
-    // Determine sandbox mode: bundle qualifiers are the source of truth (same pattern as billingPortalGet.js)
+    // Determine synthetic mode: bundle qualifiers are the source of truth (same pattern as billingPortalGet.js)
     const userBundles = await getUserBundles(userSub);
-    const hasSandboxBundle = userBundles.some((b) => b.qualifiers?.sandbox === true);
+    const hasSyntheticBundle = userBundles.some((b) => b.qualifiers?.synthetic === true);
 
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
-    const isSandbox = hasSandboxBundle || body.sandbox === true || event.headers?.["hmrcaccount"] === "sandbox";
-    let sandboxSource = "none";
-    if (hasSandboxBundle) sandboxSource = "bundle-qualifier";
-    else if (body.sandbox === true) sandboxSource = "request-body";
-    else if (event.headers?.["hmrcaccount"] === "sandbox") sandboxSource = "hmrcaccount-header";
-    logger.info({ message: "Sandbox mode resolved", isSandbox, sandboxSource });
+    const isSynthetic = hasSyntheticBundle || body.synthetic === true || event.headers?.["hmrcaccount"] === "synthetic";
+    let syntheticSource = "none";
+    if (hasSyntheticBundle) syntheticSource = "bundle-qualifier";
+    else if (body.synthetic === true) syntheticSource = "request-body";
+    else if (event.headers?.["hmrcaccount"] === "synthetic") syntheticSource = "hmrcaccount-header";
+    logger.info({ message: "Synthetic mode resolved", isSynthetic, syntheticSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
     const bundleId = body.bundleId || "resident-pro";
-    const priceId = resolveStripePriceId(bundleId, isSandbox);
+    const priceId = resolveStripePriceId(bundleId, isSynthetic);
 
     if (!priceId) {
-      logger.error({ message: "No Stripe price ID configured", bundleId, isSandbox });
+      logger.error({ message: "No Stripe price ID configured", bundleId, isSynthetic });
       return http500ServerErrorResponse({
         request,
         headers: responseHeaders,
@@ -100,9 +100,9 @@ export async function ingestHandler(event) {
       });
     }
 
-    const stripe = await getStripeClient({ test: isSandbox });
+    const stripe = await getStripeClient({ test: isSynthetic });
 
-    logger.info({ message: "Creating checkout session", isSandbox, bundleId, priceId: priceId.substring(0, 20) + "..." });
+    logger.info({ message: "Creating checkout session", isSynthetic, bundleId, priceId: priceId.substring(0, 20) + "..." });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -117,7 +117,7 @@ export async function ingestHandler(event) {
       cancel_url: `${baseUrl}bundles.html?checkout=canceled`,
     });
 
-    logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub, isSandbox });
+    logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub, isSynthetic });
 
     await publishActivityEvent({
       event: "checkout-session-created",

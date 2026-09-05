@@ -380,7 +380,7 @@ describe("bundleGet ingestHandler", () => {
       expect(mockPublishActivityFailureEvent).toHaveBeenCalledTimes(1);
     });
 
-    test("does not publish when the request is a synthetic test run", async () => {
+    test("does not publish when the request is a probe test run", async () => {
       const userId = "user-burst-test-run";
       const token = makeIdToken(userId);
       seedHits(userId, 500);

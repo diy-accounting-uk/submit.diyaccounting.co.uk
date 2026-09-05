@@ -23,8 +23,8 @@ test.describe("Test Data Link Browser Tests", () => {
   });
 
   test.describe("Submit VAT Form - Test Data Link", () => {
-    test("should show test data link in sandbox mode", async ({ page }) => {
-      // Set the page content with sandbox mode query parameter
+    test("should show test data link in synthetic mode", async ({ page }) => {
+      // Set the page content with synthetic mode query parameter
       await page.setContent(submitVatHtmlContent, {
         baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
         waitUntil: "domcontentloaded",
@@ -33,11 +33,11 @@ test.describe("Test Data Link Browser Tests", () => {
       // Load the test data generator script
       await page.addScriptTag({ content: testDataGeneratorContent });
 
-      // Simulate the initializePage logic that shows sandbox indicator, developer section, and test data link
+      // Simulate the initializePage logic that shows synthetic indicator, developer section, and test data link
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) {
-          sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) {
+          syntheticIndicator.classList.add("visible");
         }
         const developerSection = document.getElementById("developerSection");
         if (developerSection) {
@@ -55,8 +55,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await expect(testDataLink.locator("a")).toHaveText("add test data");
     });
 
-    test("should not show test data link in non-sandbox mode", async ({ page }) => {
-      // Set the page content without sandbox mode
+    test("should not show test data link in non-synthetic mode", async ({ page }) => {
+      // Set the page content without synthetic mode
       await page.setContent(submitVatHtmlContent, {
         baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
         waitUntil: "domcontentloaded",
@@ -68,7 +68,7 @@ test.describe("Test Data Link Browser Tests", () => {
     });
 
     test("should populate form when test data link is clicked", async ({ page }) => {
-      // Set the page content with sandbox mode
+      // Set the page content with synthetic mode
       await page.setContent(submitVatHtmlContent, {
         baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
         waitUntil: "domcontentloaded",
@@ -77,10 +77,10 @@ test.describe("Test Data Link Browser Tests", () => {
       // Load the test data generator script
       await page.addScriptTag({ content: testDataGeneratorContent });
 
-      // Simulate sandbox mode initialization
+      // Simulate synthetic mode initialization
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) syntheticIndicator.classList.add("visible");
         const developerSection = document.getElementById("developerSection");
         if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
@@ -108,7 +108,7 @@ test.describe("Test Data Link Browser Tests", () => {
   });
 
   test.describe("View VAT Return Form - Test Data Link", () => {
-    test("should show test data link in sandbox mode", async ({ page }) => {
+    test("should show test data link in synthetic mode", async ({ page }) => {
       await page.setContent(viewVatReturnHtmlContent, {
         baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html",
         waitUntil: "domcontentloaded",
@@ -117,8 +117,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.addScriptTag({ content: testDataGeneratorContent });
 
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) syntheticIndicator.classList.add("visible");
         const developerSection = document.getElementById("developerSection");
         if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
@@ -138,8 +138,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.addScriptTag({ content: testDataGeneratorContent });
 
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) syntheticIndicator.classList.add("visible");
         const developerSection = document.getElementById("developerSection");
         if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
@@ -160,7 +160,7 @@ test.describe("Test Data Link Browser Tests", () => {
   });
 
   test.describe("VAT Obligations Form - Test Data Link", () => {
-    test("should show test data link in sandbox mode", async ({ page }) => {
+    test("should show test data link in synthetic mode", async ({ page }) => {
       await page.setContent(vatObligationsHtmlContent, {
         baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html",
         waitUntil: "domcontentloaded",
@@ -169,8 +169,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.addScriptTag({ content: testDataGeneratorContent });
 
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) syntheticIndicator.classList.add("visible");
         const developerSection = document.getElementById("developerSection");
         if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
@@ -190,8 +190,8 @@ test.describe("Test Data Link Browser Tests", () => {
       await page.addScriptTag({ content: testDataGeneratorContent });
 
       await page.evaluate(() => {
-        const sandboxIndicator = document.getElementById("sandboxIndicator");
-        if (sandboxIndicator) sandboxIndicator.classList.add("visible");
+        const syntheticIndicator = document.getElementById("syntheticIndicator");
+        if (syntheticIndicator) syntheticIndicator.classList.add("visible");
         const developerSection = document.getElementById("developerSection");
         if (developerSection) developerSection.style.display = "block";
         const testDataLink = document.getElementById("testDataLink");
