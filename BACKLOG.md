@@ -19,10 +19,9 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Operator-only steps are briefed for Claude Cowork in
 `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 
-- **PR #118** (`claude/board-batch-2`) is complete and ready for review: videos, synthetic
-  schedule and upload fix, alarm cuts and the alarm follow-ups, the whole mode rename, the ci
-  pipeline fixes, the Companies House lookup. Its deploy needs the Companies House key in
-  Secrets Manager (done for ci; prod waits on the operator).
+- **PR #118** merged and deployed to prod (prod-cea27f8) on 2026-09-05 with its three
+  migrations run: videos, probe schedule, alarm cuts, the mode rename, the ci pipeline fixes, the
+  Companies House lookup. Two of its items wait on a later event to verify (B32.4, B30d).
 - **`claude/board-batch-3`** carries the work started after it: Google roles as code, the GA4
   property sync (both verified by live dry run as the service account), the GCP billing assert
   (waits on two grants outside the project, O1e), the ITSA spike report, and the first ITSA
@@ -41,9 +40,9 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 32 | B32.4 (on PR #118) | Optional VAT endpoints: liabilities, payments, penalties are merged and verified on the real sandbox (2026-09-04); add the suites to the 4-hourly schedule | Issue #19, vat-api-operations | S | Revenue, minor. Completes the listed feature set. |
-| 30 | B30b–B30g (on PR #118), B30f (operator) | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
-| 17a | B17a.3 (on PR #118, prod recording after its deploy), B17a.5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
+| 32 | B32.4 (deployed; next scheduled probe run) | Optional VAT endpoints: liabilities, payments, penalties are merged and verified on the real sandbox (2026-09-04); add the suites to the 4-hourly schedule | Issue #19, vat-api-operations | S | Revenue, minor. Completes the listed feature set. |
+| 30 | B30d (deployed; next alarm), B30f and O10 (operator) | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; PLAN_ALARM_CONSOLIDATION | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
+| 17a | B17a.3 (prod recording), B17a.5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
