@@ -24,10 +24,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Resumed 2026-09-05.** Integration branch `claude/board-batch-2` is PR #118 (draft, all checks
-green) with five tracks landed; PR #119 (layer 2) and PR #120 (layer 1, stacked on #118) are open
-with ci behaviour-suite failures under diagnosis. The two paused tracks resumed from their `-wip`
-branches in fresh worktrees.
+**Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
+direction 2026-09-05); the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
+the Companies House lookup (PR #124) stays separate, because its deploy cannot pass until the
+operator's API key exists.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -68,7 +68,7 @@ starting.
   (#103, #109, #123). Widen the period to straddle the cron, or move the alarm to the env stack
   so it is not recreated per deployment; CDK test updated. **Source**: BACKLOG 30; issues #123.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: probe alarm period (Sonnet). Code complete on `claude/probe-alarm-period` (PR opening, stacked on #120): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
+  **Track**: probe alarm period (Sonnet). Folded into `claude/board-batch-2` (PR #118): one `{env}-env-github-probe-failed` alarm per environment in `ObservabilityStack`, 5-hour period, and the dashboard widget now reads the namespace the workflow writes to. Verified after deploy when the per-deployment `-github-probe-failed` alarms are gone and the env alarm sits in OK across a full probe cycle.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -93,7 +93,7 @@ starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): code complete on `claude/mode-rename-2-stripe-flag` (PR #119); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): code complete on `claude/mode-rename-1-probe` (PR #120, stacked on the batch branch); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): code complete on `claude/mode-rename-3-synthetic` (PR #126, stacked on #120 and carrying #119): unit 1271, system 148, CDK 94, simulator behaviour lane green, residue sweep clean. Verified after the operator runs migration 005 before its deploy and 006 after, on ci then prod, and `submitVatBehaviour-ci` passes in synthetic mode. Layer 4 (docs and copy, plus the recount of the alarm arithmetic in `REPORT_ALARM_AUDIT.md` and `PLAN_COST_OPTIMISATION.md`): running, stacked on layer 3.
+  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): folded into `claude/board-batch-2` (PR #118); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): folded into `claude/board-batch-2` (PR #118); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): folded into `claude/board-batch-2` (PR #118): unit 1271, system 148, CDK 94, simulator behaviour lane green, residue sweep clean. Verified after the operator runs migration 005 before its deploy and 006 after, on ci then prod, and `submitVatBehaviour-ci` passes in synthetic mode. Layer 4 (docs and copy, plus the recount of the alarm arithmetic in `REPORT_ALARM_AUDIT.md` and `PLAN_COST_OPTIMISATION.md`): running, lands on the batch.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
