@@ -65,19 +65,6 @@ starting.
   run stopped twice: the Cloud Billing API is disabled on `diyaccounting-ga4`, and the service
   account holds no role on `valued-context-507200-m9` (O1e covers both); verified by a dry run
   that finds the hand-made budget and inventories the stray project once O1e is done.
-- [ ] **B10a.3. Make one read-only ITSA sandbox call through our own OAuth and fraud headers.**
-  Allow `read:self-assessment` in `web/public/lib/auth-url-builder.js` and the scope
-  validation in `app/functions/hmrc/hmrcTokenPost.js` (unit tests exist for scope
-  rejection); log in on the proxy variant as the O5 test user; call
-  `GET /individuals/business/details/{nino}/list` on `HMRC_SANDBOX_BASE_URI` with the token
-  and `app/lib/buildFraudHeaders.js` headers. Write `_developers/hmrc/ITSA_SPIKE.md`:
-  the raw response, whether the existing application and headers were accepted, and which of
-  `_developers/backlog/self-employed-api-operations.md`'s assumptions held. This is the gate
-  for B10. **Source**: BACKLOG 10a; issue #16; `_developers/backlog/self-employed-api-operations.md`.
-  **Owner**: Claude Code. **Model**: Opus. O5a and O5b done 2026-09-05: the sandbox app holds Business Details v2.0, Self Employment
-  Business v5.0 and Obligations v3.0, and the test user (VRN and NINO enrolled) is the
-  `hmrc-test-user-credentials` artifact on run 33977271581 (7-day retention).
-  **Track**: ITSA spike (Opus), worktree `.claude/worktrees/agent-aa1cb7f7075c5b8f7`, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -147,7 +134,18 @@ starting.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 ## Ready: Claude Code
 
-(none)
+- [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
+  (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
+  `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
+  `read:self-assessment` granted as requested. Build `hmrcItsaBusinessDetailsGet.js` shaped like
+  `hmrcVatObligationGet.js`, mounted at `/api/v1/hmrc/itsa/business/details` behind the
+  `self-employed` activity, with a simulator route, unit and behaviour tests. Two departures the
+  spike found: `buildHmrcHeaders` hardcodes the v1.0 Accept header, so the API version becomes a
+  parameter; and nothing in the app carries a NINO yet. Every later ITSA endpoint needs the
+  `businessId` this one returns. `_developers/backlog/self-employed-api-operations.md` has the
+  wrong paths for v5.0; the spike lists the right ones. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet, after the coordinator's go: it opens the ITSA build
+  and O4b (the 2027-28 production window) sets its target date.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
