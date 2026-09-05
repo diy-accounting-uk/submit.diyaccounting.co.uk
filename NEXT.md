@@ -75,7 +75,7 @@ starting.
   (19 of the 30 open alarm issues). Strip the deployment segment before the title search so a
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: alarm issue dedupe (Sonnet), running, lands on `claude/board-batch-2`.
+  **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
 - [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
   share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
   both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
