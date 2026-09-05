@@ -274,23 +274,21 @@ async function doEnsureBundle(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
-// HMRC's own authorise pages: cookies, continue, sign in, grant permission, back to the app. The
-// step waits for the browser to leave the site's origin first, because the click that triggers
-// the redirect is a separate scene step and returns as soon as the click lands.
-async function doHmrcAuthorise(page, step, ctx) {
+// The redirect to HMRC's own authorise pages, followed by cookies, continue, sign in, grant
+// permission, back to the app. Shared by doHmrcAuthorise and doSubmitReturn, which each trigger
+// their own scope's redirect with a preceding click but walk HMRC's pages the same way. Only the
+// redirect wait has nothing on screen yet; the behaviour steps that follow put HMRC's own pages
+// on camera — a person signing in and granting access, not a wait.
+async function waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, actionName, tokenDescription) {
   const steps = await behaviourSteps();
-  const journey = requireJourney(step, ctx);
   const appOrigin = new URL(ctx.baseUrl).origin;
-  const start = Date.now();
   try {
-    // Only this redirect is a wait with nothing on screen yet. The behaviour steps that follow
-    // put HMRC's own pages on camera — a person signing in and granting access, not a wait.
     await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
   } catch (err) {
     await writeFailureStill(page, ctx);
     throw new SceneStepError(
-      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (hmrcAuthorise): the browser stayed on ${appOrigin}, so HMRC never asked for authority. ` +
-        `A run whose account already holds an HMRC token skips the authorise pages; record with an account that has not granted authority yet (${err.message})`,
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (${actionName}): the browser stayed on ${appOrigin}, so HMRC never asked for authority. ` +
+        `A run whose account already holds ${tokenDescription} skips the authorise pages; record with an account that has not granted authority yet (${err.message})`,
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
     );
   }
@@ -300,45 +298,60 @@ async function doHmrcAuthorise(page, step, ctx) {
   await steps.fillInHmrcAuth(page, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
   await steps.submitHmrcAuth(page, ctx.stepScreenshotDir);
   await steps.grantPermissionHmrcAuth(page, ctx.stepScreenshotDir);
+}
+
+async function doHmrcAuthorise(page, step, ctx) {
+  const journey = requireJourney(step, ctx);
+  const start = Date.now();
+  await waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, "hmrcAuthorise", "an HMRC token");
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// Round figures for the nine boxes a submitReturn tour fills in, matching the on-camera tour in
+// videos/submit-return.json. Boxes 3 (totalVatDue) and 5 (netVatDue) are left out: the form
+// calculates them from the rest.
+const SUBMIT_RETURN_VAT_BOX_DATA = {
+  vatDueSales: "1000.00",
+  vatDueAcquisitions: "0.00",
+  vatReclaimedCurrPeriod: "200.00",
+  totalValueSalesExVAT: "5000",
+  totalValuePurchasesExVAT: "1000",
+  totalValueGoodsSuppliedExVAT: "0",
+  totalAcquisitionsExVAT: "0",
+};
+
 // Submits a VAT return for whatever open obligation the signed-in account currently has, off
-// camera: the same behaviour-test steps submitVat.behaviour.test.js drives for a submission
-// (home nav, the submit form, the write:vat scope authorise, and the receipt). The period comes
-// from the account's own obligations, resolved server-side — never a hard-coded period key, per
-// the repo rule against relying on a particular obligation coming back.
+// camera, the same way a customer would: click "Submit Return" on the open obligation (the
+// period comes from that obligation, resolved server-side — never a hard-coded period key),
+// fill the nine boxes with round figures and tick the declaration, submit, grant the write:vat
+// scope with HMRC, then wait for the receipt. Runs from the obligations results page, so the
+// scene using this action must follow one that already queried HMRC's obligations.
 async function doSubmitReturn(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
-  const appOrigin = new URL(ctx.baseUrl).origin;
   const start = Date.now();
 
-  await steps.goToHomePageUsingMainNav(page, ctx.stepScreenshotDir);
-  await steps.initSubmitVat(page, ctx.stepScreenshotDir);
-  // Round figures; allowSyntheticObligations lets the server resolve the period from whichever
-  // obligation is actually open, rather than the form's default placeholder dates.
-  await steps.fillInVat(page, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
-  await steps.submitFormVat(page, ctx.stepScreenshotDir);
-
-  try {
-    // The scope upgrade to write:vat read:vat sends the browser to HMRC, same redirect
-    // hmrcAuthorise waits for.
-    await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
-  } catch (err) {
+  const { navigated, periodStart, periodEnd } = await steps.clickObligationSubmitReturn(page, ctx.stepScreenshotDir);
+  if (!navigated) {
     await writeFailureStill(page, ctx);
     throw new SceneStepError(
-      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (submitReturn): the browser stayed on ${appOrigin}, so HMRC never asked for authority. ` +
-        `A run whose account already holds a write:vat token skips the authorise pages; record with an account that has not granted authority yet (${err.message})`,
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (submitReturn): no open obligation offered a "Submit Return" button`,
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
     );
   }
-  await steps.acceptCookiesHmrc(page, ctx.stepScreenshotDir);
-  await steps.goToHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.initHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.fillInHmrcAuth(page, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
-  await steps.submitHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.grantPermissionHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.fillInVat9Box(
+    page,
+    journey.hmrcUser.vatNumber,
+    { periodStart, periodEnd },
+    SUBMIT_RETURN_VAT_BOX_DATA,
+    null,
+    false,
+    ctx.stepScreenshotDir,
+    false,
+  );
+  await steps.submitFormVat(page, ctx.stepScreenshotDir);
+
+  await waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, "submitReturn", "a write:vat token");
 
   await steps.completeVat(page, ctx.baseUrl, null, ctx.stepScreenshotDir);
   await steps.verifyVatSubmission(page, null, ctx.stepScreenshotDir);

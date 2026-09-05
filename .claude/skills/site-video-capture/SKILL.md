@@ -111,10 +111,12 @@ and pauses frame capture for its whole duration: nothing from it reaches the enc
 timer and residual expectations for them, since a step run at zero pacing has neither.
 
 `submitReturn` is built for this: it submits a VAT return for whatever open obligation the
-signed-in account currently has — home nav, the submit form with round figures, the write:vat
-scope authorise with HMRC, and the receipt — and resolves the period from the account's own
-obligations server-side, never a hard-coded period key. `videos/view-return.json` uses it between
-an on-camera obligations query and a second one, so the return it then opens on camera is real.
+signed-in account currently has, the way a customer would — click "Submit Return" on the open
+obligation, fill the nine boxes with round figures, tick the declaration, the write:vat scope
+authorise with HMRC, and the receipt — and resolves the period from the obligation itself, never
+a hard-coded period key. It has to run from the obligations results page. `videos/view-return.json`
+uses it between an on-camera obligations query and a second one, so the return it then opens on
+camera is real.
 
 ## Step 3 — record for real against the proxy variant or a deployment
 
