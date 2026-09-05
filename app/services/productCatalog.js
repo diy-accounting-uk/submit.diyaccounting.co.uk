@@ -33,6 +33,14 @@ export function isActivityAvailable(catalog, activityId, bundleId) {
   return bundles.includes(bundleId);
 }
 
+// An activity may carry an `environments` array (e.g. ["local", "ci"]) restricting it to
+// those named environments. Absent or empty means every environment.
+export function isActivityListedInEnvironment(activity, environmentName) {
+  const listed = activity?.environments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  return typeof environmentName === "string" && listed.includes(environmentName);
+}
+
 export function getCappedBundleIds(catalog) {
   if (!catalog?.bundles) return [];
   return catalog.bundles.filter((b) => Number.isFinite(b.cap)).map((b) => b.id);

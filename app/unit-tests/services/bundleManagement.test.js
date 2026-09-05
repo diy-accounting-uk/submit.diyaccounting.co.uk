@@ -204,6 +204,59 @@ describe("bundleEnforcement.js", () => {
       expect(getUserBundles).toHaveBeenCalledWith("user-with-prod-bundle-expiry");
     });
 
+    test("should throw BundleEntitlementError for a gated activity's path when the environment is not listed", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const token = makeJWT("user-env-restricted");
+      const authorizerContext = {
+        "sub": "user-env-restricted",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
+      };
+      const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/liability");
+
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
+
+      await expect(enforceBundles(event)).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "vat-liabilities" },
+      });
+    });
+
+    test("should pass a gated activity's path when the environment is listed", async () => {
+      process.env.ENVIRONMENT_NAME = "ci";
+      const token = makeJWT("user-env-allowed");
+      const authorizerContext = {
+        "sub": "user-env-allowed",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
+      };
+      const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/liability");
+
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
+
+      // Should not throw
+      await enforceBundles(event);
+    });
+
+    test("should not restrict a path whose matching activities carry no environments field", async () => {
+      process.env.ENVIRONMENT_NAME = "prod";
+      const token = makeJWT("user-unrestricted-activity");
+      const authorizerContext = {
+        "sub": "user-unrestricted-activity",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
+      };
+      const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/return");
+
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
+
+      // Should not throw for environment reasons (submit-vat and view-vat-return carry no environments field)
+      await enforceBundles(event);
+    });
+
     test("should extract user info from authorizer context", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const authorizerContext = {

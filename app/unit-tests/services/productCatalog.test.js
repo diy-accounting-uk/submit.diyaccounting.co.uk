@@ -4,7 +4,15 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { parseCatalog, loadCatalogFromRoot, bundlesForActivity, isActivityAvailable, getCatalogBundleById, getStripeSubscriptionBundles } from "../../services/productCatalog.js";
+import {
+  parseCatalog,
+  loadCatalogFromRoot,
+  bundlesForActivity,
+  isActivityAvailable,
+  isActivityListedInEnvironment,
+  getCatalogBundleById,
+  getStripeSubscriptionBundles,
+} from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -88,5 +96,36 @@ describe("productCatalogHelper", () => {
       .map((b) => b.id)
       .sort();
     expect(bundleIds).toEqual(["resident-itsa", "resident-pro", "resident-vat"]);
+  });
+
+  describe("isActivityListedInEnvironment", () => {
+    it("lists an activity in a named environment", () => {
+      const activity = { environments: ["local", "ci"] };
+      expect(isActivityListedInEnvironment(activity, "ci")).toBe(true);
+    });
+
+    it("hides an activity from an environment not in its list", () => {
+      const activity = { environments: ["local", "ci"] };
+      expect(isActivityListedInEnvironment(activity, "prod")).toBe(false);
+    });
+
+    it("lists an activity with no environments field everywhere", () => {
+      expect(isActivityListedInEnvironment({}, "prod")).toBe(true);
+    });
+
+    it("hides a restricted activity when the current environment is unknown", () => {
+      const activity = { environments: ["local", "ci"] };
+      expect(isActivityListedInEnvironment(activity, undefined)).toBe(false);
+    });
+  });
+
+  it("vat-liabilities, vat-payments, vat-penalties, self-employed and company-lookup stay out of prod until examined on ci", () => {
+    const catalog = parseCatalog(tomlText);
+    const gatedActivityIds = ["vat-liabilities", "vat-payments", "vat-penalties", "self-employed", "company-lookup"];
+    for (const activityId of gatedActivityIds) {
+      const activity = catalog.activities.find((a) => a.id === activityId);
+      expect(activity.environments).toContain("ci");
+      expect(activity.environments).not.toContain("prod");
+    }
   });
 });

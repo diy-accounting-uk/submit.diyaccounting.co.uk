@@ -47,10 +47,42 @@ export async function fetchCatalogText(url = "/submit.catalogue.toml") {
   return res.text();
 }
 
+/**
+ * Check whether an activity is listed in the given environment.
+ * An activity may carry an `environments` array (e.g. ["local", "ci"]) restricting it to
+ * those named environments. Absent or empty means every environment.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @param {string|null} environmentName - The current environment name, or null if unknown
+ * @returns {boolean} True if the activity should be listed in this environment
+ */
+export function isActivityListedInEnvironment(activity, environmentName) {
+  const listed = activity?.environments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  return typeof environmentName === "string" && listed.includes(environmentName);
+}
+
+/**
+ * Fetch the current environment's name as recorded at deploy time.
+ * @param {string} url - URL to fetch (default "/submit.environment-name.txt")
+ * @returns {Promise<string|null>} The environment name, or null if it could not be read
+ */
+export async function fetchCurrentEnvironmentName(url = "/submit.environment-name.txt") {
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const text = (await res.text()).trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.bundlesForActivity = bundlesForActivity;
   window.activitiesForBundle = activitiesForBundle;
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
+  window.isActivityListedInEnvironment = isActivityListedInEnvironment;
+  window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
 }

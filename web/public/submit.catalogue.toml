@@ -243,6 +243,11 @@ metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
 hmrcScopesRequired = ["read:vat"]
 
+# environments
+# ============
+# Restricts an activity to the named environments (both the browser listing and the
+# server-side 403 gate honour it). Absent means every environment. A new activity stays
+# ci-only until the operator has tried it there and lifts the restriction.
 [[activities]]
 id = "vat-liabilities"
 name = "VAT Liabilities (HMRC)"
@@ -250,8 +255,9 @@ display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
-paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat.*"]
+paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat/liability.*"]
 hmrcScopesRequired = ["read:vat"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "vat-payments"
@@ -260,8 +266,9 @@ display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
-paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat.*"]
+paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat/payment.*"]
 hmrcScopesRequired = ["read:vat"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "vat-penalties"
@@ -270,8 +277,9 @@ display = "always-with-upsell"
 bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
-paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat.*"]
+paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat/penalty.*"]
 hmrcScopesRequired = ["read:vat"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "view-vat-return"
@@ -292,6 +300,7 @@ tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "company-lookup"
@@ -300,6 +309,7 @@ display = "on-entitlement"
 bundles = ["default"]
 metered = false
 paths = ["companies-house/companySearch.html", "^/api/v1/companies-house.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "my-receipts"
