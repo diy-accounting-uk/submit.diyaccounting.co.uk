@@ -24,8 +24,7 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-`claude/board-batch-3` is merged with main and is the next single branch and PR; its ci deploy
-(run 33986411249, deployment ci-claudf375) is green. Two PR #118 items below still wait on a
+`claude/board-batch-3` is PR #132, merged with main. Two PR #118 items below still wait on a
 later event to verify.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
@@ -41,14 +40,13 @@ starting.
   O1a granted 2026-09-05.
   **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
   `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Verified: the live dry run as the
-  service account plans the ci property, its data stream and BigQuery link. Waits on the batch 3
-  PR.
+  service account plans the ci property, its data stream and BigQuery link. On PR #132.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
   `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
-  **Track**: gcp billing (Sonnet). On `claude/board-batch-3`: `scripts/gcp-billing-assert.js`, 28
+  **Track**: gcp billing (Sonnet). On PR #132: `scripts/gcp-billing-assert.js`, 28
   unit tests; the budget defaults to GBP 10 a month unless the hand-made one is found. Its live dry
   run now reaches the billing account (`019D7D-B02D59-ED7738`) and stops at 403 there, and holds
   no role on `valued-context-507200-m9`: both are O1e. Verified by a dry run that finds the
@@ -66,14 +64,12 @@ starting.
   **Owner**: Claude Code. **Model**: Sonnet. Operator decision 2026-09-05: build against HMRC's test APIs and get
   something running before asking HMRC about production windows (O4a and O4b are back on the
   backlog, row 11a).
-  **Track**: ITSA business details (Sonnet). On `claude/board-batch-3`: handler in the VAT reads'
+  **Track**: ITSA business details (Sonnet). On PR #132: handler in the VAT reads'
   async shape, `buildHmrcHeaders` takes an API version, NINO validation, simulator route and
   scenarios, the Business Details page, and unit, system, browser and behaviour tests (1343,
-  153, 69, simulator lane 1 passed; CDK 94). Remainder: `deploy.yml` has no
-  `itsaBusinessDetailsBehaviour-ci` job (the suite is only listed as allowed in
-  `probe-test.yml`), so add one shaped like `getVatObligationsBehaviour-ci`. Verified when
-  that job is green on a ci deploy of batch 3; then a prod recording of the page is the next
-  video.
+  153, 69, simulator lane 1 passed; CDK 94), all on PR #132 with its
+  `itsaBusinessDetailsBehaviour-ci` job in `deploy.yml`. Verified when that job is green on the
+  PR's ci deploy; then a prod recording of the page is the next video.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -89,19 +85,29 @@ starting.
   **Track**: deployed with PR #118 (`app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>`
   to `<env>-app-<rest>` for the issue title and search). Verified when the next alarm on
   prod-cea27f8 or ci-claudf375 comments on an existing family issue instead of opening one.
+- [ ] **B34.1 remainder. `deploy.yml` runs `companiesHouseBehaviour-ci`.** The lookup is live
+  in prod (prod-cea27f8, `CompaniesHouseStack`); PR #132 adds the job, shaped like the other
+  probe suites. Verified when it is green on the PR's ci deploy. **Source**: BACKLOG 34; issue
+  #15. **Owner**: Claude Code. **Model**: Haiku.
 ## Ready: Claude Code
 
-- [ ] **B34.1 remainder. Give `deploy.yml` a `companiesHouseBehaviour-ci` job.** The lookup is
-  live in prod (prod-cea27f8, `CompaniesHouseStack`), but `deploy.yml` never runs its behaviour
-  suite: the suite is only listed as allowed in `probe-test.yml`. Add a job shaped like
-  `getVatObligationsBehaviour-ci`, on `claude/board-batch-3`. Verified when that job is green on
-  a ci deploy. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
+  name, the state change and the CloudWatch reason (#111 is the example). Make
+  `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
+  public: a CloudWatch Logs Insights link pre-filled with the log groups behind the alarm's
+  metric and the alarm's evaluation window (for `prod-env-hmrc-submission-failure` that is the
+  `hmrcVatReturnPost` function's log group and the `prod-env-hmrc-api-requests` table's request
+  ids), and an X-Ray trace search link for the same window (every Lambda traces with
+  `Tracing.ACTIVE`, `constructs/Lambda.java`). The alarm-to-log-group mapping needs a design
+  pass: alarm names carry the function name for per-function checks and the metric namespace
+  for business metrics. Unit tests on the two builders. **Source**: BACKLOG 30; issue #111.
+  **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -127,8 +133,9 @@ starting.
   `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` Billing Account Costs Manager so
   the budget assert can read and set budgets; (2) the stray project `valued-context-507200-m9`
   (project number 747057870039): grant it Owner so the assert can inventory and delete it, or
-  delete that project by hand once the console shows it empty. **Source**: none. **Owner**:
-  Operator.
+  delete that project by hand once the console shows it empty. Or run `gcloud auth login` as
+  antony@diyaccounting.co.uk in the Claude Code session and let it apply both grants.
+  **Source**: none. **Owner**: Operator.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
