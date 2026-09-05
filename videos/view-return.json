@@ -156,11 +156,60 @@
         {
           "action": "point",
           "target": "#obligationsTable",
-          "caption": "A fulfilled period already has a return behind it.",
+          "caption": "One of these periods is still open, waiting for a return.",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "obligations-table" },
+        { "action": "hold", "ms": 1500 }
+      ]
+    },
+    {
+      "id": "submit-open-return",
+      "chapter": "Submit the open return",
+      "offCamera": true,
+      "steps": [{ "action": "submitReturn" }]
+    },
+    {
+      "id": "obligations-again",
+      "chapter": "Ask again",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Activities" },
+          "caption": "Back to the activities, to ask again."
+        },
+        { "action": "hold", "ms": 500 },
+        {
+          "action": "click",
+          "target": "button:has-text('VAT Obligations (HMRC)')",
+          "caption": "Ask HMRC the same question again."
+        },
+        { "action": "await", "until": "#vatObligationsForm", "label": "Opening the obligations form" },
+        {
+          "action": "type",
+          "target": "#vrn",
+          "text": "{{hmrcVatNumber}}",
+          "clear": true,
+          "caption": "The same VAT registration number."
+        },
+        { "action": "fill", "target": "#fromDate", "value": "{{monthsAgo:11}}" },
+        { "action": "fill", "target": "#toDate", "value": "{{today}}" },
+        { "action": "hold", "ms": 500 },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "This time no HMRC sign-in is needed."
+        },
+        {
+          "action": "await",
+          "until": "#obligationsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "The period just sent to HMRC now shows as fulfilled."
+        },
+        { "action": "scroll", "target": "#obligationsTable" },
         { "action": "hold", "ms": 1500 }
       ]
     },
@@ -172,7 +221,7 @@
         {
           "action": "click",
           "target": { "role": "button", "name": "View Return" },
-          "caption": "Open a return HMRC already has on file."
+          "caption": "Open the return HMRC just received."
         },
         {
           "action": "await",
