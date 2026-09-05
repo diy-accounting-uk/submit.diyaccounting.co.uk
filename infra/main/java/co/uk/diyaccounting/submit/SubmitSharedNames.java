@@ -1460,7 +1460,7 @@ public class SubmitSharedNames {
         var appSelfDestructLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(appSelfDestructLambdaHandlerName);
         this.selfDestructLambdaFunctionName =
-                "%s-app-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
+                "%s-%s".formatted(this.appResourceNamePrefix, appSelfDestructLambdaHandlerDashed);
         this.selfDestructLambdaHandler =
                 "%s/infra/%s".formatted(appLambdaHandlerPrefix, appSelfDestructLambdaHandlerName);
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
