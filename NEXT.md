@@ -41,9 +41,9 @@ starting.
   name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
   O1a granted 2026-09-05.
   **Track**: ga4 property sync (Sonnet). On `claude/board-batch-3`: `scripts/ga4-property-sync.js`,
-  `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Its live dry run stopped because the
-  Analytics Admin API is not enabled on the project (O1e); verified by a dry run that plans the
-  ci property once O1e is done.
+  `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Verified: the live dry run as the
+  service account plans the ci property, its data stream and BigQuery link. Waits on the batch 3
+  PR.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
