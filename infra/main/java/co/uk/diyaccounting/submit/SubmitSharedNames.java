@@ -358,6 +358,15 @@ public class SubmitSharedNames {
     public boolean companiesHouseCompanyGetLambdaJwtAuthorizer;
     public boolean companiesHouseCompanyGetLambdaCustomAuthorizer;
 
+    public String companiesHouseTokenPostIngestLambdaHandler;
+    public String companiesHouseTokenPostIngestLambdaFunctionName;
+    public String companiesHouseTokenPostIngestLambdaArn;
+    public String companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseTokenPostLambdaHttpMethod;
+    public String companiesHouseTokenPostLambdaUrlPath;
+    public boolean companiesHouseTokenPostLambdaJwtAuthorizer;
+    public boolean companiesHouseTokenPostLambdaCustomAuthorizer;
+
     public String supportTicketPostIngestLambdaHandler;
     public String supportTicketPostIngestLambdaFunctionName;
     public String supportTicketPostIngestLambdaArn;
@@ -1259,6 +1268,28 @@ public class SubmitSharedNames {
                 "Retrieves the Companies House profile for a company number",
                 "getCompanyProfile",
                 List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseTokenPostLambdaUrlPath = "/api/v1/companies-house/token";
+        this.companiesHouseTokenPostLambdaJwtAuthorizer = false;
+        this.companiesHouseTokenPostLambdaCustomAuthorizer = false;
+        var companiesHouseTokenPostLambdaHandlerName = "companiesHouseTokenPost.ingestHandler";
+        var companiesHouseTokenPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTokenPostLambdaHandlerName);
+        this.companiesHouseTokenPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTokenPostLambdaHandlerDashed);
+        this.companiesHouseTokenPostIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTokenPostLambdaHandlerName);
+        this.companiesHouseTokenPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTokenPostLambdaHandlerDashed);
+        this.companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseTokenPostLambdaHttpMethod,
+                this.companiesHouseTokenPostLambdaUrlPath,
+                "Exchange Companies House authorization code for access token",
+                "Exchanges a Companies House OAuth authorisation code for an access token",
+                "exchangeCompaniesHouseToken"));
 
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
         this.supportTicketPostLambdaUrlPath = "/api/v1/support/ticket";

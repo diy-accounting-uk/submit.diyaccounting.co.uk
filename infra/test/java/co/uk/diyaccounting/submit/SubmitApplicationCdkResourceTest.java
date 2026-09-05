@@ -83,8 +83,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 2, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 3, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -186,8 +186,10 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
-        // Each of the two new Companies House routes also gets ApiStack's automatic HEAD route.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 52);
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/token"));
+        // Each of the three Companies House routes also gets ApiStack's automatic HEAD route.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 54);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

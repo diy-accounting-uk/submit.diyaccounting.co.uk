@@ -1,0 +1,221 @@
+<!-- filingCallback.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Companies House Callback - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>DIY Accounting Submit</h1>
+      <p class="subtitle">Change your company's details at Companies House</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <div class="navigation-container" style="text-align: center; margin-top: 2em">
+        <button type="button" class="btn" id="navigationBtn" onclick="window.location.href = '../'">Return home</button>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../lib/env-loader.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/loading-spinner.js"></script>
+    <script>
+      // OAuth callback handling for Companies House. Mirrors activities/submitVatCallback.html:
+      // same state check, same token exchange shape, same "stay on the page so the error is
+      // visible" behaviour on failure - only the storage keys, endpoint and state key differ.
+
+      async function handleOAuthCallback() {
+        const code = getValidatedAuthorisationCode();
+        let succeeded = false;
+
+        if (!code) {
+          console.error("No valid authorisation code found in URL parameters.");
+          showStatus("No valid authorisation code found. Please try again.", "error");
+        } else {
+          try {
+            showLoading();
+            showStatus("Exchanging authorisation code for access token...", "info");
+
+            const tokenResponse = await exchangeToken(code);
+
+            showStatus("Obtained access token from Companies House...", "info");
+
+            sessionStorage.removeItem("ch_oauth_state");
+            sessionStorage.setItem("companiesHouseAccessToken", tokenResponse.accessToken);
+            sessionStorage.setItem("companiesHouseTokenExpiresAt", String(Date.now() + tokenResponse.expiresIn * 1000));
+            if (tokenResponse.scope) {
+              sessionStorage.setItem("companiesHouseTokenScope", tokenResponse.scope);
+            }
+            succeeded = true;
+          } catch (error) {
+            console.error("Companies House token exchange error:", error);
+            showStatus(`Companies House sign-in failed: ${error.message}`, "error");
+          } finally {
+            hideLoading();
+          }
+        }
+
+        // Only carry on to the pending filing automatically when the token exchange
+        // succeeded. On failure, stay on this page so the error message stays visible
+        // instead of being wiped out by an immediate redirect.
+        if (succeeded) {
+          checkCurrentActivityAndRedirect();
+        } else {
+          offerReturnToActivity();
+        }
+      }
+
+      // On failure, point the existing "Return home" button back at the pending
+      // filing instead, so the user can dismiss the error and retry.
+      function offerReturnToActivity() {
+        const currentActivity = sessionStorage.getItem("currentActivity");
+        const navigationBtn = document.getElementById("navigationBtn");
+        if (currentActivity && navigationBtn) {
+          navigationBtn.textContent = "Back to Companies House filing";
+          navigationBtn.onclick = () => {
+            window.location.href = currentActivity;
+          };
+        }
+      }
+
+      function getValidatedAuthorisationCode() {
+        console.log("Companies House OAuth callback handler");
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        const state = urlParams.get("state");
+        const error = urlParams.get("error");
+
+        if (error) {
+          showStatus(`Companies House OAuth error: ${error}`, "error");
+          console.error("Companies House OAuth callback handler (error exit)");
+          return null;
+        }
+
+        if (code && state) {
+          const storedState = sessionStorage.getItem("ch_oauth_state");
+
+          if (state !== storedState) {
+            showStatus("Invalid OAuth state. Please try again.", "error");
+            console.error("Companies House OAuth callback handler (invalid state exit)");
+            return null;
+          }
+
+          // Clear URL parameters
+          console.log("Page transition initiated: Clearing URL parameters");
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          // Continue with token exchange and submission
+          console.log("Companies House OAuth callback handler (normal completion)");
+          return code;
+        } else {
+          console.log("Companies House OAuth callback handler (no action taken)");
+          return null;
+        }
+      }
+
+      async function exchangeToken(code) {
+        const url = `/api/v1/companies-house/token`;
+        const body = JSON.stringify({ code });
+        console.log(`Exchanging Companies House token. Remote call initiated: POST ${url}`);
+
+        // Cognito idToken identifies the authenticated web user for the token exchange audit,
+        // the same way activities/submitVatCallback.html authenticates its HMRC token exchange.
+        const response = await window.fetchWithIdToken(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        });
+        if (!response.ok) {
+          const message = `Failed to exchange Companies House token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}`;
+          console.error(message);
+          throw new Error(message);
+        }
+
+        const responseJson = await response.json();
+        const accessToken = responseJson.accessToken;
+        if (!accessToken) {
+          const message = `Failed to exchange Companies House token. Remote call response did not include accessToken: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+          console.error(message);
+          throw new Error(message);
+        }
+
+        console.log(`Exchanged Companies House token. Remote call completed successfully: POST ${url}`, responseJson);
+        return responseJson;
+      }
+
+      function checkCurrentActivityAndRedirect() {
+        const currentActivity = sessionStorage.getItem("currentActivity");
+        if (currentActivity) {
+          console.log("Current activity found:", currentActivity);
+          window.location.href = currentActivity;
+        } else {
+          console.log("No current activity found, staying on current page");
+        }
+      }
+
+      // Wait for submit.js module to be ready before running the callback handler
+      if (window.__submitReady__) {
+        handleOAuthCallback();
+      } else {
+        document.addEventListener("submit-ready", handleOAuthCallback, { once: true });
+      }
+    </script>
+  </body>
+</html>

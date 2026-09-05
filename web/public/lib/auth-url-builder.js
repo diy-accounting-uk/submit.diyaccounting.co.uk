@@ -48,5 +48,21 @@
     );
   }
 
-  window.authUrlBuilder = { buildCognitoAuthUrl, buildHmrcAuthUrl };
+  async function buildCompaniesHouseAuthUrl(state, scope) {
+    const env = await window.envReady;
+
+    const redirectUri = env.DIY_SUBMIT_BASE_URL.replace(/\/$/, "") + "/companies-house/filingCallback.html";
+
+    // British spelling: Companies House's identity service uses "authorise", not "authorize".
+    return (
+      `${env.COMPANIES_HOUSE_IDENTITY_BASE_URI.replace(/\/$/, "")}/oauth2/authorise` +
+      `?response_type=code` +
+      `&client_id=${encodeURIComponent(env.COMPANIES_HOUSE_CLIENT_ID)}` +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&scope=${encodeURIComponent(scope)}` +
+      `&state=${encodeURIComponent(state)}`
+    );
+  }
+
+  window.authUrlBuilder = { buildCognitoAuthUrl, buildHmrcAuthUrl, buildCompaniesHouseAuthUrl };
 })();

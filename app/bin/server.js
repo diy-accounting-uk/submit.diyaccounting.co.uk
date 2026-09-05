@@ -27,6 +27,7 @@ import { apiEndpoint as hmrcItsaBusinessDetailsGetApiEndpoint } from "../functio
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
+import { apiEndpoint as companiesHouseTokenPostApiEndpoint } from "../functions/companies-house/companiesHouseTokenPost.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
@@ -238,6 +239,7 @@ hmrcItsaBusinessDetailsGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
+companiesHouseTokenPostApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);

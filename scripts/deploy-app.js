@@ -394,6 +394,10 @@ function syncWebAssets(config) {
       `HMRC_SANDBOX_CLIENT_ID=${process.env.HMRC_SANDBOX_CLIENT_ID || ""}`,
       `HMRC_SANDBOX_BASE_URI=${process.env.HMRC_SANDBOX_BASE_URI || ""}`,
       "",
+      `COMPANIES_HOUSE_CLIENT_ID=${process.env.COMPANIES_HOUSE_CLIENT_ID || ""}`,
+      `COMPANIES_HOUSE_IDENTITY_BASE_URI=${process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI || ""}`,
+      `COMPANIES_HOUSE_FILING_BASE_URI=${process.env.COMPANIES_HOUSE_FILING_BASE_URI || ""}`,
+      "",
       `DIY_SUBMIT_BASE_URL=${process.env.DIY_SUBMIT_BASE_URL || ""}`,
       "",
     ].join("\n");
