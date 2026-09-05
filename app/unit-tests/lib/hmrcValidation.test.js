@@ -6,6 +6,7 @@
 import { describe, test, expect } from "vitest";
 import {
   isValidVrn,
+  isValidNino,
   isValidPeriodKey,
   isValidIsoDate,
   isValidDateRange,
@@ -38,6 +39,46 @@ describe("hmrcValidation", () => {
       expect(isValidVrn("12345678A")).toBe(false);
       expect(isValidVrn("ABC123456")).toBe(false);
       expect(isValidVrn("123-456-789")).toBe(false);
+    });
+  });
+
+  describe("isValidNino", () => {
+    test("accepts a valid NINO", () => {
+      expect(isValidNino("AB123456C")).toBe(true);
+      expect(isValidNino("SN123456D")).toBe(true);
+    });
+
+    test("accepts a valid NINO with spaces, case-insensitively", () => {
+      expect(isValidNino("ab 12 34 56 c")).toBe(true);
+    });
+
+    test("rejects a NINO with a reserved prefix", () => {
+      expect(isValidNino("BG123456C")).toBe(false);
+      expect(isValidNino("GB123456C")).toBe(false);
+      expect(isValidNino("NK123456C")).toBe(false);
+      expect(isValidNino("KN123456C")).toBe(false);
+      expect(isValidNino("TN123456C")).toBe(false);
+      expect(isValidNino("NT123456C")).toBe(false);
+      expect(isValidNino("ZZ123456C")).toBe(false);
+    });
+
+    test("rejects a NINO with disallowed letters", () => {
+      expect(isValidNino("DA123456C")).toBe(false); // D not allowed as first letter
+      expect(isValidNino("AO123456C")).toBe(false); // O not allowed as second letter
+    });
+
+    test("rejects a NINO with an invalid suffix letter", () => {
+      expect(isValidNino("AB123456E")).toBe(false);
+    });
+
+    test("rejects a NINO with the wrong number of digits", () => {
+      expect(isValidNino("AB12345C")).toBe(false); // 5 digits
+      expect(isValidNino("AB1234567C")).toBe(false); // 7 digits
+    });
+
+    test("rejects a NINO with no letters or all digits", () => {
+      expect(isValidNino("123456789")).toBe(false);
+      expect(isValidNino("")).toBe(false);
     });
   });
 

@@ -991,6 +991,7 @@ export async function submitVat(
       requestId,
       traceparent,
       correlationId,
+      "1.0",
     );
     /* v8 ignore stop */
     logHmrcRequestDetails(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody);

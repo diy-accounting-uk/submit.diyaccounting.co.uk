@@ -31,6 +31,27 @@ describe("services/hmrcApi", () => {
     expect(headers["Gov-Client-Device-ID"]).toBe("dev");
   });
 
+  it("buildHmrcHeaders defaults to the v1.0 Accept header when no version is given", async () => {
+    const { buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    const headers = buildHmrcHeaders("at-123");
+    expect(headers.Accept).toBe("application/vnd.hmrc.1.0+json");
+  });
+
+  it("buildHmrcHeaders builds the Accept header from an explicit apiVersion", async () => {
+    const { buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
+    const headers = buildHmrcHeaders(
+      "at-123",
+      { "Gov-Client-Device-ID": "dev" },
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "2.0",
+    );
+    expect(headers.Accept).toBe("application/vnd.hmrc.2.0+json");
+    expect(headers.Authorization).toBe("Bearer at-123");
+  });
+
   it("validateHmrcAccessToken throws on short or missing token", async () => {
     const { validateHmrcAccessToken, UnauthorizedTokenError } = await import("@app/services/hmrcApi.js");
 
