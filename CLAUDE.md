@@ -427,7 +427,7 @@ See `PLAN_ACCOUNT_SEPARATION.md` for multi-account architecture and role structu
 
 ## Running Behaviour Tests Against Deployed Environments (Fast Turnaround)
 
-For faster iteration than pushing commits and waiting for GitHub Actions (`synthetic-test.yml` or `deploy.yml`), run behaviour tests directly against ci or prod from your local machine.
+For faster iteration than pushing commits and waiting for GitHub Actions (`probe-test.yml` or `deploy.yml`), run behaviour tests directly against ci or prod from your local machine.
 
 ### Prerequisites
 

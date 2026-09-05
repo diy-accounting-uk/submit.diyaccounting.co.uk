@@ -26,7 +26,7 @@ get_secret() {
 HMRC_SANDBOX_CLIENT_SECRET="$(get_secret ci/submit/hmrc/sandbox_client_secret)"
 STRIPE_TEST_SECRET_KEY="$(get_secret ci/submit/stripe/test_secret_key)"
 
-export HMRC_ACCOUNT=sandbox
+export HMRC_ACCOUNT=synthetic
 export HMRC_SANDBOX_CLIENT_SECRET
 export STRIPE_TEST_SECRET_KEY
 export STRIPE_SECRET_KEY="$STRIPE_TEST_SECRET_KEY"

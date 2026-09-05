@@ -11,7 +11,11 @@
     "name": { "type": "string", "minLength": 1 },
     "title": { "type": "string", "minLength": 1 },
     "description": { "type": "string", "minLength": 1 },
-    "auth": { "type": "string", "enum": ["none", "cognito-native"] },
+    "auth": {
+      "type": "string",
+      "enum": ["none", "user"],
+      "description": "\"user\" says the journey needs a signed-in account, and unlocks the login, consent, ensureBundle and hmrcAuthorise actions. Which identity provider signs the account in comes from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally against the simulator variant and records against a deployment through the Cognito Hosted UI."
+    },
     "viewport": {
       "type": "object",
       "additionalProperties": false,
@@ -88,6 +92,10 @@
         "id": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9-]*$" },
         "chapter": { "type": "string", "minLength": 1 },
         "still": { "type": "boolean" },
+        "offCamera": {
+          "type": "boolean",
+          "description": "Runs the scene's steps with zero pacing, no captions, no chapter label and no stills, and pauses frame capture for its duration, so nothing from it reaches the encoded video, the vtt or the transcript. Its steps still land in the timeline (each carrying offCamera: true) so the acceptance checks can see them, but the timing checks skip timer and residual expectations for them. For a real step the video does not need to show, such as submitting a return before viewing it."
+        },
         "steps": {
           "type": "array",
           "minItems": 1,
@@ -145,6 +153,11 @@
             "properties": {
               "action": {},
               "target": { "$ref": "#/definitions/target" },
+              "expectsNavigation": {
+                "type": "boolean",
+                "description": "Set when the click's own handler navigates via window.location.href rather than a real <a href> — races the click against the URL changing so a dropped or delayed navigation fails here, named, instead of a later await step timing out with no clue why."
+              },
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
               "caption": { "type": "string" },
               "pauseMs": { "type": "number", "minimum": 0 },
               "note": { "type": "string" }
@@ -174,8 +187,27 @@
             "properties": {
               "action": {},
               "target": { "$ref": "#/definitions/target" },
-              "text": { "type": "string" },
+              "text": { "$ref": "#/definitions/substitutedText" },
               "clear": { "type": "boolean" },
+              "secret": { "$ref": "#/definitions/secret" },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "fill" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target", "value"],
+            "description": "Sets a field's value in one go, with the pointer move and highlight a type step gives but no per-character typing. For a date picker, where typing digit by digit lands them in the browser's own segment order and produces a different date.",
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "value": { "$ref": "#/definitions/substitutedText" },
+              "holdMs": { "type": "number", "minimum": 0 },
+              "secret": { "$ref": "#/definitions/secret" },
               "caption": { "type": "string" },
               "pauseMs": { "type": "number", "minimum": 0 },
               "note": { "type": "string" }
@@ -308,8 +340,89 @@
               "note": { "type": "string" }
             }
           }
+        },
+        {
+          "if": { "properties": { "action": { "const": "login" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Signs the account in from the site's sign-in options page and waits for the logged-in home page. The provider, username and password come from TEST_AUTH_PROVIDER, TEST_AUTH_USERNAME, TEST_AUTH_PASSWORD and TEST_AUTH_TOTP_SECRET, so no credential ever appears in a scene script. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "consent" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Accepts the analytics consent prompt when the environment shows one, and passes on when it does not. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "ensureBundle" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "bundle"],
+            "description": "Makes sure the signed-in account holds a bundle, granting it if it does not. Run it while the browser is on the bundles page. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "bundle": { "type": "string", "minLength": 1 },
+              "testPass": { "type": "boolean", "description": "Grant through a test pass, which carries the HMRC sandbox qualifier." },
+              "hidden": { "type": "boolean", "description": "The bundle is not in the catalogue and only ever appears under the account's current bundles." },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "hmrcAuthorise" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Walks HMRC's own authorise pages: cookies, continue, sign in with the test user, grant authority, back to the site. Place it directly after the step that triggers the redirect. The HMRC test user comes from TEST_HMRC_USERNAME, TEST_HMRC_PASSWORD and TEST_HMRC_VAT_NUMBER, or is minted for the run when HMRC_ACCOUNT is sandbox. Only the first HMRC call of a journey redirects, so a script makes at most one of these. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "caption": { "type": "string" },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "submitReturn" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Submits a VAT return for whatever open obligation the signed-in account currently has: home nav, the submit form with round figures, the write:vat scope authorise with HMRC, and the receipt. The period is resolved server-side from the account's own obligations, never a hard-coded period key. Belongs in an off-camera scene — it carries no caption of its own and drives its own HMRC authorise pages, which a viewer never needs to see twice. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
         }
       ]
+    },
+    "substitutedText": {
+      "type": "string",
+      "description": "Typed or filled text. {{hmrcVatNumber}} resolves to the run's HMRC test user's VAT registration number. {{today}}, {{daysAgo:N}}, {{monthsAgo:N}} and {{yearsAgo:N}} resolve to a date in YYYY-MM-DD, from one clock fixed at the start of the run. An unknown placeholder fails the run."
+    },
+    "secret": {
+      "type": "boolean",
+      "description": "The value is a credential. It is still typed into the page, but the transcript and the timeline record only that a hidden value was entered. Prefer the login and hmrcAuthorise actions, which take their credentials from the environment and never carry one in the script at all."
     }
   }
 }

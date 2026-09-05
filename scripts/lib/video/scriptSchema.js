@@ -9,7 +9,10 @@
 // throws with the offending path, per the repo rule: throw, don't skip.
 
 const REQUIRED_TOP_LEVEL = ["name", "title", "description", "auth", "viewport", "fps", "pacing", "captions", "scenes"];
-const AUTH_VALUES = new Set(["none", "cognito-native"]);
+// "user" says the journey needs a signed-in account. Which identity provider signs it in comes
+// from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally
+// against the simulator and records against a deployment through the Cognito Hosted UI.
+const AUTH_VALUES = new Set(["none", "user"]);
 
 const REQUIRED_PACING_KEYS = [
   "perCharMs",
@@ -29,6 +32,7 @@ const STEP_REQUIRED_FIELDS = {
   click: ["target"],
   point: ["target"],
   type: ["target", "text"],
+  fill: ["target", "value"],
   press: ["key"],
   tab: [],
   select: ["target", "value"],
@@ -38,7 +42,16 @@ const STEP_REQUIRED_FIELDS = {
   hold: ["ms"],
   await: ["until"],
   still: ["name"],
+  login: [],
+  consent: [],
+  ensureBundle: ["bundle"],
+  hmrcAuthorise: [],
+  submitReturn: [],
 };
+
+// Actions that run one of the behaviour tests' journey step functions. They drive credentials
+// and a real identity provider, so a script may only use them once it has declared auth "user".
+const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
 function fail(path, message) {
   throw new Error(`scene script invalid at ${path}: ${message}`);
@@ -62,22 +75,26 @@ function validateTarget(target, path) {
   fail(path, "target must be a CSS selector string, {role,name}, or {text}");
 }
 
-function validateStep(step, scenePath, sceneId, stepIndex) {
+function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   const path = `${scenePath}.steps[${stepIndex}]`;
   if (!step || typeof step !== "object") fail(path, "step must be an object");
   if (!step.action) fail(path, "missing required field \"action\"");
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);
+  if (USER_ONLY_ACTIONS.has(step.action) && auth !== "user") {
+    fail(path, `action "${step.action}" needs the script's auth to be "user", not "${auth}"`);
+  }
   return { sceneId, stepIndex, action: step.action };
 }
 
-function validateScene(scene, index) {
+function validateScene(scene, index, auth) {
   const path = `scenes[${index}]`;
   if (!scene || typeof scene !== "object") fail(path, "scene must be an object");
   requireKeys(scene, ["id", "chapter", "steps"], path);
+  if ("offCamera" in scene && typeof scene.offCamera !== "boolean") fail(`${path}.offCamera`, "must be a boolean");
   if (!Array.isArray(scene.steps) || scene.steps.length === 0) fail(`${path}.steps`, "must be a non-empty array");
-  scene.steps.forEach((step, stepIndex) => validateStep(step, path, scene.id, stepIndex));
+  scene.steps.forEach((step, stepIndex) => validateStep(step, path, scene.id, stepIndex, auth));
 }
 
 // Throws with the offending path on a malformed script; returns the parsed script unchanged
@@ -95,7 +112,7 @@ export function validateScript(script) {
   requireKeys((script.captions || {}).safeArea || {}, ["topPct", "bottomPct", "sidePct"], "captions.safeArea");
 
   if (!Array.isArray(script.scenes) || script.scenes.length === 0) fail("scenes", "must be a non-empty array");
-  script.scenes.forEach(validateScene);
+  script.scenes.forEach((scene, index) => validateScene(scene, index, script.auth));
 
   return script;
 }

@@ -69,23 +69,23 @@ GitHub Actions `deploy.yml` workflow on main (81 total runs):
 
 Recent activity (Sept 1–3): 6 successful deploys, 0 failures, 0 cancellations.
 
-## Canary and Synthetic Test Schedule
+## Canary and Probe Test Schedule
 
 ### CloudWatch Synthetics Canaries (OpsStack)
 - Health canary: rate(51 minutes) — checks main page loads
 - API canary: rate(51 minutes) — checks API endpoints
 
-### GitHub Actions Synthetic Test (`synthetic-test.yml`)
+### GitHub Actions Probe Test (`probe-test.yml`)
 - Schedule: `57 */4 * * *` (every 4 hours at minute 57 UTC: 00:57Z, 04:57Z, 08:57Z, 12:57Z, 16:57Z, 20:57Z)
 
-### GitHub Synthetic Test Alarm (`prod-ca55da7-app-github-synthetic-failed`)
+### GitHub Probe Test Alarm (`prod-ca55da7-app-github-probe-failed`)
 - Metric: behaviour-test (dimension test=submitVatBehaviour)
 - Threshold: >= 1 (Minimum statistic)
 - Period: 2 hours
 - Evaluation: 1 period
 - TreatMissingData: BREACHING
 
-Canaries run every 51 minutes (~10.6 cycles per 9 hours); GitHub synthetic runs every 4 hours (~1 per 9 hours). The 2-hour alarm window captures 0–2 canary runs.
+Canaries run every 51 minutes (~10.6 cycles per 9 hours); GitHub probe runs every 4 hours (~1 per 9 hours). The 2-hour alarm window captures 0–2 canary runs.
 
 ## Alarms Referenced in Runbooks and Routing
 
