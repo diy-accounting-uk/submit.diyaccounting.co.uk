@@ -101,6 +101,21 @@ starting.
   pass: alarm names carry the function name for per-function checks and the metric namespace
   for business metrics. Unit tests on the two builders. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
+- [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** After B30h. The
+  alarm Lambda (`app/functions/ops/alarmToGithubIssue.js`) dispatches an `alarm-triage.yml`
+  workflow with the alarm name, timestamp, region and deployment, gated by a per-day counter in
+  DynamoDB (conditional update, five a day to start, one per alarm family per day) so the
+  dispatcher, not the workflow, holds the budget. The job checks out the repo, assumes a
+  read-only OIDC role scoped to the deployment's log groups, X-Ray and CloudWatch alarm history
+  (no customer tables), and runs Claude Code with `CLAUDE_CODE_USE_BEDROCK=1`, a pinned Sonnet
+  model, `--max-turns`, `timeout-minutes` and `concurrency: alarm-triage`. Its one write is a
+  comment on the alarm issue (or a draft PR when it can name the change): the analysis passes
+  Bedrock Guardrails' sensitive-information filter plus a regex deny-list for IPs, emails, VRNs
+  and 64-hex hashes before posting, and log content is treated as data, never instructions. An
+  AWS Budget on Bedrock spend with a budget action that denies `bedrock:InvokeModel` to the
+  triage role is the hard stop. Design pass first: the alarm-to-log-group mapping B30h builds,
+  the counter's shape, the role's resource list. **Source**: BACKLOG 30; operator decision
+  2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
