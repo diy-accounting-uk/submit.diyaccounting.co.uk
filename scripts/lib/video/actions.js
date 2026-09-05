@@ -86,10 +86,14 @@ async function doGoto(page, step, ctx) {
     });
   }
   const start = Date.now();
-  await page.goto(url, { waitUntil: "domcontentloaded" });
-  if (step.waitFor) {
-    await page.waitForSelector(step.waitFor, { state: "visible", timeout: ctx.timeoutMs });
-  }
+  // A goto's own wait is the navigation itself, with nothing on screen to animate first, so the
+  // whole body is the wait phase.
+  await ctx.waitPhase(async () => {
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+    if (step.waitFor) {
+      await page.waitForSelector(step.waitFor, { state: "visible", timeout: ctx.timeoutMs });
+    }
+  });
   const waitMs = Date.now() - start;
   // Deliberately not unrouted here: the delayed request this targets (e.g. a page script's own
   // fetch call) is often dispatched slightly after `waitFor`'s selector already resolves, so an
@@ -103,8 +107,11 @@ async function doClick(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
   const rect = await pointAndReturnRect(page, locator);
   await overlay.click(page, rect);
+  // The pointer animation and the ripple above already took at least 450ms of on-screen motion;
+  // the wait phase brackets only the click itself, or the pill would arm during that motion
+  // rather than during an actual wait on the site.
   const start = Date.now();
-  await locator.click();
+  await ctx.waitPhase(() => locator.click());
   return { waitMs: Date.now() - start, rect };
 }
 
@@ -210,7 +217,7 @@ async function doAwait(page, step, ctx) {
   const locator = page.locator(step.until).first();
   const start = Date.now();
   try {
-    await locator.waitFor({ state: "visible", timeout: step.timeoutMs || 30000 });
+    await ctx.waitPhase(() => locator.waitFor({ state: "visible", timeout: step.timeoutMs || 30000 }));
   } catch (err) {
     await writeFailureStill(page, ctx);
     throw new SceneStepError(
@@ -239,25 +246,31 @@ async function doLogin(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
   const start = Date.now();
+  // Entering credentials is on-camera content, a person filling in a form, not a wait. Only the
+  // round trip back to the app once they are submitted has nothing to show on screen.
   await steps.loginWithCognitoOrMockAuth(page, journey.authProvider, journey.authUsername, ctx.stepScreenshotDir, journey.authPassword);
-  await steps.verifyLoggedInStatus(page, ctx.stepScreenshotDir);
+  await ctx.waitPhase(() => steps.verifyLoggedInStatus(page, ctx.stepScreenshotDir));
   return { waitMs: Date.now() - start, rect: null };
 }
 
 async function doConsent(page, step, ctx) {
   const steps = await behaviourSteps();
   const start = Date.now();
-  await steps.consentToDataCollection(page, ctx.stepScreenshotDir);
+  await ctx.waitPhase(() => steps.consentToDataCollection(page, ctx.stepScreenshotDir));
   return { waitMs: Date.now() - start, rect: null };
 }
 
 async function doEnsureBundle(page, step, ctx) {
   const steps = await behaviourSteps();
   const start = Date.now();
-  await steps.ensureBundlePresent(page, step.bundle, ctx.stepScreenshotDir, {
-    testPass: step.testPass === true,
-    isHidden: step.hidden === true,
-  });
+  // The whole call is the pass-granting round trip (create pass, redeem, poll for allocation) —
+  // there is no on-camera interaction ahead of it to protect the pill from.
+  await ctx.waitPhase(() =>
+    steps.ensureBundlePresent(page, step.bundle, ctx.stepScreenshotDir, {
+      testPass: step.testPass === true,
+      isHidden: step.hidden === true,
+    }),
+  );
   return { waitMs: Date.now() - start, rect: null };
 }
 
@@ -270,7 +283,9 @@ async function doHmrcAuthorise(page, step, ctx) {
   const appOrigin = new URL(ctx.baseUrl).origin;
   const start = Date.now();
   try {
-    await page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs });
+    // Only this redirect is a wait with nothing on screen yet. The behaviour steps that follow
+    // put HMRC's own pages on camera — a person signing in and granting access, not a wait.
+    await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
   } catch (err) {
     await writeFailureStill(page, ctx);
     throw new SceneStepError(
