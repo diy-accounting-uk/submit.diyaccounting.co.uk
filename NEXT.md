@@ -24,17 +24,13 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-The two items below wait on a later event to verify.
+Batch 4 runs on integration branch `claude/board-batch-4` (a PR follows; the operator merges).
+Each track works in its own worktree under `.claude/worktrees/` on a `worktree-agent-*` branch
+and never edits this file. The coordinator merges tracks as they land and pushes in batches,
+with pipeline fixes riding on the next push. Wave 1 started 2026-09-05 22:45 UTC; design tracks
+write a plan doc that a Sonnet build track executes in wave 2. B30d waits on a later event to
+verify.
 
-- [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
-  2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
-  `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
-  **Owner**: Claude Code. **Model**: Haiku.
-  **Track**: deployed with PR #118. The renamed `probe-test.yml` missed its first cron slot
-  (20:57 UTC on 2026-09-05) because a workflow that has never run under a live actor does not
-  fire on schedule; one dispatch on main (run 33992278768) arms it, the same fix as the
-  2026-08-31 revival. Verified when the 00:57 UTC slot on 2026-09-06 fires on its own and runs
-  all five suites; if it misses, the schedule needs a second look, not another dispatch.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -42,10 +38,42 @@ The two items below wait on a later event to verify.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: deployed with PR #118 (`app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>`
-  to `<env>-app-<rest>` for the issue title and search). Verified when the next alarm on
-  prod-0f68ed8 comments on an existing family issue instead of opening one.
-## Ready: Claude Code
-
+  to `<env>-app-<rest>` for the issue title and search). The first family issue opened under
+  the collapsed title: #133 `prod-app-api-failed`, 22:04 UTC on 2026-09-05, for prod-0f68ed8.
+  Verified when the next `api-failed` alarm on any prod set comments on #133 instead of opening
+  a new issue.
+- [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
+  `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
+  scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
+  test results" jobs for `getVatLiabilitiesBehaviour`, `getVatPaymentsBehaviour` and
+  `getVatPenaltiesBehaviour` then failed: the publish step in `probe-test.yml` copies
+  `web/public/tests/test-reports/web-test/html-report/` to S3 and that directory does not exist
+  for those suites, so the scheduled run reports failure and counts against
+  `prod-env-github-probe-failed`. Make the step upload the HTML report only when the suite
+  produced one, or carry the report through the artifact the same way the two older suites do.
+  Verified when the next scheduled run is green end to end. **Source**: BACKLOG 32; issue #19.
+  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, probe-upload (Sonnet), started.
+- [ ] **B30l. Canary alarms fire on every new prod set before the canary has run.**
+  `-api-failed` and `-health-failed` in `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`
+  treat missing data as breaching and are evaluated within two minutes of the OpsStack landing,
+  while the canaries run on `cron(27 * * * ? *)`, so a set created outside the :27 minute has no
+  datapoint and the alarm goes INSUFFICIENT_DATA to ALARM at creation (prod-cea27f8 19:48 to
+  20:28 UTC, prod-0f68ed8 22:04 to 22:28 UTC on 2026-09-05), which is what opened #133. Tune:
+  either start the canary schedule with a `rate(1 hour)` expression so the first run lands at
+  creation, or treat missing data as not breaching on these two alarms and leave the
+  stopped-canary case to `prod-env-github-probe-failed`; CDK test on whichever. **Source**:
+  BACKLOG 30; issue #133. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, opsstack-alarms (Sonnet), shared with B30k, started.
+- [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
+  (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
+  already reach Telegram through the same rule. In `OpsStack.java` the
+  `<deployment>-app-alarm-state-change` rule targets both the Telegram forwarder and
+  `alarmToGithubIssue`; add the issue Lambda as a target only when `props.envName()` is
+  `prod` (the Telegram target stays for both), and pin it with a CDK test that a ci synth has
+  one target and a prod synth two. **Source**: BACKLOG 30; operator decision 2026-09-05.
+  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, opsstack-alarms (Sonnet), shared with B30l, started.
 - [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
   catalogue once carried `listedInEnvironments` on a bundle (commented out in
   `web/public/submit.catalogue.toml`) and nothing honours it now. Add an `environments` field
@@ -58,22 +86,20 @@ The two items below wait on a later event to verify.
   reached prod in PR #118 and joins the same gate. Unit tests on both readers, and the ci
   behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
   32. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
-  simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
-  the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
-  `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
-  has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
-  **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, ci-only-gate (Sonnet), started.
 - [ ] **O1d / G2b. Create the ci GA4 property with the `ga4-property-sync` skill** (merged in
   PR #132; its dry run plans the property, web stream and BigQuery link) and record the dataset
   id. This is a real write to GA4 and to the `SUBMIT_GA4_MEASUREMENT_ID` GitHub variable.
-  **Source**: none. **Owner**: Claude Code. **Model**: Haiku.
+  **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, ga4-ci-property (Sonnet), started; G2c unblocks when it lands.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
   return for a fresh test user's canned obligations, so the scene script submits a return for a
   fulfilled period off camera through the submit page's date fields, then records "View Return"
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, view-return-prod-video (Sonnet), started; dispatches `video-capture.yml`
+  on prod and reviews the artifact.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -89,14 +115,8 @@ The two items below wait on a later event to verify.
   Verified when `prod-env-dynamodb-customer-table-scan` stays in OK across a day. **Source**:
   BACKLOG 30; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Opus design,
   then Sonnet.
-- [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
-  (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
-  already reach Telegram through the same rule. In `OpsStack.java` the
-  `<deployment>-app-alarm-state-change` rule targets both the Telegram forwarder and
-  `alarmToGithubIssue`; add the issue Lambda as a target only when `props.envName()` is
-  `prod` (the Telegram target stays for both), and pin it with a CDK test that a ci synth has
-  one target and a prod synth two. **Source**: BACKLOG 30; operator decision 2026-09-05.
-  **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1, bundle-reconcile-design (Opus) writes `PLAN_BUNDLE_CAPACITY_RECONCILE.md`,
+  started; the Sonnet build follows in wave 2.
 - [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
   name, the state change and the CloudWatch reason (#111 is the example). Make
   `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
@@ -108,6 +128,43 @@ The two items below wait on a later event to verify.
   pass: alarm names carry the function name for per-function checks and the metric namespace
   for business metrics. Unit tests on the two builders. **Source**: BACKLOG 30; issue #111.
   **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
+  **Track**: wave 1, alarm-evidence-design (Opus) writes `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`
+  covering B30h and B30i, started; the Sonnet builds follow in wave 2.
+- [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
+  The REST filing API covers transactions, registered office address, registered email address
+  and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
+  `api-sandbox.company-information.service.gov.uk` with the "DIY Accounting Submit - test"
+  developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
+  34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
+  Sonnet.
+  **Track**: wave 1, companies-house-filing-design (Opus) writes
+  `PLAN_COMPANIES_HOUSE_REST_FILING.md`, started; the Sonnet build follows in wave 2.
+## Ready: Claude Code
+
+- [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
+  simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
+  the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
+  `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
+  has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
+  Runs in wave 2 against the ci deployment the first batch-4 push creates. **Source**: BACKLOG
+  10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
+## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
+
+## Blocked: operator
+
+- [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
+  the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
+  misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
+  **Owner**: Operator.
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
+  titles and descriptions drafted from the captions. The prod recordings are workflow
+  artifacts: `video-view-obligations-prod` on run 33952515598 and `video-submit-return-prod` on
+  run 33953044775 (mp4, vtt, transcript and stills together; 30-day retention). **Source**:
+  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
+  pattern settles). Blocked on B17a.3.
+
+## Blocked: Claude Code
+
 - [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** After B30h. The
   trigger is the issue itself: `alarm-triage.yml` runs on `issues: opened` for issues labelled
   `alarm` (the Lambda in `app/functions/ops/alarmToGithubIssue.js` is not changed), reads the
@@ -126,32 +183,9 @@ The two items below wait on a later event to verify.
   Guardrails' sensitive-information filter plus a regex deny-list for IPs, emails, VRNs and
   64-hex hashes before posting, and log content is treated as data, never instructions. Design
   pass first: the alarm-to-log-group mapping shared with B30h, the role's resource list, the
-  triage prompt. **Source**: BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**:
-  Claude Code. **Model**: Opus design, then Sonnet.
-- [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
-  The REST filing API covers transactions, registered office address, registered email address
-  and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
-  `api-sandbox.company-information.service.gov.uk` with the "DIY Accounting Submit - test"
-  developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
-  34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
-  Sonnet.
-## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
-
-## Blocked: operator
-
-- [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
-  the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
-  misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
-  **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. The prod recordings are workflow
-  artifacts: `video-view-obligations-prod` on run 33952515598 and `video-submit-return-prod` on
-  run 33953044775 (mp4, vtt, transcript and stills together; 30-day retention). **Source**:
-  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
-  pattern settles). Blocked on B17a.3.
-
-## Blocked: Claude Code
-
+  triage prompt. The wave 1 alarm-evidence-design track covers this design too. **Source**:
+  BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**: Claude Code. **Model**: Opus
+  design, then Sonnet. Blocked on B30h.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
