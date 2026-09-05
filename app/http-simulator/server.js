@@ -14,6 +14,7 @@ import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
 import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
+import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
 
 /**
@@ -59,6 +60,7 @@ export function createApp() {
   vatPenaltiesEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
+  companiesHouseEndpoint(app);
 
   // OpenAPI spec serving
   openapiEndpoint(app);

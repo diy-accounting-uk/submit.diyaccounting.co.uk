@@ -14,6 +14,7 @@ import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.BillingStack;
+import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
@@ -33,6 +34,7 @@ public class SubmitApplication {
 
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
+    public final CompaniesHouseStack companiesHouseStack;
     public final AccountStack accountStack;
     public final BillingStack billingStack;
     public final ApiStack apiStack;
@@ -54,6 +56,8 @@ public class SubmitApplication {
         public String hmrcSandboxClientId;
         public String hmrcSandboxClientSecretArn;
         public String hmrcSandboxBaseUri;
+        public String companiesHouseBaseUri;
+        public String companiesHouseApiKeyArn;
         public String baseImageTag;
         public String selfDestructDelayHours;
         public String userPoolArn;
@@ -154,6 +158,12 @@ public class SubmitApplication {
                 "HMRC_SANDBOX_CLIENT_SECRET_ARN",
                 appProps.hmrcSandboxClientSecretArn,
                 "(from hmrcSandboxClientSecretArn in cdk.json)");
+        var companiesHouseBaseUri = envOr(
+                "COMPANIES_HOUSE_BASE_URI", appProps.companiesHouseBaseUri, "(from companiesHouseBaseUri in cdk.json)");
+        var companiesHouseApiKeyArn = envOr(
+                "COMPANIES_HOUSE_API_KEY_ARN",
+                appProps.companiesHouseApiKeyArn,
+                "(from companiesHouseApiKeyArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -267,6 +277,26 @@ public class SubmitApplication {
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
 
+        // Create the CompaniesHouseStack
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.companiesHouseStackId, deploymentName, envName);
+        this.companiesHouseStack = new CompaniesHouseStack(
+                app,
+                sharedNames.companiesHouseStackId,
+                CompaniesHouseStack.CompaniesHouseStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .companiesHouseBaseUri(companiesHouseBaseUri)
+                        .companiesHouseApiKeyArn(companiesHouseApiKeyArn != null ? companiesHouseApiKeyArn : "")
+                        .build());
+
         // Create the AccountStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -326,6 +356,7 @@ public class SubmitApplication {
         List<AbstractApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
 
@@ -349,6 +380,7 @@ public class SubmitApplication {
                         .build());
         this.apiStack.addStackDependency(accountStack);
         this.apiStack.addStackDependency(hmrcStack);
+        this.apiStack.addStackDependency(companiesHouseStack);
         this.apiStack.addStackDependency(authStack);
         this.apiStack.addStackDependency(billingStack);
 
