@@ -76,8 +76,11 @@ starting.
   export query by the test users' keys instead of scanning, and leave the scan detector as it is,
   since catching exactly that is its purpose. CDK test and a script test. **Source**: BACKLOG 30;
   issues #95, #97; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: deployment role and probe export (Sonnet), worktree
-  `.claude/worktrees/agent-a9fd2eae254a64ea7`, running, lands on the batch.
+  **Track**: deployment role and probe export (Sonnet). On `claude/board-batch-2` (PR #118): the
+  salt filter accepts the environment's deployment role, and both test-data exports query the test
+  user's `hashedSub` instead of scanning (the behaviour-test export had been dumping every
+  customer's rows in ci and prod). Verified when #95 and #97 stay in OK across a probe cycle
+  after the prod deploy.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
