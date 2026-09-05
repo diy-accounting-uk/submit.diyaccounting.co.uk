@@ -25,7 +25,7 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 **Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
-direction 2026-09-05); the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
+direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. Only
 the Companies House lookup (PR #124) stays separate, because its deploy cannot pass until the
 operator's API key exists.
 
@@ -35,7 +35,7 @@ starting.
 
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. A Sonnet track (worktree `.claude/worktrees/agent-ad614f21c78cd7197`) adds an off-camera scene and a `submitReturn` journey action so the video submits, then views, the return; verified by a prod recording passing the blocking check.
+  **Track**: HMRC's sandbox holds no return for a fresh test user's canned fulfilled obligations (two prod recordings, the second with the behaviour test's 450 s budget), and `getVatReturn.behaviour.test.js` only passes because it submits a return first. The batch now has off-camera scenes and a `submitReturn` journey action so the video submits, then views, the return. Its first prod recording failed inside the off-camera submission because the reused behaviour step waits for the page to report the `synthetic` mode, which prod will only do once PR #118 deploys; a Sonnet track (worktree `.claude/worktrees/agent-a459137b741199532`) routes the submission through the obligation's own "Submit Return" button instead, the path the submit-return video already proved on prod. Verified by a prod recording passing the blocking check.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -62,15 +62,13 @@ starting.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
-- [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
-  share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
-  both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
-  `ci-submit.diyaccounting.co.uk` apex that the ci behaviour suites hit, so PRs #119 and #120
-  failed thirteen ci suites with no code fault. Fix in `get-names`: a per-branch unique name of the
-  same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
-  serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
-  Sonnet.
-  **Track**: pipeline fix (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `ci-<5 chars><4 hash chars>` names, one concurrency group per target environment across the deploy, destroy and video workflows. Remainder: the per-environment concurrency group drops deploys instead of queueing them (GitHub keeps one pending run per group and cancelled the batch and layer-2 deploys when later branches pushed), so a second track restored per-branch groups and added `wait-for-ci-deploys`, a step that blocks a ci deploy until every earlier-created deploy, destroy or recording run on another branch has finished; landed on the batch, then fixed once more because the step passed a jq flag to `gh` and treated pending runs as finished. Verified when two consecutive pushes to the batch each deploy without a cancelled run and the ci suites pass.
+- [ ] **B39.3. Fix the redirect stall behind the flaky `postVatReturnBehaviour` simulator lane.**
+  After a scenario submission clears the HMRC token, the browser's redirect to the local OAuth
+  simulator page sometimes never completes and the test hangs; the batch now bounds those waits
+  at 90 s so it fails fast, but the stall remains and the CI job fails about one run in two.
+  **Source**: BACKLOG 39; CI on the batch 2026-09-05. **Owner**: Claude Code. **Model**: Opus.
+  **Track**: redirect stall (Opus), worktree `.claude/worktrees/agent-a5754bd1f68b849db`, running,
+  lands on the batch.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -90,16 +88,6 @@ starting.
   five that did are detection or analytics alarms with open issues. **Source**: BACKLOG 30;
   `PLAN_ALARM_CONSOLIDATION.md`. **Owner**: Claude Code. **Model**: Opus.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
-- [ ] **B39.1. Fix the synthetic runs' "upload web test results" job.** It fails with
-  `jq: Could not open file target/behaviour-test-results/<suite>/test-report-<suite>.json`
-  after a passing behaviour test (prod dispatches 33908160864 and 33908172202; main's
-  scheduled run 33814958075 failed the same way on submitVat), so the per-suite report is
-  written elsewhere or not at all in that job. Make the report path and the upload agree
-  and add a check that fails early with the paths it looked at. **Source**: BACKLOG 39
-  (synthetic-test flakiness); repo find 2026-09-04. **Owner**: Claude Code. **Model**:
-  Sonnet.
-  **Track**: synthetic workflow (Sonnet, shared with B32.4). Code complete on `claude/board-batch-2` (PR #118): the report file is now named after the suite the workflow passes, and the upload job fails early naming the paths it looked at. Verified when a prod dispatch of `getVatPenaltiesBehaviour` uploads its report.
-
 ## Ready: Claude Code
 
 (none)

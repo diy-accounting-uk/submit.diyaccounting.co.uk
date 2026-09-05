@@ -221,6 +221,7 @@
         {
           "action": "click",
           "target": { "role": "button", "name": "View Return" },
+          "expectsNavigation": true,
           "caption": "Open the return HMRC just received."
         },
         {
