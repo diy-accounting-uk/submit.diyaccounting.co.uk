@@ -24,7 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 4 runs on integration branch `claude/board-batch-4` (a PR follows; the operator merges).
+Batch 4 runs on integration branch `claude/board-batch-4`, PR #136 (the operator merges). Its
+first push at 23:12 UTC on 2026-09-05 started ci deploy run 33998025585; the ITSA recording
+(B10.1) and the operator's look at the gated activities use that ci deployment.
 Each track works in its own worktree under `.claude/worktrees/` on a `worktree-agent-*` branch
 and never edits this file. The coordinator merges tracks as they land and pushes in batches,
 with pipeline fixes riding on the next push. Wave 1 started 2026-09-05 22:45 UTC; design tracks
