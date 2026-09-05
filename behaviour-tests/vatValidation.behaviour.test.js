@@ -13,7 +13,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,

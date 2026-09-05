@@ -107,7 +107,7 @@
       removePassFromUrl();
       if (body.testPass) {
         try {
-          sessionStorage.setItem("hmrcAccount", "sandbox");
+          sessionStorage.setItem("hmrcAccount", "synthetic");
         } catch {}
       }
       await refreshEntitlement();

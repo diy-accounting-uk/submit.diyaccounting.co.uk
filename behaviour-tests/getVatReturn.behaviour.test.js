@@ -12,7 +12,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -87,8 +87,8 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-// Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
-const runFraudPreventionHeaderValidation = isSandboxMode();
+// Enable fraud prevention header validation in synthetic mode (required for HMRC API compliance testing)
+const runFraudPreventionHeaderValidation = isSyntheticMode();
 
 const hmrcVatDueAmount = "1000.00";
 
@@ -210,7 +210,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /* ********************************************** */
 
   await initSubmitVat(page, screenshotPath);
-  // Pass allowSandboxObligations=true to use any available open obligation in sandbox/simulator mode
+  // Pass allowSyntheticObligations=true to use any available open obligation in synthetic/simulator mode
   await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, true);
   await submitFormVat(page, screenshotPath);
   await acceptCookiesHmrc(page, screenshotPath);
@@ -233,7 +233,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   /*  VIEW VAT RETURN: TEST SCENARIOS      */
   /* ************************************* */
 
-  if (isSandboxMode()) {
+  if (isSyntheticMode()) {
     /**
      * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
      *
@@ -327,11 +327,11 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     testData: {
       hmrcTestVatNumber: testVatNumber,
       hmrcVatDueAmount,
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      testUserGenerated: isSyntheticMode() && !hmrcTestUsername,
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
       intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
@@ -400,7 +400,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
   // Assert that HMRC API requests were logged correctly
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     const hmrcApiRequestsFile = path.join(outputDir, "hmrc-api-requests.jsonl");
-    // Use regex pattern since periodKey is resolved dynamically from sandbox obligations
+    // Use regex pattern since periodKey is resolved dynamically from synthetic obligations
     const vatReturnUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/returns/\\w+`);
     const vatGetRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "GET", vatReturnUrlPattern, "VAT return retrieval");
     expect(vatGetRequests.length).toBeGreaterThan(0);
@@ -411,11 +411,11 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
     });
 
     // The GET return handler always resolves periodKey by querying obligations first when no
-    // periodKey is supplied directly (see hmrcVatReturnGet.js). In sandbox mode HMRC sometimes
+    // periodKey is supplied directly (see hmrcVatReturnGet.js). In synthetic mode HMRC's sandbox sometimes
     // has no canned return for the period that lookup resolves, even though the lookup itself
     // succeeded (see verifyViewVatReturnResults' handling of the resulting "not found" outcome).
     // Assert that lookup succeeded, so a "not found" return retrieval is attributable to that
-    // known sandbox data gap rather than a broken obligations call.
+    // known HMRC sandbox data gap rather than a broken obligations call.
     const obligationsUrlPattern = new RegExp(`/organisations/vat/${testVatNumber}/obligations`);
     const obligationsRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,

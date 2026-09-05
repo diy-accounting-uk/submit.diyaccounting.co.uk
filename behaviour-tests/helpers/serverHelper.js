@@ -22,8 +22,9 @@ export async function checkIfServerIsRunning(url, delay = 500, runServer = undef
       runServer();
     }
   } catch (error) {
-    logger.info(`[${label}]: Starting server at ${url} after error ${error}`, url, error);
+    logger.info(`[${label}]: No answer yet from ${url}: ${error}`, url, error);
     if (runServer) {
+      logger.info(`[${label}]: Starting server at ${url}`, url);
       runServer();
     }
   }

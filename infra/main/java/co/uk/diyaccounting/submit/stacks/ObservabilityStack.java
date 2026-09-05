@@ -96,7 +96,7 @@ public class ObservabilityStack extends Stack {
 
         int accessLogGroupRetentionPeriodDays();
 
-        // Apex domain for GitHub synthetic metrics namespace (e.g., submit.diyaccounting.co.uk)
+        // Apex domain for GitHub probe metrics namespace (e.g., submit.diyaccounting.co.uk)
         @Value.Default
         default String apexDomain() {
             return "";
@@ -518,10 +518,10 @@ public class ObservabilityStack extends Stack {
         // This dashboard provides a single view across all deployments in this environment
         List<List<IWidget>> dashboardRows = new ArrayList<>();
 
-        // Determine apex domain for GitHub synthetic metrics namespace
+        // Determine apex domain for GitHub probe metrics namespace
         String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
                 ? props.apexDomain()
-                : props.sharedNames().hostedZoneName;
+                : props.sharedNames().envDomainName;
 
         // Lambda function search pattern for this environment
         // Pattern matches: {env}-*-submit-*-app-{function-name}
@@ -557,10 +557,10 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 2: GitHub Synthetic Tests
-        // GitHub synthetic test metrics (sent from synthetic-test.yml), one series per suite
+        // Row 2: GitHub Probe Tests
+        // GitHub probe test metrics (sent from probe-test.yml), one series per suite
         dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("GitHub Synthetic Tests")
+                .title("GitHub Probe Tests")
                 .left(List.of(MathExpression.Builder.create()
                         .expression(String.format(
                                 "SEARCH('{%s,test} MetricName=\"behaviour-test\"', 'Minimum', 3600)", apexDomain))
@@ -705,6 +705,36 @@ public class ObservabilityStack extends Stack {
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
+        // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
+        // against this same environment-wide behaviour-test metric, each opening its own GitHub
+        // issue. Here it survives deployments, so alarmToGithubIssue's per-alarm-name dedupe
+        // (see findOpenIssueByAlarmName) keeps one open issue per environment instead of one per
+        // deployment. Period is 5 hours, not 2: probe-test.yml runs on a 4-hour cron
+        // (`57 */4 * * *`), and a 2-hour period sat on one side of a datapoint or the other
+        // depending on clock alignment, so roughly half of all windows held nothing and the
+        // alarm fired with no test having failed. A period longer than the cron interval is
+        // guaranteed to contain a datapoint regardless of alignment; 5 hours is the smallest
+        // whole-hour value greater than 4. treatMissingData stays BREACHING so a genuinely
+        // stalled schedule is still caught. No SnsAction: the alarm-state-change rule in every
+        // deployment's OpsStack matches this environment's shared-alarm prefix and routes it to
+        // Telegram and the GitHub-issue Lambda, same as BundleCapReachedAlarm above.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-GithubProbeAlarm")
+                .alarmName(props.resourceNamePrefix() + "-github-probe-failed")
+                .alarmDescription("GitHub Actions probe test has not succeeded in 5 hours")
+                .metric(Metric.Builder.create()
+                        .namespace(apexDomain)
+                        .metricName("behaviour-test")
+                        .dimensionsMap(Map.of("test", "submitVatBehaviour"))
+                        .statistic("Minimum")
+                        .period(Duration.hours(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.BREACHING)
                 .build();
 
         // Row 6: Lambda Errors across all deployments (was Row 5)

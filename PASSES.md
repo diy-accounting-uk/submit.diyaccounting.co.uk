@@ -2,11 +2,6 @@
 
 This document explains how passes, bundles, and tokens work together in DIY Accounting Submit.
 
-```
-When you get all this stabilised again and you have run the behaviour tests that have been changed against the simulator, re-test submitVatBehaviours test the payment behaviour test in
-  proxy mode, which would ideally be invoking the real stripe apis using the stripe tes
-```
-
 ## Overview
 
 The system uses a three-tier model:
@@ -34,11 +29,11 @@ Defined in `submit.passes.toml`. Each pass type is a template with defaults.
 
 | Pass Type | Bundle Granted | Max Uses | Validity | Email Required | Payment |
 |-----------|---------------|----------|----------|---------------|---------|
-| `day-guest-test-pass` | day-guest | 1 | 1 day | No | Free (admin, sandbox) |
+| `day-guest-test-pass` | day-guest | 1 | 1 day | No | Free (admin, synthetic) |
 | `invited-guest` | invited-guest | 1 | 1 month | Yes | Free (admin) |
 | `resident-guest` | resident-guest | 1 | Unlimited | Yes | Free (admin) |
 | `resident-pro-comp` | resident-pro-comp | 1 | 1 year | Yes | Free (admin) |
-| `resident-pro-test-pass` | resident-pro | 1 | 1 day | No | Free (admin, sandbox) |
+| `resident-pro-test-pass` | resident-pro | 1 | 1 day | No | Free (admin, synthetic) |
 | `resident-pro-pass` | resident-pro | 1 | 1 day | No | Free (admin, production) |
 | `campaign` | invited-guest | 1 | 3 days | No | 10 tokens (user-issued, Phase 6) |
 | `digital-pass` | day-guest | 100 | 7 days | No | 10 tokens (user-issued, Phase 6) |
@@ -46,7 +41,7 @@ Defined in `submit.passes.toml`. Each pass type is a template with defaults.
 
 ### Test vs production pass types
 
-Pass types ending in `-test-pass` have `test = true` in `submit.passes.toml`. This sets `testPass: true` on the pass record, which routes HMRC API calls to the sandbox. Use these for automated tests and CI. Use the non-test variants (e.g. `day-guest-pass`) for real users with production HMRC access.
+Pass types ending in `-test-pass` have `test = true` in `submit.passes.toml`. This sets `testPass: true` on the pass record, which activates synthetic mode so HMRC API calls go to HMRC's sandbox. Use these for automated tests and CI. Use the non-test variants (e.g. `day-guest-pass`) for real users with production HMRC access.
 
 ### When is payment required?
 
@@ -263,7 +258,7 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 - `invoice.paid` handler (token refresh on renewal)
 - `customer.subscription.updated/deleted` handlers (status changes, cancellation)
 - `invoice.payment_failed` handler (activity alert)
-- Developer tools: sandbox bundle detection via `qualifiers.sandbox`
+- Developer tools: synthetic bundle detection via `qualifiers.synthetic`
 
 ### To reach Public Beta
 
@@ -287,11 +282,11 @@ Implemented in `behaviour-tests/payment.behaviour.test.js`:
 
 1. **Login** via Cognito (native in CI, Google in prod, mock in proxy/simulator)
 2. **Redeem a test pass for day-guest** — gets 3 tokens (pass bypasses capacity cap)
-3. **Use all 3 tokens** — submit VAT to sandbox HMRC (test pass → sandbox routing)
+3. **Use all 3 tokens** — submit VAT to HMRC's sandbox (test pass → synthetic mode routing)
 4. **See activities disabled** — "Insufficient tokens", upsell link to bundles page
 5. **Redeem a test pass for resident-pro** — pass validation shows Subscribe button
 6. **Pay via test Stripe** — checkout session uses test price ID, no real charges
-7. **Submit VAT return** — goes to sandbox HMRC, consumes 1 resident-pro token
+7. **Submit VAT return** — goes to HMRC's sandbox, consumes 1 resident-pro token
 8. **Check token usage page** — `/usage.html` shows correct sources and consumption
 9. **Verify Telegram alerts** — each step generates a message in the correct channel
 
@@ -302,7 +297,7 @@ Implemented in `behaviour-tests/payment.behaviour.test.js`:
 | **Simulator** | Auto-completes (fakes Stripe) | Mock billing endpoints in `mockBilling.js` redirect to `/simulator/checkout` which grants the bundle and redirects to `bundles.html?checkout=success` |
 | **Proxy** | Real Stripe test mode | Express server calls Stripe test API; test fills in card `4242 4242 4242 4242` |
 | **CI** | Real Stripe test mode | Deployed Lambda calls Stripe test API; test fills in test card |
-| **Prod** | Stripe test when `testPass`, live otherwise | Bundle `qualifiers.sandbox` determines test vs live Stripe key |
+| **Prod** | Stripe test when `testPass`, live otherwise | Bundle `qualifiers.synthetic` determines checkout's test vs live Stripe key; `qualifiers.stripeTestMode` determines the portal's |
 
 ### Behaviour test files
 
@@ -331,8 +326,8 @@ npm run test:paymentBehaviour-prod
 
 ### Test pass routing
 
-All behaviour tests use test passes (`testPass: true`), which set `qualifiers.sandbox = true` on the granted bundle. This drives:
-- **HMRC**: Sandbox API (not live) — controlled by `sessionStorage.hmrcAccount`
+All behaviour tests use test passes (`testPass: true`), which set `qualifiers.synthetic = true` on the granted bundle. This drives:
+- **HMRC**: HMRC's sandbox API (not live) — controlled by `sessionStorage.hmrcAccount`
 - **Stripe**: Test mode (not live) — controlled by `STRIPE_TEST_PRICE_ID`
 - **Telegram**: Test channel (not live) — controlled by actor classification
-- **Developer tools**: Wrench icon appears (sandbox bundle detected)
+- **Developer tools**: Wrench icon appears (synthetic bundle detected)
