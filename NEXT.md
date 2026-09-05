@@ -91,8 +91,8 @@ items below wait on a later event to verify.
   Guardrails' sensitive-information filter plus a regex deny-list for IPs, emails, VRNs and
   64-hex hashes before posting, and log content is treated as data, never instructions. Design
   pass first: the alarm-to-log-group mapping shared with B30h, the role's resource list, the
-  triage prompt. **Source**: BACKLOG 30; operator decision 2026-09-05. **Owner**: Claude Code.
-  **Model**: Opus design, then Sonnet.
+  triage prompt. **Source**: BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**:
+  Claude Code. **Model**: Opus design, then Sonnet.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
