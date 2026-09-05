@@ -24,11 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Resumed 2026-09-05.** PR #118 (`claude/board-batch-2`) is complete and ready for review; work started after it lands
-on `claude/board-batch-3`, the next single branch and PR. The stacked PRs #119, #120, #125 and
-#126 are closed and folded in. PR #118's last ci deploy (run 33980220915) stood up every stack,
-Companies House included, and failed only in the probe workflow's test-data export step; that
-step is fixed on the branch tip (824df7d3), which no ci deploy has run yet.
+**PR #118 merged 2026-09-05.** Its prod deploy is run 33987220531; every item below marked "on
+PR #118" is verified against that deployment. `claude/board-batch-3` is merged with main and is
+the next single branch and PR.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -55,17 +53,6 @@ starting.
   run now reaches the billing account (`019D7D-B02D59-ED7738`) and stops at 403 there, and holds
   no role on `valued-context-507200-m9`: both are O1e. Verified by a dry run that finds the
   hand-made budget and inventories the stray project once O1e is done.
-- [ ] **O6 remainder / B34.1. Write the Companies House keys into Secrets Manager.** The
-  operator registered the keys and set `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub
-  environments on 2026-09-05. The step that copies a GitHub secret into Secrets Manager lives in
-  `deploy-environment.yml` on `claude/board-batch-2` (PR #118), not on main, so the workflow has
-  to run from that branch: ci now, prod after the operator's go, then `manage-secrets` action
-  `check` on each. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: none, a
-  workflow dispatch.
-  **Track**: ci done 2026-09-05 (`ci/submit/companies-house/api_key` checks OK, 36 chars). Prod
-  waits on the operator's go, because running the workflow from the branch applies the batch's
-  env stacks to prod ahead of the merge; the alternative is merging PR #118 first and running it
-  from main (O7 step 5).
 - [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
   (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
   `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
@@ -175,27 +162,11 @@ starting.
   Sonnet.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O7. Merge PR #118 in this order.** The batch renames the stored HMRC mode value and
-  splits the Stripe flag, so three one-off migrations on the bundles table go with it
-  (`scripts/migrations/004`, `005`, `006`; design in `PLAN_MODE_RENAME.md`, "Stored data"). The
-  new code never reads the old field names, and `deploy.yml` does not run migrations itself.
-  1. Get one green ci deploy of the branch tip. Run 33980220915 deployed every stack but
-     failed its submitVat suite in the probe workflow's test-data export step, which lacked
-     `ENVIRONMENT_NAME` after B30e's salt lookup; its retry re-ran the same commit and failed
-     the same way. The fix is on the tip (824df7d3): dispatch `deploy.yml` on the branch once,
-     or merge and let main's first deploy prove it.
-  2. Run `run migrations` on main for `ci`, phase `pre-deploy`, with `dry-run` ticked, then again
-     for real; then the same pair for `prod`. 004 and 005 only add fields, so today's code
-     ignores them and this is safe before the merge.
-  3. Merge #118. Main deploys to prod on its own.
-  4. When the prod deploy lands, run `run migrations` for `prod` (then `ci`), phase
-     `post-deploy`, dry run then real: 006 removes the old field.
-  5. Run `deploy-environment` on main for `prod`, then `manage-secrets` action `check`, to write
-     the Companies House key into prod Secrets Manager (the ci copy is already done).
-  6. Close alarm issues the deploy supersedes: #130 now (its trigger is a per-function
-     duration check that PR #118 deletes), and #95, #97, #128, #129 once B30e's fix has held
-     through a probe cycle.
-  **Source**: PR #118; `PLAN_MODE_RENAME.md`. **Owner**: Operator.
+- [ ] **O10. Retire the spare prod set after the PR #118 deployment holds.** After one full
+  probe cycle (about five hours) with `prod-env-github-probe-failed` and the four B30e issues
+  (#95, #97, #128, #129) in OK, close those four issues and destroy the previous prod set:
+  `gh workflow run destroy-prod.yml -f deployment-name=prod-13704ea`. Until then it costs
+  $46.88 a month. **Source**: PR #118; `PLAN_COST_OPTIMISATION.md`. **Owner**: Operator.
 - [ ] **O1e / G2b. Two grants only your own Google identity can make.** The service account
   now enables the project's APIs itself (`scripts/gcp-enable-apis.js`, first step of
   `google-roles.yml`) and its roles dry run reports no changes, but it holds nothing on two
