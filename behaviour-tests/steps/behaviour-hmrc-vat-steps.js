@@ -11,7 +11,7 @@ import {
   loggedFocus,
   loggedSelectOption,
   timestamp,
-  isSandboxMode,
+  isSyntheticMode,
 } from "../helpers/behaviour-helpers.js";
 import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
@@ -72,16 +72,16 @@ export async function fillInVat(
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
-  allowSandboxObligations = false,
+  allowSyntheticObligations = false,
 ) {
   await test.step("The user completes the VAT form with valid values and sees the Submit button", async () => {
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
     let testDataUsed = false;
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -165,10 +165,10 @@ export async function fillInVat(
     await page.waitForTimeout(100);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
 
-    if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+    if (testScenario || runFraudPreventionHeaderValidation || allowSyntheticObligations) {
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -193,19 +193,19 @@ export async function fillInVat(
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      if (allowSandboxObligations && isSandboxMode()) {
-        // The sandboxObligationsOption div should be visible in sandbox mode when developer mode is on
-        await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
-          console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
+      if (allowSyntheticObligations && isSyntheticMode()) {
+        // The syntheticObligationsOption div should be visible in synthetic mode when developer mode is on
+        await page.waitForSelector("#allowSyntheticObligations", { state: "attached", timeout: 5000 }).catch(() => {
+          console.log("allowSyntheticObligations checkbox not found - may not be in synthetic mode");
         });
-        const checkbox = page.locator("#allowSandboxObligations");
+        const checkbox = page.locator("#allowSyntheticObligations");
         if (await checkbox.isVisible().catch(() => false)) {
           // Only check if not already checked (test-data-generator may have already checked it)
           if (!(await checkbox.isChecked().catch(() => false))) {
             await checkbox.check();
-            console.log("Checked allowSandboxObligations checkbox");
+            console.log("Checked allowSyntheticObligations checkbox");
           } else {
-            console.log("allowSandboxObligations checkbox already checked");
+            console.log("allowSyntheticObligations checkbox already checked");
           }
         }
       }
@@ -215,7 +215,7 @@ export async function fillInVat(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
 
     // Period dates are now set via date inputs, periodKey is resolved server-side
-    // No need for sandbox-specific dropdown manipulation
+    // No need for synthetic-specific dropdown manipulation
 
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
@@ -241,7 +241,7 @@ export async function fillInVat9Box(
   testScenario = null,
   runFraudPreventionHeaderValidation = false,
   screenshotPath = defaultScreenshotPath,
-  allowSandboxObligations = false,
+  allowSyntheticObligations = false,
 ) {
   await test.step("The user completes the 9-box VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form manually
@@ -325,10 +325,10 @@ export async function fillInVat9Box(
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
 
-    if (testScenario || runFraudPreventionHeaderValidation || allowSandboxObligations) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+    if (testScenario || runFraudPreventionHeaderValidation || allowSyntheticObligations) {
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -352,19 +352,19 @@ export async function fillInVat9Box(
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      if (allowSandboxObligations && isSandboxMode()) {
-        // The sandboxObligationsOption div should be visible in sandbox mode when developer mode is on
-        await page.waitForSelector("#allowSandboxObligations", { state: "attached", timeout: 5000 }).catch(() => {
-          console.log("allowSandboxObligations checkbox not found - may not be in sandbox mode");
+      if (allowSyntheticObligations && isSyntheticMode()) {
+        // The syntheticObligationsOption div should be visible in synthetic mode when developer mode is on
+        await page.waitForSelector("#allowSyntheticObligations", { state: "attached", timeout: 5000 }).catch(() => {
+          console.log("allowSyntheticObligations checkbox not found - may not be in synthetic mode");
         });
-        const checkbox = page.locator("#allowSandboxObligations");
+        const checkbox = page.locator("#allowSyntheticObligations");
         if (await checkbox.isVisible().catch(() => false)) {
           // Only check if not already checked (test-data-generator may have already checked it)
           if (!(await checkbox.isChecked().catch(() => false))) {
             await checkbox.check();
-            console.log("Checked allowSandboxObligations checkbox");
+            console.log("Checked allowSyntheticObligations checkbox");
           } else {
-            console.log("allowSandboxObligations checkbox already checked");
+            console.log("allowSyntheticObligations checkbox already checked");
           }
         }
       }
@@ -403,7 +403,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
 
 export async function completeVat(page, baseUrl, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
-    await test.step("The user sees a submission error message for sandbox scenario", async () => {
+    await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
@@ -511,7 +511,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
 
 export async function verifyVatSubmission(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
-    await test.step("The user sees a submission error message for sandbox scenario", async () => {
+    await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Increase timeout and wait for terminal status (failed or error)
@@ -610,12 +610,12 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
     const dd = String(today.getDate()).padStart(2, "0");
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -653,9 +653,9 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
     }
     if (testScenario || runFraudPreventionHeaderValidation) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1042,12 +1042,12 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
     const dd = String(today.getDate()).padStart(2, "0");
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-liabilities-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -1072,9 +1072,9 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1246,12 +1246,12 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
     const dd = String(today.getDate()).padStart(2, "0");
     const to = hmrcVatPeriodToDate || `${yyyy}-${mm}-${dd}`;
 
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-payments-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -1276,9 +1276,9 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1441,12 +1441,12 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
     const { hmrcVatNumber, testScenario, runFraudPreventionHeaderValidation } = penaltiesQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-penalties-fill-in.png` });
 
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-penalties-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -1463,9 +1463,9 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1620,12 +1620,12 @@ export async function fillInViewVatReturn(
   screenshotPath = defaultScreenshotPath,
 ) {
   await test.step("The user fills in the view VAT return form with VAT registration number and period dates", async () => {
-    // Check if we're in sandbox mode and can use test data link
+    // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
-      // Use the "add test data" link in sandbox mode
+    if (isSyntheticMode() && isTestDataLinkVisible) {
+      // Use the "add test data" link in synthetic mode
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-view-vat-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -1665,9 +1665,9 @@ export async function fillInViewVatReturn(
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      // Wait for developer-mode.js to detect sandbox bundle and set sessionStorage
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       // Enable developer mode via sessionStorage and trigger UI update
       await page.evaluate(() => {
@@ -1724,7 +1724,7 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
 
 export async function verifyViewVatReturnResults(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
-    await test.step("The user sees a retrieval error message for sandbox scenario", async () => {
+    await test.step("The user sees a retrieval error message for the HMRC sandbox scenario", async () => {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
@@ -1738,7 +1738,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         if (attempt < 3) await page.waitForTimeout(500);
       }
       expect(statusText).toMatch(/failed|error|not found/);
-      console.log("View VAT return expected error for sandbox scenario successfully");
+      console.log("View VAT return expected error for the HMRC sandbox scenario successfully");
     });
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
@@ -1752,13 +1752,13 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         });
       } catch (error) {
         // The GET return handler resolves periodKey from obligations when none is supplied
-        // directly (see hmrcVatReturnGet.js). In sandbox mode HMRC sometimes has no canned
-        // return for the period it resolves, even though the obligations lookup itself
-        // succeeded (the handler already tries every other fulfilled obligation first - see
-        // its allowSandboxObligations fallback). That known sandbox data gap is a valid
-        // outcome here, not a test failure - assert the not-found message is displayed, log
-        // the period that was tried, and skip the results-table assertions below.
-        if (isSandboxMode() && /not found/i.test(error.message)) {
+        // directly (see hmrcVatReturnGet.js). In synthetic mode HMRC's sandbox sometimes has
+        // no canned return for the period it resolves, even though the obligations lookup
+        // itself succeeded (the handler already tries every other fulfilled obligation first -
+        // see its allowSyntheticObligations fallback). That known HMRC sandbox data gap is a
+        // valid outcome here, not a test failure - assert the not-found message is displayed,
+        // log the period that was tried, and skip the results-table assertions below.
+        if (isSyntheticMode() && /not found/i.test(error.message)) {
           const periodStart = await page
             .locator("#periodStart")
             .inputValue()
@@ -1770,7 +1770,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
           console.log(
             `[verifyViewVatReturnResults] HMRC sandbox has no canned return for the period it resolved ` +
               `(${periodStart} to ${periodEnd}) - obligations lookup succeeded, the return retrieval itself ` +
-              `came back not found. Treating this as a valid sandbox outcome rather than a test failure.`,
+              `came back not found. Treating this as a valid outcome rather than a test failure.`,
           );
           const statusContainer = page.locator("#statusMessagesContainer");
           await expect(statusContainer).toBeVisible();
@@ -1959,7 +1959,7 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 }
 
 /**
- * Fetch and log HMRC fraud prevention header validation feedback for sandbox tests.
+ * Fetch and log HMRC fraud prevention header validation feedback for synthetic tests.
  * This calls the HMRC test API to get feedback on all requests made to the vat-mtd API.
  *
  * @param {string} hmrcAccessToken - HMRC OAuth access token
