@@ -78,6 +78,35 @@ describe("hmrcTokenPost ingestHandler", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  test("returns the granted scope unchanged, so a self-assessment grant reaches the browser", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          access_token: "not-a-real-token",
+          token_type: "bearer",
+          expires_in: 14400,
+          scope: "read:self-assessment",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    try {
+      const event = buildLambdaEvent({
+        method: "POST",
+        body: { code: "test-code" },
+        headers: { hmrcaccount: "sandbox" },
+      });
+      const response = await hmrcTokenPostHandler(event);
+
+      expect(response.statusCode).toBe(200);
+      expect(parseResponseBody(response).scope).toBe("read:self-assessment");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
   test("publishes the hmrc-token-exchanged event with the hashed sub, never the raw sub", async () => {
     const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
     await hmrcTokenPostHandler(event);

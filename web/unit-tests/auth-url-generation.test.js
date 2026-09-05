@@ -155,4 +155,13 @@ describe("Auth URL Generation", () => {
     expect(url).toContain("scope=write%3Avat");
     expect(url).toContain("state=def456");
   });
+
+  it("buildHmrcAuthUrl requests self-assessment scopes alongside the VAT ones", async () => {
+    respondWithEnv();
+    loadScripts();
+
+    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("ghi789", "read:vat read:self-assessment", "sandbox");
+
+    expect(url).toContain("scope=" + encodeURIComponent("read:vat read:self-assessment"));
+  });
 });

@@ -1,0 +1,118 @@
+name: google roles
+run-name: "google roles (${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: google-roles-${{ github.ref_name }}
+  cancel-in-progress: false
+
+on:
+  pull_request:
+    paths:
+      - 'analytics/google-roles.toml'
+      - 'scripts/google-roles-apply.js'
+      - 'scripts/gcp-billing-assert.js'
+      - '.github/workflows/google-roles.yml'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'analytics/google-roles.toml'
+      - 'scripts/google-roles-apply.js'
+      - 'scripts/gcp-billing-assert.js'
+      - '.github/workflows/google-roles.yml'
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  google-roles:
+    name: ${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }}
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve GA4 service account key
+        id: resolve
+        run: |
+          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$GA4_SERVICE_ACCOUNT_ARN" --query SecretString --output text)
+          echo "::add-mask::${SECRET_JSON}"
+          {
+            echo "credentials-json<<GA4_SERVICE_ACCOUNT_JSON_EOF"
+            echo "${SECRET_JSON}"
+            echo "GA4_SERVICE_ACCOUNT_JSON_EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
+
+      - name: Run google-roles-apply
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/google-roles-apply.js --dry-run 2>&1 | tee google-roles-apply.log
+          else
+            node scripts/google-roles-apply.js 2>&1 | tee google-roles-apply.log
+          fi
+
+      - name: Dry-run gcp-billing-assert
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: node scripts/gcp-billing-assert.js --dry-run 2>&1 | tee gcp-billing-assert.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "# Google roles (${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f google-roles-apply.log ]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat google-roles-apply.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f gcp-billing-assert.log ]; then
+            echo "# GCP billing (dry run)" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat gcp-billing-assert.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
