@@ -23,8 +23,9 @@ import path from "path";
 
 import { validateScript } from "./lib/video/scriptSchema.js";
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
-import { installOverlay, caption as overlayCaption, chapter as overlayChapter, suppress as overlaySuppress, timerStart, timerSetCompressing, timerStop, readEvents } from "./lib/video/overlay.js";
+import { installOverlay, caption as overlayCaption, chapter as overlayChapter, suppress as overlaySuppress, readEvents } from "./lib/video/overlay.js";
 import { executeAction, SceneStepError } from "./lib/video/actions.js";
+import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline } from "./lib/video/captions.js";
@@ -189,35 +190,6 @@ const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consen
 // the caption all have to be put back.
 const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
-async function runWithWaitOverlay(page, step, unscaledPacing, capture, run) {
-  let shown = false;
-  let compressing = false;
-  const showTimer = WAIT_CAPABLE_ACTIONS.has(step.action)
-    ? setTimeout(() => {
-        shown = true;
-        timerStart(page, step.label || step.action, unscaledPacing.timerFullScaleMs).catch(() => {});
-      }, unscaledPacing.timerThresholdMs)
-    : null;
-  const compressTimer = WAIT_CAPABLE_ACTIONS.has(step.action)
-    ? setTimeout(() => {
-        compressing = true;
-        capture?.setCompression(true, unscaledPacing.waitCompressionFactor);
-        timerSetCompressing(page, true).catch(() => {});
-      }, unscaledPacing.waitCompressionAfterMs)
-    : null;
-
-  const result = await run();
-
-  if (showTimer) clearTimeout(showTimer);
-  if (compressTimer) clearTimeout(compressTimer);
-  if (compressing) {
-    capture?.setCompression(false);
-    await timerSetCompressing(page, false).catch(() => {});
-  }
-  if (shown) await timerStop(page).catch(() => {});
-  return result;
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const scriptPath = path.resolve(args.script);
@@ -294,7 +266,19 @@ async function main() {
   const captionEvents = [];
   const sceneRecords = [];
   let elapsedMs = 0;
-  let overlayEvents = [];
+  // The overlay's event log lives on the page and is wiped by every navigation (a new document,
+  // a fresh window.__svc), so reading it once at the end would only ever return what the very
+  // last document logged. Reading it after every step instead, and keeping only what is new
+  // since the last read, carries each document's events across into a run-long record before
+  // the next navigation can erase them.
+  const overlayEvents = [];
+  let lastReadEventCount = 0;
+  async function collectNewOverlayEvents() {
+    const events = await readEvents(page).catch(() => null);
+    if (!events) return;
+    if (events.length > lastReadEventCount) overlayEvents.push(...events.slice(lastReadEventCount));
+    lastReadEventCount = events.length;
+  }
   const wallStart = Date.now();
   // The overlay only exists once a document has actually loaded — addInitScript does not run
   // against the initial about:blank page. Every overlay call before the tour's first `goto` is
@@ -316,6 +300,7 @@ async function main() {
 
       for (let stepIndex = 0; stepIndex < scene.steps.length; stepIndex++) {
         const step = scene.steps[stepIndex];
+        const waitPhaseCtl = createWaitPhase(page, step, unscaledPacing, capture, WAIT_CAPABLE_ACTIONS.has(step.action));
         const ctx = {
           baseUrl: args.baseUrl,
           pacing,
@@ -327,6 +312,7 @@ async function main() {
           values,
           now,
           journey,
+          waitPhase: waitPhaseCtl.run,
         };
         const startMs = Date.now() - wallStart;
         const frameStart = capture?.frames.length ?? null;
@@ -350,6 +336,8 @@ async function main() {
         }
 
         let waitMs = 0;
+        let navigated = false;
+        let timerShown = false;
         if (step.action === "caption") {
           const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
           await overlayCaption(page, step.text);
@@ -365,10 +353,20 @@ async function main() {
             await new Promise((resolve) => setTimeout(resolve, pauseForGroup(3, pacing)));
           }
           const urlBeforeAction = page.url();
-          const result = await runWithWaitOverlay(page, step, unscaledPacing, capture, () => executeAction(page, step, ctx));
+          const result = await executeAction(page, step, ctx);
           waitMs = result.waitMs;
+          timerShown = waitPhaseCtl.shown;
+          // The document is judged by whether the URL moved, not by the action's name — a goto
+          // is navigated by definition, everything else stands or falls on the URL check alone.
+          navigated = step.action === "goto" || page.url() !== urlBeforeAction;
           if (ALWAYS_NAVIGATING_ACTIONS.has(step.action) || page.url() !== urlBeforeAction) {
             hasNavigated = true;
+            // A fresh document starts its own window.__svc.events at zero, so the count read
+            // back after the last document must not carry over — carrying it over holds the
+            // threshold too high and drops every event this new document logs until its own
+            // count happens to exceed the old one, silently losing a timer marker a same-URL
+            // reload (e.g. ensureBundle's) logs on the document it lands on.
+            lastReadEventCount = 0;
             await overlayChapter(page, scene.chapter);
             if (script.suppress?.length) await overlaySuppress(page, script.suppress);
             if (step.caption) {
@@ -403,6 +401,11 @@ async function main() {
           last.endMs = Date.now() - wallStart;
         }
 
+        // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
+        // only place a flush is needed — every other action leaves the current document alone,
+        // and its own events (e.g. a "type" step's typeChar events) ride along in the next flush.
+        if (WAIT_CAPABLE_ACTIONS.has(step.action)) await collectNewOverlayEvents();
+
         const endMs = Date.now() - wallStart;
         const frameEnd = capture?.frames.length ?? null;
         const description = describeStep(step, waitMs, values, now);
@@ -419,6 +422,8 @@ async function main() {
           waitMs,
           residualMs,
           compressedOnScreenMs: compression?.compressed ? compression.onScreenMs : null,
+          navigated,
+          timerShown,
           startMs,
           endMs,
           frameStart,
@@ -438,7 +443,7 @@ async function main() {
 
     elapsedMs = Date.now() - wallStart;
     await new Promise((resolve) => setTimeout(resolve, script.finalHoldMs));
-    overlayEvents = await readEvents(page).catch(() => []);
+    await collectNewOverlayEvents();
   } catch (err) {
     if (err instanceof SceneStepError) {
       console.error(`\nsite-video-capture failed: ${err.message}`);
