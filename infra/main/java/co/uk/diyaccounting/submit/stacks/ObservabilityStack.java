@@ -25,6 +25,8 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.customresources.AwsCustomResource;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
+import software.amazon.awscdk.services.bedrock.CfnGuardrail;
+import software.amazon.awscdk.services.bedrock.CfnGuardrailVersion;
 import software.amazon.awscdk.services.cloudtrail.Trail;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
@@ -40,6 +42,8 @@ import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.targets.SnsTopic;
 import software.amazon.awscdk.services.guardduty.CfnDetector;
+import software.amazon.awscdk.services.iam.ArnPrincipal;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.FederatedPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
@@ -53,6 +57,7 @@ import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.securityhub.CfnHub;
 import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 
 public class ObservabilityStack extends Stack {
@@ -794,5 +799,219 @@ public class ObservabilityStack extends Stack {
                 "OperationsDashboard",
                 "https://" + this.getRegion() + ".console.aws.amazon.com/cloudwatch/home?region=" + this.getRegion()
                         + "#dashboards:name=" + operationsDashboard.getDashboardName());
+
+        // ============================================================================
+        // Alarm triage: read-only role, output guardrail, SSM parameters
+        // ============================================================================
+        // The triage workflow assumes this account's github-actions-role first (matching the
+        // role-chaining every other workflow uses), then chains into this role. That role is named
+        // submit-{env}-github-actions-role in each deployment account (see GITHUB_SETUP.md), not the
+        // plain "github-actions-role" a first draft of this stack assumed.
+        String githubActionsRoleArn =
+                "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
+        String cloudwatchAlarmArnPrefix = "arn:aws:cloudwatch:*:%s:alarm:".formatted(this.getAccount());
+        String ew2LogGroupArnPrefix = "arn:aws:logs:eu-west-2:%s:log-group:".formatted(this.getAccount());
+        String ue1LogGroupArnPrefix = "arn:aws:logs:us-east-1:%s:log-group:".formatted(this.getAccount());
+
+        Role alarmTriageRole = Role.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageRole")
+                .roleName(props.sharedNames().alarmTriageRoleName)
+                .maxSessionDuration(Duration.hours(1))
+                .description("Read-only role the alarm-triage workflow assumes to gather evidence for one alarm")
+                .assumedBy(new ArnPrincipal(githubActionsRoleArn))
+                .build();
+
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadAlarmState")
+                .actions(List.of(
+                        "cloudwatch:DescribeAlarms",
+                        "cloudwatch:DescribeAlarmHistory",
+                        "cloudwatch:GetMetricData",
+                        "cloudwatch:GetMetricStatistics",
+                        "cloudwatch:ListMetrics"))
+                .resources(List.of(
+                        cloudwatchAlarmArnPrefix + props.envName() + "-*",
+                        cloudwatchAlarmArnPrefix + "check-" + props.envName() + "-*"))
+                .build());
+
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("QueryDeploymentLogs")
+                .actions(List.of(
+                        "logs:StartQuery",
+                        "logs:StopQuery",
+                        "logs:GetQueryResults",
+                        "logs:FilterLogEvents",
+                        "logs:GetLogEvents",
+                        "logs:DescribeLogStreams"))
+                .resources(List.of(
+                        ew2LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*",
+                        ew2LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*",
+                        ew2LogGroupArnPrefix + "/aws/lambda/cwsyn-" + props.envName() + "-*",
+                        ew2LogGroupArnPrefix + "/aws/lambda/cwsyn-" + props.envName() + "-*:log-stream:*",
+                        ew2LogGroupArnPrefix + "/aws/apigw/" + props.envName() + "-env/access",
+                        ew2LogGroupArnPrefix + "/aws/apigw/" + props.envName() + "-env/access:log-stream:*",
+                        ew2LogGroupArnPrefix + "/aws/cloudtrail/" + props.envName() + "-env-cloud-trail",
+                        ew2LogGroupArnPrefix + "/aws/cloudtrail/" + props.envName() + "-env-cloud-trail:log-stream:*",
+                        ew2LogGroupArnPrefix + "/aws/kinesisfirehose/" + props.envName() + "-env-*",
+                        ew2LogGroupArnPrefix + "/aws/kinesisfirehose/" + props.envName() + "-env-*:log-stream:*",
+                        ew2LogGroupArnPrefix + "/aws/vendedlogs/states/" + props.envName() + "-env-*",
+                        ew2LogGroupArnPrefix + "/aws/vendedlogs/states/" + props.envName() + "-env-*:log-stream:*",
+                        ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*",
+                        ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*"))
+                .build());
+
+        // Neither logs:DescribeLogGroups nor logs:DescribeQueries supports a resource-level ARN.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ListLogGroups")
+                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries"))
+                .resources(List.of("*"))
+                .build());
+
+        // X-Ray has no resource-level permissions.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadTraces")
+                .actions(List.of(
+                        "xray:GetTraceSummaries",
+                        "xray:BatchGetTraces",
+                        "xray:GetTraceGraph",
+                        "xray:GetServiceGraph",
+                        "xray:GetInsightSummaries",
+                        "xray:GetInsight"))
+                .resources(List.of("*"))
+                .build());
+
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("InvokeTriageModel")
+                .actions(List.of("bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"))
+                .resources(List.of(
+                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
+                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+                        "arn:aws:bedrock:*:%s:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
+                                .formatted(this.getAccount()),
+                        "arn:aws:bedrock:*:%s:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+                                .formatted(this.getAccount())))
+                .build());
+
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ApplyOutputGuardrail")
+                .actions(List.of("bedrock:ApplyGuardrail"))
+                .resources(List.of("arn:aws:bedrock:eu-west-2:%s:guardrail/*".formatted(this.getAccount())))
+                .build());
+
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadTriageParameters")
+                .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
+                .resources(List.of("arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*"
+                        .formatted(this.getAccount(), props.envName())))
+                .build());
+
+        // One explicit Deny so a later widening of an Allow above cannot reach customer data. Athena
+        // and the lake are denied deliberately: the triage agent works from logs and traces, and
+        // reaching the lake means reaching activity events, which carry hashed subs and bundle
+        // history - that lookup stays a by-hand operator skill.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DenyCustomerData")
+                .effect(Effect.DENY)
+                .actions(List.of(
+                        "dynamodb:*",
+                        "secretsmanager:GetSecretValue",
+                        "secretsmanager:BatchGetSecretValue",
+                        "cognito-idp:*",
+                        "cognito-identity:*",
+                        "athena:*",
+                        "glue:GetTable",
+                        "glue:GetPartitions",
+                        "s3:GetObject",
+                        "s3:ListBucket",
+                        "kms:Decrypt"))
+                .resources(List.of("*"))
+                .build());
+
+        cfnOutput(this, "AlarmTriageRoleArn", alarmTriageRole.getRoleArn());
+
+        // The guardrail screens the triage agent's output for PII the redaction script's regexes
+        // might miss (a name in prose, for example). BLOCK, not ANONYMIZE: a blocked comment is a
+        // loud failure the operator sees in the run log, rather than a comment that reads as
+        // complete while quietly missing pieces.
+        CfnGuardrail alarmTriageGuardrail = CfnGuardrail.Builder.create(
+                        this, props.resourceNamePrefix() + "-AlarmTriageGuardrail")
+                .name(props.sharedNames().alarmTriageGuardrailName)
+                // AWS::Bedrock::Guardrail requires both messages even though this guardrail only
+                // ever screens agent output (source OUTPUT); the plan this stack follows named only
+                // blockedOutputsMessaging, which CloudFormation would reject as an incomplete
+                // resource.
+                .blockedInputMessaging("Triage input was blocked by the guardrail.")
+                .blockedOutputsMessaging("Triage output was blocked by the guardrail.")
+                .sensitiveInformationPolicyConfig(CfnGuardrail.SensitiveInformationPolicyConfigProperty.builder()
+                        .piiEntitiesConfig(List.of(
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("EMAIL")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("PHONE")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("NAME")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("ADDRESS")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("IP_ADDRESS")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("AWS_ACCESS_KEY")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("AWS_SECRET_KEY")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("UK_NATIONAL_INSURANCE_NUMBER")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.PiiEntityConfigProperty.builder()
+                                        .type("CREDIT_DEBIT_CARD_NUMBER")
+                                        .action("BLOCK")
+                                        .build()))
+                        .regexesConfig(List.of(
+                                CfnGuardrail.RegexConfigProperty.builder()
+                                        .name("hashed-sub")
+                                        .pattern("[0-9a-f]{64}")
+                                        .action("BLOCK")
+                                        .build(),
+                                CfnGuardrail.RegexConfigProperty.builder()
+                                        .name("vat-registration-number")
+                                        .pattern("\\b(?:GB)?[0-9]{9}\\b")
+                                        .action("BLOCK")
+                                        .build()))
+                        .build())
+                .build();
+
+        CfnGuardrailVersion alarmTriageGuardrailVersion = CfnGuardrailVersion.Builder.create(
+                        this, props.resourceNamePrefix() + "-AlarmTriageGuardrailVersion")
+                .guardrailIdentifier(alarmTriageGuardrail.getAttrGuardrailId())
+                .build();
+
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageGuardrailIdParameter")
+                .parameterName(props.sharedNames().alarmTriageGuardrailIdParameterName)
+                .stringValue(alarmTriageGuardrail.getAttrGuardrailId())
+                .build();
+
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageGuardrailVersionParameter")
+                .parameterName(props.sharedNames().alarmTriageGuardrailVersionParameterName)
+                .stringValue(alarmTriageGuardrailVersion.getAttrVersion())
+                .build();
+
+        cfnOutput(this, "AlarmTriageGuardrailId", alarmTriageGuardrail.getAttrGuardrailId());
     }
 }

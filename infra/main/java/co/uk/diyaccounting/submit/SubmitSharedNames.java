@@ -506,6 +506,11 @@ public class SubmitSharedNames {
     public String edgeStackId;
     public String publishStackId;
 
+    public String alarmTriageRoleName;
+    public String alarmTriageGuardrailName;
+    public String alarmTriageGuardrailIdParameterName;
+    public String alarmTriageGuardrailVersionParameterName;
+
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
         public String envName;
@@ -1597,6 +1602,12 @@ public class SubmitSharedNames {
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
         this.selfDestructProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
+
+        this.alarmTriageRoleName = "%s-alarm-triage-role".formatted(this.envResourceNamePrefix);
+        this.alarmTriageGuardrailName = "%s-alarm-triage-guardrail".formatted(this.envResourceNamePrefix);
+        this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);
+        this.alarmTriageGuardrailVersionParameterName =
+                "/submit/%s/alarm-triage/guardrail-version".formatted(props.envName);
     }
 
     /**
