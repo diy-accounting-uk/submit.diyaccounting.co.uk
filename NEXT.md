@@ -56,15 +56,6 @@ starting.
   family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
   2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: alarm issue dedupe (Sonnet). Code complete on `claude/board-batch-2` (PR #118): `app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>` to `<env>-app-<rest>` for the issue title and search, comments name the full alarm, issues are never auto-closed. Verified when the next deployment's alarm comments on the existing family issue instead of opening one.
-- [ ] **B39.3. Fix the redirect stall behind the flaky `postVatReturnBehaviour` simulator lane.**
-  After a scenario submission clears the HMRC token, the browser's redirect to the local OAuth
-  simulator page sometimes never completes and the test hangs; the batch now bounds those waits
-  at 90 s so it fails fast, but the stall remains and the CI job fails about one run in two.
-  **Source**: BACKLOG 39; CI on the batch 2026-09-05. **Owner**: Claude Code. **Model**: Opus.
-  **Track**: redirect stall (Opus). Cause found and fixed on `claude/board-batch-2` (PR #118): the
-  poll helper's own progress query had no action timeout, so on the consent page it hung the loop;
-  every query in `waitForSuccessOrError.js` is now bounded, six consecutive local runs green.
-  Verified when CI's `simulator - postVatReturnBehaviour` job passes on the batch's next test run.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
