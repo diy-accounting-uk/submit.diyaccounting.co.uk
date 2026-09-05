@@ -28,6 +28,8 @@ import { executeAction, SceneStepError } from "./lib/video/actions.js";
 import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline } from "./lib/video/captions.js";
+import { substituteValues } from "./lib/video/values.js";
+import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
 
@@ -129,7 +131,15 @@ function describeTarget(target) {
   return String(target);
 }
 
-function describeStep(step, waitMs) {
+// The transcript is a published artefact, so a step marked secret is described by what it did,
+// never by what it typed. Everything else is described with its placeholders already resolved,
+// so a reader sees the VAT registration number the run actually used.
+function describeValue(step, field, values, now) {
+  if (step.secret) return "a hidden value";
+  return `"${substituteValues(step[field], values, now)}"`;
+}
+
+function describeStep(step, waitMs, values, now) {
   const waitSuffix = waitMs && waitMs > 500 ? ` (waits ${(waitMs / 1000).toFixed(1)}s)` : "";
   switch (step.action) {
     case "goto":
@@ -139,7 +149,9 @@ function describeStep(step, waitMs) {
     case "point":
       return `points at ${describeTarget(step.target)}`;
     case "type":
-      return `types "${step.text}" into ${describeTarget(step.target)}`;
+      return `types ${describeValue(step, "text", values, now)} into ${describeTarget(step.target)}`;
+    case "fill":
+      return `fills ${describeTarget(step.target)} with ${describeValue(step, "value", values, now)}`;
     case "press":
       return `presses ${step.key}`;
     case "tab":
@@ -156,12 +168,26 @@ function describeStep(step, waitMs) {
       return "pauses";
     case "still":
       return "captures a still";
+    case "login":
+      return `signs in${waitSuffix}`;
+    case "consent":
+      return "answers the analytics consent prompt";
+    case "ensureBundle":
+      return `takes out the ${step.bundle} bundle${waitSuffix}`;
+    case "hmrcAuthorise":
+      return `signs in at HMRC and grants authority${waitSuffix}`;
     default:
       return step.action;
   }
 }
 
-const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await"]);
+const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
+
+// Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
+// started on. Every other action is judged by whether the URL moved. Either way the overlay was
+// reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
+// the caption all have to be put back.
+const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
 
 async function runWithWaitOverlay(page, step, unscaledPacing, capture, run) {
   let shown = false;
@@ -208,6 +234,32 @@ async function main() {
   const unscaledPacing = script.pacing;
   const scaledPacing = scalePacing(script.pacing, args.speed);
 
+  // One clock for the whole run, so a date placeholder resolves to the same day in the browser,
+  // the transcript and the timeline even if the recording straddles midnight.
+  const now = new Date();
+  const stepScreenshotDir = path.resolve("target/behaviour-test-results/screenshots", `video-${script.name}`);
+
+  const needsUser = script.auth === "user";
+  const usesHmrcAuthorise = script.scenes.some((scene) => scene.steps.some((step) => step.action === "hmrcAuthorise"));
+  let localServices = { stop: async () => {} };
+  let journey = null;
+  let installCredentialFieldMask = null;
+  if (needsUser) {
+    const journeyModule = await import("./lib/video/journey.js");
+    installCredentialFieldMask = journeyModule.installCredentialFieldMask;
+    localServices = await journeyModule.startLocalServices(process.env);
+    journey = {
+      authProvider: journeyModule.authProviderFrom(process.env),
+      authUsername: journeyModule.authUsernameFrom(process.env),
+      authPassword: process.env.TEST_AUTH_PASSWORD || null,
+      hmrcUser: usesHmrcAuthorise ? await journeyModule.resolveHmrcTestUser(process.env) : null,
+    };
+    console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
+  }
+
+  const values = { hmrcVatNumber: journey?.hmrcUser?.vatNumber };
+  const secrets = collectSecrets(process.env, [journey?.hmrcUser?.password, journey?.hmrcUser?.username].filter(Boolean));
+
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
@@ -223,6 +275,7 @@ async function main() {
 
   const page = await context.newPage();
   await installOverlay(page);
+  if (installCredentialFieldMask) await installCredentialFieldMask(page);
 
   const captureEnabled = !args.stillsOnly;
   const encodeEnabled = !args.stillsOnly && !args.noEncode;
@@ -263,7 +316,18 @@ async function main() {
 
       for (let stepIndex = 0; stepIndex < scene.steps.length; stepIndex++) {
         const step = scene.steps[stepIndex];
-        const ctx = { baseUrl: args.baseUrl, pacing, stillsDir, sceneId: scene.id, stepIndex, timeoutMs: 30000 };
+        const ctx = {
+          baseUrl: args.baseUrl,
+          pacing,
+          stillsDir,
+          stepScreenshotDir,
+          sceneId: scene.id,
+          stepIndex,
+          timeoutMs: 30000,
+          values,
+          now,
+          journey,
+        };
         const startMs = Date.now() - wallStart;
         const frameStart = capture?.frames.length ?? null;
         const group = groupFor(step.action);
@@ -300,23 +364,26 @@ async function main() {
           if (group === 3 && hasNavigated) {
             await new Promise((resolve) => setTimeout(resolve, pauseForGroup(3, pacing)));
           }
+          const urlBeforeAction = page.url();
           const result = await runWithWaitOverlay(page, step, unscaledPacing, capture, () => executeAction(page, step, ctx));
           waitMs = result.waitMs;
-          if (step.action === "goto") {
+          if (ALWAYS_NAVIGATING_ACTIONS.has(step.action) || page.url() !== urlBeforeAction) {
             hasNavigated = true;
             await overlayChapter(page, scene.chapter);
             if (script.suppress?.length) await overlaySuppress(page, script.suppress);
             if (step.caption) {
               await overlayCaption(page, step.caption);
-              const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
-              captionHideAt = () => Date.now() - wallStart + minMs;
-              captionEvents.push({
-                startMs,
-                text: step.caption,
-                maxCharsPerLine: script.captions.maxCharsPerLine,
-                maxLines: script.captions.maxLines,
-                _minMs: minMs,
-              });
+              if (!captionHideAt) {
+                const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
+                captionHideAt = () => Date.now() - wallStart + minMs;
+                captionEvents.push({
+                  startMs,
+                  text: step.caption,
+                  maxCharsPerLine: script.captions.maxCharsPerLine,
+                  maxLines: script.captions.maxLines,
+                  _minMs: minMs,
+                });
+              }
             }
           }
         }
@@ -338,7 +405,7 @@ async function main() {
 
         const endMs = Date.now() - wallStart;
         const frameEnd = capture?.frames.length ?? null;
-        const description = describeStep(step, waitMs);
+        const description = describeStep(step, waitMs, values, now);
         entries.push({ caption: step.caption || null, description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
@@ -380,6 +447,7 @@ async function main() {
   } finally {
     if (capture) await capture.stop();
     await browser.close();
+    await localServices.stop();
   }
 
   // Close each caption event still missing an endMs (a caption whose hold never resolved because
@@ -396,6 +464,12 @@ async function main() {
     description: script.description,
     sceneRecords,
   });
+
+  // Last gate before any of this can be published: nothing the run was handed as a credential
+  // may appear in a text artefact that ships with the video.
+  for (const artefact of [`${script.name}.vtt`, `${script.name}.transcript.md`, `${script.name}.timeline.json`, `${script.name}.overlay-events.json`]) {
+    assertNoSecrets(artefact, fs.readFileSync(path.join(outDir, artefact), "utf8"), secrets);
+  }
 
   const stillPaths = fs
     .readdirSync(stillsDir)
