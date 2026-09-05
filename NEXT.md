@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-13704ea (main's scheduled deploy of 2026-09-05), the only app
-stack set standing.** Each extra
+**Prod runs deployment prod-cea27f8 (the PR #118 merge deploy of 2026-09-05), the only app
+stack set standing once that run's destroy-previous job finishes with prod-13704ea.** Each extra
 `prod-*-app-*` set left after a merge costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -162,11 +162,12 @@ starting.
   Sonnet.
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O10. Retire the spare prod set after the PR #118 deployment holds.** After one full
-  probe cycle (about five hours) with `prod-env-github-probe-failed` and the four B30e issues
-  (#95, #97, #128, #129) in OK, close those four issues and destroy the previous prod set:
-  `gh workflow run destroy-prod.yml -f deployment-name=prod-13704ea`. Until then it costs
-  $46.88 a month. **Source**: PR #118; `PLAN_COST_OPTIMISATION.md`. **Owner**: Operator.
+- [ ] **O10. Close the B30e alarm issues once the PR #118 deployment holds.** The probe
+  workflow runs on a 4-hour cron and the env alarm `prod-env-github-probe-failed` evaluates a
+  5-hour window, so one full cycle is one scheduled probe run plus the window that scores it:
+  about five hours after the deploy. When that window has passed with the probe alarm and the
+  four B30e alarms (#95, #97, #128, #129) in OK, close those four issues. **Source**: PR #118.
+  **Owner**: Operator.
 - [ ] **O1e / G2b. Two grants only your own Google identity can make.** The service account
   now enables the project's APIs itself (`scripts/gcp-enable-apis.js`, first step of
   `google-roles.yml`) and its roles dry run reports no changes, but it holds nothing on two
