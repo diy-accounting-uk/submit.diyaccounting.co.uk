@@ -61,6 +61,16 @@ starting.
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
   **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
+- [ ] **B39.2. Stop ci deploys from different branches colliding.** Two branches whose names
+  share nine cleaned characters (`claude/mode-rename-1-probe`, `claude/mode-rename-2-stripe-flag`)
+  both deployed as `ci-claudemod` and overwrote each other, and every deploy repoints the shared
+  `ci-submit.diyaccounting.co.uk` apex that the ci behaviour suites hit, so PRs #119 and #120
+  failed thirteen ci suites with no code fault. Fix in `get-names`: a per-branch unique name of the
+  same length; fix in `deploy.yml`: one concurrency group per target environment so ci deploys
+  serialise. **Source**: BACKLOG 39; CI diagnosis 2026-09-05. **Owner**: Claude Code. **Model**:
+  Sonnet.
+  **Track**: pipeline fix (Sonnet), running, lands on `claude/board-batch-2`; then PRs #119 and #120
+  re-run one at a time.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
