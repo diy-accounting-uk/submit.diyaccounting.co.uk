@@ -716,7 +716,7 @@ variant or a deployed environment.
 
 ## 8. `video-capture.yml`
 
-Shape mirrors `synthetic-test.yml`, so the auth handling is the same code path the operator
+Shape mirrors `probe-test.yml`, so the auth handling is the same code path the operator
 already trusts.
 
 ```yaml
@@ -735,7 +735,7 @@ permissions:
 
 Jobs:
 
-1. **`playwright-version`** — identical to synthetic-test: read the pinned version from
+1. **`playwright-version`** — identical to probe-test: read the pinned version from
    `package-lock.json` so the container matches.
 2. **`params`** — normalise inputs, resolve `github-environment` from the input or the branch.
 3. **`names`** — OIDC to `SUBMIT_ACTIONS_ROLE_ARN`, chain to `SUBMIT_DEPLOY_ROLE_ARN`, read
@@ -751,7 +751,7 @@ Jobs:
    - **Only when `auth == "cognito-native"`**: OIDC + deploy role, then
      `node scripts/toggle-cognito-native-auth.js enable <env>`, then
      `node scripts/ensure-cognito-test-user.js <env> videoCapture` (a lane of its own, so it never
-     rotates a password out from under a running synthetic test).
+     rotates a password out from under a running probe test).
    - Run the capture:
      ```
      node scripts/site-video-capture.js --script videos/${{ inputs.script }}.json \

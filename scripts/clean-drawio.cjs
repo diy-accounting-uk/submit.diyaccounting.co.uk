@@ -101,7 +101,7 @@ const knownMappings = {
   apicanary: "API Canary",
   healthcanary: "Health Canary",
   healthalarm: "Health Alarm",
-  githubsyntheticalarm: "GitHub Synthetic Alarm",
+  githubprobealarm: "GitHub Probe Alarm",
   canaryrole: "Canary Role",
   canaryartifacts: "Canary Artifacts (S3)",
   canaryartifactspolicy: "Canary Artifacts Policy",

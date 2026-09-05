@@ -12,7 +12,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalHttpServer,
   runLocalOAuth2Server,
   runLocalDynamoDb,
@@ -75,8 +75,8 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 const runFraudPreventionHeaderValidation = true;
-// Enable sandbox obligation fallback - allows test to use any available open obligation if dates don't match
-const allowSandboxObligations = isSandboxMode();
+// Enable synthetic obligation fallback - allows test to use any available open obligation if dates don't match
+const allowSyntheticObligations = isSyntheticMode();
 
 const hmrcVatDueAmount = "1000.00";
 // Period keys are unpredictable per HMRC documentation - they cannot be calculated, only validated.
@@ -146,9 +146,9 @@ test.afterEach(async ({ page }, testInfo) => {
 });
 
 test("Verify fraud prevention headers for VAT return submission", async ({ page }, testInfo) => {
-  // Only run in sandbox mode
-  if (!isSandboxMode()) {
-    console.log("[SKIP] Fraud prevention headers test is only run in sandbox mode");
+  // Only run in synthetic mode
+  if (!isSyntheticMode()) {
+    console.log("[SKIP] Fraud prevention headers test is only run in synthetic mode");
     test.skip();
     return;
   }
@@ -207,9 +207,9 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   let testPassword = hmrcTestPassword;
   let testVatNumber = hmrcTestVatNumber;
 
-  // If in sandbox mode and credentials are not provided, create a test user
+  // If in synthetic mode and credentials are not provided, create a test user
   if (!hmrcTestUsername) {
-    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    console.log("[HMRC Test User] Synthetic mode detected without full credentials - creating test user");
 
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
@@ -293,7 +293,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
     null,
     runFraudPreventionHeaderValidation,
     screenshotPath,
-    allowSandboxObligations,
+    allowSyntheticObligations,
   );
   await submitFormVat(page, screenshotPath);
 
@@ -324,7 +324,7 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
   /*  FRAUD PREVENTION HEADERS FEEDBACK */
   /* ********************************** */
 
-  // For sandbox tests, fetch fraud prevention headers validation feedback
+  // For synthetic tests, fetch fraud prevention headers validation feedback
   // Note: This request is made directly from test executor to HMRC, not through Lambda
   // We capture the result to include in the test report even without DynamoDB access
   const requestId = "request-123";
@@ -380,11 +380,11 @@ test("Verify fraud prevention headers for VAT return submission", async ({ page 
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>", // Mask password in test context
       hmrcTestVatNumber: testVatNumber,
       hmrcVatDueAmount,
-      testUserGenerated: isSandboxMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
+      testUserGenerated: isSyntheticMode() && (!hmrcTestUsername || !hmrcTestPassword || !hmrcTestVatNumber),
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
       intentionallyNotSuppliedHeaders,
     },
     // Validation feedback from HMRC (captured directly from test executor, not via Lambda/DynamoDB)

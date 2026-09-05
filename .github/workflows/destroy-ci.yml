@@ -34,6 +34,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -479,6 +480,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      - name: Wait for older ci deploy runs to finish
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
 
       - name: Setup Node
         uses: actions/setup-node@v7

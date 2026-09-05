@@ -5,7 +5,7 @@ Production `bundleGet` Lambda was denied `dynamodb:UpdateItem` on `prod-env-bund
 - Reported: 2026-04-21 21:36:35 UTC
 - Environment: submit-prod (972912397388) eu-west-2
 - Fix branch: `permissions`
-- Incident root cause: CDK IAM grant mismatch introduced 2026-02-01 and not caught by unit, system, or synthetic tests.
+- Incident root cause: CDK IAM grant mismatch introduced 2026-02-01 and not caught by unit, system, or probe tests.
 
 ## 1. What is causing these errors
 
@@ -83,9 +83,9 @@ Outside the 3-day window: unknown. Possible that other users were affected silen
 
 UserId is obfuscated to `b662…` above per instruction. No email, name, or IP is reproduced in this report.
 
-## 6. Why the synthetic tests did not fail (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs/24794955567)
+## 6. Why the probe tests did not fail (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/actions/runs/24794955567)
 
-`.github/workflows/synthetic-test.yml` schedules a single hard-coded test suite per hour:
+`.github/workflows/probe-test.yml` schedules a single hard-coded test suite per hour:
 
 - Cron: `57 * * * *`
 - Default suite (`params.normalise`, workflow.yml:151, pre-fix): `submitVatBehaviour`
@@ -120,7 +120,7 @@ Three layers of regression guard were added in this PR:
 - **CDK synth-time assertion** — `infra/test/java/co/uk/diyaccounting/submit/SubmitApplicationCdkResourceTest.java` iterates the AccountStack's synthesized IAM policies and requires at least one policy attached to the `bundleGet` role to grant `dynamodb:UpdateItem` on the bundles table. Reverting `AccountStack.java:250` back to `grantReadData` now fails `./mvnw clean verify`.
 - **Unit test covering the `tokenResetAt <= now` branch** — `app/unit-tests/functions/bundleGet.handler.test.js` now has a case `issues UpdateItem on bundles table when tokenResetAt has elapsed` that seeds the Query mock with an expired `invited-guest` bundle and asserts a `MockUpdateCommand` was dispatched to the bundles table. Removing the `resetTokens` call without removing the downstream dependency surfaces here.
 - **Behaviour test against real AWS IAM** — new `behaviour-tests/tokenRefresh.behaviour.test.js` (and `tokenRefreshBehaviour` Playwright project + npm scripts for proxy/simulator/ci/prod) allocates `invited-guest`, directly expires `tokenResetAt` via `UpdateCommand`, then calls `GET /api/v1/bundle`. Asserts 200 and tokens reset. This would have 500'd pre-fix on ci/prod.
-- **Scheduled workflow matrix** — `.github/workflows/synthetic-test.yml` now runs a matrix of suites on `schedule` events. `params.normalise` emits `behaviour-test-suites-json=["submitVatBehaviour","tokenRefreshBehaviour"]` for scheduled runs; `workflow_dispatch`/`workflow_call` keeps the single-suite behaviour. Adding more suites is a one-line edit.
+- **Scheduled workflow matrix** — `.github/workflows/probe-test.yml` now runs a matrix of suites on `schedule` events. `params.normalise` emits `behaviour-test-suites-json=["submitVatBehaviour","tokenRefreshBehaviour"]` for scheduled runs; `workflow_dispatch`/`workflow_call` keeps the single-suite behaviour. Adding more suites is a one-line edit.
 
 Recommended follow-ups outside this PR:
 
@@ -150,7 +150,7 @@ Verification after deploy:
   ```
   Expect 0.
 - Manual reproduction with the reporting user: log in, visit an activity on a refreshed bundle — expect tokens shown and no redirect to /bundles.html.
-- Run `synthetic-test.yml` manually with `tokenRefreshBehaviour` against `ci` to confirm the new guard passes. Next scheduled cron fires both suites automatically.
+- Run `probe-test.yml` manually with `tokenRefreshBehaviour` against `ci` to confirm the new guard passes. Next scheduled cron fires both suites automatically.
 
 ## Appendix A — CloudWatch Insights queries used
 

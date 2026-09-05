@@ -368,7 +368,6 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .baseUrl(sharedNames.baseUrl)
-                        .apexDomain(sharedNames.envDomainName)
                         .alertEmail(alertEmail)
                         .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
                         .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")

@@ -6,15 +6,28 @@
 // EventBridge target Lambda: receives raw CloudWatch Alarm State Change
 // events (default bus, source "aws.cloudwatch") and raises a GitHub issue
 // in this repository when an alarm enters the ALARM state. If an open
-// issue already exists for the alarm, it comments on that issue instead
-// of opening a duplicate.
+// issue already exists for the alarm's family, it comments on that issue
+// instead of opening a duplicate.
 //
-// This is deliberately minimal: one alarm, one issue thread, no fan-out
-// to multiple channels or repos. It proves the alarm-to-issue path works
-// end to end; a later build can add routing/dedup across many alarms.
+// Alarm names carry a deployment slug (e.g. "prod-a0f41c7-app-api-5xx"),
+// so a fresh deployment of the same check would otherwise open a fresh
+// issue and orphan the previous deployment's. Deduping is keyed on the
+// alarm's family (the name with its deployment slug dropped, see
+// app/lib/alarmName.js), so every deployment of the same check shares one
+// rolling issue per environment. The issue body and every comment still
+// name the exact alarm and deployment that fired, so the family issue
+// stays traceable to the deployment behind each event.
+//
+// OK transitions are never acted on: this Lambda only tracks GitHub issue
+// state, not which deployments' children are still in ALARM, so it cannot
+// tell whether an OK from one deployment means the whole family has
+// recovered. The safe rule is the simple one: only ALARM transitions
+// comment or open, and a family issue is closed by a human, never by this
+// Lambda.
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
+import { alarmFamilyKey } from "../../lib/alarmName.js";
 
 const logger = createLogger({ source: "app/functions/ops/alarmToGithubIssue.js" });
 
@@ -76,19 +89,21 @@ export function buildIssueBody({ alarmName, state, previousState, reason, timest
 *Raised automatically by the alarm-to-issue pipeline.*`;
 }
 
-export function buildCommentBody({ state, previousState, reason, timestamp, consoleLink }) {
+export function buildCommentBody({ alarmName, state, previousState, reason, timestamp, consoleLink }) {
   return `Alarm state changed again: ${previousState} → ${state}${reason ? ` (${reason})` : ""} at ${timestamp}.
+
+**Alarm:** ${alarmName}
 
 [View in CloudWatch console](${consoleLink})`;
 }
 
 /**
- * Search open issues in the repo for one already raised for this alarm.
- * Matches on exact title so unrelated issues that happen to mention the
- * alarm name in their body are not picked up.
+ * Search open issues in the repo for one already raised for this alarm's
+ * family. Matches on exact title so unrelated issues that happen to mention
+ * the family key in their body are not picked up.
  */
-export async function findOpenIssueByAlarmName(githubToken, githubRepo, alarmName) {
-  const title = buildIssueTitle(alarmName);
+export async function findOpenIssueByAlarmFamily(githubToken, githubRepo, familyKey) {
+  const title = buildIssueTitle(familyKey);
   const query = `repo:${githubRepo} is:issue is:open in:title "${title}"`;
   const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}`, {
     headers: {
@@ -150,7 +165,11 @@ export async function commentOnGitHubIssue(githubToken, githubRepo, issueNumber,
 /**
  * EventBridge target handler for CloudWatch Alarm State Change events.
  * Only ALARM transitions raise or update a GitHub issue; OK and
- * INSUFFICIENT_DATA transitions are logged and skipped.
+ * INSUFFICIENT_DATA transitions are logged and skipped. This Lambda never
+ * closes an issue on OK: it has no record of which other deployments'
+ * alarms in the same family are still in ALARM, so closing on one
+ * deployment's recovery risks closing a family issue that another
+ * deployment is still tripping.
  */
 export async function handler(event) {
   const alarm = resolveAlarmDetail(event);
@@ -176,13 +195,15 @@ export async function handler(event) {
 
   const githubToken = await resolveGitHubToken();
   const consoleLink = buildAlarmConsoleLink(alarm.region, alarm.alarmName);
+  const familyKey = alarmFamilyKey(alarm.alarmName);
 
-  const existingIssue = await findOpenIssueByAlarmName(githubToken, githubRepo, alarm.alarmName);
+  const existingIssue = await findOpenIssueByAlarmFamily(githubToken, githubRepo, familyKey);
 
   if (existingIssue) {
     logger.info({
-      message: "Open issue already exists for alarm, adding comment instead of duplicating",
+      message: "Open issue already exists for alarm family, adding comment instead of duplicating",
       alarmName: alarm.alarmName,
+      familyKey,
       issueNumber: existingIssue.number,
     });
     await commentOnGitHubIssue(
@@ -190,6 +211,7 @@ export async function handler(event) {
       githubRepo,
       existingIssue.number,
       buildCommentBody({
+        alarmName: alarm.alarmName,
         state: alarm.state,
         previousState: alarm.previousState,
         reason: alarm.reason,
@@ -201,7 +223,7 @@ export async function handler(event) {
   }
 
   const issue = await createGitHubIssue(githubToken, githubRepo, {
-    title: buildIssueTitle(alarm.alarmName),
+    title: buildIssueTitle(familyKey),
     body: buildIssueBody({
       alarmName: alarm.alarmName,
       state: alarm.state,
@@ -214,8 +236,9 @@ export async function handler(event) {
   });
 
   logger.info({
-    message: "Created GitHub issue for alarm",
+    message: "Created GitHub issue for alarm family",
     alarmName: alarm.alarmName,
+    familyKey,
     issueNumber: issue.number,
     issueUrl: issue.html_url,
   });

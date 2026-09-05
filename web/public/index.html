@@ -244,7 +244,7 @@
     <script>
       // In-memory user bundles state (list of bundleId strings)
       let __userBundles = [];
-      let __sandboxBundleIds = new Set();
+      let __syntheticBundleIds = new Set();
       let __tokensRemaining = 0;
       let __hasTokenBundles = false;
       let __fetchBundlesController = null;
@@ -281,10 +281,10 @@
             if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
               const allocated = bundlesData.bundles.filter((b) => b.allocated);
               __userBundles = allocated.map((b) => b.bundleId);
-              __sandboxBundleIds = new Set(allocated.filter((b) => b.qualifiers?.sandbox === true).map((b) => b.bundleId));
-              // Set sessionStorage for sandbox mode based on bundle qualifiers (single source of truth)
-              if (__sandboxBundleIds.size > 0) {
-                sessionStorage.setItem("hmrcAccount", "sandbox");
+              __syntheticBundleIds = new Set(allocated.filter((b) => b.qualifiers?.synthetic === true).map((b) => b.bundleId));
+              // Set sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
+              if (__syntheticBundleIds.size > 0) {
+                sessionStorage.setItem("hmrcAccount", "synthetic");
               } else {
                 sessionStorage.removeItem("hmrcAccount");
               }
@@ -292,7 +292,7 @@
               __hasTokenBundles = bundlesData.bundles.some((b) => b.allocated && b.tokensGranted !== undefined);
             } else {
               __userBundles = [];
-              __sandboxBundleIds = new Set();
+              __syntheticBundleIds = new Set();
               __tokensRemaining = 0;
               __hasTokenBundles = false;
             }
@@ -426,8 +426,8 @@
       //       <section style="margin-bottom:1em;">
       //         <h3 style="margin:0 0 .5em 0;">Test API bundle</h3>
       //         <ul>
-      //           <li>Submit VAT (Sandbox API) – available</li>
-      //           <li>VAT Obligations (Sandbox API) – available</li>
+      //           <li>Submit VAT (Synthetic API) – available</li>
+      //           <li>VAT Obligations (Synthetic API) – available</li>
       //         </ul>
       //       </section>
       //     `);
