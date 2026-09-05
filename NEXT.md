@@ -55,6 +55,9 @@ starting.
   `scripts/lib/googleAuth.js`, the skill doc, 17 unit tests. Its live dry run stopped because the
   Analytics Admin API is not enabled on the project (O1e); verified by a dry run that plans the
   ci property once O1e is done.
+- [ ] **B34.3b. Companies House micro-entity accounts through the XML Gateway** (iXBRL in an XML
+  envelope, test presenter credentials from xml@companieshouse.gov.uk). **Source**: BACKLOG 34;
+  issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
   `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
   the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
@@ -65,6 +68,15 @@ starting.
   run stopped twice: the Cloud Billing API is disabled on `diyaccounting-ga4`, and the service
   account holds no role on `valued-context-507200-m9` (O1e covers both); verified by a dry run
   that finds the hand-made budget and inventories the stray project once O1e is done.
+- [ ] **O6 remainder / B34.1. Write the Companies House keys into Secrets Manager.** The
+  operator registered the keys and set `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub
+  environments on 2026-09-05. The step that copies a GitHub secret into Secrets Manager lives in
+  `deploy-environment.yml` on `claude/board-batch-2` (PR #118), not on main, so the workflow has
+  to run from that branch: ci now, prod after the operator's go, then `manage-secrets` action
+  `check` on each. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: none, a
+  workflow dispatch.
+  **Track**: ci run dispatched; prod waits on the operator's go because it applies the batch's
+  env stacks to prod ahead of the merge.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -134,6 +146,13 @@ starting.
   **Track**: alarm cuts (Opus). Code complete on `claude/board-batch-2` (PR #118): 62 metric alarms fewer per deployment, async triples inside the stack composites, canaries at `cron(27 * * * ? *)`. Verified after the ci deploy by the counts in `PLAN_ALARM_CONSOLIDATION.md`.
 ## Ready: Claude Code
 
+- [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
+  The REST filing API covers transactions, registered office address, registered email address
+  and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
+  `api-sandbox.company-information.service.gov.uk` with the "DIY Accounting Submit - test"
+  developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
+  34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
+  Sonnet.
 - [ ] **B10.1. First ITSA endpoint: Business Details list.** The spike
   (`_developers/hmrc/ITSA_SPIKE.md`, on `claude/board-batch-3`) got HTTP 200 from
   `GET /individuals/business/details/{nino}/list` through our own OAuth and fraud headers, scope
@@ -174,12 +193,6 @@ starting.
   makingtaxdigital-softwarevendors@hmrc.gov.uk). The answer decides whether backlog rows 10
   and 11 keep their April 2027 target. **Source**: BACKLOG 11a. **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O6 / B34.1. Register two Companies House API keys and add them as GitHub environment
-  secrets.** Steps 1 to 7 under "Operator steps" in
-  `_developers/backlog/companies-house-api-operations.md`: a developer-hub application and REST key
-  per environment, then `COMPANIES_HOUSE_API_KEY` on the `ci` and `prod` GitHub environments, then
-  the deploy-environment workflow for each. PR #118 cannot deploy until this lands. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B30f. Post the HMRC answer on issue #111 and decide whether the customer needs a reply.**
   `prod-env-hmrc-api-requests` shows a live customer (no `test_` prefix, no test scenario) getting
   HTTP 403 "The client and/or agent is not authorised" from HMRC on the obligations lookup at
@@ -218,9 +231,6 @@ starting.
 
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
-- [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc, against the
-  presenter (XML gateway) route rather than the REST API. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
