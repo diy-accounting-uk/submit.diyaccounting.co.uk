@@ -55,17 +55,6 @@ starting.
   `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
   compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
   **Track**: gcp billing (Sonnet), worktree `.claude/worktrees/agent-a4333a6c92fe5225d`, lands on `claude/board-batch-3`.
-- [ ] **B27c.2 remainder. Correct the ICO record and the retired GA4 property's record.** The
-  registration did not lapse: the ICO renewed ZB070902 by direct debit on 2026-05-20, new expiry
-  2027-05-23, renewing each May. Rewrite the lapse finding in `_developers/ICO_CHECKLIST.md` as a
-  met line with the renewal cadence and the rule that the next sweep checks the mailbox before
-  declaring a lapse; replace the year-old certificate PDF in the repo root with the current one
-  from the ICO register of fee payers if it downloads without a login, otherwise leave a one-line
-  operator step. In `google-analytics.toml`, the old property 395628828 was moved to the trash on
-  2026-09-05 (permanent after about 2026-10-10): its withdrawn-retirement record becomes a
-  retirement. **Source**: BACKLOG 27c; Cowork messages 2026-09-05. **Owner**: Claude Code.
-  **Model**: Haiku.
-  **Track**: docs corrections (Haiku), worktree `.claude/worktrees/agent-a09d2816ec1ef7580`, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -176,6 +165,10 @@ starting.
   for MTD VAT or has not granted this application authority, not a fault in our code. Paste the
   finding on #111, and if the support mailbox has a matching enquiry, reply with the enrolment
   and authority steps. **Source**: BACKLOG 30; issue #111. **Owner**: Operator.
+- [ ] **B27c.2 remainder, operator. Replace the year-old ICO certificate PDF in the repo root**
+  with the current one (registration ZB070902, expiry 2027-05-23): the register of fee payers
+  only serves the certificate behind a login. Same filename, then commit. **Source**: BACKLOG
+  27c. **Owner**: Operator.
 - [ ] **B34.2. Get the Companies House filing route for accounts.** The REST filing API does
   not cover accounts; the route is a presenter account on gov.uk plus test presenter credentials
   requested by email to xml@companieshouse.gov.uk (replies reported at 17 to 40 working days).
