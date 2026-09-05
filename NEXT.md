@@ -222,9 +222,9 @@ starting.
   flips the open one to fulfilled, so a return is viewable only for the period the run itself
   submits through the submit page's date fields, the way `getVatReturn.behaviour.test.js` does;
   that behaviour step waits for the page to report the `synthetic` mode, which prod only does
-  once PR #118 deploys. A Sonnet track (worktree `.claude/worktrees/agent-aa20fccc2c1974f5c`) restores that off-camera
-  submission and the table's "View Return" on the fulfilled period, proven on the simulator.
-  Blocked on PR #118 deploying to prod; verified by a prod recording passing the blocking check.
+  once PR #118 deploys. That off-camera submission and the table's "View Return" on the fulfilled period are on
+  `claude/board-batch-2` (PR #118), green on the simulator. Blocked on PR #118 deploying to
+  prod; verified by a prod recording passing the blocking check.
 - [ ] **B34.1. Companies House read-only lookup.** Public API key, no accreditation:
   `plans/issues/PLAN_ISSUE_15_limited_company_endpoints.md` describes the lookup half. Company
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
