@@ -120,9 +120,8 @@ items below wait on a later event to verify.
   about five hours after the deploy. When that window has passed with the probe alarm and the
   four B30e alarms (#95, #97, #128, #129) in OK, close those four issues; #95 went to ALARM at
   20:05 UTC on 2026-09-05 because migration 006's scan of `prod-env-bundles` is exactly what
-  that detector counts, so it returns to OK on its own. Close #131 now: it is the self-destruct
-  log-errors check on ci-claudeboa, a set built before the fix that is self-destructing.
-  **Source**: PR #118. **Owner**: Operator.
+  that detector counts, and it returned to OK at 21:43 UTC. **Source**: PR #118. **Owner**:
+  Operator.
 ## Blocked: operator
 
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
