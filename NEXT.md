@@ -24,8 +24,8 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Resumed 2026-09-05.** Everything lands on one remote branch, `claude/board-batch-2`, and one PR, #118 (operator
-direction 2026-09-05). Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. The
+**Resumed 2026-09-05.** PR #118 (`claude/board-batch-2`) is complete and ready for review; work started after it lands
+on `claude/board-batch-3`, the next single branch and PR. Its dispatched ci deploy (run 33954344850) passed every ci suite; the stacked PRs #119, #120, #125 and #126 are closed and folded in. The
 Companies House lookup is folded in too, so PR #118's deploy fails secret validation until the
 operator's API key (O6) exists.
 
@@ -33,6 +33,39 @@ Each track runs in its own worktree off main; the coordinator merges each landed
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
 starting.
 
+- [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
+  `analytics/google-roles.toml` listing the GA4 account and property access bindings
+  (Analytics Admin API `accessBindings`) and the GCP project IAM bindings the analytics work
+  needs, a script `scripts/google-roles-apply.js` that reconciles them idempotently with a
+  `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
+  file and applies on push to main, authenticating with the service account from Secrets
+  Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
+  **Track**: google roles (Sonnet), worktree `.claude/worktrees/agent-ab637e01e6c753dbf`, lands on `claude/board-batch-3`.
+- [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
+  that, given an environment name and hostname, finds or creates the GA4 property, its web
+  data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
+  export) through the Analytics Admin API, then sets `SUBMIT_GA4_MEASUREMENT_ID` on the
+  matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
+  name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
+  O1a granted 2026-09-05.
+  **Track**: ga4 property sync (Sonnet), worktree `.claude/worktrees/agent-ac953be772e167497`, lands on `claude/board-batch-3`.
+- [ ] **B43a. GCP billing tidy-up, automated.** In a sibling of O1b's script,
+  `scripts/gcp-billing-assert.js`: assert a budget with 50/90/100 percent alerts on
+  the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
+  `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
+  compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. O1a granted 2026-09-05.
+  **Track**: gcp billing (Sonnet), worktree `.claude/worktrees/agent-a4333a6c92fe5225d`, lands on `claude/board-batch-3`.
+- [ ] **B27c.2 remainder. Correct the ICO record and the retired GA4 property's record.** The
+  registration did not lapse: the ICO renewed ZB070902 by direct debit on 2026-05-20, new expiry
+  2027-05-23, renewing each May. Rewrite the lapse finding in `_developers/ICO_CHECKLIST.md` as a
+  met line with the renewal cadence and the rule that the next sweep checks the mailbox before
+  declaring a lapse; replace the year-old certificate PDF in the repo root with the current one
+  from the ICO register of fee payers if it downloads without a login, otherwise leave a one-line
+  operator step. In `google-analytics.toml`, the old property 395628828 was moved to the trash on
+  2026-09-05 (permanent after about 2026-10-10): its withdrawn-retirement record becomes a
+  retirement. **Source**: BACKLOG 27c; Cowork messages 2026-09-05. **Owner**: Claude Code.
+  **Model**: Haiku.
+  **Track**: docs corrections (Haiku), worktree `.claude/worktrees/agent-a09d2816ec1ef7580`, lands on `claude/board-batch-3`.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -113,13 +146,6 @@ starting.
   BigQuery Admin). This is the last hand grant: after it, O1b applies grants from a file.
   **Source**: none. **Owner**: Operator.
   In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
-- [ ] **O3 / B27c.2. Renew the company's ICO registration.** Registration ZB070902 (the
-  certificate PDF in the repo root) expired 2026-05-23 and `privacy.html` still publishes it
-  as current, so this is an active gap, not a check. Pay the fee for DIY Accounting Limited
-  (06846849) and hand the new number and expiry to Claude Code for
-  `_developers/ICO_CHECKLIST.md` and `privacy.html`. **Source**: BACKLOG 27c; Track E finding
-  2026-09-03. **Owner**: Operator.
-  In the operator brief `../BRIEF_OPERATOR_TASKS_2026-09-04.md`.
 - [ ] **O4a / B11a.2. Obtain the ITSA recognition questionnaire from HMRC SDST** if it is not
   on the hub (the VAT ones arrived by email; see `_developers/hmrc/hmrc_questionnaire_*`) and
   drop it into `_developers/hmrc/`. **Source**: BACKLOG 11a. **Owner**: Operator.
@@ -175,30 +201,10 @@ starting.
 
 ## Blocked: Claude Code
 
-- [ ] **O1b / G2b roles-as-code. A role file that CI applies on commit.** Add
-  `analytics/google-roles.toml` listing the GA4 account and property access bindings
-  (Analytics Admin API `accessBindings`) and the GCP project IAM bindings the analytics work
-  needs, a script `scripts/google-roles-apply.js` that reconciles them idempotently with a
-  `--dry-run`, and a workflow `google-roles.yml` that dry-runs on pull requests touching the
-  file and applies on push to main, authenticating with the service account from Secrets
-  Manager via OIDC. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  O1a.
-- [ ] **O1c / G2b skill. `ga4-property-sync`.** A skill plus `scripts/ga4-property-sync.js`
-  that, given an environment name and hostname, finds or creates the GA4 property, its web
-  data stream and its BigQuery link (project `diyaccounting-ga4`, `europe-west2`, daily
-  export) through the Analytics Admin API, then sets `SUBMIT_GA4_MEASUREMENT_ID` on the
-  matching GitHub Environment with `gh variable set`. Dry run first, idempotent by display
-  name, never prints credentials. **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O1a.
 - [ ] **O1d / G2b. Create the ci property with the skill** and record the dataset id.
   **Source**: none. **Owner**: Claude Code. **Model**: Haiku. Blocked on O1c.
 - [ ] **B34.3. Companies House accounts filing.** The filing half of the plan doc. **Source**:
   BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Opus. Blocked on B34.2.
-- [ ] **B43a. GCP billing tidy-up, automated.** In the roles/apply script from O1b (or a
-  sibling `scripts/gcp-billing-assert.js`): assert a budget with 50/90/100 percent alerts on
-  the billing account that holds `diyaccounting-ga4`, and delete the auto-created project
-  `valued-context-507200-m9` after a dry run proves it holds no APIs, datasets, buckets or
-  compute. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O1a.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
@@ -242,13 +248,6 @@ starting.
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
   **Track**: Companies House build (Sonnet). Folded into `claude/board-batch-2` (PR #118). Blocked on O6: the deploy fails secret validation until the operator's key exists; verified by `companiesHouseBehaviour-ci` against the deployment after that.
-- [ ] **B27c.2 remainder. Record the new ICO registration number and expiry in
-  `_developers/ICO_CHECKLIST.md` and `web/public/privacy.html`** once O3 hands them over.
-  **Source**: BACKLOG 27c. **Owner**: Claude Code. **Model**: Haiku. Blocked on O3.
-
-Backlog Tier 2 rows 10 and 11 become dispatchable once B10a.3 exists and O4b answers the
-production-window question; rows 34 and 40d are now B34.1–3 and B40d.2 above.
-
 ## Discipline
 
 (none repo-specific yet — see `../NEXT.md`)
