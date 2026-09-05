@@ -10,19 +10,19 @@ churn sit in their own section and stay out of the baseline.
 
 ## Summary
 
-Prod's run rate is now about **$253 a month before VAT ($304 with UK VAT)** for one deployment.
+Prod's run rate is now about **$240 a month before VAT ($288 with UK VAT)** for one deployment.
 That is not what any past bill shows. July came in at $53 before tax. The jump happened on
 2026-08-29, when CloudTrail started recording DynamoDB data events for every table and shipping
 them to CloudWatch Logs. Almost all of that traffic is `GetRecords` from the DynamoDB Streams
 poller, which carries no security signal and which no metric filter reads. That pipeline costs
 $171.99 a month and excluding `GetRecords` recovers **$165.24** of it. With the other changes
-below, prod comes to **$65 a month before VAT ($78 with VAT)**.
+below, prod comes to **$61 a month before VAT ($73 with VAT)**.
 
-Two numbers to hold on to: **$253 if nothing changes, $65 after the four changes in scope.**
+Two numbers to hold on to: **$240 if nothing changes, $61 after the three changes in scope.**
 Provisioned concurrency stays, on the operator's decision, and holds $12.70 a month inside that
 after figure.
 
-Separately, each `prod-*-app-*` stack set standing beyond the one that serves costs **$46.88 a
+Separately, each `prod-*-app-*` stack set standing beyond the one that serves costs **$35.28 a
 month**.
 
 ## How the baseline was derived
@@ -62,7 +62,7 @@ One deployment plus the env stacks. US dollars, excluding VAT.
 |---|---:|---|
 | CloudWatch Logs ingestion | 132.42 | 7.5 GB/day measured on `/aws/cloudtrail/prod-env-cloud-trail` (AWS/Logs IncomingBytes, 29 Aug to 2 Sep) x 30.44 x $0.5816 |
 | CloudTrail data events | 39.57 | 1.30M events/day x 30.44 x $0.10 per 100k |
-| CloudWatch alarms | 28.10 | (111 eu-west-2 + 9 us-east-1 + 31 env) x $0.10, plus (23 + 3) composite x $0.50 |
+| CloudWatch alarms | 15.10 | 111 standard alarms x $0.10, plus 8 composite (6 app, 2 env) x $0.50 — recounted in `REPORT_ALARM_AUDIT.md` |
 | Lambda provisioned concurrency | 12.70 | 5 configs x 1 x 0.25 GB x 2,629,440 s x $0.000003865 |
 | CloudWatch custom metrics | 10.35 | $0.34/day measured 31 Aug x 30.44 (about 35 billable series) |
 | Cognito Plus MAU | 9.80 | 490 MAU average of July (431) and August (546) x $0.02 |
@@ -85,11 +85,15 @@ One deployment plus the env stacks. US dollars, excluding VAT.
 | Kinesis Firehose | 0.00 | 5 streams, no billed volume |
 | RUM | 0.00 | inside the free allowance |
 | Route 53 | 0.00 | no hosted zones in this account; DNS lives in management |
-| **Total** | **253.01** | **$303.61 with UK VAT at 20%** |
+| **Total** | **240.01** | **$288.01 with UK VAT at 20%** |
 
-Two lines in that table have never appeared on a bill. The 26 composite alarms ($13.00) were
-created on 2026-09-02. The CloudWatch Logs and CloudTrail data-event lines began on 2026-08-29
-and have four days of history. The budget's $152.69 forecast for submit-prod predates both.
+The CloudWatch Logs and CloudTrail data-event lines began on 2026-08-29 and have four days of
+history; the budget's $152.69 forecast for submit-prod predates both. The alarm line has moved
+twice since: per-function composite alarms went live on 2026-09-02 (26 of them, $13.00), then
+`PLAN_ALARM_CONSOLIDATION.md`'s per-stack design replaced them with 8 (6 app, 2 env, $4.00) the
+same day, and the per-function check count dropped from 4 to 2 on 2026-09-04 (cutting `Throttles`
+and `HighDurationP95`, neither reachable at this traffic level). The figure above is the current
+code state, not yet reflected in a bill.
 
 ## Optimisations
 
@@ -99,22 +103,13 @@ Sorted by saving. Effort is S (under a day), M (a few days), L (longer).
 |---|---|---:|---:|---:|---|---|---|
 | 1 | Stop logging DynamoDB Streams `GetRecords` as CloudTrail data events | 171.99 | 6.75 | **165.24** | Low. See "What we lose" below. | S | `ObservabilityStack.java:205-219` replaces `setEventSelectors` with `setAdvancedEventSelectors`, keeping the `AWS::DynamoDB::Table` resource type and adding a `NotEquals` field selector on `eventName` for `GetRecords`. |
 | 2 | Reuse one durable Cognito test user instead of creating one per run | 9.80 | 0.80 | **9.00** | Low. Tests share a fixed identity, so one failing run can leave state behind for the next. | S/M | `scripts/enable-cognito-native-test.js` and `scripts/disable-cognito-native-test.js` create and delete a user per run. Keep one user and rotate its password instead. |
-| 3 | Move to one composite alarm per stack instead of one per function | 28.10 | 19.10 | **9.00** | Low. The Telegram title names the stack rather than the function, so you read `state.reason` to find which function broke. | M | `PLAN_ALARM_CONSOLIDATION.md` already sets out this option and its trade-off; follow the alternative it names. See the alarm arithmetic below. |
-| 4 | Stop keying the behaviour-test metric namespace on the per-commit deployment name | 10.35 | 5.35 | **5.00 (estimate)** | None to the service. The dashboard loses its per-commit split. | S | The `prod-submit.diyaccounting.co.uk` namespace already holds 504 series, dimensioned `deployment-name` x `test`. Every prod deploy adds up to 13 more, for ever. Drop `deployment-name` from the dimension set, or move it to a log field. |
-| | **Total** | **220.24** | **31.00** | **188.24** | | | |
+| 3 | Stop keying the behaviour-test metric namespace on the per-commit deployment name | 10.35 | 5.35 | **5.00 (estimate)** | None to the service. The dashboard loses its per-commit split. | S | The `prod-submit.diyaccounting.co.uk` namespace already holds 504 series, dimensioned `deployment-name` x `test`. Every prod deploy adds up to 13 more, for ever. Drop `deployment-name` from the dimension set, or move it to a log field. |
+| | **Total** | **192.14** | **12.90** | **179.24** | | | |
 
-### Alarm arithmetic behind item 3
-
-Live today for one deployment plus the env stacks: 151 standard alarms (111 eu-west-2, 9
-us-east-1, 31 env) at $0.10, and 26 composite alarms (23 app, 3 env) at $0.50. That is $15.10 +
-$13.00 = $28.10. The per-function composites went in on 2026-09-02 and no bill has shown them
-yet.
-
-Per-stack composites collapse those 26 to 8, so $15.10 + $4.00 = $19.10.
-
-Item 6's saving is small today and large if item 1 is not done. Without item 1 the log group
-ingests 228 GB a month with no expiry, so storage alone climbs by about $6.80 a month, every
-month.
+Moving to one composite alarm per stack instead of one per function is no longer a listed item:
+it landed in code on 2026-09-02, the same day `PLAN_ALARM_CONSOLIDATION.md` set it out, and the
+per-function check count dropped from 4 to 2 two days later. Both are already inside the
+CloudWatch alarms baseline above ($15.10), not a pending saving.
 
 ### Why item 1 is the whole story
 
@@ -148,11 +143,11 @@ The change excludes one `eventName`. It does not turn DynamoDB data events off.
 | **CDK mechanics** | Advanced event selectors replace basic ones outright, so management events have to be re-declared in the same selector list. Use `CfnTrail.AdvancedEventSelectorProperty` with a field selector of `eventName` `NotEquals` `GetRecords` alongside the `AWS::DynamoDB::Table` resource-type selector. |
 | **The blunter alternative** | Turning DynamoDB data events off entirely saves under $0.05 a month more: the sample held 7 non-`GetRecords` DynamoDB events in 8,000, all `DescribeStream`. It blinds the B28 `Scan` and `GetItem` detectors. Not worth it. |
 
-## Steady-state monthly spend after the four changes in scope
+## Steady-state monthly spend after the three changes in scope
 
 | Line | $/month |
 |---|---:|
-| CloudWatch alarms | 19.10 |
+| CloudWatch alarms | 15.10 |
 | Lambda provisioned concurrency | 12.70 |
 | WAF | 8.17 |
 | CloudWatch Logs ingestion | 6.71 |
@@ -173,15 +168,15 @@ The change excludes one `eventName`. It does not turn DynamoDB data events off.
 | CloudTrail data events | 0.04 |
 | API Gateway | 0.02 |
 | CloudFront, Athena, Firehose, RUM, Route 53 | 0.00 |
-| **Total** | **64.77** |
+| **Total** | **60.77** |
 
-$77.72 with UK VAT. Total saving $188.24.
+$72.92 with UK VAT. Total saving $179.24.
 
 Provisioned concurrency stays at $12.70 in that total, second only to alarms.
 
-**If only the changes that alter no behaviour** (items 1 and 4): saving $170.24, leaving
-**$82.77 a month before VAT ($99.32 with VAT)**. Items 2 and 3 each trade something real:
-test isolation and per-function alarm attribution.
+**If only the changes that alter no behaviour** (items 1 and 3): saving $170.24, leaving
+**$69.77 a month before VAT ($83.72 with VAT)**. Item 2 trades something real: test isolation.
+Item 3 loses the dashboard's per-commit split.
 
 ## Cost of each stale prod stack set
 
@@ -190,13 +185,13 @@ costs per month while it stands. The figure holds for future churn whatever toda
 
 | Line | $/month |
 |---|---:|
-| CloudWatch alarms, 120 metric + 23 composite | 23.50 |
+| CloudWatch alarms, 89 standard + 6 composite | 11.90 |
 | Lambda provisioned concurrency, 5 configs | 12.70 |
 | WAF, 1 web ACL + 3 rules | 8.00 |
 | Synthetics canary runs, 2 canaries | 2.48 |
 | Hourly `bundle-capacity-reconcile` and its DynamoDB reads | 0.10 |
 | Canary artifacts bucket, API Gateway, SQS | 0.10 |
-| **Total per stale set** | **46.88** |
+| **Total per stale set** | **35.28** |
 
 One set stands: `prod-112b1ce`, which holds the `submit.diyaccounting.co.uk` alias on
 distribution E2OXL53711PV70. The set that carries the live alias changes with each merge to
@@ -247,7 +242,7 @@ figure.
 - **The $10.35 custom-metric line, attributed to individual series.** Cost Explorer stops at
   `EUW2-CW:MetricMonitorUsage`. `list-metrics --recently-active PT3H` returns 195 non-AWS series
   against a billed count near 35, so the two do not reconcile. The `behaviour-test` namespace
-  and its 504 accumulated series is the identified growth risk, and item 4's $5.00 saving is an
+  and its 504 accumulated series is the identified growth risk, and item 3's $5.00 saving is an
   estimate rather than a measurement.
 - **Whether the 546 August Cognito MAU are test users.** The pool holds 40. MAU counts anyone
   active at any point in the month, and deleted users still count, so the gap fits test-user
