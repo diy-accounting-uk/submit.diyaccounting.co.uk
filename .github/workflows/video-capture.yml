@@ -18,6 +18,7 @@ on:
         options:
           - 'tour'
           - 'view-obligations'
+          - 'view-return'
         default: 'tour'
       environment-name:
         type: choice
