@@ -172,7 +172,10 @@ starting.
   splits the Stripe flag, so three one-off migrations on the bundles table go with it
   (`scripts/migrations/004`, `005`, `006`; design in `PLAN_MODE_RENAME.md`, "Stored data"). The
   new code never reads the old field names, and `deploy.yml` does not run migrations itself.
-  1. Wait for the ci deploy of the branch to finish green (`companiesHouseBehaviour-ci` included).
+  1. Wait for a ci deploy of the branch to finish green. The first one (run 33980220915)
+     deployed the Companies House stack but failed its submitVat suite in the workflow's
+     test-data export step, which lacked `ENVIRONMENT_NAME` after B30e's salt lookup; that is
+     fixed on the branch and the probe re-run is the evidence to wait for.
   2. Run `run migrations` on main for `ci`, phase `pre-deploy`, with `dry-run` ticked, then again
      for real; then the same pair for `prod`. 004 and 005 only add fields, so today's code
      ignores them and this is safe before the merge.
