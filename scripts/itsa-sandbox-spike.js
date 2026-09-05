@@ -249,7 +249,7 @@ async function main() {
   });
   record("authorization-code-received", { pagesVisited: visited, codeLength: code.length });
 
-  const { url: tokenUrl, body: tokenBody } = await prepareTokenExchangeRequest(code, "sandbox");
+  const { url: tokenUrl, body: tokenBody } = await prepareTokenExchangeRequest(code, "synthetic");
   const tokenResponse = await fetch(tokenUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/vnd.hmrc.1.0+json" },

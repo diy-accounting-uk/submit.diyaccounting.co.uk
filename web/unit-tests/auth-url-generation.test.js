@@ -160,7 +160,7 @@ describe("Auth URL Generation", () => {
     respondWithEnv();
     loadScripts();
 
-    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("ghi789", "read:vat read:self-assessment", "sandbox");
+    const url = await mockWindow.authUrlBuilder.buildHmrcAuthUrl("ghi789", "read:vat read:self-assessment", "synthetic");
 
     expect(url).toContain("scope=" + encodeURIComponent("read:vat read:self-assessment"));
   });

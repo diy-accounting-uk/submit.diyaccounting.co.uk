@@ -96,7 +96,7 @@ describe("hmrcTokenPost ingestHandler", () => {
       const event = buildLambdaEvent({
         method: "POST",
         body: { code: "test-code" },
-        headers: { hmrcaccount: "sandbox" },
+        headers: { hmrcaccount: "synthetic" },
       });
       const response = await hmrcTokenPostHandler(event);
 

@@ -12,7 +12,7 @@ import {
   addOnPageLogging,
   createHmrcTestUser,
   getEnvVarAndLog,
-  isSandboxMode,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -81,10 +81,10 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-// Enable fraud prevention header validation in sandbox mode (required for HMRC API compliance testing)
-const runFraudPreventionHeaderValidation = isSandboxMode();
+// Enable fraud prevention header validation in synthetic mode (required for HMRC API compliance testing)
+const runFraudPreventionHeaderValidation = isSyntheticMode();
 // The two forced HTTP 500 scenarios below are implemented only by our own HTTP simulator
-// (app/http-simulator/scenarios/business-details.js), not by the real HMRC sandbox. isSandboxMode()
+// (app/http-simulator/scenarios/business-details.js), not by the real HMRC sandbox. isSyntheticMode()
 // can't tell the two apart, so use TEST_HTTP_SIMULATOR (only .env.simulator sets it to "run") to gate
 // the simulator-only scenarios out of any lane that talks to the real sandbox.
 const usingHttpSimulator = getEnvVarAndLog("usingHttpSimulator", "TEST_HTTP_SIMULATOR", null) === "run";
@@ -186,7 +186,7 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
   // HMRC obligations and identifiers are unpredictable - never hardcode a NINO. The run's own
   // test user, minted with both mtd-vat and mtd-income-tax, supplies one.
   if (!hmrcTestUsername) {
-    console.log("[HMRC Test User] Sandbox mode detected without full credentials - creating test user");
+    console.log("[HMRC Test User] Synthetic mode detected without full credentials - creating test user");
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
 
@@ -291,7 +291,7 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
   /* ***************************************** */
   /*  GET BUSINESS DETAILS WITH TEST SCENARIOS  */
   /* ***************************************** */
-  if (isSandboxMode()) {
+  if (isSyntheticMode()) {
     /**
      * HMRC Business Details v2.0 sandbox scenarios (see _developers/hmrc/ITSA_SPIKE.md)
      *
@@ -364,11 +364,11 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
     testData: {
       hmrcTestUsername: testUsername,
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>",
-      testUserGenerated: isSandboxMode() && !hmrcTestUsername,
+      testUserGenerated: isSyntheticMode() && !hmrcTestUsername,
       userSub,
       observedTraceparent,
       testUrl,
-      isSandboxMode: isSandboxMode(),
+      isSyntheticMode: isSyntheticMode(),
       intentionallyNotSuppliedHeaders,
     },
     artefactsDir: outputDir,
@@ -415,11 +415,16 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
   if (runDynamoDb === "run" || runDynamoDb === "useExisting") {
     console.log("[DynamoDB Export]: Starting export of all tables...");
     try {
-      const exportResults = await exportAllTables(outputDir, dynamoControl.endpoint, {
-        bundleTableName,
-        hmrcApiRequestsTableName,
-        receiptsTableName,
-      });
+      const exportResults = await exportAllTables(
+        outputDir,
+        dynamoControl.endpoint,
+        {
+          bundleTableName,
+          hmrcApiRequestsTableName,
+          receiptsTableName,
+        },
+        userSub,
+      );
       console.log("[DynamoDB Export]: Export completed:", exportResults);
     } catch (error) {
       console.error("[DynamoDB Export]: Failed to export tables:", error);

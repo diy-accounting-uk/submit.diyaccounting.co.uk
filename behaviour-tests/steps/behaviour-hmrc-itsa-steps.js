@@ -4,7 +4,7 @@
 // behaviour-tests/steps/behaviour-hmrc-itsa-steps.js
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, loggedFocus, loggedSelectOption, timestamp, isSandboxMode } from "../helpers/behaviour-helpers.js";
+import { loggedClick, loggedFill, loggedFocus, loggedSelectOption, timestamp, isSyntheticMode } from "../helpers/behaviour-helpers.js";
 import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-itsa-steps";
@@ -34,7 +34,7 @@ export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {},
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
-    if (isSandboxMode() && isTestDataLinkVisible) {
+    if (isSyntheticMode() && isTestDataLinkVisible) {
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-business-details-click-test-data.png` });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
@@ -49,8 +49,8 @@ export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {},
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
-      if (isSandboxMode()) {
-        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "sandbox", { timeout: 10000 });
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
       await page.evaluate(() => {
         sessionStorage.setItem("showDeveloperOptions", "true");

@@ -51,7 +51,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="sandboxIndicator" class="sandbox-indicator">⚠️ SANDBOX MODE - Using HMRC Test API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -207,10 +207,10 @@
       function initializePage() {
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
-        if (hmrcAccount === "sandbox") {
-          const sandboxIndicator = document.getElementById("sandboxIndicator");
-          if (sandboxIndicator) {
-            sandboxIndicator.classList.add("visible");
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
           }
           const testDataLink = document.getElementById("testDataLink");
           if (testDataLink) {
