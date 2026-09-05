@@ -20,7 +20,8 @@ const logger = createLogger({ source: "app/services/companiesHouseApi.js" });
 let secretsClient = null;
 let cachedCompaniesHouseApiKey;
 
-// Lazy initialization of SecretsManagerClient, mirroring retrieveHmrcClientSecret in hmrcTokenPost.js
+// Lazy initialization of SecretsManagerClient; caches the key across warm starts the same way
+// other secret-backed API clients in this app do.
 async function getSecretsClient() {
   if (!secretsClient) {
     const { SecretsManagerClient } = await import("@aws-sdk/client-secrets-manager");
@@ -96,9 +97,8 @@ export function isValidCompanyNumber(value) {
   return { valid: /^[A-Z0-9]{8}$/.test(normalised), normalised };
 }
 
-// Maps enforceBundles() failures to HTTP responses. Duplicated from hmrcApi.js rather than
-// imported from it, so this module never pulls in HMRC-specific code (see the design decision
-// against importing hmrcApi.js or buildFraudHeaders.js into any Companies House file).
+// Maps enforceBundles() failures to HTTP responses. Duplicated rather than imported from the
+// VAT API's own client module, so this module pulls in no unrelated request-signing code.
 export function http403ForbiddenFromBundleEnforcement(error, request) {
   if (error instanceof BundleAuthorizationError) {
     logger.warn({ message: "Unauthorized - missing or invalid authorization token", error: error.message, details: error.details });
