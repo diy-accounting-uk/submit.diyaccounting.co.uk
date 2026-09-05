@@ -8,7 +8,7 @@ import { dotenvConfigIfNotBlank } from "../lib/env.js";
 import { startStripeSimulator } from "../test-support/stripeSimulator.js";
 import { makeIdToken, buildEventWithToken } from "../test-helpers/eventBuilders.js";
 
-// Mock DynamoDB bundle repository (getUserBundles for sandbox auto-detection)
+// Mock DynamoDB bundle repository (getUserBundles for synthetic auto-detection)
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
