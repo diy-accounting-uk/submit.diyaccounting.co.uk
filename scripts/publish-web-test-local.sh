@@ -46,13 +46,4 @@ if [[ -d "target/test-reports/html-report" ]]; then
 # [GitHub Actions run variant] Copy "target/test-reports/${sourceTestName?}/html-report" (if it exists) to web/public/tests/test-reports/web-test-local
 elif [[ -d "target/test-reports/${sourceTestName?}/html-report" ]]; then
   cp -rv "target/test-reports/${sourceTestName?}/html-report" "${targetTestReportDir?}"
-else
-  # The report's own testName (a test's internal testId, e.g. "getVatLiabilities") does not
-  # always match the directory the workflow downloaded its html-report artifact into (the
-  # matrix suite name, e.g. "getVatLiabilitiesBehaviour" - the basename of sourceReport's
-  # directory). Fall back to that directory name.
-  reportDirName=$(basename "${reportDir?}")
-  if [[ -d "target/test-reports/${reportDirName?}/html-report" ]]; then
-    cp -rv "target/test-reports/${reportDirName?}/html-report" "${targetTestReportDir?}"
-  fi
 fi

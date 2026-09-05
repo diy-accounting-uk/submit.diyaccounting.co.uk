@@ -505,8 +505,9 @@ function generateTestReport(testName, testContextPath, hmrcApiRequestsPath, over
     artifacts,
   };
 
-  // Named after the suite the workflow passes as --testName, not testContext.testId, because the
-  // upload job looks for test-report-<suite>.json and some suites' testId drops the suffix.
+  // Named after the suite the workflow passes as --testName, which the upload job looks for as
+  // test-report-<suite>.json. Every suite's testId equals its suite name for the same reason: the
+  // publish script finds the html-report under target/test-reports/<testName>/.
   const reportFileName = `test-report-${testName}.json`;
   const reportPath = path.join(OUTPUT_DIR, reportFileName);
 

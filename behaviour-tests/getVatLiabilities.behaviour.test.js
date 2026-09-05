@@ -410,7 +410,7 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
 
   // Build and write testContext.json
   const testContext = {
-    testId: "getVatLiabilities",
+    testId: "getVatLiabilitiesBehaviour",
     name: testInfo.title,
     title: "View VAT Liabilities (HMRC: VAT Liabilities GET)",
     description: "Retrieves VAT liabilities from HMRC MTD VAT API and verifies the results flow in the UI.",
