@@ -23,11 +23,12 @@ import {
   buildIssueTitle,
   buildIssueBody,
   buildCommentBody,
-  findOpenIssueByAlarmName,
+  findOpenIssueByAlarmFamily,
   createGitHubIssue,
   commentOnGitHubIssue,
   handler,
 } from "@app/functions/ops/alarmToGithubIssue.js";
+import { alarmFamilyKey } from "@app/lib/alarmName.js";
 
 const ALARM_EVENT = {
   source: "aws.cloudwatch",
@@ -40,6 +41,20 @@ const ALARM_EVENT = {
     previousState: { value: "OK" },
   },
 };
+
+function deploymentAlarmEvent(alarmName, stateValue = "ALARM", previousStateValue = "OK") {
+  return {
+    source: "aws.cloudwatch",
+    "detail-type": "CloudWatch Alarm State Change",
+    region: "eu-west-2",
+    resources: [`arn:aws:cloudwatch:eu-west-2:367191799875:alarm:${alarmName}`],
+    detail: {
+      alarmName,
+      state: { value: stateValue, reason: "Threshold crossed", timestamp: "2026-08-31T12:00:00.000+0000" },
+      previousState: { value: previousStateValue },
+    },
+  };
+}
 
 describe("alarmToGithubIssue", () => {
   describe("resolveAlarmDetail", () => {
@@ -86,6 +101,24 @@ describe("alarmToGithubIssue", () => {
     test("prefixes the alarm name with [ALARM]", () => {
       expect(buildIssueTitle("ci-app-health-failed")).toBe("[ALARM] ci-app-health-failed");
     });
+
+    test("prefixes a family key the same way", () => {
+      expect(buildIssueTitle(alarmFamilyKey("prod-a0f41c7-app-api-5xx"))).toBe("[ALARM] prod-app-api-5xx");
+    });
+  });
+
+  describe("alarmFamilyKey via buildIssueTitle", () => {
+    test("a deployment-scoped name maps to the family title", () => {
+      expect(buildIssueTitle(alarmFamilyKey("ci-claudeboa-app-hmrc-stack-health"))).toBe(
+        "[ALARM] ci-app-hmrc-stack-health",
+      );
+    });
+
+    test("an env-scoped name is unchanged", () => {
+      expect(buildIssueTitle(alarmFamilyKey("prod-env-salt-secret-unexpected-read"))).toBe(
+        "[ALARM] prod-env-salt-secret-unexpected-read",
+      );
+    });
   });
 
   describe("buildIssueBody / buildCommentBody", () => {
@@ -117,8 +150,9 @@ describe("alarmToGithubIssue", () => {
       expect(body).toContain("not provided");
     });
 
-    test("comment body reports the new transition", () => {
+    test("comment body reports the new transition and names the exact alarm", () => {
       const body = buildCommentBody({
+        alarmName: "prod-9050bb5-app-cognito-token-post-health",
         state: "ALARM",
         previousState: "OK",
         reason: "Still failing",
@@ -128,15 +162,16 @@ describe("alarmToGithubIssue", () => {
       expect(body).toContain("OK → ALARM");
       expect(body).toContain("Still failing");
       expect(body).toContain("https://example.com/alarm");
+      expect(body).toContain("prod-9050bb5-app-cognito-token-post-health");
     });
   });
 
-  describe("findOpenIssueByAlarmName", () => {
+  describe("findOpenIssueByAlarmFamily", () => {
     afterEach(() => {
       vi.restoreAllMocks();
     });
 
-    test("returns the matching open issue by exact title", async () => {
+    test("returns the matching open issue by exact family title", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
@@ -148,7 +183,11 @@ describe("alarmToGithubIssue", () => {
           }),
       });
 
-      const issue = await findOpenIssueByAlarmName("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed");
+      const issue = await findOpenIssueByAlarmFamily(
+        "gh-token",
+        "diy-accounting-uk/submit.diyaccounting.co.uk",
+        "ci-app-health-failed",
+      );
       expect(issue.number).toBe(42);
       expect(global.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = global.fetch.mock.calls[0];
@@ -158,14 +197,18 @@ describe("alarmToGithubIssue", () => {
 
     test("returns null when no open issue matches", async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ items: [] }) });
-      const issue = await findOpenIssueByAlarmName("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed");
+      const issue = await findOpenIssueByAlarmFamily(
+        "gh-token",
+        "diy-accounting-uk/submit.diyaccounting.co.uk",
+        "ci-app-health-failed",
+      );
       expect(issue).toBeNull();
     });
 
     test("throws on a non-ok search response", async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 403, text: () => Promise.resolve("rate limited") });
       await expect(
-        findOpenIssueByAlarmName("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed"),
+        findOpenIssueByAlarmFamily("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed"),
       ).rejects.toThrow("GitHub search API error: 403");
     });
   });
@@ -298,6 +341,54 @@ describe("alarmToGithubIssue", () => {
       const [commentUrl, commentOptions] = global.fetch.mock.calls[1];
       expect(commentUrl).toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues/55/comments");
       expect(JSON.parse(commentOptions.body).body).toContain("OK → ALARM");
+    });
+
+    test("creates an issue titled with the family key for a deployment-scoped alarm", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 101, html_url: "https://github.com/x/y/issues/101" }),
+        });
+
+      await handler(deploymentAlarmEvent("prod-a0f41c7-app-api-5xx"));
+
+      const [searchUrl] = global.fetch.mock.calls[0];
+      expect(searchUrl).toContain(encodeURIComponent("[ALARM] prod-app-api-5xx"));
+      const [, createOptions] = global.fetch.mock.calls[1];
+      const createBody = JSON.parse(createOptions.body);
+      expect(createBody.title).toBe("[ALARM] prod-app-api-5xx");
+      expect(createBody.body).toContain("prod-a0f41c7-app-api-5xx");
+    });
+
+    test("a second deployment's alarm in the same family comments on the first deployment's open issue", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ items: [{ number: 200, title: "[ALARM] prod-app-api-5xx" }] }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
+
+      await handler(deploymentAlarmEvent("prod-9050bb5-app-api-5xx"));
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const [commentUrl, commentOptions] = global.fetch.mock.calls[1];
+      expect(commentUrl).toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues/200/comments");
+      const commentBody = JSON.parse(commentOptions.body).body;
+      expect(commentBody).toContain("prod-9050bb5-app-api-5xx");
+    });
+
+    test("an OK from one deployment never closes or comments on the family issue another deployment opened", async () => {
+      global.fetch = vi.fn();
+
+      await handler(deploymentAlarmEvent("prod-9050bb5-app-api-5xx", "OK", "ALARM"));
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockSecretsSend).not.toHaveBeenCalled();
     });
   });
 });

@@ -12,6 +12,7 @@
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
+import { resolveAlarmEnv } from "../../lib/alarmName.js";
 
 const logger = createLogger({ source: "app/functions/ops/activityTelegramForwarder.js" });
 
@@ -95,7 +96,7 @@ export function resolveTargetChatIds(detail, chatConfig) {
     return chatConfig.live ? [chatConfig.live] : [];
   }
 
-  // test-user, synthetic, ci-pipeline, system → test channel
+  // test-user, probe, ci-pipeline, system → test channel
   return chatConfig.test ? [chatConfig.test] : [];
 }
 
@@ -134,8 +135,7 @@ export function synthesizeFromCloudFormation(event) {
   const status = cfnDetail["status-details"]?.status || "UNKNOWN";
 
   // Extract env from stack name prefix (e.g., "ci-app-ApiStack" → "ci")
-  const envMatch = stackName.match(/^(ci|prod)-/);
-  const env = envMatch ? envMatch[1] : process.env.ENVIRONMENT_NAME || "unknown";
+  const env = resolveAlarmEnv(stackName, process.env.ENVIRONMENT_NAME || "unknown");
 
   return {
     actor: "ci-pipeline",
@@ -158,8 +158,7 @@ export function synthesizeFromCloudWatchAlarm(event) {
   const previousState = alarmDetail.previousState?.value || "UNKNOWN";
 
   // Extract env from alarm name prefix
-  const envMatch = alarmName.match(/^(ci|prod)-/);
-  const env = envMatch ? envMatch[1] : process.env.ENVIRONMENT_NAME || "unknown";
+  const env = resolveAlarmEnv(alarmName, process.env.ENVIRONMENT_NAME || "unknown");
 
   return {
     actor: "system",

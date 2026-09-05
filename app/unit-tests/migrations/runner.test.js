@@ -124,14 +124,17 @@ describe("migration runner", () => {
         { hashedSub: "system#migrations", bundleId: "001-convert-salt-to-registry" },
         { hashedSub: "system#migrations", bundleId: "002-backfill-salt-version-v1" },
         { hashedSub: "system#migrations", bundleId: "003-rotate-salt-to-passphrase" },
+        { hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" },
+        { hashedSub: "system#migrations", bundleId: "005-copy-sandbox-qualifier-to-synthetic" },
+        { hashedSub: "system#migrations", bundleId: "006-drop-sandbox-qualifier" },
       ],
     });
 
     const result = await runMigrations();
 
     expect(result.applied).toBe(0);
-    expect(result.skipped).toBe(3);
-    expect(result.total).toBe(3);
+    expect(result.skipped).toBe(6);
+    expect(result.total).toBe(6);
 
     // Only the QueryCommand for checking applied migrations
     expect(mockDynamoSend).toHaveBeenCalledTimes(1);
@@ -144,26 +147,35 @@ describe("migration runner", () => {
     process.env.ENVIRONMENT_NAME = "test";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
 
-    // 001 is pre-deploy, already applied
+    // 001, 004, 005 are pre-deploy, already applied
     mockDynamoSend.mockResolvedValueOnce({
-      Items: [{ hashedSub: "system#migrations", bundleId: "001-convert-salt-to-registry" }],
+      Items: [
+        { hashedSub: "system#migrations", bundleId: "001-convert-salt-to-registry" },
+        { hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" },
+        { hashedSub: "system#migrations", bundleId: "005-copy-sandbox-qualifier-to-synthetic" },
+      ],
     });
 
     const result = await runMigrations("pre-deploy");
 
-    // 001 is pre-deploy but already applied → counted as skipped
-    // 002, 003 are post-deploy → skipped by phase filter (not counted in skipped)
+    // 001, 004, 005 are pre-deploy but already applied → counted as skipped
+    // 002, 003, 006 are post-deploy → skipped by phase filter (not counted in skipped)
     expect(result.applied).toBe(0);
-    expect(result.skipped).toBe(1);
-    expect(result.total).toBe(3);
+    expect(result.skipped).toBe(3);
+    expect(result.total).toBe(6);
   });
 
   test("runs unapplied pre-deploy migration and records it", async () => {
     process.env.ENVIRONMENT_NAME = "test";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
 
-    // No migrations applied
-    mockDynamoSend.mockResolvedValueOnce({ Items: [] });
+    // 004 and 005 already applied, so only 001 (pre-deploy, unapplied) runs
+    mockDynamoSend.mockResolvedValueOnce({
+      Items: [
+        { hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" },
+        { hashedSub: "system#migrations", bundleId: "005-copy-sandbox-qualifier-to-synthetic" },
+      ],
+    });
 
     // 001's up() reads salt from Secrets Manager — return already-converted registry (idempotent path)
     mockSmSend.mockResolvedValueOnce({
@@ -176,8 +188,8 @@ describe("migration runner", () => {
     const result = await runMigrations("pre-deploy");
 
     expect(result.applied).toBe(1);
-    expect(result.skipped).toBe(0);
-    expect(result.total).toBe(3);
+    expect(result.skipped).toBe(2);
+    expect(result.total).toBe(6);
 
     // Second DynamoDB call is PutCommand recording the applied migration
     expect(mockDynamoSend).toHaveBeenCalledTimes(2);
@@ -185,6 +197,34 @@ describe("migration runner", () => {
     expect(putInput.Item.hashedSub).toBe("system#migrations");
     expect(putInput.Item.bundleId).toBe("001-convert-salt-to-registry");
     expect(putInput.Item.environment).toBe("test");
+  });
+
+  test("dry run applies the migration function but records nothing", async () => {
+    process.env.ENVIRONMENT_NAME = "test";
+    process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
+    process.env.MIGRATION_DRY_RUN = "true";
+
+    // 004 and 005 already applied, so only 001 (pre-deploy, unapplied) runs
+    mockDynamoSend.mockResolvedValueOnce({
+      Items: [
+        { hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" },
+        { hashedSub: "system#migrations", bundleId: "005-copy-sandbox-qualifier-to-synthetic" },
+      ],
+    });
+
+    // 001's up() reads salt from Secrets Manager — return already-converted registry (idempotent path)
+    mockSmSend.mockResolvedValueOnce({
+      SecretString: JSON.stringify({ current: "v1", versions: { v1: "test-salt" } }),
+    });
+
+    const result = await runMigrations("pre-deploy");
+
+    expect(result.applied).toBe(1);
+    expect(result.skipped).toBe(2);
+    expect(result.total).toBe(6);
+
+    // Only the initial QueryCommand for already-applied migrations — no PutCommand recording 001
+    expect(mockDynamoSend).toHaveBeenCalledTimes(1);
   });
 
   test("uses fallback table name from ENVIRONMENT_NAME", async () => {
@@ -196,6 +236,9 @@ describe("migration runner", () => {
         { hashedSub: "system#migrations", bundleId: "001-convert-salt-to-registry" },
         { hashedSub: "system#migrations", bundleId: "002-backfill-salt-version-v1" },
         { hashedSub: "system#migrations", bundleId: "003-rotate-salt-to-passphrase" },
+        { hashedSub: "system#migrations", bundleId: "004-backfill-stripe-test-mode" },
+        { hashedSub: "system#migrations", bundleId: "005-copy-sandbox-qualifier-to-synthetic" },
+        { hashedSub: "system#migrations", bundleId: "006-drop-sandbox-qualifier" },
       ],
     });
 

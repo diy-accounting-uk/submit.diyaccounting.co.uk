@@ -22,7 +22,7 @@ Optional extras worth considering alongside:
 
 ## Likely source files to change
 
-- New `app/functions/ops/gitHubIssueRaiser.js` — Lambda that consumes SNS alarm messages, opens a GitHub issue with a `triage` label, optionally assigns per a routing rule (e.g. payment alarms → @antonycc, bundle alarms → @antonycc, synthetic-test alarms → unassigned), and comments on a duplicate detection link. **Emits `issue.auto_raised` to the activity bus** so Telegram picks it up.
+- New `app/functions/ops/gitHubIssueRaiser.js` — Lambda that consumes SNS alarm messages, opens a GitHub issue with a `triage` label, optionally assigns per a routing rule (e.g. payment alarms → @antonycc, bundle alarms → @antonycc, probe alarms → unassigned), and comments on a duplicate detection link. **Emits `issue.auto_raised` to the activity bus** so Telegram picks it up.
 - `app/functions/ops/activityTelegramForwarder.js` — extend event-kind map with `issue.auto_raised` (one-line message with a link to the issue).
 - `infra/main/java/.../stacks/OpsStack.java` — wire `gitHubIssueRaiser` into SNS.
 - `infra/main/java/.../stacks/AlertingStack.java` (if it exists, else embed in OpsStack) — centralise SNS topics; ensure alarms publish to a single `alarms` topic that fans out to both Telegram (via the existing forwarder subscription) and gitHubIssueRaiser.

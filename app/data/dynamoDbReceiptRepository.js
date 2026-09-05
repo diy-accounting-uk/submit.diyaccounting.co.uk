@@ -20,7 +20,7 @@ function getTableName() {
  * @param {string} userSub - The user's subject identifier
  * @param {string} receiptId - Unique receipt identifier (timestamp-formBundleNumber)
  * @param {object} receipt - The receipt data to store
- * @param {string} actor - Actor class of the filer ("customer", "test-user", "synthetic"),
+ * @param {string} actor - Actor class of the filer ("customer", "test-user", "probe"),
  *   so real filings can be counted apart from CI and behaviour-test submissions
  */
 export async function putReceipt(userSub, receiptId, receipt, actor) {

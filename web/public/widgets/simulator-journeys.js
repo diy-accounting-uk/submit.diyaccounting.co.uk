@@ -413,11 +413,11 @@ async function ensureTestBundle(journey) {
 export async function journeySubmitVat(journey) {
   journey.setTotalSteps(15);
 
-  // Ensure test bundle is available for sandbox API access
+  // Ensure test bundle is available for synthetic API access
   await ensureTestBundle(journey);
 
   // Navigate to Submit VAT Return page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity (sandbox)...");
+  await journey.clickByText("button", "Submit VAT", "Selecting Submit VAT Return activity (synthetic)...");
 
   // Wait for page to load
   await journey.wait(2000);
@@ -472,11 +472,11 @@ export async function journeySubmitVat(journey) {
 export async function journeyViewObligations(journey) {
   journey.setTotalSteps(6);
 
-  // Ensure test bundle is available for sandbox API access
+  // Ensure test bundle is available for synthetic API access
   await ensureTestBundle(journey);
 
   // Navigate to Obligations page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity (sandbox)...");
+  await journey.clickByText("button", "Obligations", "Selecting View Obligations activity (synthetic)...");
 
   // Wait for page to load
   await journey.wait(2000);
@@ -503,11 +503,11 @@ export async function journeyViewObligations(journey) {
 export async function journeyViewReturn(journey) {
   journey.setTotalSteps(8);
 
-  // Ensure test bundle is available for sandbox API access
+  // Ensure test bundle is available for synthetic API access
   await ensureTestBundle(journey);
 
   // Navigate to View Return page (activity buttons are dynamically rendered)
-  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity (sandbox)...");
+  await journey.clickByText("button", "View VAT Return", "Selecting View VAT Return activity (synthetic)...");
 
   // Wait for page to load
   await journey.wait(2000);
