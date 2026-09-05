@@ -177,6 +177,8 @@ function describeStep(step, waitMs, values, now) {
       return `takes out the ${step.bundle} bundle${waitSuffix}`;
     case "hmrcAuthorise":
       return `signs in at HMRC and grants authority${waitSuffix}`;
+    case "submitReturn":
+      return `submits a VAT return${waitSuffix}`;
     default:
       return step.action;
   }
@@ -188,7 +190,7 @@ const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consen
 // started on. Every other action is judged by whether the URL moved. Either way the overlay was
 // reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
 // the caption all have to be put back.
-const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
+const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -212,7 +214,11 @@ async function main() {
   const stepScreenshotDir = path.resolve("target/behaviour-test-results/screenshots", `video-${script.name}`);
 
   const needsUser = script.auth === "user";
-  const usesHmrcAuthorise = script.scenes.some((scene) => scene.steps.some((step) => step.action === "hmrcAuthorise"));
+  // submitReturn drives its own HMRC authorise sequence internally, so it needs the same test
+  // user hmrcAuthorise does.
+  const usesHmrcTestUser = script.scenes.some((scene) =>
+    scene.steps.some((step) => step.action === "hmrcAuthorise" || step.action === "submitReturn"),
+  );
   let localServices = { stop: async () => {} };
   let journey = null;
   let installCredentialFieldMask = null;
@@ -224,7 +230,7 @@ async function main() {
       authProvider: journeyModule.authProviderFrom(process.env),
       authUsername: journeyModule.authUsernameFrom(process.env),
       authPassword: process.env.TEST_AUTH_PASSWORD || null,
-      hmrcUser: usesHmrcAuthorise ? await journeyModule.resolveHmrcTestUser(process.env) : null,
+      hmrcUser: usesHmrcTestUser ? await journeyModule.resolveHmrcTestUser(process.env) : null,
     };
     console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
   }
@@ -280,6 +286,12 @@ async function main() {
     lastReadEventCount = events.length;
   }
   const wallStart = Date.now();
+  // An off-camera scene (scriptSchema's "offCamera") is paused out of the capture, but the real
+  // time it takes still passes on the wall clock. pausedMs is the running total of that time,
+  // subtracted everywhere the timeline measures elapsed time so the recording and the timeline
+  // both skip forward as if the scene took no time at all — see capture.js's own pause/resume.
+  let pausedMs = 0;
+  const elapsed = () => Date.now() - wallStart - pausedMs;
   // The overlay only exists once a document has actually loaded — addInitScript does not run
   // against the initial about:blank page. Every overlay call before the tour's first `goto` is
   // deferred to just after that navigation instead of guarded with a timeout, so a scene script
@@ -290,11 +302,18 @@ async function main() {
   try {
     for (let sceneIndex = 0; sceneIndex < script.scenes.length; sceneIndex++) {
       const scene = script.scenes[sceneIndex];
+      const offCamera = scene.offCamera === true;
       const fastForward = selectedSceneIds ? !selectedSceneIds.has(scene.id) : false;
-      const pacing = fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
+      const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
 
-      if (hasNavigated) await overlayChapter(page, scene.chapter);
-      console.log(`\n=== scene "${scene.id}" (${scene.chapter}) ${fastForward ? "[fast-forward]" : ""} ===`);
+      let offCameraStartedAt = null;
+      if (offCamera) {
+        offCameraStartedAt = Date.now();
+        if (capture) capture.pause();
+      }
+
+      if (!offCamera && hasNavigated) await overlayChapter(page, scene.chapter);
+      console.log(`\n=== scene "${scene.id}" (${scene.chapter}) ${offCamera ? "[off-camera]" : fastForward ? "[fast-forward]" : ""} ===`);
 
       const entries = [];
 
@@ -314,18 +333,19 @@ async function main() {
           journey,
           waitPhase: waitPhaseCtl.run,
         };
-        const startMs = Date.now() - wallStart;
+        const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
         const group = groupFor(step.action);
         // A goto's own caption describes the page it lands on, so it is shown after navigation
         // (see the doGoto branch below) rather than before, alongside every other action's cue.
-        const showCaptionBeforeAction = step.caption && step.action !== "goto";
+        // An off-camera scene shows no caption at all — nothing here reaches a viewer.
+        const showCaptionBeforeAction = !offCamera && step.caption && step.action !== "goto";
 
         let captionHideAt = null;
         if (showCaptionBeforeAction) {
           await overlayCaption(page, step.caption);
           const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
-          captionHideAt = () => Date.now() - wallStart + minMs;
+          captionHideAt = () => elapsed() + minMs;
           captionEvents.push({
             startMs,
             text: step.caption,
@@ -339,15 +359,17 @@ async function main() {
         let navigated = false;
         let timerShown = false;
         if (step.action === "caption") {
-          const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
-          await overlayCaption(page, step.text);
-          await new Promise((resolve) => setTimeout(resolve, minMs));
-          await overlayCaption(page, null);
-          captionEvents.push({ startMs, text: step.text, maxCharsPerLine: script.captions.maxCharsPerLine, maxLines: script.captions.maxLines, _minMs: minMs });
+          if (!offCamera) {
+            const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
+            await overlayCaption(page, step.text);
+            await new Promise((resolve) => setTimeout(resolve, minMs));
+            await overlayCaption(page, null);
+            captionEvents.push({ startMs, text: step.text, maxCharsPerLine: script.captions.maxCharsPerLine, maxLines: script.captions.maxLines, _minMs: minMs });
+          }
         } else if (step.action === "hold") {
-          await new Promise((resolve) => setTimeout(resolve, fastForward ? 0 : step.ms));
+          await new Promise((resolve) => setTimeout(resolve, fastForward || offCamera ? 0 : step.ms));
         } else if (step.action === "still") {
-          if (!fastForward) await page.screenshot({ path: path.join(stillsDir, `${step.name}.png`) });
+          if (!fastForward && !offCamera) await page.screenshot({ path: path.join(stillsDir, `${step.name}.png`) });
         } else {
           if (group === 3 && hasNavigated) {
             await new Promise((resolve) => setTimeout(resolve, pauseForGroup(3, pacing)));
@@ -367,20 +389,22 @@ async function main() {
             // count happens to exceed the old one, silently losing a timer marker a same-URL
             // reload (e.g. ensureBundle's) logs on the document it lands on.
             lastReadEventCount = 0;
-            await overlayChapter(page, scene.chapter);
-            if (script.suppress?.length) await overlaySuppress(page, script.suppress);
-            if (step.caption) {
-              await overlayCaption(page, step.caption);
-              if (!captionHideAt) {
-                const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
-                captionHideAt = () => Date.now() - wallStart + minMs;
-                captionEvents.push({
-                  startMs,
-                  text: step.caption,
-                  maxCharsPerLine: script.captions.maxCharsPerLine,
-                  maxLines: script.captions.maxLines,
-                  _minMs: minMs,
-                });
+            if (!offCamera) {
+              await overlayChapter(page, scene.chapter);
+              if (script.suppress?.length) await overlaySuppress(page, script.suppress);
+              if (step.caption) {
+                await overlayCaption(page, step.caption);
+                if (!captionHideAt) {
+                  const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
+                  captionHideAt = () => elapsed() + minMs;
+                  captionEvents.push({
+                    startMs,
+                    text: step.caption,
+                    maxCharsPerLine: script.captions.maxCharsPerLine,
+                    maxLines: script.captions.maxLines,
+                    _minMs: minMs,
+                  });
+                }
               }
             }
           }
@@ -394,11 +418,11 @@ async function main() {
         }
 
         if (captionHideAt) {
-          const remaining = captionHideAt() - (Date.now() - wallStart);
+          const remaining = captionHideAt() - elapsed();
           if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
           await overlayCaption(page, null);
           const last = captionEvents[captionEvents.length - 1];
-          last.endMs = Date.now() - wallStart;
+          last.endMs = elapsed();
         }
 
         // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
@@ -406,16 +430,19 @@ async function main() {
         // and its own events (e.g. a "type" step's typeChar events) ride along in the next flush.
         if (WAIT_CAPABLE_ACTIONS.has(step.action)) await collectNewOverlayEvents();
 
-        const endMs = Date.now() - wallStart;
+        const endMs = elapsed();
         const frameEnd = capture?.frames.length ?? null;
         const description = describeStep(step, waitMs, values, now);
-        entries.push({ caption: step.caption || null, description, note: step.note || null });
+        // An off-camera step names nothing a viewer sees: it never reaches the transcript, so it
+        // never has to describe itself in words a reader would notice weren't on screen.
+        if (!offCamera) entries.push({ caption: step.caption || null, description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
 
         stepRecords.push({
           sceneId: scene.id,
           stepIndex,
+          offCamera,
           action: step.action,
           group,
           configuredMs: group ? pauseForGroup(group, pacing) : null,
@@ -433,15 +460,22 @@ async function main() {
         console.log(`  [${scene.id}#${stepIndex}] ${step.action} waitMs=${waitMs.toFixed(0)} elapsed=${(endMs / 1000).toFixed(1)}s`);
       }
 
-      sceneRecords.push({ id: scene.id, chapter: scene.chapter, entries });
+      // An off-camera scene contributes nothing a viewer would read: no caption, no description,
+      // no note — the whole scene is absent from the transcript, not just quiet within it.
+      if (!offCamera) sceneRecords.push({ id: scene.id, chapter: scene.chapter, entries });
 
-      if (scene.still && !fastForward) {
+      if (scene.still && !fastForward && !offCamera) {
         const stillPath = path.join(stillsDir, `${String(sceneIndex + 1).padStart(2, "0")}-${scene.id}.png`);
         await page.screenshot({ path: stillPath });
       }
+
+      if (offCamera) {
+        if (capture) capture.resume();
+        pausedMs += Date.now() - offCameraStartedAt;
+      }
     }
 
-    elapsedMs = Date.now() - wallStart;
+    elapsedMs = elapsed();
     await new Promise((resolve) => setTimeout(resolve, script.finalHoldMs));
     await collectNewOverlayEvents();
   } catch (err) {

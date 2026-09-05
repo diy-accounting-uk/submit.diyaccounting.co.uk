@@ -46,11 +46,12 @@ const STEP_REQUIRED_FIELDS = {
   consent: [],
   ensureBundle: ["bundle"],
   hmrcAuthorise: [],
+  submitReturn: [],
 };
 
 // Actions that run one of the behaviour tests' journey step functions. They drive credentials
 // and a real identity provider, so a script may only use them once it has declared auth "user".
-const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise"]);
+const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
 function fail(path, message) {
   throw new Error(`scene script invalid at ${path}: ${message}`);
@@ -91,6 +92,7 @@ function validateScene(scene, index, auth) {
   const path = `scenes[${index}]`;
   if (!scene || typeof scene !== "object") fail(path, "scene must be an object");
   requireKeys(scene, ["id", "chapter", "steps"], path);
+  if ("offCamera" in scene && typeof scene.offCamera !== "boolean") fail(`${path}.offCamera`, "must be a boolean");
   if (!Array.isArray(scene.steps) || scene.steps.length === 0) fail(`${path}.steps`, "must be a non-empty array");
   scene.steps.forEach((step, stepIndex) => validateStep(step, path, scene.id, stepIndex, auth));
 }

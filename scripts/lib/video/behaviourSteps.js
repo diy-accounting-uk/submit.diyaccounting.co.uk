@@ -33,10 +33,12 @@ const loginSteps = await import("../../../behaviour-tests/steps/behaviour-login-
 const siteSteps = await import("../../../behaviour-tests/steps/behaviour-steps.js");
 const bundleSteps = await import("../../../behaviour-tests/steps/behaviour-bundle-steps.js");
 const hmrcSteps = await import("../../../behaviour-tests/steps/behaviour-hmrc-steps.js");
+const vatSteps = await import("../../../behaviour-tests/steps/behaviour-hmrc-vat-steps.js");
 const helpers = await import("../../../behaviour-tests/helpers/behaviour-helpers.js");
 
 export const { loginWithCognitoOrMockAuth, verifyLoggedInStatus } = loginSteps;
-export const { consentToDataCollection } = siteSteps;
+export const { consentToDataCollection, goToHomePageUsingMainNav } = siteSteps;
 export const { ensureBundlePresent } = bundleSteps;
 export const { acceptCookiesHmrc, goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } = hmrcSteps;
+export const { initSubmitVat, fillInVat, fillInVat9Box, submitFormVat, completeVat, verifyVatSubmission } = vatSteps;
 export const { addOnPageLogging, createHmrcTestUser, isSandboxMode, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } = helpers;

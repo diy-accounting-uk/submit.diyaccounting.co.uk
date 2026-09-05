@@ -49,10 +49,30 @@ export class CdpScreencastCapture {
     this.writeIndex = 0;
     this.t0 = null;
     this.session = null;
+    this.paused = false;
+    this.pausedAtMs = null;
+    this.pausedTotalMs = 0;
   }
 
   setCompression(active, factor) {
     this.gate.setActive(active, factor);
+  }
+
+  // An off-camera scene (scriptSchema's "offCamera") pauses capture for its duration: the
+  // screencast keeps streaming and every frame is still acked (the CDP stream stalls without
+  // one), but none are written, so no still of that scene ever reaches the frames ledger. The
+  // cumulative paused time is subtracted from every later frame's own timestamp, so the two
+  // frames either side of the pause land back to back in the manifest instead of the encoded
+  // video holding on a frozen frame for however long the off-camera scene really took.
+  pause() {
+    this.paused = true;
+    this.pausedAtMs = performance.now();
+  }
+
+  resume() {
+    if (this.pausedAtMs !== null) this.pausedTotalMs += performance.now() - this.pausedAtMs;
+    this.paused = false;
+    this.pausedAtMs = null;
   }
 
   async start() {
@@ -60,11 +80,11 @@ export class CdpScreencastCapture {
     this.session = await this.page.context().newCDPSession(this.page);
     this.t0 = performance.now();
     this.session.on("Page.screencastFrame", async ({ data, sessionId }) => {
-      if (this.gate.shouldWrite()) {
+      if (!this.paused && this.gate.shouldWrite()) {
         this.writeIndex += 1;
         const filePath = path.join(this.framesDir, frameFileName(this.writeIndex));
         fs.writeFileSync(filePath, Buffer.from(data, "base64"));
-        this.frames.push({ index: this.writeIndex, tMs: performance.now() - this.t0 });
+        this.frames.push({ index: this.writeIndex, tMs: performance.now() - this.t0 - this.pausedTotalMs });
       }
       // The screencast stream stalls without the ack, whether or not this frame was written.
       await this.session.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
@@ -98,10 +118,27 @@ export class ScreenshotCadenceCapture {
     this.t0 = null;
     this.timer = null;
     this.capturing = false;
+    this.paused = false;
+    this.pausedAtMs = null;
+    this.pausedTotalMs = 0;
   }
 
   setCompression(active, factor) {
     this.gate.setActive(active, factor);
+  }
+
+  // See CdpScreencastCapture.pause/resume: an off-camera scene stops writing ticks entirely
+  // (not just gating them) and its real duration is subtracted from every later tick's
+  // timestamp, so the manifest never holds on a frozen frame for that long.
+  pause() {
+    this.paused = true;
+    this.pausedAtMs = performance.now();
+  }
+
+  resume() {
+    if (this.pausedAtMs !== null) this.pausedTotalMs += performance.now() - this.pausedAtMs;
+    this.paused = false;
+    this.pausedAtMs = null;
   }
 
   async start() {
@@ -110,13 +147,16 @@ export class ScreenshotCadenceCapture {
     this.capturing = true;
     const tick = async () => {
       if (!this.capturing) return;
-      if (this.gate.shouldWrite()) {
+      if (this.paused) {
+        // Dropped outright: no write, no index bump — nothing here is a frame the video ever
+        // scrubs past, unlike the compression gate's thinned-but-still-numbered skips.
+      } else if (this.gate.shouldWrite()) {
         this.writeIndex += 1;
         const filePath = path.join(this.framesDir, frameFileName(this.writeIndex));
         try {
           const buffer = await this.page.screenshot({ type: "jpeg", quality: 85 });
           fs.writeFileSync(filePath, buffer);
-          this.frames.push({ index: this.writeIndex, tMs: performance.now() - this.t0 });
+          this.frames.push({ index: this.writeIndex, tMs: performance.now() - this.t0 - this.pausedTotalMs });
         } catch {
           // A screenshot mid-navigation can throw; skip this tick rather than abort capture.
         }

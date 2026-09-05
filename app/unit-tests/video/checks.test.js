@@ -39,6 +39,11 @@ describe("checkTimings", () => {
     expect(failures).toHaveLength(1);
     expect(failures[0].check).toBe("residualAfterWait");
   });
+
+  test("skips an off-camera step even though its recorded residual does not match the formula", () => {
+    const offCameraStep = step({ offCamera: true, waitMs: 100, residualMs: 0 });
+    expect(checkTimings([offCameraStep], script)).toEqual([]);
+  });
 });
 
 describe("checkTimerMarkers", () => {
@@ -78,6 +83,16 @@ describe("checkTimerMarkers", () => {
   test("throws naming timerShown when only navigated is missing it", () => {
     const oldStep = { sceneId: "scene", stepIndex: 0, action: "click", waitMs: 400, navigated: false };
     expect(() => checkTimerMarkers([oldStep], [], script)).toThrow(/"timerShown"/);
+  });
+
+  test("an off-camera step's long wait is not expected to have shown a timer", () => {
+    const steps = [step({ offCamera: true, action: "submitReturn", waitMs: 30000, navigated: false, timerShown: false })];
+    expect(checkTimerMarkers(steps, [], script)).toEqual([]);
+  });
+
+  test("an off-camera step with timerShown true is not flagged, even without a long wait", () => {
+    const steps = [step({ offCamera: true, waitMs: 50, navigated: false, timerShown: true })];
+    expect(checkTimerMarkers(steps, [], script)).toEqual([]);
   });
 });
 
