@@ -54,7 +54,6 @@ import software.constructs.Construct;
 public class OpsStack extends Stack {
 
     public final Topic alertTopic;
-    public final Alarm githubProbeAlarm;
     public Canary healthCanary;
     public Canary apiCanary;
     public Alarm healthCheckAlarm;
@@ -142,12 +141,6 @@ public class OpsStack extends Stack {
         // Base URL for canaries (e.g., https://submit.diyaccounting.co.uk)
         @Value.Default
         default String baseUrl() {
-            return "";
-        }
-
-        // Apex domain for GitHub probe metrics namespace (e.g., submit.diyaccounting.co.uk)
-        @Value.Default
-        default String apexDomain() {
             return "";
         }
 
@@ -398,34 +391,6 @@ public class OpsStack extends Stack {
         }
 
         // ============================================================================
-        // GitHub Actions Probe Test Alarm
-        // ============================================================================
-        String apexDomain = props.apexDomain() != null && !props.apexDomain().isBlank()
-                ? props.apexDomain()
-                : "submit.diyaccounting.co.uk";
-
-        this.githubProbeAlarm = Alarm.Builder.create(this, "GithubProbeAlarm")
-                .alarmName(props.resourceNamePrefix() + "-github-probe-failed")
-                .alarmDescription("GitHub Actions probe test has not succeeded in 2 hours. "
-                        + "The behaviour-test metric is published per environment, not per deployment, "
-                        + "so a probe failure on any deployment in this environment trips this alarm.")
-                .metric(Metric.Builder.create()
-                        .namespace(apexDomain)
-                        .metricName("behaviour-test")
-                        .dimensionsMap(Map.of("test", "submitVatBehaviour"))
-                        .statistic("Minimum")
-                        .period(Duration.hours(2))
-                        .build())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.BREACHING)
-                .build();
-
-        this.githubProbeAlarm.addAlarmAction(new SnsAction(this.alertTopic));
-        this.githubProbeAlarm.addOkAction(new SnsAction(this.alertTopic));
-
-        // ============================================================================
         // Security Detection Alarms - Phase 1.1 & 2.3 (Deferred)
         // ============================================================================
         // NOTE: Authentication failure metric filters for Lambda log groups are NOT created here
@@ -443,7 +408,6 @@ public class OpsStack extends Stack {
         // Outputs
         // ============================================================================
         cfnOutput(this, "AlertTopicArn", this.alertTopic.getTopicArn());
-        cfnOutput(this, "GithubProbeAlarmArn", this.githubProbeAlarm.getAlarmArn());
 
         if (this.healthCanary != null) {
             cfnOutput(this, "HealthCanaryName", this.healthCanary.getCanaryName());

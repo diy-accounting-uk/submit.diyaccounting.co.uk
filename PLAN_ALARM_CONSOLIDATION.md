@@ -98,8 +98,15 @@ Exactly one Telegram message arrives. It names `<deployment>-app-<stack>-stack-h
 same stack is set to ALARM while the composite is still in ALARM. Reset both children with
 `--state-value OK` and confirm one recovery message.
 
-## Canary and synthetic schedule
+## Canary and probe schedule
 
-Both Synthetics canaries run `cron(27 * * * ? *)`. `synthetic-test.yml` runs `57 */4 * * *`, so a
-canary run always sits half an hour either side of a synthetic run and the offset cannot drift the
+Both Synthetics canaries run `cron(27 * * * ? *)`. `probe-test.yml` runs `57 */4 * * *`, so a
+canary run always sits half an hour either side of a probe run and the offset cannot drift the
 way `rate(51 minutes)` did. Hourly keeps two datapoints inside the canary alarms' 2-hour period.
+
+The GitHub probe alarm itself lives in the environment-level `ObservabilityStack`, not the
+per-deployment `OpsStack`, so one alarm survives every deployment instead of each deployment
+spawning its own against the same environment-wide `behaviour-test` metric. Its period is 5
+hours: longer than the 4-hour probe cron, so every rolling window is guaranteed a datapoint
+regardless of clock alignment, unlike the old 2-hour period which missed one by construction on
+about half of all windows.
