@@ -84,7 +84,7 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 2, routedPrefixes);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 2, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
