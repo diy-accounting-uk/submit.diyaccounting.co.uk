@@ -24,12 +24,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Paused by the operator on 2026-09-04 (session limit); resumes on their word.** Integration
-branch `claude/board-batch-2` is PR #118 (draft) with four tracks landed; PR #119 (layer 2) and
-PR #120 (layer 1, stacked on #118) are open. The two paused tracks committed as "WIP (paused):" on pushed `-wip` branches; their
-worktrees under `.claude/worktrees/` still exist and each track line below says what remains. To resume: read this section, `git worktree list`,
-and each WIP commit message, then re-dispatch each paused track from its worktree branch (or a
-fresh worktree that merges that branch) with the same brief.
+**Resumed 2026-09-05.** Integration branch `claude/board-batch-2` is PR #118 (draft, all checks
+green) with five tracks landed; PR #119 (layer 2) and PR #120 (layer 1, stacked on #118) are open
+with ci behaviour-suite failures under diagnosis. The two paused tracks resumed from their `-wip`
+branches in fresh worktrees.
 
 Each track runs in its own worktree off main; the coordinator merges each landed track into the
 batch branch, pushes in batches, and opens the PR. Wave 2 tracks merge the batch branch before
@@ -45,13 +43,13 @@ starting.
   **Track**: timing check (Haiku). Code complete on `claude/board-batch-2` (PR #118): the timer check counts only on-page waits, and the workflow step blocks. Verified when the next `video-capture.yml` run passes the check as a blocking step.
 - [ ] **B17a.2. Video: view VAT obligations**, logged in as the synthetic user, using the
   B17a.1 pattern. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. Verified when `video-capture.yml -f script=view-obligations -f environment-name=prod` produces the mp4 with the check as a blocking step.
+  **Track**: video auth (Opus). Code complete on `claude/board-batch-2` (PR #118): the capture script signs in through the provider `TEST_AUTH_PROVIDER` names, takes a day pass, authorises with HMRC, and `videos/view-obligations.json` recorded end to end on the simulator variant with the timing check green. ci recording dispatched from the batch branch (run 33948656157); prod recording follows once ci proves the workflow.
 - [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet). Not yet dispatched; paused before wave 2. Brief: write the script against the step actions `login`, `consent`, `ensureBundle`, `hmrcAuthorise` documented in `.claude/skills/site-video-capture/SKILL.md`, prove it on the simulator variant, keep secrets out of captions.
+  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
 - [ ] **B17a.4. Video: submit a VAT return** end to end, same pattern. **Source**: BACKLOG 17a.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: journey videos (Sonnet). Not yet dispatched; paused before wave 2. Brief: write the script against the step actions `login`, `consent`, `ensureBundle`, `hmrcAuthorise` documented in `.claude/skills/site-video-capture/SKILL.md`, prove it on the simulator variant, keep secrets out of captions.
+  **Track**: journey videos (Sonnet), both scripts in one track. Worktree `.claude/worktrees/agent-aebb529df95f87b05`, running, stacked on the batch branch.
 - [ ] **B32.4. Add the three read suites to the 4-hourly synthetic schedule.** Decided
   2026-09-04: `synthetic-test.yml`'s scheduled `SUITES_JSON` gains `getVatLiabilitiesBehaviour`,
   `getVatPaymentsBehaviour` and `getVatPenaltiesBehaviour`. **Source**: BACKLOG 32; issue #19.
@@ -62,7 +60,7 @@ starting.
   search and profile behind an activity, page plus Lambda following the VAT read endpoints'
   shape, simulator route, unit and behaviour tests. **Source**: BACKLOG 34; issue #15.
   **Owner**: Claude Code. **Model**: Sonnet, after an Opus design pass on the API key handling.
-  **Track**: Companies House build (Sonnet), paused at step 5 of 7 on `claude/companies-house-lookup-wip` (worktree `.claude/worktrees/agent-aa57575e98796dbdc`, WIP commit e10df074). Steps 1 to 4 landed green (client, Lambdas, simulator, Express routes, page, browser test). Resume with `./mvnw clean verify`, then `CompaniesHouseStackTest.java`, then steps 6 (workflows, env files, package.json, playwright config) and 7 (behaviour test on the simulator lane). Its own PR once the operator's key (O6) exists.
+  **Track**: Companies House build (Sonnet), resumed from `claude/companies-house-lookup-wip` at step 5 of 7 in worktree `.claude/worktrees/agent-ad6e4d9bbd090c659`, running. Its own PR; deploys once the operator's key (O6) exists.
 - [ ] **B40d.2. Rename the modes to `synthetic`/`live` and give the monitoring vocabulary a
   new name.** Decided 2026-09-04: `hmrcAccount` sandbox becomes synthetic across
   `web/public/developer-mode.js`, `billingWebhookPost.js:142` (`qualifiers.sandbox`), UI copy
@@ -71,7 +69,7 @@ starting.
   detectors and analytics, and the `synthetic-*` test users move to a name that does not
   collide (the design pass names it). One PR per rename layer. **Source**: BACKLOG 40d; issue
   #12. **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): code complete on `claude/mode-rename-2-stripe-flag` (PR #119); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): code complete on `claude/mode-rename-1-probe` (PR #120, stacked on the batch branch); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): paused on `claude/mode-rename-3-synthetic-wip` (worktree `.claude/worktrees/agent-aff8638e4acb25f2a`, WIP commit ad5d2225, stacked on layers 1 and 2): `hmrcApi.js`, `hmrcTokenPost.js` and `hmrcVatReturnPost.js` renamed; `hmrcVatReturnGet.js` half done from line 344; the rest of the PR three file list, web, env, migrations and tests not started. Resume with `grep -n -i sandbox app/functions/hmrc/hmrcVatReturnGet.js` and the same brief. Layer 4 (docs and copy) follows, and also recomputes the stale alarm-count arithmetic layer 1 left in `REPORT_ALARM_AUDIT.md` and `PLAN_COST_OPTIMISATION.md`.
+  **Tracks**: `PLAN_MODE_RENAME.md` is the design; four Sonnet layers, one PR each. Layer 2 (Stripe flag `stripeTestMode` plus migration 004): code complete on `claude/mode-rename-2-stripe-flag` (PR #119); verified after the operator runs migration 004 dry then real on ci and prod. Layer 1 (monitoring vocabulary to `probe`, plus the four alarm docs the cuts left stale): code complete on `claude/mode-rename-1-probe` (PR #120, stacked on the batch branch); verified after its deploy by the `-github-probe-failed` alarms in OK. Layer 3 (HMRC mode value, migrations 005 and 006): resumed from `claude/mode-rename-3-synthetic-wip` in worktree `.claude/worktrees/agent-a52c3cd4bb3f09447`, running, stacked on layers 1 and 2. Layer 4 (docs and copy) follows, and also recomputes the stale alarm-count arithmetic layer 1 left in `REPORT_ALARM_AUDIT.md` and `PLAN_COST_OPTIMISATION.md`.
 - [ ] **B30b. Cut the alarms and canary runs the audit shows are dead weight.** From B30a:
   drop or merge check types that never fire in CDK (`Lambda.java`), fold the five
   `AsyncApiLambda` alarm triples into their stack composite (`PLAN_ALARM_CONSOLIDATION.md`
