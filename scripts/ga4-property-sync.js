@@ -14,7 +14,7 @@
 // (see google-analytics.toml) — it does not touch that property.
 //
 // Usage:
-//   GA4_SERVICE_ACCOUNT_JSON=... node scripts/ga4-property-sync.js --environment ci --hostname ci-submit.diyaccounting.co.uk
+//   GA4_SERVICE_ACCOUNT_JSON=... (or GA4_SERVICE_ACCOUNT_ARN with AWS credentials) node scripts/ga4-property-sync.js --environment ci --hostname ci-submit.diyaccounting.co.uk
 //
 // Options:
 //   --environment <ci|prod>  Required. Which submit environment to sync.
@@ -25,7 +25,7 @@
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 
-import { createGoogleAuthorizedClient } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, resolveServiceAccountCredentialsJson } from "./lib/googleAuth.js";
 
 export const GA4_ACCOUNT_DISPLAY_NAME = "DIY Accounting";
 export const GA4_BIGQUERY_PROJECT_ID = "diyaccounting-ga4";
@@ -330,12 +330,10 @@ async function applyPlan(client, plan) {
 export async function main() {
   const opts = parseArgs(process.argv.slice(2));
 
-  const credentialsJson = process.env.GA4_SERVICE_ACCOUNT_JSON;
-  if (!credentialsJson) {
-    console.error("GA4_SERVICE_ACCOUNT_JSON environment variable is required");
-    process.exit(1);
-    return;
-  }
+  const credentialsJson = await resolveServiceAccountCredentialsJson({
+    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
+    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
+  });
 
   const client = await createGoogleAuthorizedClient(credentialsJson, [ANALYTICS_EDIT_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
 
