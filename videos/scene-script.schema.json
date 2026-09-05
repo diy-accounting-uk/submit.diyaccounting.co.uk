@@ -153,6 +153,11 @@
             "properties": {
               "action": {},
               "target": { "$ref": "#/definitions/target" },
+              "expectsNavigation": {
+                "type": "boolean",
+                "description": "Set when the click's own handler navigates via window.location.href rather than a real <a href> — races the click against the URL changing so a dropped or delayed navigation fails here, named, instead of a later await step timing out with no clue why."
+              },
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
               "caption": { "type": "string" },
               "pauseMs": { "type": "number", "minimum": 0 },
               "note": { "type": "string" }

@@ -111,7 +111,23 @@ async function doClick(page, step, ctx) {
   // the wait phase brackets only the click itself, or the pill would arm during that motion
   // rather than during an actual wait on the site.
   const start = Date.now();
-  await ctx.waitPhase(() => locator.click());
+  await ctx.waitPhase(async () => {
+    if (!step.expectsNavigation) {
+      await locator.click();
+      return;
+    }
+    // A button whose onclick assigns window.location.href, rather than a real <a href>, has no
+    // browser-native navigation to fall back on: Playwright's own click resolves as soon as the
+    // event dispatches, which is before the resulting navigation is guaranteed to have started.
+    // Racing the click against the URL actually changing turns a dropped or delayed navigation
+    // into an immediate, named failure here, instead of a following "await" step timing out
+    // minutes later with no clue that the click never left the page.
+    const startUrl = page.url();
+    await Promise.all([
+      page.waitForURL((url) => url.toString() !== startUrl, { timeout: step.timeoutMs || ctx.timeoutMs }),
+      locator.click(),
+    ]);
+  });
   return { waitMs: Date.now() - start, rect };
 }
 
