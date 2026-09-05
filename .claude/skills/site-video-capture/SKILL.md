@@ -110,13 +110,12 @@ and pauses frame capture for its whole duration: nothing from it reaches the enc
 `offCamera: true`, so the acceptance checks can see what ran; `check-video-timings.js` skips
 timer and residual expectations for them, since a step run at zero pacing has neither.
 
-`submitReturn` is built for this: it submits a VAT return for whatever open obligation the
-signed-in account currently has, the way a customer would — click "Submit Return" on the open
-obligation, fill the nine boxes with round figures, tick the declaration, the write:vat scope
-authorise with HMRC, and the receipt — and resolves the period from the obligation itself, never
-a hard-coded period key. It has to run from the obligations results page. `videos/view-return.json`
-uses it between an on-camera obligations query and a second one, so the return it then opens on
-camera is real.
+`submitReturn` is built for this: it submits a VAT return the way `getVatReturn.behaviour.test.js`
+does — the home nav, the submit VAT form's own date fields, fill the nine boxes with round
+figures, tick the declaration, the write:vat scope authorise with HMRC, and the receipt — with
+`allowSyntheticObligations` so the server resolves the period from HMRC's own open obligation,
+never a hard-coded period key. `videos/view-return.json` uses it between an on-camera obligations
+query and a second one, so the return it then opens on camera is real.
 
 ## Step 3 — record for real against the proxy variant or a deployment
 

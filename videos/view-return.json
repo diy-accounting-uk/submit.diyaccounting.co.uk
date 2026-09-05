@@ -313,53 +313,11 @@
         {
           "action": "click",
           "target": {
-            "role": "link",
-            "name": "Activities"
+            "role": "button",
+            "name": "View Return"
           },
           "expectsNavigation": true,
-          "caption": "Back to the activities."
-        },
-        {
-          "action": "hold",
-          "ms": 500
-        },
-        {
-          "action": "click",
-          "target": "button:has-text('View VAT Return (HMRC)')",
-          "expectsNavigation": true,
-          "caption": "Now ask for the return itself."
-        },
-        {
-          "action": "await",
-          "until": "#vatReturnForm",
-          "label": "Opening the return form"
-        },
-        {
-          "action": "type",
-          "target": "#vrn",
-          "text": "{{hmrcVatNumber}}",
-          "clear": true,
-          "caption": "The VAT registration number again."
-        },
-        {
-          "action": "fill",
-          "target": "#periodStart",
-          "value": "{{monthsAgo:11}}",
-          "caption": "And the same stretch of time as before."
-        },
-        {
-          "action": "fill",
-          "target": "#periodEnd",
-          "value": "{{today}}"
-        },
-        {
-          "action": "hold",
-          "ms": 500
-        },
-        {
-          "action": "click",
-          "target": "#retrieveBtn",
-          "caption": "Ask HMRC for the return."
+          "caption": "Open the return for that period."
         },
         {
           "action": "await",

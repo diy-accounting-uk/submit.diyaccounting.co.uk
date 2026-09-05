@@ -323,48 +323,19 @@ async function doHmrcAuthorise(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
-// Round figures for the nine boxes a submitReturn tour fills in, matching the on-camera tour in
-// videos/submit-return.json. Boxes 3 (totalVatDue) and 5 (netVatDue) are left out: the form
-// calculates them from the rest.
-const SUBMIT_RETURN_VAT_BOX_DATA = {
-  vatDueSales: "1000.00",
-  vatDueAcquisitions: "0.00",
-  vatReclaimedCurrPeriod: "200.00",
-  totalValueSalesExVAT: "5000",
-  totalValuePurchasesExVAT: "1000",
-  totalValueGoodsSuppliedExVAT: "0",
-  totalAcquisitionsExVAT: "0",
-};
-
-// Submits a VAT return for whatever open obligation the signed-in account currently has, off
-// camera, the same way a customer would: click "Submit Return" on the open obligation (the
-// period comes from that obligation, resolved server-side — never a hard-coded period key),
-// fill the nine boxes with round figures and tick the declaration, submit, grant the write:vat
-// scope with HMRC, then wait for the receipt. Runs from the obligations results page, so the
-// scene using this action must follow one that already queried HMRC's obligations.
+// Submits a VAT return for whatever period the account's own obligations resolve, off camera,
+// the same way getVatReturn.behaviour.test.js does: the home nav, the submit form's own date
+// fields, allowSyntheticObligations so the server resolves the open period from HMRC's
+// obligations — never a hard-coded period key — the write:vat scope authorise with HMRC, and the
+// receipt.
 async function doSubmitReturn(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
   const start = Date.now();
 
-  const { navigated, periodStart, periodEnd } = await steps.clickObligationSubmitReturn(page, ctx.stepScreenshotDir);
-  if (!navigated) {
-    await writeFailureStill(page, ctx);
-    throw new SceneStepError(
-      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (submitReturn): no open obligation offered a "Submit Return" button`,
-      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
-    );
-  }
-  await steps.fillInVat9Box(
-    page,
-    journey.hmrcUser.vatNumber,
-    { periodStart, periodEnd },
-    SUBMIT_RETURN_VAT_BOX_DATA,
-    null,
-    false,
-    ctx.stepScreenshotDir,
-    false,
-  );
+  await steps.goToHomePageUsingMainNav(page, ctx.stepScreenshotDir);
+  await steps.initSubmitVat(page, ctx.stepScreenshotDir);
+  await steps.fillInVat(page, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
   await steps.submitFormVat(page, ctx.stepScreenshotDir);
 
   await waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, "submitReturn", "a write:vat token");
