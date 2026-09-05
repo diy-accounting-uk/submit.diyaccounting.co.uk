@@ -30,10 +30,10 @@ import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 /**
- * Read-only Companies House company lookup: two synchronous Lambdas, no async worker, no
- * DynamoDB audit table. A separate stack from HmrcStack so a failed synth here never blocks the
- * VAT submission path, and so the Companies House API key never widens the HMRC Lambdas' IAM
- * surface.
+ * The read-only Companies House company lookup, plus the OAuth-authorised filing Lambdas, all
+ * synchronous with no async worker and no DynamoDB audit table. A separate stack from HmrcStack
+ * so a failed synth here never blocks the VAT submission path, and so the Companies House API
+ * key and OAuth client secret never widen the HMRC Lambdas' IAM surface.
  */
 public class CompaniesHouseStack extends Stack {
 
@@ -44,6 +44,10 @@ public class CompaniesHouseStack extends Stack {
     public AbstractApiLambdaProps companiesHouseCompanyGetLambdaProps;
     public Function companiesHouseCompanyGetLambda;
     public ILogGroup companiesHouseCompanyGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHouseTokenPostLambdaProps;
+    public Function companiesHouseTokenPostLambda;
+    public ILogGroup companiesHouseTokenPostLambdaLogGroup;
 
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
@@ -76,6 +80,14 @@ public class CompaniesHouseStack extends Stack {
         String companiesHouseBaseUri();
 
         String companiesHouseApiKeyArn();
+
+        String companiesHouseFilingBaseUri();
+
+        String companiesHouseIdentityBaseUri();
+
+        String companiesHouseClientId();
+
+        String companiesHouseClientSecretArn();
 
         @Override
         SubmitSharedNames sharedNames();
@@ -192,14 +204,74 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseCompanyGetLambda, bundlesTable, region, account, props, activityBusArn);
 
+        // Companies House OAuth token exchange. The identity base URI, client id and client
+        // secret ARN are blank until the operator has registered the developer-hub application
+        // (and, for prod, until the ci-only gate lifts), so each is set only when configured -
+        // PopulatedMap rejects a blank value outright.
+        var companiesHouseTokenPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (StringUtils.isNotBlank(props.companiesHouseIdentityBaseUri())) {
+            companiesHouseTokenPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_IDENTITY_BASE_URI", props.companiesHouseIdentityBaseUri());
+        }
+        if (StringUtils.isNotBlank(props.companiesHouseClientId())) {
+            companiesHouseTokenPostLambdaEnv.with("COMPANIES_HOUSE_CLIENT_ID", props.companiesHouseClientId());
+        }
+        if (StringUtils.isNotBlank(props.companiesHouseClientSecretArn())) {
+            companiesHouseTokenPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_CLIENT_SECRET_ARN", props.companiesHouseClientSecretArn());
+        }
+
+        var companiesHouseTokenPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHouseTokenPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouseTokenPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouseTokenPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouseTokenPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouseTokenPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseTokenPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouseTokenPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouseTokenPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseTokenPostLambdaEnv)
+                        .build());
+        this.companiesHouseTokenPostLambdaProps = companiesHouseTokenPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseTokenPostLambda = companiesHouseTokenPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseTokenPostLambdaLogGroup = companiesHouseTokenPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseTokenPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House token exchange with ingestHandler %s",
+                this.companiesHouseTokenPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouseTokenPostIngestLambdaHandler);
+
+        // Its own grant, not grantCompaniesHouseLambdaAccess: the token exchange authenticates
+        // with the OAuth client secret, not the public data API key, and does not gate on a
+        // bundle entitlement (no authorizer runs on this route, so there is no user to check -
+        // the same reason HmrcStack's own token exchange Lambda carries no bundles grant).
+        grantCompaniesHouseTokenLambdaAccess(this.companiesHouseTokenPostLambda, region, account, props, activityBusArn);
+
         Lambda.stackHealthAlarm(
                 this,
                 props.resourceNamePrefix(),
                 "companies-house",
-                List.of(companiesHouseSearchGetLambdaUrlOrigin, companiesHouseCompanyGetLambdaUrlOrigin));
+                List.of(
+                        companiesHouseSearchGetLambdaUrlOrigin,
+                        companiesHouseCompanyGetLambdaUrlOrigin,
+                        companiesHouseTokenPostLambdaUrlOrigin));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
+        cfnOutput(this, "CompaniesHouseTokenPostLambdaArn", this.companiesHouseTokenPostLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",
@@ -238,6 +310,38 @@ public class CompaniesHouseStack extends Stack {
             infof(
                     "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
                     fn.getFunctionName(), props.companiesHouseApiKeyArn(), secretArnWithWildcard);
+        }
+    }
+
+    // Kept separate from grantCompaniesHouseLambdaAccess rather than adding a boolean flag to it:
+    // the token exchange Lambda needs the OAuth client secret and neither the bundles-table grant
+    // nor the API key that method conditionally grants, so reusing it here would hand the token
+    // Lambda an API key it never calls.
+    private static void grantCompaniesHouseTokenLambdaAccess(
+            Function fn, String region, String account, CompaniesHouseStackProps props, String activityBusArn) {
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+        // Grant EventBridge PutEvents permission
+        fn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        // Grant access to the Companies House OAuth client secret in Secrets Manager
+        if (StringUtils.isNotBlank(props.companiesHouseClientSecretArn())) {
+            String secretArnWithWildcard = props.companiesHouseClientSecretArn().endsWith("-*")
+                    ? props.companiesHouseClientSecretArn()
+                    : props.companiesHouseClientSecretArn() + "-*";
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(secretArnWithWildcard))
+                    .build());
+            infof(
+                    "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
+                    fn.getFunctionName(), props.companiesHouseClientSecretArn(), secretArnWithWildcard);
         }
     }
 }

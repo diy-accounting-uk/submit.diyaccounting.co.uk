@@ -58,6 +58,10 @@ public class SubmitApplication {
         public String hmrcSandboxBaseUri;
         public String companiesHouseBaseUri;
         public String companiesHouseApiKeyArn;
+        public String companiesHouseFilingBaseUri;
+        public String companiesHouseIdentityBaseUri;
+        public String companiesHouseClientId;
+        public String companiesHouseClientSecretArn;
         public String baseImageTag;
         public String selfDestructDelayHours;
         public String userPoolArn;
@@ -164,6 +168,22 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_API_KEY_ARN",
                 appProps.companiesHouseApiKeyArn,
                 "(from companiesHouseApiKeyArn in cdk.json)");
+        var companiesHouseFilingBaseUri = envOr(
+                "COMPANIES_HOUSE_FILING_BASE_URI",
+                appProps.companiesHouseFilingBaseUri,
+                "(from companiesHouseFilingBaseUri in cdk.json)");
+        var companiesHouseIdentityBaseUri = envOr(
+                "COMPANIES_HOUSE_IDENTITY_BASE_URI",
+                appProps.companiesHouseIdentityBaseUri,
+                "(from companiesHouseIdentityBaseUri in cdk.json)");
+        var companiesHouseClientId = envOr(
+                "COMPANIES_HOUSE_CLIENT_ID",
+                appProps.companiesHouseClientId,
+                "(from companiesHouseClientId in cdk.json)");
+        var companiesHouseClientSecretArn = envOr(
+                "COMPANIES_HOUSE_CLIENT_SECRET_ARN",
+                appProps.companiesHouseClientSecretArn,
+                "(from companiesHouseClientSecretArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -295,6 +315,12 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .companiesHouseBaseUri(companiesHouseBaseUri)
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn != null ? companiesHouseApiKeyArn : "")
+                        .companiesHouseFilingBaseUri(companiesHouseFilingBaseUri != null ? companiesHouseFilingBaseUri : "")
+                        .companiesHouseIdentityBaseUri(
+                                companiesHouseIdentityBaseUri != null ? companiesHouseIdentityBaseUri : "")
+                        .companiesHouseClientId(companiesHouseClientId != null ? companiesHouseClientId : "")
+                        .companiesHouseClientSecretArn(
+                                companiesHouseClientSecretArn != null ? companiesHouseClientSecretArn : "")
                         .build());
 
         // Create the AccountStack
