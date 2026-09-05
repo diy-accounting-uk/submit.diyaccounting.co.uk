@@ -2,9 +2,7 @@
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
-  # Serialise per target environment, not per branch: two branches both targeting ci used
-  # to race each other's ECR repo, Cognito pool and secret writes.
-  group: ${{ github.ref_name == 'main' && 'deploy-environment-prod' || 'deploy-environment-ci' }}
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 # bump12

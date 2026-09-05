@@ -9,9 +9,7 @@ run-name: "record ${{ inputs.script }} video"
 # procedure — local iteration first, then this workflow for the real recording.
 
 concurrency:
-  # Recording toggles Cognito native auth on the target environment, the same shared
-  # setting a deploy toggles for its own behaviour tests — serialise per environment.
-  group: ${{ github.ref_name == 'main' && 'video-capture-prod' || 'video-capture-ci' }}
+  group: video-capture-${{ github.ref_name }}
   cancel-in-progress: false
 
 on:
@@ -24,6 +22,8 @@ on:
         options:
           - 'tour'
           - 'view-obligations'
+          - 'view-return'
+          - 'submit-return'
         default: 'tour'
       environment-name:
         type: choice
@@ -48,6 +48,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   NODE_VERSION: '24'
@@ -203,6 +204,12 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Wait for older ci deploy runs to finish
+        if: ${{ steps.script-auth.outputs.auth == 'user' && needs.names.outputs.environment-name != 'prod' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
 
       - name: Enable native auth on Cognito Hosted UI
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
