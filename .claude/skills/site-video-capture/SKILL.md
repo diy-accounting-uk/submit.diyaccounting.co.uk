@@ -62,9 +62,9 @@ what the workflow records against.
 
 ## Step 2a — a logged-in scene script
 
-Set `"auth": "user"` and four journey actions unlock: `login`, `consent`, `ensureBundle` and
-`hmrcAuthorise`. Each runs the behaviour tests' own step function, so the sign-in and HMRC flows
-have one implementation and a markup change is fixed once for both.
+Set `"auth": "user"` and five journey actions unlock: `login`, `consent`, `ensureBundle`,
+`hmrcAuthorise` and `submitReturn`. Each runs the behaviour tests' own step function, so the
+sign-in and HMRC flows have one implementation and a markup change is fixed once for both.
 
 **The script never names an identity provider.** It comes from `TEST_AUTH_PROVIDER` at run time,
 the same way the behaviour tests pick one: the simulator and proxy variants sign in through the
@@ -99,6 +99,22 @@ Three things to know before writing the next one:
   missing.
 - Type into text fields and `fill` date pickers. Typing digits into an `input type="date"` lands
   them in the browser's own segment order and produces a different date.
+
+## Step 2b — an off-camera scene
+
+Mark a scene `"offCamera": true` when a real step has to happen but a viewer never needs to see
+it — for instance, submitting a return before viewing one, so the account has something on file
+to show. The scene runs at zero pacing, shows no caption and no chapter label, takes no still,
+and pauses frame capture for its whole duration: nothing from it reaches the encoded video, the
+`.vtt` or the `.transcript.md`. Its steps still land in the timeline, each carrying
+`offCamera: true`, so the acceptance checks can see what ran; `check-video-timings.js` skips
+timer and residual expectations for them, since a step run at zero pacing has neither.
+
+`submitReturn` is built for this: it submits a VAT return for whatever open obligation the
+signed-in account currently has — home nav, the submit form with round figures, the write:vat
+scope authorise with HMRC, and the receipt — and resolves the period from the account's own
+obligations server-side, never a hard-coded period key. `videos/view-return.json` uses it between
+an on-camera obligations query and a second one, so the return it then opens on camera is real.
 
 ## Step 3 — record for real against the proxy variant or a deployment
 

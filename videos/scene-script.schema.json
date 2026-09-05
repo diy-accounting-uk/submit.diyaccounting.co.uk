@@ -92,6 +92,10 @@
         "id": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9-]*$" },
         "chapter": { "type": "string", "minLength": 1 },
         "still": { "type": "boolean" },
+        "offCamera": {
+          "type": "boolean",
+          "description": "Runs the scene's steps with zero pacing, no captions, no chapter label and no stills, and pauses frame capture for its duration, so nothing from it reaches the encoded video, the vtt or the transcript. Its steps still land in the timeline (each carrying offCamera: true) so the acceptance checks can see them, but the timing checks skip timer and residual expectations for them. For a real step the video does not need to show, such as submitting a return before viewing it."
+        },
         "steps": {
           "type": "array",
           "minItems": 1,
@@ -388,6 +392,19 @@
               "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
               "caption": { "type": "string" },
               "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "submitReturn" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Submits a VAT return for whatever open obligation the signed-in account currently has: home nav, the submit form with round figures, the write:vat scope authorise with HMRC, and the receipt. The period is resolved server-side from the account's own obligations, never a hard-coded period key. Belongs in an off-camera scene — it carries no caption of its own and drives its own HMRC authorise pages, which a viewer never needs to see twice. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
               "note": { "type": "string" }
             }
           }

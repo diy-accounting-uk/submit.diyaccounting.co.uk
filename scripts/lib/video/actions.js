@@ -303,6 +303,49 @@ async function doHmrcAuthorise(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// Submits a VAT return for whatever open obligation the signed-in account currently has, off
+// camera: the same behaviour-test steps submitVat.behaviour.test.js drives for a submission
+// (home nav, the submit form, the write:vat scope authorise, and the receipt). The period comes
+// from the account's own obligations, resolved server-side — never a hard-coded period key, per
+// the repo rule against relying on a particular obligation coming back.
+async function doSubmitReturn(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const journey = requireJourney(step, ctx);
+  const appOrigin = new URL(ctx.baseUrl).origin;
+  const start = Date.now();
+
+  await steps.goToHomePageUsingMainNav(page, ctx.stepScreenshotDir);
+  await steps.initSubmitVat(page, ctx.stepScreenshotDir);
+  // Round figures; allowSyntheticObligations lets the server resolve the period from whichever
+  // obligation is actually open, rather than the form's default placeholder dates.
+  await steps.fillInVat(page, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
+  await steps.submitFormVat(page, ctx.stepScreenshotDir);
+
+  try {
+    // The scope upgrade to write:vat read:vat sends the browser to HMRC, same redirect
+    // hmrcAuthorise waits for.
+    await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
+  } catch (err) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (submitReturn): the browser stayed on ${appOrigin}, so HMRC never asked for authority. ` +
+        `A run whose account already holds a write:vat token skips the authorise pages; record with an account that has not granted authority yet (${err.message})`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
+    );
+  }
+  await steps.acceptCookiesHmrc(page, ctx.stepScreenshotDir);
+  await steps.goToHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.initHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.fillInHmrcAuth(page, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
+  await steps.submitHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.grantPermissionHmrcAuth(page, ctx.stepScreenshotDir);
+
+  await steps.completeVat(page, ctx.baseUrl, null, ctx.stepScreenshotDir);
+  await steps.verifyVatSubmission(page, null, ctx.stepScreenshotDir);
+
+  return { waitMs: Date.now() - start, rect: null };
+}
+
 const HANDLERS = {
   goto: doGoto,
   click: doClick,
@@ -319,6 +362,7 @@ const HANDLERS = {
   consent: doConsent,
   ensureBundle: doEnsureBundle,
   hmrcAuthorise: doHmrcAuthorise,
+  submitReturn: doSubmitReturn,
 };
 
 // Returns { waitMs, rect }. waitMs is the measured backend wait for pacing's wait subtraction

@@ -37,6 +37,7 @@ const STEP_GROUP = {
   consent: 2,
   ensureBundle: 2,
   hmrcAuthorise: 2,
+  submitReturn: 2,
   caption: null,
   hold: null,
   still: null,

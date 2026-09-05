@@ -87,14 +87,39 @@ describe("journey actions", () => {
     expect(() => validateScript(withStep("user", { action: "consent" }))).not.toThrow();
     expect(() => validateScript(withStep("user", { action: "ensureBundle", bundle: "Day pass" }))).not.toThrow();
     expect(() => validateScript(withStep("user", { action: "hmrcAuthorise" }))).not.toThrow();
+    expect(() => validateScript(withStep("user", { action: "submitReturn" }))).not.toThrow();
   });
 
   test("are refused when the script has no user", () => {
     expect(() => validateScript(withStep("none", { action: "login" }))).toThrow(/auth to be "user"/);
+    expect(() => validateScript(withStep("none", { action: "submitReturn" }))).toThrow(/auth to be "user"/);
   });
 
   test("ensureBundle names the bundle it needs", () => {
     expect(() => validateScript(withStep("user", { action: "ensureBundle" }))).toThrow(/bundle/);
+  });
+});
+
+describe("offCamera scenes", () => {
+  const withScene = (sceneOverrides) =>
+    baseScript({
+      auth: "user",
+      scenes: [
+        { id: "home", chapter: "Home", steps: [{ action: "goto", url: "/" }] },
+        { id: "submit", chapter: "Submit", steps: [{ action: "submitReturn" }], ...sceneOverrides },
+      ],
+    });
+
+  test("accepts a scene marked offCamera: true", () => {
+    expect(() => validateScript(withScene({ offCamera: true }))).not.toThrow();
+  });
+
+  test("accepts a scene with no offCamera field at all", () => {
+    expect(() => validateScript(withScene({}))).not.toThrow();
+  });
+
+  test("rejects a non-boolean offCamera value", () => {
+    expect(() => validateScript(withScene({ offCamera: "yes" }))).toThrow(/offCamera/);
   });
 });
 

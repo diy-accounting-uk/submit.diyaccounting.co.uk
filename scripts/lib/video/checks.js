@@ -14,6 +14,10 @@ import { residualAfterWait } from "./pacing.js";
 export function checkTimings(timelineSteps, script) {
   const failures = [];
   for (const step of timelineSteps) {
+    // An off-camera scene runs at zero pacing by design (scriptSchema's "offCamera") — its
+    // recorded residual is deliberately not the configured one, so the formula this check
+    // enforces does not apply to it.
+    if (step.offCamera) continue;
     if (step.group === 2 || step.group === 3) {
       const expectedResidual = residualAfterWait(step.configuredMs, step.waitMs, script.pacing);
       const diff = Math.abs(expectedResidual - step.residualMs);
@@ -48,12 +52,17 @@ export function checkTimerMarkers(timelineSteps, overlayEvents, script) {
     assertHasField(step, "timerShown");
   }
   const failures = [];
-  const expectedCount = timelineSteps.filter((s) => s.waitMs > script.pacing.timerThresholdMs && s.navigated === false).length;
+  // An off-camera step never arms the timer overlay (it has no captured frame to arm it on), so
+  // a long wait there is not a marker this check should expect.
+  const expectedCount = timelineSteps.filter(
+    (s) => s.waitMs > script.pacing.timerThresholdMs && s.navigated === false && !s.offCamera,
+  ).length;
   const actualCount = overlayEvents.filter((e) => e.type === "timerStart").length;
   if (actualCount < expectedCount) {
     failures.push({ check: "timerMarkers", expected: `>= ${expectedCount}`, actual: actualCount });
   }
   for (const step of timelineSteps) {
+    if (step.offCamera) continue;
     if (step.timerShown && !(step.waitMs > script.pacing.timerThresholdMs)) {
       failures.push({
         check: "timerShownWithoutLongWait",
