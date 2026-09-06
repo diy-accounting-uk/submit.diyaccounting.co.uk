@@ -386,7 +386,7 @@ refactor to set `const TABLE_NAME = process.env.SOME_TABLE_NAME` at module scope
 
 ---
 
-## 12. `publishActivityEvent(...).catch(() => {})` Pattern
+## 12. `publishActivityEvent(...).catch(() => {})` Pattern — done
 
 **What**: 14 Lambda handler files call `publishActivityEvent({...}).catch(() => {})` as a
 fire-and-forget operation. The `.catch(() => {})` is repeated every time.
