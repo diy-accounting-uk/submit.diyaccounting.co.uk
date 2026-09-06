@@ -78,28 +78,6 @@ on main and each names the event that verifies it.
   `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
   Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
   carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
-- [ ] **B30m. The Bedrock budget topic reaches Telegram.** `<env>-env-bedrock-budget-alerts` in
-  `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
-  Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
-  30. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-5` (dc69e74e). Budgets publish only to SNS,
-  so `bedrockBudgetAlertForward.js` in us-east-1 subscribes to the topic and puts an
-  `ActivityEvent` on the shared activity bus, which every deployment's Telegram rule already
-  reads. The same commit fixes the ci environment deploy failure (run 34016080214, "Budgets
-  Actions don't support daily granularity"): the deny action sits on a monthly USD 150 budget,
-  30 days of the daily figure, and the daily USD 5 budget notifies only (`GREATER_THAN` 99
-  percent, the only operator shape Budgets accepts). The ci environment run 34020055726 then
-  failed on the forwarder Lambda's image: the environment deploy builds no image for the
-  us-east-1 registry, since that stack never had a container Lambda. Track ue1-env-image
-  added that build (ea0bd4d6: the ingestion image is pushed to the us-east-1 repository as
-  `env-observability-ue1-<sha>`), and run 34020851682 deployed the lot to ci. A test
-  notification to `ci-env-bedrock-budget-alerts` at 08:55 UTC on 2026-09-06 reached the
-  forwarder, which put one `bedrock-budget-alert` event on the activity bus (its log shows
-  `published: 1`); no ci app set stood to carry it to Telegram. The same test on prod at
-  09:30 UTC reached `prod-env-bedrock-budget-alert-forward` (`published: 1`), where
-  prod-0967fab's Telegram rule reads the bus. Verified when the operator confirms the message
-  arrived on Telegram.
-
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
   selfDestruct.js`) predates `CompaniesHouseStack`, so every ci set leaves
@@ -144,26 +122,6 @@ on main and each names the event that verifies it.
   **Track**: code complete on `claude/board-batch-4` (fe4eff98): the issue Lambda is a rule
   target only when the environment is `prod`, pinned by `OpsStackTest` (one target on ci, two on
   prod). Verified when the next ci alarm reaches Telegram and opens no issue.
-- [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
-  catalogue once carried `listedInEnvironments` on a bundle (commented out in
-  `web/public/submit.catalogue.toml`) and nothing honours it now. Add an `environments` field
-  on activities, read by `catalog-service.js` so the UI lists the activity only in a named
-  environment, and by `enforceBundles` in `app/services/bundleManagement.js` so its paths
-  answer 403 elsewhere (the Lambda has `ENVIRONMENT_NAME`; the browser reads the environment
-  from `submit.env`). Set it to `["local", "proxy", "ci"]` on `vat-liabilities`,
-  `vat-payments`, `vat-penalties` and `self-employed`, and on every new activity from now on
-  until the operator has tried it on ci and lifts the gate; the Companies House `company-lookup`
-  reached prod in PR #118 and joins the same gate. Unit tests on both readers, and the ci
-  behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
-  32. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (b72324d8). Activities carry
-  `environments = ["local", "test", "simulator", "proxy", "ci"]`; the home page reads the
-  environment from `submit.environment-name.txt` (PublishStack writes it at synth, prod serves
-  `prod`), and `enforceBundles` answers 403 with `ACTIVITY_ENVIRONMENT_RESTRICTED` elsewhere. The
-  three VAT read activities' path patterns narrowed to their own routes so the gate cannot leak
-  onto other VAT endpoints. The ci deployment ci-claud063e (deploy run 33998025585, green)
-  serves the catalogue with the field on all five activities; verified when prod after the
-  merge hides them and the operator has looked at them on ci.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -259,6 +217,17 @@ on main and each names the event that verifies it.
   allowed only `www.google-analytics.com` while GA4 collects on regional subdomains. Verified
   when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
+
+- [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Every deployment's
+  `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity bus, so while
+  two prod sets stand (the normal state between a main deploy and the daily sweep) every ops
+  message reaches Telegram twice; the operator's screenshot of 2026-09-06 shows each alarm,
+  stack event and the budget test doubled. Move the rule and the forwarder Lambda
+  (`infra/main/java/.../stacks/OpsStack.java`, `activityTelegramForwarder.js`) to an
+  environment stack so one rule reads the bus per environment, or gate the rule on the
+  deployment being the last known good; CDK test that a synth of two deployments yields one
+  forwarder. **Source**: BACKLOG 30; board render 2026-09-06. **Owner**: Claude Code.
+  **Model**: Sonnet.
 
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
