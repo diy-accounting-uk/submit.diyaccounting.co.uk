@@ -183,12 +183,12 @@ verify.
   has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
   **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: `videos/itsa-business-details.json` and its npm scripts are on
-  `claude/board-batch-4` (8e12c739), green on the simulator. Remainder in flight (Sonnet,
-  started 2026-09-06 02:10 UTC): the video journey mints its HMRC test user with
-  `mtd-income-tax` and offers `{{hmrcNino}}`, the way the ci behaviour test does, because the
-  script cannot carry a fixed NINO; it also adds `simulator` to the `resident-itsa` bundle's
-  `listedInEnvironments`. Then the coordinator records it with `video-capture.yml -f
-  environment-name=ci --ref claude/board-batch-4`.
+  `claude/board-batch-4` (8e12c739, 7f8eba25), green on the simulator: the script declares
+  `hmrcServices` so the journey mints its HMRC test user with `mtd-income-tax`, types
+  `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
+  Next: after the third push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
+  script=itsa-business-details -f environment-name=ci`; verified when the artifact shows the
+  business id.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)

@@ -104,7 +104,7 @@ export async function redeemPass(code, now) {
 
 /**
  * Query passes issued by a specific user.
- * Uses issuedBy-index GSI in production; falls back to scan+filter for local dev.
+ * Queries the issuedBy-index GSI; the local table in app/bin/dynamodb.js carries the same index.
  */
 export async function getPassesByIssuer(issuedBy, { limit = 20 } = {}) {
   logger.info({ message: `getPassesByIssuer [table: ${getTableName()}]`, issuedBy, limit });

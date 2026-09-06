@@ -813,9 +813,9 @@ public class AccountStack extends Stack {
         this.passMyPassesGetLambda = passMyPassesGetApiLambda.ingestLambda;
         this.passMyPassesGetLambdaLogGroup = passMyPassesGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passMyPassesGetLambdaProps);
-        // Listing a user's own passes queries issuedBy-index, and falls back to a table Scan when
-        // the query fails. The index needs its own grant: an imported table's ARN does not cover it.
-        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query", "dynamodb:Scan");
+        // Listing a user's own passes queries issuedBy-index. The index needs its own grant: an
+        // imported table's ARN does not cover it.
+        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query");
         grantTableIndexActions(passesTable, this.passMyPassesGetLambda, "issuedBy-index", "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.passMyPassesGetLambda, region, account, props.envName());
         this.passMyPassesGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
