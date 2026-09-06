@@ -71,46 +71,11 @@
         "operationId" : "createCheckoutSession"
       }
     },
-    "/support/ticket" : {
-      "post" : {
-        "summary" : "Submit a support ticket",
-        "description" : "Creates a GitHub issue for the authenticated user's support request",
-        "operationId" : "submitSupportTicket"
-      }
-    },
     "/api/session/beacon" : {
       "post" : {
         "summary" : "Session beacon",
         "description" : "Records a new browser session for activity monitoring",
         "operationId" : "sessionBeacon"
-      }
-    },
-    "/bundle/{id}" : {
-      "delete" : {
-        "summary" : "Delete bundle by id",
-        "description" : "Deletes a bundle for the authenticated user using a path parameter",
-        "operationId" : "deleteBundleById",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "description" : "The bundle id (or name) to delete",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundle deleted successfully"
-          },
-          "202" : {
-            "description" : "Request accepted for processing (async)"
-          }
-        }
       }
     },
     "/hmrc/vat/return" : {
@@ -230,119 +195,6 @@
         }
       }
     },
-    "/hmrc/vat/penalty" : {
-      "get" : {
-        "summary" : "Get VAT penalties from HMRC",
-        "description" : "Retrieves VAT penalties from HMRC for the authenticated user",
-        "operationId" : "getVatPenalties",
-        "parameters" : [ {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "983238295",
-            "pattern" : "^\\d{9}$"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
-    "/hmrc/vat/payment" : {
-      "get" : {
-        "summary" : "Get VAT payments from HMRC",
-        "description" : "Retrieves VAT payments from HMRC for the authenticated user",
-        "operationId" : "getVatPayments",
-        "parameters" : [ {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "983238295",
-            "pattern" : "^\\d{9}$"
-          }
-        }, {
-          "name" : "from",
-          "in" : "query",
-          "required" : false,
-          "description" : "From date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-01-01"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : false,
-          "description" : "To date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
-    "/pass/generate" : {
-      "post" : {
-        "summary" : "Generate a pass using tokens",
-        "description" : "Generates a new pass code using the authenticated user's token balance",
-        "operationId" : "generatePassWithTokens"
-      }
-    },
     "/interest" : {
       "post" : {
         "summary" : "Register feedback engagement",
@@ -369,48 +221,6 @@
         "summary" : "Redeem a pass code",
         "description" : "Redeems a pass code and grants the associated bundle to the authenticated user",
         "operationId" : "redeemPass"
-      }
-    },
-    "/hmrc/itsa/business/details" : {
-      "get" : {
-        "summary" : "Get ITSA business details from HMRC",
-        "description" : "Retrieves the authenticated user's self-employment and property business list from HMRC, including the businessId every other ITSA endpoint needs",
-        "operationId" : "getItsaBusinessDetails",
-        "parameters" : [ {
-          "name" : "nino",
-          "in" : "query",
-          "required" : true,
-          "description" : "National Insurance number",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
       }
     },
     "/hmrc/vat/obligation" : {
@@ -518,29 +328,6 @@
             "description" : "Receipts retrieved successfully"
           }
         }
-      }
-    },
-    "/companies-house/company/{companyNumber}" : {
-      "get" : {
-        "summary" : "Get a Companies House company profile",
-        "description" : "Retrieves the Companies House profile for a company number",
-        "operationId" : "getCompanyProfile",
-        "parameters" : [ {
-          "name" : "companyNumber",
-          "in" : "path",
-          "required" : true,
-          "description" : "The 8-character company number",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/billing/webhook" : {
-      "post" : {
-        "summary" : "Stripe webhook",
-        "description" : "Receives Stripe webhook events for subscription lifecycle",
-        "operationId" : "stripeWebhook"
       }
     },
     "/bundle" : {
@@ -655,61 +442,6 @@
         }
       }
     },
-    "/billing/checkout-session/{id}" : {
-      "get" : {
-        "summary" : "Retrieve a billing checkout session",
-        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
-        "operationId" : "getCheckoutSession",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Stripe checkout session id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/billing/recover" : {
-      "post" : {
-        "summary" : "Recover billing subscription",
-        "description" : "Recovers or reconciles a billing subscription",
-        "operationId" : "recoverBilling"
-      }
-    },
-    "/cognito/token" : {
-      "post" : {
-        "summary" : "Exchange Cognito authorization code for access token",
-        "description" : "Exchanges an authorization code for a Cognito access token",
-        "operationId" : "exchangeCognitoToken",
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "code" : {
-                    "type" : "string",
-                    "example" : "abc123"
-                  }
-                }
-              },
-              "example" : {
-                "code" : "abc123"
-              }
-            }
-          }
-        },
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Token exchanged successfully"
-          }
-        }
-      }
-    },
     "/pass/admin" : {
       "post" : {
         "summary" : "Generate a new pass",
@@ -741,38 +473,6 @@
             "description" : "Request completed successfully"
           }
         }
-      }
-    },
-    "/companies-house/search" : {
-      "get" : {
-        "summary" : "Search Companies House",
-        "description" : "Searches Companies House for a company by name or number",
-        "operationId" : "searchCompanies",
-        "parameters" : [ {
-          "name" : "q",
-          "in" : "query",
-          "required" : true,
-          "description" : "Company name or number search term",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "itemsPerPage",
-          "in" : "query",
-          "required" : false,
-          "description" : "Results per page (1-50, default 20)",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "startIndex",
-          "in" : "query",
-          "required" : false,
-          "description" : "Zero-based offset into the result set",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
       }
     },
     "/hmrc/vat/liability" : {
@@ -842,6 +542,306 @@
         "summary" : "Get billing portal URL",
         "description" : "Creates a Stripe billing portal session URL",
         "operationId" : "getBillingPortal"
+      }
+    },
+    "/support/ticket" : {
+      "post" : {
+        "summary" : "Submit a support ticket",
+        "description" : "Creates a GitHub issue for the authenticated user's support request",
+        "operationId" : "submitSupportTicket"
+      }
+    },
+    "/bundle/{id}" : {
+      "delete" : {
+        "summary" : "Delete bundle by id",
+        "description" : "Deletes a bundle for the authenticated user using a path parameter",
+        "operationId" : "deleteBundleById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/penalty" : {
+      "get" : {
+        "summary" : "Get VAT penalties from HMRC",
+        "description" : "Retrieves VAT penalties from HMRC for the authenticated user",
+        "operationId" : "getVatPenalties",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/vat/payment" : {
+      "get" : {
+        "summary" : "Get VAT payments from HMRC",
+        "description" : "Retrieves VAT payments from HMRC for the authenticated user",
+        "operationId" : "getVatPayments",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/pass/generate" : {
+      "post" : {
+        "summary" : "Generate a pass using tokens",
+        "description" : "Generates a new pass code using the authenticated user's token balance",
+        "operationId" : "generatePassWithTokens"
+      }
+    },
+    "/hmrc/itsa/business/details" : {
+      "get" : {
+        "summary" : "Get ITSA business details from HMRC",
+        "description" : "Retrieves the authenticated user's self-employment and property business list from HMRC, including the businessId every other ITSA endpoint needs",
+        "operationId" : "getItsaBusinessDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/company/{companyNumber}" : {
+      "get" : {
+        "summary" : "Get a Companies House company profile",
+        "description" : "Retrieves the Companies House profile for a company number",
+        "operationId" : "getCompanyProfile",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/billing/webhook" : {
+      "post" : {
+        "summary" : "Stripe webhook",
+        "description" : "Receives Stripe webhook events for subscription lifecycle",
+        "operationId" : "stripeWebhook"
+      }
+    },
+    "/billing/checkout-session/{id}" : {
+      "get" : {
+        "summary" : "Retrieve a billing checkout session",
+        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
+        "operationId" : "getCheckoutSession",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Stripe checkout session id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/billing/recover" : {
+      "post" : {
+        "summary" : "Recover billing subscription",
+        "description" : "Recovers or reconciles a billing subscription",
+        "operationId" : "recoverBilling"
+      }
+    },
+    "/cognito/token" : {
+      "post" : {
+        "summary" : "Exchange Cognito authorization code for access token",
+        "description" : "Exchanges an authorization code for a Cognito access token",
+        "operationId" : "exchangeCognitoToken",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "code" : {
+                    "type" : "string",
+                    "example" : "abc123"
+                  }
+                }
+              },
+              "example" : {
+                "code" : "abc123"
+              }
+            }
+          }
+        },
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/search" : {
+      "get" : {
+        "summary" : "Search Companies House",
+        "description" : "Searches Companies House for a company by name or number",
+        "operationId" : "searchCompanies",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : true,
+          "description" : "Company name or number search term",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "itemsPerPage",
+          "in" : "query",
+          "required" : false,
+          "description" : "Results per page (1-50, default 20)",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startIndex",
+          "in" : "query",
+          "required" : false,
+          "description" : "Zero-based offset into the result set",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     }
   },

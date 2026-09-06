@@ -125,6 +125,18 @@ public class DataStack extends Stack {
                 "hashedSub",
                 "bundleId");
         ensureTimeToLive(this, props.resourceNamePrefix() + "-BundlesTTL", props.sharedNames().bundlesTableName, "ttl");
+        // GSI for counting live allocations of a capped bundle without scanning the table.
+        // Sparse: an item with no expiry carries no index entry, which matches the count the
+        // capacity reconciliation needs. KEYS_ONLY because the query only ever asks for a count.
+        ensureGlobalSecondaryIndex(
+                this,
+                props.resourceNamePrefix() + "-BundlesBundleIdExpiryGSI",
+                props.sharedNames().bundlesTableName,
+                "bundleId-expiry-index",
+                "bundleId",
+                "expiry",
+                "KEYS_ONLY");
+        infof("Ensured bundleId-expiry-index GSI on bundles table %s", props.sharedNames().bundlesTableName);
         String bundlesStreamArn =
                 ensureTableStream(props.resourceNamePrefix() + "-Bundles", props.sharedNames().bundlesTableName);
         infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
@@ -304,7 +316,8 @@ public class DataStack extends Stack {
                 props.sharedNames().passesTableName,
                 "issuedBy-index",
                 "issuedBy",
-                "createdAt");
+                "createdAt",
+                "ALL");
         infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().passesTableName);
 
         String passesStreamArn =

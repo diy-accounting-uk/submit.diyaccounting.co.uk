@@ -3,14 +3,14 @@
 
 // app/functions/account/bundleCapacityReconcile.js
 //
-// Scheduled Lambda (EventBridge, every hour) that scans the bundles table
+// Scheduled Lambda (EventBridge, every hour) that queries the bundleId-expiry-index
 // for each capped bundleId, counts active (non-expired) allocations, and writes
 // the correct count to the capacity counter table.
 
 import { createLogger } from "../../lib/logger.js";
 import { validateEnv } from "../../lib/env.js";
-import { getDynamoDbDocClient } from "../../lib/dynamoDbClient.js";
 import { loadCatalogFromRoot, getCappedBundleIds } from "../../services/productCatalog.js";
+import { countActiveAllocations } from "../../data/dynamoDbBundleRepository.js";
 import { putCounter } from "../../data/dynamoDbCapacityRepository.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
@@ -19,8 +19,6 @@ const logger = createLogger({ source: "app/functions/account/bundleCapacityRecon
 export async function handler(_event) {
   validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME"]);
 
-  const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
-
   logger.info({ message: "Starting bundle capacity reconciliation" });
 
   let catalog;
@@ -28,7 +26,7 @@ export async function handler(_event) {
     catalog = loadCatalogFromRoot();
   } catch (error) {
     logger.error({ message: "Failed to load catalogue", error: error.message });
-    return;
+    throw error;
   }
 
   const cappedBundleIds = getCappedBundleIds(catalog);
@@ -38,41 +36,23 @@ export async function handler(_event) {
   }
 
   const now = new Date().toISOString();
-  const { docClient, module } = await getDynamoDbDocClient();
+  const failures = [];
 
   for (const bundleId of cappedBundleIds) {
     try {
-      let activeCount = 0;
-      let lastEvaluatedKey = undefined;
-
-      // Scan the bundles table filtering for this bundleId with future expiry
-      do {
-        const result = await docClient.send(
-          new module.ScanCommand({
-            TableName: bundlesTableName,
-            FilterExpression: "bundleId = :bid AND expiry > :now",
-            ExpressionAttributeValues: {
-              ":bid": bundleId,
-              ":now": now,
-            },
-            Select: "COUNT",
-            ExclusiveStartKey: lastEvaluatedKey,
-          }),
-        );
-
-        activeCount += result.Count || 0;
-        lastEvaluatedKey = result.LastEvaluatedKey;
-      } while (lastEvaluatedKey);
-
+      const activeCount = await countActiveAllocations(bundleId, now);
       await putCounter(bundleId, activeCount);
-
-      // Emit EMF metric for dashboard
       emitActiveAllocationsMetric(bundleId, activeCount);
-
       logger.info({ message: "Reconciled bundle capacity", bundleId, activeCount });
     } catch (error) {
       logger.error({ message: "Error reconciling bundle capacity", bundleId, error: error.message });
+      failures.push({ bundleId, error: error.message });
     }
+  }
+
+  if (failures.length > 0) {
+    const failedBundleIds = failures.map((failure) => failure.bundleId).join(", ");
+    throw new Error(`Bundle capacity reconciliation failed for: ${failedBundleIds}. First error: ${failures[0].error}`);
   }
 
   logger.info({ message: "Bundle capacity reconciliation complete", bundleCount: cappedBundleIds.length });

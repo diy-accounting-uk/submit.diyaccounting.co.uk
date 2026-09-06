@@ -358,6 +358,78 @@ public class SubmitSharedNames {
     public boolean companiesHouseCompanyGetLambdaJwtAuthorizer;
     public boolean companiesHouseCompanyGetLambdaCustomAuthorizer;
 
+    public String companiesHouseTokenPostIngestLambdaHandler;
+    public String companiesHouseTokenPostIngestLambdaFunctionName;
+    public String companiesHouseTokenPostIngestLambdaArn;
+    public String companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseTokenPostLambdaHttpMethod;
+    public String companiesHouseTokenPostLambdaUrlPath;
+    public boolean companiesHouseTokenPostLambdaJwtAuthorizer;
+    public boolean companiesHouseTokenPostLambdaCustomAuthorizer;
+
+    public String companiesHouseTransactionPostIngestLambdaHandler;
+    public String companiesHouseTransactionPostIngestLambdaFunctionName;
+    public String companiesHouseTransactionPostIngestLambdaArn;
+    public String companiesHouseTransactionPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseTransactionPostLambdaHttpMethod;
+    public String companiesHouseTransactionPostLambdaUrlPath;
+    public boolean companiesHouseTransactionPostLambdaJwtAuthorizer;
+    public boolean companiesHouseTransactionPostLambdaCustomAuthorizer;
+
+    public String companiesHouseTransactionGetIngestLambdaHandler;
+    public String companiesHouseTransactionGetIngestLambdaFunctionName;
+    public String companiesHouseTransactionGetIngestLambdaArn;
+    public String companiesHouseTransactionGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseTransactionGetLambdaHttpMethod;
+    public String companiesHouseTransactionGetLambdaUrlPath;
+    public boolean companiesHouseTransactionGetLambdaJwtAuthorizer;
+    public boolean companiesHouseTransactionGetLambdaCustomAuthorizer;
+
+    public String companiesHouseTransactionPutIngestLambdaHandler;
+    public String companiesHouseTransactionPutIngestLambdaFunctionName;
+    public String companiesHouseTransactionPutIngestLambdaArn;
+    public String companiesHouseTransactionPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseTransactionPutLambdaHttpMethod;
+    public String companiesHouseTransactionPutLambdaUrlPath;
+    public boolean companiesHouseTransactionPutLambdaJwtAuthorizer;
+    public boolean companiesHouseTransactionPutLambdaCustomAuthorizer;
+
+    public String companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler;
+    public String companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName;
+    public String companiesHouseRegisteredOfficeAddressGetIngestLambdaArn;
+    public String companiesHouseRegisteredOfficeAddressGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseRegisteredOfficeAddressGetLambdaHttpMethod;
+    public String companiesHouseRegisteredOfficeAddressGetLambdaUrlPath;
+    public boolean companiesHouseRegisteredOfficeAddressGetLambdaJwtAuthorizer;
+    public boolean companiesHouseRegisteredOfficeAddressGetLambdaCustomAuthorizer;
+
+    public String companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler;
+    public String companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName;
+    public String companiesHouseRegisteredOfficeAddressPostIngestLambdaArn;
+    public String companiesHouseRegisteredOfficeAddressPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseRegisteredOfficeAddressPostLambdaHttpMethod;
+    public String companiesHouseRegisteredOfficeAddressPostLambdaUrlPath;
+    public boolean companiesHouseRegisteredOfficeAddressPostLambdaJwtAuthorizer;
+    public boolean companiesHouseRegisteredOfficeAddressPostLambdaCustomAuthorizer;
+
+    public String companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler;
+    public String companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName;
+    public String companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn;
+    public String companiesHouseRegisteredEmailEligibilityGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseRegisteredEmailEligibilityGetLambdaHttpMethod;
+    public String companiesHouseRegisteredEmailEligibilityGetLambdaUrlPath;
+    public boolean companiesHouseRegisteredEmailEligibilityGetLambdaJwtAuthorizer;
+    public boolean companiesHouseRegisteredEmailEligibilityGetLambdaCustomAuthorizer;
+
+    public String companiesHouseRegisteredEmailAddressPostIngestLambdaHandler;
+    public String companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName;
+    public String companiesHouseRegisteredEmailAddressPostIngestLambdaArn;
+    public String companiesHouseRegisteredEmailAddressPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseRegisteredEmailAddressPostLambdaHttpMethod;
+    public String companiesHouseRegisteredEmailAddressPostLambdaUrlPath;
+    public boolean companiesHouseRegisteredEmailAddressPostLambdaJwtAuthorizer;
+    public boolean companiesHouseRegisteredEmailAddressPostLambdaCustomAuthorizer;
+
     public String supportTicketPostIngestLambdaHandler;
     public String supportTicketPostIngestLambdaFunctionName;
     public String supportTicketPostIngestLambdaArn;
@@ -505,6 +577,11 @@ public class SubmitSharedNames {
 
     public String edgeStackId;
     public String publishStackId;
+
+    public String alarmTriageRoleName;
+    public String alarmTriageGuardrailName;
+    public String alarmTriageGuardrailIdParameterName;
+    public String alarmTriageGuardrailVersionParameterName;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -1255,6 +1332,239 @@ public class SubmitSharedNames {
                 "getCompanyProfile",
                 List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
 
+        this.companiesHouseTokenPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseTokenPostLambdaUrlPath = "/api/v1/companies-house/token";
+        this.companiesHouseTokenPostLambdaJwtAuthorizer = false;
+        this.companiesHouseTokenPostLambdaCustomAuthorizer = false;
+        var companiesHouseTokenPostLambdaHandlerName = "companiesHouseTokenPost.ingestHandler";
+        var companiesHouseTokenPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTokenPostLambdaHandlerName);
+        this.companiesHouseTokenPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTokenPostLambdaHandlerDashed);
+        this.companiesHouseTokenPostIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTokenPostLambdaHandlerName);
+        this.companiesHouseTokenPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTokenPostLambdaHandlerDashed);
+        this.companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseTokenPostLambdaHttpMethod,
+                this.companiesHouseTokenPostLambdaUrlPath,
+                "Exchange Companies House authorization code for access token",
+                "Exchanges a Companies House OAuth authorisation code for an access token",
+                "exchangeCompaniesHouseToken"));
+
+        this.companiesHouseTransactionPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseTransactionPostLambdaUrlPath = "/api/v1/companies-house/transaction";
+        this.companiesHouseTransactionPostLambdaJwtAuthorizer = false;
+        this.companiesHouseTransactionPostLambdaCustomAuthorizer = true;
+        var companiesHouseTransactionPostLambdaHandlerName = "companiesHouseTransactionPost.ingestHandler";
+        var companiesHouseTransactionPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionPostLambdaHandlerName);
+        this.companiesHouseTransactionPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionPostLambdaHandlerDashed);
+        this.companiesHouseTransactionPostIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionPostLambdaHandlerName);
+        this.companiesHouseTransactionPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionPostLambdaHandlerDashed);
+        this.companiesHouseTransactionPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseTransactionPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseTransactionPostLambdaHttpMethod,
+                this.companiesHouseTransactionPostLambdaUrlPath,
+                "Open a Companies House transaction",
+                "Opens a Companies House filing transaction against a company number",
+                "openCompaniesHouseTransaction",
+                List.of(
+                        new ApiParameter("companyNumber", "body", true, "The 8-character company number"),
+                        new ApiParameter("description", "body", true, "A description of the filing, at most 200 characters"),
+                        new ApiParameter("reference", "body", false, "An optional caller-supplied reference"))));
+
+        this.companiesHouseTransactionGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseTransactionGetLambdaUrlPath = "/api/v1/companies-house/transaction/{transactionId}";
+        this.companiesHouseTransactionGetLambdaJwtAuthorizer = false;
+        this.companiesHouseTransactionGetLambdaCustomAuthorizer = true;
+        var companiesHouseTransactionGetLambdaHandlerName = "companiesHouseTransactionGet.ingestHandler";
+        var companiesHouseTransactionGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionGetLambdaHandlerName);
+        this.companiesHouseTransactionGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionGetLambdaHandlerDashed);
+        this.companiesHouseTransactionGetIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionGetLambdaHandlerName);
+        this.companiesHouseTransactionGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionGetLambdaHandlerDashed);
+        this.companiesHouseTransactionGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseTransactionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseTransactionGetLambdaHttpMethod,
+                this.companiesHouseTransactionGetLambdaUrlPath,
+                "Get a Companies House transaction",
+                "Retrieves a Companies House filing transaction and its filing status",
+                "getCompaniesHouseTransaction",
+                List.of(new ApiParameter("transactionId", "path", true, "The Companies House transaction id"))));
+
+        this.companiesHouseTransactionPutLambdaHttpMethod = HttpMethod.PUT;
+        this.companiesHouseTransactionPutLambdaUrlPath = "/api/v1/companies-house/transaction/{transactionId}";
+        this.companiesHouseTransactionPutLambdaJwtAuthorizer = false;
+        this.companiesHouseTransactionPutLambdaCustomAuthorizer = true;
+        var companiesHouseTransactionPutLambdaHandlerName = "companiesHouseTransactionPut.ingestHandler";
+        var companiesHouseTransactionPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionPutLambdaHandlerName);
+        this.companiesHouseTransactionPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionPutLambdaHandlerDashed);
+        this.companiesHouseTransactionPutIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionPutLambdaHandlerName);
+        this.companiesHouseTransactionPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionPutLambdaHandlerDashed);
+        this.companiesHouseTransactionPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseTransactionPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseTransactionPutLambdaHttpMethod,
+                this.companiesHouseTransactionPutLambdaUrlPath,
+                "Close a Companies House transaction",
+                "Closes a Companies House filing transaction, submitting the filing",
+                "closeCompaniesHouseTransaction",
+                List.of(new ApiParameter("transactionId", "path", true, "The Companies House transaction id"))));
+
+        this.companiesHouseRegisteredOfficeAddressGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseRegisteredOfficeAddressGetLambdaUrlPath =
+                "/api/v1/companies-house/company/{companyNumber}/registered-office-address";
+        this.companiesHouseRegisteredOfficeAddressGetLambdaJwtAuthorizer = true;
+        this.companiesHouseRegisteredOfficeAddressGetLambdaCustomAuthorizer = false;
+        var companiesHouseRegisteredOfficeAddressGetLambdaHandlerName =
+                "companiesHouseRegisteredOfficeAddressGet.ingestHandler";
+        // AWS Lambda function names cap at 64 characters. The full dashed handler name (with the
+        // resource name prefix) can push past that for a long deployment name, so the deployed
+        // function name drops "registered" - the handler entry point above keeps its full,
+        // self-documenting name.
+        var companiesHouseRegisteredOfficeAddressGetLambdaHandlerDashed = "companies-house-office-address-get";
+        this.companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseRegisteredOfficeAddressGetLambdaHandlerDashed);
+        this.companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseRegisteredOfficeAddressGetLambdaHandlerName);
+        this.companiesHouseRegisteredOfficeAddressGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseRegisteredOfficeAddressGetLambdaHandlerDashed);
+        this.companiesHouseRegisteredOfficeAddressGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseRegisteredOfficeAddressGetIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseRegisteredOfficeAddressGetLambdaHttpMethod,
+                this.companiesHouseRegisteredOfficeAddressGetLambdaUrlPath,
+                "Get a company's registered office address",
+                "Reads the current registered office address from the public register, with its etag",
+                "getCompaniesHouseRegisteredOfficeAddress",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseRegisteredOfficeAddressPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseRegisteredOfficeAddressPostLambdaUrlPath =
+                "/api/v1/companies-house/transaction/{transactionId}/registered-office-address";
+        this.companiesHouseRegisteredOfficeAddressPostLambdaJwtAuthorizer = false;
+        this.companiesHouseRegisteredOfficeAddressPostLambdaCustomAuthorizer = true;
+        var companiesHouseRegisteredOfficeAddressPostLambdaHandlerName =
+                "companiesHouseRegisteredOfficeAddressPost.ingestHandler";
+        // See the registered office address read above: the deployed function name drops
+        // "registered" to stay clear of the 64-character AWS Lambda function name cap.
+        var companiesHouseRegisteredOfficeAddressPostLambdaHandlerDashed = "companies-house-office-address-post";
+        this.companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseRegisteredOfficeAddressPostLambdaHandlerDashed);
+        this.companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseRegisteredOfficeAddressPostLambdaHandlerName);
+        this.companiesHouseRegisteredOfficeAddressPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseRegisteredOfficeAddressPostLambdaHandlerDashed);
+        this.companiesHouseRegisteredOfficeAddressPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseRegisteredOfficeAddressPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseRegisteredOfficeAddressPostLambdaHttpMethod,
+                this.companiesHouseRegisteredOfficeAddressPostLambdaUrlPath,
+                "File a registered office address change",
+                "Adds a registered office address change (AD01) resource to an open transaction",
+                "postCompaniesHouseRegisteredOfficeAddress",
+                List.of(
+                        new ApiParameter("transactionId", "path", true, "The Companies House transaction id"),
+                        new ApiParameter("premises", "body", true, "The building name or number"),
+                        new ApiParameter("addressLine1", "body", true, "The first address line"),
+                        new ApiParameter("addressLine2", "body", false, "The second address line"),
+                        new ApiParameter("locality", "body", true, "The town or city"),
+                        new ApiParameter("region", "body", false, "The county or region"),
+                        new ApiParameter("postalCode", "body", true, "The postcode"),
+                        new ApiParameter("country", "body", true, "One of the Companies House country enum values"),
+                        new ApiParameter(
+                                "acceptAppropriateOfficeAddressStatement",
+                                "body",
+                                true,
+                                "Must be true - confirms the section 86(2) Companies Act 2006 statement"),
+                        new ApiParameter(
+                                "referenceEtag",
+                                "body",
+                                true,
+                                "The etag from the current registered office address read"))));
+
+        this.companiesHouseRegisteredEmailEligibilityGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseRegisteredEmailEligibilityGetLambdaUrlPath =
+                "/api/v1/companies-house/company/{companyNumber}/registered-email-address/eligibility";
+        this.companiesHouseRegisteredEmailEligibilityGetLambdaJwtAuthorizer = false;
+        this.companiesHouseRegisteredEmailEligibilityGetLambdaCustomAuthorizer = true;
+        var companiesHouseRegisteredEmailEligibilityGetLambdaHandlerName =
+                "companiesHouseRegisteredEmailEligibilityGet.ingestHandler";
+        // See the registered office address read above: the deployed function name drops
+        // "registered" to stay clear of the 64-character AWS Lambda function name cap.
+        var companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed = "companies-house-email-eligibility-get";
+        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed);
+        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerName);
+        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn = "%s-%s"
+                .formatted(appLambdaArnPrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed);
+        this.companiesHouseRegisteredEmailEligibilityGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseRegisteredEmailEligibilityGetLambdaHttpMethod,
+                this.companiesHouseRegisteredEmailEligibilityGetLambdaUrlPath,
+                "Check registered email address change eligibility",
+                "Checks whether a company is eligible for a registered email address change",
+                "getCompaniesHouseRegisteredEmailEligibility",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseRegisteredEmailAddressPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseRegisteredEmailAddressPostLambdaUrlPath =
+                "/api/v1/companies-house/transaction/{transactionId}/registered-email-address";
+        this.companiesHouseRegisteredEmailAddressPostLambdaJwtAuthorizer = false;
+        this.companiesHouseRegisteredEmailAddressPostLambdaCustomAuthorizer = true;
+        var companiesHouseRegisteredEmailAddressPostLambdaHandlerName =
+                "companiesHouseRegisteredEmailAddressPost.ingestHandler";
+        // See the registered office address read above: the deployed function name drops
+        // "registered" to stay clear of the 64-character AWS Lambda function name cap.
+        var companiesHouseRegisteredEmailAddressPostLambdaHandlerDashed = "companies-house-email-address-post";
+        this.companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseRegisteredEmailAddressPostLambdaHandlerDashed);
+        this.companiesHouseRegisteredEmailAddressPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseRegisteredEmailAddressPostLambdaHandlerName);
+        this.companiesHouseRegisteredEmailAddressPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseRegisteredEmailAddressPostLambdaHandlerDashed);
+        this.companiesHouseRegisteredEmailAddressPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseRegisteredEmailAddressPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseRegisteredEmailAddressPostLambdaHttpMethod,
+                this.companiesHouseRegisteredEmailAddressPostLambdaUrlPath,
+                "File a registered email address change",
+                "Adds a registered email address change resource to an open transaction",
+                "postCompaniesHouseRegisteredEmailAddress",
+                List.of(
+                        new ApiParameter("transactionId", "path", true, "The Companies House transaction id"),
+                        new ApiParameter("registeredEmailAddress", "body", true, "The new registered email address"),
+                        new ApiParameter(
+                                "acceptAppropriateEmailAddressStatement",
+                                "body",
+                                true,
+                                "Must be true - confirms the section 88A(2) Companies Act 2006 statement"))));
+
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
         this.supportTicketPostLambdaUrlPath = "/api/v1/support/ticket";
         this.supportTicketPostLambdaJwtAuthorizer = false;
@@ -1597,6 +1907,12 @@ public class SubmitSharedNames {
         this.selfDestructLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, appSelfDestructLambdaHandlerDashed);
         this.selfDestructProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
+
+        this.alarmTriageRoleName = "%s-alarm-triage-role".formatted(this.envResourceNamePrefix);
+        this.alarmTriageGuardrailName = "%s-alarm-triage-guardrail".formatted(this.envResourceNamePrefix);
+        this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);
+        this.alarmTriageGuardrailVersionParameterName =
+                "/submit/%s/alarm-triage/guardrail-version".formatted(props.envName);
     }
 
     /**

@@ -456,9 +456,16 @@ public class KindCdk {
      * @param indexName The name of the GSI
      * @param partitionKeyName The GSI partition key attribute name
      * @param sortKeyName The GSI sort key attribute name (can be null)
+     * @param projectionType The GSI projection type, e.g. "ALL" or "KEYS_ONLY"
      */
     public static void ensureGlobalSecondaryIndex(
-            Stack stack, String id, String tableName, String indexName, String partitionKeyName, String sortKeyName) {
+            Stack stack,
+            String id,
+            String tableName,
+            String indexName,
+            String partitionKeyName,
+            String sortKeyName,
+            String projectionType) {
         List<Map<String, String>> attributeDefinitions = new java.util.ArrayList<>();
         attributeDefinitions.add(Map.of("AttributeName", partitionKeyName, "AttributeType", "S"));
 
@@ -473,7 +480,7 @@ public class KindCdk {
         Map<String, Object> createGsi = Map.of(
                 "IndexName", indexName,
                 "KeySchema", gsiKeySchema,
-                "Projection", Map.of("ProjectionType", "ALL"));
+                "Projection", Map.of("ProjectionType", projectionType));
 
         Map<String, Object> updateTableParams = Map.of(
                 "TableName", tableName,

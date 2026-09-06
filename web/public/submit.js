@@ -31,6 +31,22 @@ import { authorizedFetch, fetchWithIdToken, handle403Error, executeAsyncRequestP
 import { submitVat, getGovClientHeaders, getClientIP, getIPViaWebRTC } from "./lib/services/hmrc-service.js";
 import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCatalogText } from "./lib/services/catalog-service.js";
 import { searchCompanies, getCompanyProfile, normaliseCompanyNumber } from "./lib/services/companies-house-service.js";
+// Not aliased on import: scripts/bundle-for-tests.js strips import statements with a plain
+// regex rather than a real module resolver, so an "as" rename here would vanish along with the
+// import line while the window assignments below (which need the DIY Accounting Submit name)
+// still referenced it. Import under the original names and rename only on the window assignment.
+import {
+  companiesHouseScope,
+  hasUsableToken,
+  clearToken,
+  getRegisteredOfficeAddress,
+  getRegisteredEmailEligibility,
+  openTransaction,
+  putRegisteredOfficeAddress,
+  putRegisteredEmailAddress,
+  closeTransaction,
+  getTransaction,
+} from "./lib/services/companies-house-filing-service.js";
 
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
@@ -347,6 +363,18 @@ if (typeof window !== "undefined") {
   window.getCompanyProfile = getCompanyProfile;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 
+  // Companies House filing service
+  window.companiesHouseScope = companiesHouseScope;
+  window.hasUsableCompaniesHouseToken = hasUsableToken;
+  window.clearCompaniesHouseToken = clearToken;
+  window.getRegisteredOfficeAddress = getRegisteredOfficeAddress;
+  window.getRegisteredEmailEligibility = getRegisteredEmailEligibility;
+  window.openCompaniesHouseTransaction = openTransaction;
+  window.putRegisteredOfficeAddress = putRegisteredOfficeAddress;
+  window.putRegisteredEmailAddress = putRegisteredEmailAddress;
+  window.closeCompaniesHouseTransaction = closeTransaction;
+  window.getCompaniesHouseTransaction = getTransaction;
+
   // RUM functions
   window.hasRumConsent = hasRumConsent;
   window.maybeInitRum = maybeInitRum;
@@ -431,6 +459,17 @@ export {
   searchCompanies,
   getCompanyProfile,
   normaliseCompanyNumber,
+  // Companies House filing service
+  companiesHouseScope,
+  hasUsableToken,
+  clearToken,
+  getRegisteredOfficeAddress,
+  getRegisteredEmailEligibility,
+  openTransaction,
+  putRegisteredOfficeAddress,
+  putRegisteredEmailAddress,
+  closeTransaction,
+  getTransaction,
   // RUM
   hasRumConsent,
   maybeInitRum,

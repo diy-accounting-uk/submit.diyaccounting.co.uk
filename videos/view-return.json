@@ -313,11 +313,51 @@
         {
           "action": "click",
           "target": {
-            "role": "button",
-            "name": "View Return"
+            "role": "link",
+            "name": "Activities"
           },
-          "expectsNavigation": true,
-          "caption": "Open the return for that period."
+          "caption": "Back to the activities, to view a return."
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        },
+        {
+          "action": "click",
+          "target": "button:has-text('View VAT Return (HMRC)')",
+          "caption": "Ask to see a return you've already sent."
+        },
+        {
+          "action": "await",
+          "until": "#vatReturnForm",
+          "label": "Opening the return form"
+        },
+        {
+          "action": "type",
+          "target": "#vrn",
+          "text": "{{hmrcVatNumber}}",
+          "clear": true,
+          "caption": "The same VAT registration number."
+        },
+        {
+          "action": "fill",
+          "target": "#periodStart",
+          "value": "{{submittedPeriodStart}}",
+          "caption": "Then the period you want to read back."
+        },
+        {
+          "action": "fill",
+          "target": "#periodEnd",
+          "value": "{{submittedPeriodEnd}}"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "The same HMRC access already covers this."
         },
         {
           "action": "await",

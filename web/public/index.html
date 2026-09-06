@@ -460,6 +460,7 @@
           const userBundles = parseUserBundles();
           const activeBundles = getActiveBundles(catalog, userBundles);
           const expiredBundles = getExpiredBundles(userBundles);
+          const currentEnvironmentName = await window.fetchCurrentEnvironmentName();
 
           // Build a map of bundle id -> levelName for upsell display (distinct levels)
           const bundleLevelNameMap = {};
@@ -471,6 +472,9 @@
 
           for (const activity of catalog.activities || []) {
             if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
+
+            // Skip activities not listed in the current environment
+            if (!window.isActivityListedInEnvironment(activity, currentEnvironmentName)) continue;
 
             const displayRule = activity.display || "on-entitlement";
 

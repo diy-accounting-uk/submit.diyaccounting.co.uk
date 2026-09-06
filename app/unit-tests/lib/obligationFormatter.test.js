@@ -12,6 +12,7 @@ import {
   findObligationByDateRange,
   obligationLookupWindow,
   describeObligationPeriod,
+  syntheticPeriodKeys,
 } from "@app/lib/obligationFormatter.js";
 
 describe("obligationFormatter", () => {
@@ -179,6 +180,40 @@ describe("obligationFormatter", () => {
 
     test("passes through dates it cannot read", () => {
       expect(obligationLookupWindow("not-a-date", "2026-04-30")).toEqual({ from: "not-a-date", to: "2026-04-30" });
+    });
+  });
+
+  describe("syntheticPeriodKeys", () => {
+    const sandboxObligations = [
+      { periodKey: "18A1", start: "2017-01-01", end: "2017-03-31", status: "F" },
+      { periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" },
+    ];
+
+    test("leads with the requested year in front of the open obligation's key", () => {
+      expect(syntheticPeriodKeys(sandboxObligations, "2017-01-01")).toEqual(["17A2", "A171", "17A1"]);
+    });
+
+    test("keeps every open obligation, in the order HMRC listed them", () => {
+      const twoOpen = [
+        { periodKey: "18A2", status: "O" },
+        { periodKey: "18A3", status: "O" },
+      ];
+      expect(syntheticPeriodKeys(twoOpen, "2026-04-01")).toEqual(["26A2", "26A3", "A262"]);
+    });
+
+    test("leads with the requested quarter when nothing is open", () => {
+      expect(syntheticPeriodKeys([{ periodKey: "18A1", status: "F" }], "2026-11-01")).toEqual(["A264", "26A1"]);
+      expect(syntheticPeriodKeys([], "2026-01-31")).toEqual(["A261"]);
+    });
+
+    test("returns no keys at all for a date it cannot read", () => {
+      expect(syntheticPeriodKeys(sandboxObligations, "not-a-date")).toEqual([]);
+      expect(syntheticPeriodKeys(sandboxObligations, undefined)).toEqual([]);
+    });
+
+    test("skips an obligation with no period key and repeats none", () => {
+      const messy = [{ status: "O" }, { periodKey: "18A2", status: "O" }, { periodKey: "19A2", status: "F" }];
+      expect(syntheticPeriodKeys(messy, "2017-01-01")).toEqual(["17A2", "A171"]);
     });
   });
 

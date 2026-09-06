@@ -27,6 +27,14 @@ import { apiEndpoint as hmrcItsaBusinessDetailsGetApiEndpoint } from "../functio
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
+import { apiEndpoint as companiesHouseTokenPostApiEndpoint } from "../functions/companies-house/companiesHouseTokenPost.js";
+import { apiEndpoint as companiesHouseTransactionPostApiEndpoint } from "../functions/companies-house/companiesHouseTransactionPost.js";
+import { apiEndpoint as companiesHouseTransactionGetApiEndpoint } from "../functions/companies-house/companiesHouseTransactionGet.js";
+import { apiEndpoint as companiesHouseTransactionPutApiEndpoint } from "../functions/companies-house/companiesHouseTransactionPut.js";
+import { apiEndpoint as companiesHouseRegisteredOfficeAddressGetApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredOfficeAddressGet.js";
+import { apiEndpoint as companiesHouseRegisteredOfficeAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredOfficeAddressPost.js";
+import { apiEndpoint as companiesHouseRegisteredEmailEligibilityGetApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js";
+import { apiEndpoint as companiesHouseRegisteredEmailAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredEmailAddressPost.js";
 import { apiEndpoint as passGetApiEndpoint } from "../functions/account/passGet.js";
 import { apiEndpoint as passPostApiEndpoint } from "../functions/account/passPost.js";
 import { apiEndpoint as passAdminPostApiEndpoint } from "../functions/account/passAdminPost.js";
@@ -155,6 +163,8 @@ app.get("/submit.env", (req, res) => {
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_CLIENT_ID",
     "HMRC_SANDBOX_BASE_URI",
+    "COMPANIES_HOUSE_CLIENT_ID",
+    "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
   ];
 
@@ -238,6 +248,14 @@ hmrcItsaBusinessDetailsGetApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
+companiesHouseTokenPostApiEndpoint(app);
+companiesHouseTransactionPostApiEndpoint(app);
+companiesHouseTransactionGetApiEndpoint(app);
+companiesHouseTransactionPutApiEndpoint(app);
+companiesHouseRegisteredOfficeAddressGetApiEndpoint(app);
+companiesHouseRegisteredOfficeAddressPostApiEndpoint(app);
+companiesHouseRegisteredEmailEligibilityGetApiEndpoint(app);
+companiesHouseRegisteredEmailAddressPostApiEndpoint(app);
 passGetApiEndpoint(app);
 passPostApiEndpoint(app);
 passAdminPostApiEndpoint(app);

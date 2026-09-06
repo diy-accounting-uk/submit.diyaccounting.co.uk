@@ -323,11 +323,35 @@ async function doHmrcAuthorise(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// Reads the period the submit form is about to file and publishes it to the run's placeholder
+// values. Read from the form rather than taken from the step, so it is the period actually
+// filed and not one the script hoped for.
+async function publishSubmittedPeriod(page, ctx) {
+  const periodStart = await page.locator("#periodStart").inputValue();
+  const periodEnd = await page.locator("#periodEnd").inputValue();
+  if (!periodStart || !periodEnd) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (submitReturn): the submit form has no period dates, ` +
+        "so no later scene could name the period this return was filed for",
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: "#periodStart" },
+    );
+  }
+  ctx.values.submittedPeriodStart = periodStart;
+  ctx.values.submittedPeriodEnd = periodEnd;
+  console.log(`Submitting a VAT return for ${periodStart} to ${periodEnd}`);
+}
+
 // Submits a VAT return for whatever period the account's own obligations resolve, off camera,
 // the same way getVatReturn.behaviour.test.js does: the home nav, the submit form's own date
 // fields, allowSyntheticObligations so the server resolves the open period from HMRC's
 // obligations — never a hard-coded period key — the write:vat scope authorise with HMRC, and the
 // receipt.
+//
+// The period the form ends up with is published as {{submittedPeriodStart}} and
+// {{submittedPeriodEnd}}, so a later scene can ask to see this return by naming the same period.
+// Any other period reads back a different return, or none: the period key HMRC files under is
+// derived from these dates, and the sandbox holds data only for a key it has been sent.
 async function doSubmitReturn(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
@@ -336,6 +360,7 @@ async function doSubmitReturn(page, step, ctx) {
   await steps.goToHomePageUsingMainNav(page, ctx.stepScreenshotDir);
   await steps.initSubmitVat(page, ctx.stepScreenshotDir);
   await steps.fillInVat(page, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
+  await publishSubmittedPeriod(page, ctx);
   await steps.submitFormVat(page, ctx.stepScreenshotDir);
 
   await waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, "submitReturn", "a write:vat token");
