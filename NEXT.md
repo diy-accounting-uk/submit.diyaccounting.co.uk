@@ -31,9 +31,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 no workflow dispatch until the operator lifts it in their own words. Local work continues and
 fixes are proposed in the reply. What that leaves in motion:
 
-- The filing suites now read real sandbox credentials and create their own sandbox test
-  company (local branch `claude/companies-house-filing-ci-sandbox`, ef091559, green on the
-  simulator); it joins the next batch after PR #139 merges.
+- The automated sandbox sign-in for the filing suites (local branch
+  `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
+  House account with an authenticator secret, which the operator does not want. The branch
+  stays local, unmerged, in case that changes.
 - The ci deploy already running from the last push (34027333381) finishes on its own; its
   result is only read. The environment deploy that would create the ci filing secret in AWS
   (`ci/submit/companies-house/client_secret`) was cancelled and stays undone until the freeze
@@ -44,24 +45,10 @@ fixes are proposed in the reply. What that leaves in motion:
 - When the sandbox track lands it is merged locally and its secret names go to the operator;
   the push, the environment deploy and the ci filing runs wait for the operator's word.
 
-Batches 4 (PR #136) and 5 (PR #137) are merged; the items below are code complete on main
-or on batch 6 and each names the event that verifies it.
+Batches 4 (PR #136) and 5 (PR #137) are merged and both environments' stacks are deployed
+(prod's environment deploy re-run 34024729614 is green). The items below are code complete on
+main or on batch 6 and each names the event that verifies it.
 
-- [ ] **B34.4. The environment deploy skips the Companies House client secret while it is
-  unset.** `deploy-environment.yml`'s create-secrets step fails on an empty
-  `COMPANIES_HOUSE_CLIENT_SECRET`, which blocks every environment deploy. The step now exits
-  with a notice when the secret is empty. **Source**: run 34015720587. **Owner**: Claude Code.
-  **Model**: Fable (coordinator).
-  **Track**: on `claude/board-batch-5`. The ci environment deploy from the branch (run
-  34020851682) is green with every batch 4 and 5 environment stack, so ci now has the triage
-  role and guardrail, both Bedrock budgets, the forwarder Lambda and the bundles index (ACTIVE).
-  The prod environment run after the PR #137 merge (34023929068) got the observability
-  stacks, budgets and index up but `prod-env-DataStack` rolled back: the index custom
-  resource issued a second `UpdateTable` while the index was still creating ("Index is being
-  created"), and the backup stack job was skipped behind it. Re-dispatched for prod as run
-  34024729614 with the index now ACTIVE. On `claude/board-batch-6` (8105f1aa) the custom
-  resource also ignores `ResourceInUseException`, so an index still creating counts as ensured.
-  Verified when that run is green.
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
@@ -215,11 +202,9 @@ or on batch 6 and each names the event that verifies it.
   64-character cap, URL paths unchanged). Track 3 is merged (d7470848, 223cf553: the two
   filing pages, the service module, both activities on `default` behind the gate, browser and
   behaviour suites green on the simulator; the in-browser TOML parser reads one-line arrays
-  only, so catalogue arrays stay on one line). The suites read `TEST_COMPANIES_HOUSE_USER_ID`
-  and `TEST_COMPANIES_HOUSE_PASSWORD` outside the simulator and create a sandbox test company
-  with `COMPANIES_HOUSE_SANDBOX_API_KEY` (local branch, ef091559); `deploy.yml` runs both
-  suites on ci only. Verified when `changeRegisteredOfficeBehaviour-ci` and
-  `changeRegisteredEmailBehaviour-ci` pass against the sandbox, which needs O11.
+  only, so catalogue arrays stay on one line). The two suites run on the simulator only;
+  against the real sandbox a person has to sign in with a second factor, so the sandbox proof
+  is the operator's own click-through on ci (O11). Verified by that click-through.
 - [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** `alarm-triage.yml`
   runs on `issues: opened` for issues labelled `alarm` and on the `triage` label, reads the
   alarm from the issue body, derives the evidence with B30h's mapping, and runs Claude Code on
@@ -284,13 +269,13 @@ or on batch 6 and each names the event that verifies it.
   ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
-  URIs, id in `.env.ci`, secret on ci). Remaining: a sandbox user account the suites sign in
-  as, created at identity-sandbox.company-information.service.gov.uk, set on the ci GitHub
-  environment as `TEST_COMPANIES_HOUSE_USER_ID` (variable) and `TEST_COMPANIES_HOUSE_PASSWORD`
-  (secret), plus the test application's REST API key as `COMPANIES_HOUSE_SANDBOX_API_KEY`
-  (secret), which the suites use only to create and delete a sandbox test company per run.
-  Then tell Claude Code, which runs the two filing suites against ci. **Source**: BACKLOG 34;
-  issue #15. **Owner**: Operator.
+  URIs, id in `.env.ci`, secret on ci). Remaining: once PR #139 has merged and the ci
+  environment deploy has created `ci/submit/companies-house/client_secret`, open the two filing
+  activities on the ci site and take one change through the sandbox with your own Companies
+  House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
+  a person to authorise them, so an automated ci run would need a robot account with an
+  authenticator secret, which is not wanted. **Source**: BACKLOG 34; issue #15. **Owner**:
+  Operator.
 
 ## Blocked: operator
 
