@@ -47,10 +47,20 @@ jobs:
         run: |
           set -euo pipefail
           SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          COUNT=$(gh api \
+          # Every issue event starts a run, including the ones this guard or the role check
+          # stops, so only runs whose run-triage job actually executed count against the day.
+          COUNT=0
+          for RUN_ID in $(gh api \
             "repos/${{ github.repository }}/actions/workflows/alarm-triage.yml/runs?created=%3E${SINCE}&per_page=100" \
-            --jq '.total_count')
-          echo "runs in the last 24 hours: ${COUNT}"
+            --jq '.workflow_runs[].id'); do
+            if [ "${RUN_ID}" = "${{ github.run_id }}" ]; then continue; fi
+            TRIAGE_JOB=$(gh api "repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs" \
+              --jq '.jobs[] | select(.name == "run-triage") | .conclusion // "running"')
+            if [ -n "${TRIAGE_JOB}" ] && [ "${TRIAGE_JOB}" != "skipped" ]; then
+              COUNT=$((COUNT + 1))
+            fi
+          done
+          echo "triage runs that executed in the last 24 hours: ${COUNT}"
           if [ "${COUNT}" -gt 3 ]; then
             echo "proceed=false" | tee -a "$GITHUB_OUTPUT"
           else
