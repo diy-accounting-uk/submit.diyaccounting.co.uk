@@ -35,8 +35,6 @@ coordinator when its tests are green, one push per batch of landed tracks:
   `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
   `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
-  plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30p. One Telegram forwarder per environment, not per deployment** (batch 8). Every
   deployment's `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity
   bus, so while two prod sets stand every ops message reaches Telegram twice; the operator's
