@@ -13,11 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06); prod-0967fab is
-the one spare. Main's deploy of the PR #139 merge (run 34028434127) is queued behind the
-environment deploy and creates the next set; a main deploy's sweep keeps any set younger than
-eight hours and removes one older spare per run, so the daily scheduled deploy clears the
-spares over the next two days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127,
+green through every suite; its last job is destroying prod-6c85118). prod-0967fab is the one
+spare: a main deploy's sweep keeps any set younger than eight hours and removes one older
+spare per run, so the daily scheduled deploy clears it.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -35,13 +34,46 @@ fixes are proposed in the reply. What that leaves in motion:
   `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
   House account with an authenticator secret, which the operator does not want. The branch
   stays local, unmerged, in case that changes.
-- The ci filing secret (`ci/submit/companies-house/client_secret`) exists since main's
-  environment deploy of the PR #139 merge (run 34028434110) passed its create-secrets job at
-  about 10:50 UTC; the rest of that run is in progress.
 - Batch 6 (PR #139: the bundle-expiry fix, the triage day guard, the index custom-resource
-  fix and the ci client id) merged at 10:48 UTC. Main's deploy (run 34028434127) carries it to
-  prod and runs every suite; its `tokenEnforcementBehaviour-prod` and
-  `generatePassActivityBehaviour-prod` results prove the bundle-expiry fix.
+  fix and the ci client id) merged at 10:48 UTC. Main's environment deploy (run 34028434110)
+  is green and created the ci filing secret; main's deploy (run 34028434127) passed every
+  suite, including the two that prove the bundle-expiry fix, and is destroying prod-6c85118 as
+  its last job. The operator lifts the freeze when that job is green.
+- Batch 7 is `claude/b7-board` (worktree `.claude/worktrees/b7-board`), seeded with the OpenAPI
+  regeneration that adds the seven Companies House filing routes (f35ade31). The eight local
+  tracks below land on it as they finish; it is pushed once, after the freeze lifts.
+
+Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged into
+`claude/b7-board` by the coordinator when its tests are green:
+
+- [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
+  Two commits in the B10.1 pattern (Lambda, simulator, page, catalogue entry behind the
+  `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
+  `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B33a. One leaf CDK stack in TypeScript, synth diffed against the Java template.**
+  `cdk-typescript/` with a synth and diff script, report in
+  `_developers/CDK_TYPESCRIPT_SPIKE.md`; no deploy. **Source**: BACKLOG 33a. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B16a. The CSV contract for a VAT return exported from a spreadsheet.**
+  `_developers/CSV_VAT_RETURN_CONTRACT.md`, fixtures under `fixtures/vat-return-csv/` for both
+  repos to test against, and a parser `app/lib/vatReturnCsv.js` with unit tests; no import
+  endpoint yet. **Source**: BACKLOG 16a. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B22. Parse HMRC's monthly fraud-prevention-header email.** A pure parser with tests on
+  redacted fixtures found in the mail mirror, and `PLAN_FRAUD_HEADER_EMAIL_CHECK.md` choosing
+  how the email reaches code and how the alert goes out; no ingestion wired. **Source**:
+  BACKLOG 22. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
+  plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B40c. Refresh `_developers/backlog/TODO_INVENTORY.md`** against the tree. **Source**:
+  BACKLOG 40c. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B41. Doc hygiene**: archive shipped plans still marked in progress, close out
+  `PLAN_FLAGGED`, report dangling references in NEXT.md for the coordinator to fix. **Source**:
+  BACKLOG 41. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B21a / B23a. Support mail analysis** in `_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`:
+  six months of support threads classified with the template-reply share, and a 50-thread
+  sample across the archive with the first ten article topics; no personal data in the
+  document. **Source**: BACKLOG 21a, 23a. **Owner**: Claude Code. **Model**: Sonnet.
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
@@ -180,8 +212,8 @@ on main and each names the event that verifies it.
   prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
   `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
   the rejection. Fixed on main (091924dd: a bundle with no expiry is stored without the attribute;
-  unit test). #140 is the `prod-6c85118-app-api-5xx` those rejections raised at 09:52.
-  Verified when main's deploy of the merge (run 34028434127) passes the two suites.
+  unit test). #140 is the `prod-6c85118-app-api-5xx` those rejections raised at 09:52;
+  main's deploy of the merge (run 34028434127) passed both suites.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -244,6 +276,13 @@ on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O12. Close #140 now and #138 after the 11:15 UTC reconcile run.** #140
+  `prod-app-api-5xx` on prod-6c85118 was the bundle-grant rejection in B30j's remainder, and
+  main's deploy of the PR #139 merge passed the suites that hit it. #138
+  `prod-app-account-stack-health` on prod-0967fab was the reconcile erroring hourly between
+  its deploy at 06:13 and the index's arrival at 09:15 on 2026-09-06; the 10:15 run was clean
+  on both prod sets and both alarms have been OK since, so it closes once the 11:15 run is
+  clean too. **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
   titles and descriptions drafted from the captions. The prod recordings are workflow
   artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
@@ -278,14 +317,6 @@ on main and each names the event that verifies it.
 
 ## Blocked: operator
 
-- [ ] **O12. Close #138 and #140 once their causes have held.** #138
-  `prod-app-account-stack-health` on prod-0967fab is the reconcile erroring hourly between its
-  deploy at 06:13 and the index's arrival at 09:15 on 2026-09-06; the 10:15 UTC run was clean
-  on both prod sets and both alarms have been OK since, so it closes after the 11:15 run is
-  clean too. #140 `prod-app-api-5xx` on prod-6c85118 is the bundle-grant rejection in B30j's
-  remainder; it closes when main's deploy of the PR #139 merge (run 34028434127) passes its
-  suites. **Source**: board render 2026-09-06. **Owner**: Operator. Blocked on the 11:15 run
-  and that deploy.
 - [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
   2026-09-21.** The presenter account exists (ID E0000052288, code in the operator's
   credentials store); the test presenter credentials and the accounts specification were
