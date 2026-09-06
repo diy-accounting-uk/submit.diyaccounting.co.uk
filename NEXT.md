@@ -115,9 +115,8 @@ verify.
   window pads only seven days, so it has no fallback period when the sandbox holds no return
   for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
   the View VAT Return form over the same wide window the behaviour test uses; green on the
-  simulator. Next: dispatch `video-capture.yml -f script=view-return -f environment-name=prod
-  --ref claude/board-batch-4` after the second push; verified when the artifact shows the
-  return.
+  simulator. Prod recording run 34000044595 dispatched from the branch at 02:00 UTC on
+  2026-09-06; verified when its artifact shows the return.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -183,9 +182,13 @@ verify.
   `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
   has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
   **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 2, itsa-video (Sonnet) writes `videos/itsa-business-details.json` and its npm
-  scripts, proving it on the simulator; started 2026-09-06 01:20 UTC. The coordinator then
-  records it with `video-capture.yml` from the integration branch against ci-claud063e.
+  **Track**: `videos/itsa-business-details.json` and its npm scripts are on
+  `claude/board-batch-4` (8e12c739, 7f8eba25), green on the simulator: the script declares
+  `hmrcServices` so the journey mints its HMRC test user with `mtd-income-tax`, types
+  `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
+  Next: after the third push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
+  script=itsa-business-details -f environment-name=ci`; verified when the artifact shows the
+  business id.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
