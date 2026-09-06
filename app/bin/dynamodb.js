@@ -389,6 +389,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaObligationsGetAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaObligationsGetAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName, endpoint);
+    }
 
     logger.info("DynamoDB Local server is running. Press CTRL-C to stop.");
 

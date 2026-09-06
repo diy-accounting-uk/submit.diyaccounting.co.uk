@@ -7,6 +7,19 @@
 import { randomUUID } from "crypto";
 
 /**
+ * Generate a business ID in HMRC's documented format: X, one letter or digit, the
+ * literal "IS", then 11 digits (e.g. XAIS12345678910). Every downstream ITSA endpoint
+ * that takes a businessId (Obligations, Self Employment Business) validates against this
+ * shape, so a business list the simulator hands out must match it.
+ */
+function generateBusinessId() {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const middleChar = letters[Math.floor(Math.random() * letters.length)];
+  const digits = randomUUID().replace(/-/g, "").replace(/[a-f]/g, "").padEnd(11, "0").slice(0, 11);
+  return `X${middleChar}IS${digits}`;
+}
+
+/**
  * Default response: one self-employment business, shaped like the sandbox response the
  * ITSA spike recorded (see _developers/hmrc/ITSA_SPIKE.md).
  */
@@ -14,7 +27,7 @@ function defaultBusinesses() {
   return [
     {
       typeOfBusiness: "self-employment",
-      businessId: `X${randomUUID().replace(/-/g, "").slice(0, 14).toUpperCase()}`,
+      businessId: generateBusinessId(),
       tradingName: "Simulated Trading Co",
     },
   ];

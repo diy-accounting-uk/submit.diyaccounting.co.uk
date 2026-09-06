@@ -353,6 +353,86 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Self-Employment Period", () => {
+    const validBody = () => ({
+      periodDates: { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" },
+      periodIncome: { turnover: 1000, other: 0 },
+      periodExpenses: { costOfGoods: 100 },
+      periodDisallowableExpenses: {},
+    });
+
+    it("should create a period summary for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.5.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.periodId).toBe("2024-04-06_2024-07-05");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/invalid-nino/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid businessId", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/not-a-business-id/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_BUSINESS_ID");
+    });
+
+    it("should return 400 when periodDates is missing", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ periodIncome: {}, periodExpenses: {}, periodDisallowableExpenses: {} }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for OVERLAPPING_PERIOD", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "OVERLAPPING_PERIOD" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_OVERLAPPING_PERIOD");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "NOT_FOUND" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions

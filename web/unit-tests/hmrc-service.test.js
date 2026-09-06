@@ -10,7 +10,7 @@ vi.mock("../public/lib/services/api-client.js", () => ({
 }));
 
 import { authorizedFetch } from "../public/lib/services/api-client.js";
-import { submitVat, getBusinessDetails, getObligations } from "../public/lib/services/hmrc-service.js";
+import { submitVat, getBusinessDetails, getObligations, postSelfEmploymentPeriod } from "../public/lib/services/hmrc-service.js";
 
 describe("hmrc-service submitVat error handling", () => {
   const vatData = {
@@ -220,5 +220,75 @@ describe("hmrc-service getObligations", () => {
     });
 
     await expect(getObligations("AB123456C", "test-token")).rejects.toThrow(/Failed to retrieve obligations/);
+  });
+});
+
+describe("hmrc-service postSelfEmploymentPeriod", () => {
+  const periodData = {
+    nino: "AB123456C",
+    businessId: "XAIS12345678910",
+    periodStartDate: "2024-04-06",
+    periodEndDate: "2024-07-05",
+    periodIncome: { turnover: 1000, other: 0 },
+    periodExpenses: { costOfGoods: 100 },
+    periodDisallowableExpenses: {},
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("returns the parsed periodId on success", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ periodId: "2024-04-06_2024-07-05" }),
+    });
+
+    const result = await postSelfEmploymentPeriod(periodData, "test-token");
+    expect(result).toEqual({ periodId: "2024-04-06_2024-07-05" });
+    expect(authorizedFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/hmrc/itsa/self-employment/period"),
+      expect.objectContaining({ method: "POST" }),
+    );
+    const sentBody = JSON.parse(authorizedFetch.mock.calls[0][1].body);
+    expect(sentBody.nino).toBe("AB123456C");
+    expect(sentBody.businessId).toBe("XAIS12345678910");
+    expect(sentBody.periodIncome).toEqual({ turnover: 1000, other: 0 });
+  });
+
+  test("throws a friendly message and clears the stored token when the HMRC scope is insufficient", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: () =>
+        Promise.resolve({
+          message: "Forbidden",
+          reason: "hmrc_scope_insufficient",
+          userMessage: "Your HMRC authorization does not include the required permissions for this action",
+        }),
+    });
+
+    const clearHmrcToken = vi.fn();
+    global.window = { hmrcScopeCheck: { clearHmrcToken } };
+
+    await expect(postSelfEmploymentPeriod(periodData, "test-token")).rejects.toThrow(
+      "Your HMRC authorization does not include the required permissions for this action",
+    );
+    expect(clearHmrcToken).toHaveBeenCalledTimes(1);
+
+    delete global.window;
+  });
+
+  test("throws the raw response for unrecognised failure reasons", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({ message: "Something else went wrong" }),
+    });
+
+    await expect(postSelfEmploymentPeriod(periodData, "test-token")).rejects.toThrow(/Failed to file the quarterly update/);
   });
 });

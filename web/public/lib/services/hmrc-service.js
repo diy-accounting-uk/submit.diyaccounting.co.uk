@@ -431,6 +431,67 @@ export async function getObligations(
   return responseJson;
 }
 
+/**
+ * File an ITSA self-employment quarterly update (create a period summary) with HMRC.
+ * @param {object} periodData - { nino, businessId, periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing periodId
+ */
+export async function postSelfEmploymentPeriod(
+  periodData,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/self-employment/period";
+
+  // Gov-Test-Scenario is a real HTTP header on every write endpoint (see submitVat's
+  // shape), never a query parameter - it becomes the header HMRC itself reads.
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: periodData.nino,
+    businessId: periodData.businessId,
+    periodStartDate: periodData.periodStartDate,
+    periodEndDate: periodData.periodEndDate,
+    runFraudPreventionHeaderValidation,
+    periodIncome: periodData.periodIncome,
+    periodExpenses: periodData.periodExpenses,
+    periodDisallowableExpenses: periodData.periodDisallowableExpenses,
+  });
+
+  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    // The HMRC authorization is missing a required scope - clear the stale token so the
+    // customer re-authorizes instead of retrying with the same token.
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to file the quarterly update. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.submitVat = submitVat;
@@ -439,4 +500,5 @@ if (typeof window !== "undefined") {
   window.getIPViaWebRTC = getIPViaWebRTC;
   window.getBusinessDetails = getBusinessDetails;
   window.getObligations = getObligations;
+  window.postSelfEmploymentPeriod = postSelfEmploymentPeriod;
 }

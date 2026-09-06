@@ -315,3 +315,149 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
     }
   });
 }
+
+// Self-Employment Period, like Obligations, has no home-page activity button of its own -
+// navigate to it directly, the way behaviour-bundle-steps.js does for usage.html.
+export async function initItsaSelfEmploymentPeriod(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the File a Quarterly Update page and sees the period form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/selfEmploymentPeriod.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-self-employment-period.png` });
+    await expect(page.locator("#itsaSelfEmploymentPeriodForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the quarterly update form", async () => {
+    const {
+      hmrcNino,
+      businessId,
+      periodStartDate,
+      periodEndDate,
+      turnover,
+      testScenario,
+      runFraudPreventionHeaderValidation,
+    } = periodQuery || {};
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-self-employment-period-fill-in.png` });
+
+    const testDataLink = page.locator("#testDataLink.visible");
+    const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
+
+    if (isSyntheticMode() && isTestDataLinkVisible && !businessId) {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-self-employment-period-click-test-data.png` });
+      await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-self-employment-period-test-data-added.png` });
+
+      await expect(page.locator("#nino")).not.toHaveValue("");
+    } else {
+      await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+      if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+      if (periodStartDate) await loggedFill(page, "#periodStartDate", periodStartDate, "Entering period start date", { screenshotPath });
+      if (periodEndDate) await loggedFill(page, "#periodEndDate", periodEndDate, "Entering period end date", { screenshotPath });
+      if (turnover !== undefined) await loggedFill(page, "#turnover", String(turnover), "Entering turnover", { screenshotPath });
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-self-employment-period-fill-in.png` });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-self-employment-period-fill-in.png` });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-self-employment-period-filled-in.png` });
+    }
+
+    await loggedFocus(page, "#submitBtn", "Submit button", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-self-employment-period-fill-in-pagedown.png` });
+    await expect(page.locator("#submitBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaSelfEmploymentPeriodForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the quarterly update form", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-self-employment-period-submit.png` });
+    // Clicking submit may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting quarterly update form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-self-employment-period-submit.png` });
+  });
+}
+
+export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the quarterly update filing result", async () => {
+    if (arguments.length === 2 && typeof periodQuery === "string") {
+      screenshotPath = periodQuery;
+      periodQuery = {};
+    }
+    const { testScenario } = periodQuery || {};
+    const hasScenario = !!testScenario;
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-self-employment-period-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "NOT_FOUND":
+        case "OVERLAPPING_PERIOD":
+        case "MISALIGNED_PERIOD":
+        case "NOT_CONTIGUOUS_PERIOD":
+        case "DUPLICATE_SUBMISSION":
+        case "TAX_YEAR_NOT_SUPPORTED":
+          await page.waitForTimeout(500);
+          const selfEmploymentPeriodResults = page.locator("#selfEmploymentPeriodResults");
+          await expect(selfEmploymentPeriodResults).toBeHidden();
+          break;
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          await waitForSuccessOrError(page, {
+            successSelector: "#selfEmploymentPeriodResults",
+            description: `Quarterly update result (${testScenario})`,
+            timeout: 450_000,
+            screenshotPath,
+          });
+          await expect(page.locator("#selfEmploymentPeriodResults")).toBeVisible();
+          break;
+      }
+      return;
+    }
+    await waitForSuccessOrError(page, {
+      successSelector: "#selfEmploymentPeriodResults",
+      description: "Quarterly update result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-self-employment-period-results.png` });
+    const resultsContainer = page.locator("#selfEmploymentPeriodResults");
+    await expect(resultsContainer).toBeVisible();
+
+    const periodId = (await page.locator("#periodIdResult").innerText()).trim();
+    expect(periodId.length).toBeGreaterThan(0);
+  });
+}

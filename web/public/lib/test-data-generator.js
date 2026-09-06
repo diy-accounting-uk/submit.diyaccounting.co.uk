@@ -320,6 +320,26 @@ function populateItsaObligationsForm() {
   console.log("[Test Data] Populated ITSA obligations form with test data");
 }
 
+/**
+ * Populate the ITSA self-employment period form with test data
+ * Used in selfEmploymentPeriod.html - NINO, a placeholder business ID and a quarter's dates
+ */
+function populateSelfEmploymentPeriodForm() {
+  const ninoInput = document.getElementById("nino");
+  const businessIdInput = document.getElementById("businessId");
+  const periodStartDateInput = document.getElementById("periodStartDate");
+  const periodEndDateInput = document.getElementById("periodEndDate");
+  const turnoverInput = document.getElementById("turnover");
+
+  if (ninoInput) ninoInput.value = generateTestNino();
+  if (businessIdInput) businessIdInput.value = "XAIS12345678910";
+  if (periodStartDateInput) periodStartDateInput.value = "2024-04-06";
+  if (periodEndDateInput) periodEndDateInput.value = "2024-07-05";
+  if (turnoverInput) turnoverInput.value = "1000.00";
+
+  console.log("[Test Data] Populated ITSA self-employment period form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -338,5 +358,6 @@ if (typeof window !== "undefined") {
     populateVatPenaltiesForm,
     populateItsaBusinessDetailsForm,
     populateItsaObligationsForm,
+    populateSelfEmploymentPeriodForm,
   };
 }

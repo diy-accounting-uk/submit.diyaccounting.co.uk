@@ -392,6 +392,96 @@
         }
       }
     },
+    "/hmrc/itsa/self-employment/period" : {
+      "post" : {
+        "summary" : "File an ITSA self-employment quarterly update",
+        "description" : "Creates a self-employment period summary with HMRC for the given business and period",
+        "operationId" : "postItsaSelfEmploymentPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodStartDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "Start of the period, format YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodEndDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "End of the period, format YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodIncome",
+          "in" : "body",
+          "required" : false,
+          "description" : "Income for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodExpenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Expenses for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodDisallowableExpenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Disallowable expenses for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/bundle" : {
       "get" : {
         "summary" : "Get user bundles",
