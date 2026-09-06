@@ -31,8 +31,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 no workflow dispatch until the operator lifts it in their own words. Local work continues and
 fixes are proposed in the reply. What that leaves in motion:
 
-- One local track is still building: the filing suites reading real sandbox credentials
-  (ch-filing-ci-sandbox, Sonnet). It commits in its worktree only; nothing leaves the machine.
+- The filing suites now read real sandbox credentials and create their own sandbox test
+  company (local branch `claude/companies-house-filing-ci-sandbox`, ef091559, green on the
+  simulator); it joins the next batch after PR #139 merges.
 - The ci deploy already running from the last push (34027333381) finishes on its own; its
   result is only read. The environment deploy that would create the ci filing secret in AWS
   (`ci/submit/companies-house/client_secret`) was cancelled and stays undone until the freeze
@@ -214,9 +215,11 @@ or on batch 6 and each names the event that verifies it.
   64-character cap, URL paths unchanged). Track 3 is merged (d7470848, 223cf553: the two
   filing pages, the service module, both activities on `default` behind the gate, browser and
   behaviour suites green on the simulator; the in-browser TOML parser reads one-line arrays
-  only, so catalogue arrays stay on one line). Code complete. Verified when
-  `changeRegisteredOfficeBehaviour-ci` and `changeRegisteredEmailBehaviour-ci` pass against the
-  sandbox, which needs the operator steps below (O11).
+  only, so catalogue arrays stay on one line). The suites read `TEST_COMPANIES_HOUSE_USER_ID`
+  and `TEST_COMPANIES_HOUSE_PASSWORD` outside the simulator and create a sandbox test company
+  with `COMPANIES_HOUSE_SANDBOX_API_KEY` (local branch, ef091559); `deploy.yml` runs both
+  suites on ci only. Verified when `changeRegisteredOfficeBehaviour-ci` and
+  `changeRegisteredEmailBehaviour-ci` pass against the sandbox, which needs O11.
 - [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** `alarm-triage.yml`
   runs on `issues: opened` for issues labelled `alarm` and on the `triage` label, reads the
   alarm from the issue body, derives the evidence with B30h's mapping, and runs Claude Code on
@@ -280,9 +283,14 @@ or on batch 6 and each names the event that verifies it.
   `PLAN_COMPANIES_HOUSE_REST_FILING.md`'s operator steps (localhost:3000, local.submit:3443,
   ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
-  secret on the GitHub `ci` environment; hold a sandbox user account the behaviour tests can
-  sign in as. Then tell Claude Code, which runs the two filing suites against ci. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Operator.
+  secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
+  URIs, id in `.env.ci`, secret on ci). Remaining: a sandbox user account the suites sign in
+  as, created at identity-sandbox.company-information.service.gov.uk, set on the ci GitHub
+  environment as `TEST_COMPANIES_HOUSE_USER_ID` (variable) and `TEST_COMPANIES_HOUSE_PASSWORD`
+  (secret), plus the test application's REST API key as `COMPANIES_HOUSE_SANDBOX_API_KEY`
+  (secret), which the suites use only to create and delete a sandbox test company per run.
+  Then tell Claude Code, which runs the two filing suites against ci. **Source**: BACKLOG 34;
+  issue #15. **Owner**: Operator.
 
 ## Blocked: operator
 
