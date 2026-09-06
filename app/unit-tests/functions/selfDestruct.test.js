@@ -8,11 +8,13 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock CloudFormation client to simulate 'stack does not exist'
+const describedStackNames = [];
 class MockCFClient {
   async send(cmd) {
     const name = cmd.input?.StackName || "";
     // Always throw for DescribeStacks to simulate non-existent stacks
     if (cmd.constructor.name === "DescribeStacksCommand") {
+      describedStackNames.push(name);
       const err = new Error(`Stack with id ${name} does not exist`);
       throw err;
     }
@@ -114,6 +116,7 @@ describe("functions/infra/selfDestruct", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     logGroupCalls.length = 0;
+    describedStackNames.length = 0;
     Object.assign(process.env, {
       DEPLOYMENT_NAME: "ci-branch",
       OPS_STACK_NAME: "ops",
@@ -122,6 +125,8 @@ describe("functions/infra/selfDestruct", () => {
       API_STACK_NAME: "api",
       AUTH_STACK_NAME: "auth",
       HMRC_STACK_NAME: "hmrc",
+      COMPANIES_HOUSE_STACK_NAME: "companies-house",
+      BILLING_STACK_NAME: "billing",
       ACCOUNT_STACK_NAME: "account",
       SELF_DESTRUCT_STACK_NAME: "self-destruct",
       AWS_REGION: "eu-west-2",
@@ -162,6 +167,28 @@ describe("functions/infra/selfDestruct", () => {
       status: "deleted",
       error: null,
     });
+  });
+
+  it("deletes stacks in dependency order, with the Companies House stack beside the HMRC stack", async () => {
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    expect(res.statusCode).toBe(200);
+
+    // The API Gateway custom-domain cleanup describes the API stack before the deletion loop
+    // starts, so "api" appears once up front; the loop then visits it again in order.
+    const orderedStackNames = [...new Set(describedStackNames)];
+    expect(orderedStackNames).toEqual([
+      "api",
+      "ops",
+      "publish",
+      "edge",
+      "auth",
+      "hmrc",
+      "companies-house",
+      "billing",
+      "account",
+      "self-destruct",
+    ]);
   });
 
   it("warns, not errors, when the origin bucket does not exist yet on a young deployment", async () => {

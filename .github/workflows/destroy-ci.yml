@@ -378,6 +378,26 @@ jobs:
           ALL_CANDIDATE_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $DEPLOYED_DEPLOYMENT_NAMES"
           ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
+          # A deployment can lose every stack an older self-destruct pass knew to delete except
+          # one it didn't (added after that pass's stack list was written), leaving only that one
+          # stack standing with no sibling to name the deployment through PUBLIC/PUBLISHED/DEPLOYED
+          # above. Find those by scanning live stacks directly, so the next sweep still finds them.
+          LEFTOVER_STACK_NAMES=$(aws cloudformation describe-stacks --region eu-west-2 \
+            --query "Stacks[].StackName" --output text 2>/dev/null | tr '\t' '\n' \
+            | grep -E '^ci-[a-z0-9]+-app-' || echo "")
+
+          LEFTOVER_DEPLOYMENT_NAMES=""
+          for STACK_NAME in $LEFTOVER_STACK_NAMES; do
+            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(ci-[a-z0-9]+)-app-.*/\1/')
+            if [ "$PREFIX" != "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME" ]; then
+              LEFTOVER_DEPLOYMENT_NAMES="$LEFTOVER_DEPLOYMENT_NAMES $PREFIX"
+            fi
+          done
+
+          echo "Leftover deployment names found from stray app stacks: $LEFTOVER_DEPLOYMENT_NAMES"
+          ALL_CANDIDATE_DEPLOYMENT_NAMES="$ALL_CANDIDATE_DEPLOYMENT_NAMES $LEFTOVER_DEPLOYMENT_NAMES"
+          ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
           SELECTED_DEPLOYMENT_NAME=""
 
           for DEPLOYMENT_NAME in $ALL_CANDIDATE_DEPLOYMENT_NAMES; do
