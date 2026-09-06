@@ -597,6 +597,7 @@ jobs:
           COMPANIES_HOUSE_FILING_BASE_URI=${COMPANIES_HOUSE_FILING_BASE_URI}
 
           DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}
+          GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-${{ vars.SUBMIT_GA4_MEASUREMENT_ID }}}
           EOF'
 
       - name: Generate metadata files
