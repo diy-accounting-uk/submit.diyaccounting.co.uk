@@ -69,8 +69,10 @@ a later event to verify.
   us-east-1 registry, since that stack never had a container Lambda. Track ue1-env-image
   added that build (ea0bd4d6: the ingestion image is pushed to the us-east-1 repository as
   `env-observability-ue1-<sha>`), and run 34020851682 deployed the lot to ci. A test
-  notification went to `ci-env-bedrock-budget-alerts` at 08:20 UTC on 2026-09-06; verified
-  when it shows on Telegram and prod's environment deploy after the merge is green.
+  notification to `ci-env-bedrock-budget-alerts` at 08:55 UTC on 2026-09-06 reached the
+  forwarder, which put one `bedrock-budget-alert` event on the activity bus (its log shows
+  `published: 1`); no ci app set stood to carry it to Telegram. Verified when prod's
+  environment deploy after the merge is green and a test notification there shows on Telegram.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
