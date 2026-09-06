@@ -189,6 +189,12 @@ export default defineConfig({
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 600_000,
+      use: {
+        // Playwright's default headless Chromium reports "HeadlessChrome" in the User-Agent
+        // Client Hints, which GA4's bot filter drops — so a real analytics hit from this suite
+        // (DIY_SUBMIT_ALLOW_REAL_ANALYTICS=true) needs Chromium's "chrome"-branded headless mode.
+        channel: "chromium",
+      },
     },
     {
       name: "simulatorBehaviour",

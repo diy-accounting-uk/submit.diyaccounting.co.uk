@@ -3,13 +3,13 @@ run-name: "alarm triage for #${{ github.event.issue.number }}"
 # SPDX-FileCopyrightText: 2026 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# Comment-only by design: this workflow never gets contents:write or pull-requests:write, and
-# it never opens a branch or a PR. When the triage agent is confident enough to name a fix, it
-# writes that fix as a diff inside its own answer (see prompts/alarm-triage.md), and the diff
-# lands in the issue comment like the rest of the triage text, not as a draft PR. The issue
-# that triggers this workflow is opened by our own alarm-to-issue Lambda, not by a member of
-# the public, so the only untrusted content flowing through is the alarm reason string
-# CloudWatch composes and whatever the triage agent reads from logs and traces - both are
+# This workflow carries contents:write and pull-requests:write so it can open a draft PR when
+# the triage agent names a change it is confident in. That surface is acceptable here: the issue
+# that triggers this workflow is opened by our own alarm-to-issue Lambda, not by a member of the
+# public, and the only text this workflow ever turns into a branch is a diff the triage agent
+# wrote inside its own answer (see prompts/alarm-triage.md) - the same answer that already passed
+# the regex deny-list and the Bedrock guardrail before it was posted as the issue comment. The
+# alarm reason string CloudWatch composes and whatever the agent reads from logs and traces are
 # treated as data throughout, never as instructions.
 
 on:
@@ -18,8 +18,9 @@ on:
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
   issues: write
+  pull-requests: write
   actions: read
 
 concurrency:
@@ -219,16 +220,67 @@ jobs:
           ACTION=$(jq -r '.action' /tmp/guardrail-result.json)
           echo "action=${ACTION}" | tee -a "$GITHUB_OUTPUT"
 
-      - name: Comment the triage
-        if: steps.guardrail-check.outputs.action == 'NONE'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh issue comment "$ISSUE_NUMBER" --body-file /tmp/triage-comment.md
+      # The guardrail's entities and regexes are all ANONYMIZE (see ObservabilityStack.java), so
+      # GUARDRAIL_INTERVENED here means a hit was masked, never that the text was withheld. The
+      # anonymised text is in outputs[0].text; the untouched text is what the redaction script
+      # already wrote when the guardrail found nothing to mask.
+      - name: Note when the guardrail anonymised the comment
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.guardrail-check.outputs.action }}" = "NONE" ]; then
+            cp /tmp/triage-comment.md /tmp/final-comment.md
+          else
+            {
+              echo "_The guardrail anonymised part of this comment before it was posted._"
+              echo
+              jq -r '.outputs[0].text' /tmp/guardrail-result.json
+            } > /tmp/final-comment.md
+          fi
 
-      - name: Say the guardrail blocked the comment
-        if: steps.role.outputs.configured == 'true' && steps.guardrail-check.outputs.action != 'NONE'
+      # The diff, if any, is a fenced ```diff block inside the comment just built, so it has
+      # already passed the same deny-list and guardrail as the rest of the answer. This step
+      # never reads the agent's raw output directly, and it runs before the comment is posted so
+      # the comment can link to the PR it opened.
+      - name: Open a draft PR when triage named a change
+        if: steps.role.outputs.configured == 'true'
+        id: draft-pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body \
-            "Triage ran and produced text the Bedrock guardrail blocked, so nothing was posted. The run is ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."
+          set -euo pipefail
+          awk '/^```diff$/ { flag=1; next } /^```$/ { if (flag) exit } flag' /tmp/final-comment.md > triage-change.patch
+          if [ ! -s triage-change.patch ]; then
+            echo "no diff block in the triage answer, nothing to open a PR for"
+            rm -f triage-change.patch
+            exit 0
+          fi
+          if ! git apply --check triage-change.patch 2>/tmp/git-apply-check.log; then
+            echo "the proposed change does not apply cleanly, skipping the draft PR"
+            cat /tmp/git-apply-check.log
+            rm -f triage-change.patch
+            exit 0
+          fi
+          BRANCH="claude/triage-${ISSUE_NUMBER}"
+          git switch -c "$BRANCH"
+          git apply triage-change.patch
+          rm triage-change.patch
+          git add -A
+          git -c user.name='claude-alarm-triage' -c user.email='noreply@anthropic.com' \
+            commit -m "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}"
+          git push origin "$BRANCH"
+          PR_URL=$(gh pr create --draft --base main --head "$BRANCH" \
+            --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \
+            --body "Draft from the alarm-triage workflow for #${ISSUE_NUMBER}. Not reviewed by a human. Closes nothing.")
+          echo "url=${PR_URL}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Comment the triage
+        if: steps.role.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -n "${{ steps.draft-pr.outputs.url }}" ]; then
+            printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> /tmp/final-comment.md
+          fi
+          gh issue comment "$ISSUE_NUMBER" --body-file /tmp/final-comment.md

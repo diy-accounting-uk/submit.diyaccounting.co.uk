@@ -229,12 +229,21 @@ jobs:
           fi
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_CLIENT_SECRET
+        env:
+          COMPANIES_HOUSE_CLIENT_SECRET: ${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}
         run: |
+          # The Companies House filing client secret is set on the GitHub Environment by hand once
+          # the developer-hub application exists. Until then the environment deploys without it
+          # and the filing token exchange answers an error, which the ci-only gate keeps off prod.
+          if [ -z "${COMPANIES_HOUSE_CLIENT_SECRET}" ]; then
+            echo "::notice::COMPANIES_HOUSE_CLIENT_SECRET is not set on this environment; skipping the secret"
+            exit 0
+          fi
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/client_secret"
           if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
           else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
           fi
 
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
@@ -401,6 +410,10 @@ jobs:
     needs:
       - names
       - create-secrets
+      # The bedrock-budget-alert-forward Lambda this stack creates is a container image
+      # Lambda in the us-east-1 environment ECR repository; deploy-ingestion pushes that
+      # image (see its "push env observability ue1 image" steps below).
+      - deploy-ingestion
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -414,6 +427,7 @@ jobs:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.environment-name }}
       cdk-application: 'environment'
+      base-image-tag: env-observability-ue1-${{ github.sha }}
 
   deploy-data:
     name: 'deploy data'
@@ -727,6 +741,7 @@ jobs:
       - create-secrets
       - deploy-analytics
       - deploy-ecr
+      - deploy-ecr-us-east-1
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:
@@ -811,6 +826,31 @@ jobs:
           docker tag "env-ingestion:${{ github.sha }}" "${ECR_URI}:${ENV_IMAGE_TAG}"
           docker push "${ECR_URI}:${ENV_IMAGE_TAG}"
           echo "Pushed ${ECR_URI}:${ENV_IMAGE_TAG}"
+        shell: bash
+
+      # --- Push the same already-built image to the us-east-1 environment repository, for
+      #     ObservabilityUE1Stack's bedrock-budget-alert-forward Lambda. It is the same
+      #     Dockerfile with the same app code either way (the CMD is overridden per Lambda in
+      #     CDK), so this reuses the local image the build step above already produced instead
+      #     of building it again. ---
+
+      - name: Login to ECR us-east-1
+        run: |
+          ECR_REPOSITORY_BASE_URL_UE1="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com"
+          aws ecr get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin "${ECR_REPOSITORY_BASE_URL_UE1}"
+        shell: bash
+
+      - name: Tag and push env observability ue1 image to ECR us-east-1
+        run: |
+          ECR_REPOSITORY_BASE_URL_UE1="${{ vars.SUBMIT_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com"
+          ECR_REPOSITORY_NAME_UE1="${{ needs.names.outputs.environment-name }}-env-ecr-us-east-1"
+          ECR_URI_UE1="${ECR_REPOSITORY_BASE_URL_UE1}/${ECR_REPOSITORY_NAME_UE1}"
+          ENV_IMAGE_TAG_UE1="env-observability-ue1-${{ github.sha }}"
+
+          docker tag "env-ingestion:${{ github.sha }}" "${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
+          docker push "${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
+          echo "Pushed ${ECR_URI_UE1}:${ENV_IMAGE_TAG_UE1}"
         shell: bash
 
       # --- Deploy CDK stack using the env-level image tag ---

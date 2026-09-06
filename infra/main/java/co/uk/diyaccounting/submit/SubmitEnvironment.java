@@ -261,6 +261,7 @@ public class SubmitEnvironment {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .logGroupRetentionPeriodDays(accessLogGroupRetentionPeriodDays)
+                        .baseImageTag(baseImageTag)
                         .build());
 
         // Create DataStack with shared persistence for all deployments

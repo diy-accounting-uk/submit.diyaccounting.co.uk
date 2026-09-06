@@ -287,11 +287,11 @@ class SubmitEnvironmentCdkResourceTest {
         List<Map<String, Object>> regexesConfig =
                 (List<Map<String, Object>>) sensitiveInformationPolicyConfig.get("RegexesConfig");
         assertEquals(10, piiEntitiesConfig.size());
-        assertTrue(piiEntitiesConfig.stream().allMatch(entity -> "BLOCK".equals(entity.get("Action"))));
+        assertTrue(piiEntitiesConfig.stream().allMatch(entity -> "ANONYMIZE".equals(entity.get("Action"))));
         assertEquals(2, regexesConfig.size());
         assertTrue(regexesConfig.stream().anyMatch(regex -> "hashed-sub".equals(regex.get("Name"))));
         assertTrue(regexesConfig.stream().anyMatch(regex -> "vat-registration-number".equals(regex.get("Name"))));
-        assertTrue(regexesConfig.stream().allMatch(regex -> "BLOCK".equals(regex.get("Action"))));
+        assertTrue(regexesConfig.stream().allMatch(regex -> "ANONYMIZE".equals(regex.get("Action"))));
 
         observability.hasResourceProperties(
                 "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-id")));

@@ -963,25 +963,30 @@ Both accounts get the same role from the same CDK code, with `{env}` and `{accou
 
 - `sensitiveInformationPolicyConfig.piiEntitiesConfig`: `EMAIL`, `PHONE`, `NAME`, `ADDRESS`,
   `IP_ADDRESS`, `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, `UK_NATIONAL_INSURANCE_NUMBER`,
-  `UK_UNIQUE_TAXPAYER_REFERENCE`, `CREDIT_DEBIT_CARD_NUMBER`, each with `action: BLOCK`.
+  `UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER`, `CREDIT_DEBIT_CARD_NUMBER`, each with
+  `action: ANONYMIZE`.
 - `sensitiveInformationPolicyConfig.regexesConfig`: one entry named `hashed-sub` with pattern
-  `[0-9a-f]{64}` and `action: BLOCK`; one named `vat-registration-number` with pattern
-  `\b(?:GB)?[0-9]{9}\b` and `action: BLOCK`.
-- `blockedOutputsMessaging`: `Triage output was blocked by the guardrail.`
+  `[0-9a-f]{64}` and `action: ANONYMIZE`; one named `vat-registration-number` with pattern
+  `\b(?:GB)?[0-9]{9}\b` and `action: ANONYMIZE`.
+- `blockedInputMessaging` and `blockedOutputsMessaging`: required by CloudFormation even though
+  nothing blocks.
 
 Two SSM parameters carry the identifiers to the workflow:
 `/submit/{env}/alarm-triage/guardrail-id` and `/submit/{env}/alarm-triage/guardrail-version`.
 `CfnGuardrailVersion` returns the version; write both with `StringParameter`.
 
-`BLOCK` rather than `ANONYMIZE`: a blocked comment is a loud failure the operator sees, and the run
-log is still there. An anonymised comment reads as complete while quietly having holes. See the
-open question in Part 9 — the operator may prefer the opposite.
+`ANONYMIZE` rather than `BLOCK`: the triage input is HMRC's and CloudWatch's, not ours to control,
+so the comment posts with the sensitive values masked and a note that masking happened.
 
 ### 7.3 The budget and the budget action
 
 Bedrock spend is charged to the account, so the budget is per account, which means per environment.
 Budgets are global; define them in `ObservabilityUE1Stack.java` (us-east-1), which already exists
 for the us-east-1 half of this environment's observability.
+
+AWS Budgets Actions reject a DAILY budget, so the deny action sits on a MONTHLY budget at USD 150
+(30 days of the daily figure), alongside a DAILY USD 5 budget that only notifies the same alerts
+topic.
 
 Three resources:
 
@@ -1144,16 +1149,13 @@ per-run cost estimate in 6.3 is built on it. Sonnet 5 reads logs better and woul
 which may cost the same or less per run, but the estimate would have to be redone before the budget
 number can be trusted. Pick 4.5 to start and measure, or pick Sonnet 5 and set `--max-turns 8`.
 
-**Q2. Guardrail action on a PII hit: BLOCK or ANONYMIZE.** BLOCK posts nothing and says so, so the
-operator knows the triage exists in the run log and can read it there. ANONYMIZE posts the comment
-with the entity masked, so the triage is visible in the issue where it belongs, at the cost of a
-comment that looks whole while missing pieces. This plan chooses BLOCK.
+**Q2. Guardrail action on a PII hit: BLOCK or ANONYMIZE.** ANONYMIZE: the comment posts with the
+hit masked and a one-line note that anonymisation happened, since the alarm and its logs are
+HMRC's and CloudWatch's content, not ours to withhold.
 
-**Q3. Draft PR from the first release, or comment only.** The draft-PR path in 6.2 adds
-`contents: write` and `pull-requests: write` to a workflow triggered by an issue body. The issue
-body is written by our own Lambda, not by a member of the public, so the injection surface is the
-alarm reason string that CloudWatch composes. Shipping comment-only first and adding the PR path
-after a few live runs is the cautious order; shipping both now is one merge instead of two.
+**Q3. Draft PR from the first release, or comment only.** Ships from the first release: the
+workflow writes a named change to a branch and opens a draft PR referencing the issue, gated
+behind the same deny-list and guardrail as the comment.
 
 **Q4. Which environments run triage.** This plan defines the role, guardrail and budget for both ci
 and prod, and lets the workflow pick the environment from the alarm name. ci alarms are noisier and

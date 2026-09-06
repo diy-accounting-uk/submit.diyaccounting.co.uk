@@ -47,6 +47,10 @@ Refer to a customer as "the customer" and to a request by its request id only.
 Write your answer as GitHub-flavoured Markdown, under 400 words, in three sections matching the
 three questions. Plain sentences. No preamble.
 
-This run posts your answer as an issue comment. There is no pull request path: if question 3
-names a change you are confident in, show it as a fenced ```diff code block inside your answer
-rather than writing it to a file. You cannot edit files in this session.
+This run posts your answer as an issue comment. If, and only if, question 3 names a change you
+are confident in, add one more fenced ```diff code block at the end of your answer, holding that
+change in `git diff` format against this repository. The workflow extracts that block after your
+answer is posted and applies it as a patch on a new branch, opening a draft PR that references
+this issue — you do not create the branch or the PR yourself, and you cannot edit any file in this
+session. Leave the block out if you are not confident, or if the change does not reduce to a
+single diff.
