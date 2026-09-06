@@ -115,8 +115,16 @@ verify.
   window pads only seven days, so it has no fallback period when the sandbox holds no return
   for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
   the View VAT Return form over the same wide window the behaviour test uses; green on the
-  simulator. Prod recording run 34000044595 dispatched from the branch at 02:00 UTC on
-  2026-09-06; verified when its artifact shows the return.
+  simulator. Run 34000044595 then failed the same way through the form: the submit path with
+  synthetic obligations files under a key it derives from the year (`18A2` becomes `17A2`),
+  while the view path only proposes keys HMRC lists, and the sandbox answers 404 for any key
+  never filed under. Fixed on the branch (b2e85061): `syntheticPeriodKeys` in
+  `app/lib/obligationFormatter.js` is the one derivation both paths use, and the scene views
+  the period it submitted through `{{submittedPeriodStart}}` and `{{submittedPeriodEnd}}`. The
+  simulator answers any key, so it cannot prove this; the prod artifact does. Next: after the
+  fourth push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
+  script=view-return -f environment-name=prod`; verified when the return on screen shows Box 6
+  at £5,000, the figure the off-camera submission sent (£0 is the canned default).
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
