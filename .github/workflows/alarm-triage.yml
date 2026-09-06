@@ -1,0 +1,234 @@
+name: alarm-triage
+run-name: "alarm triage for #${{ github.event.issue.number }}"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Comment-only by design: this workflow never gets contents:write or pull-requests:write, and
+# it never opens a branch or a PR. When the triage agent is confident enough to name a fix, it
+# writes that fix as a diff inside its own answer (see prompts/alarm-triage.md), and the diff
+# lands in the issue comment like the rest of the triage text, not as a draft PR. The issue
+# that triggers this workflow is opened by our own alarm-to-issue Lambda, not by a member of
+# the public, so the only untrusted content flowing through is the alarm reason string
+# CloudWatch composes and whatever the triage agent reads from logs and traces - both are
+# treated as data throughout, never as instructions.
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+  actions: read
+
+concurrency:
+  group: alarm-triage
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  CLAUDE_CODE_VERSION: '2.0.30'
+
+jobs:
+  triage:
+    if: >-
+      contains(github.event.issue.labels.*.name, 'alarm') &&
+      (github.event.action == 'opened' || github.event.label.name == 'triage')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Stop if this workflow already ran three times today
+        id: budget-guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          COUNT=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/alarm-triage.yml/runs?created=%3E${SINCE}&per_page=100" \
+            --jq '.total_count')
+          echo "runs in the last 24 hours: ${COUNT}"
+          if [ "${COUNT}" -gt 3 ]; then
+            echo "proceed=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "proceed=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read the alarm out of the issue body
+        if: steps.budget-guard.outputs.proceed == 'true'
+        id: alarm
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          ALARM_NAME=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Alarm:\*\* //p' | head -1)
+          TIMESTAMP=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Timestamp:\*\* //p' | head -1)
+          REGION=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Region:\*\* //p' | head -1)
+          DEPLOYMENT=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Deployment:\*\* //p' | head -1)
+          WINDOW=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Window:\*\* //p' | head -1)
+          case "$ALARM_NAME" in
+            prod-*) ENV_NAME=prod ;;
+            ci-*)   ENV_NAME=ci ;;
+            *)      echo "alarm name has no environment prefix: $ALARM_NAME"; exit 1 ;;
+          esac
+          {
+            echo "alarm-name=${ALARM_NAME}"
+            echo "timestamp=${TIMESTAMP}"
+            echo "region=${REGION:-eu-west-2}"
+            echo "deployment=${DEPLOYMENT}"
+            echo "window=${WINDOW}"
+            echo "environment-name=${ENV_NAME}"
+          } | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      proceed: ${{ steps.budget-guard.outputs.proceed }}
+      alarm-name: ${{ steps.alarm.outputs.alarm-name }}
+      timestamp: ${{ steps.alarm.outputs.timestamp }}
+      region: ${{ steps.alarm.outputs.region }}
+      deployment: ${{ steps.alarm.outputs.deployment }}
+      window: ${{ steps.alarm.outputs.window }}
+      environment-name: ${{ steps.alarm.outputs.environment-name }}
+
+  run-triage:
+    needs: triage
+    if: needs.triage.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: ${{ needs.triage.outputs.environment-name }}
+    env:
+      ENV_NAME: ${{ needs.triage.outputs.environment-name }}
+      ALARM_NAME: ${{ needs.triage.outputs.alarm-name }}
+      ALARM_REGION: ${{ needs.triage.outputs.region }}
+      ALARM_WINDOW: ${{ needs.triage.outputs.window }}
+      DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      # The triage role is created by the environment's CDK deploy and its ARN is set on the
+      # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
+      # no-op here rather than a failed run.
+      - name: Stop when the triage role is not configured for this environment
+        id: role
+        env:
+          TRIAGE_ROLE_ARN: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+        run: |
+          if [ -z "${TRIAGE_ROLE_ARN}" ]; then
+            echo "SUBMIT_ALARM_TRIAGE_ROLE_ARN is not set on the ${ENV_NAME} environment, so triage waits" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "configured=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.role.outputs.configured == 'true'
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        if: steps.role.outputs.configured == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: steps.role.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        if: steps.role.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Read the guardrail identifiers
+        if: steps.role.outputs.configured == 'true'
+        id: guardrail
+        run: |
+          set -euo pipefail
+          aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-id" \
+            --query 'Parameter.Value' --output text | tee /tmp/guardrail-id.txt
+          aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-version" \
+            --query 'Parameter.Value' --output text | tee /tmp/guardrail-version.txt
+          echo "id=$(cat /tmp/guardrail-id.txt)" | tee -a "$GITHUB_OUTPUT"
+          echo "version=$(cat /tmp/guardrail-version.txt)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Resolve the evidence links for this alarm
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          node scripts/resolve-alarm-evidence.mjs \
+            --alarm-name "$ALARM_NAME" --deployment "$DEPLOYMENT_NAME" \
+            --region "$ALARM_REGION" --from-alarm \
+            2>&1 | tee /tmp/evidence.json
+
+      - name: Install Claude Code
+        if: steps.role.outputs.configured == 'true'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Run triage
+        if: steps.role.outputs.configured == 'true'
+        env:
+          CLAUDE_CODE_USE_BEDROCK: '1'
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+          ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+          CLAUDE_CODE_MAX_OUTPUT_TOKENS: '8192'
+          DISABLE_TELEMETRY: '1'
+          DISABLE_ERROR_REPORTING: '1'
+          DISABLE_AUTOUPDATER: '1'
+        run: |
+          PROMPT=$(envsubst < prompts/alarm-triage.md)
+          claude -p "$PROMPT" \
+            --max-turns 12 \
+            --output-format json \
+            --permission-mode plan \
+            --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
+            2>&1 | tee /tmp/triage.json
+
+      - name: Filter the output
+        if: steps.role.outputs.configured == 'true'
+        id: filter
+        run: |
+          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md
+          echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Apply the Bedrock guardrail
+        if: steps.role.outputs.configured == 'true'
+        id: guardrail-check
+        run: |
+          set -euo pipefail
+          jq -Rs '[{ text: { text: . } }]' /tmp/triage-comment.md > /tmp/guardrail-input.json
+          aws bedrock-runtime apply-guardrail \
+            --guardrail-identifier "${{ steps.guardrail.outputs.id }}" \
+            --guardrail-version "${{ steps.guardrail.outputs.version }}" \
+            --source OUTPUT \
+            --content file:///tmp/guardrail-input.json \
+            2>&1 | tee /tmp/guardrail-result.json
+          ACTION=$(jq -r '.action' /tmp/guardrail-result.json)
+          echo "action=${ACTION}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Comment the triage
+        if: steps.guardrail-check.outputs.action == 'NONE'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment "$ISSUE_NUMBER" --body-file /tmp/triage-comment.md
+
+      - name: Say the guardrail blocked the comment
+        if: steps.role.outputs.configured == 'true' && steps.guardrail-check.outputs.action != 'NONE'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body \
+            "Triage ran and produced text the Bedrock guardrail blocked, so nothing was posted. The run is ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}."

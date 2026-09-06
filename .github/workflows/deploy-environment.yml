@@ -228,6 +228,15 @@ jobs:
             aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_API_KEY }}" --region ${{ env.AWS_REGION }}
           fi
 
+      - name: Create secret in AWS from secrets.COMPANIES_HOUSE_CLIENT_SECRET
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/client_secret"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+          else
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+          fi
+
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/secret_key"

@@ -813,9 +813,9 @@ public class AccountStack extends Stack {
         this.passMyPassesGetLambda = passMyPassesGetApiLambda.ingestLambda;
         this.passMyPassesGetLambdaLogGroup = passMyPassesGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passMyPassesGetLambdaProps);
-        // Listing a user's own passes queries issuedBy-index, and falls back to a table Scan when
-        // the query fails. The index needs its own grant: an imported table's ARN does not cover it.
-        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query", "dynamodb:Scan");
+        // Listing a user's own passes queries issuedBy-index. The index needs its own grant: an
+        // imported table's ARN does not cover it.
+        passesTable.grant(this.passMyPassesGetLambda, "dynamodb:Query");
         grantTableIndexActions(passesTable, this.passMyPassesGetLambda, "issuedBy-index", "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.passMyPassesGetLambda, region, account, props.envName());
         this.passMyPassesGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -855,8 +855,10 @@ public class AccountStack extends Stack {
         healthCheckedFunctions.add(reconcileLambda);
         this.bundleCapacityReconcileLambda = reconcileLambda.ingestLambda;
         this.bundleCapacityReconcileLambdaLogGroup = reconcileLambda.logGroup;
-        // Reconciliation counts live bundles, which is the one legitimate Scan in the system.
-        bundlesTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:Scan");
+        // Reconciliation counts live allocations of each capped bundle through bundleId-expiry-index.
+        bundlesTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:Query");
+        grantTableIndexActions(
+                bundlesTable, this.bundleCapacityReconcileLambda, "bundleId-expiry-index", "dynamodb:Query");
         bundleCapacityTable.grant(this.bundleCapacityReconcileLambda, "dynamodb:PutItem");
         this.bundleCapacityReconcileLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)

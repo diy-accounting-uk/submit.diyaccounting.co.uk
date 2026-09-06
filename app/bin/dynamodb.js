@@ -87,6 +87,17 @@ export async function ensureBundleTableExists(tableName, endpoint) {
           AttributeDefinitions: [
             { AttributeName: "hashedSub", AttributeType: "S" },
             { AttributeName: "bundleId", AttributeType: "S" },
+            { AttributeName: "expiry", AttributeType: "S" },
+          ],
+          GlobalSecondaryIndexes: [
+            {
+              IndexName: "bundleId-expiry-index",
+              KeySchema: [
+                { AttributeName: "bundleId", KeyType: "HASH" },
+                { AttributeName: "expiry", KeyType: "RANGE" },
+              ],
+              Projection: { ProjectionType: "KEYS_ONLY" },
+            },
           ],
           BillingMode: "PAY_PER_REQUEST",
         }),
@@ -245,7 +256,21 @@ export async function ensurePassesTableExists(tableName, endpoint) {
         new CreateTableCommand({
           TableName: tableName,
           KeySchema: [{ AttributeName: "pk", KeyType: "HASH" }],
-          AttributeDefinitions: [{ AttributeName: "pk", AttributeType: "S" }],
+          AttributeDefinitions: [
+            { AttributeName: "pk", AttributeType: "S" },
+            { AttributeName: "issuedBy", AttributeType: "S" },
+            { AttributeName: "createdAt", AttributeType: "S" },
+          ],
+          GlobalSecondaryIndexes: [
+            {
+              IndexName: "issuedBy-index",
+              KeySchema: [
+                { AttributeName: "issuedBy", KeyType: "HASH" },
+                { AttributeName: "createdAt", KeyType: "RANGE" },
+              ],
+              Projection: { ProjectionType: "ALL" },
+            },
+          ],
           BillingMode: "PAY_PER_REQUEST",
         }),
       );

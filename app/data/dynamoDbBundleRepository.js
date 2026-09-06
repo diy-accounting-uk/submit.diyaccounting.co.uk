@@ -370,6 +370,38 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
   }
 }
 
+export async function countActiveAllocations(bundleId, nowIso) {
+  logger.info({ message: `countActiveAllocations [table: ${getTableName()}]`, bundleId });
+
+  try {
+    const { docClient, module } = await getDynamoDbDocClient();
+    const tableName = getTableName();
+
+    let count = 0;
+    let lastEvaluatedKey;
+    do {
+      const response = await docClient.send(
+        new module.QueryCommand({
+          TableName: tableName,
+          IndexName: "bundleId-expiry-index",
+          KeyConditionExpression: "bundleId = :bundleId AND expiry > :now",
+          ExpressionAttributeValues: { ":bundleId": bundleId, ":now": nowIso },
+          Select: "COUNT",
+          ExclusiveStartKey: lastEvaluatedKey,
+        }),
+      );
+      count += response.Count || 0;
+      lastEvaluatedKey = response.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    logger.info({ message: "Counted active allocations", bundleId, count });
+    return count;
+  } catch (error) {
+    logger.error({ message: "Error counting active allocations", error: error.message, bundleId });
+    throw error;
+  }
+}
+
 export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 

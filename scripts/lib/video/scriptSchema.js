@@ -53,6 +53,10 @@ const STEP_REQUIRED_FIELDS = {
 // and a real identity provider, so a script may only use them once it has declared auth "user".
 const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
+// HMRC sandbox services a script may ask its minted test user to be enrolled in. Defaults to
+// ["mtd-vat"] when a script omits the field, so an existing VAT-only script needs no change.
+const ALLOWED_HMRC_SERVICES = new Set(["mtd-vat", "mtd-income-tax"]);
+
 function fail(path, message) {
   throw new Error(`scene script invalid at ${path}: ${message}`);
 }
@@ -105,6 +109,14 @@ export function validateScript(script) {
 
   if (!AUTH_VALUES.has(script.auth)) fail("auth", `must be one of ${[...AUTH_VALUES].join(", ")}`);
 
+  if ("hmrcServices" in script) {
+    if (!Array.isArray(script.hmrcServices) || script.hmrcServices.length === 0) {
+      fail("hmrcServices", "must be a non-empty array of HMRC service names");
+    }
+    for (const service of script.hmrcServices) {
+      if (!ALLOWED_HMRC_SERVICES.has(service)) fail("hmrcServices", `unknown HMRC service "${service}"`);
+    }
+  }
   requireKeys(script.viewport || {}, ["width", "height"], "viewport");
 
   requireKeys(script.pacing || {}, REQUIRED_PACING_KEYS, "pacing");

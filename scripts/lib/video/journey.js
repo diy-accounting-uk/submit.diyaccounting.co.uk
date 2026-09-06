@@ -4,8 +4,9 @@
 // scripts/lib/video/journey.js
 //
 // What a logged-in scene script needs standing up before the first frame: the local services for
-// the simulator and proxy variants, the HMRC sandbox test user whose VAT registration number gets
-// typed into the form on camera, and the on-screen mask over the one-time code field.
+// the simulator and proxy variants, the HMRC sandbox test user whose VAT registration number (and,
+// for a script that declares the mtd-income-tax service, National Insurance number) gets typed
+// into the form on camera, and the on-screen mask over the one-time code field.
 //
 // The identity provider is never named by the scene script. It comes from TEST_AUTH_PROVIDER,
 // exactly as it does for the behaviour tests, so the same script proves locally against the
@@ -59,13 +60,23 @@ export async function startLocalServices(env) {
 }
 
 // TEST_HMRC_USERNAME and friends win when they are set; otherwise a sandbox run mints a fresh
-// test user with a VAT enrolment. The VAT registration number comes back for the script to type.
-export async function resolveHmrcTestUser(env) {
+// test user enrolled in hmrcServices (default ["mtd-vat"], matching createHmrcTestUser's own
+// default). The VAT registration number always comes back for the script to type; the National
+// Insurance number comes back only when hmrcServices asked for "mtd-income-tax" — a script that
+// never requested it gets no nino, so a stray {{hmrcNino}} placeholder fails the run rather than
+// silently typing nothing.
+export async function resolveHmrcTestUser(env, hmrcServices = ["mtd-vat"]) {
+  const wantsIncomeTax = hmrcServices.includes("mtd-income-tax");
+
   if (env.TEST_HMRC_USERNAME) {
+    if (wantsIncomeTax && !env.TEST_HMRC_NINO) {
+      throw new Error("a scene script whose hmrcServices includes mtd-income-tax needs TEST_HMRC_NINO alongside TEST_HMRC_USERNAME");
+    }
     return {
       username: env.TEST_HMRC_USERNAME,
       password: env.TEST_HMRC_PASSWORD,
       vatNumber: env.TEST_HMRC_VAT_NUMBER,
+      nino: wantsIncomeTax ? env.TEST_HMRC_NINO : undefined,
     };
   }
 
@@ -82,10 +93,18 @@ export async function resolveHmrcTestUser(env) {
     throw new Error("minting an HMRC sandbox test user needs HMRC_SANDBOX_CLIENT_ID and HMRC_SANDBOX_CLIENT_SECRET");
   }
 
-  console.log("Minting an HMRC sandbox test user with a VAT enrolment...");
-  const testUser = await createHmrcTestUser(clientId, clientSecret, { serviceNames: ["mtd-vat"] });
+  console.log(`Minting an HMRC sandbox test user with ${hmrcServices.join(", ")} enrolment...`);
+  const testUser = await createHmrcTestUser(clientId, clientSecret, { serviceNames: hmrcServices });
+  if (wantsIncomeTax && !testUser.nino) {
+    throw new Error("HMRC test user creation did not return a nino for the mtd-income-tax service");
+  }
   console.log(`HMRC sandbox test user ready, VAT registration number ${testUser.vrn}`);
-  return { username: testUser.userId, password: testUser.password, vatNumber: testUser.vrn };
+  return {
+    username: testUser.userId,
+    password: testUser.password,
+    vatNumber: testUser.vrn,
+    nino: wantsIncomeTax ? testUser.nino : undefined,
+  };
 }
 
 export async function installCredentialFieldMask(page) {

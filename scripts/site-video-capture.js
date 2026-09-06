@@ -230,12 +230,12 @@ async function main() {
       authProvider: journeyModule.authProviderFrom(process.env),
       authUsername: journeyModule.authUsernameFrom(process.env),
       authPassword: process.env.TEST_AUTH_PASSWORD || null,
-      hmrcUser: usesHmrcTestUser ? await journeyModule.resolveHmrcTestUser(process.env) : null,
+      hmrcUser: usesHmrcTestUser ? await journeyModule.resolveHmrcTestUser(process.env, script.hmrcServices || ["mtd-vat"]) : null,
     };
     console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
   }
 
-  const values = { hmrcVatNumber: journey?.hmrcUser?.vatNumber };
+  const values = { hmrcVatNumber: journey?.hmrcUser?.vatNumber, hmrcNino: journey?.hmrcUser?.nino };
   const secrets = collectSecrets(process.env, [journey?.hmrcUser?.password, journey?.hmrcUser?.username].filter(Boolean));
 
   const browser = await chromium.launch({ headless: !args.headed });
