@@ -53,10 +53,6 @@ B10.4 and O11 need.
   `destroy-prod.yml` and the main deploy's retire step, with a Sonnet build brief. The build
   follows in the next wave. **Source**: operator, 2026-09-06. **Owner**: Claude Code.
   **Model**: Opus design, then Sonnet.
-- [ ] **B17a.5** in the videos agent's worktree, branch `claude/docs-video-publish` (Sonnet):
-  the three prod artifacts downloaded, titles and descriptions drafted into
-  `videos/publish.json`, and `scripts/youtube-upload.js` for the operator's one-time OAuth
-  consent and upload.
 
 ## Ready: Claude Code
 
@@ -109,15 +105,16 @@ on main and each names the event that verifies it.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. The prod recordings are workflow
-  artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
-  `video-view-obligations-prod` on run 33952515598, `video-submit-return-prod` on run
-  33953044775, and `video-view-return-prod` on run 34017736028 (the return on screen is the one
-  filed off camera, Box 6 at £5,000). The ITSA Business Details recording is ci-only until the
-  activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
-  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
-  pattern settles).
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Batch 9
+  (58b9fa7c) carries `videos/publish.json` with the three prod videos' titles, descriptions,
+  tags and captions, and `scripts/youtube-upload.js`, which uploads them as unlisted after a
+  one-time OAuth consent and writes each video id back so a re-run is idempotent. Steps in
+  `videos/PUBLISH.md`: download the three artifacts (30-day retention from 2026-09-04 to
+  2026-09-06), create a Desktop-app OAuth client in the Google Cloud console with the YouTube
+  Data API enabled, export its id and secret, `npm run video:publish`, review, then
+  `npm run video:publish -- --public`. The ITSA Business Details recording stays
+  `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a. **Owner**:
+  Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
   production ("live application"). The hub holds three: "DIY Accounting Submit - test"
