@@ -289,6 +289,19 @@ main or on batch 6 and each names the event that verifies it.
   requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
   GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
   34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
+- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites, only if
+  wanted.** Companies House has no HMRC-style create-test-user API: its test data generator
+  makes companies only, and a sandbox user is a real account on
+  identity-sandbox.company-information.service.gov.uk with an authenticator second factor. An
+  automated ci run of the two filing suites therefore needs a throwaway sandbox account the
+  operator registers, with its email as `TEST_COMPANIES_HOUSE_USER_ID`, its password as
+  `TEST_COMPANIES_HOUSE_PASSWORD` and its authenticator secret as
+  `TEST_COMPANIES_HOUSE_TOTP_SECRET` on the ci GitHub environment, plus the test application's
+  REST key as `COMPANIES_HOUSE_SANDBOX_API_KEY` for creating the run's test company. The parked
+  local branch `claude/companies-house-filing-ci-sandbox` (ef091559) has everything except the
+  TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
+  asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
+  Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
