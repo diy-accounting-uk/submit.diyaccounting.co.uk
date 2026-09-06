@@ -47,13 +47,20 @@ a later event to verify.
   output, and the draft-PR path from `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Part 6.2 ships with
   `contents: write` and `pull-requests: write`. **Source**: BACKLOG 30; issue #18. **Owner**:
   Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, triage-anonymise-and-pr (Sonnet), started 2026-09-06 06:20 UTC.
+  **Track**: code complete on `claude/board-batch-5` (0fa136da): every guardrail entity and
+  regex is ANONYMIZE, the workflow posts `outputs[0].text` with a one-line note when the
+  guardrail intervened, and a fenced diff in the posted comment becomes branch
+  `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
+  Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
+  carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
 - [ ] **B30m. The Bedrock budget topic reaches Telegram.** `<env>-env-bedrock-budget-alerts` in
   `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
   Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
   30. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: wave 1 of batch 5, budget-topic-subscription (Sonnet), started 2026-09-06 06:20
-  UTC.
+  UTC. It also fixes the deploy failure the ci environment run 34016080214 hit: AWS Budgets
+  actions do not support daily budgets, so the deny action moves to a monthly USD 150 budget
+  (30 days of the daily figure) and the daily USD 5 budget keeps a notification only.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
@@ -63,10 +70,14 @@ a later event to verify.
   invisible to it. Three stand now: ci-claudff66, ci-claudf375, ci-claud063e (two Lambdas,
   aliases, alarms and log groups each). Fix both lists, with unit and CDK tests. **Source**:
   board render 2026-09-06; BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, self-destruct-companies-house (Sonnet), started 2026-09-06
-  06:30 UTC. The three orphans themselves go with the operator's yes to
-  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>` for each, or the
-  next sweep once the fix is on main.
+  **Track**: code complete on `claude/board-batch-5` (3e8fe230): the Lambda deletes the
+  Companies House stack after the HMRC stack, pinned by `SelfDestructStackTest`, and the sweep
+  scans eu-west-2 for `ci-*-app-` prefixes it would otherwise not see. ci-claudff66 also has an
+  `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
+  House routes), so that set needs the Companies House stack deleted first and the ApiStack
+  deleted again. The three orphans go with the operator's yes to
+  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>`, or the fixed sweep
+  once PR #137 is on main (ci-claudff66's ApiStack still needs the second delete).
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -250,6 +261,13 @@ a later event to verify.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O13. Submit the Anthropic use-case details form for Bedrock in both accounts.** The
+  first triage run (34016641016, ci) reached Bedrock and got 404 "Model use case details have
+  not been submitted for this account. Fill out the Anthropic use case details form". In the
+  console for submit-ci (367191799875) and submit-prod (972912397388), Bedrock, Model access,
+  Anthropic: submit the form; access follows within about 15 minutes. Then re-label #134 with
+  `triage` to finish B30o's proof. **Source**: BACKLOG 30; issue #18. **Owner**: Operator.
+
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
   Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
   register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
@@ -282,15 +300,13 @@ a later event to verify.
 
 ## Blocked: Claude Code
 
-- [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on both environments and prove the triage
-  chain.** The `triage` label exists (created 2026-09-06). Once the environment stacks have
-  deployed (B34.4), read each account's `<env>-env-alarm-triage-role` ARN and set the variable
-  on the `ci` and `prod` GitHub Environments (`gh variable set SUBMIT_ALARM_TRIAGE_ROLE_ARN
-  --env <env>`), then `cloudwatch set-alarm-state` on one ci alarm and confirm the family issue
-  gains one triage comment and the run's cost shows against the ci budget. **Source**: BACKLOG
-  30; issue #18. **Owner**: Claude Code (the alarm-state write is an AWS write the operator
-  asked for). **Model**: Fable (coordinator). Blocked on `aws sso login` and on B34.4 landing
-  and the environment deploy going green.
+- [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on prod and prove the triage chain.** ci is
+  done: the variable points at `ci-env-alarm-triage-role`, and adding the `triage` label to
+  #134 ran the whole chain (run 34016641016: role assumed, guardrail read, comment posted).
+  The model call answered 404 "Model use case details have not been submitted for this
+  account", so the proof completes after O13. Prod's variable waits for its environment deploy
+  after PR #137 merges. **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
+  Fable (coordinator). Blocked on O13 and on prod's environment deploy.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
