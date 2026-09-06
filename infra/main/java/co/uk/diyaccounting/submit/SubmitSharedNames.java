@@ -146,6 +146,13 @@ public class SubmitSharedNames {
     public String dynamoStreamToFirehoseLambdaArn;
     public String dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn;
 
+    // Env-level Telegram forwarder Lambda (EventBridge target, not API): one per environment,
+    // shared by every deployment's OpsStack rules instead of each deployment building its own.
+    public String activityTelegramForwarderLambdaHandler;
+    public String activityTelegramForwarderLambdaFunctionName;
+    public String activityTelegramForwarderLambdaArn;
+    public String activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn;
+
     // Env-level billing webhook Lambda
     public String envBillingWebhookLambdaFunctionName;
     public String envBillingWebhookLambdaHandler;
@@ -558,12 +565,6 @@ public class SubmitSharedNames {
 
     public String billingStackId;
 
-    // Telegram forwarder Lambda (EventBridge target, not API)
-    public String activityTelegramForwarderLambdaHandler;
-    public String activityTelegramForwarderLambdaFunctionName;
-    public String activityTelegramForwarderLambdaArn;
-    public String activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn;
-
     // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
     public String alarmToGithubIssueLambdaHandler;
     public String alarmToGithubIssueLambdaFunctionName;
@@ -691,6 +692,17 @@ public class SubmitSharedNames {
                 .formatted(props.regionName, props.awsAccount, this.dynamoStreamToFirehoseLambdaFunctionName);
         this.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.dynamoStreamToFirehoseLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Env-level Telegram forwarder Lambda: one instance shared by every deployment's OpsStack
+        // rules, instead of each deployment building its own copy of the same catch-all rule.
+        this.activityTelegramForwarderLambdaFunctionName =
+                "%s-activity-telegram-forwarder".formatted(this.envResourceNamePrefix);
+        this.activityTelegramForwarderLambdaHandler = "app/functions/ops/activityTelegramForwarder.handler";
+        this.activityTelegramForwarderLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.activityTelegramForwarderLambdaFunctionName);
+        this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
+
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
         // Env-level billing webhook Lambda
@@ -1870,19 +1882,6 @@ public class SubmitSharedNames {
                 "Stripe webhook",
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
-
-        // Telegram forwarder Lambda (EventBridge target, not API)
-        var activityTelegramForwarderLambdaHandlerName = "activityTelegramForwarder.handler";
-        var activityTelegramForwarderLambdaHandlerDashed =
-                ResourceNameUtils.convertCamelCaseToDashSeparated(activityTelegramForwarderLambdaHandlerName);
-        this.activityTelegramForwarderLambdaFunctionName =
-                "%s-%s".formatted(this.appResourceNamePrefix, activityTelegramForwarderLambdaHandlerDashed);
-        this.activityTelegramForwarderLambdaHandler =
-                "%s/ops/%s".formatted(appLambdaHandlerPrefix, activityTelegramForwarderLambdaHandlerName);
-        this.activityTelegramForwarderLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, activityTelegramForwarderLambdaHandlerDashed);
-        this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";

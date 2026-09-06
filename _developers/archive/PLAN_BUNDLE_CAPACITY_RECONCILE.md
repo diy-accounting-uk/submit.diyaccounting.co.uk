@@ -113,7 +113,7 @@ customer table. Indexing `bundleId` costs a little more storage and gets that da
 
 At 676 items and 224 KB, a KEYS_ONLY index costs a fraction of a cent a month in storage. Each
 write to a bundle item that touches `bundleId` or `expiry` writes one extra index entry, billed on
-demand. `PLAN_COST_OPTIMISATION.md` prices the hourly reconcile and its reads at $0.10 a month
+demand. `_developers/archive/PLAN_COST_OPTIMISATION.md` prices the hourly reconcile and its reads at $0.10 a month
 today, and the query replaces a 224 KB table read with a read of one small partition.
 
 `KEYS_ONLY` rather than `ALL` is deliberate. The index needs no attribute values, only a count.

@@ -25,7 +25,7 @@ report is CDK-source-only, same as the original 2026-08-31 pass:
 - Cost estimates use published CloudWatch standard pricing ($0.10/alarm/month, first 10 free per
   account; $0.50/composite alarm/month; $0.30/custom-metric/month, first 10 free;
   $0.0012/canary run), not a billed invoice — for a billing-measured view of the same
-  environment, see `PLAN_COST_OPTIMISATION.md`.
+  environment, see `_developers/archive/PLAN_COST_OPTIMISATION.md`.
 
 ## Headline numbers
 
@@ -170,7 +170,7 @@ canary runs $0.0012/run):
 | **Subtotal, one environment (prod-typical)** | | | **~$29.70** |
 
 For a billing-measured view of this same environment, including alarms this CDK-source recount
-doesn't cover (`SecurityDetectionStack`, `ScanDetectionStack`), see `PLAN_COST_OPTIMISATION.md`.
+doesn't cover (`SecurityDetectionStack`, `ScanDetectionStack`), see `_developers/archive/PLAN_COST_OPTIMISATION.md`.
 
 For CI, the app-level 95 alarms (89 standard + 6 composite) exist once per **concurrent**
 deployment, not once per environment; the 24 shared env-level alarms (22 standard + 2 composite)

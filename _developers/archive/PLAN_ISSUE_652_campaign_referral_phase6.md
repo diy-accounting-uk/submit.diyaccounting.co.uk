@@ -4,8 +4,8 @@
 > Original body: the full Phase 6 specification (copied from `PLAN_PASSES_V2.md`); 20 KB — complete design.
 > Existing plans:
 > - `_developers/backlog/PLAN_PASSES_V2-PART-2.md` (506 lines — continuation)
-> - `_developers/archive/PLAN_PASSES_V2.md`, `PLAN_PASSES.md`, `PASSES_AND_CREDITS.md`, `campaign.md`, `PLAN_CAMPAIGN_AND_REFERRALS.md` (parent), `PLAN_CAMPAIGN_AND_REFERRALS_*.svg` (UX sketches)
-> Also: parent repo root has `PLAN_CAMPAIGN_AND_REFERRALS.md` (workspace-level).
+> - `_developers/archive/PLAN_PASSES_V2.md`, `PLAN_PASSES.md`, `PASSES_AND_CREDITS.md`, `campaign.md`, `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS.md` (parent), `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS_*.svg` (UX sketches)
+> Also: parent repo has `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS.md`.
 
 ## Elaboration
 
@@ -51,7 +51,7 @@ Per issue body (sections 6.1–6.10):
 
 - `_developers/archive/PLAN_PASSES_V2.md` — mark Phase 6 delivered.
 - `_developers/archive/campaign.md` — resolved questions section update.
-- `PLAN_CAMPAIGN_AND_REFERRALS.md` at repo root — delivery log.
+- `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS.md` — delivery log.
 - `guide.html`, `about.html` — campaign / referral marketing copy.
 - `about.html` and `help.html` — "Invite a colleague" FAQ section.
 

@@ -113,6 +113,30 @@ class SubmitEnvironmentCdkResourceTest {
         // of its SSM parameters exist.
         assertAlarmTriageResources(observability);
 
+        // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
+        // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
+        // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
+        // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
+        // hardcoded below).
+        List<String> envRoutedPrefixes = List.of("test-env-");
+
+        // 8c) Activity stack: one Telegram forwarder Lambda and the one bus-wide catch-all rule
+        // that targets it, shared by every deployment's OpsStack instead of one copy per
+        // deployment (each deployment's own alarm-state-change and stack-status rules still
+        // target this same imported Lambda; that stays covered by OpsStackTest since OpsStack
+        // isn't synthesized here).
+        Template activity = Template.fromStack(env.activityStack);
+        activity.resourceCountIs("AWS::Lambda::Function", 1);
+        activity.resourceCountIs("AWS::Events::Rule", 1);
+        activity.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "test-env-activity-telegram",
+                        "EventPattern",
+                        Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 1, 0, envRoutedPrefixes);
+
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
@@ -149,12 +173,6 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
-        // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
-        // stack and isn't synthesized here, so this mirrors SubmitSharedNames.envResourceNamePrefix
-        // for the fixed ENVIRONMENT_NAME=test config above, the same way "test-env-activity-bus" is
-        // hardcoded above).
-        List<String> envRoutedPrefixes = List.of("test-env-");
         SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, 0, envRoutedPrefixes);
 
         // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
@@ -188,6 +206,7 @@ class SubmitEnvironmentCdkResourceTest {
         // handler, which exposes no logGroup option at all.
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.observabilityStack));
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.dataStack));
+        assertEveryLambdaHasAnExplicitLogGroup(activity);
         assertEveryLambdaHasAnExplicitLogGroup(analytics);
         assertEveryLambdaHasAnExplicitLogGroup(ingestion);
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(env.identityStack));

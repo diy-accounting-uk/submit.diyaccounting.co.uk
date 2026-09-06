@@ -36,6 +36,8 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
@@ -92,27 +94,6 @@ public class OpsStack extends Stack {
         // Alert configuration
         @Value.Default
         default String alertEmail() {
-            return "";
-        }
-
-        // Telegram configuration
-        @Value.Default
-        default String telegramBotTokenArn() {
-            return "";
-        }
-
-        @Value.Default
-        default String telegramTestChatId() {
-            return "";
-        }
-
-        @Value.Default
-        default String telegramLiveChatId() {
-            return "";
-        }
-
-        @Value.Default
-        default String telegramOpsChatId() {
             return "";
         }
 
@@ -186,83 +167,24 @@ public class OpsStack extends Stack {
         this.activityBus = EventBus.fromEventBusName(this, "ActivityBus", props.sharedNames().activityBusName);
 
         // ============================================================================
-        // Telegram Forwarder Lambda + EventBridge Rule
+        // Telegram Forwarder Lambda (env-level, imported)
         // ============================================================================
-        var telegramForwarderEnv = new PopulatedMap<String, String>().with("ENVIRONMENT_NAME", props.envName());
-        if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_BOT_TOKEN_ARN", props.telegramBotTokenArn());
-        }
-        if (props.telegramTestChatId() != null && !props.telegramTestChatId().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_TEST_CHAT_ID", props.telegramTestChatId());
-        }
-        if (props.telegramLiveChatId() != null && !props.telegramLiveChatId().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_LIVE_CHAT_ID", props.telegramLiveChatId());
-        }
-        if (props.telegramOpsChatId() != null && !props.telegramOpsChatId().isBlank()) {
-            telegramForwarderEnv.with("TELEGRAM_OPS_CHAT_ID", props.telegramOpsChatId());
-        }
-        var telegramForwarderLambda = new Lambda(
+        // ActivityStack owns the one Telegram forwarder Lambda per environment and the bus-wide
+        // catch-all rule that targets it. This stack only imports it, to target it from the
+        // default-bus rules below (CfnStackStatusRule, AlarmStateChangeRule), which stay
+        // deployment-scoped because they filter by this deployment's own resource-name prefix.
+        IFunction telegramForwarderLambda = Function.fromFunctionAttributes(
                 this,
-                LambdaProps.builder()
-                        .idPrefix(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().activityTelegramForwarderLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().activityTelegramForwarderLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().activityTelegramForwarderLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn)
-                        .ingestProvisionedConcurrency(0)
-                        .ingestLambdaTimeout(Duration.seconds(10))
-                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .environment(telegramForwarderEnv)
-                        // Every OpsStack deploy recreates this Lambda, and its own EventBridge
-                        // rule is about to hand it a burst of the alarm-state-change events that
-                        // rule was already generating (see AlarmStateChangeRule below). A fresh,
-                        // cold-starting instance briefly absorbing that burst looks like errors
-                        // for one 5-minute period; that is deploy noise,
-                        // not a fault. Require 2 of 3 periods (15 minutes) to breach before
-                        // alarming, so a lone deploy-time period doesn't trip it while a sustained
-                        // problem still does. See GitHub issues #77-82.
-                        .errorsAlarmEvaluationPeriods(3)
-                        .errorsAlarmDatapointsToAlarm(2)
+                "ImportedTelegramForwarderLambda",
+                FunctionAttributes.builder()
+                        .functionArn(props.sharedNames().activityTelegramForwarderLambdaArn)
+                        .sameEnvironment(true)
                         .build());
 
-        // Single catch-all rule: the Lambda handles routing to the correct chat IDs
-        // based on (actor, flow, env) in the event detail.
-        Rule.Builder.create(this, "ActivityTelegramRule")
-                .ruleName(props.resourceNamePrefix() + "-activity-telegram")
-                .eventBus(this.activityBus)
-                .eventPattern(EventPattern.builder()
-                        .detailType(List.of("ActivityEvent"))
-                        .build())
-                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
-                        .build()))
-                .build();
-
-        if (props.telegramBotTokenArn() != null && !props.telegramBotTokenArn().isBlank()) {
-            var telegramSecretArnWithWildcard = props.telegramBotTokenArn().endsWith("*")
-                    ? props.telegramBotTokenArn()
-                    : props.telegramBotTokenArn() + "-*";
-            telegramForwarderLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(telegramSecretArnWithWildcard))
-                    .build());
-            infof(
-                    "Granted Secrets Manager access to %s for Telegram bot token secret %s",
-                    telegramForwarderLambda.ingestLambda.getFunctionName(), props.telegramBotTokenArn());
-        }
-
-        cfnOutput(this, "TelegramForwarderLambdaArn", telegramForwarderLambda.ingestLambda.getFunctionArn());
-        infof(
-                "Created Telegram Forwarder Lambda %s",
-                telegramForwarderLambda.ingestLambda.getNode().getId());
-
         // Every Lambda construct this stack builds, fanned into one composite health alarm below.
+        // The Telegram forwarder is not one of them: it belongs to ActivityStack now, which
+        // carries its own health alarm.
         var healthCheckedFunctions = new ArrayList<Lambda>();
-        healthCheckedFunctions.add(telegramForwarderLambda);
 
         // ============================================================================
         // Alarm-to-GitHub-Issue Lambda + EventBridge target (optional)
@@ -334,7 +256,12 @@ public class OpsStack extends Stack {
                     alarmToGithubIssueLambdaConstruct.ingestLambda.getNode().getId(), props.opsGithubRepo());
         }
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "ops", healthCheckedFunctions);
+        // Only when this stack built a Lambda construct of its own: the alarm-to-GitHub-issue
+        // Lambda is optional (needs a GitHub token ARN), and the Telegram forwarder moved to
+        // ActivityStack, so this stack can have none.
+        if (!healthCheckedFunctions.isEmpty()) {
+            Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "ops", healthCheckedFunctions);
+        }
 
         // ============================================================================
         // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
@@ -363,8 +290,8 @@ public class OpsStack extends Stack {
                                                 "ROLLBACK_COMPLETE",
                                                 "UPDATE_ROLLBACK_COMPLETE"))))
                         .build())
-                .targets(List.of(LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda)
-                        .build()))
+                .targets(List.of(
+                        LambdaFunction.Builder.create(telegramForwarderLambda).build()))
                 .build();
 
         // CloudWatch Alarm State Change → Telegram forwarder, and the
@@ -385,8 +312,7 @@ public class OpsStack extends Stack {
         // same rule, and a ci set self-destructs within hours, so an issue opened for it is
         // stale before anyone can act on it.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
-        alarmStateChangeTargets.add(
-                LambdaFunction.Builder.create(telegramForwarderLambda.ingestLambda).build());
+        alarmStateChangeTargets.add(LambdaFunction.Builder.create(telegramForwarderLambda).build());
         if (alarmToGithubIssueLambda != null && "prod".equals(props.envName())) {
             alarmStateChangeTargets.add(
                     LambdaFunction.Builder.create(alarmToGithubIssueLambda).build());

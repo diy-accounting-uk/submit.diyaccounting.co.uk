@@ -82,10 +82,6 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentVat;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
-        public String telegramBotTokenArn;
-        public String telegramTestChatId;
-        public String telegramLiveChatId;
-        public String telegramOpsChatId;
         public String opsGithubTokenSecretArn;
         // Comma-separated hand-applied IP block list for EdgeStack's WafManualBlock rule (issue
         // #9 phase 9.3); see wafManualBlockIps in cdk-application/cdk.json.
@@ -229,14 +225,6 @@ public class SubmitApplication {
                 "STRIPE_TEST_WEBHOOK_SECRET_ARN",
                 appProps.stripeTestWebhookSecretArn,
                 "(from stripeTestWebhookSecretArn in cdk.json)");
-        var telegramBotTokenArn =
-                envOr("TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
-        var telegramTestChatId =
-                envOr("TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
-        var telegramLiveChatId =
-                envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
-        var telegramOpsChatId =
-                envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
         var opsGithubTokenSecretArn = envOr(
                 "OPS_GITHUB_TOKEN_SECRET_ARN",
                 appProps.opsGithubTokenSecretArn,
@@ -427,10 +415,6 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .baseUrl(sharedNames.baseUrl)
                         .alertEmail(alertEmail)
-                        .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
-                        .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")
-                        .telegramLiveChatId(telegramLiveChatId != null ? telegramLiveChatId : "")
-                        .telegramOpsChatId(telegramOpsChatId != null ? telegramOpsChatId : "")
                         .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
                         .build());
         // this.opsStack.addDependency(hmrcStack);
