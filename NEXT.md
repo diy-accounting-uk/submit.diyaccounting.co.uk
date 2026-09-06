@@ -13,8 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0967fab (the PR #136 merge deploy of 2026-09-06), the only app
-stack set standing.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-4909b49 (the scheduled main deploy of 08:39 UTC on 2026-09-06);
+main's deploy run 34023929108 for the PR #137 merge is building prod-6c85118 and retires
+prod-4909b49 when it completes. prod-0967fab (the PR #136 merge deploy) was left standing by
+the scheduled deploy and is a spare until named to `destroy-prod.yml`.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -98,17 +100,6 @@ a later event to verify.
   deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
   deleted and ci-claudff66's ApiStack delete was requested again. Verified when
   `list-stacks` in ci shows no `ci-claud*` stack and the next ci set self-destructs whole.
-- [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
-  `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
-  carry the deployment slug, so each new deployment opens a fresh issue for the same check
-  (19 of the 30 open alarm issues). Strip the deployment segment before the title search so a
-  family comments on one rolling issue; unit test. **Source**: BACKLOG 30; alarm-issue review
-  2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: deployed with PR #118 (`app/lib/alarmName.js` collapses `<env>-<slug>-app-<rest>`
-  to `<env>-app-<rest>` for the issue title and search). The first family issue opened under
-  the collapsed title: #133 `prod-app-api-failed`, 22:04 UTC on 2026-09-05, for prod-0f68ed8.
-  Verified when the next `api-failed` alarm on any prod set comments on #133 instead of opening
-  a new issue.
 - [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
   `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
   scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
@@ -179,25 +170,10 @@ a later event to verify.
   repository's scan fallback removed. The index and the new reconcile land in one deploy; a
   reconcile run against a still-building index throws and the next hourly run succeeds.
   Verified when `prod-env-dynamodb-customer-table-scan` stays OK for a day after the merge.
-- [ ] **B30h. Alarm issues link to the evidence.** An alarm issue today carries the alarm
-  name, the state change and the CloudWatch reason (#111 is the example). Make
-  `app/functions/ops/alarmToGithubIssue.js` add links, never log text, because the repo is
-  public: a CloudWatch Logs Insights link pre-filled with the log groups behind the alarm's
-  metric and the alarm's evaluation window (for `prod-env-hmrc-submission-failure` that is the
-  `hmrcVatReturnPost` function's log group and the `prod-env-hmrc-api-requests` table's request
-  ids), and an X-Ray trace search link for the same window (every Lambda traces with
-  `Tracing.ACTIVE`, `constructs/Lambda.java`). The alarm-to-log-group mapping needs a design
-  pass: alarm names carry the function name for per-function checks and the metric namespace
-  for business metrics. Unit tests on the two builders. **Source**: BACKLOG 30; issue #111.
-  **Owner**: Claude Code. **Model**: Opus design, then Sonnet.
-  **Track**: `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` is on `claude/board-batch-4` (605e45ef):
-  rules keyed on metric namespace rather than a row per alarm, the window read from the event's
-  `reasonData`, composite alarms resolved through `DescribeAlarms`. Code complete on
-  `claude/board-batch-4` (bd85b797): `app/lib/alarmEvidence.js`, `alarmWindow.js` and
-  `consoleLinks.js`, the Lambda's revised body, `scripts/resolve-alarm-evidence.mjs`, and the two
-  OpsStack policy statements; the CLI reproduces the plan's worked-example URLs byte for byte.
-  Verified when the first prod alarm issue after the merge carries a Logs Insights link and an
-  X-Ray link that open on the right window in the console.
+  On prod the new reconcile ran hourly from 07:15 UTC on 2026-09-06 and threw "the table does
+  not have the specified index" until the environment deploy created the index at 09:15 (that
+  is #138); the 10:15 run is the first with the index in place, and the scan alarm has been OK
+  since 07:01.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -257,6 +233,15 @@ a later event to verify.
   when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
 
+- [ ] **B43c. The scheduled main deploy leaves the previous prod set standing.** `deploy.yml`
+  runs from main on `cron: '11 4 * * *'` as well as on push. The scheduled run 34022451206 of
+  08:39 UTC on 2026-09-06 built prod-4909b49 and left prod-0967fab, while the push-triggered
+  merge deploys retire their predecessor. Read the retire step and its condition (grep
+  `destroy` and `previous` in `deploy.yml`) and make the scheduled path retire the set it
+  replaces the same way, or skip the scheduled deploy when main has not changed since the last
+  deploy; a CDK-free workflow change with `actionlint`. **Source**: board render 2026-09-06;
+  BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
+
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
@@ -284,11 +269,19 @@ a later event to verify.
 
 ## Blocked: operator
 
-- [ ] **O12. Close #134 and #135 once the reconcile fix has held.** #134
+- [ ] **O12. Close #134, #135 and #138 once the reconcile has held.** #134
   `ci-env-dynamodb-customer-table-scan` and #135 `prod-env-dynamodb-customer-table-scan` close
-  once B30j's reconcile has deployed to prod and the alarm has stayed OK for a day; the ci one
-  also stops being raised at all after B30k. **Source**: board render 2026-09-06. **Owner**:
-  Operator. Blocked on the prod environment deploy after PR #137 and a day of OK after it.
+  once the index-backed reconcile has run on prod and the scan alarm has stayed OK for a day
+  (OK since 07:01 UTC on 2026-09-06). #138 `prod-app-account-stack-health` is the reconcile
+  erroring hourly between its deploy at 06:13 and the index's arrival at 09:15; it closes once
+  the 10:15 UTC run and the next are clean. **Source**: board render 2026-09-06. **Owner**:
+  Operator. Blocked on a day of OK.
+- [ ] **O15. Destroy the spare prod set prod-0967fab.** The scheduled main deploy of 08:39 UTC
+  on 2026-09-06 built prod-4909b49 without retiring prod-0967fab, and the PR #137 deploy
+  building prod-6c85118 retires only prod-4909b49. Once prod-6c85118 is live:
+  `gh workflow run destroy-prod.yml -f deployment-name=prod-0967fab`. Why the scheduled deploy
+  left it is B43c. **Source**: board render 2026-09-06; PLAN_COST_OPTIMISATION. **Owner**:
+  Operator. Blocked on prod-6c85118 going live.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
