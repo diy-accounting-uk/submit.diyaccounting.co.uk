@@ -9,121 +9,85 @@ import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
+// Correlation headers (x-request-id, x-amzn-trace-id, traceparent, x-correlationid) are
+// merged into the response by httpResponse() below, so callers only need to pass through
+// any headers of their own plus status-specific extras (Retry-After, Location).
+
 export function http200OkResponse({ request, headers, data }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 200,
     request,
-    headers: merged,
+    headers,
     data,
     levelledLogger: logger.info.bind(logger),
   });
 }
 
 export function http201CreatedResponse({ request, headers, data }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 201,
     request,
-    headers: merged,
+    headers,
     data,
     levelledLogger: logger.info.bind(logger),
   });
 }
 
 export function http422UnprocessableEntityResponse({ request, headers, data }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 422,
     request,
-    headers: merged,
+    headers,
     data,
     levelledLogger: logger.warn.bind(logger),
   });
 }
 
 export function http400BadRequestResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 400,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
 export function http500ServerErrorResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 500,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.error.bind(logger),
   });
 }
 
 export function http403ForbiddenResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 403,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
 }
 
 export function http409ConflictResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 409,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
 }
 
 export function http404NotFoundResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 404,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
@@ -131,10 +95,6 @@ export function http404NotFoundResponse({ request, headers, message, error }) {
 
 export function http429TooManyRequestsResponse({ request, headers, message, retryAfterSeconds }) {
   const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   if (retryAfterSeconds !== undefined && retryAfterSeconds !== null) merged["Retry-After"] = String(retryAfterSeconds);
   return httpResponse({
     statusCode: 429,
@@ -146,15 +106,10 @@ export function http429TooManyRequestsResponse({ request, headers, message, retr
 }
 
 export function http401UnauthorizedResponse({ request, headers, message, error }) {
-  const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   return httpResponse({
     statusCode: 401,
     request,
-    headers: merged,
+    headers,
     data: { message, ...error },
     levelledLogger: logger.warn.bind(logger),
   });
@@ -162,10 +117,6 @@ export function http401UnauthorizedResponse({ request, headers, message, error }
 
 export function http202AcceptedResponse({ request, headers, message, location }) {
   const merged = { ...(headers || {}) };
-  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
-  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
-  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
-  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
   if (location) merged["Location"] = location;
   return httpResponse({
     statusCode: 202,

@@ -6,7 +6,7 @@ stands on its own and can be adopted or ignored independently.
 
 ---
 
-## 1. HTTP Response Helper Boilerplate (internal refactor, no library)
+## 1. HTTP Response Helper Boilerplate (internal refactor, no library) — done
 
 **What**: `app/lib/httpResponseHelper.js` contains 7 nearly identical exported functions
 (`http200OkResponse`, `http400BadRequestResponse`, `http401UnauthorizedResponse`, etc.). Each
