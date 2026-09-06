@@ -13,11 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4909b49 (the scheduled main deploy of 08:39 UTC on 2026-09-06);
-main's deploy run 34023929108 for the PR #137 merge is building prod-6c85118 to take over.
-prod-0967fab and, after the takeover, prod-4909b49 are spares: a main deploy's sweep keeps any
-set younger than eight hours and removes one older spare per run, so the daily scheduled
-deploy clears them over the next two days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06). prod-0967fab
+and prod-4909b49 are spares: a main deploy's sweep keeps any set younger than eight hours and
+removes one older spare per run, so the daily scheduled deploy clears them over the next two
+days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -35,15 +34,12 @@ fixes are proposed in the reply. What that leaves in motion:
   `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
   House account with an authenticator secret, which the operator does not want. The branch
   stays local, unmerged, in case that changes.
-- The ci deploy already running from the last push (34027333381) finishes on its own; its
-  result is only read. The environment deploy that would create the ci filing secret in AWS
-  (`ci/submit/companies-house/client_secret`) was cancelled and stays undone until the freeze
-  lifts.
-- Batch 6 (`claude/board-batch-6`, PR #139) has three commits on origin from before the freeze:
-  the triage day guard, the index custom-resource fix, and the ci client id in `.env.ci`.
-  Local commits since then (board write-backs, and the sandbox track once merged) stay local.
-- When the sandbox track lands it is merged locally and its secret names go to the operator;
-  the push, the environment deploy and the ci filing runs wait for the operator's word.
+- The environment deploy that would create the ci filing secret in AWS
+  (`ci/submit/companies-house/client_secret`) was cancelled by the deploy concurrency group
+  and stays undone; the merge of PR #139 runs it on main.
+- Batch 6 (`claude/board-batch-6`, PR #139) was pushed once inside the freeze, on the
+  operator's word, to carry the bundle-expiry fix to prod; it also holds the triage day guard,
+  the index custom-resource fix and the ci client id. The operator merges.
 
 Batches 4 (PR #136) and 5 (PR #137) are merged and both environments' stacks are deployed
 (prod's environment deploy re-run 34024729614 is green). The items below are code complete on
