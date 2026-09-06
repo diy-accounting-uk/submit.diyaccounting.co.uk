@@ -53,10 +53,6 @@ Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged 
   Code. **Model**: Sonnet.
 - [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
   plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B21a / B23a. Support mail analysis** in `_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`:
-  six months of support threads classified with the template-reply share, and a 50-thread
-  sample across the archive with the first ten article topics; no personal data in the
-  document. **Source**: BACKLOG 21a, 23a. **Owner**: Claude Code. **Model**: Sonnet.
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
