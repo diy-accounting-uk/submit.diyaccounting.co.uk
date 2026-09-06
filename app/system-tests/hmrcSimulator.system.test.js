@@ -288,6 +288,151 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Obligations", () => {
+    it("should return obligations for a valid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          Accept: "application/vnd.hmrc.3.0+json",
+          Authorization: "Bearer test-token",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+
+      expect(data).toHaveProperty("obligations");
+      expect(Array.isArray(data.obligations)).toBe(true);
+      expect(data.obligations.length).toBeGreaterThan(0);
+
+      const business = data.obligations[0];
+      expect(business).toHaveProperty("typeOfBusiness");
+      expect(business).toHaveProperty("businessId");
+      expect(Array.isArray(business.obligationDetails)).toBe(true);
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/invalid-nino/income-and-expenditure`);
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          "Gov-Test-Scenario": "NOT_FOUND",
+        },
+      });
+
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should return only open obligations for Gov-Test-Scenario OPEN", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          "Gov-Test-Scenario": "OPEN",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const statuses = data.obligations.flatMap((business) => business.obligationDetails.map((detail) => detail.status));
+      expect(statuses).toEqual(["open"]);
+    });
+
+    it("should filter by status query parameter", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure?status=fulfilled`);
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const statuses = data.obligations.flatMap((business) => business.obligationDetails.map((detail) => detail.status));
+      expect(statuses.every((status) => status === "fulfilled")).toBe(true);
+    });
+  });
+
+  describe("ITSA Self-Employment Period", () => {
+    const validBody = () => ({
+      periodDates: { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" },
+      periodIncome: { turnover: 1000, other: 0 },
+      periodExpenses: { costOfGoods: 100 },
+      periodDisallowableExpenses: {},
+    });
+
+    it("should create a period summary for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.5.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.periodId).toBe("2024-04-06_2024-07-05");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/invalid-nino/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid businessId", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/not-a-business-id/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_BUSINESS_ID");
+    });
+
+    it("should return 400 when periodDates is missing", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ periodIncome: {}, periodExpenses: {}, periodDisallowableExpenses: {} }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for OVERLAPPING_PERIOD", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "OVERLAPPING_PERIOD" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_OVERLAPPING_PERIOD");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "NOT_FOUND" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions

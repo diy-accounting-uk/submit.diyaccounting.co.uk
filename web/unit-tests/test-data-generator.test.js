@@ -384,4 +384,73 @@ describe("test-data-generator", () => {
       expect(() => nullDocGenerator.populateItsaBusinessDetailsForm()).not.toThrow();
     });
   });
+
+  describe("populateItsaObligationsForm", () => {
+    let mockElements;
+    let localTestDataGenerator;
+
+    beforeEach(() => {
+      mockElements = {
+        nino: { value: "" },
+      };
+
+      const mockDocument = {
+        getElementById: vi.fn((id) => {
+          if (id === "nino") return mockElements.nino;
+          return null;
+        }),
+      };
+
+      localTestDataGenerator = createTestDataGenerator(mockDocument);
+    });
+
+    test("populates National Insurance number field", () => {
+      localTestDataGenerator.populateItsaObligationsForm();
+      expect(mockElements.nino.value).toBe("AB123456C");
+    });
+
+    test("handles missing elements gracefully", () => {
+      const nullDocGenerator = createTestDataGenerator({
+        getElementById: vi.fn(() => null),
+      });
+      expect(() => nullDocGenerator.populateItsaObligationsForm()).not.toThrow();
+    });
+  });
+
+  describe("populateSelfEmploymentPeriodForm", () => {
+    let mockElements;
+    let localTestDataGenerator;
+
+    beforeEach(() => {
+      mockElements = {
+        nino: { value: "" },
+        businessId: { value: "" },
+        periodStartDate: { value: "" },
+        periodEndDate: { value: "" },
+        turnover: { value: "" },
+      };
+
+      const mockDocument = {
+        getElementById: vi.fn((id) => mockElements[id] || null),
+      };
+
+      localTestDataGenerator = createTestDataGenerator(mockDocument);
+    });
+
+    test("populates NINO, business ID, period dates and turnover fields", () => {
+      localTestDataGenerator.populateSelfEmploymentPeriodForm();
+      expect(mockElements.nino.value).toBe("AB123456C");
+      expect(mockElements.businessId.value).toBe("XAIS12345678910");
+      expect(mockElements.periodStartDate.value).toBe("2024-04-06");
+      expect(mockElements.periodEndDate.value).toBe("2024-07-05");
+      expect(mockElements.turnover.value).toBe("1000.00");
+    });
+
+    test("handles missing elements gracefully", () => {
+      const nullDocGenerator = createTestDataGenerator({
+        getElementById: vi.fn(() => null),
+      });
+      expect(() => nullDocGenerator.populateSelfEmploymentPeriodForm()).not.toThrow();
+    });
+  });
 });

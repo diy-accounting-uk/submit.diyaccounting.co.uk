@@ -78,8 +78,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 16);
-        assertStackHealthAlarm(hmrcStackTemplate, 9, 7, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 20);
+        assertStackHealthAlarm(hmrcStackTemplate, 11, 9, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -218,7 +218,7 @@ class SubmitApplicationCdkResourceTest {
         // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
         // the GET on the same path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 67);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 71);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
