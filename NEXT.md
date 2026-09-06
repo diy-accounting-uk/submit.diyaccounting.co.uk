@@ -73,23 +73,6 @@ on main and each names the event that verifies it.
   `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
   Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
   carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
-- [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
-  Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
-  selfDestruct.js`) predates `CompaniesHouseStack`, so every ci set leaves
-  `ci-<slug>-app-CompaniesHouseStack` standing, and `destroy-ci.yml`'s sweep only discovers
-  deployments by their public, published and last-known-good names, so the orphans are
-  invisible to it. Three stand now: ci-claudff66, ci-claudf375, ci-claud063e (two Lambdas,
-  aliases, alarms and log groups each). Fix both lists, with unit and CDK tests. **Source**:
-  board render 2026-09-06; BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-5` (3e8fe230): the Lambda deletes the
-  Companies House stack after the HMRC stack, pinned by `SelfDestructStackTest`, and the sweep
-  scans eu-west-2 for `ci-*-app-` prefixes it would otherwise not see. ci-claudff66 also has an
-  `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
-  House routes), so that set needs the Companies House stack deleted first and the ApiStack
-  deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
-  deleted and ci-claudff66's ApiStack delete was requested again. ci shows no
-  orphan stack now and ci-claudf107's self-destruct fired at 11:53 UTC on 2026-09-06; verified
-  when all eight of its stacks, `CompaniesHouseStack` included, are gone.
 - [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
   `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
   scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
