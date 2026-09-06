@@ -30,13 +30,12 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
+// No HEAD registration here: this path is shared with companiesHouseTransactionGet.js (GET and
+// PUT on the same "/transaction/{transactionId}"), which registers the HEAD route for it. A
+// second app.head() on the same path would only ever be dead code behind the first, and API
+// Gateway's own auto-HEAD route wiring (ApiStack.java) already dedupes the same way per path.
 export function apiEndpoint(app) {
   app.put("/api/v1/companies-house/transaction/:transactionId", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-  app.head("/api/v1/companies-house/transaction/:transactionId", async (httpRequest, httpResponse) => {
     const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
     const lambdaResult = await ingestHandler(lambdaEvent);
     return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
