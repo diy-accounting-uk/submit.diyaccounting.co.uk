@@ -51,8 +51,6 @@ environment deploy (run 34062870544) are running; the next batch starts from mai
   an alarm issue or Telegram message naming the set, and
   `aws ssm get-parameter --name /submit/prod/alarm-silence/cfb43ee` shows the marker.
   **Source**: operator, 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **C1** is on main (PR #146). Verified when a docs-only push to main runs no CodeQL; the
-  board write-back of 2026-09-06 22:10 UTC is the first such push.
 
 ## Ready: Claude Code
 
