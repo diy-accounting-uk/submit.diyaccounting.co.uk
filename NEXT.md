@@ -187,9 +187,12 @@ verify.
   `.env.ci` and `.env.prod` until the operator fills it). Track 2 is merged (1a8356a2,
   98cd2bec: the seven filing Lambdas, simulator scenarios and system test; the four
   registered-office and registered-email Lambdas carry shorter deployed names to fit AWS's
-  64-character cap, URL paths unchanged). Track 3 (pages, catalogue activities on `default`
-  behind the gate, behaviour tests, the simulator lane's two OAuth base URIs) started
-  2026-09-06 02:40 UTC. The ci behaviour runs need the operator steps below (O11).
+  64-character cap, URL paths unchanged). Track 3 is merged (d7470848, 223cf553: the two
+  filing pages, the service module, both activities on `default` behind the gate, browser and
+  behaviour suites green on the simulator; the in-browser TOML parser reads one-line arrays
+  only, so catalogue arrays stay on one line). Code complete. Verified when
+  `changeRegisteredOfficeBehaviour-ci` and `changeRegisteredEmailBehaviour-ci` pass against the
+  sandbox, which needs the operator steps below (O11).
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
