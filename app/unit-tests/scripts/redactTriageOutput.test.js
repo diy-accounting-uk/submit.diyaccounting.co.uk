@@ -129,6 +129,11 @@ describe("extractFinalAssistantText", () => {
     expect(extractFinalAssistantText(parsed)).toBe("final answer");
   });
 
+  test("throws on a result that carries is_error, so an API failure is never posted as triage", () => {
+    const parsed = { type: "result", subtype: "success", is_error: true, result: "API Error: 404 Model use case details" };
+    expect(() => extractFinalAssistantText(parsed)).toThrow(/triage run failed.*404/);
+  });
+
   test("exits non-zero (throws) when the input has no assistant text", () => {
     expect(() => extractFinalAssistantText({ type: "result", subtype: "error_max_turns", result: "" })).toThrow(
       /no assistant text/,

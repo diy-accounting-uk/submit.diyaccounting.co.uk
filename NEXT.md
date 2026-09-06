@@ -50,8 +50,9 @@ a later event to verify.
   **Track**: code complete on `claude/board-batch-5` (0fa136da): every guardrail entity and
   regex is ANONYMIZE, the workflow posts `outputs[0].text` with a one-line note when the
   guardrail intervened, and a fenced diff in the posted comment becomes branch
-  `claude/triage-<issue>` and a draft PR when it applies cleanly. Verified through B30o's proof
-  run.
+  `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
+  Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
+  carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
 - [ ] **B30m. The Bedrock budget topic reaches Telegram.** `<env>-env-bedrock-budget-alerts` in
   `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
   Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
@@ -256,6 +257,13 @@ a later event to verify.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O13. Submit the Anthropic use-case details form for Bedrock in both accounts.** The
+  first triage run (34016641016, ci) reached Bedrock and got 404 "Model use case details have
+  not been submitted for this account. Fill out the Anthropic use case details form". In the
+  console for submit-ci (367191799875) and submit-prod (972912397388), Bedrock, Model access,
+  Anthropic: submit the form; access follows within about 15 minutes. Then re-label #134 with
+  `triage` to finish B30o's proof. **Source**: BACKLOG 30; issue #18. **Owner**: Operator.
+
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
   Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
   register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
@@ -288,15 +296,13 @@ a later event to verify.
 
 ## Blocked: Claude Code
 
-- [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on both environments and prove the triage
-  chain.** The `triage` label exists (created 2026-09-06). Once the environment stacks have
-  deployed (B34.4), read each account's `<env>-env-alarm-triage-role` ARN and set the variable
-  on the `ci` and `prod` GitHub Environments (`gh variable set SUBMIT_ALARM_TRIAGE_ROLE_ARN
-  --env <env>`), then `cloudwatch set-alarm-state` on one ci alarm and confirm the family issue
-  gains one triage comment and the run's cost shows against the ci budget. **Source**: BACKLOG
-  30; issue #18. **Owner**: Claude Code (the alarm-state write is an AWS write the operator
-  asked for). **Model**: Fable (coordinator). Blocked on `aws sso login` and on B34.4 landing
-  and the environment deploy going green.
+- [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on prod and prove the triage chain.** ci is
+  done: the variable points at `ci-env-alarm-triage-role`, and adding the `triage` label to
+  #134 ran the whole chain (run 34016641016: role assumed, guardrail read, comment posted).
+  The model call answered 404 "Model use case details have not been submitted for this
+  account", so the proof completes after O13. Prod's variable waits for its environment deploy
+  after PR #137 merges. **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
+  Fable (coordinator). Blocked on O13 and on prod's environment deploy.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
