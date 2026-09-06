@@ -5,8 +5,8 @@
 > **Scope decision 2026-04-22 (Q15.1, pre-migration Q580.1): split into three discrete issues**, because "limited company" overloads three very different surfaces with different lead times.
 > Proposed children (pre-migration #580a/#580b/#580c; not recreated as their own issues in the post-migration renumbering):
 > - **#580a — Companies House reads** (fast, available now). Covered below as the deliverable under this plan.
-> - **#580b — Companies House filings** (weeks of accreditation before code, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580b_companies_house_filings.md`.
-> - **#580c — HMRC Corporation Tax MTD** (no production API yet, no current-issue counterpart). See `plans/archive/pre-migration/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
+> - **#580b — Companies House filings** (weeks of accreditation before code, no current-issue counterpart). See `_developers/archive/PLAN_ISSUE_580b_companies_house_filings.md`.
+> - **#580c — HMRC Corporation Tax MTD** (no production API yet, no current-issue counterpart). See `_developers/archive/PLAN_ISSUE_580c_corporation_tax_mtd.md`.
 >
 > **Correction 2026-09-05.** The Companies House REST filing API does not file accounts: it covers
 > transactions, registered office address, registered email address and insolvency. Accounts go

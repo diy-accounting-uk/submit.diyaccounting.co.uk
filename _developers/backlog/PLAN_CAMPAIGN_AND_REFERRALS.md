@@ -1,7 +1,7 @@
 # Campaign Passes, Referral System & Commission Plan
 
 > **Source**: Sections 6 & 7 of `_developers/backlog/PLAN_PASSES_V2-PART-2.md`
-> **GitHub Issue**: pre-migration #560 — no current-issue counterpart (see `plans/archive/pre-migration/PLAN_ISSUE_652_campaign_referral_phase6.md`)
+> **GitHub Issue**: pre-migration #560 — no current-issue counterpart (see `_developers/archive/PLAN_ISSUE_652_campaign_referral_phase6.md`)
 > **Prerequisite**: Pass infrastructure (Phases 1-5) is complete and deployed
 > **Prerequisite**: `PLAN_RESIDENT_VAT_ROLLOUT.md` is complete — resident-vat is the primary subscription
 

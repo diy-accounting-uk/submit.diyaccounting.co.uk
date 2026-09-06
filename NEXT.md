@@ -26,8 +26,8 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 Batch 7 is PR #141 (`claude/b7-board`, worktree `.claude/worktrees/b7-board`): the OpenAPI
 filing routes, the TODO inventory, the fraud-header parser, the CSV VAT return contract and the
-TypeScript CDK spike. Two tracks still land on it before merge; a third starts batch 8
-(`claude/b8-board`, created from main when it lands). Tracks in worktrees, each merged by the
+TypeScript CDK spike. The ITSA track still lands on it before merge. Batch 8 is
+`claude/b8-board` (worktree `.claude/worktrees/b8-board`), the Telegram forwarder move. Tracks in worktrees, each merged by the
 coordinator when its tests are green, one push per batch of landed tracks:
 
 - [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
@@ -35,14 +35,15 @@ coordinator when its tests are green, one push per batch of landed tracks:
   `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
   `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B30p. One Telegram forwarder per environment, not per deployment** (batch 8). Every
-  deployment's `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity
-  bus, so while two prod sets stand every ops message reaches Telegram twice; the operator's
-  screenshot of 2026-09-06 shows each alarm, stack event and the budget test doubled. The
-  catch-all rule and `activityTelegramForwarder.js` move to the environment stack that owns the
-  bus, with a CDK test that the environment synth has one forwarder and an OpsStack synth
-  none, and the image build the environment deploy needs. **Source**: BACKLOG 30; board render
-  2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Batch 8
+  (`claude/b8-board`, worktree `.claude/worktrees/b8-board`) moves the bus-wide rule and
+  `activityTelegramForwarder.js` from every deployment's `OpsStack` to the environment's
+  `ActivityStack`, with its image built in `deploy-environment.yml` and CDK tests pinning one
+  forwarder per environment and none per deployment (6ab57b30). The environment deploy must
+  land before an app deploy targets the forwarder by ARN; on the branch's first push the two
+  run in parallel, so a losing ci app deploy is re-run. Verified when one prod set stands after
+  main's next app deploy and a stack event reaches Telegram once. **Source**: BACKLOG 30; board
+  render 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
   environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
   Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
