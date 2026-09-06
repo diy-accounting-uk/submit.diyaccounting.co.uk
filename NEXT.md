@@ -13,10 +13,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06). prod-0967fab
-and prod-4909b49 are spares: a main deploy's sweep keeps any set younger than eight hours and
-removes one older spare per run, so the daily scheduled deploy clears them over the next two
-days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06); prod-0967fab is
+the one spare. Main's deploy of the PR #139 merge (run 34028434127) is queued behind the
+environment deploy and creates the next set; a main deploy's sweep keeps any set younger than
+eight hours and removes one older spare per run, so the daily scheduled deploy clears the
+spares over the next two days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -34,16 +35,16 @@ fixes are proposed in the reply. What that leaves in motion:
   `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
   House account with an authenticator secret, which the operator does not want. The branch
   stays local, unmerged, in case that changes.
-- The environment deploy that would create the ci filing secret in AWS
-  (`ci/submit/companies-house/client_secret`) was cancelled by the deploy concurrency group
-  and stays undone; the merge of PR #139 runs it on main.
-- Batch 6 (`claude/board-batch-6`, PR #139) was pushed once inside the freeze, on the
-  operator's word, to carry the bundle-expiry fix to prod; it also holds the triage day guard,
-  the index custom-resource fix and the ci client id. The operator merges.
+- The ci filing secret (`ci/submit/companies-house/client_secret`) exists since main's
+  environment deploy of the PR #139 merge (run 34028434110) passed its create-secrets job at
+  about 10:50 UTC; the rest of that run is in progress.
+- Batch 6 (PR #139: the bundle-expiry fix, the triage day guard, the index custom-resource
+  fix and the ci client id) merged at 10:48 UTC. Main's deploy (run 34028434127) carries it to
+  prod and runs every suite; its `tokenEnforcementBehaviour-prod` and
+  `generatePassActivityBehaviour-prod` results prove the bundle-expiry fix.
 
-Batches 4 (PR #136) and 5 (PR #137) are merged and both environments' stacks are deployed
-(prod's environment deploy re-run 34024729614 is green). The items below are code complete on
-main or on batch 6 and each names the event that verifies it.
+Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
+on main and each names the event that verifies it.
 
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
@@ -94,8 +95,9 @@ main or on batch 6 and each names the event that verifies it.
   `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
   House routes), so that set needs the Companies House stack deleted first and the ApiStack
   deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
-  deleted and ci-claudff66's ApiStack delete was requested again. Verified when
-  `list-stacks` in ci shows no `ci-claud*` stack and the next ci set self-destructs whole.
+  deleted and ci-claudff66's ApiStack delete was requested again. ci shows no
+  orphan stack now; verified when ci-claudf107, the next set, goes whole at its self-destruct
+  time of 11:53 UTC on 2026-09-06.
 - [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
   `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
   scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
@@ -177,9 +179,9 @@ main or on batch 6 and each names the event that verifies it.
   string value. IndexName: bundleId-expiry-index, IndexKey: expiry". Main's deploy of
   prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
   `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
-  the rejection. Fixed locally on `claude/board-batch-6` (a bundle with no expiry is stored
-  without the attribute; unit test), held by the freeze: the fix reaches prod through a push,
-  the PR #139 merge and main's deploy, all of which wait for the operator's word.
+  the rejection. Fixed on main (091924dd: a bundle with no expiry is stored without the attribute;
+  unit test). #140 is the `prod-6c85118-app-api-5xx` those rejections raised at 09:52.
+  Verified when main's deploy of the merge (run 34028434127) passes the two suites.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -265,8 +267,9 @@ main or on batch 6 and each names the event that verifies it.
   ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
-  URIs, id in `.env.ci`, secret on ci). Remaining: once PR #139 has merged and the ci
-  environment deploy has created `ci/submit/companies-house/client_secret`, open the two filing
+  URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
+  since main's environment deploy of the PR #139 merge). Remaining: on a standing ci set
+  (ci-claudf107 until 11:53 UTC on 2026-09-06, or the next push's), open the two filing
   activities on the ci site and take one change through the sandbox with your own Companies
   House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
   a person to authorise them, so an automated ci run would need a robot account with an
@@ -275,10 +278,14 @@ main or on batch 6 and each names the event that verifies it.
 
 ## Blocked: operator
 
-- [ ] **O12. Close #138 once the reconcile has held.** #138 `prod-app-account-stack-health`
-  is the reconcile erroring hourly between its deploy at 06:13 and the index's arrival at
-  09:15 on 2026-09-06; it closes once the 10:15 UTC run and the next are clean. **Source**:
-  board render 2026-09-06. **Owner**: Operator. Blocked on two clean hourly runs.
+- [ ] **O12. Close #138 and #140 once their causes have held.** #138
+  `prod-app-account-stack-health` on prod-0967fab is the reconcile erroring hourly between its
+  deploy at 06:13 and the index's arrival at 09:15 on 2026-09-06; the 10:15 UTC run was clean
+  on both prod sets and both alarms have been OK since, so it closes after the 11:15 run is
+  clean too. #140 `prod-app-api-5xx` on prod-6c85118 is the bundle-grant rejection in B30j's
+  remainder; it closes when main's deploy of the PR #139 merge (run 34028434127) passes its
+  suites. **Source**: board render 2026-09-06. **Owner**: Operator. Blocked on the 11:15 run
+  and that deploy.
 - [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
   2026-09-21.** The presenter account exists (ID E0000052288, code in the operator's
   credentials store); the test presenter credentials and the accounts specification were
@@ -298,10 +305,10 @@ main or on batch 6 and each names the event that verifies it.
   TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
   asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
   Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
-- [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
-  the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
-  misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
-  **Owner**: Operator.
+- [ ] **O9 / B47. Watch the revived weekly `compliance` and `stack-drift` crons fire on their
+  own** on Monday 2026-09-07 06:00 UTC (`codeql` fired on its schedule on 2026-09-06, run
+  34022009649). If one misses, revive it the same way as on 2026-08-31 and tell Claude Code.
+  **Source**: BACKLOG 47. **Owner**: Operator. Date-gated: 2026-09-07.
 
 ## Blocked: Claude Code
 
@@ -311,11 +318,12 @@ main or on batch 6 and each names the event that verifies it.
   The model call answered 404 until the Anthropic use-case form was submitted through
   `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06. The re-run
   (34024132783) stopped at the day guard, which counted every workflow run including the ones
-  the guard or the role check had stopped; on `claude/board-batch-6` the guard counts only
-  runs whose `run-triage` job executed. Once that merges, re-label #134 with `triage`. Prod's
+  the guard or the role check had stopped; on main (6db5a181, merged in PR #139 at 10:48 UTC on
+  2026-09-06) the guard counts only runs whose `run-triage` job executed. Re-labelling #134
+  with `triage` dispatches the workflow, so it waits for the freeze to lift. Prod's
   variable is set (`prod-env-alarm-triage-role` exists since run 34023929068 deployed the
   observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
-  Fable (coordinator). Blocked on the batch 6 merge.
+  Fable (coordinator). Blocked on the freeze lift.
 - [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
   operator's examination on ci: an OAuth web client key on the existing live application
   "DIY Accounting Submit - prod" (the one whose API key serves prod's lookup) with the prod
