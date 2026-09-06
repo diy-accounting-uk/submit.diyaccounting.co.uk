@@ -1,7 +1,8 @@
 # Scheduled ingestion jobs
 
-Design for backlog item 14. It supersedes WP-8 to WP-11 in `PLAN_USAGE_DATA_PIPELINE.md`,
-which those work packages have already shipped.
+Design for backlog item 14. It supersedes WP-8 to WP-11 in
+`_developers/archive/PLAN_USAGE_DATA_PIPELINE.md`, which those work packages have already
+shipped.
 
 The goal from `STRATEGY.md` is one queryable place holding revenue and funnel data. Most of
 the plumbing is built and deployed. This plan covers the five things that remain: proving
@@ -41,7 +42,7 @@ schedule.** Today five EventBridge rules fire at fixed offsets and hope. The met
 publish at 05:00 runs whether or not the ingestion jobs succeeded, so a failed Stripe pull
 puts a false zero on the dashboard and only the Lambda errors alarm says otherwise. The
 jobs now do interact: data quality and the metrics publish both read what the ingestion
-jobs wrote. `PLAN_USAGE_DATA_PIPELINE.md:1122` named this exact trigger for moving to Step
+jobs wrote. `_developers/archive/PLAN_USAGE_DATA_PIPELINE.md:1122` named this exact trigger for moving to Step
 Functions, and it has arrived. One machine also collapses five DLQs and five rules into
 one execution history and one failure alarm.
 
@@ -93,8 +94,9 @@ so nothing. One EventBridge Scheduler schedule against a 14 million free tier, n
 BigQuery job scans one small daily table per run, well inside the 1 TiB monthly on-demand
 free tier. One extra Lambda stays in the free tier.
 
-The one line to watch is CloudWatch custom metrics, which `PLAN_USAGE_DATA_PIPELINE.md`
-capped at 20 for a reason. Phase 4 adds three. Count them before adding a fourth.
+The one line to watch is CloudWatch custom metrics, which
+`_developers/archive/PLAN_USAGE_DATA_PIPELINE.md` capped at 20 for a reason. Phase 4 adds
+three. Count them before adding a fourth.
 
 Phase 5 removes a duplicate copy of every CloudFront access log, so it saves money.
 
@@ -560,8 +562,8 @@ Three new entries in `METRIC_DEFINITIONS` in `analyticsMetricsPublish.js`, readi
 against its two sides, and a difference metric alone reads as noise on a dashboard.
 
 That takes the namespace to 23 metrics. The 20-metric guidance in
-`PLAN_USAGE_DATA_PIPELINE.md` was a cost guard at $0.30 per metric, so this adds $0.90 a
-month. Record the new count in the comment above `METRIC_DEFINITIONS`.
+`_developers/archive/PLAN_USAGE_DATA_PIPELINE.md` was a cost guard at $0.30 per metric, so
+this adds $0.90 a month. Record the new count in the comment above `METRIC_DEFINITIONS`.
 
 Add one dashboard widget in `AnalyticsDashboard.java` plotting the three together, so a
 divergence is visible without a query.

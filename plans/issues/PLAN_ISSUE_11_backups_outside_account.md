@@ -11,7 +11,7 @@
 
 ## Elaboration
 
-The issue body is effectively a specification: create the `submit-backup` account, set up cross-account DynamoDB backup copying, and prove restores work by restoring prod → CI periodically. The existing `PLAN_CROSS_ACCOUNT_BACKUPS.md` covers all of this in detail; this plan is the tracking view + delta for what to do next.
+The issue body is effectively a specification: create the `submit-backup` account, set up cross-account DynamoDB backup copying, and prove restores work by restoring prod → CI periodically. The existing `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` covers all of this in detail; this plan is the tracking view + delta for what to do next.
 
 **Status summary** (inferred from workspace CLAUDE.md + archive):
 
@@ -57,7 +57,7 @@ Risk of not completing this: if submit-prod (972912397388) is compromised — IA
 
 ## Implementation approach
 
-**Recommended — follow `PLAN_CROSS_ACCOUNT_BACKUPS.md` without deviation.** The plan is detailed and reviewed; this issue is a delivery tracker.
+**Recommended — follow `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md` without deviation.** The plan is detailed and reviewed; this issue is a delivery tracker.
 
 Phasing:
 - **P1**: Bootstrap submit-backup (vault, KMS, policy, SSO perms).

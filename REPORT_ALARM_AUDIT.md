@@ -8,7 +8,8 @@ deployment — prod, most of the time — carries roughly 119 alarms: 111 standa
 CI, which runs several concurrent feature-branch deployments, multiplies the 95 by however many
 are live at once.
 
-- Audited: 2026-09-04, recounted from the code that landed `PLAN_ALARM_CONSOLIDATION.md`'s design
+- Audited: 2026-09-04, recounted from the code that landed
+  `_developers/archive/PLAN_ALARM_CONSOLIDATION.md`'s design
 - Method: CDK source read only — see "What was skipped" below
 - Source: `infra/main/java/co/uk/diyaccounting/submit/` (application stacks in `cdk-application/`,
   environment stacks in `cdk-environment/`, both built from this shared `infra/` tree)
@@ -134,7 +135,7 @@ resources a person has to read, not in raw alarm count.
 This list does not include `SecurityDetectionStack.java` (DynamoDB scan/GetItem-volume/salt-read
 alarms, 3) or `ScanDetectionStack.java` (404 scan-rate errors/missed, 2), both environment-level
 and both added since the original audit for issues #9/#10. They sit outside the scope of this
-recount, which tracks only the alarm cuts from `PLAN_ALARM_CONSOLIDATION.md`.
+recount, which tracks only the alarm cuts from `_developers/archive/PLAN_ALARM_CONSOLIDATION.md`.
 
 ## 2. Signal value — no live history available
 
@@ -198,5 +199,5 @@ alarms, and both are environment-level, so they don't multiply with concurrent C
 way the app-level GitHub probe alarm used to.
 
 These 5 alarms sit outside the headline counts above, which track only the alarm cuts from
-`PLAN_ALARM_CONSOLIDATION.md`.
+`_developers/archive/PLAN_ALARM_CONSOLIDATION.md`.
 
