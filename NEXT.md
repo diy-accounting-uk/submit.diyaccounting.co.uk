@@ -28,11 +28,18 @@ Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC with all six 
 ci deploy is the proof for B10.4, D1 and A1 and the ci set O11 needs; pipeline fixes go on top
 of the branch. No push to the branch while its deploy runs: the concurrency group cancels it.
 
-- [ ] **B10.4** is in flight on PR #146's ci deploy, which runs `itsaObligationsBehaviour` and
-  `itsaSelfEmploymentPeriodBehaviour` against the sandbox on the ci set it creates. Verified
-  when both suites pass there. Row 10's remainder after that: the dashboard page the catalogue
-  names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
+- [ ] **B10.4**: a push-triggered ci deploy skips the ITSA suites (`skipTestScenarios`
+  defaults to true), so both were dispatched through `probe-test.yml` against ci-claud9501.
+  `itsaObligationsBehaviour` passed (run 34058209190). `itsaSelfEmploymentPeriodBehaviour`
+  failed (run 34058211182): HMRC's sandbox answered the period POST with 400 "An empty or
+  non-matching body was submitted" at `/periodDisallowableExpenses`, and
+  `hmrcItsaSelfEmploymentPeriodPost.js` turned that into a 500 "An unexpected error occurred".
+  Fix in the ITSA period agent's worktree, branch `claude/itsa-period-body` (Sonnet): the body
+  matches HMRC's spec, an empty section is omitted, and an HMRC 4xx reaches the page with
+  HMRC's message the way the VAT return POST does. Verified when the suite passes on ci. Row
+  10's remainder after that: the dashboard page the catalogue names (`hmrc/itsa/dashboard.html`)
+  does not exist. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
   waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
 - [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
