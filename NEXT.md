@@ -24,15 +24,23 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC with all six tracks). Its
-ci deploy is the proof for B10.4, D1 and A1 and the ci set O11 needs; pipeline fixes go on top
-of the branch. No push to the branch while its deploy runs: the concurrency group cancels it.
+Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC, again at 20:31 with the
+PITR and video-capture fixes). Its ci set ci-claud9501 is the one O11 needs; the quarterly-update
+body fix lands on the branch next. No push to the branch while its deploy runs: the concurrency
+group cancels it.
 
-- [ ] **B10.4** is in flight on PR #146's ci deploy, which runs `itsaObligationsBehaviour` and
-  `itsaSelfEmploymentPeriodBehaviour` against the sandbox on the ci set it creates. Verified
-  when both suites pass there. Row 10's remainder after that: the dashboard page the catalogue
-  names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
+- [ ] **B10.4**: a push-triggered ci deploy skips the ITSA suites (`skipTestScenarios`
+  defaults to true), so both were dispatched through `probe-test.yml` against ci-claud9501.
+  `itsaObligationsBehaviour` passed (run 34058209190). `itsaSelfEmploymentPeriodBehaviour`
+  failed (run 34058211182): HMRC's sandbox answered the period POST with 400 "An empty or
+  non-matching body was submitted" at `/periodDisallowableExpenses`, and
+  `hmrcItsaSelfEmploymentPeriodPost.js` turned that into a 500 "An unexpected error occurred".
+  Fix in the ITSA period agent's worktree, branch `claude/itsa-period-body` (Sonnet): the body
+  matches HMRC's spec, an empty section is omitted, and an HMRC 4xx reaches the page with
+  HMRC's message the way the VAT return POST does. Verified when the suite passes on ci. Row
+  10's remainder after that: the dashboard page the catalogue names (`hmrc/itsa/dashboard.html`)
+  does not exist. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
   waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
 - [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
@@ -45,12 +53,13 @@ of the branch. No push to the branch while its deploy runs: the concurrency grou
   it has and when to stop, and makes the redaction script name a stopped run's subtype. Next:
   after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
   the next one). Verified when that run posts the guardrail's anonymised comment.
-- [ ] **D1** is code complete on the batch (3ab5cb3b): `app/functions/infra/ensurePitr.js`
-  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED,
-  on a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
-  type in place, so the first environment deploy replaces each table's PITR resource once
-  (the old one has no delete call). Verified when the batch's ci environment deploy updates
-  `ci-env-DataStack` cleanly and the next deploy that adds a table passes first time.
+- [ ] **D1** is on the batch (3ab5cb3b, fix 1a4625f4): `app/functions/infra/ensurePitr.mjs`
+  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED, on
+  a new logical id (`Custom::EnsurePitr`). The first push's ci environment deploy failed every
+  `EnsurePitr` resource on module packaging (the zip held the handler as `.js`, so Lambda
+  loaded it as CommonJS); the fix ships it as `.mjs` alone, and the second push's environment
+  deploy (run 34058236891) updated `ci-env-DataStack` cleanly at 20:44 UTC. Waits for the PR
+  merge; the race itself is verified by the next deploy that adds a table passing first time.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
   issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
@@ -78,16 +87,20 @@ Nothing.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Batch 9
-  (58b9fa7c) carries `videos/publish.json` with the three prod videos' titles, descriptions,
-  tags and captions, and `scripts/youtube-upload.js`, which uploads them as unlisted after a
-  one-time OAuth consent and writes each video id back so a re-run is idempotent. Steps in
-  `videos/PUBLISH.md`: download the three artifacts (30-day retention from 2026-09-04 to
-  2026-09-06), create a Desktop-app OAuth client in the Google Cloud console with the YouTube
-  Data API enabled, export its id and secret, `npm run video:publish`, review, then
-  `npm run video:publish -- --public`. The ITSA Business Details recording stays
-  `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a. **Owner**:
-  Operator.
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
+  ready as recorded: `video-view-obligations-prod` (run 33952515598) and
+  `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
+  the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` was re-recorded as run 34058244686 after batch 9 (d0f6316e) stopped
+  the off-camera submit leaving developer mode on: its stills are clean and
+  `check-video-timings.js` passes, and `videos/PUBLISH.md` names the new run. The operator
+  has not yet watched it. `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
+  videos' titles, descriptions, tags and captions, and `scripts/youtube-upload.js`, which
+  uploads them as unlisted after a one-time OAuth consent and writes each video id back so a
+  re-run is idempotent. Operator steps in `videos/PUBLISH.md`: download the artifacts, create
+  a Desktop-app OAuth client in the Google Cloud console with the YouTube Data API enabled,
+  export its id and secret, `npm run video:publish`, review, then
+  `npm run video:publish -- --public`. **Source**: BACKLOG 17a. **Owner**: Claude Code for the
+  re-record, then Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
   production ("live application"). The hub holds three: "DIY Accounting Submit - test"
