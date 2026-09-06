@@ -259,7 +259,15 @@ a later event to verify.
   id `G-DV0SDVEZWC`, dataset `analytics_552917343`; the sync's dry run does not find the
   BigQuery link it created, which the track fixes in `scripts/ga4-property-sync.js`.
   **Source**: none. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, g2c-ga4-ci (Sonnet), started 2026-09-06 06:35 UTC.
+  **Track**: code complete on `claude/board-batch-5` (a8304e49, e7d69754). `analytics.js` reads
+  `GA4_MEASUREMENT_ID` from `submit.env`; the environment file wins where it is set (prod pins
+  `G-T81V5NL5MB`) and the `SUBMIT_GA4_MEASUREMENT_ID` variable fills it otherwise (ci). The ci
+  export dataset is `analytics_552917343`. The daily export lags about a day, so the payment
+  suite on ci fires a real purchase event and asserts BigQuery for an earlier run's Stripe
+  transaction (26 hours to 4 days old), skipping when none exists. Two fixes rode along: the
+  sync read `bigQueryLinks` where the API says `bigqueryLinks`, and the content security policy
+  allowed only `www.google-analytics.com` while GA4 collects on regional subdomains. Verified
+  when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
