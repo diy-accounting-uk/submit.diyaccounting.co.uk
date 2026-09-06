@@ -45,12 +45,14 @@ of the branch. No push to the branch while its deploy runs: the concurrency grou
   it has and when to stop, and makes the redaction script name a stopped run's subtype. Next:
   after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
   the next one). Verified when that run posts the guardrail's anonymised comment.
-- [ ] **D1** is code complete on the batch (3ab5cb3b): `app/functions/infra/ensurePitr.js`
-  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED,
-  on a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
-  type in place, so the first environment deploy replaces each table's PITR resource once
-  (the old one has no delete call). Verified when the batch's ci environment deploy updates
-  `ci-env-DataStack` cleanly and the next deploy that adds a table passes first time.
+- [ ] **D1** is on the batch (3ab5cb3b, fix 1a4625f4): `app/functions/infra/ensurePitr.mjs`
+  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED, on
+  a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
+  type in place. The first push's ci environment deploy (run 34056172540, 19:56 UTC) failed
+  every `EnsurePitr` resource with "Cannot use import statement outside a module": the zip
+  held the handler as `.js` with no module metadata, so Lambda loaded it as CommonJS; the
+  stack rolled back cleanly. The fix renames the handler to `.mjs` and zips only that file.
+  Verified when the next push's ci environment deploy updates `ci-env-DataStack` cleanly.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
   issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
