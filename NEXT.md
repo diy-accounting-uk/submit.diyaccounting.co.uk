@@ -60,6 +60,14 @@ environment deploy (run 34062870544) are running; the next batch starts from mai
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O19. Companies House filing: the prod application's OAuth key.** The ci
+  click-through is done (2026-09-06). On the live application "DIY Accounting Submit - prod"
+  at developer.company-information.service.gov.uk/manage-applications (the one whose API key
+  serves prod's lookup), create a key of type OAuth web client with the redirect URI
+  `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html`; put its client id
+  in `.env.prod` as `COMPANIES_HOUSE_CLIENT_ID` (commit on a branch, or tell Claude Code the
+  id) and its secret as `COMPANIES_HOUSE_CLIENT_SECRET` on the GitHub `prod` environment. Then
+  tell Claude Code, which starts B34.5. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
   ready as recorded: `video-view-obligations-prod` (run 33952515598) and
   `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
@@ -74,29 +82,6 @@ environment deploy (run 34062870544) are running; the next batch starts from mai
   export its id and secret, `npm run video:publish`, review, then
   `npm run video:publish -- --public`. **Source**: BACKLOG 17a. **Owner**: Claude Code for the
   re-record, then Operator.
-- [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
-  an application to one Companies House environment, sandbox ("test application") or
-  production ("live application"). The hub holds three: "DIY Accounting Submit - test"
-  (sandbox) and the live "- ci" and "- prod", whose API keys serve the read-only lookup, which
-  reads real company data from both environments. Filing on ci runs against the sandbox, so
-  its OAuth client belongs on the test application, shared by local, proxy and ci; prod's
-  filing client goes on the live "- prod" application when the gate lifts (B34.5). On the test
-  application at
-  developer.company-information.service.gov.uk/manage-applications: create a key of type OAuth
-  web client (or open the one that exists) and register the three sandbox redirect URIs from
-  `PLAN_COMPANIES_HOUSE_REST_FILING.md`'s operator steps (localhost:3000, local.submit:3443,
-  ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
-  `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
-  secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
-  URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
-  since main's environment deploy of the PR #139 merge). Remaining: on a ci set (ci-claud9501 stands
-  from 2026-09-06 20:05 UTC until its self-destruct or the 02:34 sweep; a branch push or a
-  `deploy.yml` dispatch for ci makes another), open the two
-  filing activities on the ci site and take one change through the sandbox with your own
-  Companies House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
-  a person to authorise them, so an automated ci run would need a robot account with an
-  authenticator secret, which is not wanted. **Source**: BACKLOG 34; issue #15. **Owner**:
-  Operator.
 
 ## Blocked: operator
 
@@ -129,18 +114,14 @@ environment deploy (run 34062870544) are running; the next batch starts from mai
 
 ## Blocked: Claude Code
 
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
-  operator's examination on ci: an OAuth web client key on the existing live application
-  "DIY Accounting Submit - prod" (the one whose API key serves prod's lookup) with the prod
-  redirect URI
-  `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html`, its client id in
-  `.env.prod` and its secret as `COMPANIES_HOUSE_CLIENT_SECRET` on the GitHub `prod`
-  environment (operator steps, briefed when they come due); then `prod` joins the two filing
-  activities' `environments` in `web/public/submit.catalogue.toml`, `deploy.yml` runs the two
-  filing suites against prod, and the pricing question in `PLAN_COMPANIES_HOUSE_REST_FILING.md`
-  Q1 gets its answer before the activities leave the free `default` bundle. **Source**: BACKLOG
-  34; issue #15. **Owner**: Claude Code, with the operator's hub and secret steps. **Model**:
-  Sonnet. Blocked on O11 and the operator's look at the filings on ci.
+- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O19: `prod`
+  joins the two filing activities' `environments` in `web/public/submit.catalogue.toml`,
+  `deploy.yml` runs the two filing suites against prod only when
+  `runCompaniesHouseSandboxFiling` is on (prod filings need a real person to authorise, so no
+  automated run against prod), and the pricing question in
+  `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 gets its answer before the activities leave the free
+  `default` bundle. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**:
+  Sonnet. Blocked on O19.
 - [ ] **B34.6. Companies House accounts filing through the XML Gateway.** FRS 105 micro-entity
   accounts as iXBRL in an XML envelope against the test presenter credentials: an Opus design
   pass (envelope, presenter authentication, the accounts spec, where the iXBRL comes from,
