@@ -24,7 +24,7 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the PR #146 merge
+Batch 10 is PR #147 (`claude/b10-board`: the triage resolver and the prod filing gate). Main's prod deploy from the PR #146 merge
 (run 34062870619) is still running.
 
 - [ ] **B30o. Prove the triage chain on prod.** Relabelling #138 `triage` at 22:03 UTC on
@@ -36,16 +36,12 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
   runs on. After the merge, the operator labels the next open alarm issue `triage` (any set, live
   or retired). Verified when that run posts the guardrail's anonymised comment. **Source**:
   BACKLOG 30; issue #18. **Owner**: Claude Code, then the operator labels.
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** The prod OAuth key
-  exists (client id 9b4676ee-a473-4d10-aafe-33d5a14d982d, secret on the GitHub `prod`
-  environment, 2026-09-06 22:32 UTC). In the prod-gate agent's worktree, branch
-  `claude/ltd-prod-gate` (Sonnet), for batch 10: the id, secret ARN and live filing and
-  identity URIs in `.env.prod`; `prod` in the two filing activities' `environments` in
-  `web/public/submit.catalogue.toml`; the filing suites stay ci-only (a live filing needs a
-  real person). The pricing question in `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 is the
-  operator's before the activities leave the free `default` bundle. Verified when main's
-  deploy after the merge shows the two activities on submit.diyaccounting.co.uk. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B34.5. Lift the gate on the Companies House filings for prod** is on batch 10 (PR #147,
+  8d61de38): the prod client id, the secret ARN and the live filing and identity URIs in
+  `.env.prod`, and `prod` in the two filing activities' `environments`; the filing suites stay
+  ci-only. Verified when main's deploy after the merge shows the two activities on
+  submit.diyaccounting.co.uk and one filing goes through with the operator's own Companies
+  House sign-in. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code, then the operator.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
   teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
@@ -68,6 +64,11 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O20. Decide the price of the two Companies House filing activities.** They sit on the
+  free `default` bundle. `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 lists the options: leave them
+  free (Companies House charges nothing for either filing), a new `resident-company` bundle with
+  its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
+  catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
   ready as recorded: `video-view-obligations-prod` (run 33952515598) and
   `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and

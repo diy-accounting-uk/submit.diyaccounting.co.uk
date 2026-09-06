@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ITSA Dashboard - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+    <style>
+      .dashboard-steps {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        margin: var(--spacing-lg) 0;
+      }
+      .dashboard-step {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        padding: var(--spacing-lg);
+      }
+      .dashboard-step h2 {
+        margin: 0 0 0.25em 0;
+        font-size: var(--font-size-lg);
+      }
+      .dashboard-step p {
+        margin: 0 0 0.75em 0;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Making Tax Digital for Income Tax</h1>
+      <p class="subtitle">Quarterly updates for the self-employed and landlords</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div class="form-container">
+        <p>
+          Making Tax Digital for Income Tax replaces the annual Self Assessment return with a running record: self-employed people and
+          landlords send HMRC a summary of income and expenses every quarter instead of once a year. This preview runs against HMRC's
+          sandbox in every environment except production.
+        </p>
+
+        <div class="dashboard-steps">
+          <div class="dashboard-step">
+            <h2>1. Business Details</h2>
+            <p>Look up the self-employment and property businesses HMRC holds against your National Insurance number.</p>
+            <a href="businessDetails.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Business Details</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2>2. Obligations</h2>
+            <p>Check which quarterly updates are open, due, or already sent for a business.</p>
+            <a href="obligations.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to Obligations</a>
+          </div>
+          <div class="dashboard-step">
+            <h2>3. File a Quarterly Update</h2>
+            <p>Send a self-employment period summary of income and expenses to HMRC.</p>
+            <a href="selfEmploymentPeriod.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to File a Quarterly Update</a
+            >
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script>
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
+          }
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+      });
+    </script>
+  </body>
+</html>
