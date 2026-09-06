@@ -358,7 +358,6 @@ describe("HTTP Simulator", () => {
       periodDates: { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" },
       periodIncome: { turnover: 1000, other: 0 },
       periodExpenses: { costOfGoods: 100 },
-      periodDisallowableExpenses: {},
     });
 
     it("should create a period summary for a valid request", async () => {
@@ -403,7 +402,7 @@ describe("HTTP Simulator", () => {
       const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/period`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ periodIncome: {}, periodExpenses: {}, periodDisallowableExpenses: {} }),
+        body: JSON.stringify({ periodIncome: { turnover: 1000 } }),
       });
       expect(response.status).toBe(400);
       const data = await response.json();
