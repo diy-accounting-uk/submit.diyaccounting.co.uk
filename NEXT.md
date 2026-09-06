@@ -13,11 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4909b49 (the scheduled main deploy of 08:39 UTC on 2026-09-06);
-main's deploy run 34023929108 for the PR #137 merge is building prod-6c85118 to take over.
-prod-0967fab and, after the takeover, prod-4909b49 are spares: a main deploy's sweep keeps any
-set younger than eight hours and removes one older spare per run, so the daily scheduled
-deploy clears them over the next two days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06). prod-0967fab
+and prod-4909b49 are spares: a main deploy's sweep keeps any set younger than eight hours and
+removes one older spare per run, so the daily scheduled deploy clears them over the next two
+days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -27,29 +26,25 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-PR #136 (batch 4) merged at 06:08 UTC on 2026-09-06. Its `deploy environment` run 34015720587
-failed at the create-secrets step because `COMPANIES_HOUSE_CLIENT_SECRET` is not set yet, so
-neither environment has the batch's environment stacks (the triage role, guardrail, budget and
-the bundles index) until the guard below lands. Batch 5 is integration branch
-`claude/board-batch-5`; the operator merges. The batch 4 items below are code complete on main
-and each names the event that verifies it once the environment deploy succeeds. B30d waits on
-a later event to verify.
+**Freeze in force since 10:30 UTC on 2026-09-06** (see Discipline below): no push to origin and
+no workflow dispatch until the operator lifts it in their own words. Local work continues and
+fixes are proposed in the reply. What that leaves in motion:
 
-- [ ] **B34.4. The environment deploy skips the Companies House client secret while it is
-  unset.** `deploy-environment.yml`'s create-secrets step fails on an empty
-  `COMPANIES_HOUSE_CLIENT_SECRET`, which blocks every environment deploy. The step now exits
-  with a notice when the secret is empty. **Source**: run 34015720587. **Owner**: Claude Code.
-  **Model**: Fable (coordinator).
-  **Track**: on `claude/board-batch-5`. The ci environment deploy from the branch (run
-  34020851682) is green with every batch 4 and 5 environment stack, so ci now has the triage
-  role and guardrail, both Bedrock budgets, the forwarder Lambda and the bundles index (ACTIVE).
-  The prod environment run after the PR #137 merge (34023929068) got the observability
-  stacks, budgets and index up but `prod-env-DataStack` rolled back: the index custom
-  resource issued a second `UpdateTable` while the index was still creating ("Index is being
-  created"), and the backup stack job was skipped behind it. Re-dispatched for prod as run
-  34024729614 with the index now ACTIVE. On `claude/board-batch-6` (8105f1aa) the custom
-  resource also ignores `ResourceInUseException`, so an index still creating counts as ensured.
-  Verified when that run is green.
+- The automated sandbox sign-in for the filing suites (local branch
+  `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
+  House account with an authenticator secret, which the operator does not want. The branch
+  stays local, unmerged, in case that changes.
+- The environment deploy that would create the ci filing secret in AWS
+  (`ci/submit/companies-house/client_secret`) was cancelled by the deploy concurrency group
+  and stays undone; the merge of PR #139 runs it on main.
+- Batch 6 (`claude/board-batch-6`, PR #139) was pushed once inside the freeze, on the
+  operator's word, to carry the bundle-expiry fix to prod; it also holds the triage day guard,
+  the index custom-resource fix and the ci client id. The operator merges.
+
+Batches 4 (PR #136) and 5 (PR #137) are merged and both environments' stacks are deployed
+(prod's environment deploy re-run 34024729614 is green). The items below are code complete on
+main or on batch 6 and each names the event that verifies it.
+
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
@@ -175,6 +170,16 @@ a later event to verify.
   not have the specified index" until the environment deploy created the index at 09:15 (that
   is #138); the 10:15 run is the first with the index in place, and the scan alarm has been OK
   since 07:01.
+  **Remainder, a prod regression since the index landed at 09:15 UTC:** the grant path
+  (`bundlePost.js` `grantBundle`) builds a bundle with `expiry: ""` for bundles with no
+  timeout, and the repository spread that into the item, so DynamoDB now rejects every grant
+  of a non-expiring bundle: "The AttributeValue for a key attribute cannot contain an empty
+  string value. IndexName: bundleId-expiry-index, IndexKey: expiry". Main's deploy of
+  prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
+  `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
+  the rejection. Fixed locally on `claude/board-batch-6` (a bundle with no expiry is stored
+  without the attribute; unit test), held by the freeze: the fix reaches prod through a push,
+  the PR #139 merge and main's deploy, all of which wait for the operator's word.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -193,9 +198,9 @@ a later event to verify.
   64-character cap, URL paths unchanged). Track 3 is merged (d7470848, 223cf553: the two
   filing pages, the service module, both activities on `default` behind the gate, browser and
   behaviour suites green on the simulator; the in-browser TOML parser reads one-line arrays
-  only, so catalogue arrays stay on one line). Code complete. Verified when
-  `changeRegisteredOfficeBehaviour-ci` and `changeRegisteredEmailBehaviour-ci` pass against the
-  sandbox, which needs the operator steps below (O11).
+  only, so catalogue arrays stay on one line). The two suites run on the simulator only;
+  against the real sandbox a person has to sign in with a second factor, so the sandbox proof
+  is the operator's own click-through on ci (O11). Verified by that click-through.
 - [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** `alarm-triage.yml`
   runs on `issues: opened` for issues labelled `alarm` and on the `triage` label, reads the
   alarm from the issue body, derives the evidence with B30h's mapping, and runs Claude Code on
@@ -259,9 +264,14 @@ a later event to verify.
   `PLAN_COMPANIES_HOUSE_REST_FILING.md`'s operator steps (localhost:3000, local.submit:3443,
   ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
-  secret on the GitHub `ci` environment; hold a sandbox user account the behaviour tests can
-  sign in as. Then tell Claude Code, which runs the two filing suites against ci. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Operator.
+  secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
+  URIs, id in `.env.ci`, secret on ci). Remaining: once PR #139 has merged and the ci
+  environment deploy has created `ci/submit/companies-house/client_secret`, open the two filing
+  activities on the ci site and take one change through the sandbox with your own Companies
+  House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
+  a person to authorise them, so an automated ci run would need a robot account with an
+  authenticator secret, which is not wanted. **Source**: BACKLOG 34; issue #15. **Owner**:
+  Operator.
 
 ## Blocked: operator
 
@@ -275,6 +285,19 @@ a later event to verify.
   requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
   GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
   34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
+- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites, only if
+  wanted.** Companies House has no HMRC-style create-test-user API: its test data generator
+  makes companies only, and a sandbox user is a real account on
+  identity-sandbox.company-information.service.gov.uk with an authenticator second factor. An
+  automated ci run of the two filing suites therefore needs a throwaway sandbox account the
+  operator registers, with its email as `TEST_COMPANIES_HOUSE_USER_ID`, its password as
+  `TEST_COMPANIES_HOUSE_PASSWORD` and its authenticator secret as
+  `TEST_COMPANIES_HOUSE_TOTP_SECRET` on the ci GitHub environment, plus the test application's
+  REST key as `COMPANIES_HOUSE_SANDBOX_API_KEY` for creating the run's test company. The parked
+  local branch `claude/companies-house-filing-ci-sandbox` (ef091559) has everything except the
+  TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
+  asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
+  Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
@@ -318,4 +341,14 @@ a later event to verify.
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
 ## Discipline
 
-(none repo-specific yet — see `../NEXT.md`)
+- **Freeze, 2026-09-06 10:30 UTC, operator's words:** "We need a freeze now you are creating
+  noise with the deploys. Do not push to origin or run a github workflow until the freeze is
+  lifted. You may work locally if you see a job fail but propose the fixes to me until the
+  freeze is lifted." While it stands: no `git push`, no `gh workflow run`, no `gh pr create`,
+  nothing that reaches GitHub Actions or AWS state; local commits, worktree tracks, reading
+  logs and drafting are fine, and a failed job gets a proposed fix in the reply. It lifts only
+  when the operator says so in their own words.
+- **Why the freeze:** a push per landed track turned one batch into six ci deploys and several
+  environment deploys in a morning, each able to open alarm issues and cancel each other
+  through the deploy concurrency group. Outside a freeze, push once per batch of landed
+  tracks, and prefer one dispatch that proves several things over several dispatches.

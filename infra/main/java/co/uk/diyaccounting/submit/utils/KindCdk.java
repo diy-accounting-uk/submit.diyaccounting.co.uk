@@ -447,8 +447,10 @@ public class KindCdk {
 
     /**
      * Adds a Global Secondary Index to an existing DynamoDB table idempotently using AwsCustomResource.
-     * Uses UpdateTable API with ignoreErrorCodesMatching("ValidationException")
-     * so deployments succeed whether the GSI already exists or not.
+     * Uses UpdateTable API with ignoreErrorCodesMatching to tolerate the index already being present
+     * in any status: ValidationException means the index is already ACTIVE, and
+     * ResourceInUseException means an earlier deployment's UpdateTable call is still CREATING or
+     * UPDATING it. Both mean the index is already ensured, so neither should fail the resource.
      *
      * @param stack The stack to create the GSI in
      * @param id The construct ID prefix
@@ -492,8 +494,10 @@ public class KindCdk {
                 .action("updateTable")
                 .parameters(updateTableParams)
                 .physicalResourceId(PhysicalResourceId.of(tableName + "-" + indexName))
-                // ValidationException means GSI already exists - that's fine
-                .ignoreErrorCodesMatching("ValidationException")
+                // ValidationException means the GSI already exists (ACTIVE); ResourceInUseException
+                // means a prior deployment's UpdateTable call already has it CREATING or UPDATING.
+                // Either way the index is already ensured, so neither should fail this resource.
+                .ignoreErrorCodesMatching("ValidationException|ResourceInUseException")
                 .build();
 
         Policy gsiGrant = grantToAwsCustomResourceProvider(
