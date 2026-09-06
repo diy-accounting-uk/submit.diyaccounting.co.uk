@@ -4,41 +4,55 @@
 //
 // Upload the videos drafted in videos/publish.json to https://www.youtube.com/@DIYAccountingSubmit.
 //
-// Usage: node scripts/youtube-upload.js [--check] [--public]
+// Usage: node scripts/youtube-upload.js [--check] [--public] [--client-file <path>]
+//        node scripts/youtube-upload.js --store-client <path>
 //
-// Credentials come from gcloud's Application Default Credentials, never from an OAuth client
-// created by hand in the Google Cloud console. Sign in once, as the channel owner:
+// Credentials come from an OAuth client of our own (type Desktop app), created once in the
+// Google Cloud console — see videos/PUBLISH.md. Google blocks gcloud's own OAuth client from
+// requesting YouTube scopes, and a client created through the IAP API is locked to IAP, so this
+// project needs its own.
 //
-//   gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl
+// The client's id and secret (the JSON file the console downloads, shaped
+// {"installed": {"client_id", "client_secret", ...}}) come from one of two places:
+//   --client-file <path>   reads that JSON file directly
+//   (no flag)               reads it from AWS Secrets Manager secret prod/submit/youtube/oauth_client
+//                            in the submit-prod account
 //
-// That writes ~/.config/gcloud/application_default_credentials.json, an "authorized_user"
-// credential owned by gcloud (never this repository). GoogleAuth (google-auth-library) finds
-// it automatically; this script never stores a token of its own.
+// --store-client <path> reads the downloaded JSON and writes it to that secret (creating it if
+// it doesn't exist yet), then exits. That is the only way the client id and secret reach AWS —
+// no id is ever typed or copied by hand.
+//
+// The first run (or any run after the stored refresh token secret is deleted) opens a browser
+// for consent via the OAuth loopback flow: a local HTTP server on a free port receives the
+// authorization code, exchanges it for tokens with access_type=offline and prompt=consent, and
+// stores the refresh token in Secrets Manager secret prod/submit/youtube/refresh_token. Every
+// later run reads that secret and never prompts.
 //
 // The YouTube Data API bills quota to a Google Cloud project with youtube.googleapis.com
 // enabled, so every request here carries an x-goog-user-project header naming that project -
 // default diyaccounting-ga4, overridable with the GOOGLE_CLOUD_QUOTA_PROJECT env var.
 //
 // --check obtains a token, looks up the signed-in channel and prints its title, without
-// uploading anything.
+// uploading anything. It's the first thing to run after consent, to prove the credential works.
 //
 // Uploads are unlisted by default. Pass --public to publish publicly instead.
 // Re-running is safe: an entry that already carries a videoId is skipped.
 
 import fs from "fs";
 import path from "path";
+import http from "node:http";
+import net from "node:net";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "url";
-import { GoogleAuth } from "google-auth-library";
+import { OAuth2Client } from "google-auth-library";
+import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
 
-export const ADC_SCOPES = [
-  "https://www.googleapis.com/auth/cloud-platform",
-  "https://www.googleapis.com/auth/youtube.upload",
-  "https://www.googleapis.com/auth/youtube.force-ssl",
-];
+export const OAUTH_SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"];
 
-export const ADC_LOGIN_COMMAND = `gcloud auth application-default login --scopes=${ADC_SCOPES.join(",")}`;
+export const CLIENT_SECRET_NAME = "prod/submit/youtube/oauth_client";
+export const REFRESH_TOKEN_SECRET_NAME = "prod/submit/youtube/refresh_token";
 
 export const DEFAULT_QUOTA_PROJECT = "diyaccounting-ga4";
 
@@ -47,7 +61,24 @@ const UPLOAD_VIDEOS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/vid
 const UPLOAD_CAPTIONS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/captions";
 
 export function parseArgs(argv) {
-  return { publicVideo: argv.includes("--public"), check: argv.includes("--check") };
+  return {
+    publicVideo: argv.includes("--public"),
+    check: argv.includes("--check"),
+    clientFile: readFlagValue(argv, "--client-file"),
+    storeClient: readFlagValue(argv, "--store-client"),
+  };
+}
+
+function readFlagValue(argv, flag) {
+  const index = argv.indexOf(flag);
+  if (index === -1) {
+    return undefined;
+  }
+  const value = argv[index + 1];
+  if (!value) {
+    throw new Error(`${flag} requires a path argument`);
+  }
+  return value;
 }
 
 export function loadPublishList(filePath = PUBLISH_LIST_PATH) {
@@ -98,42 +129,176 @@ export function resolveQuotaProject(env = process.env) {
   return env.GOOGLE_CLOUD_QUOTA_PROJECT || DEFAULT_QUOTA_PROJECT;
 }
 
-// Mirrors the well-known file location google-auth-library checks for Application Default
-// Credentials, so a missing-credential error can name the exact file it looked for.
-export function resolveAdcPath(env = process.env) {
-  if (env.GOOGLE_APPLICATION_CREDENTIALS) return env.GOOGLE_APPLICATION_CREDENTIALS;
-  const home = process.platform === "win32" ? env.APPDATA : env.HOME;
-  return home ? path.join(home, ".config", "gcloud", "application_default_credentials.json") : null;
-}
+let cachedSecretsManagerClient = null;
 
-function missingAdcMessage(adcPath) {
-  const where = adcPath ? ` (expected at ${adcPath})` : "";
-  return `No Application Default Credentials found${where}. Run:\n\n  ${ADC_LOGIN_COMMAND}\n\nthen sign in as the channel owner.`;
-}
-
-function scopelessAdcMessage(adcPath) {
-  return `Application Default Credentials at ${adcPath} do not carry the YouTube scope. Run:\n\n  ${ADC_LOGIN_COMMAND}\n\nthen sign in as the channel owner.`;
-}
-
-export async function getAccessToken({ env = process.env, GoogleAuthImpl = GoogleAuth } = {}) {
-  const adcPath = resolveAdcPath(env);
-  if (!adcPath || !fs.existsSync(adcPath)) {
-    throw new Error(missingAdcMessage(adcPath));
+function getSecretsManagerClient() {
+  if (!cachedSecretsManagerClient) {
+    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
   }
-  console.log(`using application default credentials from ${adcPath}`);
-  const auth = new GoogleAuthImpl({ scopes: ADC_SCOPES });
-  const client = await auth.getClient();
-  let token;
+  return cachedSecretsManagerClient;
+}
+
+async function readSecret({ smClient, secretId }) {
   try {
-    ({ token } = await client.getAccessToken());
+    const result = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }));
+    return result.SecretString;
   } catch (error) {
-    if (/invalid_scope|insufficient/i.test(error.message)) {
-      throw new Error(scopelessAdcMessage(adcPath));
+    if (error.name === "ResourceNotFoundException") {
+      return null;
     }
     throw error;
   }
+}
+
+async function readSecretRequired({ smClient, secretId, notFoundMessage }) {
+  const value = await readSecret({ smClient, secretId });
+  if (value === null) {
+    throw new Error(notFoundMessage);
+  }
+  return value;
+}
+
+// Secrets Manager has no upsert call: try an update first (the common case, once the secret
+// exists) and only create it when that fails because it doesn't exist yet.
+async function writeSecret({ smClient, secretId, secretString, description }) {
+  try {
+    await smClient.send(new UpdateSecretCommand({ SecretId: secretId, SecretString: secretString }));
+  } catch (error) {
+    if (error.name !== "ResourceNotFoundException") {
+      throw error;
+    }
+    await smClient.send(new CreateSecretCommand({ Name: secretId, SecretString: secretString, Description: description }));
+  }
+}
+
+export async function storeClientCredentials({ clientFile, smClient = getSecretsManagerClient() }) {
+  const raw = fs.readFileSync(clientFile, "utf8");
+  const parsed = JSON.parse(raw);
+  if (!parsed.installed || !parsed.installed.client_id || !parsed.installed.client_secret) {
+    throw new Error(`${clientFile} does not look like a Desktop OAuth client JSON (expected an "installed" object with client_id and client_secret)`);
+  }
+  await writeSecret({
+    smClient,
+    secretId: CLIENT_SECRET_NAME,
+    secretString: raw,
+    description: "YouTube Data API OAuth Desktop client for the video upload script",
+  });
+  console.log(`Stored the OAuth client credentials in Secrets Manager secret ${CLIENT_SECRET_NAME}`);
+}
+
+export async function resolveClientCredentials({ clientFile, smClient } = {}) {
+  const raw = clientFile
+    ? fs.readFileSync(clientFile, "utf8")
+    : await readSecretRequired({
+        smClient,
+        secretId: CLIENT_SECRET_NAME,
+        notFoundMessage: `No OAuth client credentials found in Secrets Manager secret ${CLIENT_SECRET_NAME}. Download a Desktop OAuth client JSON from the Google Cloud console and run:\n\n  node scripts/youtube-upload.js --store-client <path-to-downloaded-json>`,
+      });
+  const parsed = JSON.parse(raw);
+  const installed = parsed.installed;
+  if (!installed || !installed.client_id || !installed.client_secret) {
+    throw new Error(`OAuth client credentials from ${clientFile || CLIENT_SECRET_NAME} do not have the expected {"installed": {"client_id", "client_secret"}} shape`);
+  }
+  return { client_id: installed.client_id, client_secret: installed.client_secret };
+}
+
+function getFreeTcpPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.on("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+function waitForAuthorizationCode({ port, redirectUri }) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const url = new URL(req.url, redirectUri);
+      const error = url.searchParams.get("error");
+      const code = url.searchParams.get("code");
+      if (error) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end(`Consent failed: ${error}`);
+        server.close();
+        reject(new Error(`Google consent failed: ${error}`));
+        return;
+      }
+      if (!code) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("No authorization code in the request");
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Signed in. You can close this tab and return to the terminal.");
+      server.close();
+      resolve(code);
+    });
+    server.listen(port, "127.0.0.1");
+  });
+}
+
+function openInBrowser(url) {
+  const platform = process.platform;
+  const [command, args] = platform === "darwin" ? ["open", [url]] : platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
+  const child = spawn(command, args, { stdio: "ignore", detached: true });
+  child.on("error", () => {}); // best effort: the URL above is already printed for opening by hand
+  child.unref();
+}
+
+// The loopback flow for Desktop OAuth clients: a local HTTP server receives the authorization
+// code Google redirects to, so nothing but this machine ever sees it.
+export async function runLoopbackConsent({ clientCredentials, scopes = OAUTH_SCOPES, OAuth2ClientImpl = OAuth2Client, openUrl = openInBrowser } = {}) {
+  const port = await getFreeTcpPort();
+  const redirectUri = `http://127.0.0.1:${port}/`;
+  const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret, redirectUri });
+  const authUrl = oAuth2Client.generateAuthUrl({ access_type: "offline", prompt: "consent", scope: scopes });
+
+  const codePromise = waitForAuthorizationCode({ port, redirectUri });
+  console.log(`Open this URL to sign in as the channel owner:\n\n  ${authUrl}\n`);
+  openUrl(authUrl);
+  const code = await codePromise;
+
+  const { tokens } = await oAuth2Client.getToken({ code, redirect_uri: redirectUri });
+  if (!tokens.refresh_token) {
+    throw new Error("Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run again so Google issues a fresh one.");
+  }
+  return tokens.refresh_token;
+}
+
+export async function obtainAccessToken({
+  clientFile,
+  smClient = getSecretsManagerClient(),
+  OAuth2ClientImpl = OAuth2Client,
+  runConsentFlow = runLoopbackConsent,
+} = {}) {
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient });
+  const storedRefreshTokenJson = await readSecret({ smClient, secretId: REFRESH_TOKEN_SECRET_NAME });
+
+  let refreshToken;
+  if (storedRefreshTokenJson) {
+    console.log(`using the stored refresh token from Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME}`);
+    refreshToken = JSON.parse(storedRefreshTokenJson).refresh_token;
+  } else {
+    console.log("no stored refresh token found; starting the browser consent flow");
+    refreshToken = await runConsentFlow({ clientCredentials, OAuth2ClientImpl });
+    await writeSecret({
+      smClient,
+      secretId: REFRESH_TOKEN_SECRET_NAME,
+      secretString: JSON.stringify({ refresh_token: refreshToken }),
+      description: "YouTube Data API refresh token for the video upload script",
+    });
+    console.log(`stored the refresh token in Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME}`);
+  }
+
+  const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret });
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
+  const { token } = await oAuth2Client.getAccessToken();
   if (!token) {
-    throw new Error(scopelessAdcMessage(adcPath));
+    throw new Error(`Google did not return an access token for the stored refresh token. Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run again to re-consent.`);
   }
   return token;
 }
@@ -148,7 +313,7 @@ export async function fetchOwnChannelTitle({ accessToken, quotaProject, fetchImp
   const data = await response.json();
   const channel = data.items && data.items[0];
   if (!channel) {
-    throw new Error("Application Default Credentials are valid but no YouTube channel is linked to this account.");
+    throw new Error("The signed-in account has no YouTube channel linked to it.");
   }
   return channel.snippet.title;
 }
@@ -229,9 +394,15 @@ export async function uploadCaption({ entry, videoId, accessToken, quotaProject 
 }
 
 export async function main() {
-  const { publicVideo, check } = parseArgs(process.argv.slice(2));
+  const { publicVideo, check, clientFile, storeClient } = parseArgs(process.argv.slice(2));
+
+  if (storeClient) {
+    await storeClientCredentials({ clientFile: storeClient });
+    return;
+  }
+
   const quotaProject = resolveQuotaProject();
-  const accessToken = await getAccessToken();
+  const accessToken = await obtainAccessToken({ clientFile });
 
   if (check) {
     const title = await fetchOwnChannelTitle({ accessToken, quotaProject });
