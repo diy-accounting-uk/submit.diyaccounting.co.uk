@@ -71,6 +71,36 @@
         "operationId" : "createCheckoutSession"
       }
     },
+    "/companies-house/transaction/{transactionId}" : {
+      "get" : {
+        "summary" : "Get a Companies House transaction",
+        "description" : "Retrieves a Companies House filing transaction and its filing status",
+        "operationId" : "getCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "put" : {
+        "summary" : "Close a Companies House transaction",
+        "description" : "Closes a Companies House filing transaction, submitting the filing",
+        "operationId" : "closeCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/api/session/beacon" : {
       "post" : {
         "summary" : "Session beacon",
@@ -295,6 +325,38 @@
         }
       }
     },
+    "/companies-house/transaction/{transactionId}/registered-email-address" : {
+      "post" : {
+        "summary" : "File a registered email address change",
+        "description" : "Adds a registered email address change resource to an open transaction",
+        "operationId" : "postCompaniesHouseRegisteredEmailAddress",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "registeredEmailAddress",
+          "in" : "body",
+          "required" : true,
+          "description" : "The new registered email address",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "acceptAppropriateEmailAddressStatement",
+          "in" : "body",
+          "required" : true,
+          "description" : "Must be true - confirms the section 88A(2) Companies Act 2006 statement",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/hmrc/receipt" : {
       "get" : {
         "summary" : "Retrieve stored receipts",
@@ -449,6 +511,22 @@
         "operationId" : "generatePass"
       }
     },
+    "/companies-house/company/{companyNumber}/registered-office-address" : {
+      "get" : {
+        "summary" : "Get a company's registered office address",
+        "description" : "Reads the current registered office address from the public register, with its etag",
+        "operationId" : "getCompaniesHouseRegisteredOfficeAddress",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/hmrc/receipt/{name}" : {
       "get" : {
         "summary" : "Retrieve a stored receipt by name",
@@ -577,6 +655,13 @@
             "description" : "Request accepted for processing (async)"
           }
         }
+      }
+    },
+    "/companies-house/token" : {
+      "post" : {
+        "summary" : "Exchange Companies House authorization code for access token",
+        "description" : "Exchanges a Companies House OAuth authorisation code for an access token",
+        "operationId" : "exchangeCompaniesHouseToken"
       }
     },
     "/hmrc/vat/penalty" : {
@@ -734,6 +819,94 @@
         }
       }
     },
+    "/companies-house/transaction/{transactionId}/registered-office-address" : {
+      "post" : {
+        "summary" : "File a registered office address change",
+        "description" : "Adds a registered office address change (AD01) resource to an open transaction",
+        "operationId" : "postCompaniesHouseRegisteredOfficeAddress",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "premises",
+          "in" : "body",
+          "required" : true,
+          "description" : "The building name or number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "addressLine1",
+          "in" : "body",
+          "required" : true,
+          "description" : "The first address line",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "addressLine2",
+          "in" : "body",
+          "required" : false,
+          "description" : "The second address line",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "locality",
+          "in" : "body",
+          "required" : true,
+          "description" : "The town or city",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "region",
+          "in" : "body",
+          "required" : false,
+          "description" : "The county or region",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "postalCode",
+          "in" : "body",
+          "required" : true,
+          "description" : "The postcode",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "country",
+          "in" : "body",
+          "required" : true,
+          "description" : "One of the Companies House country enum values",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "acceptAppropriateOfficeAddressStatement",
+          "in" : "body",
+          "required" : true,
+          "description" : "Must be true - confirms the section 86(2) Companies Act 2006 statement",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "referenceEtag",
+          "in" : "body",
+          "required" : true,
+          "description" : "The etag from the current registered office address read",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/company/{companyNumber}" : {
       "get" : {
         "summary" : "Get a Companies House company profile",
@@ -780,6 +953,22 @@
         "operationId" : "recoverBilling"
       }
     },
+    "/companies-house/company/{companyNumber}/registered-email-address/eligibility" : {
+      "get" : {
+        "summary" : "Check registered email address change eligibility",
+        "description" : "Checks whether a company is eligible for a registered email address change",
+        "operationId" : "getCompaniesHouseRegisteredEmailEligibility",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/cognito/token" : {
       "post" : {
         "summary" : "Exchange Cognito authorization code for access token",
@@ -810,6 +999,38 @@
             "description" : "Token exchanged successfully"
           }
         }
+      }
+    },
+    "/companies-house/transaction" : {
+      "post" : {
+        "summary" : "Open a Companies House transaction",
+        "description" : "Opens a Companies House filing transaction against a company number",
+        "operationId" : "openCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "body",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "description",
+          "in" : "body",
+          "required" : true,
+          "description" : "A description of the filing, at most 200 characters",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "reference",
+          "in" : "body",
+          "required" : false,
+          "description" : "An optional caller-supplied reference",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/companies-house/search" : {
