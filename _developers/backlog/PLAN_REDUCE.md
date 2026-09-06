@@ -408,7 +408,7 @@ the catch on new call sites.
 
 ---
 
-## 13. Fetch with Timeout Pattern (consider: no library)
+## 13. Fetch with Timeout Pattern (consider: no library) — done
 
 **What**: Multiple files implement fetch-with-timeout using AbortController:
 
