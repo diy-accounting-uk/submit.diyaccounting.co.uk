@@ -82,6 +82,10 @@ public class SubmitEnvironment {
         public String ga4BigQueryLocation;
         public String crossAccountBackupVaultArn;
         public String scanDetection404PerMinute;
+        public String telegramBotTokenArn;
+        public String telegramTestChatId;
+        public String telegramLiveChatId;
+        public String telegramOpsChatId;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -202,6 +206,14 @@ public class SubmitEnvironment {
         var baseImageTag = envOr(
                 "BASE_IMAGE_TAG",
                 appProps.baseImageTag == null || appProps.baseImageTag.isBlank() ? "latest" : appProps.baseImageTag);
+        var telegramBotTokenArn =
+                envOr("TELEGRAM_BOT_TOKEN_ARN", appProps.telegramBotTokenArn, "(from telegramBotTokenArn in cdk.json)");
+        var telegramTestChatId =
+                envOr("TELEGRAM_TEST_CHAT_ID", appProps.telegramTestChatId, "(from telegramTestChatId in cdk.json)");
+        var telegramLiveChatId =
+                envOr("TELEGRAM_LIVE_CHAT_ID", appProps.telegramLiveChatId, "(from telegramLiveChatId in cdk.json)");
+        var telegramOpsChatId =
+                envOr("TELEGRAM_OPS_CHAT_ID", appProps.telegramOpsChatId, "(from telegramOpsChatId in cdk.json)");
 
         // Create ObservabilityStack with resources used in monitoring the application
         infof(
@@ -320,6 +332,11 @@ public class SubmitEnvironment {
                         .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .telegramBotTokenArn(telegramBotTokenArn != null ? telegramBotTokenArn : "")
+                        .telegramTestChatId(telegramTestChatId != null ? telegramTestChatId : "")
+                        .telegramLiveChatId(telegramLiveChatId != null ? telegramLiveChatId : "")
+                        .telegramOpsChatId(telegramOpsChatId != null ? telegramOpsChatId : "")
                         .build());
 
         // Create AnalyticsStack with the lake, the catalog and the activity-event delivery stream
