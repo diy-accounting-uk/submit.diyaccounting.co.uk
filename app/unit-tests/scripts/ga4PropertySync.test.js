@@ -10,6 +10,7 @@ import {
   displayNameForEnvironment,
   streamUriForHostname,
   buildPlan,
+  extractBigQueryLinks,
   GA4_BIGQUERY_PROJECT_ID,
   GA4_BIGQUERY_LOCATION,
   GITHUB_VARIABLE_NAME,
@@ -188,5 +189,20 @@ describe("buildPlan", () => {
     });
 
     expect(plan.githubVariable).toMatchObject({ action: "pending", value: null, previousValue: "G-STALE0000" });
+  });
+});
+
+describe("extractBigQueryLinks", () => {
+  test("reads the lowercase-q field the Analytics Admin API actually returns", () => {
+    const links = [{ name: "properties/999/bigQueryLinks/1", project: "projects/123456789" }];
+    expect(extractBigQueryLinks({ bigqueryLinks: links })).toEqual(links);
+  });
+
+  test("returns an empty list when the property has no BigQuery link yet", () => {
+    expect(extractBigQueryLinks({})).toEqual([]);
+  });
+
+  test("ignores a camelCase bigQueryLinks field, since the API never sends one", () => {
+    expect(extractBigQueryLinks({ bigQueryLinks: [{ name: "properties/999/bigQueryLinks/1" }] })).toEqual([]);
   });
 });
