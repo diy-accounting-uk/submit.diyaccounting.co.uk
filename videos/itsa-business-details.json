@@ -4,6 +4,7 @@
   "title": "See the businesses HMRC has on file for your Self Assessment",
   "description": "A signed-in walk through ITSA Business Details: sign in, take out Resident ITSA, ask HMRC which self-employment and property businesses it holds against your National Insurance number, and read the answer.",
   "auth": "user",
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,
@@ -108,8 +109,9 @@
         {
           "action": "type",
           "target": "#nino",
-          "text": "AB123456C",
+          "text": "{{hmrcNino}}",
           "clear": true,
+          "secret": true,
           "caption": "Type the National Insurance number HMRC asks for."
         },
         { "action": "hold", "ms": 700 }

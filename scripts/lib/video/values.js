@@ -4,9 +4,15 @@
 // scripts/lib/video/values.js
 //
 // Placeholder substitution for a scene script's typed text and filled values. A logged-in script
-// cannot hard-code the VAT registration number it types (the run mints a fresh HMRC sandbox test
-// user) and must not hard-code a date range that quietly ages out of the API's 366-day window.
-// Both come from `{{...}}` placeholders resolved here.
+// cannot hard-code the VAT registration number or National Insurance number it types (the run
+// mints a fresh HMRC sandbox test user) and must not hard-code a date range that quietly ages out
+// of the API's 366-day window. All of these come from `{{...}}` placeholders resolved here.
+//
+// `{{hmrcVatNumber}}` and `{{hmrcNino}}` are ordinary named values, not clock placeholders: the
+// caller looks them up on the minted test user (journey.js's resolveHmrcTestUser) and passes them
+// in as `values`. A script whose hmrcServices never asked for "mtd-income-tax" gets no `hmrcNino`
+// value at all, so a stray `{{hmrcNino}}` in its text fails the run the same way any other
+// placeholder with no value does — never silently typed as an empty string.
 //
 // Pure: the clock is a parameter.
 
