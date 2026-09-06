@@ -12,6 +12,7 @@ import {
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -40,26 +41,6 @@ const logger = createLogger({ source: "app/functions/hmrc/hmrcVatPenaltiesGet.js
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
-
-/**
- * Serialize response headers to a plain object with lowercase keys
- * Handles both Headers objects (with forEach) and plain objects
- * @param {Headers|Object|null} headers - Response headers
- * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
- */
-function serializeResponseHeaders(headers) {
-  if (!headers) {
-    return [];
-  }
-  if (typeof headers.forEach === "function") {
-    const headerEntries = {};
-    headers.forEach((value, key) => {
-      headerEntries[key.toLowerCase()] = value;
-    });
-    return Object.entries(headerEntries);
-  }
-  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
-}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */

@@ -12,6 +12,7 @@ import {
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -43,26 +44,6 @@ const DEFAULT_WAIT_MS = 0;
 // Business Details v2.0 - the API version this endpoint requires, unlike the VAT reads
 // which all use v1.0.
 const HMRC_API_VERSION = "2.0";
-
-/**
- * Serialize response headers to a plain object with lowercase keys
- * Handles both Headers objects (with forEach) and plain objects
- * @param {Headers|Object|null} headers - Response headers
- * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
- */
-function serializeResponseHeaders(headers) {
-  if (!headers) {
-    return [];
-  }
-  if (typeof headers.forEach === "function") {
-    const headerEntries = {};
-    headers.forEach((value, key) => {
-      headerEntries[key.toLowerCase()] = value;
-    });
-    return Object.entries(headerEntries);
-  }
-  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
-}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */

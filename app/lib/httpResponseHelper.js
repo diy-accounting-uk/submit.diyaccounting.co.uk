@@ -181,6 +181,26 @@ export function getHeader(headers, name) {
   return null;
 }
 
+/**
+ * Serialize response headers to a plain object with lowercase keys
+ * Handles both Headers objects (with forEach) and plain objects
+ * @param {Headers|Object|null} headers - Response headers
+ * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
+ */
+export function serializeResponseHeaders(headers) {
+  if (!headers) {
+    return [];
+  }
+  if (typeof headers.forEach === "function") {
+    const headerEntries = {};
+    headers.forEach((value, key) => {
+      headerEntries[key.toLowerCase()] = value;
+    });
+    return Object.entries(headerEntries);
+  }
+  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
+}
+
 export function extractRequest(event) {
   let request;
   // Initialise the store if it doesn't exist

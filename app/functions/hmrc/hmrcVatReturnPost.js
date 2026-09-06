@@ -14,6 +14,7 @@ import {
   http409ConflictResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
@@ -634,19 +635,8 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
-          headers: {},
+          headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-        if (hmrcResponse.headers) {
-          if (typeof hmrcResponse.headers.forEach === "function") {
-            hmrcResponse.headers.forEach((v, k) => {
-              serializableHmrcResponse.headers[k.toLowerCase()] = v;
-            });
-          } else {
-            Object.keys(hmrcResponse.headers).forEach((k) => {
-              serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
-            });
-          }
-        }
 
         const resultData = {
           receipt,
@@ -798,19 +788,8 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
-        headers: {},
+        headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
-      if (hmrcResponse.headers) {
-        if (typeof hmrcResponse.headers.forEach === "function") {
-          hmrcResponse.headers.forEach((v, k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = v;
-          });
-        } else {
-          Object.keys(hmrcResponse.headers).forEach((k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
-          });
-        }
-      }
 
       const result = {
         receipt,

@@ -74,7 +74,7 @@ supplied processor for step 6. Extract `isRetryableError()` to a shared location
 
 ---
 
-## 3. `serializeResponseHeaders()` Duplication (internal refactor, no library)
+## 3. `serializeResponseHeaders()` Duplication (internal refactor, no library) — done
 
 **What**: The function `serializeResponseHeaders(headers)` that normalizes `Headers` objects into
 plain objects with lowercase keys is defined identically in two files:
