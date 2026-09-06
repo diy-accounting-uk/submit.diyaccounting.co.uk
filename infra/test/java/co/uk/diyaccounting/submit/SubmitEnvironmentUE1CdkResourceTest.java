@@ -70,7 +70,26 @@ class SubmitEnvironmentUE1CdkResourceTest {
 
         Template observabilityUE1 = Template.fromStack(env.observabilityUE1Stack);
 
-        // 6) The daily Bedrock budget: DAILY, USD 5, filtered to the Bedrock service.
+        // 6) Two budgets, not one: AWS Budgets Actions reject a DAILY budget, so the deny action
+        // sits on a MONTHLY budget at USD 150 (30 days of the operator's USD 5/day figure). A
+        // second, DAILY budget at USD 5 carries no action, only a notification to the same topic,
+        // so a bad day is still heard about before the monthly enforcement would trip.
+        observabilityUE1.hasResourceProperties(
+                "AWS::Budgets::Budget",
+                Match.objectLike(Map.of(
+                        "Budget",
+                        Match.objectLike(Map.of(
+                                "BudgetName",
+                                "test-env-bedrock-monthly",
+                                "BudgetType",
+                                "COST",
+                                "TimeUnit",
+                                "MONTHLY",
+                                "BudgetLimit",
+                                Match.objectLike(Map.of("Amount", 150, "Unit", "USD")))))));
+
+        var dailyBudgetNotification = Match.objectLike(Map.of(
+                "Subscribers", Match.arrayWith(List.of(Match.objectLike(Map.of("SubscriptionType", "SNS"))))));
         observabilityUE1.hasResourceProperties(
                 "AWS::Budgets::Budget",
                 Match.objectLike(Map.of(
@@ -83,15 +102,18 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "TimeUnit",
                                 "DAILY",
                                 "BudgetLimit",
-                                Match.objectLike(Map.of("Amount", 5, "Unit", "USD")))))));
+                                Match.objectLike(Map.of("Amount", 5, "Unit", "USD")))),
+                        "NotificationsWithSubscribers",
+                        Match.arrayWith(List.of(dailyBudgetNotification)))));
 
         // 7) The budget action names the same role-name string the environment stack used for the
-        // triage role (SubmitSharedNames.alarmTriageRoleName), not a CDK cross-stack reference.
+        // triage role (SubmitSharedNames.alarmTriageRoleName), not a CDK cross-stack reference, and
+        // sits on the monthly budget, not the daily one.
         observabilityUE1.hasResourceProperties(
                 "AWS::Budgets::BudgetsAction",
                 Match.objectLike(Map.of(
                         "BudgetName",
-                        "test-env-bedrock-daily",
+                        "test-env-bedrock-monthly",
                         "ActionType",
                         "APPLY_IAM_POLICY",
                         "Definition",
@@ -124,6 +146,79 @@ class SubmitEnvironmentUE1CdkResourceTest {
         @SuppressWarnings("unchecked")
         var deniedActions = (List<String>) denyStatement.get("Action");
         assertTrue(deniedActions.containsAll(List.of("bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream")));
+    }
+
+    @Test
+    void shouldForwardBedrockBudgetAlertsToTheSharedActivityBusInUsEast1() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+
+        if (ctx.containsKey("apexActiveLabel")) {
+            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
+        }
+        if (ctx.containsKey("apexDeploymentOrigins")) {
+            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
+        }
+        ctx.put(
+                "certificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "holdingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
+        var env = new SubmitEnvironment(app, appProps);
+        app.synth();
+
+        Template observabilityUE1 = Template.fromStack(env.observabilityUE1Stack);
+
+        // The bridge Lambda: no per-deployment OpsStack equivalent exists in us-east-1 to route a
+        // budget notification into, so this Lambda turns it into an ActivityEvent on the shared
+        // bus instead, the same contract wafScanDetect.js uses for a WAF finding.
+        observabilityUE1.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of("FunctionName", "test-env-bedrock-budget-alert-forward")));
+
+        // Subscribed directly to the budget topic (SNS is the only subscriber type a budget
+        // notification supports).
+        observabilityUE1.hasResourceProperties(
+                "AWS::SNS::Subscription",
+                Match.objectLike(Map.of(
+                        "Protocol",
+                        "lambda",
+                        "TopicArn",
+                        Match.objectLike(Map.of(
+                                "Ref", Match.stringLikeRegexp("BedrockBudgetAlertsTopic"))))));
+
+        // Permitted to publish onto this environment's own activity bus, cross-region, and no
+        // other bus in the account.
+        Map<String, Map<String, Object>> policies = observabilityUE1.findResources("AWS::IAM::Policy");
+        boolean grantsPutEventsOnActivityBus = policies.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            @SuppressWarnings("unchecked")
+            var policyDocument = (Map<String, Object>) properties.get("PolicyDocument");
+            @SuppressWarnings("unchecked")
+            var statements = (List<Map<String, Object>>) policyDocument.get("Statement");
+            return statements.stream().anyMatch(statement -> {
+                Object action = statement.get("Action");
+                Object resourceArn = statement.get("Resource");
+                boolean actsOnPutEvents = "events:PutEvents".equals(action)
+                        || (action instanceof List<?> actions && actions.contains("events:PutEvents"));
+                boolean targetsActivityBus = String.valueOf(resourceArn)
+                        .contains("event-bus/test-env-activity-bus");
+                return actsOnPutEvents && targetsActivityBus;
+            });
+        });
+        assertTrue(grantsPutEventsOnActivityBus, "No IAM policy grants events:PutEvents on the activity bus");
+
+        // The stack's own composite health alarm, named with the env-wide prefix so it reaches
+        // Telegram via any live deployment's EdgeStack forwarding rule, same as the WAF and
+        // certificate alarms.
+        observabilityUE1.hasResourceProperties(
+                "AWS::CloudWatch::CompositeAlarm",
+                Match.objectLike(Map.of("AlarmName", "test-env-obs-ue1-stack-health")));
     }
 
     private static @NotNull Map<String, Object> buildContextPropertyMapFromCdkJsonPath(Path cdkJsonPath)
