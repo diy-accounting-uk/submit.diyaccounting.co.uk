@@ -14,14 +14,20 @@ channel until the ITSA activity leaves the environments gate.
    gh run download 33953044775 -n video-submit-return-prod -D target/videos/video-submit-return-prod
    gh run download 34058244686 -n video-view-return-prod -D target/videos/video-view-return-prod
    ```
-2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`).
-   Google blocks gcloud's own client from asking for YouTube scopes, and a client created
-   through the IAP API is locked to IAP, so this project needs its own:
-   - **APIs & Services > OAuth consent screen**: type External, publishing status Testing, add
-     the channel owner's Google account as a test user, and add scopes `youtube.upload` and
-     `youtube.force-ssl`.
-   - **APIs & Services > Credentials > Create credentials > OAuth client ID**: type Desktop
-     app, name `youtube-upload`, then Download JSON.
+2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`,
+   signed in as the channel owner). Google blocks gcloud's own client from asking for YouTube
+   scopes, and a client created through the IAP API is locked to IAP, so this project needs
+   its own. The section is **Google Auth Platform** in the left menu:
+   - **Overview**: if there is a **Get started** button, App name `DIY Accounting Submit`, your
+     support email, Audience **External**, your contact email, agree, **Create**.
+   - **Audience**: publishing status stays **Testing**; under **Test users**, **Add users**,
+     your own Google account, **Save**.
+   - **Data Access**: **Add or remove scopes**, filter `youtube`, tick `.../auth/youtube.upload`
+     and `.../auth/youtube.force-ssl`, **Update**, **Save**.
+   - **Clients**: **Create client**, Application type **Desktop app**, Name `youtube-upload`,
+     **Create**, then **Download JSON** on the "OAuth client created" dialog (or the download
+     arrow on the client's row). Leave the file in Downloads; nothing is copied.
+   The full walk-through, with what each screen shows, is `.claude/skills/video-publish/SKILL.md`.
 3. **Store the downloaded client, then check the credential works**, without uploading
    anything (the shell expands the glob):
    ```bash
