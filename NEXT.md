@@ -52,6 +52,14 @@ Nothing. No sub-agent runs and no batch branch is open; the next batch starts fr
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
 
+- [ ] **C1. CodeQL runs only when test.yml would.** `codeql.yml` triggers on every push to main
+  and every pull request, so each docs-only push to main today ran it (four times between
+  16:18 and 18:39 UTC on 2026-09-06). Give its `push` and `pull_request` triggers the same
+  `paths` list as `test.yml` (app, infra, tests, behaviour-tests, web, the env files, cdk.json,
+  Dockerfile, package and pom files, the catalogue, the workflows and the lint and test
+  configs); the weekly schedule stays. The spreadsheets repo has the same gap in its own
+  `codeql.yml` and its own session makes that change. **Source**: operator, 2026-09-06.
+  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
   that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
   resource with "Backups are being enabled for the table" (DynamoDB's
@@ -72,10 +80,6 @@ on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O18. Confirm the ops Telegram chat shows each event once.** Since main's deploy of
-  16:09 UTC on 2026-09-06 one prod set stands and the forwarder lives in the environment
-  (PR #144), so the stack events of that deploy's destroy job should appear once each in
-  `@diy-prod-ops`, not twice. **Source**: BACKLOG 30. **Owner**: Operator.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.

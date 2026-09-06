@@ -40,7 +40,7 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 30 | B30o, O18 | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
+| 30 | B30o | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
 | 17a | B17a.5 | Demo videos: a human-audience Playwright capture pattern (spike), one video per journey, then publish. Channel: https://www.youtube.com/@DIYAccountingSubmit | Operator directive 2026-08-26, reversed 2026-09-04 | M | Revenue. A usable walkthrough of the real product. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
