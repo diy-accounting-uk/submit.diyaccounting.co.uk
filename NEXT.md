@@ -74,22 +74,6 @@ B10.4 and O11 need.
   read the results. Row 10's remainder after that: the dashboard
   page the catalogue names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10;
   issues #16, #20. **Owner**: Claude Code. **Model**: Fable (coordinator).
-- [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
-  environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
-  Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
-  was assumed, the guardrail read, and Bedrock answered 403, "not authorized to perform the
-  required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
-  aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
-  Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
-  account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
-  the CDK test (4316f0ce, merged in PR #141 and deployed to both environments by the
-  environment re-run 34038617995). Next step: label an open alarm issue `triage` (#138 is the
-  only one open; its alarm is gone but the chain still runs on the issue). Verified when
-  that run posts a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
-
-Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
-on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
