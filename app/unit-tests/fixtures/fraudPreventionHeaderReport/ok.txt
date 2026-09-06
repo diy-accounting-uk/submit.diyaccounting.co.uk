@@ -1,0 +1,36 @@
+From: HMRC fraud prevention <noreply@tax.service.gov.uk>
+To: developer@example.com
+Subject: Fraud prevention headers for Example App
+
+Fraud prevention headers for Example App
+
+Dear Example Developer
+
+Your application’s fraud prevention headers are correct.
+
+In production, in July 2026, Example App meets the fraud prevention specification.
+
+What you need to do
+
+To make sure your application keeps meeting the specification, you need to follow these steps.
+
+Log in to Developer Hub.
+Go to ‘View all applications’.
+Select your Production application.
+Select ‘Fraud prevention’.
+
+You can now check your application at any time.
+
+You are required by law to submit header data for the VAT (Making Tax Digital) and Income Tax Self Assessment (MTD) APIs. This includes all associated APIs and endpoints.
+
+Why you have received this email
+
+This email address is registered on Developer Hub for Example App.
+
+If you’re no longer working on Example App, an application admin needs to remove you from the team on Developer Hub. You need to have at least 1 contact for each application. You may need to add a new team member.
+
+From HMRC Transaction Monitoring team
+
+If you’re unsure an email is from HMRC:
+- Do not reply to it or click on any links
+- Report the suspicious email to HMRC - to find out how, go to GOV.UK and search for 'Avoid and report internet scams and phishing'
