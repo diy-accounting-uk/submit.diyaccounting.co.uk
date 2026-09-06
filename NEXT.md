@@ -87,9 +87,9 @@ a later event to verify.
   scans eu-west-2 for `ci-*-app-` prefixes it would otherwise not see. ci-claudff66 also has an
   `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
   House routes), so that set needs the Companies House stack deleted first and the ApiStack
-  deleted again. The three orphans go with the operator's yes to
-  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>`, or the fixed sweep
-  once PR #137 is on main (ci-claudff66's ApiStack still needs the second delete).
+  deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
+  deleted and ci-claudff66's ApiStack delete was requested again. Verified when
+  `list-stacks` in ci shows no `ci-claud*` stack and the next ci set self-destructs whole.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -264,13 +264,6 @@ a later event to verify.
   alarm at creation; that set is gone and prod-0967fab's `api-failed` alarm sat in OK from
   creation, which is what B30l set out to do. **Source**: board render 2026-09-06. **Owner**:
   Operator.
-- [ ] **O13. Submit the Anthropic use-case details form for Bedrock in both accounts.** The
-  first triage run (34016641016, ci) reached Bedrock and got 404 "Model use case details have
-  not been submitted for this account. Fill out the Anthropic use case details form". In the
-  console for submit-ci (367191799875) and submit-prod (972912397388), Bedrock, Model access,
-  Anthropic: submit the form; access follows within about 15 minutes. Then re-label #134 with
-  `triage` to finish B30o's proof. **Source**: BACKLOG 30; issue #18. **Owner**: Operator.
-
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
   Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
   register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
@@ -298,10 +291,11 @@ a later event to verify.
 - [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on prod and prove the triage chain.** ci is
   done: the variable points at `ci-env-alarm-triage-role`, and adding the `triage` label to
   #134 ran the whole chain (run 34016641016: role assumed, guardrail read, comment posted).
-  The model call answered 404 "Model use case details have not been submitted for this
-  account", so the proof completes after O13. Prod's variable waits for its environment deploy
-  after PR #137 merges. **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
-  Fable (coordinator). Blocked on O13 and on prod's environment deploy.
+  The model call answered 404 until the Anthropic use-case form was submitted through
+  `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06; the proof re-ran as
+  run 34024132783. Prod's variable waits for its environment deploy after the PR #137 merge
+  (run 34023929068). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
+  Fable (coordinator). Blocked on prod's environment deploy.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
