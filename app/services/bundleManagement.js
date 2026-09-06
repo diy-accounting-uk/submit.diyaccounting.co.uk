@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpResponseHelper.js";
-import { loadCatalogFromRoot } from "./productCatalog.js";
+import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 
@@ -131,9 +131,27 @@ export async function enforceBundles(event, options = {}) {
   const { request } = extractRequest(event);
   const requestPath = request?.pathname || "";
   const catalog = loadCatalogFromRoot();
-  const requiredBundleIds = findRequiredBundleIdsForUrlPath(catalog, requestPath);
-  if (!requiredBundleIds) {
+  const matchedActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
+  const requiredBundleIds = requiredBundleIdsFromActivities(matchedActivities);
+  if (requiredBundleIds.length === 0) {
     logger.info({ message: "No required bundles for request path - unrestricted", requestPath });
+  }
+
+  const environmentName = process.env.ENVIRONMENT_NAME;
+  const environmentRestrictedActivity = matchedActivities.find(
+    (activity) => !isActivityListedInEnvironment(activity, environmentName),
+  );
+  if (environmentRestrictedActivity) {
+    const errorDetails = {
+      code: "ACTIVITY_ENVIRONMENT_RESTRICTED",
+      activityId: environmentRestrictedActivity.id,
+      environments: environmentRestrictedActivity.environments,
+      environmentName,
+      path: requestPath,
+    };
+    const message = `Forbidden: ${environmentRestrictedActivity.id} is not available in the ${environmentName || "current"} environment`;
+    logger.warn({ message, ...errorDetails });
+    throw new BundleEntitlementError(message, errorDetails);
   }
 
   // Automatic bundles that everyone has implicitly
@@ -228,18 +246,17 @@ function matchesSimplePath(path, normalizedPath) {
   return normalizedPath === normalizedActivityPath || normalizedPath.endsWith("/" + normalizedActivityPath);
 }
 
-function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
+function findMatchingActivitiesForUrlPath(catalog, currentPath) {
   if (!catalog?.activities) return [];
 
   // Keep both variants: with and without query
   const pathWithQuery = String(currentPath || "").replace(/^\//, "");
   const pathNoQuery = pathWithQuery.split("?")[0];
 
-  const required = new Set();
+  const matched = [];
 
   for (const activity of catalog.activities) {
     const paths = activity.paths || (activity.path ? [activity.path] : []);
-    const bundles = Array.isArray(activity.bundles) ? activity.bundles : [];
 
     for (const pRaw of paths) {
       const p = String(pRaw);
@@ -257,13 +274,22 @@ function findRequiredBundleIdsForUrlPath(catalog, currentPath) {
           : matchesSimplePath(p, pathNoQuery);
 
       if (isMatch) {
-        for (const b of bundles) required.add(b);
+        matched.push(activity);
         // No need to test other patterns for this activity once matched
         break;
       }
     }
   }
 
+  return matched;
+}
+
+function requiredBundleIdsFromActivities(activities) {
+  const required = new Set();
+  for (const activity of activities) {
+    const bundles = Array.isArray(activity.bundles) ? activity.bundles : [];
+    for (const b of bundles) required.add(b);
+  }
   return Array.from(required);
 }
 

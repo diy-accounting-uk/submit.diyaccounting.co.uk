@@ -24,6 +24,7 @@ on:
           - 'view-obligations'
           - 'view-return'
           - 'submit-return'
+          - 'itsa-business-details'
         default: 'tour'
       environment-name:
         type: choice

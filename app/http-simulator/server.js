@@ -7,6 +7,7 @@
 import express from "express";
 import { apiEndpoint as localOAuthEndpoint } from "./routes/local-oauth.js";
 import { apiEndpoint as hmrcOAuthEndpoint } from "./routes/hmrc-oauth.js";
+import { apiEndpoint as companiesHouseOAuthEndpoint } from "./routes/companies-house-oauth.js";
 import { apiEndpoint as vatReturnsEndpoint } from "./routes/vat-returns.js";
 import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.js";
 import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
@@ -52,6 +53,10 @@ export function createApp() {
   // OAuth routes (handles both local OAuth and HMRC OAuth based on client_id)
   localOAuthEndpoint(app);
   hmrcOAuthEndpoint(app);
+  // Registered after hmrc-oauth.js: HMRC's /oauth/authorize (American spelling) and Companies
+  // House's /oauth2/authorise (British spelling) are different paths, so registration order here
+  // does not matter for routing, only for readability.
+  companiesHouseOAuthEndpoint(app);
 
   // HMRC VAT API routes
   vatReturnsEndpoint(app);

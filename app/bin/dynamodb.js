@@ -87,6 +87,17 @@ export async function ensureBundleTableExists(tableName, endpoint) {
           AttributeDefinitions: [
             { AttributeName: "hashedSub", AttributeType: "S" },
             { AttributeName: "bundleId", AttributeType: "S" },
+            { AttributeName: "expiry", AttributeType: "S" },
+          ],
+          GlobalSecondaryIndexes: [
+            {
+              IndexName: "bundleId-expiry-index",
+              KeySchema: [
+                { AttributeName: "bundleId", KeyType: "HASH" },
+                { AttributeName: "expiry", KeyType: "RANGE" },
+              ],
+              Projection: { ProjectionType: "KEYS_ONLY" },
+            },
           ],
           BillingMode: "PAY_PER_REQUEST",
         }),

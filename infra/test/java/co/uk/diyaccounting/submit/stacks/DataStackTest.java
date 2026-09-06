@@ -167,6 +167,49 @@ class DataStackTest {
     }
 
     @Test
+    void bundlesTableGetsBundleIdExpiryIndex() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // The capacity reconciliation counts live allocations of a capped bundle through this
+        // index instead of scanning the whole bundles table.
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTable",
+                                        dataStack.bundlesTable.getTableName(),
+                                        "bundleId-expiry-index",
+                                        "\"AttributeName\":\"expiry\"",
+                                        "\"ProjectionType\":\"KEYS_ONLY\""))));
+        assertEquals(1, resource.size());
+    }
+
+    @Test
+    void passesIssuedByIndexStaysProjectionAll() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // Guards the ensureGlobalSecondaryIndex projectionType parameter: the passes table still
+        // projects the whole item, since passMyPassesGet reads full pass records from this index.
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "updateTable",
+                                        dataStack.passesTable.getTableName(),
+                                        "issuedBy-index",
+                                        "\"ProjectionType\":\"ALL\""))));
+        assertEquals(1, resource.size());
+    }
+
+    @Test
     void everyLambdaFunctionHasAnExplicitLogGroup() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);

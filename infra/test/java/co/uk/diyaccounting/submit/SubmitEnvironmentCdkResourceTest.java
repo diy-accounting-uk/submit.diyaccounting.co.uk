@@ -78,13 +78,13 @@ class SubmitEnvironmentCdkResourceTest {
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
-        // 6) Data stack creates DynamoDB tables + PITR + 1 GSI + TTL via AwsCustomResource
+        // 6) Data stack creates DynamoDB tables + PITR + 2 GSIs + TTL via AwsCustomResource
         // for idempotent deployments, including hmrcItsaBusinessDetailsGetAsyncRequests
         // PITR: every table
-        // GSIs: passes issuedBy-index
+        // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 54);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 55);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template observability = Template.fromStack(env.observabilityStack);
@@ -107,6 +107,11 @@ class SubmitEnvironmentCdkResourceTest {
                         "EvaluationPeriods", 1,
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "TreatMissingData", "breaching")));
+
+        // 8b) Alarm triage: the read-only role denies customer data even if a later change widens
+        // an Allow, its Bedrock Allow names only the two pinned models, and the guardrail and both
+        // of its SSM parameters exist.
+        assertAlarmTriageResources(observability);
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
@@ -230,6 +235,120 @@ class SubmitEnvironmentCdkResourceTest {
                 .anyMatch(field -> "eventName".equals(field.get("Field"))
                         && List.of("GetRecords").equals(field.get("NotEquals"))));
         assertTrue(dataFields.stream().noneMatch(field -> "readOnly".equals(field.get("Field"))));
+    }
+
+    /**
+     * Asserts the alarm-triage role's Deny statement still covers customer data, its Bedrock Allow
+     * names only the two pinned models and their inference profiles, and the guardrail plus both of
+     * its SSM parameters exist, matching the fixed ENVIRONMENT_NAME=test config this test class uses.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertAlarmTriageResources(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-alarm-triage-role")));
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(observability, "DenyCustomerData");
+
+        Map<String, Object> denyStatement = statements.stream()
+                .filter(s -> "DenyCustomerData".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Deny", denyStatement.get("Effect"));
+        assertTrue(((List<String>) denyStatement.get("Action")).contains("dynamodb:*"));
+        assertTrue(
+                statements.stream()
+                        .filter(s -> "Allow".equals(s.get("Effect")))
+                        .noneMatch(s -> actionsOf(s).stream().anyMatch(a -> a.startsWith("dynamodb:"))),
+                "no Allow statement on the triage role may grant a dynamodb action");
+
+        Map<String, Object> invokeModelStatement = statements.stream()
+                .filter(s -> "InvokeTriageModel".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        List<Object> invokeModelResources = (List<Object>) invokeModelStatement.get("Resource");
+        assertEquals(4, invokeModelResources.size());
+        List<String> resolvedInvokeModelResources =
+                invokeModelResources.stream().map(SubmitEnvironmentCdkResourceTest::resolveAccountToken).toList();
+        assertTrue(resolvedInvokeModelResources.containsAll(List.of(
+                "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+                "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+                "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0")));
+
+        Map<String, Map<String, Object>> guardrails = observability.findResources("AWS::Bedrock::Guardrail");
+        assertEquals(1, guardrails.size());
+        Map<String, Object> guardrailProperties =
+                (Map<String, Object>) guardrails.values().iterator().next().get("Properties");
+        assertEquals("test-env-alarm-triage-guardrail", guardrailProperties.get("Name"));
+        Map<String, Object> sensitiveInformationPolicyConfig =
+                (Map<String, Object>) guardrailProperties.get("SensitiveInformationPolicyConfig");
+        List<Map<String, Object>> piiEntitiesConfig =
+                (List<Map<String, Object>>) sensitiveInformationPolicyConfig.get("PiiEntitiesConfig");
+        List<Map<String, Object>> regexesConfig =
+                (List<Map<String, Object>>) sensitiveInformationPolicyConfig.get("RegexesConfig");
+        assertEquals(10, piiEntitiesConfig.size());
+        assertTrue(piiEntitiesConfig.stream().allMatch(entity -> "BLOCK".equals(entity.get("Action"))));
+        assertEquals(2, regexesConfig.size());
+        assertTrue(regexesConfig.stream().anyMatch(regex -> "hashed-sub".equals(regex.get("Name"))));
+        assertTrue(regexesConfig.stream().anyMatch(regex -> "vat-registration-number".equals(regex.get("Name"))));
+        assertTrue(regexesConfig.stream().allMatch(regex -> "BLOCK".equals(regex.get("Action"))));
+
+        observability.hasResourceProperties(
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-id")));
+        observability.hasResourceProperties(
+                "AWS::SSM::Parameter",
+                Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-version")));
+    }
+
+    /**
+     * Finds the {@code AWS::IAM::Policy} whose statements include one carrying the given Sid, and
+     * returns that policy's full statement list. Fails loudly rather than returning an empty list so
+     * a renamed Sid breaks the test that depends on it instead of silently asserting nothing.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findPolicyStatementsContainingSid(Template template, String sid) {
+        for (Map<String, Object> policy : template.findResources("AWS::IAM::Policy").values()) {
+            Map<String, Object> properties = (Map<String, Object>) policy.get("Properties");
+            Map<String, Object> document = (Map<String, Object>) properties.get("PolicyDocument");
+            List<Map<String, Object>> statements = (List<Map<String, Object>>) document.get("Statement");
+            if (statements.stream().anyMatch(statement -> sid.equals(statement.get("Sid")))) {
+                return statements;
+            }
+        }
+        throw new AssertionError("no IAM::Policy statement carries Sid " + sid);
+    }
+
+    /** Normalises a statement's Action, which CDK renders as a bare string when there is only one. */
+    @SuppressWarnings("unchecked")
+    private static List<String> actionsOf(Map<String, Object> statement) {
+        Object action = statement.get("Action");
+        return action instanceof List<?> list ? (List<String>) list : List.of(String.valueOf(action));
+    }
+
+    /**
+     * Resolves one ARN resource entry back to a plain string. This stack's account/region are not
+     * bound to a literal {@code Environment} at the CDK level (see {@code
+     * ObservabilityStack(Construct, String, StackProps, ObservabilityStackProps)}, which passes the
+     * incoming {@code stackProps} - null from the two-arg constructor every caller uses - straight to
+     * {@code super()} instead of building one from {@code props.getEnv()}), so {@code
+     * this.getAccount()} is the {@code AWS::AccountId} pseudo parameter rather than a literal, and any
+     * ARN built from it renders as an {@code Fn::Join} here rather than a plain string. This test's
+     * fixed CDK_DEFAULT_ACCOUNT (111111111111) is substituted back in so the assertions can compare
+     * against the same literal ARNs the plan specifies.
+     */
+    @SuppressWarnings("unchecked")
+    private static String resolveAccountToken(Object resource) {
+        if (resource instanceof String s) {
+            return s;
+        }
+        Map<String, Object> fnJoin = (Map<String, Object>) resource;
+        List<Object> joinArgs = (List<Object>) fnJoin.get("Fn::Join");
+        List<Object> parts = (List<Object>) joinArgs.get(1);
+        StringBuilder resolved = new StringBuilder();
+        for (Object part : parts) {
+            resolved.append(part instanceof String s ? s : "111111111111");
+        }
+        return resolved.toString();
     }
 
     /**

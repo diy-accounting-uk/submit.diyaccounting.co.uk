@@ -83,8 +83,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 2, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 3, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -115,17 +115,29 @@ class SubmitApplicationCdkResourceTest {
                 bundleGetUpdateItemPolicies);
 
         // Scan and BatchGetItem read a whole table at once, so they are the cheapest way to walk off
-        // with customer data. Three functions genuinely use them: capacity reconciliation counts
-        // every bundle, the my-passes listing falls back to a scan when its index query fails, and
-        // bundleGet reads several capacity counters at once. Any other role holding either action
-        // has been granted more than it calls.
-        List<String> rolesThatReadInBulk = List.of("bundle-capacity-reconcile", "pass-my-passes-get", "bundle-get");
+        // with customer data. Two functions genuinely use them: the my-passes listing falls back to
+        // a scan when its index query fails, and bundleGet reads several capacity counters at once.
+        // Any other role holding either action has been granted more than it calls.
+        List<String> rolesThatReadInBulk = List.of("pass-my-passes-get", "bundle-get");
         List<String> unexpectedBulkReaders = findRolesGrantedBulkReads(accountStackTemplate, rolesThatReadInBulk);
         if (!unexpectedBulkReaders.isEmpty()) {
             dumpIamPolicies(accountStackTemplate);
             throw new AssertionFailedError("These roles hold dynamodb:Scan or dynamodb:BatchGetItem without calling "
                     + "either: " + unexpectedBulkReaders + ". Grant only the actions the function "
                     + "makes, or add the role here if the bulk read is real.");
+        }
+
+        // Capacity reconciliation counts live allocations of a capped bundle through
+        // bundleId-expiry-index instead of scanning the bundles table. A re-grant of dynamodb:Scan
+        // to this role would slip past the check above only if this assertion also failed.
+        boolean reconcileHasIndexQuery =
+                findRoleGrantedActionOnResourceSuffix(
+                        accountStackTemplate, "bundle-capacity-reconcile", "dynamodb:Query", "/index/bundleId-expiry-index");
+        if (!reconcileHasIndexQuery) {
+            dumpIamPolicies(accountStackTemplate);
+            throw new AssertionFailedError("bundle-capacity-reconcile Lambda role is missing dynamodb:Query on "
+                    + "bundleId-expiry-index. Check the grantTableIndexActions call for "
+                    + "bundleCapacityReconcileLambda in AccountStack.java.");
         }
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
@@ -174,8 +186,10 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
-        // Each of the two new Companies House routes also gets ApiStack's automatic HEAD route.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 52);
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/token"));
+        // Each of the three Companies House routes also gets ApiStack's automatic HEAD route.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 54);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -630,6 +644,78 @@ class SubmitApplicationCdkResourceTest {
                     }
                 }
             }
+        }
+        return false;
+    }
+
+    /**
+     * True if some IAM policy attached to a role matching {@code slug} grants {@code action} on a
+     * resource whose ARN string ends in {@code resourceSuffix}. Used to confirm an index grant
+     * (e.g. {@code /index/bundleId-expiry-index}) landed on the expected role.
+     */
+    @SuppressWarnings("unchecked")
+    private static boolean findRoleGrantedActionOnResourceSuffix(
+            Template template, String slug, String action, String resourceSuffix) {
+        Map<String, Map<String, Object>> policies = template.findResources("AWS::IAM::Policy");
+        for (Map<String, Object> resource : policies.values()) {
+            Map<String, Object> props = (Map<String, Object>) resource.get("Properties");
+            if (props == null) continue;
+            if (!policyAttachesToRoleMatching(props, slug)) continue;
+            Object document = props.get("PolicyDocument");
+            if (!(document instanceof Map)) continue;
+            Object statements = ((Map<String, Object>) document).get("Statement");
+            if (!(statements instanceof List<?>)) continue;
+            for (Object statementObj : (List<Object>) statements) {
+                if (!(statementObj instanceof Map)) continue;
+                Map<String, Object> statement = (Map<String, Object>) statementObj;
+                if (!statementGrantsAction(statement, action)) continue;
+                if (statementTargetsResourceEndingWith(statement, resourceSuffix)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean statementGrantsAction(Map<String, Object> statement, String action) {
+        Object statementAction = statement.get("Action");
+        if (statementAction instanceof String) return action.equals(statementAction);
+        if (statementAction instanceof List<?>) {
+            for (Object a : (List<Object>) statementAction) {
+                if (action.equals(a)) return true;
+            }
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean statementTargetsResourceEndingWith(Map<String, Object> statement, String suffix) {
+        Object resource = statement.get("Resource");
+        List<Object> resources = resource instanceof List<?>
+                ? (List<Object>) resource
+                : resource == null ? List.of() : List.of(resource);
+        for (Object r : resources) {
+            if (resourceEndsWith(r, suffix)) return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean resourceEndsWith(Object resource, String suffix) {
+        if (resource instanceof String) return ((String) resource).endsWith(suffix);
+        if (resource instanceof List<?>) {
+            for (Object part : (List<Object>) resource) {
+                if (resourceEndsWith(part, suffix)) return true;
+            }
+            return false;
+        }
+        if (resource instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) resource;
+            Object fnJoin = map.get("Fn::Join");
+            if (fnJoin instanceof List<?> joinArgs && joinArgs.size() == 2) {
+                return resourceEndsWith(joinArgs.get(1), suffix);
+            }
+            Object fnSub = map.get("Fn::Sub");
+            if (fnSub instanceof String s) return s.endsWith(suffix);
         }
         return false;
     }

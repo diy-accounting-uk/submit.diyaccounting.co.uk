@@ -173,7 +173,9 @@ jobs:
           # colliding artifact names, and the report-generating call downloads a suite's
           # artifact built by an invocation that generated no report.
           if [ "${{ github.event_name }}" = "schedule" ] && [ -z "${{ inputs.behaviour-test-suite }}" ]; then
-            SUITES_JSON='["submitVatBehaviour","tokenRefreshBehaviour","getVatLiabilitiesBehaviour","getVatPaymentsBehaviour","getVatPenaltiesBehaviour"]'
+            # VAT liabilities, payments and penalties are gated to non-prod environments until
+            # examined, so the scheduled prod matrix stays on the two open activities.
+            SUITES_JSON='["submitVatBehaviour","tokenRefreshBehaviour"]'
           else
             SUITES_JSON=$(printf '["%s"]' "${SUITE}")
           fi
@@ -685,9 +687,13 @@ jobs:
           ls -l web/public/tests/test-report-web-test.json
           aws s3 cp web/public/tests/test-report-web-test.json s3://${BUCKET_NAME?}/tests/test-report-web-test.json
 
-          echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
-          find web/public/tests/test-reports/web-test/html-report/ -type f
-          aws s3 cp web/public/tests/test-reports/web-test/html-report/ s3://${BUCKET_NAME?}/tests/test-reports/web-test/html-report/ --recursive
+          if [ -d web/public/tests/test-reports/web-test/html-report/ ]; then
+            echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
+            find web/public/tests/test-reports/web-test/html-report/ -type f
+            aws s3 cp web/public/tests/test-reports/web-test/html-report/ s3://${BUCKET_NAME?}/tests/test-reports/web-test/html-report/ --recursive
+          else
+            echo "No html-report directory produced for this suite, skipping upload"
+          fi
 
           echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
           find web/public/tests/behaviour-test-results/web-test/ -type f

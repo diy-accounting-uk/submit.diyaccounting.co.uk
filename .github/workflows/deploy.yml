@@ -1388,6 +1388,10 @@ jobs:
           HMRC_SANDBOX_CLIENT_ID=${HMRC_SANDBOX_CLIENT_ID}
           HMRC_SANDBOX_BASE_URI=${HMRC_SANDBOX_BASE_URI}
 
+          COMPANIES_HOUSE_CLIENT_ID=${COMPANIES_HOUSE_CLIENT_ID}
+          COMPANIES_HOUSE_IDENTITY_BASE_URI=${COMPANIES_HOUSE_IDENTITY_BASE_URI}
+          COMPANIES_HOUSE_FILING_BASE_URI=${COMPANIES_HOUSE_FILING_BASE_URI}
+
           DIY_SUBMIT_BASE_URL=${DIY_SUBMIT_BASE_URL}
           EOF'
 
@@ -1968,7 +1972,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-liability-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -1995,7 +2000,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vat-payment-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2022,7 +2028,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vat-penalty-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2184,7 +2191,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-companies-house:
-    if: ${{ !cancelled() }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
     name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2211,7 +2219,8 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-itsa-business-details-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
     name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
