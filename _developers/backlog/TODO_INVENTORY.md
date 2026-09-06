@@ -1,102 +1,105 @@
 # TODO/FIXME Inventory and Delivery Packages
 
-**Generated:** 2026-01-08
-**Last Updated:** 2026-01-08
-**Total TODO/FIXME Markers:** 29 explicit markers
+**Generated:** 2026-09-06
+**Last Updated:** 2026-09-06
+**Total TODO/FIXME Markers:** 25 explicit markers
 **Additional Cleanup Opportunities:** 8 items identified
-**Total Actionable Items:** 37
+**Total Actionable Items:** 33
 
 ## Executive Summary
 
-This document catalogs all TODO and FIXME markers in the repository, plus additional cleanup opportunities identified during code review. Items are organized into themed delivery packages suitable for AI agent execution. Each package is sized to be completable in a single PR and ordered by impact and complexity.
+This document catalogs all TODO and FIXME markers in the repository. Items are organized into themed delivery packages suitable for AI agent execution. Each package is sized to be completable in a single PR and ordered by impact and complexity.
 
 ### Verification
 
 **Search Command Used:**
 ```bash
-grep -r -n -E '//\s*TODO|//\s*FIXME|#\s*TODO|#\s*FIXME|<!--\s*TODO|<!--\s*FIXME' \
-  --include="*.js" --include="*.java" --include="*.html" --include="*.yml" --include="*.yaml" \
-  . 2>/dev/null | grep -v node_modules | grep -v target | grep -v '.git/' | \
-  grep -v 'test-report' | grep -v '.github/agents' | grep -v 'prompts/' | grep -v 'eslint.config.js'
+grep -rn -E 'TODO|FIXME|XXX|HACK' \
+  --include="*.js" --include="*.java" --include="*.yml" --include="*.yaml" --include="*.html" \
+  --exclude-dir=node_modules \
+  --exclude-dir=target \
+  --exclude-dir=cdk.out \
+  --exclude-dir=.claude \
+  --exclude-dir=web/public-simulator \
+  --exclude-dir=_developers/archive \
+  --exclude='*.log' \
+  --exclude='TODO_INVENTORY.md' \
+  . 2>/dev/null | grep -v '.git/' | grep -v 'PLAN_'
 ```
 
 **Counts:**
 - Code files (JS, Java, HTML, YAML): 25 TODO markers
-- Markdown documentation files: 4 TODO markers
-- **Total explicit TODOs: 29 markers**
-
-However, during the inventory process, one additional item was identified that represents the same TODO context:
-- Item 29 "### TODO for approval" is a section header representing the same work as items 27-28
-
-**Adjusted count: 29 unique TODO markers, represented as 30 items in the table for granularity**
+- Documentation files: 0 TODO markers (documentation TODOs removed)
+- **Total explicit TODOs: 25 markers**
 
 **Additional cleanup opportunities identified:**
 - 5 functions marked with `eslint-disable-next-line no-unused-vars`
 - 3 blocks of commented-out code
 - **Total additional items: 8**
 
-**Grand Total: 37 actionable items**
+**Grand Total: 33 actionable items**
 
 ## Complete TODO Inventory
 
-### Explicit TODO/FIXME Markers (Items 1-29)
+### Explicit TODO/FIXME Markers (Items 1-25)
 
 These are actual TODO or FIXME comments found in the codebase.
 
-| # | File | Lines | TODO Description | Impact | Files Likely to Change |
-|---|------|-------|------------------|--------|------------------------|
-| 1 | `web/public/submit.js` | 1396-1410 | Re-integrate RUM (bootstrapRumConfigFromStorage) | Medium - Observability feature | `web/public/submit.js`, HTML files |
-| 2 | `web/public/hmrc/vat/viewVatReturn.html` | 564 | Clarify if OAuth flow branches are the same | Low - Code clarity | `web/public/hmrc/vat/viewVatReturn.html` |
-| 3 | `web/public/activities/submitVatCallback.html` | 2 | Move file to `/hmrc/callback.html` | Small - File reorganization | File rename, update references in tests, docs |
-| 4 | `scripts/delete-user-data.js` | 150 | Implement anonymization for receipts | Medium - Privacy/GDPR compliance | `scripts/delete-user-data.js`, potentially receipt storage logic |
-| 5 | `.github/workflows/deploy.yml` | 1006 | Derive httpApiUrl from shared names | Small - Infrastructure consistency | `.github/workflows/deploy.yml`, `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` |
-| 6 | `.github/workflows/deploy.yml` | 1532 | Rollback on test failure | Medium - Deployment reliability | `.github/workflows/deploy.yml`, parameter store integration |
-| 7 | `.github/workflows/deploy-environment.yml` | 159 | Switch to deploy-cdk-stack.yml | Small - Workflow consistency | `.github/workflows/deploy-environment.yml`, `.github/workflows/deploy-cdk-stack.yml` |
-| 8 | `app/unit-tests/functions/bundlePost.handler.test.js` | 109 | Fix HEAD request handling in extractRequest | Medium - Test correctness | `app/helpers/extractRequest.js`, `app/functions/bundlePost.js`, test file |
-| 9 | `app/functions/hmrc/hmrcVatReturnPost.js` | 61 | Remove alternate paths compatibility code | Small - Technical debt | `app/functions/hmrc/hmrcVatReturnPost.js`, caller code |
-| 10 | `app/bin/server.js` | 119 | Make strict env validation always on | Small - Configuration hardening | `app/bin/server.js` |
-| 11 | `behaviour-tests/submitVat.behaviour.test.js` | 330 | Support non-sandbox production testing | Medium - Test coverage | `behaviour-tests/submitVat.behaviour.test.js`, test helpers |
-| 12 | `behaviour-tests/submitVat.behaviour.test.js` | 572 | Response code count assertions | Small - Test completeness | `behaviour-tests/submitVat.behaviour.test.js` |
-| 13 | `behaviour-tests/submitVat.behaviour.test.js` | 602 | Response code count assertions | Small - Test completeness | `behaviour-tests/submitVat.behaviour.test.js` |
-| 14 | `behaviour-tests/getVatObligations.behaviour.test.js` | 304 | Support non-sandbox production testing | Medium - Test coverage | `behaviour-tests/getVatObligations.behaviour.test.js`, test helpers |
-| 15 | `behaviour-tests/getVatObligations.behaviour.test.js` | 759 | Capture exception failures in DynamoDB | Small - Test assertions | `behaviour-tests/getVatObligations.behaviour.test.js` |
-| 16 | `behaviour-tests/getVatObligations.behaviour.test.js` | 760 | Capture exception failures in DynamoDB | Small - Test assertions | `behaviour-tests/getVatObligations.behaviour.test.js` |
-| 17 | `behaviour-tests/postVatReturn.behaviour.test.js` | 488 | Deeper inspection of expected responses | Small - Test completeness | `behaviour-tests/postVatReturn.behaviour.test.js` |
-| 18 | `behaviour-tests/bundles.behaviour.test.js` | 201 | Support non-sandbox production testing | Medium - Test coverage | `behaviour-tests/bundles.behaviour.test.js`, test helpers |
-| 19 | `behaviour-tests/getVatReturn.behaviour.test.js` | 282 | Fix failing SUBMIT_HMRC_API_HTTP_500 test | Medium - Test reliability | `behaviour-tests/getVatReturn.behaviour.test.js`, async handling |
-| 20 | `behaviour-tests/getVatReturn.behaviour.test.js` | 304 | Fix failing timeout/slow scenario tests | Medium - Test reliability | `behaviour-tests/getVatReturn.behaviour.test.js`, async handling |
-| 21 | `behaviour-tests/getVatReturn.behaviour.test.js` | 447 | Deeper inspection of expected responses | Small - Test completeness | `behaviour-tests/getVatReturn.behaviour.test.js` |
-| 22 | `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` | 90 | Remove BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv | Small - Infrastructure cleanup | `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` |
-| 23 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 74 | Move async table names to LambdaNames | Medium - Infrastructure refactoring | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, `LambdaNames.java` |
-| 24 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 142 | Replace individual attributes with LambdaNames instances | Large - Infrastructure refactoring | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, all stack files |
-| 25 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 290 | Use deploymentDomainName consistently | Small - Naming consistency | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` |
-| 26 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 426 | Remove bundlePost reference wrappers | Small - Infrastructure cleanup | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, stack files |
-| 27 | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` | 22 | Document VRN used for testing | Small - Documentation | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` |
-| 28 | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` | 23 | Export CloudWatch or local debug logs | Medium - Documentation/Evidence | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md`, possibly export scripts |
-| 29 | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` | 125 | Complete TODO for approval section | Medium - Documentation/Compliance | `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` |
-| 30 | `HMRC_MTD_APPROVAL_PLAN.md` | 405 | Implement Gov-Client-Multi-Factor header | Medium - HMRC compliance | `web/public/submit.js`, HMRC function files, Cognito integration |
+| # | File | Line | TODO Description | Impact | Files Likely to Change |
+|---|------|------|------------------|--------|------------------------|
+| 1 | `app/bin/server.js` | 293 | Make strict env validation always on | Small - Configuration hardening | `app/bin/server.js` |
+| 2 | `app/functions/hmrc/hmrcVatLiabilitiesGet.js` | 125 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatLiabilitiesGet.js` |
+| 3 | `app/functions/hmrc/hmrcVatObligationGet.js` | 124 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatObligationGet.js` |
+| 4 | `app/functions/hmrc/hmrcVatPaymentsGet.js` | 125 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatPaymentsGet.js` |
+| 5 | `app/functions/hmrc/hmrcVatPenaltiesGet.js` | 105 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatPenaltiesGet.js` |
+| 6 | `app/functions/hmrc/hmrcVatReturnGet.js` | 140 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatReturnGet.js` |
+| 7 | `app/functions/hmrc/hmrcVatReturnPost.js` | 394 | Remove all but initial wait and async options | Small - Technical debt | `app/functions/hmrc/hmrcVatReturnPost.js` |
+| 8 | `app/unit-tests/functions/bundlePost.handler.test.js` | 129 | Fix HEAD request handling - extractRequest missing method | Medium - Test correctness | `app/helpers/extractRequest.js`, `app/functions/bundlePost.js`, test file |
+| 9 | `behaviour-tests/getVatLiabilities.behaviour.test.js` | 263 | Support testing in non-synthetic mode with production credentials | Medium - Test coverage | `behaviour-tests/getVatLiabilities.behaviour.test.js`, test helpers |
+| 10 | `behaviour-tests/getVatObligations.behaviour.test.js` | 272 | Support testing in non-synthetic mode with production credentials | Medium - Test coverage | `behaviour-tests/getVatObligations.behaviour.test.js`, test helpers |
+| 11 | `behaviour-tests/getVatObligations.behaviour.test.js` | 741 | Capture exception failures in DynamoDB | Small - Test assertions | `behaviour-tests/getVatObligations.behaviour.test.js` |
+| 12 | `behaviour-tests/getVatObligations.behaviour.test.js` | 742 | Capture exception failures in DynamoDB | Small - Test assertions | `behaviour-tests/getVatObligations.behaviour.test.js` |
+| 13 | `behaviour-tests/getVatPayments.behaviour.test.js` | 263 | Support testing in non-synthetic mode with production credentials | Medium - Test coverage | `behaviour-tests/getVatPayments.behaviour.test.js`, test helpers |
+| 14 | `behaviour-tests/getVatPenalties.behaviour.test.js` | 261 | Support testing in non-synthetic mode with production credentials | Medium - Test coverage | `behaviour-tests/getVatPenalties.behaviour.test.js`, test helpers |
+| 15 | `behaviour-tests/getVatReturn.behaviour.test.js` | 252 | Fix failing test | Medium - Test reliability | `behaviour-tests/getVatReturn.behaviour.test.js`, async handling |
+| 16 | `behaviour-tests/getVatReturn.behaviour.test.js` | 272 | Fix failing test | Medium - Test reliability | `behaviour-tests/getVatReturn.behaviour.test.js`, async handling |
+| 17 | `behaviour-tests/getVatReturn.behaviour.test.js` | 415 | Deeper inspection of expected responses | Small - Test completeness | `behaviour-tests/getVatReturn.behaviour.test.js` |
+| 18 | `behaviour-tests/postVatReturn.behaviour.test.js` | 532 | Deeper inspection of expected responses | Small - Test completeness | `behaviour-tests/postVatReturn.behaviour.test.js` |
+| 19 | `behaviour-tests/submitVat.behaviour.test.js` | 323 | Support testing in non-synthetic mode with production credentials | Medium - Test coverage | `behaviour-tests/submitVat.behaviour.test.js`, test helpers |
+| 20 | `behaviour-tests/submitVat.behaviour.test.js` | 688 | Response code count assertions | Small - Test completeness | `behaviour-tests/submitVat.behaviour.test.js` |
+| 21 | `behaviour-tests/submitVat.behaviour.test.js` | 718 | Response code count assertions | Small - Test completeness | `behaviour-tests/submitVat.behaviour.test.js` |
+| 22 | `.github/workflows/deploy-environment.yml` | 1017 | Switch to deploy-cdk-stack.yml | Small - Workflow consistency | `.github/workflows/deploy-environment.yml`, `.github/workflows/deploy-cdk-stack.yml` |
+| 23 | `.github/workflows/deploy.yml` | 1210 | Can this be derived from shared names | Small - Infrastructure consistency | `.github/workflows/deploy.yml`, `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` |
+| 24 | `.github/workflows/deploy.yml` | 1598 | Uncomment to enable data migrations in deploy pipeline | Medium - Deployment enhancement | `.github/workflows/deploy.yml` |
+| 25 | `.github/workflows/deploy.yml` | 2463 | Look up last deployment from parameter store on set-origin failure | Medium - Deployment reliability | `.github/workflows/deploy.yml`, parameter store integration |
+| 26 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 81 | Move async table names to LambdaNames | Medium - Infrastructure refactoring | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, `LambdaNames.java` |
+| 27 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 187 | Replace individual attributes with LambdaNames instances | Large - Infrastructure refactoring | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, all stack files |
+| 28 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 637 | Use deploymentDomainName consistently | Small - Naming consistency | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` |
+| 29 | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java` | 835 | Remove bundlePost reference wrappers | Small - Infrastructure cleanup | `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`, stack files |
+| 30 | `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` | 155 | Remove BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv | Small - Infrastructure cleanup | `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java` |
+| 31 | `web/public/activities/submitVatCallback.html` | 2 | Move file to `/hmrc/callback.html` | Small - File reorganization | File rename, update references in tests, docs |
 
-### Additional Cleanup Opportunities (Items 31-37)
+### Additional Cleanup Opportunities (Items 32-39)
 
 These items were identified during code review as cleanup opportunities, though they don't have explicit TODO markers.
 
 | # | File | Lines | Description | Impact | Files Likely to Change |
 |---|------|-------|-------------|--------|------------------------|
-| 31 | `web/public/submit.js` | 4 | `checkAuthStatus` marked with `eslint-disable-next-line no-unused-vars` | Low - May be called from HTML | `web/public/submit.js`, HTML files |
-| 32 | `web/public/submit.js` | 1130 | `getGovClientHeaders` marked with `eslint-disable-next-line no-unused-vars` | Low - Verify actual usage | `web/public/submit.js` |
-| 33 | `web/public/submit.js` | 1281 | `loadScript` marked with `eslint-disable-next-line no-unused-vars` | Low - Utility for future use or remove | `web/public/submit.js` |
-| 34 | `web/public/submit.js` | 1351 | `sha256Hex` marked with `eslint-disable-next-line no-unused-vars` | Low - Utility for future use or remove | `web/public/submit.js` |
-| 35 | `behaviour-tests/getVatReturn.behaviour.test.js` | 288-322 | Large block of commented out expensive test code | Low - Technical debt | `behaviour-tests/getVatReturn.behaviour.test.js` |
-| 36 | `app/services/asyncApiServices.js` | 48-50 | Commented out DynamoDB put with explanation | Low - Code clarity | `app/services/asyncApiServices.js` |
-| 37 | `app/services/asyncApiServices.js` | 107-110 | Commented out error handling code | Low - Code clarity | `app/services/asyncApiServices.js` |
+| 32 | `web/public/submit.js` | 4 | `checkAuthStatus` marked with `eslint-disable-next-line no-unused-vars` | Low - May be called from HTML | `web/public/submit.js`, HTML files |
+| 33 | `web/public/submit.js` | 1130 | `getGovClientHeaders` marked with `eslint-disable-next-line no-unused-vars` | Low - Verify actual usage | `web/public/submit.js` |
+| 34 | `web/public/submit.js` | 1281 | `loadScript` marked with `eslint-disable-next-line no-unused-vars` | Low - Utility for future use or remove | `web/public/submit.js` |
+| 35 | `web/public/submit.js` | 1351 | `sha256Hex` marked with `eslint-disable-next-line no-unused-vars` | Low - Utility for future use or remove | `web/public/submit.js` |
+| 36 | `behaviour-tests/getVatReturn.behaviour.test.js` | 288-322 | Large block of commented out expensive test code | Low - Technical debt | `behaviour-tests/getVatReturn.behaviour.test.js` |
+| 37 | `app/services/asyncApiServices.js` | 48-50 | Commented out DynamoDB put with explanation | Low - Code clarity | `app/services/asyncApiServices.js` |
+| 38 | `app/services/asyncApiServices.js` | 107-110 | Commented out error handling code | Low - Code clarity | `app/services/asyncApiServices.js` |
 
-**Note:** Items 31-34 are functions marked as unused but may actually be used. Verification needed before removal.
+**Note:** Items 32-35 are functions marked as unused but may actually be used. Verification needed before removal.
 
-**Updated Total: 37 items**
+**Updated Total: 39 items** (31 TODO markers + 8 cleanup opportunities)
 
 ---
 
-## Delivery Packages
+## Delivery Packages (Consolidated)
 
 Packages are organized thematically and ordered by: (1) cleanup first, (2) smallest/highest impact, (3) to largest/lowest impact.
 
@@ -110,13 +113,13 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 | TODO # | Description |
 |--------|-------------|
-| 31 | Verify and remove or properly use `checkAuthStatus` (check HTML usage first) |
-| 32 | Verify usage of `getGovClientHeaders` and remove eslint-disable if used |
-| 33 | Remove `loadScript` if unused or document future use |
-| 34 | Remove `sha256Hex` if unused or document future use |
-| 35 | Remove commented-out expensive test code in getVatReturn.behaviour.test.js |
-| 36 | Clean up commented DynamoDB put with clear documentation |
-| 37 | Remove or clarify commented error handling code |
+| 32 | Verify and remove or properly use `checkAuthStatus` (check HTML usage first) |
+| 33 | Verify usage of `getGovClientHeaders` and remove eslint-disable if used |
+| 34 | Remove `loadScript` if unused or document future use |
+| 35 | Remove `sha256Hex` if unused or document future use |
+| 36 | Remove commented-out expensive test code in getVatReturn.behaviour.test.js |
+| 37 | Clean up commented DynamoDB put with clear documentation |
+| 38 | Remove or clarify commented error handling code |
 
 **Acceptance Criteria:**
 - No eslint-disable-next-line no-unused-vars comments remain unless justified
@@ -125,109 +128,61 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 ---
 
-### Package 1: Simple Infrastructure Cleanup
+### Package 1: HMRC Function Async Options Cleanup
 
-**Theme:** Remove temporary compatibility code and clean up infrastructure references
-**Size:** Small (3-4 files)
-**Testing:** Unit + System tests, CDK build
+**Theme:** Remove alternate async wait/retry options in HMRC GET functions
+**Size:** Small (6 files)
+**Testing:** Unit + Behaviour tests
 **Estimated Effort:** 2-3 hours
 **Priority:** High (low risk, improves maintainability)
 
 | TODO # | Description |
 |--------|-------------|
-| 9 | Remove alternate paths compatibility code in hmrcVatReturnPost.js |
-| 10 | Make strict env validation always on in server.js |
-| 22 | Remove BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv |
-| 25 | Use deploymentDomainName consistently in SubmitSharedNames.java |
-| 26 | Remove bundlePost reference wrappers in SubmitSharedNames.java |
+| 2 | Remove all but initial wait and async options in hmrcVatLiabilitiesGet.js |
+| 3 | Remove all but initial wait and async options in hmrcVatObligationGet.js |
+| 4 | Remove all but initial wait and async options in hmrcVatPaymentsGet.js |
+| 5 | Remove all but initial wait and async options in hmrcVatPenaltiesGet.js |
+| 6 | Remove all but initial wait and async options in hmrcVatReturnGet.js |
+| 7 | Remove all but initial wait and async options in hmrcVatReturnPost.js |
 
 **Acceptance Criteria:**
-- Compatibility code removed, callers updated to use new API
-- Strict validation always enabled, no optional bypass
-- Infrastructure code is cleaner with consistent naming
-- All tests pass (npm test, ./mvnw clean verify)
+- Alternate wait options removed from all HMRC functions
+- Only the initial wait and async options remain
+- All tests pass (npm test, npm run test:allBehaviour)
+- Infrastructure code is cleaner and consistent
 
 ---
 
-### Package 2: Test Assertions and Completeness
+### Package 2: Configuration Hardening
 
-**Theme:** Add missing test assertions and response validations
-**Size:** Small (4 files)
-**Testing:** Behaviour tests
-**Estimated Effort:** 2-4 hours
-**Priority:** High (improves test reliability)
-
-| TODO # | Description |
-|--------|-------------|
-| 12 | Add response code count assertions in submitVat.behaviour.test.js:572 |
-| 13 | Add response code count assertions in submitVat.behaviour.test.js:602 |
-| 15 | Capture exception failures in DynamoDB (getVatObligations:759) |
-| 16 | Capture exception failures in DynamoDB (getVatObligations:760) |
-| 17 | Add deeper inspection of expected responses in postVatReturn.behaviour.test.js |
-| 21 | Add deeper inspection of expected responses in getVatReturn.behaviour.test.js |
-
-**Acceptance Criteria:**
-- All response codes are properly counted and asserted
-- Exception scenarios are captured in DynamoDB and verified
-- Test assertions provide clear failure messages
-- npm run test:allBehaviour passes
-
----
-
-### Package 3: File Organization and Minor Refactoring
-
-**Theme:** Reorganize files and clarify code structure
-**Size:** Small (3-4 files)
-**Testing:** Browser + Behaviour tests
-**Estimated Effort:** 2-3 hours
-**Priority:** Medium (improves organization)
-
-| TODO # | Description |
-|--------|-------------|
-| 2 | Clarify if OAuth flow branches are the same in viewVatReturn.html |
-| 3 | Move submitVatCallback.html to /hmrc/callback.html |
-| 7 | Switch deploy-environment.yml to use deploy-cdk-stack.yml |
-
-**Acceptance Criteria:**
-- OAuth flow logic is clear and potentially consolidated
-- File is moved to correct location, all references updated
-- Workflow uses consistent reusable workflow pattern
-- All tests pass including behaviour tests
-
----
-
-### Package 4: Workflow and Deployment Improvements
-
-**Theme:** Improve CI/CD workflows and deployment reliability
-**Size:** Medium (2 files)
-**Testing:** Manual workflow testing
-**Estimated Effort:** 3-4 hours
-**Priority:** Medium (improves deployment safety)
-
-| TODO # | Description |
-|--------|-------------|
-| 5 | Derive httpApiUrl from shared names instead of parsing JSON |
-| 6 | Implement rollback on test failure in deploy workflow |
-
-**Acceptance Criteria:**
-- API URL is consistently derived from shared naming pattern
-- Failed deployments automatically roll back to last known good deployment
-- Parameter store tracks last successful deployment
-- Deployment workflow is more reliable
-
----
-
-### Package 5: HEAD Request Fix
-
-**Theme:** Fix HEAD request handling in bundle enforcement
-**Size:** Small (3 files)
+**Theme:** Simplify validation by removing optional bypass
+**Size:** Small (1 file)
 **Testing:** Unit tests
-**Estimated Effort:** 2-3 hours
-**Priority:** Medium (correctness)
+**Estimated Effort:** 1-2 hours
+**Priority:** High (correctness)
 
 | TODO # | Description |
 |--------|-------------|
-| 8 | Fix HEAD request handling - extractRequest doesn't return method property |
+| 1 | Make strict env validation always on in app/bin/server.js |
+
+**Acceptance Criteria:**
+- Strict validation always enabled, no optional bypass
+- Configuration code is cleaner with no legacy conditional logic
+- All tests pass (npm test)
+
+---
+
+### Package 3: Test Correctness and Completeness
+
+**Theme:** Fix HEAD request handling and add missing test assertions
+**Size:** Small (3 files)
+**Testing:** Unit + Behaviour tests
+**Estimated Effort:** 2-3 hours
+**Priority:** High (correctness)
+
+| TODO # | Description |
+|--------|-------------|
+| 8 | Fix HEAD request handling - extractRequest returns URL object missing method property |
 
 **Acceptance Criteria:**
 - extractRequest includes method from event.requestContext.http.method
@@ -237,53 +192,58 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 ---
 
-### Package 6: Documentation Updates
+### Package 4: Test Assertions and Coverage
 
-**Theme:** Complete HMRC approval documentation
-**Size:** Medium (2-3 files)
-**Testing:** Manual review
-**Estimated Effort:** 3-5 hours
-**Priority:** Medium (required for production approval)
+**Theme:** Add missing test assertions and response validations
+**Size:** Small (4 files)
+**Testing:** Behaviour tests
+**Estimated Effort:** 2-4 hours
+**Priority:** High (improves test reliability)
 
 | TODO # | Description |
 |--------|-------------|
-| 27 | Document VRN used for testing in MTD_DIY_ACCOUNTING_SUBMIT.md |
-| 28 | Export and document CloudWatch logs or local debug logs |
-| 29 | Complete TODO for approval section with real evidence |
+| 11 | Capture exception failures in DynamoDB (getVatObligations:741) |
+| 12 | Capture exception failures in DynamoDB (getVatObligations:742) |
+| 20 | Add response code count assertions in submitVat.behaviour.test.js:688 |
+| 21 | Add response code count assertions in submitVat.behaviour.test.js:718 |
+| 17 | Add deeper inspection of expected responses in getVatReturn.behaviour.test.js |
+| 18 | Add deeper inspection of expected responses in postVatReturn.behaviour.test.js |
 
 **Acceptance Criteria:**
-- Test VRN is documented with creation method
-- Sample logs exported showing fraud prevention headers
-- Approval checklist is complete with evidence
-- Documentation is ready for HMRC submission
+- All response codes are properly counted and asserted
+- Exception scenarios are captured in DynamoDB and verified
+- Test assertions provide clear failure messages
+- npm run test:allBehaviour passes
 
 ---
 
-### Package 7: Non-Sandbox Production Testing Support
+### Package 5: Non-Sandbox Production Testing Support
 
 **Theme:** Enable behaviour tests to run against production credentials
-**Size:** Medium (4 files)
+**Size:** Medium (5 files)
 **Testing:** Behaviour tests
 **Estimated Effort:** 4-6 hours
 **Priority:** Medium (test coverage)
 
 | TODO # | Description |
 |--------|-------------|
-| 11 | Support non-sandbox production testing in submitVat.behaviour.test.js |
-| 14 | Support non-sandbox production testing in getVatObligations.behaviour.test.js |
-| 18 | Support non-sandbox production testing in bundles.behaviour.test.js |
+| 9 | Support non-sandbox production testing in getVatLiabilities.behaviour.test.js |
+| 10 | Support non-sandbox production testing in getVatObligations.behaviour.test.js |
+| 13 | Support non-sandbox production testing in getVatPayments.behaviour.test.js |
+| 14 | Support non-sandbox production testing in getVatPenalties.behaviour.test.js |
+| 19 | Support non-sandbox production testing in submitVat.behaviour.test.js |
 
 **Acceptance Criteria:**
 - Tests can run in both sandbox and production mode
 - Environment detection logic handles production credentials
-- Guest bundle logic works correctly in non-sandbox mode
 - All behaviour tests pass in both modes
+- Test output indicates mode correctly (sandbox vs production)
 
 ---
 
-### Package 8: Fix Flaky Async Tests
+### Package 6: Async Test Reliability
 
-**Theme:** Fix failing async/timeout tests in getVatReturn
+**Theme:** Fix failing and flaky async tests in getVatReturn
 **Size:** Medium (1 file, complex changes)
 **Testing:** Behaviour tests
 **Estimated Effort:** 4-6 hours
@@ -291,72 +251,75 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 | TODO # | Description |
 |--------|-------------|
-| 19 | Fix failing SUBMIT_HMRC_API_HTTP_500 test (async polling issue) |
-| 20 | Fix failing timeout/slow scenario tests (async timing issue) |
+| 15 | Fix failing test at getVatReturn.behaviour.test.js:252 |
+| 16 | Fix failing test at getVatReturn.behaviour.test.js:272 |
 
 **Acceptance Criteria:**
-- HTTP 500 test correctly waits for error state
-- Slow scenario test properly validates timing constraints
+- Tests correctly wait for error state
 - Async state polling is reliable
 - Tests can be uncommented and pass consistently
+- All async test scenarios validate timing constraints
 
 ---
 
-### Package 9: Receipt Anonymization
+### Package 7: File Organization and Workflow Consistency
 
-**Theme:** Implement PII anonymization for receipts
-**Size:** Medium (2-3 files)
-**Testing:** Unit + System tests
-**Estimated Effort:** 4-6 hours
-**Priority:** Medium (GDPR compliance)
+**Theme:** Reorganize files and improve workflow patterns
+**Size:** Small (2-3 files)
+**Testing:** All tests
+**Estimated Effort:** 2-3 hours
+**Priority:** Medium (improves organization)
 
 | TODO # | Description |
 |--------|-------------|
-| 4 | Implement anonymization for receipts (remove PII, keep transaction metadata) |
+| 22 | Switch deploy-environment.yml to use deploy-cdk-stack.yml |
+| 31 | Move submitVatCallback.html to /hmrc/callback.html |
 
 **Acceptance Criteria:**
-- Anonymization logic removes PII from receipts
-- Transaction metadata retained for legal compliance
-- delete-user-data.js properly anonymizes receipts
-- Tests verify anonymization completeness
+- Workflow uses consistent reusable workflow pattern
+- File is moved to correct location, all references updated
+- All tests pass including behaviour tests
+- No broken links or import errors
 
 ---
 
-### Package 10: CloudWatch RUM Re-integration
+### Package 8: Workflow and Deployment Improvements
 
-**Theme:** Re-enable Real User Monitoring
+**Theme:** Improve CI/CD workflows and deployment reliability
 **Size:** Medium (2-3 files)
-**Testing:** Browser tests
-**Estimated Effort:** 4-6 hours
-**Priority:** Low (observability)
+**Testing:** Manual workflow testing
+**Estimated Effort:** 3-4 hours
+**Priority:** Medium (improves deployment)
 
 | TODO # | Description |
 |--------|-------------|
-| 1 | Re-integrate RUM bootstrapRumConfigFromStorage function |
-| 32 | Verify usage of getGovClientHeaders (may be used for RUM/fraud headers) |
+| 23 | Derive httpApiUrl from shared names instead of parsing JSON in deploy.yml |
+| 24 | Uncomment and implement data migrations in deploy pipeline |
+| 25 | Implement rollback to last deployment on set-origin failure |
 
 **Acceptance Criteria:**
-- RUM configuration properly loaded from localStorage
-- RUM script integration works in deployed environment
-- Function is no longer marked as unused
-- CloudWatch RUM collects user data
+- API URL is consistently derived from shared naming pattern
+- Data migrations can be triggered from deploy pipeline
+- Failed deployments automatically roll back to last known good
+- Deployment workflow is more reliable
 
 ---
 
----
-
-### Package 12: Infrastructure LambdaNames Consolidation
+### Package 9: Infrastructure Refactoring (LambdaNames Consolidation)
 
 **Theme:** Refactor infrastructure to use LambdaNames pattern consistently
 **Size:** Large (10+ files)
 **Testing:** CDK build, Integration tests
 **Estimated Effort:** 8-12 hours
-**Priority:** Low (major refactoring)
+**Priority:** Low (major refactoring, do last)
 
 | TODO # | Description |
 |--------|-------------|
-| 23 | Move async table names to LambdaNames |
-| 24 | Replace individual attributes with LambdaNames instances |
+| 26 | Move async table names to LambdaNames |
+| 27 | Replace individual attributes with LambdaNames instances |
+| 28 | Use deploymentDomainName consistently |
+| 29 | Remove bundlePost reference wrappers |
+| 30 | Remove BUNDLE_DYNAMODB_TABLE_NAME from customAuthorizerLambdaEnv |
 
 **Acceptance Criteria:**
 - All Lambda functions use LambdaNames pattern
@@ -372,73 +335,55 @@ Packages are organized thematically and ordered by: (1) cleanup first, (2) small
 
 | Package | Theme | Size | TODOs | Priority | Effort (hours) |
 |---------|-------|------|-------|----------|----------------|
-| 0 | Cleanup | Small | 6 | High | 1-2 |
-| 1 | Infrastructure Cleanup | Small | 5 | High | 2-3 |
-| 2 | Test Assertions | Small | 6 | High | 2-4 |
-| 3 | File Organization | Small | 3 | Medium | 2-3 |
-| 4 | Workflow Improvements | Medium | 2 | Medium | 3-4 |
-| 5 | HEAD Request Fix | Small | 1 | Medium | 2-3 |
-| 6 | Documentation | Medium | 3 | Medium | 3-5 |
-| 7 | Non-Sandbox Testing | Medium | 3 | Medium | 4-6 |
-| 8 | Fix Flaky Tests | Medium | 2 | Medium | 4-6 |
-| 9 | Receipt Anonymization | Medium | 1 | Medium | 4-6 |
-| 10 | RUM Re-integration | Medium | 2 | Low | 4-6 |
-| 11 | MFA Implementation | Medium | 1 | Medium | 5-8 |
-| 12 | LambdaNames Refactor | Large | 2 | Low | 8-12 |
+| 0 | Cleanup | Small | 7 | High | 1-2 |
+| 1 | HMRC Async Cleanup | Small | 6 | High | 2-3 |
+| 2 | Configuration | Small | 1 | High | 1-2 |
+| 3 | Test Correctness | Small | 1 | High | 2-3 |
+| 4 | Test Assertions | Small | 6 | High | 2-4 |
+| 5 | Non-Sandbox Testing | Medium | 5 | Medium | 4-6 |
+| 6 | Async Tests | Medium | 2 | Medium | 4-6 |
+| 7 | File Organization | Small | 2 | Medium | 2-3 |
+| 8 | Workflow Improvements | Medium | 3 | Medium | 3-4 |
+| 9 | LambdaNames Refactor | Large | 5 | Low | 8-12 |
 
-**Total: 37 TODOs across 13 packages**
+**Total: 38 explicit TODO markers + 8 cleanup opportunities = 46 items tracked** (consolidated from 31 unique code markers)
 
 ---
 
-## Notes for AI Agent Execution
+## Changes from Previous Inventory
 
-### Package Sizing Philosophy
+**Removed Items (No longer in codebase):**
+- `web/public/submit.js` - RUM re-integration TODO
+- `web/public/hmrc/vat/viewVatReturn.html` - OAuth flow clarification TODO
+- `scripts/delete-user-data.js` - Receipt anonymization TODO
+- `behaviour-tests/bundles.behaviour.test.js` - Non-sandbox testing TODO
+- `_developers/MTD_DIY_ACCOUNTING_SUBMIT.md` - Documentation TODOs (3 items)
+- `.github/workflows/deploy.yml` - Original rollback TODO
 
-Each package is sized to be completable within a single PR by an AI agent similar to GitHub Copilot. Sizing considers:
-- **Scope:** Number of files and LOC changed
-- **Complexity:** Architectural understanding required
-- **Testing:** Types and duration of tests needed
-- **Risk:** Potential for breaking changes
+**Updated Line Numbers (code moved but marker still present):**
+- `app/bin/server.js`: 119 → 293
+- `app/unit-tests/functions/bundlePost.handler.test.js`: 109 → 129
+- `app/functions/hmrc/hmrcVatReturnPost.js`: 61 → 394
+- `.github/workflows/deploy-environment.yml`: 159 → 1017
+- `.github/workflows/deploy.yml`: 1006 → 1210 (derived httpApiUrl)
+- `behaviour-tests/submitVat.behaviour.test.js`: 330 → 323, 572 → 688, 602 → 718
+- `behaviour-tests/getVatObligations.behaviour.test.js`: 304 → 272, 759 → 741, 760 → 742
+- `behaviour-tests/getVatReturn.behaviour.test.js`: 282 → 252, 304 → 272, 447 → 415
+- `behaviour-tests/postVatReturn.behaviour.test.js`: 488 → 532
+- `infra/main/java/co/uk/diyaccounting/submit/stacks/AccountStack.java`: 90 → 155
+- `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`: 74 → 81, 142 → 187, 290 → 637, 426 → 835
 
-### Testing Strategy per Package
-
-- **Unit-only packages (0, 1, 5):** Run `npm run test:unit` (~4s)
-- **System packages (9):** Run `npm test` (~10s)
-- **CDK packages (1, 4, 12):** Run `./mvnw clean verify` (~2min)
-- **Behaviour packages (2, 3, 7, 8):** Run `npm run test:allBehaviour` (~5-10min)
-- **Full validation:** Run all three test suites in sequence
-
-### Dependency Graph
-
-```
-Package 0 (Cleanup) → Can be done independently
-Package 1 (Infra Cleanup) → Can be done independently
-Package 2 (Test Assertions) → Can be done independently
-Package 3 (File Org) → Can be done independently
-Package 4 (Workflow) → Depends on Package 1 (shared names)
-Package 5 (HEAD Fix) → Can be done independently
-Package 6 (Docs) → Depends on Package 11 (MFA) for complete evidence
-Package 7 (Non-Sandbox) → Can be done independently
-Package 8 (Flaky Tests) → May depend on Package 7
-Package 9 (Anonymization) → Can be done independently
-Package 10 (RUM) → Can be done independently
-Package 12 (LambdaNames) → Should be done last, depends on stable state
-```
-
-### Recommended Execution Order
-
-1. **Package 0** - Cleanup (reduces noise)
-2. **Package 1** - Infrastructure Cleanup (enables Package 4)
-3. **Package 2** - Test Assertions (improves test reliability)
-4. **Package 5** - HEAD Request Fix (simple correctness fix)
-5. **Package 3** - File Organization (simple refactor)
-6. **Package 4** - Workflow Improvements (deployment safety)
-7. **Package 7** - Non-Sandbox Testing (enables Package 8)
-8. **Package 8** - Fix Flaky Tests (test reliability)
-9. **Package 9** - Receipt Anonymization (compliance)
-11. **Package 6** - Documentation (requires Package 11 complete)
-12. **Package 10** - RUM Re-integration (observability)
-13. **Package 12** - LambdaNames Refactor (major refactor, do last)
+**New Items Found (not in previous inventory):**
+- `app/functions/hmrc/hmrcVatLiabilitiesGet.js:125` - Async options
+- `app/functions/hmrc/hmrcVatObligationGet.js:124` - Async options
+- `app/functions/hmrc/hmrcVatPaymentsGet.js:125` - Async options
+- `app/functions/hmrc/hmrcVatPenaltiesGet.js:105` - Async options
+- `app/functions/hmrc/hmrcVatReturnGet.js:140` - Async options
+- `behaviour-tests/getVatPayments.behaviour.test.js:263` - Non-sandbox testing
+- `behaviour-tests/getVatPenalties.behaviour.test.js:261` - Non-sandbox testing
+- `behaviour-tests/getVatLiabilities.behaviour.test.js:263` - Non-sandbox testing
+- `.github/workflows/deploy.yml:1598` - Data migrations
+- `.github/workflows/deploy.yml:2463` - Rollback logic
 
 ---
 
