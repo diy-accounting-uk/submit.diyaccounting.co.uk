@@ -24,160 +24,18 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 7 is PR #141 (`claude/b7-board`, worktree `.claude/worktrees/b7-board`): the OpenAPI
-filing routes, the TODO inventory, the fraud-header parser, the CSV VAT return contract and the
-TypeScript CDK spike. Every track has landed; it is pushed once and the operator merges. Batch 8 is
-`claude/b8-board` (worktree `.claude/worktrees/b8-board`), the Telegram forwarder move. Tracks in worktrees, each merged by the
-coordinator when its tests are green, one push per batch of landed tracks:
-
-- [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
-  Code complete on PR #141 (8f0c479a, cb6773e2): `hmrcItsaObligationsGet.js` against Obligations
-  MTD 3.0 and `hmrcItsaSelfEmploymentPeriodPost.js` against Self Employment Business 5.0, each
-  with simulator scenarios, page, catalogue entry behind the `environments` gate, CDK wiring,
-  a simulator behaviour suite wired into `deploy.yml` and `probe-test.yml`, and the OpenAPI
-  regeneration; the HMRC Obligations 3.0 spec is saved under `_developers/reference/`. Two
-  fixes rode along: `hmrcHttpPost` callers must pass the full HMRC URL, and the simulator's
-  Business Details `businessId` now matches HMRC's format. Main deploys run only the prod
-  suites, which the gate skips, so the sandbox proof comes from the next branch push's ci
-  deploy: verified when `itsaObligationsBehaviour-ci` and `itsaSelfEmploymentPeriodBehaviour-ci`
-  pass there. Remainder for row 10: the dashboard page
-  the catalogue names (`hmrc/itsa/dashboard.html`) does not exist yet. **Source**: BACKLOG 10;
-  issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Batch 8
-  (`claude/b8-board`, worktree `.claude/worktrees/b8-board`) moves the bus-wide rule and
-  `activityTelegramForwarder.js` from every deployment's `OpsStack` to the environment's
-  `ActivityStack`, with its image built in `deploy-environment.yml` and CDK tests pinning one
-  forwarder per environment and none per deployment (6ab57b30). The environment deploy must
-  land before an app deploy targets the forwarder by ARN; on the branch's first push the two
-  run in parallel, so a losing ci app deploy is re-run. Verified when one prod set stands after
-  main's next app deploy and a stack event reaches Telegram once. **Source**: BACKLOG 30; board
-  render 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
-  change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
-  PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
-  control, so a blocked comment helps nobody), the workflow posts the guardrail's anonymised
-  output, and the draft-PR path from `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Part 6.2 ships with
-  `contents: write` and `pull-requests: write`. **Source**: BACKLOG 30; issue #18. **Owner**:
-  Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-5` (0fa136da): every guardrail entity and
-  regex is ANONYMIZE, the workflow posts `outputs[0].text` with a one-line note when the
-  guardrail intervened, and a fenced diff in the posted comment becomes branch
-  `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
-  Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
-  carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
-- [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
-  `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
-  scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
-  test results" jobs for `getVatLiabilitiesBehaviour`, `getVatPaymentsBehaviour` and
-  `getVatPenaltiesBehaviour` then failed: the publish step in `probe-test.yml` copies
-  `web/public/tests/test-reports/web-test/html-report/` to S3 and that directory does not exist
-  for those suites, so the scheduled run reports failure and counts against
-  `prod-env-github-probe-failed`. Make the step upload the HTML report only when the suite
-  produced one, or carry the report through the artifact the same way the two older suites do.
-  Verified when the next scheduled run is green end to end. **Source**: BACKLOG 32; issue #19.
-  **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (58051590, aa57a597). The cause was the
-  four newer suites' `testId` lacking the `Behaviour` suffix, so the publish script looked for
-  the html-report under the wrong directory; the ids now equal the suite names. The scheduled
-  prod matrix drops the three read suites and `deploy.yml` runs the gated suites only on ci.
-  Verified when the first scheduled probe run after the PR merges is green end to end.
-- [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
-  (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
-  already reach Telegram through the same rule. In `OpsStack.java` the
-  `<deployment>-app-alarm-state-change` rule targets both the Telegram forwarder and
-  `alarmToGithubIssue`; add the issue Lambda as a target only when `props.envName()` is
-  `prod` (the Telegram target stays for both), and pin it with a CDK test that a ci synth has
-  one target and a prod synth two. **Source**: BACKLOG 30; operator decision 2026-09-05.
-  **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (fe4eff98): the issue Lambda is a rule
-  target only when the environment is `prod`, pinned by `OpsStackTest` (one target on ci, two on
-  prod). Verified when the next ci alarm reaches Telegram and opens no issue.
-- [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
-  CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
-  ALARM every hour at about :35 past, and each one is
-  `app/functions/account/bundleCapacityReconcile.js` running `Scan` on `prod-env-bundles` on
-  its `rate(1 hour)` schedule (AccountStack); the deployment role's scans stopped with B30e
-  and the last of them was migration 006 at 20:05 UTC. The scan detector exempts no caller by
-  design, because app code should never scan a customer table; the detector is right and the
-  job is wrong. Design pass: count bundle
-  take-up without a scan (a sparse GSI on `bundleId` queried per catalogue bundle, or a counter
-  item the grant and expiry paths maintain), then rebuild the reconcile on it; CDK test on the
-  index or the counter, unit test on the reconcile. The operator closed #95 on 2026-09-05;
-  the next hourly scan opens a fresh family issue, which is the one to close when this lands.
-  Verified when `prod-env-dynamodb-customer-table-scan` stays in OK across a day. **Source**:
-  BACKLOG 30; CloudTrail lookup 2026-09-05. **Owner**: Claude Code. **Model**: Opus design,
-  then Sonnet.
-  **Track**: `PLAN_BUNDLE_CAPACITY_RECONCILE.md` is on `claude/board-batch-4` (bd6d402e): a
-  sparse GSI `bundleId-expiry-index` queried once per capped bundle, no counter, no backfill,
-  the schedule stays hourly. Code complete on `claude/board-batch-4` (6ebea8ee, 6dca64bb,
-  a13db2db, ce25b350): the index, the reconcile's per-bundle count query, the Scan grant gone,
-  `restore-test.yml` reading `ItemCount` instead of scanning the source table, and the pass
-  repository's scan fallback removed. The index and the new reconcile land in one deploy; a
-  reconcile run against a still-building index throws and the next hourly run succeeds.
-  Verified when `prod-env-dynamodb-customer-table-scan` stays OK for a day after the merge.
-  On prod the new reconcile ran hourly from 07:15 UTC on 2026-09-06 and threw "the table does
-  not have the specified index" until the environment deploy created the index at 09:15 (that
-  is #138); the 10:15 run is the first with the index in place, and the scan alarm has been OK
-  since 07:01.
-  **Remainder, a prod regression since the index landed at 09:15 UTC:** the grant path
-  (`bundlePost.js` `grantBundle`) builds a bundle with `expiry: ""` for bundles with no
-  timeout, and the repository spread that into the item, so DynamoDB now rejects every grant
-  of a non-expiring bundle: "The AttributeValue for a key attribute cannot contain an empty
-  string value. IndexName: bundleId-expiry-index, IndexKey: expiry". Main's deploy of
-  prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
-  `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
-  the rejection. Fixed on main (091924dd: a bundle with no expiry is stored without the attribute;
-  unit test). #140 is the `prod-6c85118-app-api-5xx` those rejections raised at 09:52;
-  main's deploy of the merge (run 34028434127) passed both suites.
-- [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
-  The REST filing API covers transactions, registered office address, registered email address
-  and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
-  `api-sandbox.company-information.service.gov.uk` with the "DIY Accounting Submit - test"
-  developer-hub application the operator created (an OAuth client, no key). **Source**: BACKLOG
-  34; issue #15; Cowork research 2026-09-05. **Owner**: Claude Code. **Model**: Opus design, then
-  Sonnet.
-  **Track**: `PLAN_COMPANIES_HOUSE_REST_FILING.md` is on `claude/board-batch-4` (ca7a800a):
-  eight Lambdas, tokens in the browser session like HMRC's, both activities free on `default`
-  behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) is
-  merged (a88c2459: token exchange Lambda with the client secret scoped to it alone, callback
-  page, simulator OAuth routes, env and CDK plumbing; `COMPANIES_HOUSE_CLIENT_ID` is blank in
-  `.env.ci` and `.env.prod` until the operator fills it). Track 2 is merged (1a8356a2,
-  98cd2bec: the seven filing Lambdas, simulator scenarios and system test; the four
-  registered-office and registered-email Lambdas carry shorter deployed names to fit AWS's
-  64-character cap, URL paths unchanged). Track 3 is merged (d7470848, 223cf553: the two
-  filing pages, the service module, both activities on `default` behind the gate, browser and
-  behaviour suites green on the simulator; the in-browser TOML parser reads one-line arrays
-  only, so catalogue arrays stay on one line). The two suites run on the simulator only;
-  against the real sandbox a person has to sign in with a second factor, so the sandbox proof
-  is the operator's own click-through on ci (O11). Verified by that click-through.
-- [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** `alarm-triage.yml`
-  runs on `issues: opened` for issues labelled `alarm` and on the `triage` label, reads the
-  alarm from the issue body, derives the evidence with B30h's mapping, and runs Claude Code on
-  Bedrock (`eu.anthropic.claude-sonnet-4-5-20250929-v1:0`, `--max-turns 12`, plan mode, a
-  read-only tool allow-list) behind a three-runs-a-day guard, `concurrency: alarm-triage` and a
-  timeout. Its one write is an issue comment, after a regex deny-list and a Bedrock guardrail
-  that blocks PII; no PR permissions. The read-only triage role, the guardrail and a daily USD 5
-  Bedrock budget whose action attaches a Bedrock deny live in the Observability stacks. Design
-  in `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Parts 6 to 8. **Source**: BACKLOG 30; issue #18;
-  operator decision 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (0501fc94, a28ab599); the workflow is a
-  quiet no-op until `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on the environment. Remainder: the
-  budget action's subscriber, `<env>-env-bedrock-budget-alerts` in `ObservabilityUE1Stack`, has
-  no reader yet (B30m). The `triage` label exists; the role variable and the proof run are
-  B30o; the anonymise and draft-PR reversal is B30n. Verified through B30o.
-- [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
-  On main since PR #137: `analytics.js` reads `GA4_MEASUREMENT_ID` from `submit.env`, the ci
-  export dataset is `analytics_552917343`, and the payment suite on ci fires a real purchase
-  event and asserts BigQuery for an earlier run's Stripe transaction. The first ci run of the
-  assertion (run 34034928895) failed with "Dataset analytics_552917343 was not found in
-  location US": the query named no location, so BigQuery searched the US multi-region for a
-  europe-west2 dataset. The fix (PR #145, merged) names the location and skips the assertion while
-  GA4 has not yet created the dataset with its first daily export. Verified when a ci probe
-  run finds a purchase row. **Source**: none. **Owner**: Claude Code.
-  **Model**: Sonnet.
+Nothing. No sub-agent runs and no batch branch is open; the next batch starts from main as
+`claude/b9-board` when its first track lands.
 
 ## Ready: Claude Code
 
+- [ ] **B10.4. Prove the ITSA Obligations and quarterly-update suites against the sandbox on
+  ci.** Both endpoints are on main and prod behind the `environments` gate (PR #141), and main
+  deploys run only the prod suites, which the gate skips. Dispatch `probe-test.yml` for ci with
+  `itsaObligationsBehaviour` and `itsaSelfEmploymentPeriodBehaviour`, or let the next branch
+  push's ci deploy run them, and read the results. Row 10's remainder after that: the dashboard
+  page the catalogue names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10;
+  issues #16, #20. **Owner**: Claude Code. **Model**: Fable (coordinator).
 - [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
   environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
   Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
@@ -214,6 +72,10 @@ on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O18. Confirm the ops Telegram chat shows each event once.** Since main's deploy of
+  16:09 UTC on 2026-09-06 one prod set stands and the forwarder lives in the environment
+  (PR #144), so the stack events of that deploy's destroy job should appear once each in
+  `@diy-prod-ops`, not twice. **Source**: BACKLOG 30. **Owner**: Operator.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
@@ -294,11 +156,11 @@ on main and each names the event that verifies it.
   simulator routes) then a Sonnet build, with the presenter code reaching the build as a
   GitHub environment secret. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code.
   **Model**: Opus design, then Sonnet. Blocked on O16.
-- [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
+- [ ] **G3. Confirm a real `purchase` lands in prod**: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
   ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
-  **Model**: Haiku. Blocked on G1, G2c and a live sale.
+  **Model**: Haiku. Blocked on a live sale.
 ## Discipline
 
 - **Push once per batch of landed tracks, never per track**, and prefer one dispatch that
