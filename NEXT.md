@@ -248,9 +248,12 @@ a later event to verify.
   pattern settles).
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
-  production ("live application"), so "DIY Accounting Submit - test" is the sandbox
-  application every non-prod lane shares (local, proxy, ci) and prod gets a live application
-  when the gate lifts (B34.5). On the test application at
+  production ("live application"). The hub holds three: "DIY Accounting Submit - test"
+  (sandbox) and the live "- ci" and "- prod", whose API keys serve the read-only lookup, which
+  reads real company data from both environments. Filing on ci runs against the sandbox, so
+  its OAuth client belongs on the test application, shared by local, proxy and ci; prod's
+  filing client goes on the live "- prod" application when the gate lifts (B34.5). On the test
+  application at
   developer.company-information.service.gov.uk/manage-applications: create a key of type OAuth
   web client (or open the one that exists) and register the three sandbox redirect URIs from
   `PLAN_COMPANIES_HOUSE_REST_FILING.md`'s operator steps (localhost:3000, local.submit:3443,
@@ -291,8 +294,9 @@ a later event to verify.
   observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
   Fable (coordinator). Blocked on the batch 6 merge.
 - [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
-  operator's examination on ci: a live application "DIY Accounting Submit - live" on the
-  developer hub with the prod redirect URI
+  operator's examination on ci: an OAuth web client key on the existing live application
+  "DIY Accounting Submit - prod" (the one whose API key serves prod's lookup) with the prod
+  redirect URI
   `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html`, its client id in
   `.env.prod` and its secret as `COMPANIES_HOUSE_CLIENT_SECRET` on the GitHub `prod`
   environment (operator steps, briefed when they come due); then `prod` joins the two filing
