@@ -47,13 +47,19 @@ a later event to verify.
   output, and the draft-PR path from `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Part 6.2 ships with
   `contents: write` and `pull-requests: write`. **Source**: BACKLOG 30; issue #18. **Owner**:
   Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, triage-anonymise-and-pr (Sonnet), started 2026-09-06 06:20 UTC.
+  **Track**: code complete on `claude/board-batch-5` (0fa136da): every guardrail entity and
+  regex is ANONYMIZE, the workflow posts `outputs[0].text` with a one-line note when the
+  guardrail intervened, and a fenced diff in the posted comment becomes branch
+  `claude/triage-<issue>` and a draft PR when it applies cleanly. Verified through B30o's proof
+  run.
 - [ ] **B30m. The Bedrock budget topic reaches Telegram.** `<env>-env-bedrock-budget-alerts` in
   `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
   Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
   30. **Owner**: Claude Code. **Model**: Sonnet.
   **Track**: wave 1 of batch 5, budget-topic-subscription (Sonnet), started 2026-09-06 06:20
-  UTC.
+  UTC. It also fixes the deploy failure the ci environment run 34016080214 hit: AWS Budgets
+  actions do not support daily budgets, so the deny action moves to a monthly USD 150 budget
+  (30 days of the daily figure) and the daily USD 5 budget keeps a notification only.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/

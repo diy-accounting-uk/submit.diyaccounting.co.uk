@@ -963,19 +963,20 @@ Both accounts get the same role from the same CDK code, with `{env}` and `{accou
 
 - `sensitiveInformationPolicyConfig.piiEntitiesConfig`: `EMAIL`, `PHONE`, `NAME`, `ADDRESS`,
   `IP_ADDRESS`, `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, `UK_NATIONAL_INSURANCE_NUMBER`,
-  `UK_UNIQUE_TAXPAYER_REFERENCE`, `CREDIT_DEBIT_CARD_NUMBER`, each with `action: BLOCK`.
+  `UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER`, `CREDIT_DEBIT_CARD_NUMBER`, each with
+  `action: ANONYMIZE`.
 - `sensitiveInformationPolicyConfig.regexesConfig`: one entry named `hashed-sub` with pattern
-  `[0-9a-f]{64}` and `action: BLOCK`; one named `vat-registration-number` with pattern
-  `\b(?:GB)?[0-9]{9}\b` and `action: BLOCK`.
-- `blockedOutputsMessaging`: `Triage output was blocked by the guardrail.`
+  `[0-9a-f]{64}` and `action: ANONYMIZE`; one named `vat-registration-number` with pattern
+  `\b(?:GB)?[0-9]{9}\b` and `action: ANONYMIZE`.
+- `blockedInputMessaging` and `blockedOutputsMessaging`: required by CloudFormation even though
+  nothing blocks.
 
 Two SSM parameters carry the identifiers to the workflow:
 `/submit/{env}/alarm-triage/guardrail-id` and `/submit/{env}/alarm-triage/guardrail-version`.
 `CfnGuardrailVersion` returns the version; write both with `StringParameter`.
 
-`BLOCK` rather than `ANONYMIZE`: a blocked comment is a loud failure the operator sees, and the run
-log is still there. An anonymised comment reads as complete while quietly having holes. See the
-open question in Part 9 — the operator may prefer the opposite.
+`ANONYMIZE` rather than `BLOCK`: the triage input is HMRC's and CloudWatch's, not ours to control,
+so the comment posts with the sensitive values masked and a note that masking happened.
 
 ### 7.3 The budget and the budget action
 
