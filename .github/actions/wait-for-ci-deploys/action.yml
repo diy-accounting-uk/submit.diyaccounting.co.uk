@@ -15,6 +15,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         CURRENT_RUN_ID: ${{ github.run_id }}
-      # github.action_path is the runner's host path, which a container job cannot see; the
-      # checkout is at github.workspace on both.
-      run: node "${{ github.workspace }}/.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs"
+      # The github.action_path and github.workspace expressions expand to the runner's host
+      # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
+      # step is the checkout's path wherever the step runs.
+      run: node "${GITHUB_WORKSPACE}/.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs"
