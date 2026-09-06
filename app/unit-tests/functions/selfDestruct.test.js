@@ -105,6 +105,49 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client: MockS3Client, GetBucketLocationCommand, ListObjectsV2Command, DeleteObjectsCommand };
 });
 
+// Mock SSM and CloudWatch clients for the alarm-silence call at the start of ingestHandler
+const mockSsmSend = vi.fn();
+class MockSsmClient {
+  async send(...args) {
+    return mockSsmSend(...args);
+  }
+}
+
+vi.mock("@aws-sdk/client-ssm", () => {
+  const GetParameterCommand = class GetParameterCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const PutParameterCommand = class PutParameterCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { SSMClient: MockSsmClient, GetParameterCommand, PutParameterCommand };
+});
+
+const mockCloudWatchSend = vi.fn();
+class MockCloudWatchClient {
+  async send(...args) {
+    return mockCloudWatchSend(...args);
+  }
+}
+
+vi.mock("@aws-sdk/client-cloudwatch", () => {
+  const DescribeAlarmsCommand = class DescribeAlarmsCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  const DisableAlarmActionsCommand = class DisableAlarmActionsCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { CloudWatchClient: MockCloudWatchClient, DescribeAlarmsCommand, DisableAlarmActionsCommand };
+});
+
 function makeEvent() {
   return {
     requestContext: { http: { method: "POST", path: "/ops/self-destruct" } },
@@ -117,6 +160,8 @@ describe("functions/infra/selfDestruct", () => {
     vi.resetAllMocks();
     logGroupCalls.length = 0;
     describedStackNames.length = 0;
+    mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
     Object.assign(process.env, {
       DEPLOYMENT_NAME: "ci-branch",
       OPS_STACK_NAME: "ops",
@@ -178,6 +223,33 @@ describe("functions/infra/selfDestruct", () => {
     // starts, so "api" appears once up front; the loop then visits it again in order.
     const orderedStackNames = [...new Set(describedStackNames)];
     expect(orderedStackNames).toEqual([
+      "api",
+      "ops",
+      "publish",
+      "edge",
+      "auth",
+      "hmrc",
+      "companies-house",
+      "billing",
+      "account",
+      "self-destruct",
+    ]);
+  });
+
+  it("calls the silencer before any CloudFormation call, and still deletes stacks when the silencer rejects", async () => {
+    let ssmCalledBeforeFirstDescribe = false;
+    mockSsmSend.mockImplementation(() => {
+      if (describedStackNames.length === 0) ssmCalledBeforeFirstDescribe = true;
+      return Promise.reject(new Error("SSM unavailable"));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(mockSsmSend).toHaveBeenCalled();
+    expect(ssmCalledBeforeFirstDescribe).toBe(true);
+    expect(res.statusCode).toBe(200);
+    expect([...new Set(describedStackNames)]).toEqual([
       "api",
       "ops",
       "publish",

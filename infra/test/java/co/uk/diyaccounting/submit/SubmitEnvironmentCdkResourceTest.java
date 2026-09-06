@@ -78,13 +78,15 @@ class SubmitEnvironmentCdkResourceTest {
         // 5) Identity stack should create a Cognito User Pool
         Template.fromStack(env.identityStack).resourceCountIs("AWS::Cognito::UserPool", 1);
 
-        // 6) Data stack creates DynamoDB tables + PITR + 2 GSIs + TTL via AwsCustomResource
-        // for idempotent deployments, including hmrcItsaBusinessDetailsGetAsyncRequests
-        // PITR: every table
+        // 6) Data stack creates DynamoDB tables + 2 GSIs + TTL via AwsCustomResource, and PITR via
+        // a Provider-backed custom resource, for idempotent deployments, including
+        // hmrcItsaBusinessDetailsGetAsyncRequests
+        // PITR: every table (Custom::EnsurePitr, not Custom::AWS - see KindCdk.ensurePitrProvider)
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 61);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 43);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 18);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template observability = Template.fromStack(env.observabilityStack);
@@ -136,6 +138,19 @@ class SubmitEnvironmentCdkResourceTest {
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
         SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 1, 0, envRoutedPrefixes);
+
+        // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
+        // mid-teardown's ALARM events are dropped instead of forwarded.
+        List<Map<String, Object>> alarmSilenceStatements =
+                findPolicyStatementsContainingSid(activity, "ReadAlarmSilence");
+        Map<String, Object> alarmSilenceStatement = alarmSilenceStatements.stream()
+                .filter(s -> "ReadAlarmSilence".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("ssm:GetParameter", alarmSilenceStatement.get("Action"));
+        assertTrue(
+                String.valueOf(alarmSilenceStatement.get("Resource")).endsWith("parameter/submit/test/alarm-silence/*"),
+                "expected the test alarm-silence prefix, got " + alarmSilenceStatement.get("Resource"));
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);

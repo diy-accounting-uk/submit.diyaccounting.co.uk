@@ -21,6 +21,22 @@ function isValidBusinessId(businessId) {
   return /^X[A-Za-z0-9]IS\d{11}$/.test(businessId);
 }
 
+const OPTIONAL_MONEY_SECTIONS = ["periodIncome", "periodExpenses", "periodDisallowableExpenses"];
+
+/**
+ * HMRC's Self Employment Business v5.0 sandbox rejects an empty object at
+ * periodIncome/periodExpenses/periodDisallowableExpenses with RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED
+ * naming the empty path(s) - a caller must omit an optional section entirely rather than send {}.
+ * @param {Object} body - the parsed request body
+ * @returns {string[]} the paths of any optional sections present as an empty object
+ */
+export function findEmptyOptionalSections(body) {
+  return OPTIONAL_MONEY_SECTIONS.filter((key) => {
+    const section = body?.[key];
+    return section && typeof section === "object" && Object.keys(section).length === 0;
+  }).map((key) => `/${key}`);
+}
+
 export function apiEndpoint(app) {
   // POST /individuals/business/self-employment/{nino}/{businessId}/period
   app.post("/individuals/business/self-employment/:nino/:businessId/period", (req, res) => {
@@ -41,6 +57,15 @@ export function apiEndpoint(app) {
       return res.status(400).json({
         code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
         message: "An empty or non-matching body was submitted",
+      });
+    }
+
+    const emptySectionPaths = findEmptyOptionalSections(req.body);
+    if (emptySectionPaths.length > 0) {
+      return res.status(400).json({
+        code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+        message: "An empty or non-matching body was submitted",
+        paths: emptySectionPaths,
       });
     }
 

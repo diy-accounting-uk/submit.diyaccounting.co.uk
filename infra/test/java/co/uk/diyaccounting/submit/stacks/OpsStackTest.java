@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -129,5 +130,37 @@ class OpsStackTest {
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of("AlarmName", "prod-env-api-failed", "TreatMissingData", "notBreaching")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmToGithubIssueLambdaCanReadOnlyItsOwnEnvironmentsAlarmSilenceParameters() {
+        OpsStack opsStack = synthOpsStack(
+                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        Template template = Template.fromStack(opsStack);
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadAlarmSilence");
+        Map<String, Object> statement =
+                statements.stream().filter(s -> "ReadAlarmSilence".equals(s.get("Sid"))).findFirst().orElseThrow();
+
+        assertEquals("ssm:GetParameter", statement.get("Action"));
+        String resource = (String) statement.get("Resource");
+        assertTrue(
+                resource.endsWith("parameter/submit/prod/alarm-silence/*"),
+                "expected the prod alarm-silence prefix, got " + resource);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findPolicyStatementsContainingSid(Template template, String sid) {
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            Map<String, Object> properties = (Map<String, Object>) policy.get("Properties");
+            Map<String, Object> document = (Map<String, Object>) properties.get("PolicyDocument");
+            List<Map<String, Object>> statements = (List<Map<String, Object>>) document.get("Statement");
+            if (statements.stream().anyMatch(statement -> sid.equals(statement.get("Sid")))) {
+                return statements;
+            }
+        }
+        throw new AssertionError("no IAM::Policy statement carries Sid " + sid);
     }
 }

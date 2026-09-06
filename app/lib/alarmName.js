@@ -11,6 +11,8 @@
 
 const ENV_PREFIX = /^(ci|prod)-/;
 const DEPLOYMENT_SCOPED = /^(ci|prod)-[^-]+-app-(.+)$/;
+const CHECK_PREFIX = /^check-/;
+const DEPLOYMENT_SLUG = /^(ci|prod)-([^-]+)-app-/;
 
 /**
  * Extract the environment (`ci` or `prod`) from a resource name, falling
@@ -36,4 +38,20 @@ export function alarmFamilyKey(alarmName) {
   if (!match) return alarmName;
   const [, env, rest] = match;
   return `${env}-app-${rest}`;
+}
+
+/**
+ * Extract the deployment slug from an alarm name, stripping the `check-`
+ * prefix a composite's child alarms carry first so a composite and its
+ * children resolve to the same slug. Returns null for an environment-scoped
+ * name (no slug) or anything that doesn't parse.
+ *
+ *   prod-a0f41c7-app-api-5xx                        -> a0f41c7
+ *   check-ci-claudeboa-app-hmrc-vat-return-post-errors -> claudeboa
+ *   prod-env-salt-secret-unexpected-read            -> null
+ */
+export function alarmDeploymentSlug(alarmName) {
+  const withoutCheckPrefix = (alarmName || "").replace(CHECK_PREFIX, "");
+  const match = withoutCheckPrefix.match(DEPLOYMENT_SLUG);
+  return match ? match[2] : null;
 }

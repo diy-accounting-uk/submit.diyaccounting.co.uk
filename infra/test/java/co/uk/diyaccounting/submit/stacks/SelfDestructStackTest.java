@@ -6,9 +6,12 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -83,5 +86,49 @@ class SelfDestructStackTest {
                         + "leaves it standing after every other app stack is gone");
         assertEquals("ci-selfdestructtest-app-BillingStack", variables.get("BILLING_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-AccountStack", variables.get("ACCOUNT_STACK_NAME"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void selfDestructRoleCanWriteOnlyItsOwnEnvironmentsAlarmSilenceParameters() {
+        SelfDestructStack selfDestructStack = synthSelfDestructStack();
+        Template template = Template.fromStack(selfDestructStack);
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "WriteAlarmSilence");
+        Map<String, Object> statement =
+                statements.stream().filter(s -> "WriteAlarmSilence".equals(s.get("Sid"))).findFirst().orElseThrow();
+
+        assertEquals(
+                List.of("ssm:PutParameter", "ssm:GetParameter"),
+                statement.get("Action"),
+                "the self-destruct role must be able to write and read its own alarm-silence marker");
+        String resource = (String) statement.get("Resource");
+        assertTrue(
+                resource.endsWith("parameter/submit/ci/alarm-silence/*"),
+                "expected the ci alarm-silence prefix, got " + resource);
+        assertFalse(resource.equals("*"), "the alarm-silence grant must not be a bare wildcard");
+    }
+
+    /**
+     * The self-destruct role's grants are inline policies on the {@code AWS::IAM::Role} itself
+     * (built via {@code Role.Builder.inlinePolicies}), not a separate {@code AWS::IAM::Policy}
+     * resource (what {@code addToRolePolicy} produces), so this searches the role's own
+     * {@code Policies} list rather than the {@code AWS::IAM::Policy} resource type.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> findPolicyStatementsContainingSid(Template template, String sid) {
+        for (Map<String, Object> role : template.findResources("AWS::IAM::Role").values()) {
+            Map<String, Object> properties = (Map<String, Object>) role.get("Properties");
+            List<Map<String, Object>> inlinePolicies = (List<Map<String, Object>>) properties.get("Policies");
+            if (inlinePolicies == null) continue;
+            for (Map<String, Object> inlinePolicy : inlinePolicies) {
+                Map<String, Object> document = (Map<String, Object>) inlinePolicy.get("PolicyDocument");
+                List<Map<String, Object>> statements = (List<Map<String, Object>>) document.get("Statement");
+                if (statements.stream().anyMatch(statement -> sid.equals(statement.get("Sid")))) {
+                    return statements;
+                }
+            }
+        }
+        throw new AssertionError("no IAM::Role inline policy statement carries Sid " + sid);
     }
 }

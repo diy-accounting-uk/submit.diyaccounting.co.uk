@@ -153,6 +153,34 @@ public class SelfDestructStack extends Stack {
                                                         "events:*",
                                                         "apigateway:*"))
                                                 .resources(List.of("*"))
+                                                .build(),
+                                        // Write this deployment's alarm-silence marker before teardown starts
+                                        // deleting stacks, so the alarm-to-GitHub-issue and Telegram-forwarder
+                                        // routers drop this deployment's ALARM events while it goes.
+                                        PolicyStatement.Builder.create()
+                                                .sid("WriteAlarmSilence")
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of("ssm:PutParameter", "ssm:GetParameter"))
+                                                .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/alarm-silence/*"
+                                                        .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                                                .build(),
+                                        // Disable actions on this deployment's own alarms and their check-
+                                        // prefixed composite children as part of silencing them.
+                                        PolicyStatement.Builder.create()
+                                                .sid("DisableDeploymentAlarmActions")
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of("cloudwatch:DisableAlarmActions"))
+                                                .resources(List.of(
+                                                        "arn:aws:cloudwatch:%s:%s:alarm:%s-*"
+                                                                .formatted(
+                                                                        this.getRegion(),
+                                                                        this.getAccount(),
+                                                                        props.deploymentName()),
+                                                        "arn:aws:cloudwatch:%s:%s:alarm:check-%s-*"
+                                                                .formatted(
+                                                                        this.getRegion(),
+                                                                        this.getAccount(),
+                                                                        props.deploymentName())))
                                                 .build()))
                                 .build()))
                 .build();

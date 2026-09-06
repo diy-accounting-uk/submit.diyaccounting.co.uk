@@ -293,4 +293,47 @@ describe("services/hmrcApi", () => {
       expect(body.detail).toBe("Something exploded");
     });
   });
+
+  describe("http400BadRequestFromHmrcResponse", () => {
+    it("forwards HMRC's own message and paths for an error code with no curated mapping", async () => {
+      const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = {
+        status: 400,
+        data: {
+          code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+          message: "An empty or non-matching body was submitted",
+          paths: ["/periodDisallowableExpenses"],
+        },
+      };
+
+      const response = http400BadRequestFromHmrcResponse(undefined, hmrcResponse, {});
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("An empty or non-matching body was submitted: /periodDisallowableExpenses");
+    });
+
+    it("uses the curated user message when the error code is mapped", async () => {
+      const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = { status: 400, data: { code: "INVALID_VRN", message: "Bad VRN" } };
+
+      const response = http400BadRequestFromHmrcResponse(undefined, hmrcResponse, {}, {
+        userMessage: "The VAT registration number is not valid",
+        actionAdvice: "Please check the VAT registration number and try again",
+      });
+
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("The VAT registration number is not valid");
+    });
+
+    it("falls back to a generic message when HMRC's response carries no message", async () => {
+      const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = { status: 400, data: { code: "UNKNOWN" } };
+
+      const response = http400BadRequestFromHmrcResponse(undefined, hmrcResponse, {});
+
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("HMRC rejected the request");
+    });
+  });
 });

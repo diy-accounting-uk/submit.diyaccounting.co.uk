@@ -42,16 +42,12 @@ class KindCdkTest {
 
         Template template = Template.fromStack(stack);
 
-        // One custom resource creates the table, a second turns PITR on. CreateTable takes no PITR
-        // parameter and no-ops against a table that already exists, so the second call is what
-        // reaches live tables.
-        template.resourceCountIs("Custom::AWS", 2);
-        template.hasResourceProperties(
-                "Custom::AWS",
-                Map.of(
-                        "Create",
-                        software.amazon.awscdk.assertions.Match.stringLikeRegexp(
-                                ".*updateContinuousBackups.*PointInTimeRecoveryEnabled.*")));
+        // CreateTable is the only AwsCustomResource call left here; PITR now runs behind a
+        // Provider-backed custom resource so its onEvent/isComplete handlers can wait out
+        // ContinuousBackupsUnavailableException instead of failing the deployment.
+        template.resourceCountIs("Custom::AWS", 1);
+        template.resourceCountIs("Custom::EnsurePitr", 1);
+        template.hasResourceProperties("Custom::EnsurePitr", Map.of("TableName", "test-env-widgets"));
     }
 
     @Test
@@ -66,11 +62,13 @@ class KindCdkTest {
 
         Template template = Template.fromStack(stack);
 
-        // Two calls create the table and turn PITR on; a third enables the stream and a fourth reads
-        // back its ARN, because getResponseField cannot be combined with ignoreErrorCodesMatching on
-        // the same call and the enable call must ignore ValidationException to stay idempotent
-        // against an already-streaming table.
-        template.resourceCountIs("Custom::AWS", 4);
+        // CreateTable, the stream enable call, and the stream ARN read-back are AwsCustomResource
+        // calls; PITR runs behind its own Provider-backed custom resource (see
+        // ensureTableTurnsOnPointInTimeRecovery), because getResponseField cannot be combined with
+        // ignoreErrorCodesMatching on the same call and the enable call must ignore
+        // ValidationException to stay idempotent against an already-streaming table.
+        template.resourceCountIs("Custom::AWS", 3);
+        template.resourceCountIs("Custom::EnsurePitr", 1);
         // Map.of does not preserve key order, so the two StreamSpecification fields and TableName can
         // appear in either order in the serialized Create string - match each fact independently.
         template.hasResourceProperties(

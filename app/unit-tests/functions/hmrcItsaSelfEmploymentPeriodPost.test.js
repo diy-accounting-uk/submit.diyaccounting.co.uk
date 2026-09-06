@@ -90,10 +90,71 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
-import { ingestHandler as hmrcItsaSelfEmploymentPeriodPostHandler } from "@app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
+import {
+  ingestHandler as hmrcItsaSelfEmploymentPeriodPostHandler,
+  buildSelfEmploymentPeriodRequestBody,
+} from "@app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
 import { hashSub } from "@app/services/subHasher.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
+
+describe("buildSelfEmploymentPeriodRequestBody", () => {
+  test("includes periodDates, periodIncome, periodExpenses and periodDisallowableExpenses when all are populated", () => {
+    const body = buildSelfEmploymentPeriodRequestBody({
+      periodStartDate: "2024-04-06",
+      periodEndDate: "2024-07-05",
+      periodIncome: { turnover: 1000, other: 0 },
+      periodExpenses: { costOfGoods: 100, otherExpenses: 50 },
+      periodDisallowableExpenses: { costOfGoodsDisallowable: 10 },
+    });
+    expect(body).toEqual({
+      periodDates: { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" },
+      periodIncome: { turnover: 1000, other: 0 },
+      periodExpenses: { costOfGoods: 100, otherExpenses: 50 },
+      periodDisallowableExpenses: { costOfGoodsDisallowable: 10 },
+    });
+  });
+
+  test("omits periodDisallowableExpenses when the caller entered nothing for it", () => {
+    const body = buildSelfEmploymentPeriodRequestBody({
+      periodStartDate: "2024-04-06",
+      periodEndDate: "2024-07-05",
+      periodIncome: { turnover: 1000, other: 0 },
+      periodExpenses: { costOfGoods: 100, otherExpenses: 0 },
+      periodDisallowableExpenses: {},
+    });
+    expect(body).not.toHaveProperty("periodDisallowableExpenses");
+  });
+
+  test("never emits an empty object for periodIncome, periodExpenses or periodDisallowableExpenses", () => {
+    const body = buildSelfEmploymentPeriodRequestBody({
+      periodStartDate: "2024-04-06",
+      periodEndDate: "2024-07-05",
+      periodIncome: {},
+      periodExpenses: undefined,
+      periodDisallowableExpenses: {},
+    });
+    expect(body).toEqual({
+      periodDates: { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" },
+    });
+    expect(body).not.toHaveProperty("periodIncome");
+    expect(body).not.toHaveProperty("periodExpenses");
+    expect(body).not.toHaveProperty("periodDisallowableExpenses");
+  });
+
+  test("sends amounts as numbers rounded to 2 decimal places, never as strings", () => {
+    const body = buildSelfEmploymentPeriodRequestBody({
+      periodStartDate: "2024-04-06",
+      periodEndDate: "2024-07-05",
+      periodIncome: { turnover: "1000.005", other: 0 },
+      periodExpenses: { costOfGoods: "99.999" },
+    });
+    expect(typeof body.periodIncome.turnover).toBe("number");
+    expect(body.periodIncome.turnover).toBe(1000.01);
+    expect(typeof body.periodExpenses.costOfGoods).toBe("number");
+    expect(body.periodExpenses.costOfGoods).toBe(100);
+  });
+});
 
 const VALID_NINO = "AB123456C";
 const VALID_BUSINESS_ID = "XAIS12345678910";
@@ -238,7 +299,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     expect(calledUrl).toContain(`/individuals/business/self-employment/${VALID_NINO}/${VALID_BUSINESS_ID}/period`);
   });
 
-  test("sends periodDates, periodIncome, periodExpenses and periodDisallowableExpenses in the request body", async () => {
+  test("sends periodDates, periodIncome and periodExpenses in the request body, and omits an empty periodDisallowableExpenses", async () => {
     mockHmrcSuccess(mockFetch, { periodId: "2024-04-06_2024-07-05" });
 
     const event = buildHmrcEvent({
@@ -252,7 +313,24 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     expect(sentBody.periodDates).toEqual({ periodStartDate: "2024-04-06", periodEndDate: "2024-07-05" });
     expect(sentBody.periodIncome).toEqual({ turnover: 1000, other: 0 });
     expect(sentBody.periodExpenses).toEqual({ costOfGoods: 100 });
-    expect(sentBody.periodDisallowableExpenses).toEqual({});
+    expect(sentBody).not.toHaveProperty("periodDisallowableExpenses");
+  });
+
+  test("returns 400 with HMRC's own message when HMRC rejects an empty periodDisallowableExpenses", async () => {
+    mockHmrcError(mockFetch, 400, {
+      code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+      message: "An empty or non-matching body was submitted",
+      paths: ["/periodDisallowableExpenses"],
+    });
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody(),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toBe("An empty or non-matching body was submitted: /periodDisallowableExpenses");
   });
 
   test("publishes the itsa-self-employment-period-created event with the hashed sub, never the raw sub", async () => {

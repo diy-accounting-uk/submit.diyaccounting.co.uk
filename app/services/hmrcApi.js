@@ -736,6 +736,17 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
   });
 }
 
+// HMRC error codes not in getHmrcErrorMessage's curated map still carry a plain-English
+// message (and sometimes the field paths it applies to) - forward that instead of a generic
+// "rejected" line, the way an unmapped VAT code would otherwise lose its detail.
+export function buildHmrcRejectionMessage(responseBody, fallbackMessage) {
+  if (!responseBody || typeof responseBody.message !== "string") {
+    return fallbackMessage;
+  }
+  const paths = Array.isArray(responseBody.paths) && responseBody.paths.length > 0 ? `: ${responseBody.paths.join(", ")}` : "";
+  return `${responseBody.message}${paths}`;
+}
+
 export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClientHeaders, errorDetails = null) {
   logger.warn({
     message: "Bad request rejected by HMRC",
@@ -744,7 +755,7 @@ export function http400BadRequestFromHmrcResponse(request, hmrcResponse, govClie
     responseBody: hmrcResponse.data,
   });
 
-  const message = errorDetails ? errorDetails.userMessage : "HMRC rejected the request";
+  const message = errorDetails ? errorDetails.userMessage : buildHmrcRejectionMessage(hmrcResponse.data, "HMRC rejected the request");
   const errorResponse = {
     hmrcResponseCode: hmrcResponse.status,
     responseBody: hmrcResponse.data,

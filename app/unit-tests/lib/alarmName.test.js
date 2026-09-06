@@ -2,7 +2,7 @@
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
 import { describe, test, expect } from "vitest";
-import { resolveAlarmEnv, alarmFamilyKey } from "@app/lib/alarmName.js";
+import { resolveAlarmEnv, alarmFamilyKey, alarmDeploymentSlug } from "@app/lib/alarmName.js";
 
 describe("resolveAlarmEnv", () => {
   test("extracts ci from a ci-prefixed name", () => {
@@ -37,5 +37,23 @@ describe("alarmFamilyKey", () => {
 
   test("leaves an already family-shaped name unchanged", () => {
     expect(alarmFamilyKey("ci-app-health-failed")).toBe("ci-app-health-failed");
+  });
+});
+
+describe("alarmDeploymentSlug", () => {
+  test("extracts the slug from a deployment-scoped composite alarm", () => {
+    expect(alarmDeploymentSlug("prod-a0f41c7-app-hmrc-stack-health")).toBe("a0f41c7");
+  });
+
+  test("strips the check- prefix from a composite's child alarm", () => {
+    expect(alarmDeploymentSlug("check-ci-claudeboa-app-hmrc-vat-return-post-errors")).toBe("claudeboa");
+  });
+
+  test("returns null for an environment-scoped alarm with no slug", () => {
+    expect(alarmDeploymentSlug("prod-env-salt-secret-unexpected-read")).toBeNull();
+  });
+
+  test("returns null for a malformed name", () => {
+    expect(alarmDeploymentSlug("not-an-alarm-name")).toBeNull();
   });
 });
