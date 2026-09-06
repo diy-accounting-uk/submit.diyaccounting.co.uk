@@ -57,9 +57,10 @@ B10.4 and O11 need.
   `/submit/<env>/alarm-silence/<deployment>` as the first action of the self-destruct Lambda
   and both destroy workflows (which also cover the main deploy's prod retire), and the
   GitHub-issue and Telegram routers drop a silenced deployment's events; the marker lasts two
-  hours and never beyond twelve from its first write, so a failed destroy re-arms itself. Build
-  in the alarm-silence agent's worktree, branch `claude/ops-alarm-silence` (Sonnet), from the
-  plan's build brief. Verified on a ci deploy whose set self-destructs without an alarm
+  hours and never beyond twelve from its first write, so a failed destroy re-arms itself. The
+  build is on the batch (26269035): `app/lib/alarmSilence.js`, the guard in both routers, the
+  first action of `selfDestruct.js` and a step in both destroy workflows, with the IAM grants
+  in `SelfDestructStack`, `ActivityStack` and `OpsStack`. Verified on a ci deploy whose set self-destructs without an alarm
   issue or Telegram message naming it. **Source**: operator, 2026-09-06. **Owner**: Claude
   Code. **Model**: Sonnet.
 
