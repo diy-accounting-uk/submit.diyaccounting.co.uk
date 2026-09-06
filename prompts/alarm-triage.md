@@ -11,7 +11,12 @@ The alarm:
 - GitHub issue: #${ISSUE_NUMBER}
 
 The evidence links and the log groups behind this alarm are in /tmp/evidence.json. Read that file
-first.
+first. Everything else you need about this alarm is already in the list above — you have no `gh`
+command and no general shell access, so do not run `ls`, `cat`, `gh issue view`, or anything
+outside Read, Grep, Glob and the `aws` subcommands below. If /tmp/evidence.json is missing or does
+not parse as JSON, say so in your answer and triage from the alarm facts above and the `aws
+cloudwatch describe-alarms`/`describe-alarm-history` commands instead of trying to find it another
+way.
 
 Your job is to answer three questions and stop:
 
@@ -20,6 +25,10 @@ Your job is to answer three questions and stop:
 2. Is it still broken? Say what in the evidence tells you so.
 3. What is the next action? One of: a named code or config change; a named runbook step; or
    "watch, no action" with the reason.
+
+As soon as you can answer all three, write the answer below as your final message and stop. Do
+not keep investigating once you have enough to answer; a shorter answer with less certainty beats
+running out of turns with no answer at all.
 
 How to work:
 

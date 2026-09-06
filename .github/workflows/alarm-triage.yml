@@ -176,9 +176,14 @@ jobs:
           echo "id=$(cat /tmp/guardrail-id.txt)" | tee -a "$GITHUB_OUTPUT"
           echo "version=$(cat /tmp/guardrail-version.txt)" | tee -a "$GITHUB_OUTPUT"
 
+      - name: Install dependencies
+        if: steps.role.outputs.configured == 'true'
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
       - name: Resolve the evidence links for this alarm
         if: steps.role.outputs.configured == 'true'
         run: |
+          set -o pipefail
           node scripts/resolve-alarm-evidence.mjs \
             --alarm-name "$ALARM_NAME" --deployment "$DEPLOYMENT_NAME" \
             --region "$ALARM_REGION" --from-alarm \
@@ -202,9 +207,9 @@ jobs:
         run: |
           PROMPT=$(envsubst < prompts/alarm-triage.md)
           claude -p "$PROMPT" \
-            --max-turns 12 \
+            --max-turns 30 \
             --output-format json \
-            --permission-mode plan \
+            --permission-mode dontAsk \
             --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
             2>&1 | tee /tmp/triage.json
 
