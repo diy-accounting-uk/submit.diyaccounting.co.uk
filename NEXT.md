@@ -13,8 +13,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0f68ed8 (the PR #132 merge deploy of 2026-09-05), the only app
-stack set standing.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-0f68ed8 (the PR #132 merge deploy of 2026-09-05); main's deploy
+run 34015720718 for the PR #136 merge is building prod-0967fab beside it and retires
+prod-0f68ed8 itself when it completes.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -54,6 +55,18 @@ a later event to verify.
   **Track**: wave 1 of batch 5, budget-topic-subscription (Sonnet), started 2026-09-06 06:20
   UTC.
 
+- [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
+  Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
+  selfDestruct.js`) predates `CompaniesHouseStack`, so every ci set leaves
+  `ci-<slug>-app-CompaniesHouseStack` standing, and `destroy-ci.yml`'s sweep only discovers
+  deployments by their public, published and last-known-good names, so the orphans are
+  invisible to it. Three stand now: ci-claudff66, ci-claudf375, ci-claud063e (two Lambdas,
+  aliases, alarms and log groups each). Fix both lists, with unit and CDK tests. **Source**:
+  board render 2026-09-06; BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: wave 1 of batch 5, self-destruct-companies-house (Sonnet), started 2026-09-06
+  06:30 UTC. The three orphans themselves go with the operator's yes to
+  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>` for each, or the
+  next sweep once the fix is on main.
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
@@ -249,6 +262,13 @@ a later event to verify.
 
 ## Blocked: operator
 
+- [ ] **O12. Close the alarm issues the batch 4 fixes retire.** #133 `prod-app-api-failed`
+  once main's deploy has retired prod-0f68ed8 (its alarm goes with the set; the new set's
+  alarm treats missing data as not breaching). #134 `ci-env-dynamodb-customer-table-scan` and
+  #135 `prod-env-dynamodb-customer-table-scan` once B30j's reconcile has deployed and the
+  alarm has stayed OK for a day; the ci one also stops being raised at all after B30k.
+  **Source**: board render 2026-09-06. **Owner**: Operator. Blocked on the prod deploy and on
+  a day of OK after it.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
