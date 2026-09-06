@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Micro-entity Accounts - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>File Micro-entity Accounts</h1>
+      <p class="subtitle">File a company's FRS 105 micro-entity annual accounts with Companies House</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../">Activities</a>
+        <a href="../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../bundles.html">Bundles</a>
+        <a href="../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div id="companyView" class="form-container">
+        <h2>Which company?</h2>
+        <form id="companyForm">
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              The 8-character company number, for example 06846849. Not sure of the number?
+              <a href="companySearch.html">Search Companies House</a> for it first.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              required
+              value=""
+              placeholder="e.g., 06846849"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn">Look up company</button>
+        </form>
+      </div>
+
+      <!-- Balance sheet form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Micro-entity accounts</h2>
+        <p>
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you
+          meant? <a href="#" id="changeCompanyLink">Change company</a>.
+        </p>
+        <form id="accountsForm">
+          <h3>Period</h3>
+          <div class="form-group">
+            <label for="periodStart">Period start</label>
+            <input type="date" id="periodStart" name="periodStart" required />
+          </div>
+          <div class="form-group">
+            <label for="periodEnd">Period end</label>
+            <input type="date" id="periodEnd" name="periodEnd" required />
+          </div>
+
+          <h3>Balance sheet - current year</h3>
+          <div class="form-group">
+            <label for="currentFixedAssets">Fixed assets</label>
+            <input type="number" id="currentFixedAssets" name="currentFixedAssets" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="currentCurrentAssets">Current assets</label>
+            <input type="number" id="currentCurrentAssets" name="currentCurrentAssets" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="currentCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
+            <input type="number" id="currentCreditorsWithinOneYear" name="currentCreditorsWithinOneYear" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="currentCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
+            <input type="number" id="currentCreditorsAfterOneYear" name="currentCreditorsAfterOneYear" required step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="currentCalledUpShareCapital">Called up share capital</label>
+            <input type="number" id="currentCalledUpShareCapital" name="currentCalledUpShareCapital" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="currentProfitAndLossAccount">Profit and loss account</label>
+            <input type="number" id="currentProfitAndLossAccount" name="currentProfitAndLossAccount" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="currentCapitalAndReserves">Capital and reserves</label>
+            <input type="number" id="currentCapitalAndReserves" name="currentCapitalAndReserves" required step="1" />
+          </div>
+          <p id="currentYearTotals" class="hint"></p>
+
+          <h3>Balance sheet - prior year</h3>
+          <div class="form-group">
+            <label for="priorFixedAssets">Fixed assets</label>
+            <input type="number" id="priorFixedAssets" name="priorFixedAssets" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="priorCurrentAssets">Current assets</label>
+            <input type="number" id="priorCurrentAssets" name="priorCurrentAssets" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="priorCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
+            <input type="number" id="priorCreditorsWithinOneYear" name="priorCreditorsWithinOneYear" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="priorCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
+            <input type="number" id="priorCreditorsAfterOneYear" name="priorCreditorsAfterOneYear" required step="1" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="priorCalledUpShareCapital">Called up share capital</label>
+            <input type="number" id="priorCalledUpShareCapital" name="priorCalledUpShareCapital" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="priorProfitAndLossAccount">Profit and loss account</label>
+            <input type="number" id="priorProfitAndLossAccount" name="priorProfitAndLossAccount" required step="1" />
+          </div>
+          <div class="form-group">
+            <label for="priorCapitalAndReserves">Capital and reserves</label>
+            <input type="number" id="priorCapitalAndReserves" name="priorCapitalAndReserves" required step="1" />
+          </div>
+          <p id="priorYearTotals" class="hint"></p>
+
+          <h3>Employees and director</h3>
+          <div class="form-group">
+            <label for="averageEmployees">Average number of employees during the period</label>
+            <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="directorName">Director approving the balance sheet</label>
+            <input type="text" id="directorName" name="directorName" required />
+          </div>
+          <div class="form-group">
+            <label for="directorDateApproved">Date approved</label>
+            <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+          </div>
+
+          <h3>Statements</h3>
+          <div class="form-group">
+            <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
+            <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
+              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small
+              companies.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" />
+            <label for="statementMembersNotRequiredAudit" style="display: inline; font-weight: normal">
+              The members have not required the company to obtain an audit for the year in question.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
+            <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
+              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006
+              with respect to accounting records and the preparation of accounts.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementMicroEntityProvisions" name="statementMicroEntityProvisions" />
+            <label for="statementMicroEntityProvisions" style="display: inline; font-weight: normal">
+              These accounts have been prepared in accordance with the provisions applicable to companies subject to the
+              small companies regime and in accordance with the provisions available to micro-entities.
+            </label>
+          </div>
+
+          <button type="submit" id="previewBtn" class="btn">Preview accounts</button>
+        </form>
+      </div>
+
+      <!-- Preview view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2>Preview</h2>
+        <p>This is the iXBRL that will be filed. Nothing has been submitted to Companies House yet.</p>
+        <pre id="previewIxbrl" class="ixbrl-preview"></pre>
+        <div class="form-group">
+          <label for="companyAuthCode">Company authentication code</label>
+          <p id="companyAuthCode-hint" class="hint">
+            The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+          </p>
+          <input
+            type="text"
+            id="companyAuthCode"
+            name="companyAuthCode"
+            required
+            minlength="6"
+            maxlength="8"
+            aria-describedby="companyAuthCode-hint"
+            spellcheck="false"
+          />
+        </div>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
+          <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script>
+      // File micro-entity accounts: companyView -> formView -> previewView -> resultView. No
+      // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
+      // presenter credentials, so only the Cognito id token is needed to reach the API.
+
+      const BALANCE_SHEET_FIELDS = [
+        "fixedAssets",
+        "currentAssets",
+        "creditorsWithinOneYear",
+        "creditorsAfterOneYear",
+        "calledUpShareCapital",
+        "profitAndLossAccount",
+        "capitalAndReserves",
+      ];
+
+      let company = null;
+
+      function views() {
+        return {
+          companyView: document.getElementById("companyView"),
+          formView: document.getElementById("formView"),
+          previewView: document.getElementById("previewView"),
+          resultView: document.getElementById("resultView"),
+        };
+      }
+
+      function showView(name) {
+        const all = views();
+        Object.keys(all).forEach((key) => {
+          all[key].style.display = key === name ? "block" : "none";
+        });
+      }
+
+      function readYear(prefix) {
+        const year = {};
+        BALANCE_SHEET_FIELDS.forEach((field) => {
+          const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
+          year[field] = Number(document.getElementById(inputId).value);
+        });
+        return year;
+      }
+
+      function netAssetsOf(year) {
+        const netCurrentAssets = year.currentAssets - year.creditorsWithinOneYear;
+        const totalAssetsLessCurrentLiabilities = year.fixedAssets + netCurrentAssets;
+        return totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
+      }
+
+      function renderYearTotals(elementId, year) {
+        const netAssets = netAssetsOf(year);
+        const element = document.getElementById(elementId);
+        element.textContent = `Net assets: ${netAssets}. ${
+          netAssets === year.capitalAndReserves
+            ? "Matches capital and reserves."
+            : `Does not match capital and reserves (${year.capitalAndReserves}) - correct this before previewing.`
+        }`;
+      }
+
+      function refreshYearTotals() {
+        renderYearTotals("currentYearTotals", readYear("current"));
+        renderYearTotals("priorYearTotals", readYear("prior"));
+      }
+
+      async function handleCompanySubmit(event) {
+        event.preventDefault();
+        const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
+        if (!companyNumber) {
+          showStatus("Please enter a company number.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const profile = await window.getCompanyProfile(companyNumber);
+          company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+          document.getElementById("formCompanyName").textContent = company.companyName;
+          document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+          showView("formView");
+        } catch (error) {
+          console.error("Failed to look up the company:", error);
+          showStatus(error.message || "Failed to look up the company.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function buildAccountsPayload() {
+        return {
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          periodStart: document.getElementById("periodStart").value,
+          periodEnd: document.getElementById("periodEnd").value,
+          balanceSheet: {
+            currentYear: readYear("current"),
+            priorYear: readYear("prior"),
+          },
+          averageEmployees: Number(document.getElementById("averageEmployees").value),
+          director: {
+            name: document.getElementById("directorName").value.trim(),
+            dateApproved: document.getElementById("directorDateApproved").value,
+          },
+          statementsAccepted: {
+            section477Exemption: document.getElementById("statementSection477Exemption").checked,
+            membersNotRequiredAudit: document.getElementById("statementMembersNotRequiredAudit").checked,
+            directorsResponsibilities: document.getElementById("statementDirectorsResponsibilities").checked,
+            microEntityProvisions: document.getElementById("statementMicroEntityProvisions").checked,
+          },
+        };
+      }
+
+      async function handleAccountsFormSubmit(event) {
+        event.preventDefault();
+        const currentYear = readYear("current");
+        const priorYear = readYear("prior");
+        if (netAssetsOf(currentYear) !== currentYear.capitalAndReserves || netAssetsOf(priorYear) !== priorYear.capitalAndReserves) {
+          showStatus("Capital and reserves must equal net assets for both years before previewing.", "error");
+          return;
+        }
+
+        const accepted = [
+          "statementSection477Exemption",
+          "statementMembersNotRequiredAudit",
+          "statementDirectorsResponsibilities",
+          "statementMicroEntityProvisions",
+        ].every((id) => document.getElementById(id).checked);
+        if (!accepted) {
+          showStatus("All four statements must be accepted before previewing.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const accounts = buildAccountsPayload();
+          const preview = await window.previewMicroEntityAccounts(accounts);
+          document.getElementById("previewIxbrl").textContent = preview.ixbrl;
+          showView("previewView");
+        } catch (error) {
+          console.error("Failed to render the accounts preview:", error);
+          showStatus(error.message || "Failed to render the accounts preview.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function renderRejections(rejections) {
+        const container = document.getElementById("rejections");
+        if (!rejections || rejections.length === 0) {
+          container.style.display = "none";
+          return;
+        }
+        container.style.display = "block";
+        container.innerHTML = rejections
+          .map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`)
+          .join("\n");
+      }
+
+      async function pollUntilSettled(submissionNumber) {
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const result = await window.pollMicroEntityAccounts(submissionNumber);
+          if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
+            return result;
+          }
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        return window.pollMicroEntityAccounts(submissionNumber);
+      }
+
+      async function handleSubmitFiling() {
+        const companyAuthCode = document.getElementById("companyAuthCode").value.trim();
+        if (companyAuthCode.length < 6 || companyAuthCode.length > 8) {
+          showStatus("Enter the 6 to 8 character company authentication code.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const accounts = { ...buildAccountsPayload(), companyAuthCode };
+          const govTestScenario = document.getElementById("govTestScenario").value.trim();
+          const submission = await window.submitMicroEntityAccounts(
+            accounts,
+            govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
+          );
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+          showView("resultView");
+
+          const outcome = await pollUntilSettled(submission.submissionNumber);
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
+          renderRejections(outcome.rejections);
+          document.getElementById("startAgainBtn").style.display = "inline-block";
+        } catch (error) {
+          console.error("Companies House accounts filing failed:", error);
+          showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function updateGovTestScenarioVisibility() {
+        const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+        document.getElementById("govTestScenarioGroup").style.display = developerModeEnabled ? "block" : "none";
+      }
+      updateGovTestScenarioVisibility();
+      window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
+
+      function startAgain() {
+        company = null;
+        document.getElementById("companyForm").reset();
+        document.getElementById("accountsForm").reset();
+        document.getElementById("rejections").style.display = "none";
+        document.getElementById("startAgainBtn").style.display = "none";
+        hideStatus();
+        showView("companyView");
+      }
+
+      document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
+      document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
+      document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
+      document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
+      document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
+      document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+      document.getElementById("changeCompanyLink").addEventListener("click", (event) => {
+        event.preventDefault();
+        showView("companyView");
+      });
+    </script>
+  </body>
+</html>
