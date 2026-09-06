@@ -184,3 +184,37 @@ export function describeObligationPeriod(obligation) {
   const end = new Date(obligation.end).toLocaleDateString("en-GB", dateOptions);
   return `${start} to ${end}`;
 }
+
+/**
+ * The period keys the synthetic escape hatch uses when a requested date range maps to no open
+ * obligation. HMRC's sandbox hands out obligations that have nothing to do with the dates a
+ * tester types, so a key is derived from whatever open obligation is on offer, with the
+ * requested year in front of it.
+ *
+ * A submission files under the first key. A lookup asks for all of them in turn, because a
+ * derived key belongs to no obligation HMRC lists, so nothing filed this way can be read back
+ * by matching dates to the obligations. The tail covers a period that was open when its return
+ * was filed and has since been fulfilled. Both paths call this so they cannot drift apart.
+ * Never reached against the live HMRC account.
+ *
+ * @param {Array} obligations - Raw obligations from HMRC (with status and periodKey)
+ * @param {string} periodStart - Start date of the requested period, ISO format (YYYY-MM-DD)
+ * @returns {string[]} Candidate period keys, the one a submission would file under first
+ */
+export function syntheticPeriodKeys(obligations, periodStart) {
+  const start = toIsoDay(periodStart);
+  if (!start) {
+    return [];
+  }
+  const year = start.substring(2, 4);
+  const withPeriodKey = (Array.isArray(obligations) ? obligations : []).filter((obligation) => typeof obligation?.periodKey === "string");
+  const derive = (obligation) => `${year}${obligation.periodKey.substring(2, 4)}`;
+
+  const openKeys = withPeriodKey.filter((obligation) => obligation.status === "O").map(derive);
+  const fulfilledKeys = withPeriodKey.filter((obligation) => obligation.status !== "O").map(derive);
+  // With nothing open to derive from, the quarter the requested period starts in is the only
+  // handle left, so a submission falls back to that.
+  const quarter = Math.floor((parseInt(start.substring(5, 7), 10) - 1) / 3) + 1;
+
+  return [...new Set([...openKeys, `A${year}${quarter}`, ...fulfilledKeys])];
+}

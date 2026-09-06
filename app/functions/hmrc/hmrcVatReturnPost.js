@@ -30,7 +30,12 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { isValidVrn, isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { findObligationByDateRange, obligationLookupWindow, describeObligationPeriod } from "../../lib/obligationFormatter.js";
+import {
+  findObligationByDateRange,
+  obligationLookupWindow,
+  describeObligationPeriod,
+  syntheticPeriodKeys,
+} from "../../lib/obligationFormatter.js";
 import { getVatObligations } from "./hmrcVatObligationGet.js";
 import {
   detectRequestFormat,
@@ -257,36 +262,6 @@ export function extractAndValidateParameters(event, errorMessages) {
 }
 
 /**
- * Synthetic escape hatch: HMRC's sandbox hands out obligations that have nothing to do with the
- * dates a tester types, so a period key is derived from whatever open obligation is on offer.
- * Never reached against the live HMRC account.
- */
-function periodKeyFromAnySyntheticObligation(obligations, periodStart) {
-  const year = periodStart.substring(2, 4);
-  const openObligations = obligations.filter((o) => o.status === "O");
-  if (openObligations.length > 0) {
-    const rawPeriodKey = openObligations[0].periodKey;
-    const periodKey = `${year}${rawPeriodKey.substring(2, 4)}`;
-    logger.info({
-      message: "allowSyntheticObligations: Using first available open obligation with the requested year injected",
-      requestedPeriod: { periodStart },
-      rawPeriodKey,
-      usedObligation: periodKey,
-    });
-    return periodKey;
-  }
-  const month = parseInt(periodStart.substring(5, 7), 10);
-  const quarter = Math.floor((month - 1) / 3) + 1;
-  const periodKey = `A${year}${quarter}`;
-  logger.info({
-    message: "allowSyntheticObligations: No open obligations found, generating periodKey from periodStart",
-    requestedPeriod: { periodStart },
-    usedObligation: periodKey,
-  });
-  return periodKey;
-}
-
-/**
  * Resolve the opaque HMRC period key for the period the customer entered.
  *
  * Returns `{ periodKey }` when a period can be filed, or `{ response }` carrying the HTTP
@@ -349,7 +324,17 @@ async function resolvePeriodKeyFromObligations({
     return { periodKey: matchedObligation.periodKey };
   }
   if (allowSyntheticObligations) {
-    return { periodKey: periodKeyFromAnySyntheticObligation(obligationsArray, periodStart) };
+    // HMRC's sandbox hands out obligations that have nothing to do with the dates a tester
+    // types, so the return is filed under a key derived from whatever open obligation is on
+    // offer. The lookup path derives the same keys from the same obligations, so a return
+    // filed here can be read back. Never reached against the live HMRC account.
+    const [periodKey] = syntheticPeriodKeys(obligationsArray, periodStart);
+    logger.info({
+      message: "allowSyntheticObligations: filing under a period key derived from the sandbox's obligations",
+      requestedPeriod: { periodStart },
+      periodKey,
+    });
+    return { periodKey };
   }
 
   if (matchedObligation?.status === "F") {
