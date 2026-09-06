@@ -14,9 +14,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4909b49 (the scheduled main deploy of 08:39 UTC on 2026-09-06);
-main's deploy run 34023929108 for the PR #137 merge is building prod-6c85118 and retires
-prod-4909b49 when it completes. prod-0967fab (the PR #136 merge deploy) was left standing by
-the scheduled deploy and is a spare until named to `destroy-prod.yml`.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+main's deploy run 34023929108 for the PR #137 merge is building prod-6c85118 to take over.
+prod-0967fab and, after the takeover, prod-4909b49 are spares: a main deploy's sweep keeps any
+set younger than eight hours and removes one older spare per run, so the daily scheduled
+deploy clears them over the next two days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -233,14 +234,6 @@ a later event to verify.
   when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
 
-- [ ] **B43c. The scheduled main deploy leaves the previous prod set standing.** `deploy.yml`
-  runs from main on `cron: '11 4 * * *'` as well as on push. The scheduled run 34022451206 of
-  08:39 UTC on 2026-09-06 built prod-4909b49 and left prod-0967fab, while the push-triggered
-  merge deploys retire their predecessor. Read the retire step and its condition (grep
-  `destroy` and `previous` in `deploy.yml`) and make the scheduled path retire the set it
-  replaces the same way, or skip the scheduled deploy when main has not changed since the last
-  deploy; a CDK-free workflow change with `actionlint`. **Source**: board render 2026-09-06;
-  BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -253,10 +246,6 @@ a later event to verify.
   activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
   BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
   pattern settles).
-- [ ] **O14. Close alarm issue #133.** `prod-app-api-failed` was opened by prod-0f68ed8's
-  alarm at creation; that set is gone and prod-0967fab's `api-failed` alarm sat in OK from
-  creation, which is what B30l set out to do. **Source**: board render 2026-09-06. **Owner**:
-  Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
   Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
   register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
@@ -269,19 +258,10 @@ a later event to verify.
 
 ## Blocked: operator
 
-- [ ] **O12. Close #134, #135 and #138 once the reconcile has held.** #134
-  `ci-env-dynamodb-customer-table-scan` and #135 `prod-env-dynamodb-customer-table-scan` close
-  once the index-backed reconcile has run on prod and the scan alarm has stayed OK for a day
-  (OK since 07:01 UTC on 2026-09-06). #138 `prod-app-account-stack-health` is the reconcile
-  erroring hourly between its deploy at 06:13 and the index's arrival at 09:15; it closes once
-  the 10:15 UTC run and the next are clean. **Source**: board render 2026-09-06. **Owner**:
-  Operator. Blocked on a day of OK.
-- [ ] **O15. Destroy the spare prod set prod-0967fab.** The scheduled main deploy of 08:39 UTC
-  on 2026-09-06 built prod-4909b49 without retiring prod-0967fab, and the PR #137 deploy
-  building prod-6c85118 retires only prod-4909b49. Once prod-6c85118 is live:
-  `gh workflow run destroy-prod.yml -f deployment-name=prod-0967fab`. Why the scheduled deploy
-  left it is B43c. **Source**: board render 2026-09-06; PLAN_COST_OPTIMISATION. **Owner**:
-  Operator. Blocked on prod-6c85118 going live.
+- [ ] **O12. Close #138 once the reconcile has held.** #138 `prod-app-account-stack-health`
+  is the reconcile erroring hourly between its deploy at 06:13 and the index's arrival at
+  09:15 on 2026-09-06; it closes once the 10:15 UTC run and the next are clean. **Source**:
+  board render 2026-09-06. **Owner**: Operator. Blocked on two clean hourly runs.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
