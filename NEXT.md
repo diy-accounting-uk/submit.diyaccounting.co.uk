@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-cfb43ee (main's deploy of the PR #141 merge, run 34038618085);
-the deploy retired prod-3778d47 and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-00c5690 (main's deploy of the PR #146 merge, run 34062870619);
+the deploy is retiring prod-cfb43ee and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -24,8 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the PR #146 merge
-(run 34062870619) is still running.
+Batch 10 is PR #147 (`claude/b10-board`: the triage resolver, the prod filing gate, the ITSA
+dashboard, the catalogue-paths test and the YouTube upload on gcloud credentials). Main's prod
+deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-cfb43ee.
 
 - [ ] **B30o. Prove the triage chain on prod.** Relabelling #138 `triage` at 22:03 UTC on
   2026-09-06 (run 34062903265) ran the fixed job as far as the evidence resolver, which stopped
@@ -36,52 +37,45 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
   runs on. After the merge, the operator labels the next open alarm issue `triage` (any set, live
   or retired). Verified when that run posts the guardrail's anonymised comment. **Source**:
   BACKLOG 30; issue #18. **Owner**: Claude Code, then the operator labels.
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** The prod OAuth key
-  exists (client id 9b4676ee-a473-4d10-aafe-33d5a14d982d, secret on the GitHub `prod`
-  environment, 2026-09-06 22:32 UTC). In the prod-gate agent's worktree, branch
-  `claude/ltd-prod-gate` (Sonnet), for batch 10: the id, secret ARN and live filing and
-  identity URIs in `.env.prod`; `prod` in the two filing activities' `environments` in
-  `web/public/submit.catalogue.toml`; the filing suites stay ci-only (a live filing needs a
-  real person). The pricing question in `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 is the
-  operator's before the activities leave the free `default` bundle. Verified when main's
-  deploy after the merge shows the two activities on submit.diyaccounting.co.uk. **Source**:
-  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B34.5. Lift the gate on the Companies House filings for prod** is on batch 10 (PR #147,
+  8d61de38): the prod client id, the secret ARN and the live filing and identity URIs in
+  `.env.prod`, and `prod` in the two filing activities' `environments`; the filing suites stay
+  ci-only. Verified when main's deploy after the merge shows the two activities on
+  submit.diyaccounting.co.uk and one filing goes through with the operator's own Companies
+  House sign-in. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code, then the operator.
+- [ ] **B10.5. The ITSA dashboard page** is on batch 10 (PR #147, 7d94dab8):
+  `web/public/hmrc/itsa/dashboard.html` links Business Details, Obligations and the quarterly
+  update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
+  that every page the catalogue names exists. Verified when main's deploy after the merge
+  shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
-  auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
-  teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
-  Lambda, `destroy-ci.yml`, `destroy-prod.yml`, and so the main deploy's prod retire) and the
-  GitHub-issue and Telegram routers drop a silenced deployment's events; the marker lasts two
-  hours and never beyond twelve from its first write. Main's deploy retires prod-cfb43ee
-  through that path. Verified when the retire and the next ci self-destruct each pass without
-  an alarm issue or Telegram message naming the set, and
-  `aws ssm get-parameter --name /submit/prod/alarm-silence/cfb43ee` shows the marker.
-  **Source**: operator, 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
+  auto-destructing sets.** On main (PR #146). First real check passed: main's deploy retiring
+  prod-cfb43ee wrote `/submit/prod/alarm-silence/cfb43ee` at 22:52 UTC on 2026-09-06 and no
+  alarm issue or Telegram message named the set. Verified when the next ci self-destruct
+  passes the same way (ci-claud9501, on its schedule or the 02:34 sweep). **Source**: operator,
+  2026-09-06. **Owner**: Claude Code.
 
 ## Ready: Claude Code
 
-- [ ] **B10.5. The ITSA dashboard page.** Both sandbox suites passed on ci (Obligations run
-  34058209190, quarterly update run 34060737800 after the body fix in PR #146), so row 10's
-  three endpoints are proven. The catalogue names `hmrc/itsa/dashboard.html` and the page does
-  not exist: build it as the entry point that links Business Details, Obligations and the
-  quarterly update, in the pattern of the VAT pages. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Sonnet.
+Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
-  ready as recorded: `video-view-obligations-prod` (run 33952515598) and
-  `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
-  the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` was re-recorded as run 34058244686 after batch 9 (d0f6316e) stopped
-  the off-camera submit leaving developer mode on: its stills are clean and
-  `check-video-timings.js` passes, and `videos/PUBLISH.md` names the new run. The re-recorded
-  mp4 was sent to the operator on 2026-09-06 for review. `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
-  videos' titles, descriptions, tags and captions, and `scripts/youtube-upload.js`, which
-  uploads them as unlisted after a one-time OAuth consent and writes each video id back so a
-  re-run is idempotent. Operator steps in `videos/PUBLISH.md`: download the artifacts, create
-  a Desktop-app OAuth client in the Google Cloud console with the YouTube Data API enabled,
-  export its id and secret, `npm run video:publish`, review, then
-  `npm run video:publish -- --public`. **Source**: BACKLOG 17a. **Owner**: Claude Code for the
-  re-record, then Operator.
+- [ ] **O20. Decide the price of the two Companies House filing activities.** They sit on the
+  free `default` bundle. `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 lists the options: leave them
+  free (Companies House charges nothing for either filing), a new `resident-company` bundle with
+  its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
+  catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. All
+  three recordings are ready and downloaded to the paths `videos/publish.json` names
+  (view-obligations run 33952515598, submit-return run 33953044775, view-return run
+  34058244686). Batch 10 (15f18373) makes `scripts/youtube-upload.js` use gcloud's
+  Application Default Credentials, and the YouTube Data API is enabled on `diyaccounting-ga4`
+  (2026-09-06). The one step only the channel owner can do: `gcloud auth application-default
+  login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl`
+  in a terminal, approve in the browser, then tell Claude Code, which runs
+  `npm run video:publish -- --check`, the unlisted upload, and `--public` after the operator's
+  look. **Source**: BACKLOG 17a. **Owner**: Operator for the consent, then Claude Code.
 
 ## Blocked: operator
 
