@@ -1,0 +1,2 @@
+vrn,periodStart,periodEnd,vatDueSales,vatDueAcquisitions,totalVatDue,vatReclaimedCurrPeriod,netVatDue,totalValueSalesExVAT,totalValuePurchasesExVAT,totalValueGoodsSuppliedExVAT,totalAcquisitionsExVAT,finalised
+193054661,2025-04-01,2025-06-30,-45.20,0.00,-45.20,120.00,165.20,-300,2400,0,0,true
