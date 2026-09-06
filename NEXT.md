@@ -61,8 +61,13 @@ a later event to verify.
   `ActivityEvent` on the shared activity bus, which every deployment's Telegram rule already
   reads. The same commit fixes the ci environment deploy failure (run 34016080214, "Budgets
   Actions don't support daily granularity"): the deny action sits on a monthly USD 150 budget,
-  30 days of the daily figure, and the daily USD 5 budget notifies only. Verified when the
-  environment deploy is green and a test notification on the topic reaches Telegram.
+  30 days of the daily figure, and the daily USD 5 budget notifies only (`GREATER_THAN` 99
+  percent, the only operator shape Budgets accepts). The ci environment run 34020055726 then
+  failed on the forwarder Lambda's image: the environment deploy builds no image for the
+  us-east-1 registry, since that stack never had a container Lambda. Track ue1-env-image
+  (Sonnet, started 2026-09-06 07:55 UTC) adds that build and tag to `deploy-environment.yml`.
+  Verified when the ci environment deploy is green and a test notification on the topic
+  reaches Telegram.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
