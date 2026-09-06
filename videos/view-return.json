@@ -342,13 +342,13 @@
         {
           "action": "fill",
           "target": "#periodStart",
-          "value": "{{monthsAgo:11}}",
-          "caption": "The same stretch of time you asked about."
+          "value": "{{submittedPeriodStart}}",
+          "caption": "Then the period you want to read back."
         },
         {
           "action": "fill",
           "target": "#periodEnd",
-          "value": "{{today}}"
+          "value": "{{submittedPeriodEnd}}"
         },
         {
           "action": "hold",

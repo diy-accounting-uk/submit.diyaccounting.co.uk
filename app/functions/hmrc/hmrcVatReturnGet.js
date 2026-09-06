@@ -29,7 +29,12 @@ import {
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidVrn, isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { findObligationByDateRange, obligationLookupWindow, describeObligationPeriod } from "../../lib/obligationFormatter.js";
+import {
+  findObligationByDateRange,
+  obligationLookupWindow,
+  describeObligationPeriod,
+  syntheticPeriodKeys,
+} from "../../lib/obligationFormatter.js";
 import { getVatObligations } from "./hmrcVatObligationGet.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -302,6 +307,25 @@ export async function ingestHandler(event) {
               fallbackCount: syntheticFallbackPeriodKeys.length,
             });
           }
+        }
+
+        // A submission made in synthetic mode files under a period key derived from the
+        // sandbox's own open obligations, and that key belongs to no obligation HMRC lists.
+        // Ask for those keys too, after the fulfilled obligations, or a return filed that way
+        // can never be read back. syntheticPeriodKeys is the same derivation the submission
+        // path uses, so the two cannot drift apart.
+        if (allowSyntheticObligations) {
+          const candidates = [resolvedPeriodKey, ...syntheticFallbackPeriodKeys, ...syntheticPeriodKeys(obligationsArray, periodStart)]
+            .filter(Boolean)
+            .map((key) => key.toUpperCase());
+          const ordered = [...new Set(candidates)];
+          resolvedPeriodKey = ordered[0] ?? null;
+          syntheticFallbackPeriodKeys = ordered.slice(1);
+          logger.info({
+            message: "allowSyntheticObligations: period keys to try for this date range",
+            requestedPeriod: { periodStart, periodEnd },
+            periodKeys: ordered,
+          });
         }
 
         if (!resolvedPeriodKey) {

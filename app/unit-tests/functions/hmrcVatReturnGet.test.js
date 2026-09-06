@@ -105,6 +105,7 @@ import {
   extractAndValidateParameters,
 } from "@app/functions/hmrc/hmrcVatReturnGet.js";
 import { hashSub } from "@app/services/subHasher.js";
+import { syntheticPeriodKeys } from "@app/lib/obligationFormatter.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -443,6 +444,95 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual(vatReturn);
     expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  test("allowSyntheticObligations: asks for the key a synthetic submission filed under, once the listed obligations 404", async () => {
+    // The submission path files under a key derived from the open obligation (see
+    // hmrcVatReturnPost's resolvePeriodKeyFromObligations). That key belongs to no obligation
+    // HMRC lists, so the lookup has to derive it the same way or the return is unreachable.
+    const obligations = [
+      { periodKey: "18A1", start: TEST_PERIOD_START, end: TEST_PERIOD_END, status: "F" },
+      { periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" },
+    ];
+    mockGetVatObligations.mockResolvedValue({
+      obligations: { obligations },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const [filedPeriodKey] = syntheticPeriodKeys(obligations, TEST_PERIOD_START);
+    mockHmrcError(mockFetch, 404, {});
+    const vatReturn = { periodKey: filedPeriodKey, totalVatDue: 1000 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSyntheticObligations: "true",
+      },
+      headers: {
+        "authorization": "Bearer test-token",
+        "hmrcAccount": "synthetic",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch.mock.calls[1][0]).toContain(`/returns/${filedPeriodKey}`);
+  });
+
+  test("allowSyntheticObligations: looks up a synthetic submission when HMRC lists no fulfilled obligation", async () => {
+    const obligations = [{ periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" }];
+    mockGetVatObligations.mockResolvedValue({
+      obligations: { obligations },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const [filedPeriodKey] = syntheticPeriodKeys(obligations, TEST_PERIOD_START);
+    const vatReturn = { periodKey: filedPeriodKey, totalVatDue: 1000 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        allowSyntheticObligations: "true",
+      },
+      headers: {
+        "authorization": "Bearer test-token",
+        "hmrcAccount": "synthetic",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch.mock.calls[0][0]).toContain(`/returns/${filedPeriodKey}`);
+  });
+
+  test("a live account reports a miss rather than guessing at a period key", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: { obligations: [{ periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" }] },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END },
+      headers: {
+        "authorization": "Bearer test-token",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("poll after successful retrieval returns persisted result without re-resolving periodKey", async () => {
