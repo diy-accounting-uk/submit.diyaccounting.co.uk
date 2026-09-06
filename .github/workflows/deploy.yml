@@ -63,6 +63,14 @@ on:
           - 'false'
         required: false
         default: 'false'
+      runCompaniesHouseSandboxFiling:
+        description: 'Run the Companies House filing suites that sign in to the real sandbox on ci'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
       skipCleanup:
         description: 'Keep test users and native auth enabled after tests (for debugging)'
         type: choice
@@ -141,6 +149,8 @@ jobs:
         run: ":"
       - name: "inputs.runProxyBehaviourTests=[${{ inputs.runProxyBehaviourTests }}]"
         run: ":"
+      - name: "inputs.runCompaniesHouseSandboxFiling=[${{ inputs.runCompaniesHouseSandboxFiling }}]"
+        run: ":"
       - name: "inputs.skipCleanup=[${{ inputs.skipCleanup }}]"
         run: ":"
       - name: "github.event.head_commit.message=[${{ github.event.head_commit.message }}]"
@@ -166,6 +176,7 @@ jobs:
           X='${{ inputs.selfDestructDelayHours }}' ; echo "selfDestructDelayHours=${X:-2}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipTestScenarios }}' ; echo "skipTestScenarios=${X:-true}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.runProxyBehaviourTests }}' ; echo "runProxyBehaviourTests=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.runCompaniesHouseSandboxFiling }}' ; echo "runCompaniesHouseSandboxFiling=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skipCleanup }}' ; echo "skipCleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSkippingDeploy: true if skipDeploy=true OR (push event with skip: in commit message)
           SKIP_DEPLOY='${{ inputs.skipDeploy }}'
@@ -187,6 +198,7 @@ jobs:
       selfDestructDelayHours: ${{ steps.normalise.outputs.selfDestructDelayHours }}
       skipTestScenarios: ${{ steps.normalise.outputs.skipTestScenarios }}
       runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
+      runCompaniesHouseSandboxFiling: ${{ steps.normalise.outputs.runCompaniesHouseSandboxFiling }}
       skipCleanup: ${{ steps.normalise.outputs.skipCleanup }}
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
@@ -2219,6 +2231,68 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-change-registered-office:
+    # Gated to non-prod environments until examined, and off unless runCompaniesHouseSandboxFiling
+    # is turned on. Signs in to the real Companies House sandbox, so it needs
+    # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
+    # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' }}
+    name: 'changeRegisteredOfficeBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'changeRegisteredOfficeBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+      runCompaniesHouseSandboxFiling: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+      TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
+
+  web-test-change-registered-email:
+    # Gated to non-prod environments until examined, and off unless runCompaniesHouseSandboxFiling
+    # is turned on. Signs in to the real Companies House sandbox, so it needs
+    # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
+    # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' }}
+    name: 'changeRegisteredEmailBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'changeRegisteredEmailBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+      runCompaniesHouseSandboxFiling: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+      TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
+
   web-test-itsa-business-details-synthetic:
     # Gated to non-prod environments until examined.
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
@@ -2381,6 +2455,8 @@ jobs:
       - web-test-help-synthetic
       - web-test-vatValidation-synthetic
       - web-test-companies-house
+      - web-test-change-registered-office
+      - web-test-change-registered-email
       - web-test-itsa-business-details-synthetic
       - web-test-itsa-obligations-synthetic
       - web-test-itsa-self-employment-period-synthetic

@@ -54,6 +54,8 @@ on:
           - 'generatePassActivityBehaviour'
           - 'paymentBehaviour'
           - 'companiesHouseBehaviour'
+          - 'changeRegisteredOfficeBehaviour'
+          - 'changeRegisteredEmailBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
@@ -71,6 +73,14 @@ on:
         description: 'Skip disabling native auth after test (caller manages cleanup)'
         required: false
         default: false
+      runCompaniesHouseSandboxFiling:
+        description: 'Run the Companies House filing suites that sign in to the real sandbox on ci'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   workflow_call:
     inputs:
       environment-name:
@@ -109,9 +119,19 @@ on:
         type: string
         description: 'Pre-created test user TOTP secret (for MFA challenge)'
         required: false
+      runCompaniesHouseSandboxFiling:
+        type: string
+        description: 'Run the Companies House filing suites that sign in to the real sandbox on ci, e.g. "true" or "false"'
+        required: false
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: true
+      COMPANIES_HOUSE_SANDBOX_API_KEY:
+        required: false
+      TEST_COMPANIES_HOUSE_PASSWORD:
+        required: false
+      TEST_COMPANIES_HOUSE_TOTP_SECRET:
+        required: false
   schedule:
     # Check for cold starts over the hour using CloudWatch Logs Insights query:
     #   fields @timestamp, @message
@@ -159,6 +179,8 @@ jobs:
         run: ":"
       - name: "inputs.skip-native-auth-disable=[${{ inputs.skip-native-auth-disable }}]"
         run: ":"
+      - name: "inputs.runCompaniesHouseSandboxFiling=[${{ inputs.runCompaniesHouseSandboxFiling }}]"
+        run: ":"
       - name: "inputs.test-auth-username=[${{ inputs.test-auth-username }}]"
         run: ":"
       - name: "inputs.test-auth-password=[***]"
@@ -195,6 +217,7 @@ jobs:
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-cleanup }}' ; echo "skip-cleanup=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-native-auth-disable }}' ; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.runCompaniesHouseSandboxFiling }}' ; echo "runCompaniesHouseSandboxFiling=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-username=${{ inputs.test-auth-username }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-totp-secret=${{ inputs.test-auth-totp-secret }}' | tee -a "$GITHUB_OUTPUT"
@@ -206,6 +229,7 @@ jobs:
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       skip-cleanup: ${{ steps.normalise.outputs.skip-cleanup }}
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
+      runCompaniesHouseSandboxFiling: ${{ steps.normalise.outputs.runCompaniesHouseSandboxFiling }}
       test-auth-username: ${{ steps.normalise.outputs.test-auth-username }}
       test-auth-password: ${{ steps.normalise.outputs.test-auth-password }}
       test-auth-totp-secret: ${{ steps.normalise.outputs.test-auth-totp-secret }}
@@ -381,10 +405,29 @@ jobs:
           sleep "$DELAY"
         shell: bash
 
+      - name: Guard the Companies House sandbox filing suite
+        id: companies-house-guard
+        if: ${{ !cancelled() && (matrix.suite == 'changeRegisteredOfficeBehaviour' || matrix.suite == 'changeRegisteredEmailBehaviour') }}
+        shell: bash
+        run: |
+          if [ "${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}" != "true" ]; then
+            echo "::error::${{ matrix.suite }} signs in to the real Companies House sandbox and only runs when runCompaniesHouseSandboxFiling=true is passed to this workflow."
+            exit 1
+          fi
+          missing=""
+          [ -z "${{ vars.TEST_COMPANIES_HOUSE_USER_ID }}" ] && missing="${missing} TEST_COMPANIES_HOUSE_USER_ID"
+          [ -z "${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}" ] && missing="${missing} TEST_COMPANIES_HOUSE_PASSWORD"
+          [ -z "${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}" ] && missing="${missing} TEST_COMPANIES_HOUSE_TOTP_SECRET"
+          [ -z "${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}" ] && missing="${missing} COMPANIES_HOUSE_SANDBOX_API_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::${{ matrix.suite }} needs the ci environment to set:${missing}"
+            exit 1
+          fi
+
       - name: 'Run behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         continue-on-error: true
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' }}
         run: |
           npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
@@ -400,6 +443,12 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+          # The two Companies House filing suites sign in to the real sandbox on ci; unused by
+          # every other suite.
+          COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+          TEST_COMPANIES_HOUSE_USER_ID: ${{ vars.TEST_COMPANIES_HOUSE_USER_ID }}
+          TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+          TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
           # paymentBehaviour's GA4 purchase assertion needs real gtag/collect traffic and a
           # BigQuery read; scoped to ci only so no synthetic purchase reaches the shared prod
           # GA4 property (see behaviour-tests/helpers/ga4PurchaseQuery.js).
@@ -428,6 +477,12 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+          # The two Companies House filing suites sign in to the real sandbox on ci; unused by
+          # every other suite.
+          COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+          TEST_COMPANIES_HOUSE_USER_ID: ${{ vars.TEST_COMPANIES_HOUSE_USER_ID }}
+          TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+          TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
           DIY_SUBMIT_ALLOW_REAL_ANALYTICS: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'true' || '' }}
           GA4_SERVICE_ACCOUNT_ARN: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && format('arn:aws:secretsmanager:{0}:{1}:secret:{2}/submit/ga4/service_account', env.AWS_REGION, vars.SUBMIT_ACCOUNT_ID, needs.names.outputs.environment-name) || '' }}
           GA4_BIGQUERY_PROJECT_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'diyaccounting-ga4' || '' }}
