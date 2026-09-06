@@ -110,26 +110,16 @@ verify.
   on that period; that step waits for the page to report the `synthetic` mode, which prod does
   since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
   blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: six prod runs failed the same way, the last (33998196356) after the submission fix:
-  the table's "View Return" button carries one quarter's dates, the GET handler's obligation
-  window pads only seven days, so it has no fallback period when the sandbox holds no return
-  for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
-  the View VAT Return form over the same wide window the behaviour test uses; green on the
-  simulator. Run 34000044595 then failed the same way through the form: the submit path with
-  synthetic obligations files under a key it derives from the year (`18A2` becomes `17A2`),
-  while the view path only proposes keys HMRC lists, and the sandbox answers 404 for any key
-  never filed under. Fixed on the branch (b2e85061): `syntheticPeriodKeys` in
-  `app/lib/obligationFormatter.js` is the one derivation both paths use, and the scene views
-  the period it submitted through `{{submittedPeriodStart}}` and `{{submittedPeriodEnd}}`. The
-  simulator answers any key, so it cannot prove this. Run 34002054637 from the branch against
-  prod failed the same way because prod runs main's Lambda code; only the scene script came from
-  the branch. Proof therefore runs against ci, which carries the fix and talks to the same HMRC
-  sandbox: `video-capture.yml -f script=view-return -f environment-name=ci --ref
-  claude/board-batch-4`, run 34002758927, dispatched 01:10 UTC on 2026-09-06 behind the ci
-  deploys (an earlier dispatch died in the wait-for-ci-deploys action, now fixed twice over:
-  it runs on Node and resolves its script through the workspace path). Verified on ci when the return on screen shows Box 6 at £5,000, the figure the off-camera
-  submission sent (£0 is the canned default); the prod recording follows the PR #136 merge and
-  its prod deploy.
+  **Track**: the eight failed prod runs shared one cause, fixed on `claude/board-batch-4`
+  (b2e85061): the submit path with synthetic obligations filed under a period key it derived
+  from the year while the view path only proposed keys HMRC lists, and the sandbox answers 404
+  for any key never filed under. `syntheticPeriodKeys` in `app/lib/obligationFormatter.js` is
+  now the one derivation both paths use, and the scene views the period it submitted. Proven on
+  ci, which carries the fix and talks to the same sandbox: run 34002894187 passed at 01:23 UTC
+  on 2026-09-06 and its `return-details.png` shows Box 6 at £5,000, the figure the off-camera
+  submission sent. Remainder: the prod recording for publishing, `gh workflow run
+  video-capture.yml -f script=view-return -f environment-name=prod`, once PR #136 has merged
+  and its prod deploy has finished.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
