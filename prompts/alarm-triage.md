@@ -16,7 +16,10 @@ command and no general shell access, so do not run `ls`, `cat`, `gh issue view`,
 outside Read, Grep, Glob and the `aws` subcommands below. If /tmp/evidence.json is missing or does
 not parse as JSON, say so in your answer and triage from the alarm facts above and the `aws
 cloudwatch describe-alarms`/`describe-alarm-history` commands instead of trying to find it another
-way.
+way. If it parses but `alarmFound` is `false`, the alarm no longer exists (its deployment set was
+retired or self-destructed) and the log group prefix given is a best guess, not a confirmed
+source — triage from the alarm facts above and whatever log lines you can still find under that
+prefix, and say plainly in your answer that the alarm itself is gone.
 
 Your job is to answer three questions and stop:
 

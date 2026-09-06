@@ -92,15 +92,24 @@ export function parseArgs(argv) {
  * A composite alarm (a "-stack-health" family) carries no metric of its
  * own, so its window falls back to the default period against its own
  * state transition timestamp.
+ *
+ * Returns `{ found: false }` when DescribeAlarms has nothing by that name
+ * rather than throwing: a deployment-scoped alarm on a retired set (every
+ * main deploy retires the previous one; ci sets self-destruct hourly) is
+ * the normal case, not a failure.
  */
 async function resolveFromLiveAlarm({ alarmName, region }) {
   const cloudwatchClient = new CloudWatchClient({ region });
-  const result = await cloudwatchClient.send(new DescribeAlarmsCommand({ AlarmNames: [alarmName] }));
+  // DescribeAlarms defaults to MetricAlarm only when AlarmTypes is omitted, so a composite
+  // ("-stack-health") alarm name would otherwise come back empty even when it exists.
+  const result = await cloudwatchClient.send(
+    new DescribeAlarmsCommand({ AlarmNames: [alarmName], AlarmTypes: ["CompositeAlarm", "MetricAlarm"] }),
+  );
 
   const metricAlarm = result.MetricAlarms?.[0];
   const compositeAlarm = result.CompositeAlarms?.[0];
   if (!metricAlarm && !compositeAlarm) {
-    throw new Error(`No alarm named ${alarmName} was found in ${region}`);
+    return { found: false };
   }
 
   if (compositeAlarm) {
@@ -110,6 +119,7 @@ async function resolveFromLiveAlarm({ alarmName, region }) {
       periodSeconds: null,
     });
     return {
+      found: true,
       namespace: null,
       metricName: null,
       dimensions: {},
@@ -139,7 +149,45 @@ async function resolveFromLiveAlarm({ alarmName, region }) {
     periodSeconds: metricAlarm.Period || null,
   });
 
-  return { namespace, metricName, dimensions, compositeChildFunctionNames: [], window };
+  return { found: true, namespace, metricName, dimensions, compositeChildFunctionNames: [], window };
+}
+
+/**
+ * Builds the evidence object for an alarm DescribeAlarms no longer returns.
+ * Runs the same resolveAlarmEvidence rules a live alarm would, with no
+ * namespace or metric to key on, so a family key alone (e.g. a
+ * "-stack-health" or app-scoped alarm name) still resolves to the
+ * deployment's Lambda log group prefix rather than an empty answer.
+ */
+function buildNotFoundEvidence({ alarmName, familyKey, env, deployment, region }) {
+  const evidence = resolveAlarmEvidence({
+    alarmName,
+    familyKey,
+    env,
+    deployment,
+    namespace: null,
+    metricName: null,
+    dimensions: {},
+    compositeChildFunctionNames: [],
+  });
+
+  const rawWindow = process.env.ALARM_WINDOW;
+  const window =
+    rawWindow && rawWindow.trim().length > 0
+      ? `${rawWindow} (from the ALARM_WINDOW environment variable; the alarm's own history could not be read)`
+      : "unknown: the alarm's own history could not be read and no ALARM_WINDOW was set";
+
+  return {
+    ...evidence,
+    logsInsightsUrl: null,
+    xrayUrl: null,
+    alarmFound: false,
+    alarmName,
+    deployment,
+    region,
+    window,
+    note: "the alarm no longer exists: its deployment set has been retired, so the log groups may be gone too",
+  };
 }
 
 export async function main(argv) {
@@ -155,10 +203,19 @@ export async function main(argv) {
   let window;
 
   if (opts.fromAlarm) {
-    ({ namespace, metricName, dimensions, compositeChildFunctionNames, window } = await resolveFromLiveAlarm({
-      alarmName: opts.alarmName,
-      region: opts.region,
-    }));
+    const liveAlarm = await resolveFromLiveAlarm({ alarmName: opts.alarmName, region: opts.region });
+    if (!liveAlarm.found) {
+      const output = buildNotFoundEvidence({
+        alarmName: opts.alarmName,
+        familyKey,
+        env,
+        deployment,
+        region: opts.region,
+      });
+      console.log(JSON.stringify(output, null, 2));
+      return output;
+    }
+    ({ namespace, metricName, dimensions, compositeChildFunctionNames, window } = liveAlarm);
   } else {
     namespace = opts.namespace || null;
     metricName = opts.metricName || null;
@@ -191,7 +248,7 @@ export async function main(argv) {
     filterExpression: evidence.xrayFilterExpression,
   });
 
-  const output = { ...evidence, logsInsightsUrl, xrayUrl };
+  const output = { ...evidence, logsInsightsUrl, xrayUrl, alarmFound: true };
   console.log(JSON.stringify(output, null, 2));
   return output;
 }
