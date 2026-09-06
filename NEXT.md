@@ -138,23 +138,6 @@ a later event to verify.
   onto other VAT endpoints. The ci deployment ci-claud063e (deploy run 33998025585, green)
   serves the catalogue with the field on all five activities; verified when prod after the
   merge hides them and the operator has looked at them on ci.
-- [ ] **B17a.3. Video: view a submitted VAT return**, same pattern. HMRC's sandbox holds no
-  return for a fresh test user's canned obligations, so the scene script submits a return for a
-  fulfilled period off camera through the submit page's date fields, then records "View Return"
-  on that period; that step waits for the page to report the `synthetic` mode, which prod does
-  since the PR #118 deploy. Green on the simulator; verified by a prod recording passing the
-  blocking check. **Source**: BACKLOG 17a. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: the eight failed prod runs shared one cause, fixed on `claude/board-batch-4`
-  (b2e85061): the submit path with synthetic obligations filed under a period key it derived
-  from the year while the view path only proposed keys HMRC lists, and the sandbox answers 404
-  for any key never filed under. `syntheticPeriodKeys` in `app/lib/obligationFormatter.js` is
-  now the one derivation both paths use, and the scene views the period it submitted. Proven on
-  ci, which carries the fix and talks to the same sandbox: run 34002894187 passed at 01:23 UTC
-  on 2026-09-06 and its `return-details.png` shows Box 6 at £5,000, the figure the off-camera
-  submission sent. Remainder: the prod recording for publishing, `gh workflow run
-  video-capture.yml -f script=view-return -f environment-name=prod`, once main's deploy run
-  34015720718 has replaced prod-0f68ed8; the coordinator dispatches it and B17a.5 takes the
-  artifact.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -258,6 +241,15 @@ a later event to verify.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
+  titles and descriptions drafted from the captions. The prod recordings are workflow
+  artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
+  `video-view-obligations-prod` on run 33952515598, `video-submit-return-prod` on run
+  33953044775, and `video-view-return-prod` on run 34017736028 (the return on screen is the one
+  filed off camera, Box 6 at £5,000). The ITSA Business Details recording is ci-only until the
+  activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
+  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
+  pattern settles).
 - [ ] **O14. Close alarm issue #133.** `prod-app-api-failed` was opened by prod-0f68ed8's
   alarm at creation; that set is gone and prod-0967fab's `api-failed` alarm sat in OK from
   creation, which is what B30l set out to do. **Source**: board render 2026-09-06. **Owner**:
@@ -290,12 +282,6 @@ a later event to verify.
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
   **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. The prod recordings are workflow
-  artifacts: `video-view-obligations-prod` on run 33952515598 and `video-submit-return-prod` on
-  run 33953044775 (mp4, vtt, transcript and stills together; 30-day retention). **Source**:
-  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
-  pattern settles). Blocked on B17a.3.
 
 ## Blocked: Claude Code
 
