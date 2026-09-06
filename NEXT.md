@@ -40,7 +40,7 @@ fixes are proposed in the reply. What that leaves in motion:
   suite, including the two that prove the bundle-expiry fix, and is destroying prod-6c85118 as
   its last job. The operator lifts the freeze when that job is green.
 - Batch 7 is `claude/b7-board` (worktree `.claude/worktrees/b7-board`), seeded with the OpenAPI
-  regeneration that adds the seven Companies House filing routes (f35ade31). The eight local
+  regeneration that adds the seven Companies House filing routes (f35ade31). The local
   tracks below land on it as they finish; it is pushed once, after the freeze lifts.
 
 Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged into
@@ -65,8 +65,6 @@ Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged 
   BACKLOG 22. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
   plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B40c. Refresh `_developers/backlog/TODO_INVENTORY.md`** against the tree. **Source**:
-  BACKLOG 40c. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B41. Doc hygiene**: archive shipped plans still marked in progress, close out
   `PLAN_FLAGGED`, report dangling references in NEXT.md for the coordinator to fix. **Source**:
   BACKLOG 41. **Owner**: Claude Code. **Model**: Sonnet.
