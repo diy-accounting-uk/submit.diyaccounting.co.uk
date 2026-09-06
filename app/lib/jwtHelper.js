@@ -49,16 +49,8 @@ export function getUserSub(event) {
   const tryExtract = (bearerValue) => {
     if (!bearerValue || !bearerValue.startsWith("Bearer ")) return null;
     const token = bearerValue.split(" ")[1];
-    try {
-      const parts = String(token).split(".");
-      if (parts.length < 2) return null;
-      const payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const json = Buffer.from(payload, "base64").toString("utf8");
-      const claims = JSON.parse(json);
-      return claims?.sub || null;
-    } catch {
-      return null;
-    }
+    const claims = decodeJwtNoVerify(token);
+    return claims?.sub || null;
   };
 
   // Case-insensitive lookup for Authorization header

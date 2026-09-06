@@ -298,7 +298,7 @@ Pa11y and Playwright tests run with JS enabled so they will see the populated he
 
 ---
 
-## 8. JWT Decode Without Verification (already fine)
+## 8. JWT Decode Without Verification (already fine) — done
 
 **What**: `app/lib/jwtHelper.js` hand-rolls JWT base64url decoding in `decodeJwtNoVerify()`.
 The function `getUserSub()` duplicates the same decode logic inline (lines 49-62).
