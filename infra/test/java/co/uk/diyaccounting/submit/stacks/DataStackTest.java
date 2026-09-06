@@ -189,6 +189,32 @@ class DataStackTest {
     }
 
     @Test
+    void globalSecondaryIndexCustomResourcesToleratePendingCreation() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // A redeploy can call UpdateTable again while an earlier deployment's index creation is
+        // still CREATING or UPDATING; DynamoDB then answers ResourceInUseException rather than the
+        // ValidationException it gives for an already-ACTIVE index. Both call sites must ignore
+        // both codes, or a second deploy within the same index's build window fails the stack.
+        for (String tableName :
+                new String[] {dataStack.bundlesTable.getTableName(), dataStack.passesTable.getTableName()}) {
+            var resource = template.findResources(
+                    "Custom::AWS",
+                    Map.of(
+                            "Properties",
+                            Map.of(
+                                    "Create",
+                                    createContaining(
+                                            "updateTable",
+                                            tableName,
+                                            "\"ignoreErrorCodesMatching\":\"ValidationException",
+                                            "ResourceInUseException\""))));
+            assertEquals(1, resource.size(), "expected exactly one GSI custom resource for " + tableName);
+        }
+    }
+
+    @Test
     void passesIssuedByIndexStaysProjectionAll() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
