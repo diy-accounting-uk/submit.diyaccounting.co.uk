@@ -24,20 +24,18 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 9 merged as PR #146 at 22:03 UTC on 2026-09-06. Main's deploy (run 34062870619) and
-environment deploy (run 34062870544) are running; the next batch starts from main as
-`claude/b10-board` when its first track lands.
+Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the PR #146 merge
+(run 34062870619) is still running.
 
-- [ ] **B30o. Prove the triage chain on prod.** The pipeline fix is on main: relabelling #138
-  `triage` at 22:03 UTC (run 34062903265) installed dependencies and ran the evidence resolver,
-  which stopped the job with "No alarm named prod-0967fab-app-account-stack-health was found
-  in eu-west-2", the right answer for a retired set and the reason #138 could not serve as the
-  proof. Next: `scripts/resolve-alarm-evidence.mjs` treats a missing deployment-scoped alarm
-  as evidence (the set is gone; say so, with the issue body's window and the log-group prefix)
-  and exits 0 so the triage runs, then the next live alarm issue labelled `triage` is the
-  proof. Verified when that run posts the guardrail's anonymised comment. **Source**: BACKLOG
-  30; issue #18. **Owner**: Claude Code. **Model**: Sonnet for the resolver (in the triage-retired
-  agent's worktree, branch `claude/ops-triage-retired`), then the operator labels.
+- [ ] **B30o. Prove the triage chain on prod.** Relabelling #138 `triage` at 22:03 UTC on
+  2026-09-06 (run 34062903265) ran the fixed job as far as the evidence resolver, which stopped
+  it with "No alarm named prod-0967fab-app-account-stack-health was found", because the set was
+  retired and because the script never asked CloudWatch for composite alarms, so every
+  `-stack-health` alarm looked missing. PR #147 fixes both: a missing alarm becomes evidence
+  (`alarmFound: false`, the deployment's log-group prefix, the window, a note) and the triage
+  runs on. After the merge, the operator labels the next open alarm issue `triage` (any set, live
+  or retired). Verified when that run posts the guardrail's anonymised comment. **Source**:
+  BACKLOG 30; issue #18. **Owner**: Claude Code, then the operator labels.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
   teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
