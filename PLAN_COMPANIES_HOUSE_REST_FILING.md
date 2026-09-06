@@ -239,7 +239,19 @@ These are yours. Nothing in the build can do them.
    `COMPANIES_HOUSE_CLIENT_SECRET` (a secret). Do the same on `prod` when the gate lifts.
 3. **Hold a Companies House user account** for the sandbox that the behaviour tests can sign in
    as. The behaviour test signs in as a person on the Companies House screens; there is no
-   client-credentials shortcut.
+   client-credentials shortcut. Put these four values on the GitHub `ci` environment:
+   - `TEST_COMPANIES_HOUSE_USER_ID` (variable) — the throwaway sandbox account's email address.
+   - `TEST_COMPANIES_HOUSE_PASSWORD` (secret) — its password.
+   - `TEST_COMPANIES_HOUSE_TOTP_SECRET` (secret) — its authenticator app base32 secret, for the
+     account's 2SV challenge.
+   - `COMPANIES_HOUSE_SANDBOX_API_KEY` (secret) — the test-data application's REST key, used to
+     create and delete each run's throwaway test company.
+
+   Run the two suites by hand with `gh workflow run probe-test.yml -f environment-name=ci
+   -f deployment-name=<ci-set> -f behaviour-test-suite=changeRegisteredOfficeBehaviour
+   -f runCompaniesHouseSandboxFiling=true` (swap the suite for `changeRegisteredEmailBehaviour`
+   for the other one). `runCompaniesHouseSandboxFiling` defaults to `false`, so a push-triggered
+   `deploy.yml` run never signs in to the real sandbox.
 4. **Decide whether a separate sandbox OAuth client is needed for prod.** The developer hub keys an
    application to one environment. If "DIY Accounting Submit - test" is sandbox-only, a live
    filing needs a second application with its own client id and secret.
