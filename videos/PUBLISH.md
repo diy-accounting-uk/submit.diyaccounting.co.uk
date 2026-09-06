@@ -14,20 +14,26 @@ channel until the ITSA activity leaves the environments gate.
    gh run download 33953044775 -n video-submit-return-prod -D target/videos/video-submit-return-prod
    gh run download 34058244686 -n video-view-return-prod -D target/videos/video-view-return-prod
    ```
-2. **Sign in once as the channel owner**, granting gcloud's own client the scopes this
-   script needs — no OAuth client to create in the console:
+2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`).
+   Google blocks gcloud's own client from asking for YouTube scopes, and a client created
+   through the IAP API is locked to IAP, so this project needs its own:
+   - **APIs & Services > OAuth consent screen**: type External, publishing status Testing, add
+     the channel owner's Google account as a test user, and add scopes `youtube.upload` and
+     `youtube.force-ssl`.
+   - **APIs & Services > Credentials > Create credentials > OAuth client ID**: type Desktop
+     app, name `youtube-upload`, then Download JSON.
+3. **Store the downloaded client, then check the credential works**, without uploading
+   anything (the shell expands the glob):
    ```bash
-   gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl
-   ```
-   This writes `~/.config/gcloud/application_default_credentials.json`, which the script
-   reads automatically. It also carries `youtube.googleapis.com` quota to the
-   `diyaccounting-ga4` Google Cloud project via an `x-goog-user-project` header (override
-   with `GOOGLE_CLOUD_QUOTA_PROJECT` if needed).
-3. **Check the credential works**, without uploading anything:
-   ```bash
+   node scripts/youtube-upload.js --store-client ~/Downloads/client_secret_*.json
    npm run video:publish -- --check
    ```
-   This prints the signed-in channel's title.
+   `--store-client` writes the client id and secret into AWS Secrets Manager and prints the
+   secret name — the downloaded JSON file can then be deleted. `--check` opens a browser once
+   for consent (the loopback flow for Desktop clients), stores a refresh token in Secrets
+   Manager for later runs, and prints the signed-in channel's title. `x-goog-user-project`
+   carries `youtube.googleapis.com` quota to the `diyaccounting-ga4` Google Cloud project on
+   every request (override with `GOOGLE_CLOUD_QUOTA_PROJECT` if needed).
 4. **Run the upload**:
    ```bash
    npm run video:publish

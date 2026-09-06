@@ -9,7 +9,8 @@ import os from "os";
 import path from "path";
 
 import {
-  ADC_LOGIN_COMMAND,
+  CLIENT_SECRET_NAME,
+  REFRESH_TOKEN_SECRET_NAME,
   DEFAULT_QUOTA_PROJECT,
   parseArgs,
   loadPublishList,
@@ -18,8 +19,9 @@ import {
   recordVideoId,
   buildVideoResource,
   resolveQuotaProject,
-  resolveAdcPath,
-  getAccessToken,
+  resolveClientCredentials,
+  storeClientCredentials,
+  obtainAccessToken,
   fetchOwnChannelTitle,
   uploadVideo,
   uploadCaption,
@@ -29,15 +31,35 @@ function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "youtube-upload-test-"));
 }
 
+function notFound() {
+  return Object.assign(new Error("not found"), { name: "ResourceNotFoundException" });
+}
+
+function fakeSmClient() {
+  return { send: vi.fn() };
+}
+
 describe("parseArgs", () => {
-  test("defaults to unlisted and no check", () => {
-    expect(parseArgs([])).toEqual({ publicVideo: false, check: false });
+  test("defaults to unlisted, no check, no client file or store", () => {
+    expect(parseArgs([])).toEqual({ publicVideo: false, check: false, clientFile: undefined, storeClient: undefined });
   });
   test("reads --public", () => {
-    expect(parseArgs(["--public"])).toEqual({ publicVideo: true, check: false });
+    expect(parseArgs(["--public"]).publicVideo).toBe(true);
   });
   test("reads --check", () => {
-    expect(parseArgs(["--check"])).toEqual({ publicVideo: false, check: true });
+    expect(parseArgs(["--check"]).check).toBe(true);
+  });
+  test("reads --client-file with its path", () => {
+    expect(parseArgs(["--client-file", "/tmp/client.json"]).clientFile).toBe("/tmp/client.json");
+  });
+  test("reads --store-client with its path", () => {
+    expect(parseArgs(["--store-client", "/tmp/client.json"]).storeClient).toBe("/tmp/client.json");
+  });
+  test("fails when --client-file has no path argument", () => {
+    expect(() => parseArgs(["--client-file"])).toThrow(/--client-file requires a path argument/);
+  });
+  test("fails when --store-client has no path argument", () => {
+    expect(() => parseArgs(["--store-client"])).toThrow(/--store-client requires a path argument/);
   });
 });
 
@@ -132,58 +154,150 @@ describe("resolveQuotaProject", () => {
   });
 });
 
-describe("resolveAdcPath", () => {
-  test("honours GOOGLE_APPLICATION_CREDENTIALS", () => {
-    expect(resolveAdcPath({ GOOGLE_APPLICATION_CREDENTIALS: "/tmp/creds.json", HOME: "/home/x" })).toBe("/tmp/creds.json");
-  });
-  test("falls back to the gcloud well-known file under HOME", () => {
-    expect(resolveAdcPath({ HOME: "/home/x" })).toBe(path.join("/home/x", ".config", "gcloud", "application_default_credentials.json"));
-  });
-});
+const CLIENT_JSON = JSON.stringify({ installed: { client_id: "client-123", client_secret: "shh", auth_uri: "https://accounts.google.com/o/oauth2/auth" } });
 
-describe("getAccessToken", () => {
+describe("resolveClientCredentials", () => {
   let dir;
   beforeEach(() => (dir = makeTempDir()));
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  test("fails naming the gcloud login command when no ADC file exists", async () => {
-    const env = { HOME: dir };
-    await expect(getAccessToken({ env })).rejects.toThrow(ADC_LOGIN_COMMAND);
+  test("reads client id and secret from --client-file", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
+
+    const credentials = await resolveClientCredentials({ clientFile: filePath });
+
+    expect(credentials).toEqual({ client_id: "client-123", client_secret: "shh" });
   });
 
-  test("reads the token from a GoogleAuth client built from ADC", async () => {
-    const adcPath = path.join(dir, ".config", "gcloud", "application_default_credentials.json");
-    fs.mkdirSync(path.dirname(adcPath), { recursive: true });
-    fs.writeFileSync(adcPath, JSON.stringify({ type: "authorized_user" }));
-    const env = { HOME: dir };
-    const getClient = vi.fn().mockResolvedValue({ getAccessToken: vi.fn().mockResolvedValue({ token: "adc-access-token" }) });
-    const GoogleAuthImpl = vi.fn(function GoogleAuthImpl() {
-      this.getClient = getClient;
-    });
+  test("fails naming the expected shape when the file doesn't have an installed client", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, JSON.stringify({ web: {} }));
 
-    const token = await getAccessToken({ env, GoogleAuthImpl });
-
-    expect(token).toBe("adc-access-token");
-    expect(GoogleAuthImpl).toHaveBeenCalledWith({
-      scopes: [
-        "https://www.googleapis.com/auth/cloud-platform",
-        "https://www.googleapis.com/auth/youtube.upload",
-        "https://www.googleapis.com/auth/youtube.force-ssl",
-      ],
-    });
+    await expect(resolveClientCredentials({ clientFile: filePath })).rejects.toThrow(/"installed"/);
   });
 
-  test("fails naming the gcloud login command when the credential lacks the YouTube scope", async () => {
-    const adcPath = path.join(dir, ".config", "gcloud", "application_default_credentials.json");
-    fs.mkdirSync(path.dirname(adcPath), { recursive: true });
-    fs.writeFileSync(adcPath, JSON.stringify({ type: "authorized_user" }));
-    const env = { HOME: dir };
-    const getClient = vi.fn().mockResolvedValue({ getAccessToken: vi.fn().mockRejectedValue(new Error("invalid_scope")) });
-    const GoogleAuthImpl = vi.fn(function GoogleAuthImpl() {
-      this.getClient = getClient;
-    });
+  test("reads client id and secret from Secrets Manager when no file is given", async () => {
+    const smClient = fakeSmClient();
+    smClient.send.mockResolvedValueOnce({ SecretString: CLIENT_JSON });
 
-    await expect(getAccessToken({ env, GoogleAuthImpl })).rejects.toThrow(ADC_LOGIN_COMMAND);
+    const credentials = await resolveClientCredentials({ smClient });
+
+    expect(credentials).toEqual({ client_id: "client-123", client_secret: "shh" });
+    expect(smClient.send.mock.calls[0][0].input).toEqual({ SecretId: CLIENT_SECRET_NAME });
+  });
+
+  test("fails naming --store-client when the secret does not exist", async () => {
+    const smClient = fakeSmClient();
+    smClient.send.mockRejectedValueOnce(notFound());
+
+    await expect(resolveClientCredentials({ smClient })).rejects.toThrow(/--store-client/);
+  });
+});
+
+describe("storeClientCredentials", () => {
+  let dir;
+  beforeEach(() => (dir = makeTempDir()));
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("fails naming the expected shape when the downloaded file isn't a Desktop client", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, JSON.stringify({ web: {} }));
+    const smClient = fakeSmClient();
+
+    await expect(storeClientCredentials({ clientFile: filePath, smClient })).rejects.toThrow(/Desktop OAuth client/);
+    expect(smClient.send).not.toHaveBeenCalled();
+  });
+
+  test("updates the secret when it already exists", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
+    const smClient = fakeSmClient();
+    smClient.send.mockResolvedValueOnce({});
+
+    await storeClientCredentials({ clientFile: filePath, smClient });
+
+    expect(smClient.send).toHaveBeenCalledTimes(1);
+    expect(smClient.send.mock.calls[0][0].input).toEqual({ SecretId: CLIENT_SECRET_NAME, SecretString: CLIENT_JSON });
+  });
+
+  test("creates the secret when it doesn't exist yet", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
+    const smClient = fakeSmClient();
+    smClient.send.mockRejectedValueOnce(notFound()).mockResolvedValueOnce({});
+
+    await storeClientCredentials({ clientFile: filePath, smClient });
+
+    expect(smClient.send).toHaveBeenCalledTimes(2);
+    expect(smClient.send.mock.calls[1][0].input).toEqual({
+      Name: CLIENT_SECRET_NAME,
+      SecretString: CLIENT_JSON,
+      Description: "YouTube Data API OAuth Desktop client for the video upload script",
+    });
+  });
+});
+
+function fakeOAuth2ClientImpl(getAccessTokenResult) {
+  const instances = [];
+  const OAuth2ClientImpl = vi.fn(function FakeOAuth2Client(options) {
+    instances.push(this);
+    this.options = options;
+    this.setCredentials = vi.fn();
+    this.getAccessToken = vi.fn().mockResolvedValue(getAccessTokenResult);
+  });
+  OAuth2ClientImpl.instances = instances;
+  return OAuth2ClientImpl;
+}
+
+describe("obtainAccessToken", () => {
+  let dir;
+  beforeEach(() => (dir = makeTempDir()));
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("uses a stored refresh token without running the consent flow", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON }) // client credentials
+      .mockResolvedValueOnce({ SecretString: JSON.stringify({ refresh_token: "stored-refresh-token" }) }); // refresh token
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: "fresh-access-token" });
+    const runConsentFlow = vi.fn();
+
+    const token = await obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow });
+
+    expect(token).toBe("fresh-access-token");
+    expect(runConsentFlow).not.toHaveBeenCalled();
+    expect(OAuth2ClientImpl.instances[0].setCredentials).toHaveBeenCalledWith({ refresh_token: "stored-refresh-token" });
+  });
+
+  test("runs the consent flow and stores the refresh token when none is stored yet", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON }) // client credentials
+      .mockRejectedValueOnce(notFound()) // no stored refresh token
+      .mockResolvedValueOnce({}); // writeSecret (update succeeds)
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: "fresh-access-token" });
+    const runConsentFlow = vi.fn().mockResolvedValue("new-refresh-token");
+
+    const token = await obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow });
+
+    expect(token).toBe("fresh-access-token");
+    expect(runConsentFlow).toHaveBeenCalledWith({ clientCredentials: { client_id: "client-123", client_secret: "shh" }, OAuth2ClientImpl });
+    expect(smClient.send.mock.calls[2][0].input).toEqual({
+      SecretId: REFRESH_TOKEN_SECRET_NAME,
+      SecretString: JSON.stringify({ refresh_token: "new-refresh-token" }),
+    });
+    expect(OAuth2ClientImpl.instances[0].setCredentials).toHaveBeenCalledWith({ refresh_token: "new-refresh-token" });
+  });
+
+  test("fails loudly when Google returns no access token for the stored refresh token", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON })
+      .mockResolvedValueOnce({ SecretString: JSON.stringify({ refresh_token: "stored-refresh-token" }) });
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: null });
+
+    await expect(obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow: vi.fn() })).rejects.toThrow(REFRESH_TOKEN_SECRET_NAME);
   });
 });
 
