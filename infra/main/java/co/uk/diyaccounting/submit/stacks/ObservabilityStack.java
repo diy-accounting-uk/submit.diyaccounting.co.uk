@@ -897,6 +897,13 @@ public class ObservabilityStack extends Stack {
                 .resources(List.of("arn:aws:bedrock:eu-west-2:%s:guardrail/*".formatted(this.getAccount())))
                 .build());
 
+        // AWS Marketplace has no resource-level permissions for these two actions.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("SubscribeMarketplaceModel")
+                .actions(List.of("aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"))
+                .resources(List.of("*"))
+                .build());
+
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ReadTriageParameters")
                 .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
