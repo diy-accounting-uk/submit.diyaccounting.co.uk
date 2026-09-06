@@ -90,13 +90,10 @@ Nothing.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
   ready as recorded: `video-view-obligations-prod` (run 33952515598) and
   `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
-  the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` (run 34017736028) shows the
-  developer panel and debug header in its "Ask again" scene, because the off-camera submit
-  turned developer mode on in sessionStorage and nothing turned it off; batch 9 (d0f6316e)
-  fixes the capture runner, and Claude Code re-records it with
-  `gh workflow run video-capture.yml --ref claude/b9-board -f script=view-return
-  -f environment-name=prod` after the batch push, then puts the new run id in
-  `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
+  the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` was re-recorded as run 34058244686 after batch 9 (d0f6316e) stopped
+  the off-camera submit leaving developer mode on: its stills are clean and
+  `check-video-timings.js` passes, and `videos/PUBLISH.md` names the new run. The operator
+  has not yet watched it. `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
   videos' titles, descriptions, tags and captions, and `scripts/youtube-upload.js`, which
   uploads them as unlisted after a one-time OAuth consent and writes each video id back so a
   re-run is idempotent. Operator steps in `videos/PUBLISH.md`: download the artifacts, create
