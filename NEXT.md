@@ -125,8 +125,9 @@ verify.
   prod failed the same way because prod runs main's Lambda code; only the scene script came from
   the branch. Proof therefore runs against ci, which carries the fix and talks to the same HMRC
   sandbox: `video-capture.yml -f script=view-return -f environment-name=ci --ref
-  claude/board-batch-4`, dispatched 03:05 UTC on 2026-09-06 behind the fourth ci deploy.
-  Verified on ci when the return on screen shows Box 6 at £5,000, the figure the off-camera
+  claude/board-batch-4`, run 34002758927, dispatched 01:10 UTC on 2026-09-06 behind the ci
+  deploys (an earlier dispatch died in the wait-for-ci-deploys action, now fixed twice over:
+  it runs on Node and resolves its script through the workspace path). Verified on ci when the return on screen shows Box 6 at £5,000, the figure the off-camera
   submission sent (£0 is the canned default); the prod recording follows the PR #136 merge and
   its prod deploy.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
@@ -201,9 +202,8 @@ verify.
   `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
   The first ci recording (run 34001286060) failed before recording: the `wait-for-ci-deploys`
   action called `gh` and `jq`, which the Playwright container lacks; the action now runs a Node
-  script instead (on the branch, unpushed until the next push). Then re-dispatch
-  `gh workflow run video-capture.yml --ref claude/board-batch-4 -f script=itsa-business-details
-  -f environment-name=ci`; verified when the artifact shows the business id.
+  script through the workspace path instead. Re-dispatched as run 34002765831 at 01:10 UTC on
+  2026-09-06; verified when the artifact shows the business id.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
