@@ -19,6 +19,7 @@ import { apiEndpoint as itsaSelfEmploymentPeriodEndpoint } from "./routes/itsa-s
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
+import { apiEndpoint as companiesHouseXmlGatewayEndpoint } from "./routes/companies-house-xmlgw.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
 
 /**
@@ -72,6 +73,7 @@ export function createApp() {
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
   companiesHouseEndpoint(app);
+  companiesHouseXmlGatewayEndpoint(app);
 
   // OpenAPI spec serving
   openapiEndpoint(app);
