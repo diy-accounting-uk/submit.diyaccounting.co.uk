@@ -37,7 +37,8 @@ import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-sec
 import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
 import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
-import { alarmFamilyKey, resolveAlarmEnv } from "../../lib/alarmName.js";
+import { alarmFamilyKey, alarmDeploymentSlug, resolveAlarmEnv } from "../../lib/alarmName.js";
+import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
 import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../../lib/alarmEvidence.js";
 import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
@@ -333,12 +334,22 @@ export async function handler(event) {
     return;
   }
 
+  const env = resolveAlarmEnv(alarm.alarmName, process.env.ENVIRONMENT_NAME);
+  const deploymentSlug = alarmDeploymentSlug(alarm.alarmName);
+  if (await isDeploymentSilenced({ ssmClient, env, deployment: deploymentSlug, now: new Date() })) {
+    logger.info({
+      message: "Deployment is silenced, skipping issue creation",
+      alarmName: alarm.alarmName,
+      deployment: deploymentSlug,
+    });
+    return;
+  }
+
   const githubRepo = process.env.GITHUB_REPO;
   if (!githubRepo) throw new Error("GITHUB_REPO environment variable is required");
 
   const githubToken = await resolveGitHubToken();
   const familyKey = alarmFamilyKey(alarm.alarmName);
-  const env = resolveAlarmEnv(alarm.alarmName, process.env.ENVIRONMENT_NAME);
 
   const deployment = await resolveDeploymentSlug({ alarmName: alarm.alarmName, env });
   const compositeChildFunctionNames = familyKey.endsWith("-stack-health")

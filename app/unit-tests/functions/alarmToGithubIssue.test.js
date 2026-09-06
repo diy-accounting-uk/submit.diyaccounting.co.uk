@@ -672,6 +672,43 @@ describe("alarmToGithubIssue", () => {
       expect(commentBody).toContain("/xray/home");
     });
 
+    test("a silenced deployment's ALARM event opens no issue and makes no GitHub call", async () => {
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      mockSsmSend.mockImplementation((command) => {
+        if (command.input?.Name === "/submit/prod/alarm-silence/a0f41c7") {
+          return Promise.resolve({
+            Parameter: { Value: JSON.stringify({ firstSilencedAt: new Date().toISOString(), expiresAt }) },
+          });
+        }
+        return Promise.resolve({ Parameter: { Value: "ci-mockdeploy" } });
+      });
+      global.fetch = vi.fn();
+
+      await handler(deploymentAlarmEvent("prod-a0f41c7-app-api-5xx"));
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockSecretsSend).not.toHaveBeenCalled();
+    });
+
+    test("an env alarm is never silenced: it carries no deployment slug, so no alarm-silence parameter is ever read", async () => {
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 200, html_url: "https://github.com/x/y/issues/200" }),
+        });
+
+      await handler(deploymentAlarmEvent("prod-env-hmrc-submission-failure"));
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const silenceParameterReads = mockSsmSend.mock.calls.filter(([command]) =>
+        String(command.input?.Name).startsWith("/submit/prod/alarm-silence/"),
+      );
+      expect(silenceParameterReads).toEqual([]);
+    });
+
     test("no issue or comment body ever contains the string reasonData", async () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi

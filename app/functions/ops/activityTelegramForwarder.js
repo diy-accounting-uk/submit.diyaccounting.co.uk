@@ -11,12 +11,15 @@
 // TELEGRAM_CHAT_ID environment variable set per-rule invocation.
 
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+import { SSMClient } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
-import { resolveAlarmEnv } from "../../lib/alarmName.js";
+import { alarmDeploymentSlug, resolveAlarmEnv } from "../../lib/alarmName.js";
+import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
 
 const logger = createLogger({ source: "app/functions/ops/activityTelegramForwarder.js" });
 
 const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
+const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
 let cachedBotToken = null;
 
@@ -189,6 +192,16 @@ export function resolveEventDetail(event) {
  * raw AWS service events (CloudFormation, CloudWatch from default bus).
  */
 export async function handler(event) {
+  if (event.source === "aws.cloudwatch") {
+    const alarmName = event.detail?.alarmName || "unknown";
+    const deployment = alarmDeploymentSlug(alarmName);
+    const env = resolveAlarmEnv(alarmName, process.env.ENVIRONMENT_NAME);
+    if (await isDeploymentSilenced({ ssmClient, env, deployment, now: new Date() })) {
+      logger.info({ message: "Deployment is silenced, skipping Telegram forward", alarmName, deployment });
+      return;
+    }
+  }
+
   const detail = resolveEventDetail(event);
 
   logger.info({
