@@ -74,17 +74,33 @@ export async function findPastStripeSubscriptionId({ olderThanMs, newestMs }) {
 }
 
 /**
- * Queries the daily GA4 BigQuery export for a `purchase` event carrying the given transaction
- * id, across the last `lookbackDays` days of daily tables.
+ * Whether the GA4 export dataset exists yet. GA4 creates it with the first daily export, so a
+ * property whose BigQuery link is younger than a day has none.
  *
- * @param {{transactionId: string, projectId: string, datasetId: string, lookbackDays?: number}} input
+ * @param {{projectId: string, datasetId: string}} input
+ * @returns {Promise<boolean>}
+ */
+export async function exportDatasetExists({ projectId, datasetId }) {
+  const client = await getBigQueryClient(projectId);
+  const [exists] = await client.dataset(datasetId).exists();
+  return exists;
+}
+
+/**
+ * Queries the daily GA4 BigQuery export for a `purchase` event carrying the given transaction
+ * id, across the last `lookbackDays` days of daily tables. The dataset lives in the location
+ * the GA4 link was created with, which the query has to name: BigQuery looks in the US
+ * multi-region otherwise and reports the dataset as not found.
+ *
+ * @param {{transactionId: string, projectId: string, datasetId: string, location: string, lookbackDays?: number}} input
  * @returns {Promise<{found: boolean, tablesQueried: string[]}>}
  */
-export async function findPurchaseEvent({ transactionId, projectId, datasetId, lookbackDays = 4 }) {
+export async function findPurchaseEvent({ transactionId, projectId, datasetId, location, lookbackDays = 4 }) {
   const client = await getBigQueryClient(projectId);
   const suffixes = dailyTableSuffixes(lookbackDays);
 
   const [rows] = await client.query({
+    location,
     query: `
       SELECT event_name
       FROM \`${projectId}.${datasetId}.events_*\`

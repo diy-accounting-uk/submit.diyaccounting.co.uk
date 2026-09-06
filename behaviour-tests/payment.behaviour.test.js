@@ -73,7 +73,7 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
-import { findPastStripeSubscriptionId, pollForPurchaseEvent } from "./helpers/ga4PurchaseQuery.js";
+import { exportDatasetExists, findPastStripeSubscriptionId, pollForPurchaseEvent } from "./helpers/ga4PurchaseQuery.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -432,8 +432,15 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
     const datasetId = process.env.GA4_BIGQUERY_DATASET_ID;
-    if (!projectId || !datasetId) {
-      console.log("GA4_BIGQUERY_PROJECT_ID/GA4_BIGQUERY_DATASET_ID not set — skipping the BigQuery lookup");
+    const location = process.env.GA4_BIGQUERY_LOCATION;
+    if (!projectId || !datasetId || !location) {
+      console.log("GA4_BIGQUERY_PROJECT_ID/GA4_BIGQUERY_DATASET_ID/GA4_BIGQUERY_LOCATION not set — skipping the BigQuery lookup");
+      return;
+    }
+    if (!(await exportDatasetExists({ projectId, datasetId }))) {
+      console.log(
+        `BigQuery dataset ${projectId}.${datasetId} does not exist yet (GA4 creates it with the first daily export) — skipping the BigQuery assertion`,
+      );
       return;
     }
 
@@ -448,7 +455,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     console.log(`Checking BigQuery for a purchase event carrying transaction_id=${priorTransactionId}...`);
     const result = await pollForPurchaseEvent(
-      { transactionId: priorTransactionId, projectId, datasetId },
+      { transactionId: priorTransactionId, projectId, datasetId, location },
       { attempts: 3, intervalMs: 10_000 },
     );
     console.log(`BigQuery purchase lookup: found=${result.found} (tables queried: ${result.tablesQueried.join(", ")})`);
