@@ -24,6 +24,36 @@ export function http200OkResponse({ request, headers, data }) {
   });
 }
 
+export function http201CreatedResponse({ request, headers, data }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  return httpResponse({
+    statusCode: 201,
+    request,
+    headers: merged,
+    data,
+    levelledLogger: logger.info.bind(logger),
+  });
+}
+
+export function http422UnprocessableEntityResponse({ request, headers, data }) {
+  const merged = { ...(headers || {}) };
+  if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");
+  if (context.get("amznTraceId")) merged["x-amzn-trace-id"] = context.get("amznTraceId");
+  if (context.get("traceparent")) merged["traceparent"] = context.get("traceparent");
+  if (context.get("correlationId")) merged["x-correlationid"] = context.get("correlationId");
+  return httpResponse({
+    statusCode: 422,
+    request,
+    headers: merged,
+    data,
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http400BadRequestResponse({ request, headers, message, error }) {
   const merged = { ...(headers || {}) };
   if (context.get("requestId")) merged["x-request-id"] = context.get("requestId");

@@ -83,8 +83,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 3);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 3, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 10);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 10, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -188,8 +188,38 @@ class SubmitApplicationCdkResourceTest {
                 Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/token"));
-        // Each of the three Companies House routes also gets ApiStack's automatic HEAD route.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 54);
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/companies-house/transaction/{transactionId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "PUT /api/v1/companies-house/transaction/{transactionId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of(
+                        "RouteKey",
+                        "GET /api/v1/companies-house/company/{companyNumber}/registered-office-address"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of(
+                        "RouteKey",
+                        "POST /api/v1/companies-house/transaction/{transactionId}/registered-office-address"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of(
+                        "RouteKey",
+                        "GET /api/v1/companies-house/company/{companyNumber}/registered-email-address/eligibility"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of(
+                        "RouteKey",
+                        "POST /api/v1/companies-house/transaction/{transactionId}/registered-email-address"));
+        // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
+        // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
+        // the GET on the same path.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 67);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
