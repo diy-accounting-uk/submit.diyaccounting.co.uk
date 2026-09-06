@@ -14,6 +14,7 @@ import {
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
+import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
 import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
@@ -594,27 +595,6 @@ export async function workerHandler(event) {
   }
 }
 
-/**
- * Determine if an error is retryable (transient) or terminal.
- * @param {Error} error
- * @returns {boolean}
- */
-function isRetryableError(error) {
-  // Explicitly marked retryable HMRC errors
-  if (error.message?.includes("HMRC temporary error")) return true;
-
-  // Fetch timeout
-  if (error.name === "AbortError") return true;
-
-  // Standard Node.js network errors
-  const retryableCodes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ESOCKETTIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH"];
-  if (error.code && retryableCodes.includes(error.code)) return true;
-
-  // DynamoDB throughput or other transient AWS errors might have retryable: true
-  if (error.retryable) return true;
-
-  return false;
-}
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatReturn(

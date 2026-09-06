@@ -34,7 +34,15 @@ the seven functions.
 
 ---
 
-## 2. SQS Worker Handler Boilerplate (internal refactor, no library)
+## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — partly done
+
+`isRetryableError()` is extracted to `app/lib/sqsWorkerHelper.js` and imported by the three
+hmrc handlers, removing the identical copy in each. The remaining part of this item — a shared
+`processSqsRecords()` wrapping steps 1-5 and 7 — is not done: `bundlePost.js`/`bundleDelete.js`
+always rethrow on error while the hmrc handlers classify retryable vs terminal, so a shared
+wrapper needs a real per-caller policy, and `hmrcVatReturnPost.js` (the live VAT submission
+path) has no direct `workerHandler` unit test to catch a wrong merge. That part needs its own
+pass with handler-specific tests in place first.
 
 **What**: Five Lambda files implement the same `workerHandler(event)` pattern with near-identical
 boilerplate:
