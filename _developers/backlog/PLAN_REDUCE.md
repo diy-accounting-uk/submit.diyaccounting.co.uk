@@ -116,7 +116,7 @@ function is simpler.
 
 ---
 
-## 5. DynamoDB Repository Boilerplate (internal refactor, no library)
+## 5. DynamoDB Repository Boilerplate (internal refactor, no library) — done
 
 **What**: All 7 repository files in `app/data/` follow an identical pattern:
 

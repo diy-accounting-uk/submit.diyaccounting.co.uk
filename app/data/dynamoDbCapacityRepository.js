@@ -4,7 +4,7 @@
 // app/data/dynamoDbCapacityRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbCapacityRepository.js" });
 
@@ -16,18 +16,18 @@ function getTableName() {
 export async function incrementCounter(bundleId, cap) {
   logger.info({ message: `incrementCounter [table: ${getTableName()}]`, bundleId, cap });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
   try {
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { bundleId },
-        UpdateExpression: "SET activeCount = if_not_exists(activeCount, :zero) + :inc",
-        ConditionExpression: "(attribute_not_exists(activeCount) AND :cap > :zero) OR activeCount < :cap",
-        ExpressionAttributeValues: { ":inc": 1, ":zero": 0, ":cap": cap },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { bundleId },
+          UpdateExpression: "SET activeCount = if_not_exists(activeCount, :zero) + :inc",
+          ConditionExpression: "(attribute_not_exists(activeCount) AND :cap > :zero) OR activeCount < :cap",
+          ExpressionAttributeValues: { ":inc": 1, ":zero": 0, ":cap": cap },
+        }),
     );
     logger.info({ message: "Counter incremented", bundleId });
     return true;
@@ -44,18 +44,18 @@ export async function incrementCounter(bundleId, cap) {
 export async function decrementCounter(bundleId) {
   logger.info({ message: `decrementCounter [table: ${getTableName()}]`, bundleId });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
   try {
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { bundleId },
-        UpdateExpression: "SET activeCount = activeCount - :dec",
-        ConditionExpression: "attribute_exists(activeCount) AND activeCount > :zero",
-        ExpressionAttributeValues: { ":dec": 1, ":zero": 0 },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { bundleId },
+          UpdateExpression: "SET activeCount = activeCount - :dec",
+          ConditionExpression: "attribute_exists(activeCount) AND activeCount > :zero",
+          ExpressionAttributeValues: { ":dec": 1, ":zero": 0 },
+        }),
     );
     logger.info({ message: "Counter decremented", bundleId });
   } catch (error) {
@@ -71,14 +71,14 @@ export async function decrementCounter(bundleId) {
 export async function getCounter(bundleId) {
   logger.info({ message: `getCounter [table: ${getTableName()}]`, bundleId });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  const result = await docClient.send(
-    new module.GetCommand({
-      TableName: tableName,
-      Key: { bundleId },
-    }),
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { bundleId },
+      }),
   );
 
   return result.Item || null;
@@ -89,17 +89,17 @@ export async function getCounters(bundleIds) {
 
   logger.info({ message: `getCounters [table: ${getTableName()}]`, count: bundleIds.length });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  const result = await docClient.send(
-    new module.BatchGetCommand({
-      RequestItems: {
-        [tableName]: {
-          Keys: bundleIds.map((bundleId) => ({ bundleId })),
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.BatchGetCommand({
+        RequestItems: {
+          [tableName]: {
+            Keys: bundleIds.map((bundleId) => ({ bundleId })),
+          },
         },
-      },
-    }),
+      }),
   );
 
   const items = (result.Responses && result.Responses[tableName]) || [];
@@ -113,18 +113,18 @@ export async function getCounters(bundleIds) {
 export async function putCounter(bundleId, activeCount) {
   logger.info({ message: `putCounter [table: ${getTableName()}]`, bundleId, activeCount });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  await docClient.send(
-    new module.PutCommand({
-      TableName: tableName,
-      Item: {
-        bundleId,
-        activeCount,
-        reconciledAt: new Date().toISOString(),
-      },
-    }),
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: {
+          bundleId,
+          activeCount,
+          reconciledAt: new Date().toISOString(),
+        },
+      }),
   );
 
   logger.info({ message: "Counter written", bundleId, activeCount });

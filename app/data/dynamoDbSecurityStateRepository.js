@@ -10,7 +10,7 @@
 // Every item carries a short TTL; none of it is customer data.
 
 import { createLogger } from "../lib/logger.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { fiveMinuteTtl, calculateOneHourTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSecurityStateRepository.js" });
@@ -31,18 +31,18 @@ function getTableName() {
  * @returns {Promise<number>} the updated hit count
  */
 export async function incrementRateCounter({ hashedSub, minute }) {
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  const { Attributes } = await docClient.send(
-    new module.UpdateCommand({
-      TableName: tableName,
-      Key: { stateKey: `rate#${hashedSub}#${minute}` },
-      UpdateExpression: "SET #ttl = if_not_exists(#ttl, :ttl) ADD hits :one",
-      ExpressionAttributeNames: { "#ttl": "ttl" },
-      ExpressionAttributeValues: { ":one": 1, ":ttl": fiveMinuteTtl() },
-      ReturnValues: "UPDATED_NEW",
-    }),
+  const { Attributes } = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { stateKey: `rate#${hashedSub}#${minute}` },
+        UpdateExpression: "SET #ttl = if_not_exists(#ttl, :ttl) ADD hits :one",
+        ExpressionAttributeNames: { "#ttl": "ttl" },
+        ExpressionAttributeValues: { ":one": 1, ":ttl": fiveMinuteTtl() },
+        ReturnValues: "UPDATED_NEW",
+      }),
   );
 
   logger.info({ message: "Rate counter incremented", hashedSub, minute, hits: Attributes?.hits });
@@ -56,14 +56,14 @@ export async function incrementRateCounter({ hashedSub, minute }) {
  * @returns {Promise<{country?: string, revokedAt?: number}|null>} null when no item exists
  */
 export async function getSessionGeo(hashedSub) {
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  const result = await docClient.send(
-    new module.GetCommand({
-      TableName: tableName,
-      Key: { stateKey: `geo#${hashedSub}` },
-    }),
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { stateKey: `geo#${hashedSub}` },
+      }),
   );
 
   return result.Item || null;
@@ -82,19 +82,19 @@ export async function getSessionGeo(hashedSub) {
  * @param {number} [fields.revokedAt] - epoch seconds; omitted clears any prior revocation
  */
 export async function putSessionGeo(hashedSub, { country, revokedAt }) {
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  await docClient.send(
-    new module.PutCommand({
-      TableName: tableName,
-      Item: {
-        stateKey: `geo#${hashedSub}`,
-        country,
-        ...(revokedAt !== undefined ? { revokedAt } : {}),
-        ttl: calculateOneHourTtl(new Date()).ttl,
-      },
-    }),
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: {
+          stateKey: `geo#${hashedSub}`,
+          country,
+          ...(revokedAt !== undefined ? { revokedAt } : {}),
+          ttl: calculateOneHourTtl(new Date()).ttl,
+        },
+      }),
   );
 
   logger.info({ message: "Session geo written", hashedSub, country, revoked: revokedAt !== undefined });
