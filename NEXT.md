@@ -52,10 +52,11 @@ coordinator when its tests are green, one push per batch of landed tracks:
   required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
   aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
   Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
-  account, so the triage role in `ObservabilityStack.java` needs those two actions, pinned in
-  the CDK test (batch 8, Sonnet, in a worktree). Verified when a re-labelled alarm issue gets
-  a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
-  **Owner**: Claude Code. **Model**: Sonnet, then Fable (coordinator) for the proof run.
+  account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
+  the CDK test (4316f0ce, on PR #141). Verified when, after that merge deploys the
+  observability stacks, a re-labelled alarm issue gets a triage comment with the guardrail's
+  anonymised output. **Source**: BACKLOG 30; issue #18.
+  **Owner**: Claude Code. **Model**: Fable (coordinator).
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
