@@ -194,6 +194,23 @@ on main and each names the event that verifies it.
 
 ## Ready: Claude Code
 
+- [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
+  that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
+  resource with "Backups are being enabled for the table" (DynamoDB's
+  ContinuousBackupsUnavailableException): `ensurePointInTimeRecovery` in
+  `infra/main/java/.../utils/KindCdk.java` calls UpdateContinuousBackups the moment the
+  CreateTable custom resource returns, before DynamoDB has finished turning on the table's
+  default backups. A re-run succeeds because the table is ready by then. Two main deploys hit
+  it in a day: run 33993674189 (2026-09-05 21:42, the ITSA Business Details table) and run
+  34038617995 (2026-09-06 14:19, the Obligations and Self Employment period tables), prod both
+  times; ci passed the same runs, so it is a timing race, not a prod difference. Replace the
+  `AwsCustomResource` with a `Provider`-backed custom resource whose `onEvent` calls
+  UpdateContinuousBackups and whose `isComplete` polls DescribeContinuousBackups until
+  point-in-time recovery reads ENABLED, retrying the update while the backups are still being
+  enabled (`app/functions/infra/ensurePitr.js`, next to `selfDestruct.js`); unit test on the
+  handler, CDK test that every ensured table has the resource. **Source**: deploy-environment
+  runs of 2026-09-05 and 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
