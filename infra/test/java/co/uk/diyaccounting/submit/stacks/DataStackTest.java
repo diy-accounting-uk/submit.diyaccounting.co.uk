@@ -119,6 +119,45 @@ class DataStackTest {
     }
 
     @Test
+    void everyTableGetsAProviderBackedPitrCustomResource() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // Every table ensureTable creates gets one PITR wait, and that wait runs behind the
+        // Provider-backed custom resource KindCdk.ensurePitrProvider builds - not the plain
+        // AwsCustomResource used elsewhere in this file - so its onEvent/isComplete handlers can
+        // retry past ContinuousBackupsUnavailableException instead of failing the deployment.
+        String[] tableNames = {
+            dataStack.receiptsTable.getTableName(),
+            dataStack.bundlesTable.getTableName(),
+            dataStack.bundlePostAsyncRequestsTable.getTableName(),
+            dataStack.bundleDeleteAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatReturnPostAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatReturnGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatObligationGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatLiabilitiesGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatPaymentsGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcVatPenaltiesGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcItsaBusinessDetailsGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcItsaObligationsGetAsyncRequestsTable.getTableName(),
+            dataStack.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.getTableName(),
+            dataStack.hmrcApiRequestsTable.getTableName(),
+            dataStack.passesTable.getTableName(),
+            dataStack.bundleCapacityTable.getTableName(),
+            dataStack.subscriptionsTable.getTableName(),
+            dataStack.securityStateTable.getTableName(),
+        };
+
+        template.resourceCountIs("Custom::EnsurePitr", tableNames.length);
+
+        for (String tableName : tableNames) {
+            var resource = template.findResources(
+                    "Custom::EnsurePitr", Map.of("Properties", Map.of("TableName", tableName)));
+            assertEquals(1, resource.size(), "expected exactly one EnsurePitr custom resource for " + tableName);
+        }
+    }
+
+    @Test
     void receiptsTableGetsTimeToLiveOnTtlAttribute() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
@@ -243,11 +282,13 @@ class DataStackTest {
         Template template = Template.fromStack(dataStack);
 
         // DataStack creates no Lambda of its own: every Custom::AWS resource here (CreateTable,
-        // PITR, GSI, TTL, stream enable/describe) shares one singleton provider Lambda, and that
-        // singleton must carry the one explicit, retained LogGroup KindCdk hands it — otherwise
-        // CDK gives it a bare auto-created log group with no retention and no removal policy.
+        // GSI, TTL, stream enable/describe) shares one singleton provider Lambda, and every
+        // table's PITR wait shares one Provider-backed onEvent/isComplete Lambda pair plus that
+        // Provider's own framework onEvent/isComplete/onTimeout Lambdas. Every one of those six
+        // must carry the explicit, retained LogGroup KindCdk hands it — otherwise CDK gives it a
+        // bare auto-created log group with no retention and no removal policy.
         assertEquals(
-                1,
+                6,
                 template.findResources("AWS::Lambda::Function").size(),
                 "expected only the singleton AwsCustomResource provider Lambda");
         assertEveryLambdaHasAnExplicitLogGroup(template);
