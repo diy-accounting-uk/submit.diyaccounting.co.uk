@@ -222,9 +222,11 @@ class SubmitApplicationCdkResourceTest {
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
-        // No Lambda-construct count: the second one (alarm-to-GitHub-issue) only exists when a
-        // GitHub token ARN is configured, and this test's config doesn't set one.
-        assertStackHealthAlarm(opsStackTemplateForRouting, null, 0, routedPrefixes);
+        // The Telegram forwarder moved to env-level ActivityStack, and the alarm-to-GitHub-issue
+        // Lambda only exists when a GitHub token ARN is configured (this test's config doesn't
+        // set one), so this stack builds no Lambda construct of its own and has no composite
+        // health alarm.
+        opsStackTemplateForRouting.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 0);
 
         // Both canaries run on the hour, half an hour off probe-test.yml's `57 */4 * * *`, so
         // the two never check the site in the same window and the offset cannot drift.
