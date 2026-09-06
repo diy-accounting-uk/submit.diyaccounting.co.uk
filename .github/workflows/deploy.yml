@@ -2219,6 +2219,62 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-change-registered-office:
+    # Gated to non-prod environments until examined. Signs in to the real Companies House
+    # sandbox, so it needs COMPANIES_HOUSE_SANDBOX_API_KEY and TEST_COMPANIES_HOUSE_PASSWORD on
+    # the ci environment (see probe-test.yml).
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
+    name: 'changeRegisteredOfficeBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'changeRegisteredOfficeBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+
+  web-test-change-registered-email:
+    # Gated to non-prod environments until examined. Signs in to the real Companies House
+    # sandbox, so it needs COMPANIES_HOUSE_SANDBOX_API_KEY and TEST_COMPANIES_HOUSE_PASSWORD on
+    # the ci environment (see probe-test.yml).
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
+    name: 'changeRegisteredEmailBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'changeRegisteredEmailBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+
   web-test-itsa-business-details-synthetic:
     # Gated to non-prod environments until examined.
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
@@ -2381,6 +2437,8 @@ jobs:
       - web-test-help-synthetic
       - web-test-vatValidation-synthetic
       - web-test-companies-house
+      - web-test-change-registered-office
+      - web-test-change-registered-email
       - web-test-itsa-business-details-synthetic
       - web-test-itsa-obligations-synthetic
       - web-test-itsa-self-employment-period-synthetic

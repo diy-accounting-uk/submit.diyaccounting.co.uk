@@ -8,8 +8,76 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { createTestCompany, deleteTestCompany } from "../../scripts/companies-house-test-company.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-filing-steps";
+
+// The canned user only the simulator's OAuth stand-in accepts (see
+// app/http-simulator/routes/companies-house-oauth.js).
+const simulatorSignInCredentials = {
+  userId: "synthetic-companies-house-user@test.diyaccounting.co.uk",
+  password: "test-password",
+};
+
+/**
+ * True when this run talks to the simulator's own Companies House OAuth stand-in rather than a
+ * real identity service. The http-simulator only starts when TEST_HTTP_SIMULATOR=run, which only
+ * .env.simulator sets; DIY_SUBMIT_ENV_FILEPATH naming .env.simulator is the same signal read a
+ * second way, for a run that inherited the variable from a parent process.
+ */
+export function isCompaniesHouseSimulatorLane(envFilePath) {
+  return process.env.TEST_HTTP_SIMULATOR === "run" || (envFilePath ?? "").includes(".env.simulator");
+}
+
+/**
+ * The Companies House sign-in the suite uses. Real credentials in the environment always win.
+ * Outside the simulator lane, with no real credentials set, this throws rather than trying the
+ * canned simulator user against a real identity service, where it cannot work.
+ */
+export function resolveCompaniesHouseSignInCredentials(companyAuthCode, envFilePath) {
+  const userId = process.env.TEST_COMPANIES_HOUSE_USER_ID;
+  const password = process.env.TEST_COMPANIES_HOUSE_PASSWORD;
+  if (userId && password) {
+    return { userId, password, companyAuthCode };
+  }
+  if (userId || password) {
+    throw new Error("Set both TEST_COMPANIES_HOUSE_USER_ID and TEST_COMPANIES_HOUSE_PASSWORD, or neither.");
+  }
+  if (isCompaniesHouseSimulatorLane(envFilePath)) {
+    return { ...simulatorSignInCredentials, companyAuthCode: companyAuthCode ?? "test-auth-code" };
+  }
+  throw new Error(
+    "TEST_COMPANIES_HOUSE_USER_ID and TEST_COMPANIES_HOUSE_PASSWORD must be set to sign in to Companies House " +
+      "outside the simulator lane. The canned simulator user only works against the simulator's OAuth stand-in.",
+  );
+}
+
+/**
+ * Creates a fresh sandbox test company for a run outside the simulator lane, using Companies
+ * House's test data generator. On the simulator the suite keeps its canned fixture company, so
+ * this returns nulls and provisions nothing.
+ */
+export async function provisionCompaniesHouseTestCompany(envFilePath) {
+  if (isCompaniesHouseSimulatorLane(envFilePath)) {
+    return { companyNumber: null, authCode: null, apiKey: null };
+  }
+  const apiKey = process.env.COMPANIES_HOUSE_SANDBOX_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      "COMPANIES_HOUSE_SANDBOX_API_KEY must be set to create a Companies House sandbox test company outside the simulator lane.",
+    );
+  }
+  const { companyNumber, authCode } = await createTestCompany(apiKey);
+  return { companyNumber, authCode, apiKey };
+}
+
+/** Deletes the company `provisionCompaniesHouseTestCompany` created, a no-op on the simulator. */
+export async function releaseCompaniesHouseTestCompany({ companyNumber, authCode, apiKey }) {
+  if (!companyNumber) {
+    return;
+  }
+  await deleteTestCompany(apiKey, companyNumber, authCode);
+}
 
 export async function goToChangeRegisteredOffice(page, screenshotPath = defaultScreenshotPath) {
   const activityButtonText = "Change Registered Office Address (Companies House)";

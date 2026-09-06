@@ -25,6 +25,10 @@ import {
   submitFiling,
   verifyFilingAccepted,
   verifyValidationErrorShown,
+  isCompaniesHouseSimulatorLane,
+  resolveCompaniesHouseSignInCredentials,
+  provisionCompaniesHouseTestCompany,
+  releaseCompaniesHouseTestCompany,
 } from "./steps/behaviour-companies-house-filing-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
@@ -46,8 +50,9 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
-// The fixtures the simulator serves (see app/http-simulator/scenarios/filings.js).
-const existingCompanyNumber = "06846849";
+// The simulator's canned company fixture (see app/http-simulator/scenarios/filings.js). Outside
+// the simulator lane, beforeAll below replaces this with a freshly created sandbox company.
+let existingCompanyNumber = "06846849";
 const validationErrorCompanyNumber = "00000422";
 
 const newAddress = {
@@ -59,11 +64,8 @@ const newAddress = {
   country: "England",
 };
 
-const companiesHouseCredentials = {
-  userId: "synthetic-companies-house-user@test.diyaccounting.co.uk",
-  password: "test-password",
-  companyAuthCode: "test-auth-code",
-};
+let companiesHouseCredentials;
+let testCompany;
 
 let mockOAuth2Process;
 let serverProcess;
@@ -90,6 +92,12 @@ test.beforeAll(async () => {
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
 
+  testCompany = await provisionCompaniesHouseTestCompany(envFilePath);
+  if (testCompany.companyNumber) {
+    existingCompanyNumber = testCompany.companyNumber;
+  }
+  companiesHouseCredentials = resolveCompaniesHouseSignInCredentials(testCompany.authCode, envFilePath);
+
   console.log("beforeAll hook completed successfully");
 });
 
@@ -103,6 +111,7 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  await releaseCompaniesHouseTestCompany(testCompany);
 });
 
 test("Click through: change registered office address end to end and see the filing accepted", async ({ page }, testInfo) => {
@@ -135,6 +144,11 @@ test("Click through: change registered office address end to end and see the fil
 });
 
 test("Click through: change registered office address shows the validation error Companies House returns", async ({ page }, testInfo) => {
+  test.skip(
+    !isCompaniesHouseSimulatorLane(envFilePath),
+    "The 422 validation-error company number is a simulator-only fixture; only the simulator lane can reproduce it.",
+  );
+
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
