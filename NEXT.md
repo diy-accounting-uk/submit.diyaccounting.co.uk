@@ -292,10 +292,13 @@ a later event to verify.
   done: the variable points at `ci-env-alarm-triage-role`, and adding the `triage` label to
   #134 ran the whole chain (run 34016641016: role assumed, guardrail read, comment posted).
   The model call answered 404 until the Anthropic use-case form was submitted through
-  `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06; the proof re-ran as
-  run 34024132783. Prod's variable waits for its environment deploy after the PR #137 merge
-  (run 34023929068). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
-  Fable (coordinator). Blocked on prod's environment deploy.
+  `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06. The re-run
+  (34024132783) stopped at the day guard, which counted every workflow run including the ones
+  the guard or the role check had stopped; on `claude/board-batch-6` the guard counts only
+  runs whose `run-triage` job executed. Once that merges, re-label #134 with `triage`. Prod's
+  variable waits for its environment deploy after the PR #137 merge (run 34023929068).
+  **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**: Fable (coordinator).
+  Blocked on the batch 6 merge and prod's environment deploy.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
