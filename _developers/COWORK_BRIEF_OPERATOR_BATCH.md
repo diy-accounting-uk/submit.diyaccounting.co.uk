@@ -286,7 +286,8 @@ signed in. Written 2026-09-01 by the Claude Code submit session. Report back via
 
 ## Context
 
-This is the one remaining console-only step in `submit.diyaccounting.co.uk/PLAN_SCHEDULED_INGESTION.md`
+This is the one remaining console-only step in
+`submit.diyaccounting.co.uk/_developers/archive/PLAN_SCHEDULED_INGESTION.md`
 phase 2 (GA4 BigQuery event export). Everything else in that plan's operator-prerequisites
 section is already done, mostly by a Cowork session overnight 2026-08-30/31
 (`BRIEF_GA4_CONSOLE_B19.md`, now closed): the GA4→BigQuery export link exists, project
