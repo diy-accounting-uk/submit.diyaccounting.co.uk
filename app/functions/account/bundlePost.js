@@ -6,6 +6,7 @@
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { validateEnv } from "../../lib/env.js";
 import { context, createLogger } from "../../lib/logger.js";
+import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -19,7 +20,7 @@ import {
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -53,24 +54,6 @@ function emitCapMetric(metricName, bundleId) {
 
 const MAX_WAIT_MS = 25_000;
 const DEFAULT_WAIT_MS = 0;
-
-function parseIsoDurationToDate(fromDate, iso) {
-  // Minimal support for PnD, PnM, PnY
-  const d = new Date(fromDate.getTime());
-  // eslint-disable-next-line security/detect-unsafe-regex
-  const m = String(iso || "").match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/);
-  if (!m) {
-    logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso });
-    return d;
-  }
-  const years = parseInt(m[1] || "0", 10);
-  const months = parseInt(m[2] || "0", 10);
-  const days = parseInt(m[3] || "0", 10);
-  d.setFullYear(d.getFullYear() + years);
-  d.setMonth(d.getMonth() + months);
-  d.setDate(d.getDate() + days);
-  return d;
-}
 
 function getCatalogBundle(bundleId) {
   try {
@@ -117,11 +100,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/bundle", ingestHandler);
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
@@ -448,7 +427,11 @@ export async function grantBundle(
   }
 
   logger.info({ message: "Granting bundle to user:", userId, requestedBundle });
-  const expiry = catalogBundle.timeout ? parseIsoDurationToDate(new Date(), catalogBundle.timeout) : null;
+  const expiry = catalogBundle.timeout
+    ? parseIsoDurationToDate(new Date(), catalogBundle.timeout, {
+        onUnsupported: (iso) => logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso }),
+      })
+    : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
   const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
   const effectiveQualifiers = grantQualifiers || (Object.keys(qualifiers).length > 0 ? qualifiers : undefined);
@@ -462,7 +445,9 @@ export async function grantBundle(
     newBundle.tokensGranted = tokensGranted;
     newBundle.tokensConsumed = 0;
     if (catalogBundle.tokenRefreshInterval && expiry) {
-      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval).toISOString();
+      newBundle.tokenResetAt = parseIsoDurationToDate(new Date(), catalogBundle.tokenRefreshInterval, {
+        onUnsupported: (iso) => logger.warn({ message: "Unsupported ISO duration format, cannot parse:", iso }),
+      }).toISOString();
     } else {
       newBundle.tokenResetAt = null;
     }

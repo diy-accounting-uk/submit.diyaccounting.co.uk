@@ -10,18 +10,20 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockSend = vi.fn();
 const mockPutCommand = vi.fn();
+const dynamoDbModule = {
+  PutCommand: class PutCommand {
+    constructor(params) {
+      mockPutCommand(params);
+      this.params = params;
+    }
+  },
+};
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getDynamoDbDocClient: vi.fn().mockResolvedValue({
     docClient: { send: (...args) => mockSend(...args) },
-    module: {
-      PutCommand: class PutCommand {
-        constructor(params) {
-          mockPutCommand(params);
-          this.params = params;
-        }
-      },
-    },
+    module: dynamoDbModule,
   }),
+  executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
 }));
 
 vi.mock("@app/services/subHasher.js", () => ({

@@ -5,17 +5,13 @@
 
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingRecoverPost.js" });
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/billing/recover", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/billing/recover", ingestHandler);
 }
 /* v8 ignore stop */
 

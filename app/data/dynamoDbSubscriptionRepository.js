@@ -4,7 +4,7 @@
 // app/data/dynamoDbSubscriptionRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSubscriptionRepository.js" });
 
@@ -15,17 +15,17 @@ function getTableName() {
 export async function putSubscription(subscription) {
   logger.info({ message: `putSubscription [table: ${getTableName()}]` });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  await docClient.send(
-    new module.PutCommand({
-      TableName: tableName,
-      Item: {
-        ...subscription,
-        updatedAt: new Date().toISOString(),
-      },
-    }),
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: {
+          ...subscription,
+          updatedAt: new Date().toISOString(),
+        },
+      }),
   );
 
   logger.info({ message: "Subscription stored", pk: subscription.pk });
@@ -34,14 +34,14 @@ export async function putSubscription(subscription) {
 export async function getSubscription(pk) {
   logger.info({ message: `getSubscription [table: ${getTableName()}]`, pk });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
-  const result = await docClient.send(
-    new module.GetCommand({
-      TableName: tableName,
-      Key: { pk },
-    }),
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { pk },
+      }),
   );
 
   return result.Item || null;
@@ -50,7 +50,6 @@ export async function getSubscription(pk) {
 export async function updateSubscription(pk, updates) {
   logger.info({ message: `updateSubscription [table: ${getTableName()}]`, pk });
 
-  const { docClient, module } = await getDynamoDbDocClient();
   const tableName = getTableName();
 
   const expressions = [];
@@ -69,14 +68,15 @@ export async function updateSubscription(pk, updates) {
   names["#updatedAt"] = "updatedAt";
   values[":updatedAt"] = new Date().toISOString();
 
-  await docClient.send(
-    new module.UpdateCommand({
-      TableName: tableName,
-      Key: { pk },
-      UpdateExpression: "SET " + expressions.join(", "),
-      ExpressionAttributeNames: names,
-      ExpressionAttributeValues: values,
-    }),
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { pk },
+        UpdateExpression: "SET " + expressions.join(", "),
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+      }),
   );
 
   logger.info({ message: "Subscription updated", pk });

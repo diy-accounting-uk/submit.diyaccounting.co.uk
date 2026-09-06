@@ -5,6 +5,7 @@
 
 import { validateEnv } from "../../lib/env.js";
 import { createLogger, context } from "../../lib/logger.js";
+import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -12,7 +13,7 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -70,11 +71,7 @@ async function checkBundleGetBurst(userId) {
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/bundle", ingestHandler);
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
@@ -217,7 +214,7 @@ export async function retrieveUserBundles(userId, requestId = null) {
         const catBundle = (catalog.bundles || []).find((b) => b.id === bundle.bundleId);
         if (catBundle?.tokenRefreshInterval) {
           const { resetTokens } = await import("../../data/dynamoDbBundleRepository.js");
-          const nextReset = addDurationSimple(new Date(), catBundle.tokenRefreshInterval);
+          const nextReset = parseIsoDurationToDate(new Date(), catBundle.tokenRefreshInterval);
           const tokensGranted = catBundle.tokensGranted ?? bundle.tokensGranted;
           await resetTokens(userId, bundle.bundleId, tokensGranted, nextReset.toISOString());
           bundle.tokensConsumed = 0;
@@ -264,15 +261,4 @@ export async function retrieveUserBundles(userId, requestId = null) {
     logger.error({ message: "Error retrieving user bundles", error: error.message, userId, requestId });
     throw error;
   }
-}
-
-function addDurationSimple(fromDate, iso) {
-  const d = new Date(fromDate.getTime());
-  // eslint-disable-next-line security/detect-unsafe-regex
-  const m = String(iso || "").match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/);
-  if (!m) return d;
-  d.setFullYear(d.getFullYear() + parseInt(m[1] || "0", 10));
-  d.setMonth(d.getMonth() + parseInt(m[2] || "0", 10));
-  d.setDate(d.getDate() + parseInt(m[3] || "0", 10));
-  return d;
 }

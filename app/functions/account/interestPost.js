@@ -12,7 +12,7 @@ import {
   http400BadRequestResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -22,11 +22,7 @@ const snsClient = new SNSClient({ region: process.env.AWS_REGION || "eu-west-2" 
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/interest", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/interest", ingestHandler);
   app.head("/api/v1/interest", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

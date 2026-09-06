@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { calculateOneHourTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbAsyncRequestRepository.js" });
@@ -32,7 +32,6 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
 
   try {
     const hashedSub = hashSub(userId);
-    const { docClient, module } = await getDynamoDbDocClient();
 
     const now = new Date();
     const isoNow = now.toISOString();
@@ -70,17 +69,18 @@ export async function putAsyncRequest(userId, requestId, status, data = null, ta
       expressionAttributeNames["#data"] = "data";
     }
 
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: actualTableName,
-        Key: {
-          hashedSub,
-          requestId,
-        },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: actualTableName,
+          Key: {
+            hashedSub,
+            requestId,
+          },
+          UpdateExpression: updateExpression,
+          ExpressionAttributeNames: expressionAttributeNames,
+          ExpressionAttributeValues: expressionAttributeValues,
+        }),
     );
 
     logger.info({
@@ -122,17 +122,17 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
 
   try {
     const hashedSub = hashSub(userId);
-    const { docClient, module } = await getDynamoDbDocClient();
 
-    const result = await docClient.send(
-      new module.GetCommand({
-        TableName: actualTableName,
-        Key: {
-          hashedSub,
-          requestId,
-        },
-        ConsistentRead: true,
-      }),
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({
+          TableName: actualTableName,
+          Key: {
+            hashedSub,
+            requestId,
+          },
+          ConsistentRead: true,
+        }),
     );
 
     if (result.Item) {
@@ -149,15 +149,16 @@ export async function getAsyncRequest(userId, requestId, tableName = null) {
     // Fall back to previous salt versions during migration window
     for (const version of getPreviousVersions()) {
       const oldHash = hashSubWithVersion(userId, version);
-      const fallbackResult = await docClient.send(
-        new module.GetCommand({
-          TableName: actualTableName,
-          Key: {
-            hashedSub: oldHash,
-            requestId,
-          },
-          ConsistentRead: true,
-        }),
+      const fallbackResult = await executeDynamoDbCommand(
+        (module) =>
+          new module.GetCommand({
+            TableName: actualTableName,
+            Key: {
+              hashedSub: oldHash,
+              requestId,
+            },
+            ConsistentRead: true,
+          }),
       );
       if (fallbackResult.Item) {
         logger.warn({

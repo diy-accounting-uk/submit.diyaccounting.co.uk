@@ -10,7 +10,7 @@
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, buildValidationError } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   companiesHouseHttpGet,
@@ -26,16 +26,8 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/companies-house/company/:companyNumber/registered-office-address", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-  app.head("/api/v1/companies-house/company/:companyNumber/registered-office-address", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/companies-house/company/:companyNumber/registered-office-address", ingestHandler);
+  registerLambdaRoute(app, "head", "/api/v1/companies-house/company/:companyNumber/registered-office-address", ingestHandler);
 }
 /* v8 ignore stop */
 

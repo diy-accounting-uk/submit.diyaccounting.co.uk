@@ -14,7 +14,7 @@ import {
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { redeemPass } from "../../services/passService.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -24,11 +24,7 @@ const logger = createLogger({ source: "app/functions/account/passPost.js" });
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/pass", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/pass", ingestHandler);
 }
 /* v8 ignore stop */
 

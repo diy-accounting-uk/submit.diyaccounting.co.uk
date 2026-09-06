@@ -5,7 +5,7 @@
 
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, getHeader } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { classifyVisitor } from "../../lib/visitorClassifier.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 
@@ -13,11 +13,7 @@ const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.j
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/session/beacon", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/session/beacon", ingestHandler);
 }
 /* v8 ignore stop */
 

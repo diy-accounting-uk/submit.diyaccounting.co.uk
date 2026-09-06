@@ -12,9 +12,11 @@ import {
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -40,34 +42,10 @@ const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.j
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
 
-/**
- * Serialize response headers to a plain object with lowercase keys
- * Handles both Headers objects (with forEach) and plain objects
- * @param {Headers|Object|null} headers - Response headers
- * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
- */
-function serializeResponseHeaders(headers) {
-  if (!headers) {
-    return [];
-  }
-  if (typeof headers.forEach === "function") {
-    const headerEntries = {};
-    headers.forEach((value, key) => {
-      headerEntries[key.toLowerCase()] = value;
-    });
-    return Object.entries(headerEntries);
-  }
-  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
-}
-
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/hmrc/vat/obligation", ingestHandler);
   app.head("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
@@ -449,27 +427,6 @@ export async function workerHandler(event) {
   }
 }
 
-/**
- * Determine if an error is retryable (transient) or terminal.
- * @param {Error} error
- * @returns {boolean}
- */
-function isRetryableError(error) {
-  // Explicitly marked retryable HMRC errors
-  if (error.message?.includes("HMRC temporary error")) return true;
-
-  // Fetch timeout
-  if (error.name === "AbortError") return true;
-
-  // Standard Node.js network errors
-  const retryableCodes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ESOCKETTIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH"];
-  if (error.code && retryableCodes.includes(error.code)) return true;
-
-  // DynamoDB throughput or other transient AWS errors might have retryable: true
-  if (error.retryable) return true;
-
-  return false;
-}
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatObligations(

@@ -6,7 +6,7 @@ stands on its own and can be adopted or ignored independently.
 
 ---
 
-## 1. HTTP Response Helper Boilerplate (internal refactor, no library)
+## 1. HTTP Response Helper Boilerplate (internal refactor, no library) — done
 
 **What**: `app/lib/httpResponseHelper.js` contains 7 nearly identical exported functions
 (`http200OkResponse`, `http400BadRequestResponse`, `http401UnauthorizedResponse`, etc.). Each
@@ -34,7 +34,15 @@ the seven functions.
 
 ---
 
-## 2. SQS Worker Handler Boilerplate (internal refactor, no library)
+## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — partly done
+
+`isRetryableError()` is extracted to `app/lib/sqsWorkerHelper.js` and imported by the three
+hmrc handlers, removing the identical copy in each. The remaining part of this item — a shared
+`processSqsRecords()` wrapping steps 1-5 and 7 — is not done: `bundlePost.js`/`bundleDelete.js`
+always rethrow on error while the hmrc handlers classify retryable vs terminal, so a shared
+wrapper needs a real per-caller policy, and `hmrcVatReturnPost.js` (the live VAT submission
+path) has no direct `workerHandler` unit test to catch a wrong merge. That part needs its own
+pass with handler-specific tests in place first.
 
 **What**: Five Lambda files implement the same `workerHandler(event)` pattern with near-identical
 boilerplate:
@@ -66,7 +74,7 @@ supplied processor for step 6. Extract `isRetryableError()` to a shared location
 
 ---
 
-## 3. `serializeResponseHeaders()` Duplication (internal refactor, no library)
+## 3. `serializeResponseHeaders()` Duplication (internal refactor, no library) — done
 
 **What**: The function `serializeResponseHeaders(headers)` that normalizes `Headers` objects into
 plain objects with lowercase keys is defined identically in two files:
@@ -85,7 +93,7 @@ A slightly different inline version also appears in `hmrcVatReturnPost.js` (line
 
 ---
 
-## 4. ISO Duration Parsing Duplication (internal refactor, no library)
+## 4. ISO Duration Parsing Duplication (internal refactor, no library) — done
 
 **What**: Two files contain nearly identical ISO 8601 duration parsers:
 
@@ -108,7 +116,7 @@ function is simpler.
 
 ---
 
-## 5. DynamoDB Repository Boilerplate (internal refactor, no library)
+## 5. DynamoDB Repository Boilerplate (internal refactor, no library) — done
 
 **What**: All 7 repository files in `app/data/` follow an identical pattern:
 
@@ -154,7 +162,7 @@ every function.
 
 ---
 
-## 6. Express `apiEndpoint` Registration Pattern (internal refactor, no library)
+## 6. Express `apiEndpoint` Registration Pattern (internal refactor, no library) — done
 
 **What**: Every Lambda handler file exports an `apiEndpoint(app)` function that registers routes
 with this pattern:
@@ -290,7 +298,7 @@ Pa11y and Playwright tests run with JS enabled so they will see the populated he
 
 ---
 
-## 8. JWT Decode Without Verification (already fine)
+## 8. JWT Decode Without Verification (already fine) — done
 
 **What**: `app/lib/jwtHelper.js` hand-rolls JWT base64url decoding in `decodeJwtNoVerify()`.
 The function `getUserSub()` duplicates the same decode logic inline (lines 49-62).
@@ -310,7 +318,7 @@ refactored to call `decodeJwtNoVerify()` instead of re-implementing the decode. 
 
 ---
 
-## 9. Logging: Already Using Pino (no change recommended)
+## 9. Logging: Already Using Pino (no change recommended) — done
 
 **What**: The codebase already uses `pino` for structured logging with PII redaction
 (`app/lib/logger.js`). The implementation is well-structured with two redaction layers,
@@ -324,7 +332,7 @@ applied across all files.
 
 ---
 
-## 10. Environment Validation: Already Using Zod (partial adoption)
+## 10. Environment Validation: Already Using Zod (partial adoption) — done
 
 **What**: The project has two parallel env validation systems:
 
@@ -347,7 +355,15 @@ Consider removing `envSchema.js` unless there is a concrete plan to use typed en
 
 ---
 
-## 11. `getTableName()` Pattern in Every Repository (internal refactor)
+## 11. `getTableName()` Pattern in Every Repository (internal refactor) — not done
+
+The suggested `const TABLE_NAME = process.env.X` at module scope is not behaviour-neutral:
+several unit tests import the repository module once at the top of the file, then set the
+table-name env var per test inside `beforeEach` (e.g.
+`app/unit-tests/data/dynamoDbBundleRepository.putBundle.test.js`). A module-scope constant
+would capture whatever the env var held at import time, before any test sets it, and stay
+wrong for the life of the module. `getTableName()` stays a function so it keeps reading the
+env var at call time.
 
 **What**: Six repository files define an identical pattern:
 
@@ -370,7 +386,7 @@ refactor to set `const TABLE_NAME = process.env.SOME_TABLE_NAME` at module scope
 
 ---
 
-## 12. `publishActivityEvent(...).catch(() => {})` Pattern
+## 12. `publishActivityEvent(...).catch(() => {})` Pattern — done
 
 **What**: 14 Lambda handler files call `publishActivityEvent({...}).catch(() => {})` as a
 fire-and-forget operation. The `.catch(() => {})` is repeated every time.
@@ -392,7 +408,7 @@ the catch on new call sites.
 
 ---
 
-## 13. Fetch with Timeout Pattern (consider: no library)
+## 13. Fetch with Timeout Pattern (consider: no library) — done
 
 **What**: Multiple files implement fetch-with-timeout using AbortController:
 
@@ -424,7 +440,7 @@ appropriate here.
 
 ---
 
-## 14. `vi.mock("@aws-sdk/...")` DynamoDB Mock Pattern in Tests
+## 14. `vi.mock("@aws-sdk/...")` DynamoDB Mock Pattern in Tests — done
 
 **What**: Every test file that touches DynamoDB repeats:
 
@@ -442,7 +458,7 @@ The existing `dynamoDbMock.js` shared module already provides the best possible 
 
 ---
 
-## 15. Lambda Handler Structure: `initializeSalt` + `validateEnv` + `extractRequest`
+## 15. Lambda Handler Structure: `initializeSalt` + `validateEnv` + `extractRequest` — done
 
 **What**: Nearly every Lambda handler starts with:
 

@@ -14,11 +14,13 @@ import {
   http409ConflictResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
+import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   UnauthorizedTokenError,
@@ -90,11 +92,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/hmrc/vat/return", ingestHandler);
   app.head("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });
@@ -633,19 +631,8 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
-          headers: {},
+          headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-        if (hmrcResponse.headers) {
-          if (typeof hmrcResponse.headers.forEach === "function") {
-            hmrcResponse.headers.forEach((v, k) => {
-              serializableHmrcResponse.headers[k.toLowerCase()] = v;
-            });
-          } else {
-            Object.keys(hmrcResponse.headers).forEach((k) => {
-              serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
-            });
-          }
-        }
 
         const resultData = {
           receipt,
@@ -797,19 +784,8 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
-        headers: {},
+        headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
-      if (hmrcResponse.headers) {
-        if (typeof hmrcResponse.headers.forEach === "function") {
-          hmrcResponse.headers.forEach((v, k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = v;
-          });
-        } else {
-          Object.keys(hmrcResponse.headers).forEach((k) => {
-            serializableHmrcResponse.headers[k.toLowerCase()] = hmrcResponse.headers[k];
-          });
-        }
-      }
 
       const result = {
         receipt,
@@ -885,27 +861,6 @@ export async function workerHandler(event) {
   }
 }
 
-/**
- * Determine if an error is retryable (transient) or terminal.
- * @param {Error} error
- * @returns {boolean}
- */
-function isRetryableError(error) {
-  // Explicitly marked retryable HMRC errors
-  if (error.message?.includes("HMRC temporary error")) return true;
-
-  // Fetch timeout
-  if (error.name === "AbortError") return true;
-
-  // Standard Node.js network errors
-  const retryableCodes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ESOCKETTIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH"];
-  if (error.code && retryableCodes.includes(error.code)) return true;
-
-  // DynamoDB throughput or other transient AWS errors might have retryable: true
-  if (error.retryable) return true;
-
-  return false;
-}
 
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // trace: 9

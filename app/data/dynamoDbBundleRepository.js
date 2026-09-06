@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
@@ -22,7 +22,6 @@ export async function putBundle(userId, bundle) {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Storing bundle", hashedSub, userId, bundle });
 
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -54,11 +53,12 @@ export async function putBundle(userId, bundle) {
       hashedSub,
       item,
     });
-    await docClient.send(
-      new module.PutCommand({
-        TableName: tableName,
-        Item: item,
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: item,
+        }),
     );
 
     logger.info({
@@ -81,7 +81,6 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
   logger.info({ message: `putBundleByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -106,11 +105,12 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
     }
 
     logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });
-    await docClient.send(
-      new module.PutCommand({
-        TableName: tableName,
-        Item: item,
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: item,
+        }),
     );
 
     logger.info({ message: "Bundle stored in DynamoDB by hashedSub", hashedSub, item });
@@ -131,7 +131,6 @@ export async function deleteBundle(userId, bundleId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     logger.info({
@@ -139,14 +138,15 @@ export async function deleteBundle(userId, bundleId) {
       hashedSub,
       bundleId,
     });
-    await docClient.send(
-      new module.DeleteCommand({
-        TableName: tableName,
-        Key: {
-          hashedSub,
-          bundleId,
-        },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.DeleteCommand({
+          TableName: tableName,
+          Key: {
+            hashedSub,
+            bundleId,
+          },
+        }),
     );
 
     logger.info({
@@ -217,21 +217,21 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
 
   try {
     const hashedSub = hashSub(userId);
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
-        ExpressionAttributeValues: {
-          ":zero": 0,
-          ":granted": tokensGranted,
-          ":resetAt": nextResetAt,
-          ":saltVersion": getSaltVersion(),
-        },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId },
+          UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
+          ExpressionAttributeValues: {
+            ":zero": 0,
+            ":granted": tokensGranted,
+            ":resetAt": nextResetAt,
+            ":saltVersion": getSaltVersion(),
+          },
+        }),
     );
 
     logger.info({ message: "Tokens reset", hashedSub, bundleId, tokensGranted, nextResetAt });
@@ -245,21 +245,21 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
   logger.info({ message: `resetTokensByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
-        ExpressionAttributeValues: {
-          ":zero": 0,
-          ":granted": tokensGranted,
-          ":resetAt": nextResetAt,
-          ":saltVersion": getSaltVersion(),
-        },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId },
+          UpdateExpression: "SET tokensConsumed = :zero, tokensGranted = :granted, tokenResetAt = :resetAt, saltVersion = :saltVersion",
+          ExpressionAttributeValues: {
+            ":zero": 0,
+            ":granted": tokensGranted,
+            ":resetAt": nextResetAt,
+            ":saltVersion": getSaltVersion(),
+          },
+        }),
     );
 
     logger.info({ message: "Tokens reset by hashedSub", hashedSub, bundleId, tokensGranted, nextResetAt });
@@ -274,22 +274,22 @@ export async function consumeToken(userId, bundleId, count = 1) {
 
   try {
     const hashedSub = hashSub(userId);
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const result = await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
-        ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
-        ExpressionAttributeValues: {
-          ":zero": 0,
-          ":inc": count,
-          ":saltVersion": getSaltVersion(),
-        },
-        ReturnValues: "ALL_NEW",
-      }),
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId },
+          UpdateExpression: "SET tokensConsumed = if_not_exists(tokensConsumed, :zero) + :inc, saltVersion = :saltVersion",
+          ConditionExpression: "attribute_not_exists(tokensConsumed) OR tokensConsumed < tokensGranted",
+          ExpressionAttributeValues: {
+            ":zero": 0,
+            ":inc": count,
+            ":saltVersion": getSaltVersion(),
+          },
+          ReturnValues: "ALL_NEW",
+        }),
     );
 
     const updated = result.Attributes;
@@ -311,7 +311,6 @@ export async function recordTokenEvent(userId, bundleId, event) {
 
   try {
     const hashedSub = hashSub(userId);
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const tokenEvent = {
@@ -319,17 +318,18 @@ export async function recordTokenEvent(userId, bundleId, event) {
       timestamp: new Date().toISOString(),
     };
 
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { hashedSub, bundleId },
-        UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
-        ExpressionAttributeValues: {
-          ":empty": [],
-          ":event": [tokenEvent],
-          ":saltVersion": getSaltVersion(),
-        },
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId },
+          UpdateExpression: "SET tokenEvents = list_append(if_not_exists(tokenEvents, :empty), :event), saltVersion = :saltVersion",
+          ExpressionAttributeValues: {
+            ":empty": [],
+            ":event": [tokenEvent],
+            ":saltVersion": getSaltVersion(),
+          },
+        }),
     );
 
     logger.info({ message: "Token event recorded", hashedSub, bundleId, event: tokenEvent });
@@ -343,7 +343,6 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
   logger.info({ message: `updateBundleSubscriptionFields [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const expressions = [];
@@ -363,14 +362,15 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
     names["#saltVersion"] = "saltVersion";
     values[":saltVersion"] = getSaltVersion();
 
-    await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { hashedSub, bundleId },
-        UpdateExpression: "SET " + expressions.join(", "),
-        ExpressionAttributeNames: names,
-        ExpressionAttributeValues: values,
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId },
+          UpdateExpression: "SET " + expressions.join(", "),
+          ExpressionAttributeNames: names,
+          ExpressionAttributeValues: values,
+        }),
     );
 
     logger.info({ message: "Bundle subscription fields updated", hashedSub, bundleId, fields });
@@ -384,21 +384,21 @@ export async function countActiveAllocations(bundleId, nowIso) {
   logger.info({ message: `countActiveAllocations [table: ${getTableName()}]`, bundleId });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     let count = 0;
     let lastEvaluatedKey;
     do {
-      const response = await docClient.send(
-        new module.QueryCommand({
-          TableName: tableName,
-          IndexName: "bundleId-expiry-index",
-          KeyConditionExpression: "bundleId = :bundleId AND expiry > :now",
-          ExpressionAttributeValues: { ":bundleId": bundleId, ":now": nowIso },
-          Select: "COUNT",
-          ExclusiveStartKey: lastEvaluatedKey,
-        }),
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            IndexName: "bundleId-expiry-index",
+            KeyConditionExpression: "bundleId = :bundleId AND expiry > :now",
+            ExpressionAttributeValues: { ":bundleId": bundleId, ":now": nowIso },
+            Select: "COUNT",
+            ExclusiveStartKey: lastEvaluatedKey,
+          }),
       );
       count += response.Count || 0;
       lastEvaluatedKey = response.LastEvaluatedKey;
@@ -418,17 +418,17 @@ export async function getUserBundles(userId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const response = await docClient.send(
-      new module.QueryCommand({
-        TableName: tableName,
-        KeyConditionExpression: "hashedSub = :hashedSub",
-        ExpressionAttributeValues: {
-          ":hashedSub": hashedSub,
-        },
-      }),
+    const response = await executeDynamoDbCommand(
+      (module) =>
+        new module.QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: "hashedSub = :hashedSub",
+          ExpressionAttributeValues: {
+            ":hashedSub": hashedSub,
+          },
+        }),
     );
     logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
 
@@ -440,14 +440,15 @@ export async function getUserBundles(userId) {
     // Fall back to previous salt versions during migration window
     for (const version of getPreviousVersions()) {
       const oldHash = hashSubWithVersion(userId, version);
-      const fallbackResponse = await docClient.send(
-        new module.QueryCommand({
-          TableName: tableName,
-          KeyConditionExpression: "hashedSub = :hashedSub",
-          ExpressionAttributeValues: {
-            ":hashedSub": oldHash,
-          },
-        }),
+      const fallbackResponse = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            KeyConditionExpression: "hashedSub = :hashedSub",
+            ExpressionAttributeValues: {
+              ":hashedSub": oldHash,
+            },
+          }),
       );
       if (fallbackResponse.Items && fallbackResponse.Items.length > 0) {
         logger.warn({ message: "Found bundles at old salt version", version, hashedSub: oldHash });

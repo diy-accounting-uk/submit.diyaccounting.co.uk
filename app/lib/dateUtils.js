@@ -95,3 +95,29 @@ export function calculateOneHourTtl(baseDate) {
 export function fiveMinuteTtl() {
   return calculateTtl(new Date(), TTL_PRESETS.FIVE_MINUTES).ttl;
 }
+
+/**
+ * Add an ISO 8601 duration of the form PnYnMnD to a date. Minimal support for years,
+ * months and days only — no time components.
+ * @param {Date} fromDate - The date to add the duration to
+ * @param {string} iso - The ISO 8601 duration string, e.g. "P1Y6M"
+ * @param {{onUnsupported?: (iso: string) => void}} [options] - onUnsupported is called,
+ *   and fromDate returned unchanged, when iso does not match the supported pattern
+ * @returns {Date}
+ */
+export function parseIsoDurationToDate(fromDate, iso, { onUnsupported } = {}) {
+  const d = new Date(fromDate.getTime());
+  // eslint-disable-next-line security/detect-unsafe-regex
+  const m = String(iso || "").match(/^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?$/);
+  if (!m) {
+    if (onUnsupported) onUnsupported(iso);
+    return d;
+  }
+  const years = parseInt(m[1] || "0", 10);
+  const months = parseInt(m[2] || "0", 10);
+  const days = parseInt(m[3] || "0", 10);
+  d.setFullYear(d.getFullYear() + years);
+  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() + days);
+  return d;
+}
