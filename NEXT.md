@@ -13,10 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-6c85118 (the PR #137 merge deploy of 2026-09-06). prod-0967fab
-and prod-4909b49 are spares: a main deploy's sweep keeps any set younger than eight hours and
-removes one older spare per run, so the daily scheduled deploy clears them over the next two
-days.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127,
+green through every suite; its last job is destroying prod-6c85118). prod-0967fab is the one
+spare: a main deploy's sweep keeps any set younger than eight hours and removes one older
+spare per run, so the daily scheduled deploy clears it.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -34,16 +34,28 @@ fixes are proposed in the reply. What that leaves in motion:
   `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
   House account with an authenticator secret, which the operator does not want. The branch
   stays local, unmerged, in case that changes.
-- The environment deploy that would create the ci filing secret in AWS
-  (`ci/submit/companies-house/client_secret`) was cancelled by the deploy concurrency group
-  and stays undone; the merge of PR #139 runs it on main.
-- Batch 6 (`claude/board-batch-6`, PR #139) was pushed once inside the freeze, on the
-  operator's word, to carry the bundle-expiry fix to prod; it also holds the triage day guard,
-  the index custom-resource fix and the ci client id. The operator merges.
+- Batch 6 (PR #139: the bundle-expiry fix, the triage day guard, the index custom-resource
+  fix and the ci client id) merged at 10:48 UTC. Main's environment deploy (run 34028434110)
+  is green and created the ci filing secret; main's deploy (run 34028434127) passed every
+  suite, including the two that prove the bundle-expiry fix, and is destroying prod-6c85118 as
+  its last job. The operator lifts the freeze when that job is green.
+- Batch 7 is `claude/b7-board` (worktree `.claude/worktrees/b7-board`), seeded with the OpenAPI
+  regeneration that adds the seven Companies House filing routes (f35ade31). The local
+  tracks below land on it as they finish; it is pushed once, after the freeze lifts.
 
-Batches 4 (PR #136) and 5 (PR #137) are merged and both environments' stacks are deployed
-(prod's environment deploy re-run 34024729614 is green). The items below are code complete on
-main or on batch 6 and each names the event that verifies it.
+Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged into
+`claude/b7-board` by the coordinator when its tests are green:
+
+- [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
+  Two commits in the B10.1 pattern (Lambda, simulator, page, catalogue entry behind the
+  `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
+  `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
+  plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
+
+Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
+on main and each names the event that verifies it.
 
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
@@ -58,28 +70,6 @@ main or on batch 6 and each names the event that verifies it.
   `claude/triage-<issue>` and a draft PR when it applies cleanly. The first ci run posted
   Bedrock's 404 as if it were triage, so the redaction script now fails the run on a result
   carrying `is_error`, and nothing is posted. Verified through B30o's proof run.
-- [ ] **B30m. The Bedrock budget topic reaches Telegram.** `<env>-env-bedrock-budget-alerts` in
-  `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
-  Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
-  30. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-5` (dc69e74e). Budgets publish only to SNS,
-  so `bedrockBudgetAlertForward.js` in us-east-1 subscribes to the topic and puts an
-  `ActivityEvent` on the shared activity bus, which every deployment's Telegram rule already
-  reads. The same commit fixes the ci environment deploy failure (run 34016080214, "Budgets
-  Actions don't support daily granularity"): the deny action sits on a monthly USD 150 budget,
-  30 days of the daily figure, and the daily USD 5 budget notifies only (`GREATER_THAN` 99
-  percent, the only operator shape Budgets accepts). The ci environment run 34020055726 then
-  failed on the forwarder Lambda's image: the environment deploy builds no image for the
-  us-east-1 registry, since that stack never had a container Lambda. Track ue1-env-image
-  added that build (ea0bd4d6: the ingestion image is pushed to the us-east-1 repository as
-  `env-observability-ue1-<sha>`), and run 34020851682 deployed the lot to ci. A test
-  notification to `ci-env-bedrock-budget-alerts` at 08:55 UTC on 2026-09-06 reached the
-  forwarder, which put one `bedrock-budget-alert` event on the activity bus (its log shows
-  `published: 1`); no ci app set stood to carry it to Telegram. The same test on prod at
-  09:30 UTC reached `prod-env-bedrock-budget-alert-forward` (`published: 1`), where
-  prod-0967fab's Telegram rule reads the bus. Verified when the operator confirms the message
-  arrived on Telegram.
-
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
   selfDestruct.js`) predates `CompaniesHouseStack`, so every ci set leaves
@@ -94,8 +84,9 @@ main or on batch 6 and each names the event that verifies it.
   `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
   House routes), so that set needs the Companies House stack deleted first and the ApiStack
   deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
-  deleted and ci-claudff66's ApiStack delete was requested again. Verified when
-  `list-stacks` in ci shows no `ci-claud*` stack and the next ci set self-destructs whole.
+  deleted and ci-claudff66's ApiStack delete was requested again. ci shows no
+  orphan stack now; verified when ci-claudf107, the next set, goes whole at its self-destruct
+  time of 11:53 UTC on 2026-09-06.
 - [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
   `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
   scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
@@ -123,26 +114,6 @@ main or on batch 6 and each names the event that verifies it.
   **Track**: code complete on `claude/board-batch-4` (fe4eff98): the issue Lambda is a rule
   target only when the environment is `prod`, pinned by `OpsStackTest` (one target on ci, two on
   prod). Verified when the next ci alarm reaches Telegram and opens no issue.
-- [ ] **B32.5. Activities visible only in ci until the operator has examined them.** The
-  catalogue once carried `listedInEnvironments` on a bundle (commented out in
-  `web/public/submit.catalogue.toml`) and nothing honours it now. Add an `environments` field
-  on activities, read by `catalog-service.js` so the UI lists the activity only in a named
-  environment, and by `enforceBundles` in `app/services/bundleManagement.js` so its paths
-  answer 403 elsewhere (the Lambda has `ENVIRONMENT_NAME`; the browser reads the environment
-  from `submit.env`). Set it to `["local", "proxy", "ci"]` on `vat-liabilities`,
-  `vat-payments`, `vat-penalties` and `self-employed`, and on every new activity from now on
-  until the operator has tried it on ci and lifts the gate; the Companies House `company-lookup`
-  reached prod in PR #118 and joins the same gate. Unit tests on both readers, and the ci
-  behaviour suites keep running against ci. **Source**: operator decision 2026-09-05; BACKLOG
-  32. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (b72324d8). Activities carry
-  `environments = ["local", "test", "simulator", "proxy", "ci"]`; the home page reads the
-  environment from `submit.environment-name.txt` (PublishStack writes it at synth, prod serves
-  `prod`), and `enforceBundles` answers 403 with `ACTIVITY_ENVIRONMENT_RESTRICTED` elsewhere. The
-  three VAT read activities' path patterns narrowed to their own routes so the gate cannot leak
-  onto other VAT endpoints. The ci deployment ci-claud063e (deploy run 33998025585, green)
-  serves the catalogue with the field on all five activities; verified when prod after the
-  merge hides them and the operator has looked at them on ci.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -177,9 +148,9 @@ main or on batch 6 and each names the event that verifies it.
   string value. IndexName: bundleId-expiry-index, IndexKey: expiry". Main's deploy of
   prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
   `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
-  the rejection. Fixed locally on `claude/board-batch-6` (a bundle with no expiry is stored
-  without the attribute; unit test), held by the freeze: the fix reaches prod through a push,
-  the PR #139 merge and main's deploy, all of which wait for the operator's word.
+  the rejection. Fixed on main (091924dd: a bundle with no expiry is stored without the attribute;
+  unit test). #140 is the `prod-6c85118-app-api-5xx` those rejections raised at 09:52;
+  main's deploy of the merge (run 34028434127) passed both suites.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
@@ -220,7 +191,7 @@ main or on batch 6 and each names the event that verifies it.
   Replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a value read from
   `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the environment variable), pass
   `GA4_BIGQUERY_DATASET_ID` for ci into `app/functions/analytics/ga4EventExportPull.js`'s
-  environment, and extend `paymentBehaviour-ci` (or a post-run step in `synthetic-test.yml`)
+  environment, and extend `paymentBehaviour-ci` (or a post-run step in `probe-test.yml`)
   to query the ci dataset for a `purchase` event with the run's transaction id. Behaviour-test
   browsers stub `gtag.js` and `/g/collect` unless `DIY_SUBMIT_ALLOW_REAL_ANALYTICS=true`, and
   Playwright's headless shell reports `HeadlessChrome`, which GA4's bot filter excludes, so the
@@ -239,9 +210,27 @@ main or on batch 6 and each names the event that verifies it.
   when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
 
+- [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Every deployment's
+  `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity bus, so while
+  two prod sets stand (the normal state between a main deploy and the daily sweep) every ops
+  message reaches Telegram twice; the operator's screenshot of 2026-09-06 shows each alarm,
+  stack event and the budget test doubled. Move the rule and the forwarder Lambda
+  (`infra/main/java/.../stacks/OpsStack.java`, `activityTelegramForwarder.js`) to an
+  environment stack so one rule reads the bus per environment, or gate the rule on the
+  deployment being the last known good; CDK test that a synth of two deployments yields one
+  forwarder. **Source**: BACKLOG 30; board render 2026-09-06. **Owner**: Claude Code.
+  **Model**: Sonnet.
+
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O12. Close #140 now and #138 after the 11:15 UTC reconcile run.** #140
+  `prod-app-api-5xx` on prod-6c85118 was the bundle-grant rejection in B30j's remainder, and
+  main's deploy of the PR #139 merge passed the suites that hit it. #138
+  `prod-app-account-stack-health` on prod-0967fab was the reconcile erroring hourly between
+  its deploy at 06:13 and the index's arrival at 09:15 on 2026-09-06; the 10:15 run was clean
+  on both prod sets and both alarms have been OK since, so it closes once the 11:15 run is
+  clean too. **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
   titles and descriptions drafted from the captions. The prod recordings are workflow
   artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
@@ -265,8 +254,9 @@ main or on batch 6 and each names the event that verifies it.
   ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
-  URIs, id in `.env.ci`, secret on ci). Remaining: once PR #139 has merged and the ci
-  environment deploy has created `ci/submit/companies-house/client_secret`, open the two filing
+  URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
+  since main's environment deploy of the PR #139 merge). Remaining: on a standing ci set
+  (ci-claudf107 until 11:53 UTC on 2026-09-06, or the next push's), open the two filing
   activities on the ci site and take one change through the sandbox with your own Companies
   House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
   a person to authorise them, so an automated ci run would need a robot account with an
@@ -275,10 +265,6 @@ main or on batch 6 and each names the event that verifies it.
 
 ## Blocked: operator
 
-- [ ] **O12. Close #138 once the reconcile has held.** #138 `prod-app-account-stack-health`
-  is the reconcile erroring hourly between its deploy at 06:13 and the index's arrival at
-  09:15 on 2026-09-06; it closes once the 10:15 UTC run and the next are clean. **Source**:
-  board render 2026-09-06. **Owner**: Operator. Blocked on two clean hourly runs.
 - [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
   2026-09-21.** The presenter account exists (ID E0000052288, code in the operator's
   credentials store); the test presenter credentials and the accounts specification were
@@ -298,10 +284,10 @@ main or on batch 6 and each names the event that verifies it.
   TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
   asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
   Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
-- [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
-  the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
-  misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
-  **Owner**: Operator.
+- [ ] **O9 / B47. Watch the revived weekly `compliance` and `stack-drift` crons fire on their
+  own** on Monday 2026-09-07 06:00 UTC (`codeql` fired on its schedule on 2026-09-06, run
+  34022009649). If one misses, revive it the same way as on 2026-08-31 and tell Claude Code.
+  **Source**: BACKLOG 47. **Owner**: Operator. Date-gated: 2026-09-07.
 
 ## Blocked: Claude Code
 
@@ -311,11 +297,12 @@ main or on batch 6 and each names the event that verifies it.
   The model call answered 404 until the Anthropic use-case form was submitted through
   `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06. The re-run
   (34024132783) stopped at the day guard, which counted every workflow run including the ones
-  the guard or the role check had stopped; on `claude/board-batch-6` the guard counts only
-  runs whose `run-triage` job executed. Once that merges, re-label #134 with `triage`. Prod's
+  the guard or the role check had stopped; on main (6db5a181, merged in PR #139 at 10:48 UTC on
+  2026-09-06) the guard counts only runs whose `run-triage` job executed. Re-labelling #134
+  with `triage` dispatches the workflow, so it waits for the freeze to lift. Prod's
   variable is set (`prod-env-alarm-triage-role` exists since run 34023929068 deployed the
   observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
-  Fable (coordinator). Blocked on the batch 6 merge.
+  Fable (coordinator). Blocked on the freeze lift.
 - [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
   operator's examination on ci: an OAuth web client key on the existing live application
   "DIY Accounting Submit - prod" (the one whose API key serves prod's lookup) with the prod

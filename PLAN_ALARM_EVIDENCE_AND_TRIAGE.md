@@ -129,7 +129,7 @@ Read from prod (972912397388) and ci (367191799875) on 2026-09-05. `{env}` is `c
 | `ci-app-self-destruct-stack-health` | composite | 14 | children of the rule | — | as above |
 | `{env}-app-edge-stack-health` | composite | 14 | children of the rule | — | as above |
 
-`{env}-app-edge-stack-health` is in `PLAN_ALARM_CONSOLIDATION.md`'s table. It was not present in
+`{env}-app-edge-stack-health` is in `_developers/archive/PLAN_ALARM_CONSOLIDATION.md`'s table. It was not present in
 prod on 2026-09-05 in either region. Rule 14 covers it whenever it appears.
 
 **Application-scoped, us-east-1** (forwarded by `EdgeStack`'s `WafAlarmForwardRule`)

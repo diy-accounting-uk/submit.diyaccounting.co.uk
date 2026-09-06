@@ -105,6 +105,10 @@ for branches with commits nowhere else, whether their content already exists on 
   `main` or the batch, and those names) rather than one row each.
 Never delete an origin branch from this skill; the operator does. Local branches whose tip is
 on `main` or the batch may be pruned with `git branch -d` (never `-D`).
+Branch names follow `CLAUDE.md`: the integration branch is `claude/b<n>-board`, a track branch
+`claude/<ns>-<n>-<topic>` or `claude/<ns>-<topic>`, the distinctive part right after `claude/`.
+A branch named the old way (`claude/board-batch-<n>`, a generic preamble, a series number at
+the end) gets a note in `Action`: rename before its next push.
 
 ## Rules
 

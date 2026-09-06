@@ -907,7 +907,7 @@ Sized for a Sonnet coder. Each item names its files and what "done" looks like.
 | 14 | `.github/workflows/video-capture.yml` | Section 8. |
 | 15 | `package.json` | The three npm scripts, `ffmpeg-static` devDependency; remove `test:captureDemo` and `test:captureDemo-simulator`. |
 | 16 | `.claude/skills/site-video-capture/SKILL.md` + root symlink | Section 9. |
-| 17 | Deletions | `behaviour-tests/captureDemo.behaviour.test.js`, `scripts/capture-demo-videos.js`, the `captureDemo` project in `playwright.config.js`, `behaviour-tests/helpers/playwrightTestForCapture.js` if nothing else uses it, `PLAN_DEMO_VIDEOS.md`. |
+| 17 | Deletions | `behaviour-tests/captureDemo.behaviour.test.js`, `scripts/capture-demo-videos.js`, the `captureDemo` project in `playwright.config.js`, `behaviour-tests/helpers/playwrightTestForCapture.js` if nothing else uses it, `_developers/archive/PLAN_DEMO_VIDEOS.md`. |
 
 Build order: 1–4 first (the pacing model is the thing to get right and it is testable without a
 browser), then 5–6 (the overlay, reviewable with `--stills-only`), then 7–8, then 9–12, then 13–14.
@@ -916,7 +916,8 @@ browser), then 5–6 (the overlay, reviewable with `--stills-only`), then 7–8,
 
 ## 13. What to keep and what to drop from the previous attempt
 
-`PLAN_DEMO_VIDEOS.md` already marks itself superseded. The code underneath it splits cleanly.
+`_developers/archive/PLAN_DEMO_VIDEOS.md` already marks itself superseded. The code underneath it
+splits cleanly.
 
 **Keep, as ideas:**
 
@@ -951,7 +952,8 @@ browser), then 5–6 (the overlay, reviewable with `--stills-only`), then 7–8,
   working around it.
 - **`behaviour-tests/` as the home for this.** These are not tests. A failed recording is not a
   failed build. It lives in `scripts/` with its own workflow.
-- **`PLAN_DEMO_VIDEOS.md`.** Delete it when the build lands; this design and the skill replace it.
+- **`_developers/archive/PLAN_DEMO_VIDEOS.md`.** Delete it when the build lands; this design and
+  the skill replace it.
 
 ---
 

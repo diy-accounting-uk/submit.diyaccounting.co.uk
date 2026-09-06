@@ -48,7 +48,8 @@ Unit rates derived from the bill, not looked up:
   2,678,400 seconds = 3,348,000.
 - CloudWatch Logs ingestion: August charged $12.15 for 20.89 GB, so **$0.5816 per GB**.
 - CloudWatch alarms: August charged $17.49 for 183.91 alarm-months, so **$0.0951 per alarm-month**
-  against a list price of $0.10. Composite alarms are $0.50 (`PLAN_ALARM_CONSOLIDATION.md`).
+  against a list price of $0.10. Composite alarms are $0.50
+  (`_developers/archive/PLAN_ALARM_CONSOLIDATION.md`).
 - CloudTrail data events: 2026-09-01 charged $1.29 for 1,289,680 events, so **$0.10 per 100,000**.
 - Cognito Plus: August charged $10.92 for 546 MAU, so **$0.02 per MAU** with no free allowance
   applied.
@@ -90,7 +91,7 @@ One deployment plus the env stacks. US dollars, excluding VAT.
 The CloudWatch Logs and CloudTrail data-event lines began on 2026-08-29 and have four days of
 history; the budget's $152.69 forecast for submit-prod predates both. The alarm line has moved
 twice since: per-function composite alarms went live on 2026-09-02 (26 of them, $13.00), then
-`PLAN_ALARM_CONSOLIDATION.md`'s per-stack design replaced them with 8 (6 app, 2 env, $4.00) the
+`_developers/archive/PLAN_ALARM_CONSOLIDATION.md`'s per-stack design replaced them with 8 (6 app, 2 env, $4.00) the
 same day, and the per-function check count dropped from 4 to 2 on 2026-09-04 (cutting `Throttles`
 and `HighDurationP95`, neither reachable at this traffic level). The figure above is the current
 code state, not yet reflected in a bill.
@@ -107,7 +108,7 @@ Sorted by saving. Effort is S (under a day), M (a few days), L (longer).
 | | **Total** | **192.14** | **12.90** | **179.24** | | | |
 
 Moving to one composite alarm per stack instead of one per function is no longer a listed item:
-it landed in code on 2026-09-02, the same day `PLAN_ALARM_CONSOLIDATION.md` set it out, and the
+it landed in code on 2026-09-02, the same day `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` set it out, and the
 per-function check count dropped from 4 to 2 two days later. Both are already inside the
 CloudWatch alarms baseline above ($15.10), not a pending saving.
 
