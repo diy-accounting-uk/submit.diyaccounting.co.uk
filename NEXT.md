@@ -24,8 +24,32 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Nothing. No sub-agent runs and no batch branch is open; the next batch starts from main as
-`claude/b9-board` when its first track lands.
+Batch 9 is open as `claude/b9-board` (local, from main c696c249). Tracks land on it as each
+worktree agent finishes; one push carries the wave, and that push's ci deploy is the ci set
+B10.4 and O11 need.
+
+- [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
+  waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
+- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 is the
+  proof. Verified when it posts the guardrail's anonymised triage comment.
+- [ ] **D1** in the PITR agent's worktree, branch `claude/cdk-pitr-wait` (Sonnet).
+- [ ] **O17 / B34.7** in the Companies House sandbox agent's worktree, branch
+  `claude/ltd-ci-sandbox` (Sonnet): ef091559 cherry-picked, gated behind a
+  `runCompaniesHouseSandboxFiling` dispatch input on `deploy.yml` and `probe-test.yml`, the
+  TOTP step added, and the four ci environment values it expects named in
+  `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
+- [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
+  auto-destructing sets.** Design pass in the alarm-teardown agent's worktree, branch
+  `claude/ops-alarm-teardown` (Opus): `PLAN_ALARM_TEARDOWN.md` classifies the alarm issues of
+  the last 60 days by scenario, finds #138's cause, and designs one mechanism that disables a
+  deployment's alarms as the first action of the self-destruct Lambda, `destroy-ci.yml`,
+  `destroy-prod.yml` and the main deploy's retire step, with a Sonnet build brief. The build
+  follows in the next wave. **Source**: operator, 2026-09-06. **Owner**: Claude Code.
+  **Model**: Opus design, then Sonnet.
+- [ ] **B17a.5** in the videos agent's worktree, branch `claude/docs-video-publish` (Sonnet):
+  the three prod artifacts downloaded, titles and descriptions drafted into
+  `videos/publish.json`, and `scripts/youtube-upload.js` for the operator's one-time OAuth
+  consent and upload.
 
 ## Ready: Claude Code
 
@@ -55,14 +79,6 @@ Nothing. No sub-agent runs and no batch branch is open; the next batch starts fr
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
 
-- [ ] **C1. CodeQL runs only when test.yml would.** `codeql.yml` triggers on every push to main
-  and every pull request, so each docs-only push to main today ran it (four times between
-  16:18 and 18:39 UTC on 2026-09-06). Give its `push` and `pull_request` triggers the same
-  `paths` list as `test.yml` (app, infra, tests, behaviour-tests, web, the env files, cdk.json,
-  Dockerfile, package and pom files, the catalogue, the workflows and the lint and test
-  configs); the weekly schedule stays. The spreadsheets repo has the same gap in its own
-  `codeql.yml` and its own session makes that change. **Source**: operator, 2026-09-06.
-  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
   that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
   resource with "Backups are being enabled for the table" (DynamoDB's
