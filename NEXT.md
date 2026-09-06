@@ -36,11 +36,8 @@ environment deploy (run 34062870544) are running; the next batch starts from mai
   as evidence (the set is gone; say so, with the issue body's window and the log-group prefix)
   and exits 0 so the triage runs, then the next live alarm issue labelled `triage` is the
   proof. Verified when that run posts the guardrail's anonymised comment. **Source**: BACKLOG
-  30; issue #18. **Owner**: Claude Code. **Model**: Sonnet for the resolver, then the operator
-  labels.
-- [ ] **D1** is on main (PR #146): main's environment deploy replaces each table's PITR
-  resource with the `Provider`-backed one on prod (ci passed at 20:44). Verified when run
-  34062870544 completes and the next deploy that adds a table passes first time.
+  30; issue #18. **Owner**: Claude Code. **Model**: Sonnet for the resolver (in the triage-retired
+  agent's worktree, branch `claude/ops-triage-retired`), then the operator labels.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
   teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
