@@ -115,8 +115,16 @@ verify.
   window pads only seven days, so it has no fallback period when the sandbox holds no return
   for that quarter and answers 404. Fixed on `claude/board-batch-4` (a1cdc8ae): the scene opens
   the View VAT Return form over the same wide window the behaviour test uses; green on the
-  simulator. Prod recording run 34000044595 dispatched from the branch at 02:00 UTC on
-  2026-09-06; verified when its artifact shows the return.
+  simulator. Run 34000044595 then failed the same way through the form: the submit path with
+  synthetic obligations files under a key it derives from the year (`18A2` becomes `17A2`),
+  while the view path only proposes keys HMRC lists, and the sandbox answers 404 for any key
+  never filed under. Fixed on the branch (b2e85061): `syntheticPeriodKeys` in
+  `app/lib/obligationFormatter.js` is the one derivation both paths use, and the scene views
+  the period it submitted through `{{submittedPeriodStart}}` and `{{submittedPeriodEnd}}`. The
+  simulator answers any key, so it cannot prove this; the prod artifact does. Next: after the
+  fourth push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
+  script=view-return -f environment-name=prod`; verified when the return on screen shows Box 6
+  at £5,000, the figure the off-camera submission sent (£0 is the canned default).
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
@@ -171,11 +179,12 @@ verify.
   behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) is
   merged (a88c2459: token exchange Lambda with the client secret scoped to it alone, callback
   page, simulator OAuth routes, env and CDK plumbing; `COMPANIES_HOUSE_CLIENT_ID` is blank in
-  `.env.ci` and `.env.prod` until the operator fills it). Track 2 (the seven filing Lambdas,
-  simulator scenarios, system test) started 2026-09-06 01:45 UTC; track 3 (web, catalogue,
-  behaviour tests) follows it. Track 3 also has to fill the two OAuth base URIs for the
-  simulator lane in `behaviour-tests/helpers/behaviour-helpers.js`, which no track owns yet.
-  The ci behaviour runs need the operator steps below (O11).
+  `.env.ci` and `.env.prod` until the operator fills it). Track 2 is merged (1a8356a2,
+  98cd2bec: the seven filing Lambdas, simulator scenarios and system test; the four
+  registered-office and registered-email Lambdas carry shorter deployed names to fit AWS's
+  64-character cap, URL paths unchanged). Track 3 (pages, catalogue activities on `default`
+  behind the gate, behaviour tests, the simulator lane's two OAuth base URIs) started
+  2026-09-06 02:40 UTC. The ci behaviour runs need the operator steps below (O11).
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
@@ -186,9 +195,11 @@ verify.
   `claude/board-batch-4` (8e12c739, 7f8eba25), green on the simulator: the script declares
   `hmrcServices` so the journey mints its HMRC test user with `mtd-income-tax`, types
   `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
-  Next: after the third push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
-  script=itsa-business-details -f environment-name=ci`; verified when the artifact shows the
-  business id.
+  The first ci recording (run 34001286060) failed before recording: the `wait-for-ci-deploys`
+  action called `gh` and `jq`, which the Playwright container lacks; the action now runs a Node
+  script instead (on the branch, unpushed until the next push). Then re-dispatch
+  `gh workflow run video-capture.yml --ref claude/board-batch-4 -f script=itsa-business-details
+  -f environment-name=ci`; verified when the artifact shows the business id.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
