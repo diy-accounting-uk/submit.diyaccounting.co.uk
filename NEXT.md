@@ -44,8 +44,9 @@ a later event to verify.
   stacks, budgets and index up but `prod-env-DataStack` rolled back: the index custom
   resource issued a second `UpdateTable` while the index was still creating ("Index is being
   created"), and the backup stack job was skipped behind it. Re-dispatched for prod as run
-  34024729614 with the index now ACTIVE; a batch 6 track makes the custom resource treat an
-  index in any status as ensured. Verified when that run is green.
+  34024729614 with the index now ACTIVE. On `claude/board-batch-6` (8105f1aa) the custom
+  resource also ignores `ResourceInUseException`, so an index still creating counts as ensured.
+  Verified when that run is green.
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
