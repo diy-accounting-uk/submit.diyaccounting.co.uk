@@ -59,10 +59,6 @@ Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged 
   `_developers/CSV_VAT_RETURN_CONTRACT.md`, fixtures under `fixtures/vat-return-csv/` for both
   repos to test against, and a parser `app/lib/vatReturnCsv.js` with unit tests; no import
   endpoint yet. **Source**: BACKLOG 16a. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B22. Parse HMRC's monthly fraud-prevention-header email.** A pure parser with tests on
-  redacted fixtures found in the mail mirror, and `PLAN_FRAUD_HEADER_EMAIL_CHECK.md` choosing
-  how the email reaches code and how the alert goes out; no ingestion wired. **Source**:
-  BACKLOG 22. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
   plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B41. Doc hygiene**: archive shipped plans still marked in progress, close out
