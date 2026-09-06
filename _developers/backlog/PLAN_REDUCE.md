@@ -318,7 +318,7 @@ refactored to call `decodeJwtNoVerify()` instead of re-implementing the decode. 
 
 ---
 
-## 9. Logging: Already Using Pino (no change recommended)
+## 9. Logging: Already Using Pino (no change recommended) — done
 
 **What**: The codebase already uses `pino` for structured logging with PII redaction
 (`app/lib/logger.js`). The implementation is well-structured with two redaction layers,
