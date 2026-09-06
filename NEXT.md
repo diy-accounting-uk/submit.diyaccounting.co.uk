@@ -24,77 +24,70 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Nothing. No sub-agent runs and no batch branch is open; the next batch starts from main as
-`claude/b9-board` when its first track lands.
+Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC with all six tracks). Its
+ci deploy is the proof for B10.4, D1 and A1 and the ci set O11 needs; pipeline fixes go on top
+of the branch. No push to the branch while its deploy runs: the concurrency group cancels it.
+
+- [ ] **B10.4** is in flight on PR #146's ci deploy, which runs `itsaObligationsBehaviour` and
+  `itsaSelfEmploymentPeriodBehaviour` against the sandbox on the ci set it creates. Verified
+  when both suites pass there. Row 10's remainder after that: the dashboard page the catalogue
+  names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Fable (coordinator).
+- [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
+  waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
+- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
+  the role, read the guardrail and reached Bedrock, then posted "no assistant text found": the
+  evidence resolver crashed on a missing `@aws-sdk/client-cloudwatch` (the job never installed
+  dependencies and `tee` hid the exit code, so the model found a stack trace in
+  `/tmp/evidence.json`), and `--permission-mode plan` in a headless run left it spending its 12
+  turns on denied `ls` and `gh` calls. Batch 9 (1ca17b6a) installs dependencies in the job,
+  pipefails the evidence step, runs Claude in `dontAsk` mode with 30 turns, tells the prompt what
+  it has and when to stop, and makes the redaction script name a stopped run's subtype. Next:
+  after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
+  the next one). Verified when that run posts the guardrail's anonymised comment.
+- [ ] **D1** is code complete on the batch (3ab5cb3b): `app/functions/infra/ensurePitr.js`
+  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED,
+  on a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
+  type in place, so the first environment deploy replaces each table's PITR resource once
+  (the old one has no delete call). Verified when the batch's ci environment deploy updates
+  `ci-env-DataStack` cleanly and the next deploy that adds a table passes first time.
+- [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
+  auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
+  issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
+  cleared by fe4eff98), fifteen came from the per-deployment Telegram forwarder (cleared by
+  6ab57b30) and twenty-one were real signal, #138 among them (prod-0967fab's hourly
+  bundle-capacity reconcile failed at 07:11 and 08:11 UTC, then ran clean; the log group went
+  with the set). Every alarm routes through the deployment's EventBridge rule with no alarm
+  actions, so disabling actions alone silences nothing; the design writes an SSM marker
+  `/submit/<env>/alarm-silence/<deployment>` as the first action of the self-destruct Lambda
+  and both destroy workflows (which also cover the main deploy's prod retire), and the
+  GitHub-issue and Telegram routers drop a silenced deployment's events; the marker lasts two
+  hours and never beyond twelve from its first write, so a failed destroy re-arms itself. The
+  build is on the batch (26269035): `app/lib/alarmSilence.js`, the guard in both routers, the
+  first action of `selfDestruct.js` and a step in both destroy workflows, with the IAM grants
+  in `SelfDestructStack`, `ActivityStack` and `OpsStack`. Verified on a ci deploy whose set self-destructs without an alarm
+  issue or Telegram message naming it. **Source**: operator, 2026-09-06. **Owner**: Claude
+  Code. **Model**: Sonnet.
 
 ## Ready: Claude Code
 
-- [ ] **B10.4. Prove the ITSA Obligations and quarterly-update suites against the sandbox on
-  ci.** Both endpoints are on main and prod behind the `environments` gate (PR #141), and main
-  deploys run only the prod suites, which the gate skips. No ci set stands (the one PR #141's ci
-  deploy made self-destructed after its hour), so the proof needs a ci deploy first: let the
-  next branch push's ci deploy run them, or dispatch `deploy.yml` for ci from main and then
-  `probe-test.yml` with `itsaObligationsBehaviour` and `itsaSelfEmploymentPeriodBehaviour`, and
-  read the results. Row 10's remainder after that: the dashboard
-  page the catalogue names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10;
-  issues #16, #20. **Owner**: Claude Code. **Model**: Fable (coordinator).
-- [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
-  environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
-  Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
-  was assumed, the guardrail read, and Bedrock answered 403, "not authorized to perform the
-  required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
-  aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
-  Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
-  account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
-  the CDK test (4316f0ce, merged in PR #141 and deployed to both environments by the
-  environment re-run 34038617995). Next step: label an open alarm issue `triage` (#138 is the
-  only one open; its alarm is gone but the chain still runs on the issue). Verified when
-  that run posts a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
-
-Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
-on main and each names the event that verifies it.
-
-- [ ] **C1. CodeQL runs only when test.yml would.** `codeql.yml` triggers on every push to main
-  and every pull request, so each docs-only push to main today ran it (four times between
-  16:18 and 18:39 UTC on 2026-09-06). Give its `push` and `pull_request` triggers the same
-  `paths` list as `test.yml` (app, infra, tests, behaviour-tests, web, the env files, cdk.json,
-  Dockerfile, package and pom files, the catalogue, the workflows and the lint and test
-  configs); the weekly schedule stays. The spreadsheets repo has the same gap in its own
-  `codeql.yml` and its own session makes that change. **Source**: operator, 2026-09-06.
-  **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
-  that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
-  resource with "Backups are being enabled for the table" (DynamoDB's
-  ContinuousBackupsUnavailableException): `ensurePointInTimeRecovery` in
-  `infra/main/java/.../utils/KindCdk.java` calls UpdateContinuousBackups the moment the
-  CreateTable custom resource returns, before DynamoDB has finished turning on the table's
-  default backups. A re-run succeeds because the table is ready by then. Two main deploys hit
-  it in a day: run 33993674189 (2026-09-05 21:42, the ITSA Business Details table) and run
-  34038617995 (2026-09-06 14:19, the Obligations and Self Employment period tables), prod both
-  times; ci passed the same runs, so it is a timing race, not a prod difference. Replace the
-  `AwsCustomResource` with a `Provider`-backed custom resource whose `onEvent` calls
-  UpdateContinuousBackups and whose `isComplete` polls DescribeContinuousBackups until
-  point-in-time recovery reads ENABLED, retrying the update while the backups are still being
-  enabled (`app/functions/infra/ensurePitr.js`, next to `selfDestruct.js`); unit test on the
-  handler, CDK test that every ensured table has the resource. **Source**: deploy-environment
-  runs of 2026-09-05 and 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
-
+Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. The prod recordings are workflow
-  artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
-  `video-view-obligations-prod` on run 33952515598, `video-submit-return-prod` on run
-  33953044775, and `video-view-return-prod` on run 34017736028 (the return on screen is the one
-  filed off camera, Box 6 at £5,000). The ITSA Business Details recording is ci-only until the
-  activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
-  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
-  pattern settles).
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Batch 9
+  (58b9fa7c) carries `videos/publish.json` with the three prod videos' titles, descriptions,
+  tags and captions, and `scripts/youtube-upload.js`, which uploads them as unlisted after a
+  one-time OAuth consent and writes each video id back so a re-run is idempotent. Steps in
+  `videos/PUBLISH.md`: download the three artifacts (30-day retention from 2026-09-04 to
+  2026-09-06), create a Desktop-app OAuth client in the Google Cloud console with the YouTube
+  Data API enabled, export its id and secret, `npm run video:publish`, review, then
+  `npm run video:publish -- --public`. The ITSA Business Details recording stays
+  `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a. **Owner**:
+  Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
   production ("live application"). The hub holds three: "DIY Accounting Submit - test"
@@ -126,19 +119,22 @@ on main and each names the event that verifies it.
   requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
   GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
   34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
-- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites, only if
-  wanted.** Companies House has no HMRC-style create-test-user API: its test data generator
-  makes companies only, and a sandbox user is a real account on
-  identity-sandbox.company-information.service.gov.uk with an authenticator second factor. An
-  automated ci run of the two filing suites therefore needs a throwaway sandbox account the
-  operator registers, with its email as `TEST_COMPANIES_HOUSE_USER_ID`, its password as
-  `TEST_COMPANIES_HOUSE_PASSWORD` and its authenticator secret as
-  `TEST_COMPANIES_HOUSE_TOTP_SECRET` on the ci GitHub environment, plus the test application's
-  REST key as `COMPANIES_HOUSE_SANDBOX_API_KEY` for creating the run's test company. The parked
-  local branch `claude/companies-house-filing-ci-sandbox` (ef091559) has everything except the
-  TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
-  asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
-  Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
+- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites.** Batch
+  9 (6957651c) carries the suites' sandbox sign-in with the authenticator step, off by default:
+  `deploy.yml` and `probe-test.yml` run the two filing suites only when the dispatch input
+  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of the four ci
+  environment values that is empty. Companies House has no create-test-user API, so the
+  operator registers a throwaway account on
+  identity-sandbox.company-information.service.gov.uk with an authenticator second factor and
+  puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its email)
+  and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` (the
+  authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's REST key,
+  for creating the run's test company). Then, against a standing ci set:
+  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
+  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
+  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
+  selector fix. **Source**: BACKLOG 34; issue #15. **Owner**: Operator registers and sets the
+  values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 - [ ] **O9 / B47. Watch the revived weekly `compliance` and `stack-drift` crons fire on their
   own** on Monday 2026-09-07 06:00 UTC (`codeql` fired on its schedule on 2026-09-06, run
   34022009649). If one misses, revive it the same way as on 2026-08-31 and tell Claude Code.
