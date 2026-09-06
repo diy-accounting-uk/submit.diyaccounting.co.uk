@@ -51,7 +51,7 @@ function baseScript(overrides = {}) {
 describe("every scene script in the repo", () => {
   const names = fs
     .readdirSync(videosDir)
-    .filter((file) => file.endsWith(".json") && !file.endsWith(".schema.json"))
+    .filter((file) => file.endsWith(".json") && !file.endsWith(".schema.json") && file !== "publish.json")
     .map((file) => file.replace(/\.json$/, ""));
 
   test.each(names)("%s validates", (name) => {

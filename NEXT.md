@@ -24,8 +24,35 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Nothing. No sub-agent runs and no batch branch is open; the next batch starts from main as
-`claude/b9-board` when its first track lands.
+Batch 9 is open as `claude/b9-board` (local, from main c696c249). Tracks land on it as each
+worktree agent finishes; one push carries the wave, and that push's ci deploy is the ci set
+B10.4 and O11 need.
+
+- [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
+  waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
+- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
+  the role, read the guardrail and reached Bedrock (Sonnet 4.5, 12 turns), then posted "no
+  assistant text found": the evidence resolver crashed on a missing `@aws-sdk/client-cloudwatch`
+  (the job never installs dependencies, and `tee` hid the exit code) and the Claude run spent
+  its 12 turns on denied `ls` and `gh` calls because the prompt never names `/tmp/evidence.json`.
+  Fix in the triage-fix agent's worktree, branch `claude/ops-triage-run` (Sonnet): install
+  dependencies in the job, pipefail on the evidence step, prompt names its inputs, 30 turns,
+  and the redaction script reports a non-success subtype. Verified when the next `triage`
+  label posts the guardrail's anonymised comment.
+- [ ] **D1** in the PITR agent's worktree, branch `claude/cdk-pitr-wait` (Sonnet).
+- [ ] **O17 / B34.7** in the Companies House sandbox agent's worktree, branch
+  `claude/ltd-ci-sandbox` (Sonnet): ef091559 cherry-picked, gated behind a
+  `runCompaniesHouseSandboxFiling` dispatch input on `deploy.yml` and `probe-test.yml`, the
+  TOTP step added, and the four ci environment values it expects named in
+  `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
+- [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
+  auto-destructing sets.** Design pass in the alarm-teardown agent's worktree, branch
+  `claude/ops-alarm-teardown` (Opus): `PLAN_ALARM_TEARDOWN.md` classifies the alarm issues of
+  the last 60 days by scenario, finds #138's cause, and designs one mechanism that disables a
+  deployment's alarms as the first action of the self-destruct Lambda, `destroy-ci.yml`,
+  `destroy-prod.yml` and the main deploy's retire step, with a Sonnet build brief. The build
+  follows in the next wave. **Source**: operator, 2026-09-06. **Owner**: Claude Code.
+  **Model**: Opus design, then Sonnet.
 
 ## Ready: Claude Code
 
@@ -55,14 +82,6 @@ Nothing. No sub-agent runs and no batch branch is open; the next batch starts fr
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
 
-- [ ] **C1. CodeQL runs only when test.yml would.** `codeql.yml` triggers on every push to main
-  and every pull request, so each docs-only push to main today ran it (four times between
-  16:18 and 18:39 UTC on 2026-09-06). Give its `push` and `pull_request` triggers the same
-  `paths` list as `test.yml` (app, infra, tests, behaviour-tests, web, the env files, cdk.json,
-  Dockerfile, package and pom files, the catalogue, the workflows and the lint and test
-  configs); the weekly schedule stays. The spreadsheets repo has the same gap in its own
-  `codeql.yml` and its own session makes that change. **Source**: operator, 2026-09-06.
-  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
   that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
   resource with "Backups are being enabled for the table" (DynamoDB's
@@ -86,15 +105,16 @@ on main and each names the event that verifies it.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
-  titles and descriptions drafted from the captions. The prod recordings are workflow
-  artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
-  `video-view-obligations-prod` on run 33952515598, `video-submit-return-prod` on run
-  33953044775, and `video-view-return-prod` on run 34017736028 (the return on screen is the one
-  filed off camera, Box 6 at £5,000). The ITSA Business Details recording is ci-only until the
-  activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
-  BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
-  pattern settles).
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Batch 9
+  (58b9fa7c) carries `videos/publish.json` with the three prod videos' titles, descriptions,
+  tags and captions, and `scripts/youtube-upload.js`, which uploads them as unlisted after a
+  one-time OAuth consent and writes each video id back so a re-run is idempotent. Steps in
+  `videos/PUBLISH.md`: download the three artifacts (30-day retention from 2026-09-04 to
+  2026-09-06), create a Desktop-app OAuth client in the Google Cloud console with the YouTube
+  Data API enabled, export its id and secret, `npm run video:publish`, review, then
+  `npm run video:publish -- --public`. The ITSA Business Details recording stays
+  `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a. **Owner**:
+  Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
   production ("live application"). The hub holds three: "DIY Accounting Submit - test"
