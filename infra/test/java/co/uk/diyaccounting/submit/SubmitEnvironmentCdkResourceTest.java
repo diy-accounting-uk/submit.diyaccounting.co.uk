@@ -275,6 +275,16 @@ class SubmitEnvironmentCdkResourceTest {
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0")));
 
+        Map<String, Object> subscribeMarketplaceStatement = statements.stream()
+                .filter(s -> "SubscribeMarketplaceModel".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Allow", subscribeMarketplaceStatement.get("Effect"));
+        assertEquals(
+                List.of("aws-marketplace:ViewSubscriptions", "aws-marketplace:Subscribe"),
+                actionsOf(subscribeMarketplaceStatement));
+        assertEquals("*", subscribeMarketplaceStatement.get("Resource"));
+
         Map<String, Map<String, Object>> guardrails = observability.findResources("AWS::Bedrock::Guardrail");
         assertEquals(1, guardrails.size());
         Map<String, Object> guardrailProperties =
