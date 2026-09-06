@@ -1,7 +1,7 @@
 # Resident VAT Bundle Rollout Plan
 
 > **Goal**: Launch `resident-vat` as the primary publicly available subscription tier at £0.99/mo
-> **Prerequisite for**: `PLAN_CAMPAIGN_AND_REFERRALS.md` Phase A
+> **Prerequisite for**: `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS.md` Phase A
 > **GitHub Issue**: TBD
 
 ## User Assertions
