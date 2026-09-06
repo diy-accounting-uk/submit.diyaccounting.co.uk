@@ -407,6 +407,7 @@ jobs:
           GA4_SERVICE_ACCOUNT_ARN: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && format('arn:aws:secretsmanager:{0}:{1}:secret:{2}/submit/ga4/service_account', env.AWS_REGION, vars.SUBMIT_ACCOUNT_ID, needs.names.outputs.environment-name) || '' }}
           GA4_BIGQUERY_PROJECT_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'diyaccounting-ga4' || '' }}
           GA4_BIGQUERY_DATASET_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'analytics_552917343' || '' }}
+          GA4_BIGQUERY_LOCATION: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'europe-west2' || '' }}
 
       - name: 'Retry behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test-retry
@@ -431,6 +432,7 @@ jobs:
           GA4_SERVICE_ACCOUNT_ARN: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && format('arn:aws:secretsmanager:{0}:{1}:secret:{2}/submit/ga4/service_account', env.AWS_REGION, vars.SUBMIT_ACCOUNT_ID, needs.names.outputs.environment-name) || '' }}
           GA4_BIGQUERY_PROJECT_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'diyaccounting-ga4' || '' }}
           GA4_BIGQUERY_DATASET_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'analytics_552917343' || '' }}
+          GA4_BIGQUERY_LOCATION: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'europe-west2' || '' }}
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
