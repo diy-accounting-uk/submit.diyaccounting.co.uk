@@ -40,7 +40,12 @@ B10.4 and O11 need.
   it has and when to stop, and makes the redaction script name a stopped run's subtype. Next:
   after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
   the next one). Verified when that run posts the guardrail's anonymised comment.
-- [ ] **D1** in the PITR agent's worktree, branch `claude/cdk-pitr-wait` (Sonnet).
+- [ ] **D1** is code complete on the batch (3ab5cb3b): `app/functions/infra/ensurePitr.js`
+  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED,
+  on a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
+  type in place, so the first environment deploy replaces each table's PITR resource once
+  (the old one has no delete call). Verified when the batch's ci environment deploy updates
+  `ci-env-DataStack` cleanly and the next deploy that adds a table passes first time.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
   issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
@@ -85,24 +90,6 @@ B10.4 and O11 need.
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
-
-- [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
-  that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
-  resource with "Backups are being enabled for the table" (DynamoDB's
-  ContinuousBackupsUnavailableException): `ensurePointInTimeRecovery` in
-  `infra/main/java/.../utils/KindCdk.java` calls UpdateContinuousBackups the moment the
-  CreateTable custom resource returns, before DynamoDB has finished turning on the table's
-  default backups. A re-run succeeds because the table is ready by then. Two main deploys hit
-  it in a day: run 33993674189 (2026-09-05 21:42, the ITSA Business Details table) and run
-  34038617995 (2026-09-06 14:19, the Obligations and Self Employment period tables), prod both
-  times; ci passed the same runs, so it is a timing race, not a prod difference. Replace the
-  `AwsCustomResource` with a `Provider`-backed custom resource whose `onEvent` calls
-  UpdateContinuousBackups and whose `isComplete` polls DescribeContinuousBackups until
-  point-in-time recovery reads ENABLED, retrying the update while the backups are still being
-  enabled (`app/functions/infra/ensurePitr.js`, next to `selfDestruct.js`); unit test on the
-  handler, CDK test that every ensured table has the resource. **Source**: deploy-environment
-  runs of 2026-09-05 and 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
-
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
