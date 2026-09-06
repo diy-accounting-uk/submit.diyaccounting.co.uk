@@ -207,6 +207,22 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "changeRegisteredOfficeBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/changeRegisteredOffice.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
+      name: "changeRegisteredEmailBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/changeRegisteredEmail.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "captureDemo",
       testDir: "behaviour-tests",
       testMatch: ["**/captureDemo.behaviour.test.js"],

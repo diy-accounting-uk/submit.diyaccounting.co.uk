@@ -163,6 +163,8 @@ app.get("/submit.env", (req, res) => {
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_CLIENT_ID",
     "HMRC_SANDBOX_BASE_URI",
+    "COMPANIES_HOUSE_CLIENT_ID",
+    "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
   ];
 
