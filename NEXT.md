@@ -36,6 +36,16 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
   runs on. After the merge, the operator labels the next open alarm issue `triage` (any set, live
   or retired). Verified when that run posts the guardrail's anonymised comment. **Source**:
   BACKLOG 30; issue #18. **Owner**: Claude Code, then the operator labels.
+- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** The prod OAuth key
+  exists (client id 9b4676ee-a473-4d10-aafe-33d5a14d982d, secret on the GitHub `prod`
+  environment, 2026-09-06 22:32 UTC). In the prod-gate agent's worktree, branch
+  `claude/ltd-prod-gate` (Sonnet), for batch 10: the id, secret ARN and live filing and
+  identity URIs in `.env.prod`; `prod` in the two filing activities' `environments` in
+  `web/public/submit.catalogue.toml`; the filing suites stay ci-only (a live filing needs a
+  real person). The pricing question in `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 is the
+  operator's before the activities leave the free `default` bundle. Verified when main's
+  deploy after the merge shows the two activities on submit.diyaccounting.co.uk. **Source**:
+  BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
   teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
@@ -58,14 +68,6 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O19. Companies House filing: the prod application's OAuth key.** The ci
-  click-through is done (2026-09-06). On the live application "DIY Accounting Submit - prod"
-  at developer.company-information.service.gov.uk/manage-applications (the one whose API key
-  serves prod's lookup), create a key of type OAuth web client with the redirect URI
-  `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html`; put its client id
-  in `.env.prod` as `COMPANIES_HOUSE_CLIENT_ID` (commit on a branch, or tell Claude Code the
-  id) and its secret as `COMPANIES_HOUSE_CLIENT_SECRET` on the GitHub `prod` environment. Then
-  tell Claude Code, which starts B34.5. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
   ready as recorded: `video-view-obligations-prod` (run 33952515598) and
   `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
@@ -112,14 +114,6 @@ Batch 10 is PR #147 (`claude/b10-board`, one track). Main's prod deploy from the
 
 ## Blocked: Claude Code
 
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O19: `prod`
-  joins the two filing activities' `environments` in `web/public/submit.catalogue.toml`,
-  `deploy.yml` runs the two filing suites against prod only when
-  `runCompaniesHouseSandboxFiling` is on (prod filings need a real person to authorise, so no
-  automated run against prod), and the pricing question in
-  `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 gets its answer before the activities leave the free
-  `default` bundle. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on O19.
 - [ ] **B34.6. Companies House accounts filing through the XML Gateway.** FRS 105 micro-entity
   accounts as iXBRL in an XML envelope against the test presenter credentials: an Opus design
   pass (envelope, presenter authentication, the accounts spec, where the iXBRL comes from,
