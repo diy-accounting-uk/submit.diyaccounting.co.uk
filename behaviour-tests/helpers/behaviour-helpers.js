@@ -132,6 +132,9 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const hmrcItsaBusinessDetailsGetAsyncTable = process.env.HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaBusinessDetailsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBusinessDetailsGetAsyncTable, endpoint);
+
+    const hmrcItsaObligationsGetAsyncTable = process.env.HMRC_ITSA_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaObligationsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaObligationsGetAsyncTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);

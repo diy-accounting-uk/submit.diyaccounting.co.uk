@@ -288,6 +288,71 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Obligations", () => {
+    it("should return obligations for a valid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          Accept: "application/vnd.hmrc.3.0+json",
+          Authorization: "Bearer test-token",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+
+      expect(data).toHaveProperty("obligations");
+      expect(Array.isArray(data.obligations)).toBe(true);
+      expect(data.obligations.length).toBeGreaterThan(0);
+
+      const business = data.obligations[0];
+      expect(business).toHaveProperty("typeOfBusiness");
+      expect(business).toHaveProperty("businessId");
+      expect(Array.isArray(business.obligationDetails)).toBe(true);
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/invalid-nino/income-and-expenditure`);
+      expect(response.status).toBe(400);
+
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          "Gov-Test-Scenario": "NOT_FOUND",
+        },
+      });
+
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should return only open obligations for Gov-Test-Scenario OPEN", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure`, {
+        headers: {
+          "Gov-Test-Scenario": "OPEN",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const statuses = data.obligations.flatMap((business) => business.obligationDetails.map((detail) => detail.status));
+      expect(statuses).toEqual(["open"]);
+    });
+
+    it("should filter by status query parameter", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/income-and-expenditure?status=fulfilled`);
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const statuses = data.obligations.flatMap((business) => business.obligationDetails.map((detail) => detail.status));
+      expect(statuses.every((status) => status === "fulfilled")).toBe(true);
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions

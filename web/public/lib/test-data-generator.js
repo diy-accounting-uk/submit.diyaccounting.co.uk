@@ -308,6 +308,18 @@ function populateItsaBusinessDetailsForm() {
   console.log("[Test Data] Populated ITSA business details form with test data");
 }
 
+/**
+ * Populate the ITSA obligations form with test data
+ * Used in obligations.html - NINO only, filters are left to their defaults
+ */
+function populateItsaObligationsForm() {
+  const ninoInput = document.getElementById("nino");
+
+  if (ninoInput) ninoInput.value = generateTestNino();
+
+  console.log("[Test Data] Populated ITSA obligations form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -325,5 +337,6 @@ if (typeof window !== "undefined") {
     populateVatPaymentsForm,
     populateVatPenaltiesForm,
     populateItsaBusinessDetailsForm,
+    populateItsaObligationsForm,
   };
 }

@@ -84,7 +84,7 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 55);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 58);
 
         // 8) Observability stack should enable CloudTrail (Trail present)
         Template observability = Template.fromStack(env.observabilityStack);

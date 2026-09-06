@@ -384,4 +384,36 @@ describe("test-data-generator", () => {
       expect(() => nullDocGenerator.populateItsaBusinessDetailsForm()).not.toThrow();
     });
   });
+
+  describe("populateItsaObligationsForm", () => {
+    let mockElements;
+    let localTestDataGenerator;
+
+    beforeEach(() => {
+      mockElements = {
+        nino: { value: "" },
+      };
+
+      const mockDocument = {
+        getElementById: vi.fn((id) => {
+          if (id === "nino") return mockElements.nino;
+          return null;
+        }),
+      };
+
+      localTestDataGenerator = createTestDataGenerator(mockDocument);
+    });
+
+    test("populates National Insurance number field", () => {
+      localTestDataGenerator.populateItsaObligationsForm();
+      expect(mockElements.nino.value).toBe("AB123456C");
+    });
+
+    test("handles missing elements gracefully", () => {
+      const nullDocGenerator = createTestDataGenerator({
+        getElementById: vi.fn(() => null),
+      });
+      expect(() => nullDocGenerator.populateItsaObligationsForm()).not.toThrow();
+    });
+  });
 });

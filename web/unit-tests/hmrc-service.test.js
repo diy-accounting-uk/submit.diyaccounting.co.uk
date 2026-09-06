@@ -10,7 +10,7 @@ vi.mock("../public/lib/services/api-client.js", () => ({
 }));
 
 import { authorizedFetch } from "../public/lib/services/api-client.js";
-import { submitVat, getBusinessDetails } from "../public/lib/services/hmrc-service.js";
+import { submitVat, getBusinessDetails, getObligations } from "../public/lib/services/hmrc-service.js";
 
 describe("hmrc-service submitVat error handling", () => {
   const vatData = {
@@ -144,5 +144,81 @@ describe("hmrc-service getBusinessDetails", () => {
     });
 
     await expect(getBusinessDetails("AB123456C", "test-token")).rejects.toThrow(/Failed to retrieve business details/);
+  });
+});
+
+describe("hmrc-service getObligations", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("returns the parsed obligations on success", async () => {
+    const obligations = [{ typeOfBusiness: "self-employment", businessId: "XAIS12345678901", obligationDetails: [] }];
+    authorizedFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ obligations }),
+    });
+
+    const result = await getObligations("AB123456C", "test-token");
+    expect(result).toEqual({ obligations });
+    expect(authorizedFetch).toHaveBeenCalledWith(
+      expect.stringContaining("/api/v1/hmrc/itsa/obligations?nino=AB123456C"),
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  test("forwards typeOfBusiness, businessId and status filters as query parameters", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ obligations: [] }),
+    });
+
+    await getObligations("AB123456C", "test-token", {}, false, null, {
+      typeOfBusiness: "self-employment",
+      businessId: "XAIS12345678901",
+      status: "open",
+    });
+
+    const calledUrl = authorizedFetch.mock.calls[0][0];
+    expect(calledUrl).toContain("typeOfBusiness=self-employment");
+    expect(calledUrl).toContain("businessId=XAIS12345678901");
+    expect(calledUrl).toContain("status=open");
+  });
+
+  test("throws a friendly message and clears the stored token when the HMRC scope is insufficient", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      statusText: "Bad Request",
+      json: () =>
+        Promise.resolve({
+          message: "Forbidden",
+          reason: "hmrc_scope_insufficient",
+          userMessage: "Your HMRC authorization does not include the required permissions for this action",
+        }),
+    });
+
+    const clearHmrcToken = vi.fn();
+    global.window = { hmrcScopeCheck: { clearHmrcToken } };
+
+    await expect(getObligations("AB123456C", "test-token")).rejects.toThrow(
+      "Your HMRC authorization does not include the required permissions for this action",
+    );
+    expect(clearHmrcToken).toHaveBeenCalledTimes(1);
+
+    delete global.window;
+  });
+
+  test("throws the raw response for unrecognised failure reasons", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({ message: "Something else went wrong" }),
+    });
+
+    await expect(getObligations("AB123456C", "test-token")).rejects.toThrow(/Failed to retrieve obligations/);
   });
 });

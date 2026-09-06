@@ -374,6 +374,63 @@ export async function getBusinessDetails(
   return responseJson;
 }
 
+/**
+ * Retrieve the authenticated user's ITSA quarterly update obligations from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @param {object} [filters] - Optional typeOfBusiness, businessId, fromDate, toDate, status filters
+ * @returns {Promise<object>} Response containing obligations
+ */
+export async function getObligations(
+  nino,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+  filters = {},
+) {
+  const params = new URLSearchParams({ nino });
+  if (filters.typeOfBusiness) params.append("typeOfBusiness", filters.typeOfBusiness);
+  if (filters.businessId) params.append("businessId", filters.businessId);
+  if (filters.fromDate) params.append("fromDate", filters.fromDate);
+  if (filters.toDate) params.append("toDate", filters.toDate);
+  if (filters.status) params.append("status", filters.status);
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/obligations?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    // The HMRC authorization is missing a required scope - clear the stale token so the
+    // customer re-authorizes instead of retrying with the same token.
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve obligations. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.submitVat = submitVat;
@@ -381,4 +438,5 @@ if (typeof window !== "undefined") {
   window.getClientIP = getClientIP;
   window.getIPViaWebRTC = getIPViaWebRTC;
   window.getBusinessDetails = getBusinessDetails;
+  window.getObligations = getObligations;
 }
