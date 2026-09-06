@@ -320,7 +320,7 @@ metered = false
 # The web/public/lib/toml-parser.js in-browser parser is line-based and does not support a
 # multi-line array, so this stays on one line, unlike the plan's example.
 paths = ["companies-house/changeRegisteredOffice.html", "^/api/v1/companies-house/transaction.*", "^/api/v1/companies-house/company/[^/]+/registered-office-address$", "^/api/v1/companies-house/token$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "change-registered-email"
@@ -329,7 +329,7 @@ display = "on-entitlement"
 bundles = ["default"]
 metered = false
 paths = ["companies-house/changeRegisteredEmail.html", "^/api/v1/companies-house/transaction.*", "^/api/v1/companies-house/company/[^/]+/registered-email-address/eligibility$", "^/api/v1/companies-house/token$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "my-receipts"
