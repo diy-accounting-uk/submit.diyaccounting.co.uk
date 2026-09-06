@@ -139,6 +139,19 @@ class SubmitEnvironmentCdkResourceTest {
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
         SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 1, 0, envRoutedPrefixes);
 
+        // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
+        // mid-teardown's ALARM events are dropped instead of forwarded.
+        List<Map<String, Object>> alarmSilenceStatements =
+                findPolicyStatementsContainingSid(activity, "ReadAlarmSilence");
+        Map<String, Object> alarmSilenceStatement = alarmSilenceStatements.stream()
+                .filter(s -> "ReadAlarmSilence".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("ssm:GetParameter", alarmSilenceStatement.get("Action"));
+        assertTrue(
+                String.valueOf(alarmSilenceStatement.get("Resource")).endsWith("parameter/submit/test/alarm-silence/*"),
+                "expected the test alarm-silence prefix, got " + alarmSilenceStatement.get("Resource"));
+
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);

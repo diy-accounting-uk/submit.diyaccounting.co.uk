@@ -171,6 +171,16 @@ public class ActivityStack extends Stack {
                     this.telegramForwarderLambda.ingestLambda.getFunctionName(), props.telegramBotTokenArn());
         }
 
+        // Reads a deployment's alarm-silence marker so an ALARM state change from a deployment
+        // mid-teardown is dropped instead of forwarded to Telegram.
+        this.telegramForwarderLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAlarmSilence")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/alarm-silence/*"
+                        .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                .build());
+
         cfnOutput(this, "TelegramForwarderLambdaArn", this.telegramForwarderLambda.ingestLambda.getFunctionArn());
 
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "activity", List.of(this.telegramForwarderLambda));

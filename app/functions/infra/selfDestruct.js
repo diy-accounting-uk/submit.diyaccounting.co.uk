@@ -4,10 +4,14 @@
 // app/functions/selfDestruct.js
 
 import { extractRequest, http200OkResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
+import { resolveAlarmEnv } from "../../lib/alarmName.js";
+import { silenceDeployment } from "../../lib/alarmSilence.js";
 
 let cloudFormationClient = null;
 let cloudFormationClientUE1 = null;
 let s3Client = null;
+let ssmClient = null;
+let cloudWatchClient = null;
 
 async function getCloudFormationClient(region = "eu-west-2") {
   if (region === "us-east-1") {
@@ -33,6 +37,50 @@ async function getS3Client() {
   return s3Client;
 }
 
+async function getSsmClient() {
+  if (!ssmClient) {
+    const { SSMClient } = await import("@aws-sdk/client-ssm");
+    ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return ssmClient;
+}
+
+async function getCloudWatchClient() {
+  if (!cloudWatchClient) {
+    const { CloudWatchClient } = await import("@aws-sdk/client-cloudwatch");
+    cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return cloudWatchClient;
+}
+
+/**
+ * Silence this deployment's alarms before anything is torn down, so a normal teardown does not
+ * fire the routers that open a GitHub issue or post to Telegram. DEPLOYMENT_NAME carries the env
+ * prefix (e.g. "ci-branch"); an alarm's own name carries only the slug after it, so the prefix is
+ * stripped here to match what the routers look up. Never throws: a silence failure must not stop
+ * the teardown behind it.
+ */
+async function silenceDeploymentAlarms(deploymentName) {
+  try {
+    const env = resolveAlarmEnv(deploymentName, null);
+    if (!env) {
+      console.log(`Deployment name ${deploymentName} carries no ci/prod prefix, skipping alarm silence`);
+      return;
+    }
+    const deployment = deploymentName.slice(env.length + 1);
+    const result = await silenceDeployment({
+      ssmClient: await getSsmClient(),
+      cloudWatchClient: await getCloudWatchClient(),
+      env,
+      deployment,
+      now: new Date(),
+    });
+    console.log(`Alarm silence result for ${deploymentName}: ${JSON.stringify(result)}`);
+  } catch (error) {
+    console.log(`Error silencing alarms for ${deploymentName}: ${error.message}`);
+  }
+}
+
 export async function ingestHandler(event, context) {
   const client = await getCloudFormationClient();
   const clientUE1 = await getCloudFormationClient("us-east-1");
@@ -48,6 +96,10 @@ export async function ingestHandler(event, context) {
   let request = "Not created";
   try {
     request = extractRequest(event);
+
+    if (process.env.DEPLOYMENT_NAME) {
+      await silenceDeploymentAlarms(process.env.DEPLOYMENT_NAME);
+    }
 
     if (process.env.EDGE_ORIGIN_BUCKET) {
       await emptyBucket(process.env.EDGE_ORIGIN_BUCKET);
