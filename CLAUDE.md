@@ -72,7 +72,15 @@ See `../CLAUDE.md` for full rules. Common permissions for submit work: git opera
 
 ## Git Workflow
 
-See `../CLAUDE.md` for full rules. Branch naming: `claude/<short-description>`. You may create branches, commit, push, open PRs. You may NOT merge PRs, push to main, delete branches, or rewrite history.
+See `../CLAUDE.md` for full rules. You may create branches, commit, push, open PRs. You may NOT merge PRs, push to main, delete branches, or rewrite history.
+
+Branch naming: `claude/<ns>-<n>-<topic>` for one of a series, `claude/<ns>-<topic>` otherwise.
+`<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`; `b` for a board
+batch), `<n>` the series number, `<topic>` one or two words. A narrow branch dropdown shows only
+the first characters after `claude/`, so they carry the distinction: `claude/ltd-1-ch-file`,
+`claude/ltd-2-ch-file`, `claude/ltd-hmrc-submit`, `claude/b7-board`. Never a generic preamble
+or a series number at the end (`claude/a-few-batches-1`,
+`claude/consistent-preamble-hiding-specificity`).
 
 ## Test Commands
 

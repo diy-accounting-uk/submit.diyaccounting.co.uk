@@ -106,7 +106,8 @@ signal in the same evaluation. Anything log-derived can only report a request th
 succeeded.
 
 **404 rates: Athena over the existing Parquet delivery.** The v2 delivery into the analytics
-lake is the only CloudFront log path, and phase 5 of `PLAN_SCHEDULED_INGESTION.md` deleted
+lake is the only CloudFront log path, and phase 5 of
+`_developers/archive/PLAN_SCHEDULED_INGESTION.md` deleted
 the duplicate classic delivery on purpose. Do not add a second delivery, do not enable
 `Distribution.enableLogging`, and do not parse Parquet in Node. `cloudfront_requests` is
 already catalogued and `analyticsMetricsPublish.js` already shows the query-and-parse shape
