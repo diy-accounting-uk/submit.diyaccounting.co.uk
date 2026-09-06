@@ -93,7 +93,7 @@ A slightly different inline version also appears in `hmrcVatReturnPost.js` (line
 
 ---
 
-## 4. ISO Duration Parsing Duplication (internal refactor, no library)
+## 4. ISO Duration Parsing Duplication (internal refactor, no library) — done
 
 **What**: Two files contain nearly identical ISO 8601 duration parsers:
 
