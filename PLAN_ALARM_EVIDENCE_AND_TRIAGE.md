@@ -983,6 +983,10 @@ Bedrock spend is charged to the account, so the budget is per account, which mea
 Budgets are global; define them in `ObservabilityUE1Stack.java` (us-east-1), which already exists
 for the us-east-1 half of this environment's observability.
 
+AWS Budgets Actions reject a DAILY budget, so the deny action sits on a MONTHLY budget at USD 150
+(30 days of the daily figure), alongside a DAILY USD 5 budget that only notifies the same alerts
+topic.
+
 Three resources:
 
 1. `ManagedPolicy` named `{env}-env-alarm-triage-bedrock-deny`, one statement, Effect DENY, actions
