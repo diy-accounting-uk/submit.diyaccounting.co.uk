@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127).
-prod-0967fab is going: `destroy-prod.yml` run 34031877353, dispatched 12:02 UTC on 2026-09-06.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127) and
+no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -198,9 +198,9 @@ on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O12. Close #138.** Both alarms are OK, the 11:15 UTC reconcile run was clean,
-  and each issue carries a comment with the cause and the recommendation to close; #140 is
-  closed. **Source**: board render 2026-09-06. **Owner**: Operator.
+- [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
+  2026-09-06); the issue carries a comment with the cause and the recommendation to close.
+  **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
   titles and descriptions drafted from the captions. The prod recordings are workflow
   artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
