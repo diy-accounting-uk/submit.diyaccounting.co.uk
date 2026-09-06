@@ -309,6 +309,8 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.HMRC_BASE_URI = result.baseUrl;
       process.env.HMRC_SANDBOX_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_FILING_BASE_URI = result.baseUrl;
 
       return {
         stop: result.stop,

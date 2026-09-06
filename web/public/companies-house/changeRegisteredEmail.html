@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Change Registered Email Address - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Change Registered Email Address</h1>
+      <p class="subtitle">File a change of registered email address with Companies House</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../">Activities</a>
+        <a href="../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../bundles.html">Bundles</a>
+        <a href="../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry and eligibility view -->
+      <div id="companyView" class="form-container">
+        <h2>Which company?</h2>
+        <form id="companyForm">
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              The 8-character company number, for example 06846849. Not sure of the number?
+              <a href="companySearch.html">Search Companies House</a> for it first.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              required
+              value=""
+              placeholder="e.g., 06846849"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn">Check eligibility</button>
+        </form>
+      </div>
+
+      <!-- New email form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>New registered email address</h2>
+        <form id="emailAddressForm">
+          <div class="form-group">
+            <label for="registeredEmailAddress">New registered email address</label>
+            <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" required value="" />
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="acceptEmailStatement" name="acceptEmailStatement" />
+            <label for="acceptEmailStatement" style="display: inline; font-weight: normal">
+              I confirm this is an appropriate email address under section 88A(2) of the Companies Act 2006 - one the company is
+              likely to notice mail sent to.
+            </label>
+          </div>
+          <button type="submit" id="continueBtn" class="btn">Continue</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="reviewView" class="results-container" style="display: none">
+        <h2>Review the filing</h2>
+        <p>
+          Company number <strong id="reviewCompanyNumber"></strong> will have its registered email address changed to
+          <strong id="reviewEmailAddress"></strong>.
+        </p>
+        <div class="button-group">
+          <button type="button" id="submitFilingBtn" class="btn">File with Companies House</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div id="validationErrors" class="error-message" style="display: none"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script>
+      // Change registered email address: companyView (with the eligibility check) -> formView ->
+      // reviewView -> resultView, with an authorise round trip through filingCallback.html
+      // whenever no usable Companies House token is already held.
+
+      const PENDING_KEY = "companiesHousePendingFiling";
+      const RESOURCE = "registered-email-address";
+
+      const ELIGIBILITY_STOP_MESSAGES = {
+        INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS:
+          "This company has no registered email address yet. This filing changes an existing address; it does not set the first one.",
+        INVALID_COMPANY_STATUS: "This company's status blocks a registered email address change.",
+        INVALID_COMPANY_TYPE: "This company's type is not covered by this filing.",
+        COMPANY_NOT_FOUND: "That company number is not on the register.",
+      };
+
+      // In-memory filing state. Mirrored into sessionStorage (PENDING_KEY) before any redirect,
+      // so the page can resume the same filing after the OAuth round trip.
+      let filing = null;
+
+      function views() {
+        return {
+          companyView: document.getElementById("companyView"),
+          formView: document.getElementById("formView"),
+          reviewView: document.getElementById("reviewView"),
+          resultView: document.getElementById("resultView"),
+        };
+      }
+
+      function showView(name) {
+        const all = views();
+        Object.keys(all).forEach((key) => {
+          all[key].style.display = key === name ? "block" : "none";
+        });
+      }
+
+      function savePendingFiling() {
+        sessionStorage.setItem(PENDING_KEY, JSON.stringify(filing));
+      }
+
+      function loadPendingFiling() {
+        const raw = sessionStorage.getItem(PENDING_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }
+
+      function clearPendingFiling() {
+        sessionStorage.removeItem(PENDING_KEY);
+      }
+
+      // The eligibility check itself carries Companies House OAuth scopes (Track 2's
+      // companiesHouseRegisteredEmailEligibilityGet.js requires the user's access token), so the
+      // authorise round trip happens before the eligibility answer is known, not after.
+      async function checkEligibilityAndProceed() {
+        showLoading();
+        hideStatus();
+        try {
+          const eligibility = await window.getRegisteredEmailEligibility(filing.companyNumber);
+          if (eligibility.eligibilityStatusCode !== "COMPANY_VALID_FOR_SERVICE") {
+            const message =
+              ELIGIBILITY_STOP_MESSAGES[eligibility.eligibilityStatusCode] ||
+              `This company is not eligible for a registered email address change (${eligibility.eligibilityStatusCode}).`;
+            showStatus(message, "error");
+            clearPendingFiling();
+            showView("companyView");
+            return;
+          }
+
+          clearPendingFiling();
+          showView("formView");
+        } catch (error) {
+          if (error.status === 401) {
+            console.log("Companies House access token was rejected during the eligibility check, re-authorising");
+            window.clearCompaniesHouseToken();
+            redirectToAuthorise(window.companiesHouseScope(filing.companyNumber, RESOURCE));
+            return;
+          }
+          console.error("Failed to check registered email address eligibility:", error);
+          showStatus(error.message || "Failed to check registered email address eligibility.", "error");
+          showView("companyView");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleCompanySubmit(event) {
+        event.preventDefault();
+        const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
+        if (!companyNumber) {
+          showStatus("Please enter a company number.", "error");
+          return;
+        }
+
+        filing = { companyNumber };
+        const scope = window.companiesHouseScope(companyNumber, RESOURCE);
+        if (!window.hasUsableCompaniesHouseToken(scope)) {
+          redirectToAuthorise(scope);
+          return;
+        }
+
+        await checkEligibilityAndProceed();
+      }
+
+      function handleFormSubmit(event) {
+        event.preventDefault();
+        const accepted = document.getElementById("acceptEmailStatement").checked;
+        if (!accepted) {
+          showStatus("You must confirm the section 88A(2) appropriate email address statement to continue.", "error");
+          return;
+        }
+
+        filing = {
+          ...filing,
+          registeredEmailAddress: document.getElementById("registeredEmailAddress").value.trim(),
+          acceptAppropriateEmailAddressStatement: true,
+        };
+
+        document.getElementById("reviewCompanyNumber").textContent = filing.companyNumber;
+        document.getElementById("reviewEmailAddress").textContent = filing.registeredEmailAddress;
+        hideStatus();
+        showView("reviewView");
+      }
+
+      async function pollTransactionUntilSettled(transactionId) {
+        let transaction;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          transaction = await window.getCompaniesHouseTransaction(transactionId);
+          const stillProcessing = (transaction.filings || []).some((entry) => entry.status === "processing");
+          if (!stillProcessing) break;
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+        return transaction;
+      }
+
+      function renderFilingResult(transaction) {
+        const container = document.getElementById("filingResult");
+        const filings = transaction.filings || [];
+        const lines = [
+          `<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`,
+        ];
+        filings.forEach((entry) => {
+          lines.push(`<p>Filing: ${entry.description || entry.type} - <strong>${entry.status}</strong></p>`);
+          if (entry.rejectReasons && entry.rejectReasons.length > 0) {
+            lines.push(`<p>Rejected: ${entry.rejectReasons.join(", ")}</p>`);
+          }
+        });
+        container.innerHTML = lines.join("\n");
+      }
+
+      function renderValidationErrors(errors) {
+        const container = document.getElementById("validationErrors");
+        container.style.display = "block";
+        container.innerHTML = (errors || [])
+          .map((entry) => `<p>${entry.location || ""}: ${entry.error || "invalid value"}</p>`)
+          .join("\n");
+      }
+
+      function redirectToAuthorise(scope) {
+        const state = window.generateRandomState();
+        sessionStorage.setItem("ch_oauth_state", state);
+        sessionStorage.setItem("currentActivity", location.pathname);
+        savePendingFiling();
+        window.authUrlBuilder.buildCompaniesHouseAuthUrl(state, scope).then((authUrl) => {
+          console.log(`Page transition initiated: Redirecting to Companies House OAuth URL ${authUrl}`);
+          window.location.href = authUrl;
+        });
+      }
+
+      async function runFilingSequence() {
+        const scope = window.companiesHouseScope(filing.companyNumber, RESOURCE);
+
+        if (!window.hasUsableCompaniesHouseToken(scope)) {
+          redirectToAuthorise(scope);
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        document.getElementById("validationErrors").style.display = "none";
+        try {
+          if (!filing.transactionId) {
+            const transaction = await window.openCompaniesHouseTransaction(filing.companyNumber, "Change of registered email address");
+            filing.transactionId = transaction.transactionId;
+            savePendingFiling();
+          }
+
+          if (!filing.resourceAdded) {
+            await window.putRegisteredEmailAddress(filing.transactionId, {
+              registeredEmailAddress: filing.registeredEmailAddress,
+              acceptAppropriateEmailAddressStatement: filing.acceptAppropriateEmailAddressStatement,
+            });
+            filing.resourceAdded = true;
+            savePendingFiling();
+          }
+
+          await window.closeCompaniesHouseTransaction(filing.transactionId);
+          const transaction = await pollTransactionUntilSettled(filing.transactionId);
+
+          renderFilingResult(transaction);
+          document.getElementById("startAgainBtn").style.display = "inline-block";
+          clearPendingFiling();
+          showView("resultView");
+        } catch (error) {
+          if (error.status === 401) {
+            console.log("Companies House access token was rejected mid-filing, re-authorising");
+            window.clearCompaniesHouseToken();
+            redirectToAuthorise(scope);
+            return;
+          }
+          if (error.status === 422) {
+            renderValidationErrors(error.body?.errors);
+            document.getElementById("startAgainBtn").style.display = "inline-block";
+            savePendingFiling();
+            showView("resultView");
+            return;
+          }
+          console.error("Companies House filing failed:", error);
+          showStatus(error.message || "Failed to file the change with Companies House.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function startAgain() {
+        clearPendingFiling();
+        filing = null;
+        document.getElementById("companyForm").reset();
+        document.getElementById("emailAddressForm").reset();
+        document.getElementById("validationErrors").style.display = "none";
+        document.getElementById("startAgainBtn").style.display = "none";
+        hideStatus();
+        showView("companyView");
+      }
+
+      // Resume a filing left pending across an OAuth authorise round trip, whenever the page
+      // loads with both a pending filing and a usable token. Two return points share this key:
+      // the eligibility check (no registeredEmailAddress saved yet) and the filing sequence
+      // itself (the form was already filled in), so route to whichever step redirected.
+      async function resumePendingFilingIfReady() {
+        const pending = loadPendingFiling();
+        if (!pending) return;
+
+        filing = pending;
+        const scope = window.companiesHouseScope(filing.companyNumber, RESOURCE);
+        if (!window.hasUsableCompaniesHouseToken(scope)) return;
+
+        sessionStorage.removeItem("currentActivity");
+
+        if (filing.registeredEmailAddress) {
+          runFilingSequence();
+        } else {
+          await checkEligibilityAndProceed();
+        }
+      }
+
+      document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
+      document.getElementById("emailAddressForm").addEventListener("submit", handleFormSubmit);
+      document.getElementById("submitFilingBtn").addEventListener("click", runFilingSequence);
+      document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+
+      if (window.__submitReady__) {
+        resumePendingFilingIfReady();
+      } else {
+        document.addEventListener("submit-ready", resumePendingFilingIfReady, { once: true });
+      }
+    </script>
+  </body>
+</html>

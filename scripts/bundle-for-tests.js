@@ -34,6 +34,7 @@ const moduleFiles = [
   "lib/services/hmrc-service.js",
   "lib/services/catalog-service.js",
   "lib/services/companies-house-service.js",
+  "lib/services/companies-house-filing-service.js",
   // Main entry point
   "submit.js",
 ];
