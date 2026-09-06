@@ -48,6 +48,23 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
   update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
   that every page the catalogue names exists. Verified when main's deploy after the merge
   shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+- [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
+  needs no credentials.** Design pass in the accounts-filing design agent's worktree, branch
+  `claude/ltd-accounts-design` (Opus): `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` from the public
+  schemas on xmlgw.companieshouse.gov.uk (GovTalk envelope, form submission, accounts document)
+  and the FRC's FRS 105 taxonomy, covering the iXBRL generator for micro-entity accounts with
+  offline validation, the envelope and presenter authentication, the submit-then-poll flow, a
+  simulator route that validates against the schemas and returns the documented responses, the
+  page and activity, and a Sonnet build brief. The build follows in the next wave and its
+  behaviour suite runs in the simulator lane. **Source**: BACKLOG 34b; issue #15. **Owner**:
+  Claude Code. **Model**: Opus design, then Sonnet.
+- [ ] **G6. What was the `purchase` event on submitVat.html at 16:47 UTC on 2026-09-03?**
+  The GA4 export holds it with item "VAT Return" and transaction id 096059144348, seventeen
+  minutes after Stripe took a £0.99 subscription payment (pi_3UBdVHCD0Ld2ukzI0mcS9QU3). Read-only
+  lookup in the event-lookup agent's worktree (Sonnet), the way
+  `.claude/skills/vat-submission-failure-alarm-user-lookup` works: was it a live customer's VAT
+  submission, did HMRC accept it, and is it the same customer as the subscription; report
+  without personal data. **Source**: operator, 2026-09-07. **Owner**: Claude Code.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** On main (PR #146). First real check passed: main's deploy retiring
   prod-cfb43ee wrote `/submit/prod/alarm-silence/cfb43ee` at 22:52 UTC on 2026-09-06 and no
@@ -57,7 +74,26 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
 
 ## Ready: Claude Code
 
-Nothing.
+- [ ] **G4. GA4 `purchase` events carry the money.** Both purchases in the export (the £45
+  Company package on the spreadsheets site, pi_3UBX5pCD0Ld2ukzI0ASK1VDj, and the £0.99 submit
+  subscription, pi_3UBdVHCD0Ld2ukzI0mcS9QU3, both 2026-09-03) reached GA4 with revenue 0. Send
+  `value` and `currency` (and the item price) on every `purchase` from both sites, from the
+  Stripe session or price the page already knows, so GA4 reports income. Unit tests on the
+  event builders. **Source**: operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **G5. One event per thing: a VAT submission is not a purchase.** submitVat.html sends
+  GA4 `purchase` with item "VAT Return" when a return is filed, which is a submission, not a
+  payment. Define the events: `purchase` only for a Stripe checkout or subscription (bundle
+  name, value, currency), a distinct event for a filed VAT return, and check whether the
+  subscription checkout on the submit site sends `purchase` at all (the export shows none
+  for the £0.99 subscription's success page). Land the events in `web/public/lib/analytics.js`
+  and wherever the pages call it, with unit tests. **Source**: operator, 2026-09-07. **Owner**:
+  Claude Code. **Model**: Sonnet.
+- [ ] **G7. Streaming export for the GA4 property.** The property has daily export only
+  (`events_YYYYMMDD`, no intraday table), so an event shows in BigQuery the next day. Turn on
+  streaming export on the BigQuery link with `scripts/ga4-property-sync.js` (the service
+  account holds admin; dry run first, then apply), so events land in `events_intraday_*` within
+  minutes. **Source**: operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -108,12 +144,13 @@ Nothing.
 
 ## Blocked: Claude Code
 
-- [ ] **B34.6. Companies House accounts filing through the XML Gateway.** FRS 105 micro-entity
-  accounts as iXBRL in an XML envelope against the test presenter credentials: an Opus design
-  pass (envelope, presenter authentication, the accounts spec, where the iXBRL comes from,
-  simulator routes) then a Sonnet build, with the presenter code reaching the build as a
-  GitHub environment secret. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code.
-  **Model**: Opus design, then Sonnet. Blocked on O16.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After B34.6a and O16:
+  submit the FRS 105 accounts to the XML Gateway test service with the test presenter
+  credentials (a GitHub environment secret), read the real acknowledgement and poll responses,
+  correct the envelope and iXBRL where the sandbox's own validation differs from the public
+  schemas, and record HMRC-style test data in the simulator from what the sandbox returned.
+  **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  O16 and B34.6a.
 
 ## Discipline
 
