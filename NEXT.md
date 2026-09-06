@@ -27,13 +27,24 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-PR #136 (batch 4) merged at 06:08 UTC on 2026-09-06. Its `deploy environment` run 34015720587
-failed at the create-secrets step because `COMPANIES_HOUSE_CLIENT_SECRET` is not set yet, so
-neither environment has the batch's environment stacks (the triage role, guardrail, budget and
-the bundles index) until the guard below lands. Batch 5 is integration branch
-`claude/board-batch-5`; the operator merges. The batch 4 items below are code complete on main
-and each names the event that verifies it once the environment deploy succeeds. B30d waits on
-a later event to verify.
+**Freeze in force since 10:30 UTC on 2026-09-06** (see Discipline below): no push to origin and
+no workflow dispatch until the operator lifts it in their own words. Local work continues and
+fixes are proposed in the reply. What that leaves in motion:
+
+- One local track is still building: the filing suites reading real sandbox credentials
+  (ch-filing-ci-sandbox, Sonnet). It commits in its worktree only; nothing leaves the machine.
+- The ci deploy already running from the last push (34027333381) finishes on its own; its
+  result is only read. The environment deploy that would create the ci filing secret in AWS
+  (`ci/submit/companies-house/client_secret`) was cancelled and stays undone until the freeze
+  lifts.
+- Batch 6 (`claude/board-batch-6`, PR #139) has three commits on origin from before the freeze:
+  the triage day guard, the index custom-resource fix, and the ci client id in `.env.ci`.
+  Local commits since then (board write-backs, and the sandbox track once merged) stay local.
+- When the sandbox track lands it is merged locally and its secret names go to the operator;
+  the push, the environment deploy and the ci filing runs wait for the operator's word.
+
+Batches 4 (PR #136) and 5 (PR #137) are merged; the items below are code complete on main
+or on batch 6 and each names the event that verifies it.
 
 - [ ] **B34.4. The environment deploy skips the Companies House client secret while it is
   unset.** `deploy-environment.yml`'s create-secrets step fails on an empty
@@ -318,4 +329,14 @@ a later event to verify.
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
 ## Discipline
 
-(none repo-specific yet — see `../NEXT.md`)
+- **Freeze, 2026-09-06 10:30 UTC, operator's words:** "We need a freeze now you are creating
+  noise with the deploys. Do not push to origin or run a github workflow until the freeze is
+  lifted. You may work locally if you see a job fail but propose the fixes to me until the
+  freeze is lifted." While it stands: no `git push`, no `gh workflow run`, no `gh pr create`,
+  nothing that reaches GitHub Actions or AWS state; local commits, worktree tracks, reading
+  logs and drafting are fine, and a failed job gets a proposed fix in the reply. It lifts only
+  when the operator says so in their own words.
+- **Why the freeze:** a push per landed track turned one batch into six ci deploys and several
+  environment deploys in a morning, each able to open alarm issues and cancel each other
+  through the deploy concurrency group. Outside a freeze, push once per batch of landed
+  tracks, and prefer one dispatch that proves several things over several dispatches.
