@@ -83,16 +83,15 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
   free (Companies House charges nothing for either filing), a new `resident-company` bundle with
   its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
   catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. All
-  three recordings are ready and downloaded to the paths `videos/publish.json` names
-  (view-obligations run 33952515598, submit-return run 33953044775, view-return run
-  34058244686). Batch 10 (15f18373) makes `scripts/youtube-upload.js` use gcloud's
-  Application Default Credentials, and the YouTube Data API is enabled on `diyaccounting-ga4`
-  (2026-09-06). The one step only the channel owner can do: `gcloud auth application-default
-  login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl`
-  in a terminal, approve in the browser, then tell Claude Code, which runs
-  `npm run video:publish -- --check`, the unlisted upload, and `--public` after the operator's
-  look. **Source**: BACKLOG 17a. **Owner**: Operator for the consent, then Claude Code.
+- [ ] **B17a.5. Publish the videos.** The three VAT recordings are on
+  https://www.youtube.com/@DIYAccountingSubmit as unlisted since 2026-09-07 00:45 UTC:
+  view-obligations MTwm38-r5GU, submit-return jo7LWb3ZpwY, view-return 8qWSW59oxAI, with
+  captions; the ids are in `videos/publish.json` (batch 10). The OAuth client and the channel
+  owner's refresh token are in Secrets Manager (`prod/submit/youtube/oauth_client`,
+  `prod/submit/youtube/refresh_token`), so no later run prompts. Remaining: the operator
+  watches the three, then Claude Code runs `npm run video:publish -- --public`. The ITSA
+  recording stays `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a.
+  **Owner**: Operator to watch, then Claude Code.
 
 ## Blocked: operator
 
