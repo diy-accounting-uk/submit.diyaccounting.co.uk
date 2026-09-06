@@ -332,7 +332,7 @@ applied across all files.
 
 ---
 
-## 10. Environment Validation: Already Using Zod (partial adoption)
+## 10. Environment Validation: Already Using Zod (partial adoption) — done
 
 **What**: The project has two parallel env validation systems:
 
