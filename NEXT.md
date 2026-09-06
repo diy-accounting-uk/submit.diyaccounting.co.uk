@@ -13,9 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0f68ed8 (the PR #132 merge deploy of 2026-09-05); main's deploy
-run 34015720718 for the PR #136 merge is building prod-0967fab beside it and retires
-prod-0f68ed8 itself when it completes.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-0967fab (the PR #136 merge deploy of 2026-09-06), the only app
+stack set standing.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -108,19 +107,6 @@ a later event to verify.
   the html-report under the wrong directory; the ids now equal the suite names. The scheduled
   prod matrix drops the three read suites and `deploy.yml` runs the gated suites only on ci.
   Verified when the first scheduled probe run after the PR merges is green end to end.
-- [ ] **B30l. Canary alarms fire on every new prod set before the canary has run.**
-  `-api-failed` and `-health-failed` in `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`
-  treat missing data as breaching and are evaluated within two minutes of the OpsStack landing,
-  while the canaries run on `cron(27 * * * ? *)`, so a set created outside the :27 minute has no
-  datapoint and the alarm goes INSUFFICIENT_DATA to ALARM at creation (prod-cea27f8 19:48 to
-  20:28 UTC, prod-0f68ed8 22:04 to 22:28 UTC on 2026-09-05), which is what opened #133. Tune:
-  either start the canary schedule with a `rate(1 hour)` expression so the first run lands at
-  creation, or treat missing data as not breaching on these two alarms and leave the
-  stopped-canary case to `prod-env-github-probe-failed`; CDK test on whichever. **Source**:
-  BACKLOG 30; issue #133. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: code complete on `claude/board-batch-4` (fe4eff98): both canary alarms treat
-  missing data as not breaching, pinned by `OpsStackTest`. Verified when the prod deploy after
-  the PR merges opens no `api-failed` or `health-failed` alarm at creation.
 - [ ] **B30k. ci alarms stop opening GitHub issues.** Every ci alarm issue of 2026-09-05
   (#128, #129, #131) was test churn on a ci set that self-destructs within hours, and ci alarms
   already reach Telegram through the same rule. In `OpsStack.java` the
@@ -272,6 +258,10 @@ a later event to verify.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O14. Close alarm issue #133.** `prod-app-api-failed` was opened by prod-0f68ed8's
+  alarm at creation; that set is gone and prod-0967fab's `api-failed` alarm sat in OK from
+  creation, which is what B30l set out to do. **Source**: board render 2026-09-06. **Owner**:
+  Operator.
 - [ ] **O13. Submit the Anthropic use-case details form for Bedrock in both accounts.** The
   first triage run (34016641016, ci) reached Bedrock and got 404 "Model use case details have
   not been submitted for this account. Fill out the Anthropic use case details form". In the
@@ -291,13 +281,11 @@ a later event to verify.
 
 ## Blocked: operator
 
-- [ ] **O12. Close the alarm issues the batch 4 fixes retire.** #133 `prod-app-api-failed`
-  once main's deploy has retired prod-0f68ed8 (its alarm goes with the set; the new set's
-  alarm treats missing data as not breaching). #134 `ci-env-dynamodb-customer-table-scan` and
-  #135 `prod-env-dynamodb-customer-table-scan` once B30j's reconcile has deployed and the
-  alarm has stayed OK for a day; the ci one also stops being raised at all after B30k.
-  **Source**: board render 2026-09-06. **Owner**: Operator. Blocked on the prod deploy and on
-  a day of OK after it.
+- [ ] **O12. Close #134 and #135 once the reconcile fix has held.** #134
+  `ci-env-dynamodb-customer-table-scan` and #135 `prod-env-dynamodb-customer-table-scan` close
+  once B30j's reconcile has deployed to prod and the alarm has stayed OK for a day; the ci one
+  also stops being raised at all after B30k. **Source**: board render 2026-09-06. **Owner**:
+  Operator. Blocked on the prod environment deploy after PR #137 and a day of OK after it.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
