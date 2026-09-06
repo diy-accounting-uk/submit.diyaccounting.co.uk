@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127) and
-no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-cfb43ee (main's deploy of the PR #141 merge, run 34038618085);
+the deploy retired prod-3778d47 and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -37,8 +37,10 @@ coordinator when its tests are green, one push per batch of landed tracks:
   a simulator behaviour suite wired into `deploy.yml` and `probe-test.yml`, and the OpenAPI
   regeneration; the HMRC Obligations 3.0 spec is saved under `_developers/reference/`. Two
   fixes rode along: `hmrcHttpPost` callers must pass the full HMRC URL, and the simulator's
-  Business Details `businessId` now matches HMRC's format. Verified when the two suites pass
-  against the real sandbox on ci once PR #145 unblocks the ci gate. Remainder for row 10: the dashboard page
+  Business Details `businessId` now matches HMRC's format. Main deploys run only the prod
+  suites, which the gate skips, so the sandbox proof comes from the next branch push's ci
+  deploy: verified when `itsaObligationsBehaviour-ci` and `itsaSelfEmploymentPeriodBehaviour-ci`
+  pass there. Remainder for row 10: the dashboard page
   the catalogue names (`hmrc/itsa/dashboard.html`) does not exist yet. **Source**: BACKLOG 10;
   issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Batch 8
@@ -50,22 +52,6 @@ coordinator when its tests are green, one push per batch of landed tracks:
   run in parallel, so a losing ci app deploy is re-run. Verified when one prod set stands after
   main's next app deploy and a stack event reaches Telegram once. **Source**: BACKLOG 30; board
   render 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
-  environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
-  Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
-  was assumed, the guardrail read, and Bedrock answered 403, "not authorized to perform the
-  required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
-  aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
-  Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
-  account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
-  the CDK test (4316f0ce, on PR #141). Verified when, after that merge deploys the
-  observability stacks, a re-labelled alarm issue gets a triage comment with the guardrail's
-  anonymised output. **Source**: BACKLOG 30; issue #18.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
-
-Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
-on main and each names the event that verifies it.
-
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
@@ -185,14 +171,28 @@ on main and each names the event that verifies it.
   event and asserts BigQuery for an earlier run's Stripe transaction. The first ci run of the
   assertion (run 34034928895) failed with "Dataset analytics_552917343 was not found in
   location US": the query named no location, so BigQuery searched the US multi-region for a
-  europe-west2 dataset. The fix (`claude/ga4-bq-location`, PR #145) names the location and
-  skips the assertion while GA4 has not yet created the dataset with its first daily export.
-  Until it merges, `paymentBehaviour-ci` fails every ci deploy, the ITSA suites behind it are
-  skipped, and main's deploy (run 34038618085) does not reach prod. Verified when a ci probe
-  run after the merge finds a purchase row. **Source**: none. **Owner**: Claude Code.
+  europe-west2 dataset. The fix (PR #145, merged) names the location and skips the assertion while
+  GA4 has not yet created the dataset with its first daily export. Verified when a ci probe
+  run finds a purchase row. **Source**: none. **Owner**: Claude Code.
   **Model**: Sonnet.
 
 ## Ready: Claude Code
+
+- [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
+  environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
+  Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
+  was assumed, the guardrail read, and Bedrock answered 403, "not authorized to perform the
+  required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
+  aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
+  Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
+  account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
+  the CDK test (4316f0ce, merged in PR #141 and deployed to both environments by the
+  environment re-run 34038617995). Next step: label an open alarm issue `triage`. Verified when
+  that run posts a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
+  **Owner**: Claude Code. **Model**: Fable (coordinator).
+
+Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
+on main and each names the event that verifies it.
 
 - [ ] **D1. The PITR custom resource waits for a new table's backups.** Every environment deploy
   that creates an async-requests table fails `<env>-env-DataStack` on that table's `EnsurePITR`
