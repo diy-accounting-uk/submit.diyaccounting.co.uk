@@ -24,14 +24,11 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 4 runs on integration branch `claude/board-batch-4`, PR #136 (the operator merges). Its
-first push at 23:12 UTC on 2026-09-05 started ci deploy run 33998025585; the ITSA recording
-(B10.1) and the operator's look at the gated activities use that ci deployment.
-Each track works in its own worktree under `.claude/worktrees/` on a `worktree-agent-*` branch
-and never edits this file. The coordinator merges tracks as they land and pushes in batches,
-with pipeline fixes riding on the next push. Wave 1 started 2026-09-05 22:45 UTC; design tracks
-write a plan doc that a Sonnet build track executes in wave 2. B30d waits on a later event to
-verify.
+Batch 4 is integration branch `claude/board-batch-4`, PR #136, and every build track has landed
+on it; the operator merges. Its ci deployment (the `ci-*` set named in `/submit/ci/last-known-
+good-deployment`) is where the gated activities can be examined. The items below are code
+complete and each names the event that verifies it after the merge. B30d waits on a later
+event to verify.
 
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
@@ -183,20 +180,24 @@ verify.
   only, so catalogue arrays stay on one line). Code complete. Verified when
   `changeRegisteredOfficeBehaviour-ci` and `changeRegisteredEmailBehaviour-ci` pass against the
   sandbox, which needs the operator steps below (O11).
-- [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
-  simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
-  the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
-  `auth: "user"`) against a ci deployment, since the activity stays ci-only until the operator
-  has examined it (B32.5). Every later ITSA endpoint needs the `businessId` this one returns.
-  **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: `videos/itsa-business-details.json` and its npm scripts are on
-  `claude/board-batch-4` (8e12c739, 7f8eba25), green on the simulator: the script declares
-  `hmrcServices` so the journey mints its HMRC test user with `mtd-income-tax`, types
-  `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
-  The first ci recording (run 34001286060) failed before recording: the `wait-for-ci-deploys`
-  action called `gh` and `jq`, which the Playwright container lacks; the action now runs a Node
-  script through the workspace path instead. Re-dispatched as run 34002765831 at 01:10 UTC on
-  2026-09-06; verified when the artifact shows the business id.
+- [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** `alarm-triage.yml`
+  runs on `issues: opened` for issues labelled `alarm` and on the `triage` label, reads the
+  alarm from the issue body, derives the evidence with B30h's mapping, and runs Claude Code on
+  Bedrock (`eu.anthropic.claude-sonnet-4-5-20250929-v1:0`, `--max-turns 12`, plan mode, a
+  read-only tool allow-list) behind a three-runs-a-day guard, `concurrency: alarm-triage` and a
+  timeout. Its one write is an issue comment, after a regex deny-list and a Bedrock guardrail
+  that blocks PII; no PR permissions. The read-only triage role, the guardrail and a daily USD 5
+  Bedrock budget whose action attaches a Bedrock deny live in the Observability stacks. Design
+  in `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Parts 6 to 8. **Source**: BACKLOG 30; issue #18;
+  operator decision 2026-09-05. **Owner**: Claude Code. **Model**: Sonnet.
+  **Track**: code complete on `claude/board-batch-4` (0501fc94, a28ab599); the workflow is a
+  quiet no-op until `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on the environment. Remainder: the
+  budget action's subscriber, `<env>-env-bedrock-budget-alerts` in `ObservabilityUE1Stack`, has
+  no reader yet; subscribe it to the Telegram forwarder or the operator subscribes an address.
+  After the merge and the first deploy the operator runs `gh label create triage`, sets the
+  `SUBMIT_ALARM_TRIAGE_ROLE_ARN` variable on the `ci` and `prod` environments, and proves the
+  chain with a `set-alarm-state` on one ci alarm. Verified when that alarm's issue gains one
+  triage comment and the run's cost appears against the ci budget.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
@@ -240,39 +241,6 @@ verify.
 
 ## Blocked: Claude Code
 
-- [ ] **B30i. Alarm triage: Claude Code headless in Actions, on Bedrock.** After B30h. The
-  trigger is the issue itself: `alarm-triage.yml` runs on `issues: opened` for issues labelled
-  `alarm` (the Lambda in `app/functions/ops/alarmToGithubIssue.js` is not changed), reads the
-  alarm name, timestamp, region and deployment from the issue body, and derives the log groups
-  with the mapping B30h builds. Repeat alarms only comment on the family issue, so they never
-  re-trigger; the operator re-runs one by adding a `triage` label (`issues: labeled`). Budget:
-  USD 5 a day. An AWS Budget on Bedrock spend for the account with a daily period and that
-  limit, with a budget action that attaches a deny on `bedrock:InvokeModel` to the triage role
-  when the figure is crossed, is the hard stop, not an alert. Beneath it the first step counts
-  this workflow's runs in the last 24 hours through the GitHub API and exits at three, and
-  `concurrency: alarm-triage`, `timeout-minutes`, a pinned Sonnet model and `--max-turns` keep
-  a run near a dollar, so the budget action is the backstop, not the normal path. The job checks out the repo, assumes a
-  read-only OIDC role scoped to the deployment's log groups, X-Ray and CloudWatch alarm history
-  (no customer tables), and runs Claude Code with `CLAUDE_CODE_USE_BEDROCK=1`. Its one write is
-  a comment on the issue (or a draft PR when it can name the change): the text passes Bedrock
-  Guardrails' sensitive-information filter plus a regex deny-list for IPs, emails, VRNs and
-  64-hex hashes before posting, and log content is treated as data, never instructions. Design
-  pass first: the alarm-to-log-group mapping shared with B30h, the role's resource list, the
-  triage prompt. **Source**: BACKLOG 30; issue #18; operator decision 2026-09-05. **Owner**:
-  Claude Code. **Model**: Sonnet.
-  **Track**: designed in `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` Parts 6 to 8. Decisions taken at
-  dispatch: Sonnet 4.5 pinned and measured first, guardrail action BLOCK, comment-only with no
-  PR write permissions, resources for both environments. Wave 2 tracks B (CDK: role, guardrail,
-  budget and budget action) and C (the workflow, prompt and redaction script) started 2026-09-06
-  00:30 UTC alongside track A. B is merged (0501fc94: the role trusts
-  `submit-<env>-github-actions-role`, the guardrail blocks PII, the daily USD 5 budget's action
-  attaches the Bedrock deny) and C is merged (a28ab599, plus a guard that makes the run a quiet
-  no-op while `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is unset on the environment). Remainder: the
-  budget action needs a subscriber, so `<env>-env-bedrock-budget-alerts` is a new SNS topic in
-  `ObservabilityUE1Stack` that nothing reads yet; subscribe it to the Telegram forwarder or the
-  operator subscribes an address. Operator steps after the first ci deploy:
-  `gh label create triage`, the `SUBMIT_ALARM_TRIAGE_ROLE_ARN` variable on the `ci` and `prod`
-  environments, and a `set-alarm-state` on one ci alarm to prove the chain.
 - [ ] **G2c. Plumb the measurement id through `submit.env` and assert a `purchase` row in ci.**
   After O1: replace the hardcoded `G-T81V5NL5MB` in `web/public/lib/analytics.js` with a
   value read from `submit.env` (generated by `deploy.yml`/`deploy-app.yml` from the
