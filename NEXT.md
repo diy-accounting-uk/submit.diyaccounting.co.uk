@@ -121,10 +121,14 @@ verify.
   never filed under. Fixed on the branch (b2e85061): `syntheticPeriodKeys` in
   `app/lib/obligationFormatter.js` is the one derivation both paths use, and the scene views
   the period it submitted through `{{submittedPeriodStart}}` and `{{submittedPeriodEnd}}`. The
-  simulator answers any key, so it cannot prove this; the prod artifact does. Next: after the
-  fourth push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
-  script=view-return -f environment-name=prod`; verified when the return on screen shows Box 6
-  at £5,000, the figure the off-camera submission sent (£0 is the canned default).
+  simulator answers any key, so it cannot prove this. Run 34002054637 from the branch against
+  prod failed the same way because prod runs main's Lambda code; only the scene script came from
+  the branch. Proof therefore runs against ci, which carries the fix and talks to the same HMRC
+  sandbox: `video-capture.yml -f script=view-return -f environment-name=ci --ref
+  claude/board-batch-4`, dispatched 03:05 UTC on 2026-09-06 behind the fourth ci deploy.
+  Verified on ci when the return on screen shows Box 6 at £5,000, the figure the off-camera
+  submission sent (£0 is the canned default); the prod recording follows the PR #136 merge and
+  its prod deploy.
 - [ ] **B30j. Stop the hourly bundle-capacity reconcile scanning the bundles table.**
   CloudTrail for 2026-09-05 shows `prod-env-dynamodb-customer-table-scan` (#95) re-entering
   ALARM every hour at about :35 past, and each one is
