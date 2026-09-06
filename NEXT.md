@@ -46,13 +46,21 @@ B10.4 and O11 need.
   TOTP step added, and the four ci environment values it expects named in
   `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
-  auto-destructing sets.** Design pass in the alarm-teardown agent's worktree, branch
-  `claude/ops-alarm-teardown` (Opus): `PLAN_ALARM_TEARDOWN.md` classifies the alarm issues of
-  the last 60 days by scenario, finds #138's cause, and designs one mechanism that disables a
-  deployment's alarms as the first action of the self-destruct Lambda, `destroy-ci.yml`,
-  `destroy-prod.yml` and the main deploy's retire step, with a Sonnet build brief. The build
-  follows in the next wave. **Source**: operator, 2026-09-06. **Owner**: Claude Code.
-  **Model**: Opus design, then Sonnet.
+  auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
+  issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
+  cleared by fe4eff98), fifteen came from the per-deployment Telegram forwarder (cleared by
+  6ab57b30) and twenty-one were real signal, #138 among them (prod-0967fab's hourly
+  bundle-capacity reconcile failed at 07:11 and 08:11 UTC, then ran clean; the log group went
+  with the set). Every alarm routes through the deployment's EventBridge rule with no alarm
+  actions, so disabling actions alone silences nothing; the design writes an SSM marker
+  `/submit/<env>/alarm-silence/<deployment>` as the first action of the self-destruct Lambda
+  and both destroy workflows (which also cover the main deploy's prod retire), and the
+  GitHub-issue and Telegram routers drop a silenced deployment's events; the marker lasts two
+  hours and never beyond twelve from its first write, so a failed destroy re-arms itself. Build
+  in the alarm-silence agent's worktree, branch `claude/ops-alarm-silence` (Sonnet), from the
+  plan's build brief. Verified on a ci deploy whose set self-destructs without an alarm
+  issue or Telegram message naming it. **Source**: operator, 2026-09-06. **Owner**: Claude
+  Code. **Model**: Sonnet.
 
 ## Ready: Claude Code
 
