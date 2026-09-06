@@ -41,11 +41,6 @@ B10.4 and O11 need.
   after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
   the next one). Verified when that run posts the guardrail's anonymised comment.
 - [ ] **D1** in the PITR agent's worktree, branch `claude/cdk-pitr-wait` (Sonnet).
-- [ ] **O17 / B34.7** in the Companies House sandbox agent's worktree, branch
-  `claude/ltd-ci-sandbox` (Sonnet): ef091559 cherry-picked, gated behind a
-  `runCompaniesHouseSandboxFiling` dispatch input on `deploy.yml` and `probe-test.yml`, the
-  TOTP step added, and the four ci environment values it expects named in
-  `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
   issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
@@ -155,19 +150,22 @@ on main and each names the event that verifies it.
   requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
   GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
   34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
-- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites, only if
-  wanted.** Companies House has no HMRC-style create-test-user API: its test data generator
-  makes companies only, and a sandbox user is a real account on
-  identity-sandbox.company-information.service.gov.uk with an authenticator second factor. An
-  automated ci run of the two filing suites therefore needs a throwaway sandbox account the
-  operator registers, with its email as `TEST_COMPANIES_HOUSE_USER_ID`, its password as
-  `TEST_COMPANIES_HOUSE_PASSWORD` and its authenticator secret as
-  `TEST_COMPANIES_HOUSE_TOTP_SECRET` on the ci GitHub environment, plus the test application's
-  REST key as `COMPANIES_HOUSE_SANDBOX_API_KEY` for creating the run's test company. The parked
-  local branch `claude/companies-house-filing-ci-sandbox` (ef091559) has everything except the
-  TOTP step, which Claude Code adds the way the Cognito lane computes its code. Claude Code
-  asks before starting. **Source**: BACKLOG 34; issue #15. **Owner**: Operator decides, then
-  Claude Code. **Model**: Sonnet. Blocked on the operator wanting it.
+- [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites.** Batch
+  9 (6957651c) carries the suites' sandbox sign-in with the authenticator step, off by default:
+  `deploy.yml` and `probe-test.yml` run the two filing suites only when the dispatch input
+  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of the four ci
+  environment values that is empty. Companies House has no create-test-user API, so the
+  operator registers a throwaway account on
+  identity-sandbox.company-information.service.gov.uk with an authenticator second factor and
+  puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its email)
+  and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` (the
+  authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's REST key,
+  for creating the run's test company). Then, against a standing ci set:
+  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
+  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
+  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
+  selector fix. **Source**: BACKLOG 34; issue #15. **Owner**: Operator registers and sets the
+  values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 - [ ] **O9 / B47. Watch the revived weekly `compliance` and `stack-drift` crons fire on their
   own** on Monday 2026-09-07 06:00 UTC (`codeql` fired on its schedule on 2026-09-06, run
   34022009649). If one misses, revive it the same way as on 2026-08-31 and tell Claude Code.
