@@ -51,10 +51,6 @@ Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged 
   `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
   `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B33a. One leaf CDK stack in TypeScript, synth diffed against the Java template.**
-  `cdk-typescript/` with a synth and diff script, report in
-  `_developers/CDK_TYPESCRIPT_SPIKE.md`; no deploy. **Source**: BACKLOG 33a. **Owner**: Claude
-  Code. **Model**: Sonnet.
 - [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
   plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B21a / B23a. Support mail analysis** in `_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`:
