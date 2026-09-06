@@ -8,16 +8,20 @@ package co.uk.diyaccounting.submit.utils;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CustomResource;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.customresources.AwsCustomResource;
 import software.amazon.awscdk.customresources.AwsSdkCall;
 import software.amazon.awscdk.customresources.PhysicalResourceId;
+import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.iam.IGrantable;
@@ -28,6 +32,10 @@ import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -169,6 +177,145 @@ public class KindCdk {
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
+    }
+
+    private static final String ENSURE_PITR_PROVIDER_ROLE_ID = "EnsurePitrProviderRole";
+
+    private static final String ENSURE_PITR_PROVIDER_POLICY_ID = "EnsurePitrProviderPolicy";
+
+    private static final String ENSURE_PITR_PROVIDER_ID = "EnsurePitrProvider";
+
+    /**
+     * Returns the execution role shared by a stack's ensurePitr onEvent and isComplete Lambdas,
+     * creating it on first call and returning the same instance on every later call for that stack.
+     *
+     * <p>Follows the same per-stack singleton shape as {@link #ensureAwsCustomResourceProviderRole},
+     * so every table's PITR wait in a stack runs under one role instead of one per table.
+     *
+     * @param stack The stack whose ensurePitr provider role is needed
+     * @return The shared execution role for that stack's ensurePitr Lambdas
+     */
+    public static IRole ensurePitrProviderRole(Stack stack) {
+        software.constructs.IConstruct existing = stack.getNode().tryFindChild(ENSURE_PITR_PROVIDER_ROLE_ID);
+        if (existing != null) {
+            return (IRole) existing;
+        }
+        return Role.Builder.create(stack, ENSURE_PITR_PROVIDER_ROLE_ID)
+                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+                .managedPolicies(List.of(
+                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .build();
+    }
+
+    /**
+     * Grants {@code statements} to the stack's shared ensurePitr provider role, through one policy
+     * per stack that every table's PITR wait contributes to, mirroring
+     * {@link #grantToAwsCustomResourceProvider}.
+     *
+     * @param stack The stack whose ensurePitr provider role is being granted to
+     * @param statements The permissions one table's PITR wait needs
+     * @return The shared policy, to be added as a dependency of that table's EnsurePITR resource
+     */
+    public static Policy grantToPitrProvider(Stack stack, List<PolicyStatement> statements) {
+        software.constructs.IConstruct existing = stack.getNode().tryFindChild(ENSURE_PITR_PROVIDER_POLICY_ID);
+        Policy policy;
+        if (existing != null) {
+            policy = (Policy) existing;
+        } else {
+            policy = Policy.Builder.create(stack, ENSURE_PITR_PROVIDER_POLICY_ID)
+                    .document(PolicyDocument.Builder.create().minimize(true).build())
+                    .build();
+            policy.attachToRole(ensurePitrProviderRole(stack));
+        }
+        statements.forEach(policy::addStatements);
+        return policy;
+    }
+
+    /**
+     * Returns the stack's singleton Provider-backed PITR waiter, creating it on first call and
+     * returning the same instance on every later call for that stack.
+     *
+     * <p>UpdateContinuousBackups fails with ContinuousBackupsUnavailableException
+     * ("Backups are being enabled for the table") for a short, unpredictable window right after
+     * CreateTable returns on a brand new table. An {@link AwsCustomResource} has no retry loop, so
+     * it fails the whole deployment whenever it lands inside that window; a redeploy then succeeds
+     * only because the table has since finished. A {@link Provider}-backed custom resource polls
+     * {@code isComplete} instead, retrying the update until DynamoDB reports PITR as ENABLED. See
+     * {@code app/functions/infra/ensurePitr.js} for the onEvent/isComplete handler pair.
+     *
+     * @param stack The stack whose ensurePitr provider is needed
+     * @return The shared Provider for that stack's PITR waits
+     */
+    public static Provider ensurePitrProvider(Stack stack) {
+        software.constructs.IConstruct existing = stack.getNode().tryFindChild(ENSURE_PITR_PROVIDER_ID);
+        if (existing != null) {
+            return (Provider) existing;
+        }
+
+        IRole role = ensurePitrProviderRole(stack);
+        var ensurePitrAssetDir = ensurePitrAssetPath();
+
+        ILogGroup onEventLogGroup = LogGroup.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "OnEventLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-EnsurePitrOnEvent")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        Function onEventFunction = Function.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "OnEvent")
+                .runtime(Runtime.NODEJS_22_X)
+                .architecture(Architecture.ARM_64)
+                .handler("ensurePitr.onEvent")
+                .code(Code.fromAsset(ensurePitrAssetDir))
+                .timeout(Duration.seconds(30))
+                .role(role)
+                .logGroup(onEventLogGroup)
+                .build();
+
+        ILogGroup isCompleteLogGroup = LogGroup.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "IsCompleteLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-EnsurePitrIsComplete")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        Function isCompleteFunction = Function.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "IsComplete")
+                .runtime(Runtime.NODEJS_22_X)
+                .architecture(Architecture.ARM_64)
+                .handler("ensurePitr.isComplete")
+                .code(Code.fromAsset(ensurePitrAssetDir))
+                .timeout(Duration.seconds(30))
+                .role(role)
+                .logGroup(isCompleteLogGroup)
+                .build();
+
+        ILogGroup frameworkLogGroup = LogGroup.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "FrameworkLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-EnsurePitrProviderFramework")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        return Provider.Builder.create(stack, ENSURE_PITR_PROVIDER_ID)
+                .onEventHandler(onEventFunction)
+                .isCompleteHandler(isCompleteFunction)
+                .queryInterval(Duration.seconds(10))
+                .totalTimeout(Duration.minutes(10))
+                .logGroup(frameworkLogGroup)
+                .build();
+    }
+
+    /**
+     * Resolves the ensurePitr Lambda's source directory from either the project root (Maven test)
+     * or a CDK app subdirectory such as {@code cdk-environment/} (cdk synth), matching the
+     * resolution {@code IdentityStack} uses for its pre-token-generation trigger.
+     *
+     * @return The absolute path to {@code app/functions/infra}
+     */
+    private static String ensurePitrAssetPath() {
+        var relativePath = "app/functions/infra";
+        var assetDir = Paths.get(relativePath).toAbsolutePath().normalize();
+        if (!assetDir.toFile().isDirectory()) {
+            assetDir = Paths.get("../" + relativePath).toAbsolutePath().normalize();
+        }
+        return assetDir.toString();
     }
 
     /**
@@ -384,9 +531,12 @@ public class KindCdk {
      * live tables that CreateTable skips, which is what makes it work on the existing prod and CI
      * tables rather than only on new ones.
      *
-     * <p>Errors are deliberately not ignored. A table that is still CREATING rejects this call, and
-     * a deployment that failed loudly there is better than one that silently leaves a table with no
-     * recovery window. The dependency on the CreateTable resource orders the two calls.
+     * <p>A brand new table rejects UpdateContinuousBackups with ContinuousBackupsUnavailableException
+     * ("Backups are being enabled for the table") for a short, unpredictable window after CreateTable
+     * returns. {@link #ensurePitrProvider} waits out that window instead of failing the deployment:
+     * its onEvent handler makes one immediate attempt, and its isComplete handler polls until
+     * DynamoDB reports PITR as ENABLED, retrying the update once the window has passed. The
+     * dependency on the CreateTable resource still orders the two calls.
      *
      * @param stack The stack holding the table
      * @param id The construct ID prefix, matching the one passed to ensureTable
@@ -395,28 +545,19 @@ public class KindCdk {
      */
     private static void ensurePointInTimeRecovery(
             Stack stack, String id, String tableName, AwsCustomResource ensureTableResource) {
-        Map<String, Object> updateContinuousBackupsParams = Map.of(
-                "TableName", tableName, "PointInTimeRecoverySpecification", Map.of("PointInTimeRecoveryEnabled", true));
+        Provider pitrProvider = ensurePitrProvider(stack);
 
-        AwsSdkCall updateContinuousBackupsCall = AwsSdkCall.builder()
-                .service("DynamoDB")
-                .action("updateContinuousBackups")
-                .parameters(updateContinuousBackupsParams)
-                .physicalResourceId(PhysicalResourceId.of(tableName + "-pitr"))
-                .build();
-
-        Policy pitrGrant = grantToAwsCustomResourceProvider(
+        Policy pitrGrant = grantToPitrProvider(
                 stack,
                 List.of(PolicyStatement.Builder.create()
                         .actions(List.of("dynamodb:UpdateContinuousBackups", "dynamodb:DescribeContinuousBackups"))
                         .resources(List.of(dynamoTableArn(stack, tableName)))
                         .build()));
 
-        AwsCustomResource ensurePitrResource = AwsCustomResource.Builder.create(stack, id + "-EnsurePITR")
-                .onCreate(updateContinuousBackupsCall)
-                .onUpdate(updateContinuousBackupsCall)
-                .logGroup(ensureAwsCustomResourceProviderLogGroup(stack))
-                .role(ensureAwsCustomResourceProviderRole(stack))
+        CustomResource ensurePitrResource = CustomResource.Builder.create(stack, id + "-EnsurePITRWait")
+                .serviceToken(pitrProvider.getServiceToken())
+                .resourceType("Custom::EnsurePitr")
+                .properties(Map.of("TableName", tableName))
                 .build();
 
         ensurePitrResource.getNode().addDependency(pitrGrant);
@@ -666,10 +807,10 @@ public class KindCdk {
      * ordering between custom resources that never reference each other. Recording the EnsurePITR
      * resource here lets {@link #dependOnTableCreation} chain those calls after it too.
      */
-    private static final Map<Stack, Map<String, AwsCustomResource>> TABLE_PITR_RESOURCES =
+    private static final Map<Stack, Map<String, Construct>> TABLE_PITR_RESOURCES =
             java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
 
-    private static void recordTablePitr(Stack stack, String tableName, AwsCustomResource resource) {
+    private static void recordTablePitr(Stack stack, String tableName, Construct resource) {
         TABLE_PITR_RESOURCES
                 .computeIfAbsent(stack, ignored -> new java.util.HashMap<>())
                 .put(tableName, resource);
@@ -684,8 +825,8 @@ public class KindCdk {
         }
         dependent.getNode().addDependency(tableCreation);
 
-        Map<String, AwsCustomResource> pitrByTableName = TABLE_PITR_RESOURCES.get(stack);
-        AwsCustomResource tablePitr = pitrByTableName == null ? null : pitrByTableName.get(tableName);
+        Map<String, Construct> pitrByTableName = TABLE_PITR_RESOURCES.get(stack);
+        Construct tablePitr = pitrByTableName == null ? null : pitrByTableName.get(tableName);
         if (tablePitr != null) {
             dependent.getNode().addDependency(tablePitr);
         }
