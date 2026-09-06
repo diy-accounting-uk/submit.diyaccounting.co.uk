@@ -21,6 +21,14 @@ describe("substituteValues", () => {
     expect(substituteValues("{{today}} for {{hmrcVatNumber}}", { hmrcVatNumber: "193054661" }, now)).toBe("2026-09-04 for 193054661");
   });
 
+  test("resolves the minted user's National Insurance number", () => {
+    expect(substituteValues("{{hmrcNino}}", { hmrcNino: "AB123456C" }, now)).toBe("AB123456C");
+  });
+
+  test("throws when the script asked for no income-tax service, so hmrcNino was never resolved", () => {
+    expect(() => substituteValues("{{hmrcNino}}", { hmrcVatNumber: "193054661" }, now)).toThrow(/no value for this run/);
+  });
+
   test("resolves the run's date from the clock it is given", () => {
     expect(substituteValues("{{today}}", {}, now)).toBe("2026-09-04");
     expect(substituteValues("{{daysAgo:10}}", {}, now)).toBe("2026-08-25");

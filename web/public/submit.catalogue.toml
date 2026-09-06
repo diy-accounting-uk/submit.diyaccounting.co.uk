@@ -144,7 +144,7 @@ tokenRefreshInterval = "P1M"
 stripePriceAmount = 99
 stripeCurrency = "gbp"
 stripeInterval = "month"
-listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
+listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
 # Hidden in production until the ITSA pages (B10) exist to claim the self-employed activity

@@ -123,6 +123,24 @@ describe("offCamera scenes", () => {
   });
 });
 
+describe("hmrcServices", () => {
+  test("is optional, defaulting elsewhere to mtd-vat", () => {
+    expect(() => validateScript(baseScript())).not.toThrow();
+  });
+
+  test("accepts a script that also asks for mtd-income-tax", () => {
+    expect(() => validateScript(baseScript({ hmrcServices: ["mtd-vat", "mtd-income-tax"] }))).not.toThrow();
+  });
+
+  test("rejects an empty array", () => {
+    expect(() => validateScript(baseScript({ hmrcServices: [] }))).toThrow(/hmrcServices/);
+  });
+
+  test("rejects an unknown service name", () => {
+    expect(() => validateScript(baseScript({ hmrcServices: ["mtd-something-else"] }))).toThrow(/hmrcServices/);
+  });
+});
+
 describe("fill", () => {
   const withStep = (step) => baseScript({ scenes: [{ id: "home", chapter: "Home", steps: [{ action: "goto", url: "/" }, step] }] });
 

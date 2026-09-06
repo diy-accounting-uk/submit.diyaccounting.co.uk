@@ -77,6 +77,13 @@
     },
     "suppress": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "finalHoldMs": { "type": "number", "minimum": 0 },
+    "hmrcServices": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["mtd-vat", "mtd-income-tax"] },
+      "minItems": 1,
+      "default": ["mtd-vat"],
+      "description": "HMRC sandbox services the run's minted test user needs, passed to the Create Test User API. Defaults to [\"mtd-vat\"]. A script whose journey needs the user's National Insurance number (the {{hmrcNino}} placeholder) declares [\"mtd-vat\", \"mtd-income-tax\"]. Ignored when TEST_HMRC_USERNAME supplies a real test user instead of minting one."
+    },
     "scenes": {
       "type": "array",
       "minItems": 1,
@@ -418,7 +425,7 @@
     },
     "substitutedText": {
       "type": "string",
-      "description": "Typed or filled text. {{hmrcVatNumber}} resolves to the run's HMRC test user's VAT registration number. {{today}}, {{daysAgo:N}}, {{monthsAgo:N}} and {{yearsAgo:N}} resolve to a date in YYYY-MM-DD, from one clock fixed at the start of the run. An unknown placeholder fails the run."
+      "description": "Typed or filled text. {{hmrcVatNumber}} resolves to the run's HMRC test user's VAT registration number. {{hmrcNino}} resolves to that user's National Insurance number and needs \"mtd-income-tax\" in the script's hmrcServices. {{today}}, {{daysAgo:N}}, {{monthsAgo:N}} and {{yearsAgo:N}} resolve to a date in YYYY-MM-DD, from one clock fixed at the start of the run. An unknown placeholder, or one the run never resolved, fails the run."
     },
     "secret": {
       "type": "boolean",
