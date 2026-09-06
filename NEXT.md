@@ -31,9 +31,11 @@ Nothing. No sub-agent runs and no batch branch is open; the next batch starts fr
 
 - [ ] **B10.4. Prove the ITSA Obligations and quarterly-update suites against the sandbox on
   ci.** Both endpoints are on main and prod behind the `environments` gate (PR #141), and main
-  deploys run only the prod suites, which the gate skips. Dispatch `probe-test.yml` for ci with
-  `itsaObligationsBehaviour` and `itsaSelfEmploymentPeriodBehaviour`, or let the next branch
-  push's ci deploy run them, and read the results. Row 10's remainder after that: the dashboard
+  deploys run only the prod suites, which the gate skips. No ci set stands (the one PR #141's ci
+  deploy made self-destructed after its hour), so the proof needs a ci deploy first: let the
+  next branch push's ci deploy run them, or dispatch `deploy.yml` for ci from main and then
+  `probe-test.yml` with `itsaObligationsBehaviour` and `itsaSelfEmploymentPeriodBehaviour`, and
+  read the results. Row 10's remainder after that: the dashboard
   page the catalogue names (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10;
   issues #16, #20. **Owner**: Claude Code. **Model**: Fable (coordinator).
 - [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
@@ -45,7 +47,8 @@ Nothing. No sub-agent runs and no batch branch is open; the next batch starts fr
   Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
   account, so the triage role in `ObservabilityStack.java` grants those two actions, pinned in
   the CDK test (4316f0ce, merged in PR #141 and deployed to both environments by the
-  environment re-run 34038617995). Next step: label an open alarm issue `triage`. Verified when
+  environment re-run 34038617995). Next step: label an open alarm issue `triage` (#138 is the
+  only one open; its alarm is gone but the chain still runs on the issue). Verified when
   that run posts a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
   **Owner**: Claude Code. **Model**: Fable (coordinator).
 
@@ -107,9 +110,10 @@ on main and each names the event that verifies it.
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
   URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
-  since main's environment deploy of the PR #139 merge). Remaining: on the ci set PR #141's
-  deploy creates, open the two filing activities on the ci site and take one change through the sandbox with your own Companies
-  House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
+  since main's environment deploy of the PR #139 merge). Remaining: on a ci set (none stands;
+  the next branch push makes one, or dispatch `deploy.yml` for ci from main), open the two
+  filing activities on the ci site and take one change through the sandbox with your own
+  Companies House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
   a person to authorise them, so an automated ci run would need a robot account with an
   authenticator secret, which is not wanted. **Source**: BACKLOG 34; issue #15. **Owner**:
   Operator.
