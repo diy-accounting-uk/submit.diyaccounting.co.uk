@@ -400,3 +400,7 @@ web/www.diyaccounting.co.uk/redirect-function.js
 
 # Agent worktrees created by Claude Code sessions
 .claude/worktrees/
+
+# TypeScript CDK spike build output
+/cdk-typescript/node_modules/
+/cdk-typescript/cdk.out/

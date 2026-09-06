@@ -16,7 +16,7 @@ import {
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { updateUserBundles } from "../../services/bundleManagement.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
@@ -32,17 +32,9 @@ const DEFAULT_WAIT_MS = 0; // Fire-and-forget by default for Phase 1 async rollo
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.delete("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "delete", "/api/v1/bundle", ingestHandler);
   // Also support deletion via path parameter for parity with API Gateway
-  app.delete("/api/v1/bundle/:id", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "delete", "/api/v1/bundle/:id", ingestHandler);
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

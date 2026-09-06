@@ -6,6 +6,7 @@
 import { createLogger } from "./logger.js";
 import { readFileSync } from "fs";
 import { hashSub, isSaltInitialized } from "../services/subHasher.js";
+import { fetchWithTimeout } from "./httpFetch.js";
 
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url)));
 // Strip npm scope prefix (e.g., @org/package -> package) for cleaner HMRC product name
@@ -37,10 +38,7 @@ export async function detectVendorPublicIp() {
   vendorIpDetectionAttempted = true;
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch("https://checkip.amazonaws.com", { signal: controller.signal });
-    clearTimeout(timeoutId);
+    const { response } = await fetchWithTimeout("https://checkip.amazonaws.com", {}, 3000);
     if (response.ok) {
       cachedVendorPublicIp = (await response.text()).trim();
       logger.info({ message: "Detected vendor public IP", vendorPublicIp: cachedVendorPublicIp });

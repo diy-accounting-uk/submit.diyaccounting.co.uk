@@ -12,9 +12,10 @@ import {
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
   getHeader,
+  serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -41,34 +42,10 @@ const logger = createLogger({ source: "app/functions/hmrc/hmrcVatLiabilitiesGet.
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
 
-/**
- * Serialize response headers to a plain object with lowercase keys
- * Handles both Headers objects (with forEach) and plain objects
- * @param {Headers|Object|null} headers - Response headers
- * @returns {Array<[string, string]>} Array of [key, value] pairs for Object.fromEntries
- */
-function serializeResponseHeaders(headers) {
-  if (!headers) {
-    return [];
-  }
-  if (typeof headers.forEach === "function") {
-    const headerEntries = {};
-    headers.forEach((value, key) => {
-      headerEntries[key.toLowerCase()] = value;
-    });
-    return Object.entries(headerEntries);
-  }
-  return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
-}
-
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/hmrc/vat/liability", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/hmrc/vat/liability", ingestHandler);
   app.head("/api/v1/hmrc/vat/liability", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

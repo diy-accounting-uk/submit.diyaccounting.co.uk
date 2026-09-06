@@ -10,32 +10,34 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Mock DynamoDB client
 const mockSend = vi.fn().mockResolvedValue({});
+const dynamoDbModule = {
+  UpdateCommand: class UpdateCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+  PutCommand: class PutCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+  DeleteCommand: class DeleteCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+  QueryCommand: class QueryCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+};
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getDynamoDbDocClient: vi.fn().mockResolvedValue({
     docClient: { send: (...args) => mockSend(...args) },
-    module: {
-      UpdateCommand: class UpdateCommand {
-        constructor(params) {
-          this.params = params;
-        }
-      },
-      PutCommand: class PutCommand {
-        constructor(params) {
-          this.params = params;
-        }
-      },
-      DeleteCommand: class DeleteCommand {
-        constructor(params) {
-          this.params = params;
-        }
-      },
-      QueryCommand: class QueryCommand {
-        constructor(params) {
-          this.params = params;
-        }
-      },
-    },
+    module: dynamoDbModule,
   }),
+  executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
 }));
 
 const { initializeSalt } = await import("@app/services/subHasher.js");

@@ -15,7 +15,7 @@ import {
   http401UnauthorizedResponse,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   companiesHouseFilingRequest,
@@ -35,11 +35,7 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 // second app.head() on the same path would only ever be dead code behind the first, and API
 // Gateway's own auto-HEAD route wiring (ApiStack.java) already dedupes the same way per path.
 export function apiEndpoint(app) {
-  app.put("/api/v1/companies-house/transaction/:transactionId", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "put", "/api/v1/companies-house/transaction/:transactionId", ingestHandler);
 }
 /* v8 ignore stop */
 

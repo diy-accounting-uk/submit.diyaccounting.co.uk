@@ -4,7 +4,7 @@
 // app/data/dynamoDbPassRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbPassRepository.js" });
 
@@ -17,17 +17,17 @@ export async function putPass(pass) {
   logger.info({ message: `putPass [table: ${getTableName()}]` });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     logger.info({ message: "Storing pass in DynamoDB", passTypeId: pass.passTypeId, bundleId: pass.bundleId });
 
-    await docClient.send(
-      new module.PutCommand({
-        TableName: tableName,
-        Item: pass,
-        ConditionExpression: "attribute_not_exists(pk)",
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: pass,
+          ConditionExpression: "attribute_not_exists(pk)",
+        }),
     );
 
     logger.info({ message: "Pass stored in DynamoDB", pk: pass.pk });
@@ -45,14 +45,14 @@ export async function getPass(code) {
   logger.info({ message: `getPass [table: ${getTableName()}]` });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const result = await docClient.send(
-      new module.GetCommand({
-        TableName: tableName,
-        Key: { pk: `pass#${code}` },
-      }),
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+        }),
     );
 
     logger.info({ message: "Retrieved pass from DynamoDB", found: !!result.Item });
@@ -67,27 +67,27 @@ export async function redeemPass(code, now) {
   logger.info({ message: `redeemPass [table: ${getTableName()}]` });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const result = await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { pk: `pass#${code}` },
-        UpdateExpression: "SET useCount = useCount + :inc, updatedAt = :now",
-        ConditionExpression: [
-          "attribute_exists(pk)",
-          "attribute_not_exists(revokedAt)",
-          "useCount < maxUses",
-          "validFrom <= :now",
-          "(attribute_not_exists(validUntil) OR validUntil >= :now)",
-        ].join(" AND "),
-        ExpressionAttributeValues: {
-          ":inc": 1,
-          ":now": now,
-        },
-        ReturnValues: "ALL_NEW",
-      }),
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+          UpdateExpression: "SET useCount = useCount + :inc, updatedAt = :now",
+          ConditionExpression: [
+            "attribute_exists(pk)",
+            "attribute_not_exists(revokedAt)",
+            "useCount < maxUses",
+            "validFrom <= :now",
+            "(attribute_not_exists(validUntil) OR validUntil >= :now)",
+          ].join(" AND "),
+          ExpressionAttributeValues: {
+            ":inc": 1,
+            ":now": now,
+          },
+          ReturnValues: "ALL_NEW",
+        }),
     );
 
     logger.info({ message: "Pass redeemed in DynamoDB", pk: `pass#${code}` });
@@ -110,22 +110,22 @@ export async function getPassesByIssuer(issuedBy, { limit = 20 } = {}) {
   logger.info({ message: `getPassesByIssuer [table: ${getTableName()}]`, issuedBy, limit });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
     const items = [];
 
     let lastEvaluatedKey;
     do {
-      const result = await docClient.send(
-        new module.QueryCommand({
-          TableName: tableName,
-          IndexName: "issuedBy-index",
-          KeyConditionExpression: "issuedBy = :ib",
-          ExpressionAttributeValues: { ":ib": issuedBy },
-          ScanIndexForward: false, // newest first
-          Limit: limit,
-          ExclusiveStartKey: lastEvaluatedKey,
-        }),
+      const result = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            IndexName: "issuedBy-index",
+            KeyConditionExpression: "issuedBy = :ib",
+            ExpressionAttributeValues: { ":ib": issuedBy },
+            ScanIndexForward: false, // newest first
+            Limit: limit,
+            ExclusiveStartKey: lastEvaluatedKey,
+          }),
       );
       items.push(...(result.Items || []));
       lastEvaluatedKey = result.LastEvaluatedKey;
@@ -143,20 +143,20 @@ export async function revokePass(code, now) {
   logger.info({ message: `revokePass [table: ${getTableName()}]` });
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
-    const result = await docClient.send(
-      new module.UpdateCommand({
-        TableName: tableName,
-        Key: { pk: `pass#${code}` },
-        UpdateExpression: "SET revokedAt = :now, updatedAt = :now",
-        ConditionExpression: "attribute_exists(pk) AND attribute_not_exists(revokedAt)",
-        ExpressionAttributeValues: {
-          ":now": now,
-        },
-        ReturnValues: "ALL_NEW",
-      }),
+    const result = await executeDynamoDbCommand(
+      (module) =>
+        new module.UpdateCommand({
+          TableName: tableName,
+          Key: { pk: `pass#${code}` },
+          UpdateExpression: "SET revokedAt = :now, updatedAt = :now",
+          ConditionExpression: "attribute_exists(pk) AND attribute_not_exists(revokedAt)",
+          ExpressionAttributeValues: {
+            ":now": now,
+          },
+          ReturnValues: "ALL_NEW",
+        }),
     );
 
     logger.info({ message: "Pass revoked in DynamoDB", pk: `pass#${code}` });

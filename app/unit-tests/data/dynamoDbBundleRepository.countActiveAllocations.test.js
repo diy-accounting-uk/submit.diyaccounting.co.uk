@@ -10,23 +10,25 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockSend = vi.fn();
 const mockScanCommand = vi.fn();
+const dynamoDbModule = {
+  QueryCommand: class QueryCommand {
+    constructor(params) {
+      this.params = params;
+    }
+  },
+  ScanCommand: class ScanCommand {
+    constructor(params) {
+      mockScanCommand(params);
+      this.params = params;
+    }
+  },
+};
 vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getDynamoDbDocClient: vi.fn().mockResolvedValue({
     docClient: { send: (...args) => mockSend(...args) },
-    module: {
-      QueryCommand: class QueryCommand {
-        constructor(params) {
-          this.params = params;
-        }
-      },
-      ScanCommand: class ScanCommand {
-        constructor(params) {
-          mockScanCommand(params);
-          this.params = params;
-        }
-      },
-    },
+    module: dynamoDbModule,
   }),
+  executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
 }));
 
 const { countActiveAllocations } = await import("@app/data/dynamoDbBundleRepository.js");

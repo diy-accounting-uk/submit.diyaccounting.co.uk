@@ -12,7 +12,7 @@ import {
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { createPass } from "../../services/passService.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -22,11 +22,7 @@ const logger = createLogger({ source: "app/functions/account/passAdminPost.js" }
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/pass/admin", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/pass/admin", ingestHandler);
 }
 /* v8 ignore stop */
 

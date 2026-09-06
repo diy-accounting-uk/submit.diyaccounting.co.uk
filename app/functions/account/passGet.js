@@ -6,7 +6,7 @@
 import { validateEnv } from "../../lib/env.js";
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http400BadRequestResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { checkPass } from "../../services/passService.js";
 import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 
@@ -14,11 +14,7 @@ const logger = createLogger({ source: "app/functions/account/passGet.js" });
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/pass", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/pass", ingestHandler);
 }
 /* v8 ignore stop */
 

@@ -65,6 +65,8 @@ export function setupTestEnv(customEnv = {}) {
     HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-vat-return-get-async-requests-table",
     HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-vat-obligation-get-async-requests-table",
     HMRC_ITSA_BUSINESS_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-business-details-get-async-requests-table",
+    HMRC_ITSA_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-obligations-get-async-requests-table",
+    HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-self-employment-period-post-async-requests-table",
     SQS_QUEUE_URL: "https://sqs.eu-west-2.amazonaws.com/123456789012/test-queue",
     DIY_SUBMIT_BASE_URL: "https://test.diyaccounting.co.uk",
     COGNITO_CLIENT_ID: "test-cognito-client-id",

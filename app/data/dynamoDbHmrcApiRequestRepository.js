@@ -7,7 +7,7 @@ import { createLogger, context } from "../lib/logger.js";
 import { hashSub, getSaltVersion } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
-import { getDynamoDbDocClient } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
 import { calculateTwentyEightDayTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
@@ -47,7 +47,6 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
   const id = `hmrcreq-${uuidv4()}`; // Unique ID for this specific call
 
   try {
-    const { docClient, module } = await getDynamoDbDocClient();
     const tableName = getTableName();
 
     const now = new Date();
@@ -77,11 +76,12 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
     item.ttl = ttl;
     item.ttl_datestamp = ttl_datestamp;
 
-    await docClient.send(
-      new module.PutCommand({
-        TableName: tableName,
-        Item: item,
-      }),
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: item,
+        }),
     );
 
     logger.info({
