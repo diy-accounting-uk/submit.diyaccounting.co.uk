@@ -26,15 +26,21 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 Batch 7 is PR #141 (`claude/b7-board`, worktree `.claude/worktrees/b7-board`): the OpenAPI
 filing routes, the TODO inventory, the fraud-header parser, the CSV VAT return contract and the
-TypeScript CDK spike. The ITSA track still lands on it before merge. Batch 8 is
+TypeScript CDK spike. Every track has landed; it is pushed once and the operator merges. Batch 8 is
 `claude/b8-board` (worktree `.claude/worktrees/b8-board`), the Telegram forwarder move. Tracks in worktrees, each merged by the
 coordinator when its tests are green, one push per batch of landed tracks:
 
 - [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
-  Two commits in the B10.1 pattern (Lambda, simulator, page, catalogue entry behind the
-  `environments` gate, CDK wiring, simulator behaviour suite, OpenAPI), paths from
-  `_developers/hmrc/ITSA_SPIKE.md`. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude
-  Code. **Model**: Sonnet.
+  Code complete on PR #141 (8f0c479a, cb6773e2): `hmrcItsaObligationsGet.js` against Obligations
+  MTD 3.0 and `hmrcItsaSelfEmploymentPeriodPost.js` against Self Employment Business 5.0, each
+  with simulator scenarios, page, catalogue entry behind the `environments` gate, CDK wiring,
+  a simulator behaviour suite wired into `deploy.yml` and `probe-test.yml`, and the OpenAPI
+  regeneration; the HMRC Obligations 3.0 spec is saved under `_developers/reference/`. Two
+  fixes rode along: `hmrcHttpPost` callers must pass the full HMRC URL, and the simulator's
+  Business Details `businessId` now matches HMRC's format. Verified when the two suites pass
+  against the real sandbox on ci in PR #141's deploy. Remainder for row 10: the dashboard page
+  the catalogue names (`hmrc/itsa/dashboard.html`) does not exist yet. **Source**: BACKLOG 10;
+  issues #16, #20. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Batch 8
   (`claude/b8-board`, worktree `.claude/worktrees/b8-board`) moves the bus-wide rule and
   `activityTelegramForwarder.js` from every deployment's `OpsStack` to the environment's
