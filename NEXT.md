@@ -70,10 +70,14 @@ a later event to verify.
   invisible to it. Three stand now: ci-claudff66, ci-claudf375, ci-claud063e (two Lambdas,
   aliases, alarms and log groups each). Fix both lists, with unit and CDK tests. **Source**:
   board render 2026-09-06; BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, self-destruct-companies-house (Sonnet), started 2026-09-06
-  06:30 UTC. The three orphans themselves go with the operator's yes to
-  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>` for each, or the
-  next sweep once the fix is on main.
+  **Track**: code complete on `claude/board-batch-5` (3e8fe230): the Lambda deletes the
+  Companies House stack after the HMRC stack, pinned by `SelfDestructStackTest`, and the sweep
+  scans eu-west-2 for `ci-*-app-` prefixes it would otherwise not see. ci-claudff66 also has an
+  `ApiStack` in DELETE_FAILED (its Cognito authorizer is still referenced by the Companies
+  House routes), so that set needs the Companies House stack deleted first and the ApiStack
+  deleted again. The three orphans go with the operator's yes to
+  `aws --profile submit-ci cloudformation delete-stack --stack-name <name>`, or the fixed sweep
+  once PR #137 is on main (ci-claudff66's ApiStack still needs the second delete).
 - [ ] **B30d. Make `alarmToGithubIssue.js` dedupe by alarm family.**
   `findOpenIssueByAlarmName` matches the exact `[ALARM] <name>` title, and per-deployment names
   carry the deployment slug, so each new deployment opens a fresh issue for the same check
