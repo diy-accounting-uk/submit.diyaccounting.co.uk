@@ -24,78 +24,54 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC, again at 20:31 with the
-PITR and video-capture fixes). Its ci set ci-claud9501 is the one O11 needs; the quarterly-update
-body fix lands on the branch next. No push to the branch while its deploy runs: the concurrency
-group cancels it.
+Batch 9 merged as PR #146 at 22:03 UTC on 2026-09-06. Main's deploy (run 34062870619) and
+environment deploy (run 34062870544) are running; the next batch starts from main as
+`claude/b10-board` when its first track lands.
 
-- [ ] **B10.4**: a push-triggered ci deploy skips the ITSA suites (`skipTestScenarios`
-  defaults to true), so both were dispatched through `probe-test.yml` against ci-claud9501.
-  `itsaObligationsBehaviour` passed (run 34058209190). `itsaSelfEmploymentPeriodBehaviour`
-  failed (run 34058211182): the page sent `periodDisallowableExpenses: {}` and named
-  `periodExpenses.other` where HMRC's Self Employment Business API v5.0 wants `otherExpenses`,
-  so the sandbox answered 400 at `/periodDisallowableExpenses`, and the Lambda turned that
-  into a 500. Batch 9 (7417eb77) builds the body from the sections the caller sent, omits an
-  empty one, rejects an empty one in the simulator the way HMRC does, and returns HMRC's 400
-  with its message. Next: after the batch's next ci app deploy, dispatch
-  `probe-test.yml -f environment-name=ci -f deployment-name=ci-claud9501
-  -f behaviour-test-suite=itsaSelfEmploymentPeriodBehaviour`. Verified when it passes. Row
-  10's remainder after that: the dashboard page the catalogue names
-  (`hmrc/itsa/dashboard.html`) does not exist. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Fable (coordinator).
-- [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
-  waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
-- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
-  the role, read the guardrail and reached Bedrock, then posted "no assistant text found": the
-  evidence resolver crashed on a missing `@aws-sdk/client-cloudwatch` (the job never installed
-  dependencies and `tee` hid the exit code, so the model found a stack trace in
-  `/tmp/evidence.json`), and `--permission-mode plan` in a headless run left it spending its 12
-  turns on denied `ls` and `gh` calls. Batch 9 (1ca17b6a) installs dependencies in the job,
-  pipefails the evidence step, runs Claude in `dontAsk` mode with 30 turns, tells the prompt what
-  it has and when to stop, and makes the redaction script name a stopped run's subtype. Next:
-  after the batch merges, label an open alarm issue `triage` (#138 again, once relabelled, or
-  the next one). Verified when that run posts the guardrail's anonymised comment.
-- [ ] **D1** is on the batch (3ab5cb3b, fix 1a4625f4): `app/functions/infra/ensurePitr.mjs`
-  behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED, on
-  a new logical id (`Custom::EnsurePitr`). The first push's ci environment deploy failed every
-  `EnsurePitr` resource on module packaging (the zip held the handler as `.js`, so Lambda
-  loaded it as CommonJS); the fix ships it as `.mjs` alone, and the second push's environment
-  deploy (run 34058236891) updated `ci-env-DataStack` cleanly at 20:44 UTC. Waits for the PR
-  merge; the race itself is verified by the next deploy that adds a table passing first time.
+- [ ] **B30o. Prove the triage chain on prod.** The pipeline fix is on main: relabelling #138
+  `triage` at 22:03 UTC (run 34062903265) installed dependencies and ran the evidence resolver,
+  which stopped the job with "No alarm named prod-0967fab-app-account-stack-health was found
+  in eu-west-2", the right answer for a retired set and the reason #138 could not serve as the
+  proof. Next: `scripts/resolve-alarm-evidence.mjs` treats a missing deployment-scoped alarm
+  as evidence (the set is gone; say so, with the issue body's window and the log-group prefix)
+  and exits 0 so the triage runs, then the next live alarm issue labelled `triage` is the
+  proof. Verified when that run posts the guardrail's anonymised comment. **Source**: BACKLOG
+  30; issue #18. **Owner**: Claude Code. **Model**: Sonnet for the resolver, then the operator
+  labels.
+- [ ] **D1** is on main (PR #146): main's environment deploy replaces each table's PITR
+  resource with the `Provider`-backed one on prod (ci passed at 20:44). Verified when run
+  34062870544 completes and the next deploy that adds a table passes first time.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
-  auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
-  issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
-  cleared by fe4eff98), fifteen came from the per-deployment Telegram forwarder (cleared by
-  6ab57b30) and twenty-one were real signal, #138 among them (prod-0967fab's hourly
-  bundle-capacity reconcile failed at 07:11 and 08:11 UTC, then ran clean; the log group went
-  with the set). Every alarm routes through the deployment's EventBridge rule with no alarm
-  actions, so disabling actions alone silences nothing; the design writes an SSM marker
-  `/submit/<env>/alarm-silence/<deployment>` as the first action of the self-destruct Lambda
-  and both destroy workflows (which also cover the main deploy's prod retire), and the
+  auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` and its build are on main (PR #146): a
+  teardown writes `/submit/<env>/alarm-silence/<deployment>` as its first action (self-destruct
+  Lambda, `destroy-ci.yml`, `destroy-prod.yml`, and so the main deploy's prod retire) and the
   GitHub-issue and Telegram routers drop a silenced deployment's events; the marker lasts two
-  hours and never beyond twelve from its first write, so a failed destroy re-arms itself. The
-  build is on the batch (26269035): `app/lib/alarmSilence.js`, the guard in both routers, the
-  first action of `selfDestruct.js` and a step in both destroy workflows, with the IAM grants
-  in `SelfDestructStack`, `ActivityStack` and `OpsStack`. Verified on a ci deploy whose set self-destructs without an alarm
-  issue or Telegram message naming it. **Source**: operator, 2026-09-06. **Owner**: Claude
-  Code. **Model**: Sonnet.
+  hours and never beyond twelve from its first write. Main's deploy retires prod-cfb43ee
+  through that path. Verified when the retire and the next ci self-destruct each pass without
+  an alarm issue or Telegram message naming the set, and
+  `aws ssm get-parameter --name /submit/prod/alarm-silence/cfb43ee` shows the marker.
+  **Source**: operator, 2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **C1** is on main (PR #146). Verified when a docs-only push to main runs no CodeQL; the
+  board write-back of 2026-09-06 22:10 UTC is the first such push.
 
 ## Ready: Claude Code
 
-Nothing.
+- [ ] **B10.5. The ITSA dashboard page.** Both sandbox suites passed on ci (Obligations run
+  34058209190, quarterly update run 34060737800 after the body fix in PR #146), so row 10's
+  three endpoints are proven. The catalogue names `hmrc/itsa/dashboard.html` and the page does
+  not exist: build it as the entry point that links Business Details, Obligations and the
+  quarterly update, in the pattern of the VAT pages. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
-  2026-09-06); the issue carries a comment with the cause and the recommendation to close.
-  **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
   ready as recorded: `video-view-obligations-prod` (run 33952515598) and
   `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
   the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` was re-recorded as run 34058244686 after batch 9 (d0f6316e) stopped
   the off-camera submit leaving developer mode on: its stills are clean and
-  `check-video-timings.js` passes, and `videos/PUBLISH.md` names the new run. The operator
-  has not yet watched it. `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
+  `check-video-timings.js` passes, and `videos/PUBLISH.md` names the new run. The re-recorded
+  mp4 was sent to the operator on 2026-09-06 for review. `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
   videos' titles, descriptions, tags and captions, and `scripts/youtube-upload.js`, which
   uploads them as unlisted after a one-time OAuth consent and writes each video id back so a
   re-run is idempotent. Operator steps in `videos/PUBLISH.md`: download the artifacts, create
@@ -118,8 +94,9 @@ Nothing.
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
   URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
-  since main's environment deploy of the PR #139 merge). Remaining: on a ci set (none stands;
-  the next branch push makes one, or dispatch `deploy.yml` for ci from main), open the two
+  since main's environment deploy of the PR #139 merge). Remaining: on a ci set (ci-claud9501 stands
+  from 2026-09-06 20:05 UTC until its self-destruct or the 02:34 sweep; a branch push or a
+  `deploy.yml` dispatch for ci makes another), open the two
   filing activities on the ci site and take one change through the sandbox with your own
   Companies House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
   a person to authorise them, so an automated ci run would need a robot account with an
