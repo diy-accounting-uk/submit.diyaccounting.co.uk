@@ -57,10 +57,13 @@ a later event to verify.
   `ObservabilityUE1Stack` has no subscriber. The us-east-1 alarms already forward to the
   Telegram path; the budget topic joins the same route in CDK, with a test. **Source**: BACKLOG
   30. **Owner**: Claude Code. **Model**: Sonnet.
-  **Track**: wave 1 of batch 5, budget-topic-subscription (Sonnet), started 2026-09-06 06:20
-  UTC. It also fixes the deploy failure the ci environment run 34016080214 hit: AWS Budgets
-  actions do not support daily budgets, so the deny action moves to a monthly USD 150 budget
-  (30 days of the daily figure) and the daily USD 5 budget keeps a notification only.
+  **Track**: code complete on `claude/board-batch-5` (dc69e74e). Budgets publish only to SNS,
+  so `bedrockBudgetAlertForward.js` in us-east-1 subscribes to the topic and puts an
+  `ActivityEvent` on the shared activity bus, which every deployment's Telegram rule already
+  reads. The same commit fixes the ci environment deploy failure (run 34016080214, "Budgets
+  Actions don't support daily granularity"): the deny action sits on a monthly USD 150 budget,
+  30 days of the daily figure, and the daily USD 5 budget notifies only. Verified when the
+  environment deploy is green and a test notification on the topic reaches Telegram.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
