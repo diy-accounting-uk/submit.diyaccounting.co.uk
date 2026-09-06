@@ -80,16 +80,23 @@ Nothing.
 - [ ] **O12. Close #138 as stale.** Its alarm went with prod-0967fab (destroyed 12:15 UTC on
   2026-09-06); the issue carries a comment with the cause and the recommendation to close.
   **Source**: board render 2026-09-06. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Batch 9
-  (58b9fa7c) carries `videos/publish.json` with the three prod videos' titles, descriptions,
-  tags and captions, and `scripts/youtube-upload.js`, which uploads them as unlisted after a
-  one-time OAuth consent and writes each video id back so a re-run is idempotent. Steps in
-  `videos/PUBLISH.md`: download the three artifacts (30-day retention from 2026-09-04 to
-  2026-09-06), create a Desktop-app OAuth client in the Google Cloud console with the YouTube
-  Data API enabled, export its id and secret, `npm run video:publish`, review, then
-  `npm run video:publish -- --public`. The ITSA Business Details recording stays
-  `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a. **Owner**:
-  Operator.
+- [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit. Two are
+  ready as recorded: `video-view-obligations-prod` (run 33952515598) and
+  `video-submit-return-prod` (run 33953044775); the operator accepted the sandbox banner and
+  the 2017 sandbox periods on 2026-09-06. `video-view-return-prod` (run 34017736028) shows the
+  developer panel and debug header in its "Ask again" scene, because the off-camera submit
+  turned developer mode on in sessionStorage and nothing turned it off; batch 9 (d0f6316e)
+  fixes the capture runner, and Claude Code re-records it with
+  `gh workflow run video-capture.yml --ref claude/b9-board -f script=view-return
+  -f environment-name=prod` after the batch push, then puts the new run id in
+  `videos/PUBLISH.md`. Batch 9 (58b9fa7c) also carries `videos/publish.json` with the three
+  videos' titles, descriptions, tags and captions, and `scripts/youtube-upload.js`, which
+  uploads them as unlisted after a one-time OAuth consent and writes each video id back so a
+  re-run is idempotent. Operator steps in `videos/PUBLISH.md`: download the artifacts, create
+  a Desktop-app OAuth client in the Google Cloud console with the YouTube Data API enabled,
+  export its id and secret, `npm run video:publish`, review, then
+  `npm run video:publish -- --public`. **Source**: BACKLOG 17a. **Owner**: Claude Code for the
+  re-record, then Operator.
 - [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
   an application to one Companies House environment, sandbox ("test application") or
   production ("live application"). The hub holds three: "DIY Accounting Submit - test"
