@@ -30,8 +30,15 @@ B10.4 and O11 need.
 
 - [ ] **C1** is code complete on the batch (65dfe238, `claude/ops-codeql-paths`, merged):
   waits for the batch push. Verified when a docs-only push to main no longer runs CodeQL.
-- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 is the
-  proof. Verified when it posts the guardrail's anonymised triage comment.
+- [ ] **B30o**: #138 labelled `triage` at 19:06 UTC on 2026-09-06; run 34053827545 assumed
+  the role, read the guardrail and reached Bedrock (Sonnet 4.5, 12 turns), then posted "no
+  assistant text found": the evidence resolver crashed on a missing `@aws-sdk/client-cloudwatch`
+  (the job never installs dependencies, and `tee` hid the exit code) and the Claude run spent
+  its 12 turns on denied `ls` and `gh` calls because the prompt never names `/tmp/evidence.json`.
+  Fix in the triage-fix agent's worktree, branch `claude/ops-triage-run` (Sonnet): install
+  dependencies in the job, pipefail on the evidence step, prompt names its inputs, 30 turns,
+  and the redaction script reports a non-success subtype. Verified when the next `triage`
+  label posts the guardrail's anonymised comment.
 - [ ] **D1** in the PITR agent's worktree, branch `claude/cdk-pitr-wait` (Sonnet).
 - [ ] **O17 / B34.7** in the Companies House sandbox agent's worktree, branch
   `claude/ltd-ci-sandbox` (Sonnet): ef091559 cherry-picked, gated behind a
