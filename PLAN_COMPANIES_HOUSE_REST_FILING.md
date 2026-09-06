@@ -224,20 +224,7 @@ The check is a plain string comparison against the scope string the page is abou
 
 These are yours. Nothing in the build can do them.
 
-1. **Register the redirect URIs on the developer-hub application.** Open
-   <https://developer.company-information.service.gov.uk/manage-applications>, open the
-   "DIY Accounting Submit - test" application, and add every redirect URI we will use. Companies
-   House rejects an authorise request whose `redirect_uri` is not registered, and the token
-   exchange must send the identical string.
-   - `http://localhost:3000/companies-house/filingCallback.html` (local and simulator lanes)
-   - `https://local.submit.diyaccounting.co.uk:3443/companies-house/filingCallback.html` (proxy)
-   - `https://ci-submit.diyaccounting.co.uk/companies-house/filingCallback.html` (ci)
-   - `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html` (prod, add it when
-     the ci-only gate lifts)
-2. **Put the OAuth client id and secret on the GitHub `ci` environment** as
-   `COMPANIES_HOUSE_CLIENT_ID` (a variable is fine, it reaches the browser anyway) and
-   `COMPANIES_HOUSE_CLIENT_SECRET` (a secret). Do the same on `prod` when the gate lifts.
-3. **Hold a Companies House user account** for the sandbox that the behaviour tests can sign in
+1. **Hold a Companies House user account** for the sandbox that the behaviour tests can sign in
    as. The behaviour test signs in as a person on the Companies House screens; there is no
    client-credentials shortcut. Put these four values on the GitHub `ci` environment:
    - `TEST_COMPANIES_HOUSE_USER_ID` (variable) — the throwaway sandbox account's email address.
@@ -252,9 +239,11 @@ These are yours. Nothing in the build can do them.
    -f runCompaniesHouseSandboxFiling=true` (swap the suite for `changeRegisteredEmailBehaviour`
    for the other one). `runCompaniesHouseSandboxFiling` defaults to `false`, so a push-triggered
    `deploy.yml` run never signs in to the real sandbox.
-4. **Decide whether a separate sandbox OAuth client is needed for prod.** The developer hub keys an
-   application to one environment. If "DIY Accounting Submit - test" is sandbox-only, a live
-   filing needs a second application with its own client id and secret.
+
+The ci click-through and the prod OAuth web client key are done: `prod` now carries its own
+`COMPANIES_HOUSE_CLIENT_ID`, `COMPANIES_HOUSE_CLIENT_SECRET_ARN` and live filing/identity base
+URIs, and both filing activities' `environments` in `web/public/submit.catalogue.toml` include
+`prod`. Q1 (pricing) is still open below.
 
 ## The Lambdas
 

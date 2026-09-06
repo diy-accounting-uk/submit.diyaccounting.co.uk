@@ -9,16 +9,18 @@ import os from "os";
 import path from "path";
 
 import {
+  ADC_LOGIN_COMMAND,
+  DEFAULT_QUOTA_PROJECT,
   parseArgs,
   loadPublishList,
   savePublishList,
   selectPendingUploads,
   recordVideoId,
   buildVideoResource,
-  requireEnv,
-  buildConsentUrl,
-  extractAuthorizationCode,
-  ensureAccessToken,
+  resolveQuotaProject,
+  resolveAdcPath,
+  getAccessToken,
+  fetchOwnChannelTitle,
   uploadVideo,
   uploadCaption,
 } from "../../../scripts/youtube-upload.js";
@@ -28,11 +30,14 @@ function makeTempDir() {
 }
 
 describe("parseArgs", () => {
-  test("defaults to unlisted", () => {
-    expect(parseArgs([])).toEqual({ publicVideo: false });
+  test("defaults to unlisted and no check", () => {
+    expect(parseArgs([])).toEqual({ publicVideo: false, check: false });
   });
   test("reads --public", () => {
-    expect(parseArgs(["--public"])).toEqual({ publicVideo: true });
+    expect(parseArgs(["--public"])).toEqual({ publicVideo: true, check: false });
+  });
+  test("reads --check", () => {
+    expect(parseArgs(["--check"])).toEqual({ publicVideo: false, check: true });
   });
 });
 
@@ -118,71 +123,87 @@ describe("buildVideoResource", () => {
   });
 });
 
-describe("requireEnv", () => {
-  test("throws when the variable is missing", () => {
-    expect(() => requireEnv("YOUTUBE_CLIENT_ID", {})).toThrow(/YOUTUBE_CLIENT_ID/);
+describe("resolveQuotaProject", () => {
+  test("defaults to diyaccounting-ga4", () => {
+    expect(resolveQuotaProject({})).toBe(DEFAULT_QUOTA_PROJECT);
   });
-  test("returns the value when present", () => {
-    expect(requireEnv("YOUTUBE_CLIENT_ID", { YOUTUBE_CLIENT_ID: "abc" })).toBe("abc");
-  });
-});
-
-describe("buildConsentUrl", () => {
-  test("carries the client id and the upload scope", () => {
-    const url = new URL(buildConsentUrl("my-client-id"));
-    expect(url.searchParams.get("client_id")).toBe("my-client-id");
-    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/youtube.upload");
-    expect(url.searchParams.get("access_type")).toBe("offline");
+  test("honours GOOGLE_CLOUD_QUOTA_PROJECT", () => {
+    expect(resolveQuotaProject({ GOOGLE_CLOUD_QUOTA_PROJECT: "other-project" })).toBe("other-project");
   });
 });
 
-describe("extractAuthorizationCode", () => {
-  test("pulls the code out of a pasted redirect URL", () => {
-    expect(extractAuthorizationCode("http://127.0.0.1:8912/oauth2callback?code=4/abc-123&scope=x")).toBe("4/abc-123");
+describe("resolveAdcPath", () => {
+  test("honours GOOGLE_APPLICATION_CREDENTIALS", () => {
+    expect(resolveAdcPath({ GOOGLE_APPLICATION_CREDENTIALS: "/tmp/creds.json", HOME: "/home/x" })).toBe("/tmp/creds.json");
   });
-  test("treats a bare pasted value as the code itself", () => {
-    expect(extractAuthorizationCode("  4/abc-123  ")).toBe("4/abc-123");
+  test("falls back to the gcloud well-known file under HOME", () => {
+    expect(resolveAdcPath({ HOME: "/home/x" })).toBe(path.join("/home/x", ".config", "gcloud", "application_default_credentials.json"));
   });
 });
 
-describe("ensureAccessToken", () => {
+describe("getAccessToken", () => {
   let dir;
   beforeEach(() => (dir = makeTempDir()));
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  test("refreshes silently when a token is already stored", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    fs.writeFileSync(tokenPath, JSON.stringify({ refreshToken: "stored-refresh-token" }));
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "fresh-access-token" }) });
-    const prompt = vi.fn();
-
-    const accessToken = await ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt });
-
-    expect(accessToken).toBe("fresh-access-token");
-    expect(prompt).not.toHaveBeenCalled();
-    const [, options] = fetchImpl.mock.calls[0];
-    expect(options.body.get("refresh_token")).toBe("stored-refresh-token");
-    expect(options.body.get("grant_type")).toBe("refresh_token");
+  test("fails naming the gcloud login command when no ADC file exists", async () => {
+    const env = { HOME: dir };
+    await expect(getAccessToken({ env })).rejects.toThrow(ADC_LOGIN_COMMAND);
   });
 
-  test("runs the consent flow and stores the refresh token when nothing is stored yet", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "first-access-token", refresh_token: "first-refresh-token" }) });
-    const prompt = vi.fn().mockResolvedValue("pasted-code");
+  test("reads the token from a GoogleAuth client built from ADC", async () => {
+    const adcPath = path.join(dir, ".config", "gcloud", "application_default_credentials.json");
+    fs.mkdirSync(path.dirname(adcPath), { recursive: true });
+    fs.writeFileSync(adcPath, JSON.stringify({ type: "authorized_user" }));
+    const env = { HOME: dir };
+    const getClient = vi.fn().mockResolvedValue({ getAccessToken: vi.fn().mockResolvedValue({ token: "adc-access-token" }) });
+    const GoogleAuthImpl = vi.fn(function GoogleAuthImpl() {
+      this.getClient = getClient;
+    });
 
-    const accessToken = await ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt });
+    const token = await getAccessToken({ env, GoogleAuthImpl });
 
-    expect(accessToken).toBe("first-access-token");
-    expect(prompt).toHaveBeenCalledOnce();
-    expect(JSON.parse(fs.readFileSync(tokenPath, "utf8"))).toEqual({ refreshToken: "first-refresh-token" });
+    expect(token).toBe("adc-access-token");
+    expect(GoogleAuthImpl).toHaveBeenCalledWith({
+      scopes: [
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube.force-ssl",
+      ],
+    });
   });
 
-  test("fails loudly when Google returns no refresh token on first consent", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "only-access-token" }) });
-    const prompt = vi.fn().mockResolvedValue("pasted-code");
+  test("fails naming the gcloud login command when the credential lacks the YouTube scope", async () => {
+    const adcPath = path.join(dir, ".config", "gcloud", "application_default_credentials.json");
+    fs.mkdirSync(path.dirname(adcPath), { recursive: true });
+    fs.writeFileSync(adcPath, JSON.stringify({ type: "authorized_user" }));
+    const env = { HOME: dir };
+    const getClient = vi.fn().mockResolvedValue({ getAccessToken: vi.fn().mockRejectedValue(new Error("invalid_scope")) });
+    const GoogleAuthImpl = vi.fn(function GoogleAuthImpl() {
+      this.getClient = getClient;
+    });
 
-    await expect(ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt })).rejects.toThrow(/refresh token/);
+    await expect(getAccessToken({ env, GoogleAuthImpl })).rejects.toThrow(ADC_LOGIN_COMMAND);
+  });
+});
+
+describe("fetchOwnChannelTitle", () => {
+  test("returns the signed-in channel's title", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit" } }] }) });
+
+    const title = await fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+
+    expect(title).toBe("DIY Accounting Submit");
+    const [url, options] = fetchImpl.mock.calls[0];
+    expect(url).toContain("/youtube/v3/channels?part=snippet&mine=true");
+    expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
+    expect(options.headers.Authorization).toBe("Bearer token");
+  });
+
+  test("fails loudly when no channel is linked to the account", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+
+    await expect(fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(/no YouTube channel/);
   });
 });
 
@@ -201,11 +222,12 @@ describe("uploadVideo", () => {
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ location: "https://upload.example/session-1" }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "yt-video-id" }) });
 
-    const videoId = await uploadVideo({ entry, accessToken: "token", publicVideo: false, fetchImpl });
+    const videoId = await uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl });
 
     expect(videoId).toBe("yt-video-id");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(fetchImpl.mock.calls[1][0]).toBe("https://upload.example/session-1");
+    expect(fetchImpl.mock.calls[0][1].headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
   });
 
   test("fails loudly when the resumable session has no Location header", async () => {
@@ -214,7 +236,7 @@ describe("uploadVideo", () => {
     const entry = { id: "clip", videoFile, title: "t", description: "d", tags: [], categoryId: "27" };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, headers: new Headers() });
 
-    await expect(uploadVideo({ entry, accessToken: "token", publicVideo: false, fetchImpl })).rejects.toThrow(/Location header/);
+    await expect(uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl })).rejects.toThrow(/Location header/);
   });
 });
 
@@ -229,12 +251,13 @@ describe("uploadCaption", () => {
     const entry = { id: "clip", captionFile };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "caption-id" }) });
 
-    const result = await uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", fetchImpl });
+    const result = await uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
 
     expect(result).toEqual({ id: "caption-id" });
     const [url, options] = fetchImpl.mock.calls[0];
     expect(url).toContain("/captions?uploadType=multipart");
     expect(options.headers["Content-Type"]).toMatch(/^multipart\/related; boundary=/);
+    expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
     expect(options.body.toString()).toContain("yt-video-id");
     expect(options.body.toString()).toContain("WEBVTT");
   });
