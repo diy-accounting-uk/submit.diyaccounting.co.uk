@@ -47,9 +47,15 @@ coordinator when its tests are green, one push per batch of landed tracks:
   2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
   environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
-  #140 was labelled `triage` at 12:01 UTC on 2026-09-06 (run 34031866561). Verified when that
-  run posts a triage comment on #140 with the guardrail's anonymised output. **Source**:
-  BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**: Fable (coordinator).
+  Labelling #140 `triage` at 12:01 UTC on 2026-09-06 ran the chain (run 34031866561): the role
+  was assumed, the guardrail read, and Bedrock answered 403, "not authorized to perform the
+  required AWS Marketplace actions (aws-marketplace:ViewSubscriptions,
+  aws-marketplace:Subscribe)"; the redaction script posted that failure line and nothing else.
+  Anthropic models on Bedrock are Marketplace-listed and the first call subscribes the
+  account, so the triage role in `ObservabilityStack.java` needs those two actions, pinned in
+  the CDK test (batch 8, Sonnet, in a worktree). Verified when a re-labelled alarm issue gets
+  a triage comment with the guardrail's anonymised output. **Source**: BACKLOG 30; issue #18.
+  **Owner**: Claude Code. **Model**: Sonnet, then Fable (coordinator) for the proof run.
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
@@ -210,10 +216,9 @@ on main and each names the event that verifies it.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O12. Close #138 and #140.** Both alarms are OK, the 11:15 UTC reconcile run was clean,
-  and each issue carries a comment with the cause and the recommendation to close. #140 also
-  carries the `triage` label for B30o's proof run; close it once that run has commented.
-  **Source**: board render 2026-09-06. **Owner**: Operator.
+- [ ] **O12. Close #138.** Both alarms are OK, the 11:15 UTC reconcile run was clean,
+  and each issue carries a comment with the cause and the recommendation to close; #140 is
+  closed. **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
   titles and descriptions drafted from the captions. The prod recordings are workflow
   artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
