@@ -171,11 +171,12 @@ verify.
   behind the environments gate, three sequential Sonnet tracks. Track 1 (auth plumbing) is
   merged (a88c2459: token exchange Lambda with the client secret scoped to it alone, callback
   page, simulator OAuth routes, env and CDK plumbing; `COMPANIES_HOUSE_CLIENT_ID` is blank in
-  `.env.ci` and `.env.prod` until the operator fills it). Track 2 (the seven filing Lambdas,
-  simulator scenarios, system test) started 2026-09-06 01:45 UTC; track 3 (web, catalogue,
-  behaviour tests) follows it. Track 3 also has to fill the two OAuth base URIs for the
-  simulator lane in `behaviour-tests/helpers/behaviour-helpers.js`, which no track owns yet.
-  The ci behaviour runs need the operator steps below (O11).
+  `.env.ci` and `.env.prod` until the operator fills it). Track 2 is merged (1a8356a2,
+  98cd2bec: the seven filing Lambdas, simulator scenarios and system test; the four
+  registered-office and registered-email Lambdas carry shorter deployed names to fit AWS's
+  64-character cap, URL paths unchanged). Track 3 (pages, catalogue activities on `default`
+  behind the gate, behaviour tests, the simulator lane's two OAuth base URIs) started
+  2026-09-06 02:40 UTC. The ci behaviour runs need the operator steps below (O11).
 - [ ] **B10.1 remainder. Record the ITSA Business Details page on ci.** The endpoint, page,
   simulator route and tests merged in PR #132 and `itsaBusinessDetailsBehaviour-ci` is green;
   the last step is a recording of the page in the site-video-capture pattern (`videos/*.json`,
@@ -186,9 +187,11 @@ verify.
   `claude/board-batch-4` (8e12c739, 7f8eba25), green on the simulator: the script declares
   `hmrcServices` so the journey mints its HMRC test user with `mtd-income-tax`, types
   `{{hmrcNino}}` as a hidden value, and the `resident-itsa` bundle now lists on the simulator.
-  Next: after the third push, `gh workflow run video-capture.yml --ref claude/board-batch-4 -f
-  script=itsa-business-details -f environment-name=ci`; verified when the artifact shows the
-  business id.
+  The first ci recording (run 34001286060) failed before recording: the `wait-for-ci-deploys`
+  action called `gh` and `jq`, which the Playwright container lacks; the action now runs a Node
+  script instead (on the branch, unpushed until the next push). Then re-dispatch
+  `gh workflow run video-capture.yml --ref claude/board-batch-4 -f script=itsa-business-details
+  -f environment-name=ci`; verified when the artifact shows the business id.
 ## Ready: Claude Code
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
