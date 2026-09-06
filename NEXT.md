@@ -40,7 +40,12 @@ a later event to verify.
   **Track**: on `claude/board-batch-5`. The ci environment deploy from the branch (run
   34020851682) is green with every batch 4 and 5 environment stack, so ci now has the triage
   role and guardrail, both Bedrock budgets, the forwarder Lambda and the bundles index (ACTIVE).
-  Verified for prod when the `deploy environment` run after PR #137 merges is green.
+  The prod environment run after the PR #137 merge (34023929068) got the observability
+  stacks, budgets and index up but `prod-env-DataStack` rolled back: the index custom
+  resource issued a second `UpdateTable` while the index was still creating ("Index is being
+  created"), and the backup stack job was skipped behind it. Re-dispatched for prod as run
+  34024729614 with the index now ACTIVE; a batch 6 track makes the custom resource treat an
+  index in any status as ensured. Verified when that run is green.
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
@@ -71,8 +76,10 @@ a later event to verify.
   `env-observability-ue1-<sha>`), and run 34020851682 deployed the lot to ci. A test
   notification to `ci-env-bedrock-budget-alerts` at 08:55 UTC on 2026-09-06 reached the
   forwarder, which put one `bedrock-budget-alert` event on the activity bus (its log shows
-  `published: 1`); no ci app set stood to carry it to Telegram. Verified when prod's
-  environment deploy after the merge is green and a test notification there shows on Telegram.
+  `published: 1`); no ci app set stood to carry it to Telegram. The same test on prod at
+  09:30 UTC reached `prod-env-bedrock-budget-alert-forward` (`published: 1`), where
+  prod-0967fab's Telegram rule reads the bus. Verified when the operator confirms the message
+  arrived on Telegram.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
@@ -296,9 +303,9 @@ a later event to verify.
   (34024132783) stopped at the day guard, which counted every workflow run including the ones
   the guard or the role check had stopped; on `claude/board-batch-6` the guard counts only
   runs whose `run-triage` job executed. Once that merges, re-label #134 with `triage`. Prod's
-  variable waits for its environment deploy after the PR #137 merge (run 34023929068).
-  **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**: Fable (coordinator).
-  Blocked on the batch 6 merge and prod's environment deploy.
+  variable is set (`prod-env-alarm-triage-role` exists since run 34023929068 deployed the
+  observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
+  Fable (coordinator). Blocked on the batch 6 merge.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
