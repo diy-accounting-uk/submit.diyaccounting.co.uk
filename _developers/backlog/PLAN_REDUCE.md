@@ -440,7 +440,7 @@ appropriate here.
 
 ---
 
-## 14. `vi.mock("@aws-sdk/...")` DynamoDB Mock Pattern in Tests
+## 14. `vi.mock("@aws-sdk/...")` DynamoDB Mock Pattern in Tests — done
 
 **What**: Every test file that touches DynamoDB repeats:
 
@@ -458,7 +458,7 @@ The existing `dynamoDbMock.js` shared module already provides the best possible 
 
 ---
 
-## 15. Lambda Handler Structure: `initializeSalt` + `validateEnv` + `extractRequest`
+## 15. Lambda Handler Structure: `initializeSalt` + `validateEnv` + `extractRequest` — done
 
 **What**: Nearly every Lambda handler starts with:
 
