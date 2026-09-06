@@ -42,6 +42,11 @@ export async function putBundle(userId, bundle) {
       const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
       item.ttl = ttl;
       item.ttl_datestamp = ttl_datestamp;
+    } else {
+      // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
+      // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
+      // missing key simply leaves the item out of that sparse index.
+      delete item.expiry;
     }
 
     logger.info({
@@ -93,6 +98,11 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
       const { ttl, ttl_datestamp } = calculateOneMonthTtl(expiryDate);
       item.ttl = ttl;
       item.ttl_datestamp = ttl_datestamp;
+    } else {
+      // A bundle with no expiry carries no expiry attribute at all: expiry is a key of the
+      // bundleId-expiry-index and DynamoDB rejects an empty string in an index key, and a
+      // missing key simply leaves the item out of that sparse index.
+      delete item.expiry;
     }
 
     logger.info({ message: "Storing bundle in DynamoDB by hashedSub", hashedSub, item });

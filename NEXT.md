@@ -186,6 +186,16 @@ or on batch 6 and each names the event that verifies it.
   not have the specified index" until the environment deploy created the index at 09:15 (that
   is #138); the 10:15 run is the first with the index in place, and the scan alarm has been OK
   since 07:01.
+  **Remainder, a prod regression since the index landed at 09:15 UTC:** the grant path
+  (`bundlePost.js` `grantBundle`) builds a bundle with `expiry: ""` for bundles with no
+  timeout, and the repository spread that into the item, so DynamoDB now rejects every grant
+  of a non-expiring bundle: "The AttributeValue for a key attribute cannot contain an empty
+  string value. IndexName: bundleId-expiry-index, IndexKey: expiry". Main's deploy of
+  prod-6c85118 (run 34023929108) failed its `tokenEnforcementBehaviour-prod` and
+  `generatePassActivityBehaviour-prod` suites on it, and `prod-6c85118-app-pass-post` logged
+  the rejection. Fixed locally on `claude/board-batch-6` (a bundle with no expiry is stored
+  without the attribute; unit test), held by the freeze: the fix reaches prod through a push,
+  the PR #139 merge and main's deploy, all of which wait for the operator's word.
 - [ ] **B34.3a. Companies House REST filing: registered office and registered email changes.**
   The REST filing API covers transactions, registered office address, registered email address
   and insolvency, not accounts. Build those two changes as OAuth user-authorised filings against
