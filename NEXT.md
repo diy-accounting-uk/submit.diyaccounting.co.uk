@@ -37,8 +37,10 @@ a later event to verify.
   `COMPANIES_HOUSE_CLIENT_SECRET`, which blocks every environment deploy. The step now exits
   with a notice when the secret is empty. **Source**: run 34015720587. **Owner**: Claude Code.
   **Model**: Fable (coordinator).
-  **Track**: on `claude/board-batch-5`; verified when the next `deploy environment` run on main
-  is green for ci and prod.
+  **Track**: on `claude/board-batch-5`. The ci environment deploy from the branch (run
+  34020851682) is green with every batch 4 and 5 environment stack, so ci now has the triage
+  role and guardrail, both Bedrock budgets, the forwarder Lambda and the bundles index (ACTIVE).
+  Verified for prod when the `deploy environment` run after PR #137 merges is green.
 - [ ] **B30n. Triage anonymises rather than blocks, and opens a draft PR when it can name the
   change.** Operator decision 2026-09-06, reversing the dispatch choices: the Bedrock guardrail's
   PII action becomes ANONYMIZE (the triage input is HMRC's and CloudWatch's, not ours to
@@ -65,9 +67,10 @@ a later event to verify.
   percent, the only operator shape Budgets accepts). The ci environment run 34020055726 then
   failed on the forwarder Lambda's image: the environment deploy builds no image for the
   us-east-1 registry, since that stack never had a container Lambda. Track ue1-env-image
-  (Sonnet, started 2026-09-06 07:55 UTC) adds that build and tag to `deploy-environment.yml`.
-  Verified when the ci environment deploy is green and a test notification on the topic
-  reaches Telegram.
+  added that build (ea0bd4d6: the ingestion image is pushed to the us-east-1 repository as
+  `env-observability-ue1-<sha>`), and run 34020851682 deployed the lot to ci. A test
+  notification went to `ci-env-bedrock-budget-alerts` at 08:20 UTC on 2026-09-06; verified
+  when it shows on Telegram and prod's environment deploy after the merge is green.
 
 - [ ] **B43b. ci self-destruct leaves the Companies House stack behind.** The self-destruct
   Lambda's deletion list (`SelfDestructStack.java` environment, `app/functions/infra/
