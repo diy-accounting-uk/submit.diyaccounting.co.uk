@@ -58,13 +58,6 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
   page and activity, and a Sonnet build brief. The build follows in the next wave and its
   behaviour suite runs in the simulator lane. **Source**: BACKLOG 34b; issue #15. **Owner**:
   Claude Code. **Model**: Opus design, then Sonnet.
-- [ ] **G6. What was the `purchase` event on submitVat.html at 16:47 UTC on 2026-09-03?**
-  The GA4 export holds it with item "VAT Return" and transaction id 096059144348, seventeen
-  minutes after Stripe took a £0.99 subscription payment (pi_3UBdVHCD0Ld2ukzI0mcS9QU3). Read-only
-  lookup in the event-lookup agent's worktree (Sonnet), the way
-  `.claude/skills/vat-submission-failure-alarm-user-lookup` works: was it a live customer's VAT
-  submission, did HMRC accept it, and is it the same customer as the subscription; report
-  without personal data. **Source**: operator, 2026-09-07. **Owner**: Claude Code.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** On main (PR #146). First real check passed: main's deploy retiring
   prod-cfb43ee wrote `/submit/prod/alarm-silence/cfb43ee` at 22:52 UTC on 2026-09-06 and no
@@ -74,20 +67,6 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
 
 ## Ready: Claude Code
 
-- [ ] **G4. GA4 `purchase` events carry the money.** Both purchases in the export (the £45
-  Company package on the spreadsheets site, pi_3UBX5pCD0Ld2ukzI0ASK1VDj, and the £0.99 submit
-  subscription, pi_3UBdVHCD0Ld2ukzI0mcS9QU3, both 2026-09-03) reached GA4 with revenue 0. Send
-  `value` and `currency` (and the item price) on every `purchase` from both sites, from the
-  Stripe session or price the page already knows, so GA4 reports income. Unit tests on the
-  event builders. **Source**: operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **G5. One event per thing: a VAT submission is not a purchase.** submitVat.html sends
-  GA4 `purchase` with item "VAT Return" when a return is filed, which is a submission, not a
-  payment. Define the events: `purchase` only for a Stripe checkout or subscription (bundle
-  name, value, currency), a distinct event for a filed VAT return, and check whether the
-  subscription checkout on the submit site sends `purchase` at all (the export shows none
-  for the £0.99 subscription's success page). Land the events in `web/public/lib/analytics.js`
-  and wherever the pages call it, with unit tests. **Source**: operator, 2026-09-07. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **G7. Streaming export for the GA4 property.** The property has daily export only
   (`events_YYYYMMDD`, no intraday table), so an event shows in BigQuery the next day. Turn on
   streaming export on the BigQuery link with `scripts/ga4-property-sync.js` (the service
