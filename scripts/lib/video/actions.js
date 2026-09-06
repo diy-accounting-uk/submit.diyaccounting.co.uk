@@ -367,8 +367,20 @@ async function doSubmitReturn(page, step, ctx) {
 
   await steps.completeVat(page, ctx.baseUrl, null, ctx.stepScreenshotDir);
   await steps.verifyVatSubmission(page, null, ctx.stepScreenshotDir);
+  await disableDeveloperMode(page);
 
   return { waitMs: Date.now() - start, rect: null };
+}
+
+// fillInVat turns developer mode on in sessionStorage so the synthetic obligations option is
+// available, and sessionStorage outlives the scene. Off camera that is fine; the next scene on
+// camera must not show the developer panel and the debug header.
+async function disableDeveloperMode(page) {
+  await page.evaluate(() => {
+    sessionStorage.removeItem("showDeveloperOptions");
+    document.body.classList.remove("developer-mode");
+    window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: false } }));
+  });
 }
 
 const HANDLERS = {
