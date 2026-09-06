@@ -79,7 +79,7 @@ for the one that is live (the apex and the probes point at it). One row per depl
   `destroy-ci.yml` sweeps leftovers on its cron (`34 2,4,6,8,10,12 * * *` UTC). `Goes when` is
   creation plus the delay, or the next sweep if that has passed.
 - prod sets never go on their own: only `destroy-prod.yml` with the deployment name removes
-  one. A spare prod set costs $35.28 a month (`PLAN_COST_OPTIMISATION.md`). `Goes when` for a
+  one. A spare prod set costs $35.28 a month (`_developers/archive/PLAN_COST_OPTIMISATION.md`). `Goes when` for a
   spare prod set is "on destroy-prod", and `Follow-up` names the dispatch:
   `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run.
 - A live set's `Follow-up` is none. A ci set past its self-destruct time that is still
