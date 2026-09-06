@@ -12,7 +12,7 @@ import {
   http404NotFoundResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
@@ -21,11 +21,7 @@ const logger = createLogger({ source: "app/functions/billing/billingCheckoutSess
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/billing/checkout-session/:id", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/billing/checkout-session/:id", ingestHandler);
 }
 /* v8 ignore stop */
 

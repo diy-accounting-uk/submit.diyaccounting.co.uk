@@ -162,7 +162,7 @@ every function.
 
 ---
 
-## 6. Express `apiEndpoint` Registration Pattern (internal refactor, no library)
+## 6. Express `apiEndpoint` Registration Pattern (internal refactor, no library) — done
 
 **What**: Every Lambda handler file exports an `apiEndpoint(app)` function that registers routes
 with this pattern:

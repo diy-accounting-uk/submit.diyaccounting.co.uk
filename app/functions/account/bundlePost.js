@@ -20,7 +20,7 @@ import {
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepository.js";
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -100,11 +100,7 @@ function qualifiersSatisfied(bundle, claims, requestQualifiers = {}) {
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/bundle", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/bundle", ingestHandler);
   app.head("/api/v1/bundle", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

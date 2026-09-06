@@ -12,7 +12,7 @@ import {
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
@@ -85,11 +85,7 @@ async function createGitHubIssue({ title, body, labels }) {
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/support/ticket", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/support/ticket", ingestHandler);
   app.head("/api/v1/support/ticket", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

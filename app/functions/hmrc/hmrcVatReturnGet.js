@@ -16,7 +16,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -53,11 +53,7 @@ const DEFAULT_WAIT_MS = 0;
 /* v8 ignore start */
 export function apiEndpoint(app) {
   // New endpoint using query parameters for date-based period lookup
-  app.get(`/api/v1/hmrc/vat/return`, async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", `/api/v1/hmrc/vat/return`, ingestHandler);
   app.head("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

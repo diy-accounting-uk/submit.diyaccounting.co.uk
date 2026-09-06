@@ -13,7 +13,7 @@ import {
   http401UnauthorizedResponse,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber } from "../../services/companiesHouseApi.js";
 import {
@@ -32,16 +32,8 @@ const MAX_DESCRIPTION_LENGTH = 200;
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/companies-house/transaction", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-  app.head("/api/v1/companies-house/transaction", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/companies-house/transaction", ingestHandler);
+  registerLambdaRoute(app, "head", "/api/v1/companies-house/transaction", ingestHandler);
 }
 /* v8 ignore stop */
 

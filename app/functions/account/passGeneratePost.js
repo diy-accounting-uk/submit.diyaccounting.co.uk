@@ -13,7 +13,7 @@ import {
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createPass } from "../../services/passService.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
@@ -25,11 +25,7 @@ const logger = createLogger({ source: "app/functions/account/passGeneratePost.js
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/pass/generate", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/pass/generate", ingestHandler);
 }
 /* v8 ignore stop */
 

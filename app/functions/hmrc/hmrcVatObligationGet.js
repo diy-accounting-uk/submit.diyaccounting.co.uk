@@ -16,7 +16,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -45,11 +45,7 @@ const DEFAULT_WAIT_MS = 0;
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.get("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "get", "/api/v1/hmrc/vat/obligation", ingestHandler);
   app.head("/api/v1/hmrc/vat/obligation", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

@@ -20,7 +20,7 @@ import { validateEnv } from "../../lib/env.js";
 import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import {
   UnauthorizedTokenError,
@@ -92,11 +92,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
+  registerLambdaRoute(app, "post", "/api/v1/hmrc/vat/return", ingestHandler);
   app.head("/api/v1/hmrc/vat/return", async (httpRequest, httpResponse) => {
     httpResponse.status(200).send();
   });

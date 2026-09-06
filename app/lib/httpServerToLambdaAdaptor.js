@@ -99,3 +99,21 @@ export function buildHttpResponseFromLambdaResult({ headers, statusCode, body },
     return httpResponse.status(statusCode).send(body || "");
   }
 }
+
+/**
+ * Register an Express route that adapts an HTTP request into a Lambda event, calls the
+ * given Lambda-style handler, and adapts its result back into an HTTP response. This is
+ * the same three-line body every apiEndpoint(app) function repeats for each of its routes.
+ *
+ * @param {import("express").Express} app
+ * @param {"get"|"post"|"put"|"delete"|"patch"|"head"} method
+ * @param {string} path
+ * @param {(event: object) => Promise<object>} handler - Lambda-style ingestHandler
+ */
+export function registerLambdaRoute(app, method, path, handler) {
+  app[method](path, async (httpRequest, httpResponse) => {
+    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
+    const lambdaResult = await handler(lambdaEvent);
+    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
+  });
+}
