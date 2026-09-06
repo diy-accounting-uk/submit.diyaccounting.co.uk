@@ -332,6 +332,15 @@ paths = ["companies-house/changeRegisteredEmail.html", "^/api/v1/companies-house
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "file-micro-entity-accounts"
+name = "File Micro-entity Accounts (Companies House)"
+display = "on-entitlement"
+bundles = ["default"]
+metered = false
+paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "my-receipts"
 name = "View previously submitted receipts"
 display = "on-entitlement"

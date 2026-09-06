@@ -248,6 +248,39 @@ jobs:
             aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
           fi
 
+      - name: Create secret in AWS from secrets.COMPANIES_HOUSE_PRESENTER_ID
+        env:
+          COMPANIES_HOUSE_PRESENTER_ID: ${{ secrets.COMPANIES_HOUSE_PRESENTER_ID }}
+        run: |
+          # The Companies House XML Gateway test presenter id and authentication code are set on
+          # the GitHub Environment by hand once Companies House emails them. Until then the
+          # environment deploys without accounts filing credentials.
+          if [ -z "${COMPANIES_HOUSE_PRESENTER_ID}" ]; then
+            echo "::notice::COMPANIES_HOUSE_PRESENTER_ID is not set on this environment; skipping the secret"
+            exit 0
+          fi
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_id"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_ID}" --region ${{ env.AWS_REGION }}
+          else
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_ID}" --region ${{ env.AWS_REGION }}
+          fi
+
+      - name: Create secret in AWS from secrets.COMPANIES_HOUSE_PRESENTER_CODE
+        env:
+          COMPANIES_HOUSE_PRESENTER_CODE: ${{ secrets.COMPANIES_HOUSE_PRESENTER_CODE }}
+        run: |
+          if [ -z "${COMPANIES_HOUSE_PRESENTER_CODE}" ]; then
+            echo "::notice::COMPANIES_HOUSE_PRESENTER_CODE is not set on this environment; skipping the secret"
+            exit 0
+          fi
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_code"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_CODE}" --region ${{ env.AWS_REGION }}
+          else
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_CODE}" --region ${{ env.AWS_REGION }}
+          fi
+
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/secret_key"

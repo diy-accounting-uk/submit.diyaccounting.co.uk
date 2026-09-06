@@ -83,8 +83,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 10);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 10, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
@@ -215,10 +215,17 @@ class SubmitApplicationCdkResourceTest {
                 Map.of(
                         "RouteKey",
                         "POST /api/v1/companies-house/transaction/{transactionId}/registered-email-address"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/accounts/preview"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/accounts"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
         // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
         // the GET on the same path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 71);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 77);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
