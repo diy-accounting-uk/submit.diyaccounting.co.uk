@@ -24,9 +24,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC with all six tracks). Its
-ci deploy is the proof for B10.4, D1 and A1 and the ci set O11 needs; pipeline fixes go on top
-of the branch. No push to the branch while its deploy runs: the concurrency group cancels it.
+Batch 9 is PR #146 (`claude/b9-board`, pushed 2026-09-06 19:52 UTC, again at 20:31 with the
+PITR and video-capture fixes). Its ci set ci-claud9501 is the one O11 needs; the quarterly-update
+body fix lands on the branch next. No push to the branch while its deploy runs: the concurrency
+group cancels it.
 
 - [ ] **B10.4**: a push-triggered ci deploy skips the ITSA suites (`skipTestScenarios`
   defaults to true), so both were dispatched through `probe-test.yml` against ci-claud9501.
@@ -54,12 +55,11 @@ of the branch. No push to the branch while its deploy runs: the concurrency grou
   the next one). Verified when that run posts the guardrail's anonymised comment.
 - [ ] **D1** is on the batch (3ab5cb3b, fix 1a4625f4): `app/functions/infra/ensurePitr.mjs`
   behind a `Provider` whose `isComplete` polls until point-in-time recovery reads ENABLED, on
-  a new logical id (`Custom::EnsurePitr`) because CloudFormation cannot change a resource's
-  type in place. The first push's ci environment deploy (run 34056172540, 19:56 UTC) failed
-  every `EnsurePitr` resource with "Cannot use import statement outside a module": the zip
-  held the handler as `.js` with no module metadata, so Lambda loaded it as CommonJS; the
-  stack rolled back cleanly. The fix renames the handler to `.mjs` and zips only that file.
-  Verified when the next push's ci environment deploy updates `ci-env-DataStack` cleanly.
+  a new logical id (`Custom::EnsurePitr`). The first push's ci environment deploy failed every
+  `EnsurePitr` resource on module packaging (the zip held the handler as `.js`, so Lambda
+  loaded it as CommonJS); the fix ships it as `.mjs` alone, and the second push's environment
+  deploy (run 34058236891) updated `ci-env-DataStack` cleanly at 20:44 UTC. Waits for the PR
+  merge; the race itself is verified by the next deploy that adds a table passing first time.
 - [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
   auto-destructing sets.** `PLAN_ALARM_TEARDOWN.md` is on batch 9 (3b5f2c24). Of the 43 alarm
   issues of 1 to 6 September, three fired during a ci self-destruct, four at creation (already
