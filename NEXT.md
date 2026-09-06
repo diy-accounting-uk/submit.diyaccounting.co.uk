@@ -246,15 +246,19 @@ a later event to verify.
   activity leaves the gate: `video-itsa-business-details-ci` on run 34002898819. **Source**:
   BACKLOG 17a. **Owner**: Operator (an upload via the YouTube Data API can follow once the
   pattern settles).
-- [ ] **O11. Companies House filing: the developer-hub and ci steps.** On the "DIY Accounting
-  Submit - test" application at developer.company-information.service.gov.uk/manage-applications,
-  register the redirect URIs `PLAN_COMPANIES_HOUSE_REST_FILING.md` lists (each ends in
-  `/companies-house/filingCallback.html`, for localhost:3000, local.submit:3443, ci-submit and
-  submit). Put `COMPANIES_HOUSE_CLIENT_ID` (variable) and `COMPANIES_HOUSE_CLIENT_SECRET`
-  (secret) on the GitHub `ci` environment. Say whether the application is sandbox-only, which
-  decides whether prod needs a second application. The build lands and proves itself on the
-  simulator without these; the ci behaviour runs wait on them. **Source**: BACKLOG 34; issue
-  #15. **Owner**: Operator.
+- [ ] **O11. Companies House filing: the developer-hub and ci steps.** The developer hub keys
+  an application to one Companies House environment, sandbox ("test application") or
+  production ("live application"), so "DIY Accounting Submit - test" is the sandbox
+  application every non-prod lane shares (local, proxy, ci) and prod gets a live application
+  when the gate lifts (B34.5). On the test application at
+  developer.company-information.service.gov.uk/manage-applications: create a key of type OAuth
+  web client (or open the one that exists) and register the three sandbox redirect URIs from
+  `PLAN_COMPANIES_HOUSE_REST_FILING.md`'s operator steps (localhost:3000, local.submit:3443,
+  ci-submit, each ending `/companies-house/filingCallback.html`); put its client id as the
+  `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
+  secret on the GitHub `ci` environment; hold a sandbox user account the behaviour tests can
+  sign in as. Then tell Claude Code, which runs the two filing suites against ci. **Source**:
+  BACKLOG 34; issue #15. **Owner**: Operator.
 
 ## Blocked: operator
 
@@ -262,6 +266,12 @@ a later event to verify.
   is the reconcile erroring hourly between its deploy at 06:13 and the index's arrival at
   09:15 on 2026-09-06; it closes once the 10:15 UTC run and the next are clean. **Source**:
   board render 2026-09-06. **Owner**: Operator. Blocked on two clean hourly runs.
+- [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
+  2026-09-21.** The presenter account exists (ID E0000052288, code in the operator's
+  credentials store); the test presenter credentials and the accounts specification were
+  requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
+  GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
+  34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
 - [ ] **O9 / B47. Watch the revived schedules fire on their own**: `codeql` on 2026-09-06 and
   the weekly `compliance` and `stack-drift` crons on Monday 2026-09-07 06:00 UTC. If one
   misses, revive it the same way as on 2026-08-31 and tell Claude Code. **Source**: BACKLOG 47.
@@ -280,6 +290,23 @@ a later event to verify.
   variable is set (`prod-env-alarm-triage-role` exists since run 34023929068 deployed the
   observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
   Fable (coordinator). Blocked on the batch 6 merge.
+- [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
+  operator's examination on ci: a live application "DIY Accounting Submit - live" on the
+  developer hub with the prod redirect URI
+  `https://submit.diyaccounting.co.uk/companies-house/filingCallback.html`, its client id in
+  `.env.prod` and its secret as `COMPANIES_HOUSE_CLIENT_SECRET` on the GitHub `prod`
+  environment (operator steps, briefed when they come due); then `prod` joins the two filing
+  activities' `environments` in `web/public/submit.catalogue.toml`, `deploy.yml` runs the two
+  filing suites against prod, and the pricing question in `PLAN_COMPANIES_HOUSE_REST_FILING.md`
+  Q1 gets its answer before the activities leave the free `default` bundle. **Source**: BACKLOG
+  34; issue #15. **Owner**: Claude Code, with the operator's hub and secret steps. **Model**:
+  Sonnet. Blocked on O11 and the operator's look at the filings on ci.
+- [ ] **B34.6. Companies House accounts filing through the XML Gateway.** FRS 105 micro-entity
+  accounts as iXBRL in an XML envelope against the test presenter credentials: an Opus design
+  pass (envelope, presenter authentication, the accounts spec, where the iXBRL comes from,
+  simulator routes) then a Sonnet build, with the presenter code reaching the build as a
+  GitHub environment secret. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code.
+  **Model**: Opus design, then Sonnet. Blocked on O16.
 - [ ] **G3. Confirm a real `purchase` lands in prod** once G1 and G2c ship: the next live
   checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
   (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
