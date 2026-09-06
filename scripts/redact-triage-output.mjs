@@ -76,6 +76,18 @@ export function extractFinalAssistantText(parsed) {
   throw new Error("no assistant text found in the input JSON");
 }
 
+/**
+ * Describes a Claude Code run that stopped before producing any assistant text — most often by
+ * exhausting `--max-turns`. Returns null when `parsed` is not that shape, so callers fall back to
+ * `extractFinalAssistantText`'s own error for a genuine `is_error` failure or malformed input.
+ */
+export function describeStoppedRun(parsed) {
+  const entries = Array.isArray(parsed) ? parsed : [parsed];
+  const lastResult = [...entries].reverse().find((entry) => entry && typeof entry === "object" && entry.type === "result");
+  if (!lastResult || lastResult.subtype === "success" || lastResult.is_error === true) return null;
+  return `triage stopped: ${lastResult.subtype} after ${lastResult.num_turns} turns`;
+}
+
 function main() {
   const inputPath = process.argv[2];
   if (!inputPath) {
@@ -96,6 +108,12 @@ function main() {
   try {
     text = extractFinalAssistantText(parsed);
   } catch (err) {
+    const stoppedSummary = describeStoppedRun(parsed);
+    if (stoppedSummary) {
+      writeFileSync("/tmp/redactions.txt", "");
+      process.stdout.write(`${stoppedSummary}\n`);
+      return;
+    }
     console.error(err.message);
     process.exit(1);
   }

@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DENY_PATTERNS, redact, extractFinalAssistantText } from "../../../scripts/redact-triage-output.mjs";
+import { DENY_PATTERNS, redact, extractFinalAssistantText, describeStoppedRun } from "../../../scripts/redact-triage-output.mjs";
 
 const SCRIPT_PATH = fileURLToPath(new URL("../../../scripts/redact-triage-output.mjs", import.meta.url));
 
@@ -142,6 +142,35 @@ describe("extractFinalAssistantText", () => {
   });
 });
 
+describe("describeStoppedRun", () => {
+  test("names the subtype and turn count of a run that hit max-turns with no text", () => {
+    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
+    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_max_turns after 30 turns");
+  });
+
+  test("returns null for a successful result", () => {
+    const parsed = { type: "result", subtype: "success", result: "final answer" };
+    expect(describeStoppedRun(parsed)).toBeNull();
+  });
+
+  test("returns null for an is_error failure, leaving it to extractFinalAssistantText's own message", () => {
+    const parsed = { type: "result", subtype: "error_during_execution", is_error: true, num_turns: 3 };
+    expect(describeStoppedRun(parsed)).toBeNull();
+  });
+
+  test("returns null when there is no result entry at all", () => {
+    expect(describeStoppedRun({ foo: "bar" })).toBeNull();
+  });
+
+  test("reads the last result entry out of a transcript array", () => {
+    const parsed = [
+      { type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "intermediate turn" }] } },
+      { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 },
+    ];
+    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_max_turns after 30 turns");
+  });
+});
+
 describe("CLI", () => {
   test("prints the redacted final result and exits zero", () => {
     const parsed = { type: "result", subtype: "success", result: "Customer 192.168.1.1 hit the alarm." };
@@ -165,6 +194,13 @@ describe("CLI", () => {
     const result = runCli(JSON.stringify({ foo: "bar" }));
     expect(result.status).not.toBe(0);
     expect(result.stderr).toMatch(/no assistant text/);
+  });
+
+  test("exits zero with a one-line summary when the run hit max-turns with no text", () => {
+    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
+    const result = runCli(JSON.stringify(parsed));
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe("triage stopped: error_max_turns after 30 turns");
   });
 
   test("exits non-zero when the input is not valid JSON", () => {

@@ -554,6 +554,9 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
+      - name: Silence the deployment's alarms
+        run: node scripts/silence-deployment-alarms.mjs --env prod --deployment "${{ needs.names.outputs.deployment-name }}"
+
       - name: Build CDK
         run: ./mvnw --errors clean verify -DskipTests
 

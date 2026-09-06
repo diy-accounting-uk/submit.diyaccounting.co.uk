@@ -240,6 +240,16 @@ public class OpsStack extends Stack {
                             .formatted(this.getRegion(), this.getAccount(), props.envName())))
                     .build());
 
+            // Reads a deployment's alarm-silence marker so an ALARM state change from a
+            // deployment mid-teardown is dropped instead of opening or updating an issue.
+            alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("ReadAlarmSilence")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("ssm:GetParameter"))
+                    .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/alarm-silence/*"
+                            .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                    .build());
+
             // Reads a "-stack-health" composite alarm's own AlarmRule so its evidence links
             // can name the child functions behind it instead of widening to a broad prefix.
             alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()

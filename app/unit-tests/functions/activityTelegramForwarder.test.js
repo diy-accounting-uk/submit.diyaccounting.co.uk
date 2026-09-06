@@ -2,6 +2,21 @@
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class GetParameterCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 import {
   escapeTelegramMarkdown,
   formatMessage,
@@ -167,6 +182,8 @@ describe("activityTelegramForwarder", () => {
       process.env.TELEGRAM_OPS_CHAT_ID = "@diy_ci_ops";
       process.env.ENVIRONMENT_NAME = "test";
       global.fetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve("{}") });
+      mockSsmSend.mockReset();
+      mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     });
 
     afterEach(() => {
@@ -326,6 +343,54 @@ describe("activityTelegramForwarder", () => {
       expect(body.text).toContain("prod-app-health-failed");
       expect(body.text).toContain("OK");
       expect(body.text).toContain("ALARM");
+    });
+
+    test("sends no Telegram message for a silenced deployment's alarm event", async () => {
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      mockSsmSend.mockImplementation((command) => {
+        if (command.input?.Name === "/submit/prod/alarm-silence/a0f41c7") {
+          return Promise.resolve({
+            Parameter: { Value: JSON.stringify({ firstSilencedAt: new Date().toISOString(), expiresAt }) },
+          });
+        }
+        return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+      });
+
+      await handler({
+        "source": "aws.cloudwatch",
+        "detail-type": "CloudWatch Alarm State Change",
+        "detail": {
+          alarmName: "prod-a0f41c7-app-api-5xx",
+          state: { value: "ALARM", reason: "Threshold crossed" },
+          previousState: { value: "OK" },
+        },
+      });
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test("still sends other event types when a deployment's alarms are silenced", async () => {
+      mockSsmSend.mockResolvedValue({
+        Parameter: {
+          Value: JSON.stringify({
+            firstSilencedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          }),
+        },
+      });
+
+      await handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "prod",
+          actor: "customer",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
   });
 
