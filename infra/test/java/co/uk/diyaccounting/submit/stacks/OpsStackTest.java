@@ -91,6 +91,34 @@ class OpsStackTest {
     }
 
     @Test
+    void opsStackCreatesNoBusWideTelegramForwarder() {
+        OpsStack opsStack = synthOpsStack(
+                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        Template template = Template.fromStack(opsStack);
+
+        // The catch-all rule on the custom ActivityEvent bus, and the Lambda it targets, now
+        // belong to env-level ActivityStack (one instance per environment, not one per
+        // deployment). OpsStack only imports that Lambda as a target for its own
+        // deployment-scoped default-bus rules (CfnStackStatusRule, AlarmStateChangeRule).
+        var busWideRules = template.findResources(
+                "AWS::Events::Rule",
+                Map.of("Properties", Map.of("EventPattern", Map.of("detail-type", List.of("ActivityEvent")))));
+        assertEquals(
+                0,
+                busWideRules.size(),
+                "OpsStack must not create its own bus-wide catch-all Telegram forwarder rule");
+        var forwarderFunctionNames = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<?, ?>) resource.get("Properties"))
+                .map(properties -> String.valueOf(properties.get("FunctionName")))
+                .filter(functionName -> functionName.contains("activity-telegram-forwarder"))
+                .toList();
+        assertEquals(
+                List.of(),
+                forwarderFunctionNames,
+                "OpsStack must not build its own Telegram forwarder Lambda");
+    }
+
+    @Test
     void canaryAlarmsTreatMissingDataAsNotBreaching() {
         OpsStack opsStack = synthOpsStack("prod", null, "https://submit.diyaccounting.co.uk/");
         Template template = Template.fromStack(opsStack);
