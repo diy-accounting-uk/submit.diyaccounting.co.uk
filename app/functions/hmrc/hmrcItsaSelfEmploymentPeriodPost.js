@@ -21,6 +21,7 @@ import {
   hmrcHttpPost,
   extractHmrcAccessTokenFromLambdaEvent,
   generateHmrcErrorResponseWithRetryAdvice,
+  http400BadRequestFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
   validateFraudPreventionHeaders,
   buildHmrcHeaders,
@@ -42,6 +43,59 @@ const DEFAULT_WAIT_MS = 0;
 const HMRC_API_VERSION = "5.0";
 
 const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
+
+/**
+ * Round a money value to 2 decimal places, the way every amount in the Self Employment
+ * Business v5.0 schema is specified ("up to 2 decimal places").
+ * @param {number|string} value
+ * @returns {number}
+ */
+function roundToTwoDecimalPlaces(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Build one of periodIncome/periodExpenses/periodDisallowableExpenses for the HMRC request
+ * body. HMRC's Self Employment Business v5.0 spec makes each of these objects optional, but
+ * rejects an empty object at its path with "An empty or non-matching body was submitted" - so
+ * a section with no entered values must be left out of the body entirely, never sent as {}.
+ * @param {Object|undefined} section - the caller's income/expenses/disallowable-expenses object
+ * @returns {Object|undefined} the section with numeric values, or undefined if it has nothing in it
+ */
+function buildMoneySection(section) {
+  if (!section || typeof section !== "object") return undefined;
+  const entries = Object.entries(section).filter(([, value]) => value !== undefined && value !== null && value !== "");
+  if (entries.length === 0) return undefined;
+  return Object.fromEntries(entries.map(([key, value]) => [key, roundToTwoDecimalPlaces(value)]));
+}
+
+/**
+ * Build the Self Employment Business v5.0 "Create a Self-Employment Period Summary" request
+ * body. periodDates is always required; periodIncome, periodExpenses and
+ * periodDisallowableExpenses are each included only when the caller entered a value for at
+ * least one of their fields.
+ * @param {Object} periodDetails - periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses
+ * @returns {Object} the HMRC request body
+ */
+export function buildSelfEmploymentPeriodRequestBody(periodDetails) {
+  const hmrcRequestBody = {
+    periodDates: {
+      periodStartDate: periodDetails.periodStartDate,
+      periodEndDate: periodDetails.periodEndDate,
+    },
+  };
+
+  const periodIncome = buildMoneySection(periodDetails.periodIncome);
+  if (periodIncome) hmrcRequestBody.periodIncome = periodIncome;
+
+  const periodExpenses = buildMoneySection(periodDetails.periodExpenses);
+  if (periodExpenses) hmrcRequestBody.periodExpenses = periodExpenses;
+
+  const periodDisallowableExpenses = buildMoneySection(periodDetails.periodDisallowableExpenses);
+  if (periodDisallowableExpenses) hmrcRequestBody.periodDisallowableExpenses = periodDisallowableExpenses;
+
+  return hmrcRequestBody;
+}
 
 /**
  * Serialize response headers to a plain object with lowercase keys
@@ -117,9 +171,10 @@ export function extractAndValidateParameters(event, errorMessages) {
     businessId,
     periodStartDate,
     periodEndDate,
-    // HMRC requires income, expenses and deductions to be present even when zero - pass
-    // through whatever the caller sent and let HMRC validate the amounts, the way every
-    // other write handler in this repo defers box-level validation to HMRC.
+    // Pass through whatever the caller sent for income, expenses and disallowable expenses
+    // and let HMRC validate the amounts, the way every other write handler in this repo
+    // defers box-level validation to HMRC. buildSelfEmploymentPeriodRequestBody drops any of
+    // these three that end up empty - HMRC rejects an empty object at any of their paths.
     periodIncome: periodIncome || {},
     periodExpenses: periodExpenses || {},
     periodDisallowableExpenses: periodDisallowableExpenses || {},
@@ -324,8 +379,14 @@ export async function ingestHandler(event) {
     }
   }
 
-  // Map HMRC error responses to our HTTP responses
+  // Map HMRC error responses to our HTTP responses. A 400 is the caller's to fix (a
+  // malformed period, not a system fault), so it comes back as a 400 carrying HMRC's own
+  // message, the way hmrcVatPaymentsGet.js and its siblings map their 400s.
   if (result && result.hmrcResponse && !result.hmrcResponse.ok) {
+    if (result.hmrcResponse.status === 400) {
+      result.hmrcResponse.data = result.hmrcResponseBody;
+      return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    }
     return generateHmrcErrorResponseWithRetryAdvice(
       request,
       result.hmrcResponse,
@@ -522,15 +583,7 @@ export async function createSelfEmploymentPeriod(
     });
   }
 
-  const hmrcRequestBody = {
-    periodDates: {
-      periodStartDate: periodDetails.periodStartDate,
-      periodEndDate: periodDetails.periodEndDate,
-    },
-    periodIncome: periodDetails.periodIncome,
-    periodExpenses: periodDetails.periodExpenses,
-    periodDisallowableExpenses: periodDetails.periodDisallowableExpenses,
-  };
+  const hmrcRequestBody = buildSelfEmploymentPeriodRequestBody(periodDetails);
 
   // hmrcHttpPost, unlike hmrcHttpGet, does not prepend the HMRC base URI itself - the
   // caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.
