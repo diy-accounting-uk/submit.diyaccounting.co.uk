@@ -355,7 +355,15 @@ Consider removing `envSchema.js` unless there is a concrete plan to use typed en
 
 ---
 
-## 11. `getTableName()` Pattern in Every Repository (internal refactor)
+## 11. `getTableName()` Pattern in Every Repository (internal refactor) — not done
+
+The suggested `const TABLE_NAME = process.env.X` at module scope is not behaviour-neutral:
+several unit tests import the repository module once at the top of the file, then set the
+table-name env var per test inside `beforeEach` (e.g.
+`app/unit-tests/data/dynamoDbBundleRepository.putBundle.test.js`). A module-scope constant
+would capture whatever the env var held at import time, before any test sets it, and stay
+wrong for the life of the module. `getTableName()` stays a function so it keeps reading the
+env var at call time.
 
 **What**: Six repository files define an identical pattern:
 
