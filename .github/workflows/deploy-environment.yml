@@ -229,12 +229,21 @@ jobs:
           fi
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_CLIENT_SECRET
+        env:
+          COMPANIES_HOUSE_CLIENT_SECRET: ${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}
         run: |
+          # The Companies House filing client secret is set on the GitHub Environment by hand once
+          # the developer-hub application exists. Until then the environment deploys without it
+          # and the filing token exchange answers an error, which the ci-only gate keeps off prod.
+          if [ -z "${COMPANIES_HOUSE_CLIENT_SECRET}" ]; then
+            echo "::notice::COMPANIES_HOUSE_CLIENT_SECRET is not set on this environment; skipping the secret"
+            exit 0
+          fi
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/client_secret"
           if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
           else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
+            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
           fi
 
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY

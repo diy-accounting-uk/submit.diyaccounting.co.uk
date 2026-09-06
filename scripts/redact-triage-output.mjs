@@ -59,6 +59,9 @@ export function extractFinalAssistantText(parsed) {
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
     if (!entry || typeof entry !== "object") continue;
+    if (entry.is_error === true) {
+      throw new Error(`the triage run failed, so nothing is posted: ${entry.result || "no detail"}`);
+    }
     if (typeof entry.result === "string" && entry.result.length > 0) {
       return entry.result;
     }

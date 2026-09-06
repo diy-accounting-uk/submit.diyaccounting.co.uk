@@ -399,6 +399,7 @@ function syncWebAssets(config) {
       `COMPANIES_HOUSE_FILING_BASE_URI=${process.env.COMPANIES_HOUSE_FILING_BASE_URI || ""}`,
       "",
       `DIY_SUBMIT_BASE_URL=${process.env.DIY_SUBMIT_BASE_URL || ""}`,
+      `GA4_MEASUREMENT_ID=${process.env.GA4_MEASUREMENT_ID || ""}`,
       "",
     ].join("\n");
     fs.writeFileSync(path.join(tmpWebDir, "submit.env"), submitEnv);

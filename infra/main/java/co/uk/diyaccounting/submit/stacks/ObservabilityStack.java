@@ -929,70 +929,72 @@ public class ObservabilityStack extends Stack {
         cfnOutput(this, "AlarmTriageRoleArn", alarmTriageRole.getRoleArn());
 
         // The guardrail screens the triage agent's output for PII the redaction script's regexes
-        // might miss (a name in prose, for example). BLOCK, not ANONYMIZE: a blocked comment is a
-        // loud failure the operator sees in the run log, rather than a comment that reads as
-        // complete while quietly missing pieces.
+        // might miss (a name in prose, for example). ANONYMIZE, not BLOCK: the alarm and its logs
+        // are HMRC's and CloudWatch's content, not ours to withhold, so masking the hit and
+        // posting the rest of the triage is more useful than posting nothing. The Bedrock API
+        // supports ANONYMIZE for every PII entity type and every regex here, so nothing forces a
+        // BLOCK fallback.
         CfnGuardrail alarmTriageGuardrail = CfnGuardrail.Builder.create(
                         this, props.resourceNamePrefix() + "-AlarmTriageGuardrail")
                 .name(props.sharedNames().alarmTriageGuardrailName)
                 // AWS::Bedrock::Guardrail requires both messages even though this guardrail only
-                // ever screens agent output (source OUTPUT); the plan this stack follows named only
-                // blockedOutputsMessaging, which CloudFormation would reject as an incomplete
-                // resource.
+                // ever screens agent output (source OUTPUT) and never blocks it (every entity and
+                // regex below is ANONYMIZE); CloudFormation rejects the resource as incomplete
+                // without both.
                 .blockedInputMessaging("Triage input was blocked by the guardrail.")
                 .blockedOutputsMessaging("Triage output was blocked by the guardrail.")
                 .sensitiveInformationPolicyConfig(CfnGuardrail.SensitiveInformationPolicyConfigProperty.builder()
                         .piiEntitiesConfig(List.of(
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("EMAIL")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("PHONE")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("NAME")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("ADDRESS")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("IP_ADDRESS")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("AWS_ACCESS_KEY")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("AWS_SECRET_KEY")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("UK_NATIONAL_INSURANCE_NUMBER")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("UK_UNIQUE_TAXPAYER_REFERENCE_NUMBER")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.PiiEntityConfigProperty.builder()
                                         .type("CREDIT_DEBIT_CARD_NUMBER")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build()))
                         .regexesConfig(List.of(
                                 CfnGuardrail.RegexConfigProperty.builder()
                                         .name("hashed-sub")
                                         .pattern("[0-9a-f]{64}")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build(),
                                 CfnGuardrail.RegexConfigProperty.builder()
                                         .name("vat-registration-number")
                                         .pattern("\\b(?:GB)?[0-9]{9}\\b")
-                                        .action("BLOCK")
+                                        .action("ANONYMIZE")
                                         .build()))
                         .build())
                 .build();

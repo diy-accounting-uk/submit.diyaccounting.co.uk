@@ -10,9 +10,13 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -25,6 +29,7 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
 import software.constructs.Construct;
 
 public class ObservabilityUE1Stack extends Stack {
@@ -60,6 +65,8 @@ public class ObservabilityUE1Stack extends Stack {
         SubmitSharedNames sharedNames();
 
         int logGroupRetentionPeriodDays();
+
+        String baseImageTag();
 
         static ImmutableObservabilityUE1StackProps.Builder builder() {
             return ImmutableObservabilityUE1StackProps.builder();
@@ -106,14 +113,14 @@ public class ObservabilityUE1Stack extends Stack {
         cfnOutput(this, "SelfDestructLogGroupArn", this.selfDestructLogGroup.getLogGroupArn());
 
         // ============================================================================
-        // Alarm triage: the daily Bedrock budget and its deny action
+        // Alarm triage: the Bedrock budgets and the deny action
         // ============================================================================
-        // Bedrock spend is charged to the account, so the budget lives here (us-east-1, where every
+        // Bedrock spend is charged to the account, so the budgets live here (us-east-1, where every
         // other account-wide, region-agnostic resource in this environment's observability lives),
         // not alongside the triage role in the eu-west-2 stack.
 
         // Attached to nothing at deploy time - the budget action attaches it to the triage role by
-        // name once the account crosses the daily threshold.
+        // name once the account crosses the monthly threshold.
         ManagedPolicy bedrockDenyPolicy = ManagedPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-AlarmTriageBedrockDenyPolicy")
                 .managedPolicyName(props.resourceNamePrefix() + "-alarm-triage-bedrock-deny")
@@ -147,24 +154,31 @@ public class ObservabilityUE1Stack extends Stack {
                 .resources(List.of(bedrockDenyPolicy.getManagedPolicyArn()))
                 .build());
 
-        // The budget action's SNS subscriber is required by CfnBudgetsAction, but the plan this
-        // stack follows left alertTopicArn undefined; nothing subscribes today, so this is purely a
-        // sink the operator can subscribe to later.
+        // The budget action's SNS subscriber is required by CfnBudgetsAction. AWS Budgets
+        // notifications are plain SNS text with no EventBridge equivalent, and Budgets offers no
+        // other subscriber type, so a Lambda bridges this topic to the shared activity bus below
+        // rather than the CloudWatch-alarm routing OpsStack owns per deployment.
         Topic bedrockBudgetAlertsTopic = Topic.Builder.create(
                         this, props.resourceNamePrefix() + "-BedrockBudgetAlertsTopic")
                 .topicName(props.resourceNamePrefix() + "-bedrock-budget-alerts")
                 .displayName("DIY Accounting Submit - Bedrock daily budget")
                 .build();
 
-        String bedrockDailyBudgetName = props.envName() + "-env-bedrock-daily";
+        // Two budgets, not one: AWS Budgets Actions reject a DAILY budget ("AWS Budgets Actions
+        // don't support daily granularity budget for now"), so the deny action has to sit on a
+        // MONTHLY budget. USD 150 is 30 days of the operator's USD 5/day figure, keeping the same
+        // spend rate the action enforces at. The DAILY budget carries no action, only a
+        // notification to the same topic, so the operator still hears about a bad day before the
+        // month-level enforcement would trip.
+        String bedrockMonthlyBudgetName = props.envName() + "-env-bedrock-monthly";
 
-        CfnBudget.Builder.create(this, props.resourceNamePrefix() + "-BedrockDailyBudget")
+        CfnBudget.Builder.create(this, props.resourceNamePrefix() + "-BedrockMonthlyBudget")
                 .budget(CfnBudget.BudgetDataProperty.builder()
-                        .budgetName(bedrockDailyBudgetName)
+                        .budgetName(bedrockMonthlyBudgetName)
                         .budgetType("COST")
-                        .timeUnit("DAILY")
+                        .timeUnit("MONTHLY")
                         .budgetLimit(CfnBudget.SpendProperty.builder()
-                                .amount(5)
+                                .amount(150)
                                 .unit("USD")
                                 .build())
                         .costFilters(Map.of("Service", List.of("Amazon Bedrock")))
@@ -172,7 +186,7 @@ public class ObservabilityUE1Stack extends Stack {
                 .build();
 
         CfnBudgetsAction.Builder.create(this, props.resourceNamePrefix() + "-BedrockDenyAction")
-                .budgetName(bedrockDailyBudgetName)
+                .budgetName(bedrockMonthlyBudgetName)
                 .actionType("APPLY_IAM_POLICY")
                 .approvalModel("AUTOMATIC")
                 .notificationType("ACTUAL")
@@ -193,6 +207,96 @@ public class ObservabilityUE1Stack extends Stack {
                         .build()))
                 .build();
 
+        String bedrockDailyBudgetName = props.envName() + "-env-bedrock-daily";
+
+        CfnBudget.Builder.create(this, props.resourceNamePrefix() + "-BedrockDailyBudget")
+                .budget(CfnBudget.BudgetDataProperty.builder()
+                        .budgetName(bedrockDailyBudgetName)
+                        .budgetType("COST")
+                        .timeUnit("DAILY")
+                        .budgetLimit(CfnBudget.SpendProperty.builder()
+                                .amount(5)
+                                .unit("USD")
+                                .build())
+                        .costFilters(Map.of("Service", List.of("Amazon Bedrock")))
+                        .build())
+                .notificationsWithSubscribers(List.of(CfnBudget.NotificationWithSubscribersProperty.builder()
+                        .notification(CfnBudget.NotificationProperty.builder()
+                                .notificationType("ACTUAL")
+                                .comparisonOperator("GREATER_THAN")
+                                .threshold(99)
+                                .thresholdType("PERCENTAGE")
+                                .build())
+                        .subscribers(List.of(CfnBudget.SubscriberProperty.builder()
+                                .subscriptionType("SNS")
+                                .address(bedrockBudgetAlertsTopic.getTopicArn())
+                                .build()))
+                        .build()))
+                .build();
+
         cfnOutput(this, "BedrockBudgetAlertsTopicArn", bedrockBudgetAlertsTopic.getTopicArn());
+
+        // ============================================================================
+        // Bedrock budget alerts reaching Telegram
+        // ============================================================================
+        // The WAF and certificate alarms in EdgeStack reach Telegram by forwarding their
+        // us-east-1 "CloudWatch Alarm State Change" events cross-region to OpsStack's
+        // AlarmStateChangeRule, but that rule (like the rest of OpsStack) is created once per
+        // app deployment - there is no persistent env-level equivalent to forward a CloudWatch
+        // alarm into, and a budget threshold breach has no CloudWatch alarm to raise in the first
+        // place (Budgets does not publish a per-budget metric). The env-level path that already
+        // survives every deployment is the shared activity bus ActivityStack creates: OpsStack's
+        // ActivityTelegramRule reads it in every live deployment and needs no alarm-name prefix
+        // match, only detail-type "ActivityEvent". This Lambda is the bridge from the budget
+        // topic's plain SNS text to that contract, the same role wafScanDetect.js plays for a WAF
+        // finding raised in this same region (see EdgeStack).
+        var budgetAlertForwardFunctionName = props.resourceNamePrefix() + "-bedrock-budget-alert-forward";
+        var budgetAlertForwardEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_REGION", "eu-west-2");
+
+        var budgetAlertForwardLambda = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(budgetAlertForwardFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
+                        .ingestFunctionName(budgetAlertForwardFunctionName)
+                        .ingestHandler("app/functions/ops/bedrockBudgetAlertForward.handler")
+                        .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
+                                + budgetAlertForwardFunctionName)
+                        .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:us-east-1:" + this.getAccount()
+                                + ":function:" + budgetAlertForwardFunctionName + ":"
+                                + props.sharedNames().provisionedConcurrencyAliasName)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.seconds(10))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(budgetAlertForwardEnv)
+                        .build());
+
+        // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
+        // us-east-1 (the budget itself is account-wide, but Bedrock spend and the deny action's
+        // execution role live where this stack does). Scoped to this environment's own activity
+        // bus, not every bus in the account.
+        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
+                + props.sharedNames().activityBusName;
+        budgetAlertForwardLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        bedrockBudgetAlertsTopic.addSubscription(new LambdaSubscription(budgetAlertForwardLambda.ingestLambda));
+
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "obs-ue1", List.of(budgetAlertForwardLambda));
+
+        cfnOutput(
+                this,
+                "BedrockBudgetAlertForwardLambdaArn",
+                budgetAlertForwardLambda.ingestLambda.getFunctionArn());
+        infof(
+                "Subscribed Bedrock budget alert forward Lambda %s to %s",
+                budgetAlertForwardLambda.ingestLambda.getNode().getId(), bedrockBudgetAlertsTopic.getTopicName());
     }
 }
