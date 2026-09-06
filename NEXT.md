@@ -121,11 +121,7 @@ Batch 10 is PR #147 (`claude/b10-board`: the triage resolver and the prod filing
   simulator routes) then a Sonnet build, with the presenter code reaching the build as a
   GitHub environment secret. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code.
   **Model**: Opus design, then Sonnet. Blocked on O16.
-- [ ] **G3. Confirm a real `purchase` lands in prod**: the next live
-  checkout should appear in `diyaccounting-ga4.analytics_523400333.events_*`
-  (`bq --project_id=diyaccounting-ga4 --location=europe-west2`). No event of that name has
-  ever reached the export. **Source**: none. **Owner**: Claude Code (read-only query).
-  **Model**: Haiku. Blocked on a live sale.
+
 ## Discipline
 
 - **Push once per batch of landed tracks, never per track**, and prefer one dispatch that
