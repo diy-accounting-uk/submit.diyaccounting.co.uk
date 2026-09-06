@@ -232,9 +232,22 @@ async function listDataStreams(client, propertyName) {
   return data.dataStreams || [];
 }
 
+/**
+ * Pull the list of links out of a bigQueryLinks response body. The Analytics Admin API names
+ * this field "bigqueryLinks" (lowercase q) in the JSON body, unlike the "bigQueryLinks" resource
+ * path segment used to fetch it — reading the wrong case silently returns an empty list, which
+ * reads exactly like "no link exists yet" and proposes creating a second one.
+ *
+ * @param {object} data
+ * @returns {Array<{name: string, project?: string, datasetLocation?: string, dailyExportEnabled?: boolean}>}
+ */
+export function extractBigQueryLinks(data) {
+  return data.bigqueryLinks || [];
+}
+
 async function listBigQueryLinks(client, propertyName) {
   const { data } = await client.request({ url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/bigQueryLinks` });
-  return data.bigQueryLinks || [];
+  return extractBigQueryLinks(data);
 }
 
 async function resolveProjectNumber(client, projectId) {

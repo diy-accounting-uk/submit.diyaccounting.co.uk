@@ -73,6 +73,7 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
+import { findPastStripeSubscriptionId, pollForPurchaseEvent } from "./helpers/ga4PurchaseQuery.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -105,6 +106,7 @@ let stripeListenProcess;
 let dynamoControl;
 let userSub = null;
 let observedTraceparent = null;
+let webhookActivation = null;
 
 test.setTimeout(600_000); // 10 minutes
 
@@ -373,7 +375,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     // This is the key verification that would catch webhook signature failures.
     if (checkoutResult?.isStripeCheckout) {
       console.log("Real Stripe checkout detected — waiting for webhook to activate bundle...");
-      await waitForBundleWebhookActivation(page, "resident-vat", screenshotPath, { timeoutMs: 45_000 });
+      webhookActivation = await waitForBundleWebhookActivation(page, "resident-vat", screenshotPath, { timeoutMs: 45_000 });
       console.log("Webhook activation confirmed — bundle has stripeSubscriptionId");
     } else {
       console.log("Simulator checkout — skipping webhook activation wait");
@@ -384,6 +386,73 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     expect(tokens).toBe(100);
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-resident-vat-granted.png` });
+  });
+
+  // ============================================================
+  // STEP 6a: Fire a real GA4 purchase event and confirm an earlier run's
+  // purchase reached BigQuery.
+  //
+  // Only runs with DIY_SUBMIT_ALLOW_REAL_ANALYTICS=true (playwrightTestWithout.js stubs
+  // gtag/collect otherwise) and a real Stripe checkout (never the simulator).
+  //
+  // GA4's BigQuery link for this property has only the daily export enabled (see
+  // scripts/ga4-property-sync.js) — no streaming — so a same-run purchase event's row cannot
+  // exist yet by the time this test checks. Instead this step looks up a Stripe subscription id
+  // from an earlier scheduled run (old enough that its daily export should already have landed)
+  // and confirms BigQuery has ingested a purchase event carrying it. A prior run's stripeSubscriptionId
+  // stands in for a persisted "last transaction id" here, since every ci run of this test creates
+  // and later cancels one such subscription.
+  // ============================================================
+  await test.step("Fire a GA4 purchase event and verify an earlier run's purchase reached BigQuery", async () => {
+    if (process.env.DIY_SUBMIT_ALLOW_REAL_ANALYTICS !== "true") {
+      console.log("DIY_SUBMIT_ALLOW_REAL_ANALYTICS is not set — skipping the GA4 purchase assertion");
+      return;
+    }
+    if (!webhookActivation?.stripeSubscriptionId) {
+      console.log("No real Stripe checkout this run — skipping the GA4 purchase assertion");
+      return;
+    }
+
+    console.log("\n" + "=".repeat(60));
+    console.log("STEP 6a: GA4 purchase event and BigQuery verification");
+    console.log("=".repeat(60));
+
+    await page.evaluate(
+      (transactionId) => {
+        window.gtag("event", "purchase", {
+          transaction_id: transactionId,
+          value: 0,
+          currency: "GBP",
+          items: [{ item_id: "resident-vat", item_name: "Resident VAT" }],
+        });
+      },
+      webhookActivation.stripeSubscriptionId,
+    );
+    console.log(`Dispatched GA4 purchase event: transaction_id=${webhookActivation.stripeSubscriptionId}`);
+
+    const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
+    const datasetId = process.env.GA4_BIGQUERY_DATASET_ID;
+    if (!projectId || !datasetId) {
+      console.log("GA4_BIGQUERY_PROJECT_ID/GA4_BIGQUERY_DATASET_ID not set — skipping the BigQuery lookup");
+      return;
+    }
+
+    const priorTransactionId = await findPastStripeSubscriptionId({
+      olderThanMs: 26 * 60 * 60 * 1000,
+      newestMs: 4 * 24 * 60 * 60 * 1000,
+    });
+    if (!priorTransactionId) {
+      console.log("No prior Stripe subscription old enough to check yet — skipping the BigQuery assertion");
+      return;
+    }
+
+    console.log(`Checking BigQuery for a purchase event carrying transaction_id=${priorTransactionId}...`);
+    const result = await pollForPurchaseEvent(
+      { transactionId: priorTransactionId, projectId, datasetId },
+      { attempts: 3, intervalMs: 10_000 },
+    );
+    console.log(`BigQuery purchase lookup: found=${result.found} (tables queried: ${result.tablesQueried.join(", ")})`);
+    expect(result.found).toBe(true);
   });
 
   // ============================================================

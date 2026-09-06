@@ -140,7 +140,10 @@ app.use((req, res, next) => {
   // Content-Security-Policy: Basic CSP for security
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
+    // img-src needs the wildcard, not just https://www.google-analytics.com: GA4's /g/collect
+    // beacon lands on a region-specific subdomain (e.g. region1.google-analytics.com), which the
+    // literal host doesn't match and CSP then silently drops the pixel.
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -166,6 +169,7 @@ app.get("/submit.env", (req, res) => {
     "COMPANIES_HOUSE_CLIENT_ID",
     "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
+    "GA4_MEASUREMENT_ID",
   ];
 
   const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);
