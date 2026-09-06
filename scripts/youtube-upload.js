@@ -4,41 +4,50 @@
 //
 // Upload the videos drafted in videos/publish.json to https://www.youtube.com/@DIYAccountingSubmit.
 //
-// Usage: node scripts/youtube-upload.js [--public]
+// Usage: node scripts/youtube-upload.js [--check] [--public]
 //
-// Requires YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET in the environment, from an
-// OAuth 2.0 client of type "Desktop app" in the Google Cloud console, with the
-// https://www.googleapis.com/auth/youtube.upload scope enabled.
+// Credentials come from gcloud's Application Default Credentials, never from an OAuth client
+// created by hand in the Google Cloud console. Sign in once, as the channel owner:
 //
-// On first run this prints a consent URL. Open it, sign in, and grant access. The
-// browser then redirects to a localhost address that refuses the connection - that
-// is expected, because this script has no server listening there. Copy the address
-// from the browser's address bar (or just the "code" value in it) and paste it back
-// into this terminal. The resulting refresh token is stored at
-// ~/.config/diyaccounting/youtube-token.json, never in this repository, so later
-// runs need no further consent.
+//   gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl
+//
+// That writes ~/.config/gcloud/application_default_credentials.json, an "authorized_user"
+// credential owned by gcloud (never this repository). GoogleAuth (google-auth-library) finds
+// it automatically; this script never stores a token of its own.
+//
+// The YouTube Data API bills quota to a Google Cloud project with youtube.googleapis.com
+// enabled, so every request here carries an x-goog-user-project header naming that project -
+// default diyaccounting-ga4, overridable with the GOOGLE_CLOUD_QUOTA_PROJECT env var.
+//
+// --check obtains a token, looks up the signed-in channel and prints its title, without
+// uploading anything.
 //
 // Uploads are unlisted by default. Pass --public to publish publicly instead.
 // Re-running is safe: an entry that already carries a videoId is skipped.
 
 import fs from "fs";
-import os from "os";
 import path from "path";
-import readline from "readline";
 import { fileURLToPath } from "url";
+import { GoogleAuth } from "google-auth-library";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
-export const TOKEN_PATH = path.join(os.homedir(), ".config", "diyaccounting", "youtube-token.json");
 
-const OAUTH_SCOPE = "https://www.googleapis.com/auth/youtube.upload";
-const OAUTH_REDIRECT_URI = "http://127.0.0.1:8912/oauth2callback";
-const OAUTH_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
-const OAUTH_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+export const ADC_SCOPES = [
+  "https://www.googleapis.com/auth/cloud-platform",
+  "https://www.googleapis.com/auth/youtube.upload",
+  "https://www.googleapis.com/auth/youtube.force-ssl",
+];
+
+export const ADC_LOGIN_COMMAND = `gcloud auth application-default login --scopes=${ADC_SCOPES.join(",")}`;
+
+export const DEFAULT_QUOTA_PROJECT = "diyaccounting-ga4";
+
+const CHANNELS_ENDPOINT = "https://www.googleapis.com/youtube/v3/channels";
 const UPLOAD_VIDEOS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/videos";
 const UPLOAD_CAPTIONS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/captions";
 
 export function parseArgs(argv) {
-  return { publicVideo: argv.includes("--public") };
+  return { publicVideo: argv.includes("--public"), check: argv.includes("--check") };
 }
 
 export function loadPublishList(filePath = PUBLISH_LIST_PATH) {
@@ -79,123 +88,77 @@ export function buildVideoResource(entry, { publicVideo }) {
   };
 }
 
-export function requireEnv(name, env = process.env) {
-  const value = env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable ${name}`);
-  }
-  return value;
-}
-
 function requireFile(filePath, label) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`Missing ${label}: ${filePath}`);
   }
 }
 
-function loadStoredToken(tokenPath) {
-  if (!fs.existsSync(tokenPath)) return null;
-  return JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+export function resolveQuotaProject(env = process.env) {
+  return env.GOOGLE_CLOUD_QUOTA_PROJECT || DEFAULT_QUOTA_PROJECT;
 }
 
-function saveStoredToken(token, tokenPath) {
-  fs.mkdirSync(path.dirname(tokenPath), { recursive: true });
-  fs.writeFileSync(tokenPath, JSON.stringify(token, null, 2) + "\n", { mode: 0o600 });
+// Mirrors the well-known file location google-auth-library checks for Application Default
+// Credentials, so a missing-credential error can name the exact file it looked for.
+export function resolveAdcPath(env = process.env) {
+  if (env.GOOGLE_APPLICATION_CREDENTIALS) return env.GOOGLE_APPLICATION_CREDENTIALS;
+  const home = process.platform === "win32" ? env.APPDATA : env.HOME;
+  return home ? path.join(home, ".config", "gcloud", "application_default_credentials.json") : null;
 }
 
-export function buildConsentUrl(clientId) {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: OAUTH_REDIRECT_URI,
-    response_type: "code",
-    scope: OAUTH_SCOPE,
-    access_type: "offline",
-    prompt: "consent",
-  });
-  return `${OAUTH_AUTH_ENDPOINT}?${params.toString()}`;
+function missingAdcMessage(adcPath) {
+  const where = adcPath ? ` (expected at ${adcPath})` : "";
+  return `No Application Default Credentials found${where}. Run:\n\n  ${ADC_LOGIN_COMMAND}\n\nthen sign in as the channel owner.`;
 }
 
-export function extractAuthorizationCode(input) {
-  const trimmed = input.trim();
+function scopelessAdcMessage(adcPath) {
+  return `Application Default Credentials at ${adcPath} do not carry the YouTube scope. Run:\n\n  ${ADC_LOGIN_COMMAND}\n\nthen sign in as the channel owner.`;
+}
+
+export async function getAccessToken({ env = process.env, GoogleAuthImpl = GoogleAuth } = {}) {
+  const adcPath = resolveAdcPath(env);
+  if (!adcPath || !fs.existsSync(adcPath)) {
+    throw new Error(missingAdcMessage(adcPath));
+  }
+  console.log(`using application default credentials from ${adcPath}`);
+  const auth = new GoogleAuthImpl({ scopes: ADC_SCOPES });
+  const client = await auth.getClient();
+  let token;
   try {
-    const url = new URL(trimmed);
-    const code = url.searchParams.get("code");
-    if (code) return code;
-  } catch {
-    // Not a URL - treat the whole input as the code.
+    ({ token } = await client.getAccessToken());
+  } catch (error) {
+    if (/invalid_scope|insufficient/i.test(error.message)) {
+      throw new Error(scopelessAdcMessage(adcPath));
+    }
+    throw error;
   }
-  return trimmed;
+  if (!token) {
+    throw new Error(scopelessAdcMessage(adcPath));
+  }
+  return token;
 }
 
-async function promptForCode(consentUrl) {
-  console.log("Open this URL, sign in, and grant access:");
-  console.log(consentUrl);
-  console.log("");
-  console.log("The browser then redirects to a localhost address that refuses the connection - that is expected.");
-  console.log('Paste the full address from the browser\'s address bar (or just the "code" value) below:');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await new Promise((resolve) => rl.question("> ", resolve));
-  rl.close();
-  return extractAuthorizationCode(answer);
-}
-
-async function exchangeCodeForToken({ clientId, clientSecret, code, fetchImpl }) {
-  const response = await fetchImpl(OAUTH_TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-      grant_type: "authorization_code",
-      redirect_uri: OAUTH_REDIRECT_URI,
-    }),
+export async function fetchOwnChannelTitle({ accessToken, quotaProject, fetchImpl = fetch }) {
+  const response = await fetchImpl(`${CHANNELS_ENDPOINT}?part=snippet&mine=true`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
   });
   if (!response.ok) {
-    throw new Error(`Failed to exchange authorization code: ${response.status} ${await response.text()}`);
+    throw new Error(`Failed to look up the signed-in channel: ${response.status} ${await response.text()}`);
   }
-  return response.json();
+  const data = await response.json();
+  const channel = data.items && data.items[0];
+  if (!channel) {
+    throw new Error("Application Default Credentials are valid but no YouTube channel is linked to this account.");
+  }
+  return channel.snippet.title;
 }
 
-async function refreshAccessToken({ clientId, clientSecret, refreshToken, fetchImpl }) {
-  const response = await fetchImpl(OAUTH_TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to refresh access token: ${response.status} ${await response.text()}`);
-  }
-  return response.json();
-}
-
-export async function ensureAccessToken({ clientId, clientSecret, tokenPath = TOKEN_PATH, fetchImpl = fetch, prompt = promptForCode }) {
-  const stored = loadStoredToken(tokenPath);
-  if (stored?.refreshToken) {
-    const refreshed = await refreshAccessToken({ clientId, clientSecret, refreshToken: stored.refreshToken, fetchImpl });
-    return refreshed.access_token;
-  }
-  const code = await prompt(buildConsentUrl(clientId));
-  const token = await exchangeCodeForToken({ clientId, clientSecret, code, fetchImpl });
-  if (!token.refresh_token) {
-    throw new Error(
-      "Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run this again.",
-    );
-  }
-  saveStoredToken({ refreshToken: token.refresh_token }, tokenPath);
-  return token.access_token;
-}
-
-async function initiateResumableUpload({ accessToken, resource, fileSize, mimeType, fetchImpl }) {
+async function initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType, fetchImpl }) {
   const response = await fetchImpl(`${UPLOAD_VIDEOS_ENDPOINT}?uploadType=resumable&part=snippet,status`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      "x-goog-user-project": quotaProject,
       "Content-Type": "application/json; charset=UTF-8",
       "X-Upload-Content-Length": String(fileSize),
       "X-Upload-Content-Type": mimeType,
@@ -212,10 +175,10 @@ async function initiateResumableUpload({ accessToken, resource, fileSize, mimeTy
   return location;
 }
 
-export async function uploadVideo({ entry, accessToken, publicVideo, fetchImpl = fetch }) {
+export async function uploadVideo({ entry, accessToken, quotaProject = resolveQuotaProject(), publicVideo, fetchImpl = fetch }) {
   const resource = buildVideoResource(entry, { publicVideo });
   const fileSize = fs.statSync(entry.videoFile).size;
-  const uploadUrl = await initiateResumableUpload({ accessToken, resource, fileSize, mimeType: "video/mp4", fetchImpl });
+  const uploadUrl = await initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType: "video/mp4", fetchImpl });
   const response = await fetchImpl(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": "video/mp4", "Content-Length": String(fileSize) },
@@ -243,7 +206,7 @@ function buildMultipartRelated(parts) {
   return { body: Buffer.concat(segments), contentType: `multipart/related; boundary=${boundary}` };
 }
 
-export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = fetch }) {
+export async function uploadCaption({ entry, videoId, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
   const metadata = { snippet: { videoId, language: "en", name: "English", isDraft: false } };
   const { body, contentType } = buildMultipartRelated([
     { contentType: "application/json; charset=UTF-8", body: JSON.stringify(metadata) },
@@ -251,7 +214,12 @@ export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = f
   ]);
   const response = await fetchImpl(`${UPLOAD_CAPTIONS_ENDPOINT}?uploadType=multipart&part=snippet`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": contentType, "Content-Length": String(body.length) },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-goog-user-project": quotaProject,
+      "Content-Type": contentType,
+      "Content-Length": String(body.length),
+    },
     body,
   });
   if (!response.ok) {
@@ -261,9 +229,15 @@ export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = f
 }
 
 export async function main() {
-  const { publicVideo } = parseArgs(process.argv.slice(2));
-  const clientId = requireEnv("YOUTUBE_CLIENT_ID");
-  const clientSecret = requireEnv("YOUTUBE_CLIENT_SECRET");
+  const { publicVideo, check } = parseArgs(process.argv.slice(2));
+  const quotaProject = resolveQuotaProject();
+  const accessToken = await getAccessToken();
+
+  if (check) {
+    const title = await fetchOwnChannelTitle({ accessToken, quotaProject });
+    console.log(`Signed in as channel: ${title}`);
+    return;
+  }
 
   let list = loadPublishList();
   const pending = selectPendingUploads(list);
@@ -277,13 +251,11 @@ export async function main() {
     requireFile(entry.captionFile, `caption file for ${entry.id}`);
   }
 
-  const accessToken = await ensureAccessToken({ clientId, clientSecret });
-
   for (const entry of pending) {
     console.log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
-    const videoId = await uploadVideo({ entry, accessToken, publicVideo });
+    const videoId = await uploadVideo({ entry, accessToken, quotaProject, publicVideo });
     console.log(`  video id: ${videoId}`);
-    await uploadCaption({ entry, videoId, accessToken });
+    await uploadCaption({ entry, videoId, accessToken, quotaProject });
     console.log("  caption uploaded");
     list = recordVideoId(list, entry.id, videoId);
     savePublishList(list);

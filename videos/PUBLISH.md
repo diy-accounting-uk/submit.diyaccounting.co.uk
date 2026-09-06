@@ -14,24 +14,26 @@ channel until the ITSA activity leaves the environments gate.
    gh run download 33953044775 -n video-submit-return-prod -D target/videos/video-submit-return-prod
    gh run download 34058244686 -n video-view-return-prod -D target/videos/video-view-return-prod
    ```
-2. **Create an OAuth client** in the Google Cloud console for the project behind the
-   channel: APIs & Services → Credentials → Create Credentials → OAuth client ID → type
-   "Desktop app". Enable the YouTube Data API v3 and the
-   `https://www.googleapis.com/auth/youtube.upload` scope for it.
-3. **Export the client id and secret**:
+2. **Sign in once as the channel owner**, granting gcloud's own client the scopes this
+   script needs — no OAuth client to create in the console:
    ```bash
-   export YOUTUBE_CLIENT_ID=...
-   export YOUTUBE_CLIENT_SECRET=...
+   gcloud auth application-default login --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/youtube.upload,https://www.googleapis.com/auth/youtube.force-ssl
    ```
+   This writes `~/.config/gcloud/application_default_credentials.json`, which the script
+   reads automatically. It also carries `youtube.googleapis.com` quota to the
+   `diyaccounting-ga4` Google Cloud project via an `x-goog-user-project` header (override
+   with `GOOGLE_CLOUD_QUOTA_PROJECT` if needed).
+3. **Check the credential works**, without uploading anything:
+   ```bash
+   npm run video:publish -- --check
+   ```
+   This prints the signed-in channel's title.
 4. **Run the upload**:
    ```bash
    npm run video:publish
    ```
-   First run prints a consent URL. Open it, sign in, and grant access — the browser then
-   redirects to a localhost address that refuses the connection, which is expected. Paste
-   the address (or just the `code` value) back into the terminal. The script stores the
-   refresh token at `~/.config/diyaccounting/youtube-token.json` and writes each returned
-   video id into `videos/publish.json`, so a re-run only uploads what's still missing.
+   Uploads are unlisted by default. The script writes each returned video id into
+   `videos/publish.json`, so a re-run only uploads what's still missing.
 5. **Review the three unlisted videos**, then re-run with `--public` to publish them:
    ```bash
    npm run video:publish -- --public
