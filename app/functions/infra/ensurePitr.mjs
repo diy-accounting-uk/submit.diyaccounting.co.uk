@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-// app/functions/infra/ensurePitr.js
+// app/functions/infra/ensurePitr.mjs
 //
 // Custom resource handler pair for a CDK Provider that turns on DynamoDB point-in-time recovery.
 //

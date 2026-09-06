@@ -34,6 +34,7 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.ILogGroup;
@@ -241,7 +242,7 @@ public class KindCdk {
      * it fails the whole deployment whenever it lands inside that window; a redeploy then succeeds
      * only because the table has since finished. A {@link Provider}-backed custom resource polls
      * {@code isComplete} instead, retrying the update until DynamoDB reports PITR as ENABLED. See
-     * {@code app/functions/infra/ensurePitr.js} for the onEvent/isComplete handler pair.
+     * {@code app/functions/infra/ensurePitr.mjs} for the onEvent/isComplete handler pair.
      *
      * @param stack The stack whose ensurePitr provider is needed
      * @return The shared Provider for that stack's PITR waits
@@ -265,7 +266,7 @@ public class KindCdk {
                 .runtime(Runtime.NODEJS_22_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.onEvent")
-                .code(Code.fromAsset(ensurePitrAssetDir))
+                .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
                 .timeout(Duration.seconds(30))
                 .role(role)
                 .logGroup(onEventLogGroup)
@@ -281,7 +282,7 @@ public class KindCdk {
                 .runtime(Runtime.NODEJS_22_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.isComplete")
-                .code(Code.fromAsset(ensurePitrAssetDir))
+                .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
                 .timeout(Duration.seconds(30))
                 .role(role)
                 .logGroup(isCompleteLogGroup)

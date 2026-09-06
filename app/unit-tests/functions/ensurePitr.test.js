@@ -26,7 +26,7 @@ vi.mock("@aws-sdk/client-dynamodb", () => {
   return { DynamoDBClient, UpdateContinuousBackupsCommand, DescribeContinuousBackupsCommand };
 });
 
-const { onEvent, isComplete } = await import("@app/functions/infra/ensurePitr.js");
+const { onEvent, isComplete } = await import("@app/functions/infra/ensurePitr.mjs");
 
 function continuousBackupsUnavailableException() {
   const error = new Error("Backups are being enabled for the table");
