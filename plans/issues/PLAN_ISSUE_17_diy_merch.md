@@ -45,7 +45,7 @@ Two paths for implementation:
 - `guide.html` — mention Merch as a section.
 - `privacy.html` — **important**: collecting shipping addresses is a new PII category; update the privacy notice and data-processing register.
 - New `_developers/MERCH_OPS.md` — print-on-demand vendor choice, SLA, refund policy.
-- `PLAN_CAMPAIGN_AND_REFERRALS.md` — link merch as a reward tier if we go that route.
+- `_developers/backlog/PLAN_CAMPAIGN_AND_REFERRALS.md` — link merch as a reward tier if we go that route.
 
 ## Acceptance criteria
 

@@ -256,7 +256,7 @@ figure.
   volume is env-level and should not move with deployment count, but there is no quiet day to
   confirm that against.
 - **Any split of the bill by stack or deployment.** Cost allocation tags are known to billing but
-  none is active (`PLAN_COST_INSTRUMENTATION.md`). Every per-deployment figure here is built from
+  none is active (`_developers/archive/PLAN_COST_INSTRUMENTATION.md`). Every per-deployment figure here is built from
   resource counts and rates, not from billing data. Activating those tags would let the next
   review check these numbers instead of rebuilding them.
 - **Steady-state traffic.** Prod carried no user traffic during the measured window. CloudFront

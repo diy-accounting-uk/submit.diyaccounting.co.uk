@@ -13,12 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127,
-green through every suite; its last job is destroying prod-6c85118). prod-0967fab is the one
-spare: a main deploy's sweep keeps any set younger than eight hours and removes one older
-spare per run, so the daily scheduled deploy clears it.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-3778d47 (main's deploy of the PR #139 merge, run 34028434127).
+prod-0967fab is going: `destroy-prod.yml` run 34031877353, dispatched 12:02 UTC on 2026-09-06.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
-(`PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
+(`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
 The board runs in five sections, in this order: in flight; ready for Claude Code; ready for
 the operator (each briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the
@@ -26,25 +24,11 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-**Freeze in force since 10:30 UTC on 2026-09-06** (see Discipline below): no push to origin and
-no workflow dispatch until the operator lifts it in their own words. Local work continues and
-fixes are proposed in the reply. What that leaves in motion:
-
-- The automated sandbox sign-in for the filing suites (local branch
-  `claude/companies-house-filing-ci-sandbox`, ef091559) is parked: it needs a robot Companies
-  House account with an authenticator secret, which the operator does not want. The branch
-  stays local, unmerged, in case that changes.
-- Batch 6 (PR #139: the bundle-expiry fix, the triage day guard, the index custom-resource
-  fix and the ci client id) merged at 10:48 UTC. Main's environment deploy (run 34028434110)
-  is green and created the ci filing secret; main's deploy (run 34028434127) passed every
-  suite, including the two that prove the bundle-expiry fix, and is destroying prod-6c85118 as
-  its last job. The operator lifts the freeze when that job is green.
-- Batch 7 is `claude/b7-board` (worktree `.claude/worktrees/b7-board`), seeded with the OpenAPI
-  regeneration that adds the seven Companies House filing routes (f35ade31). The local
-  tracks below land on it as they finish; it is pushed once, after the freeze lifts.
-
-Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged into
-`claude/b7-board` by the coordinator when its tests are green:
+Batch 7 is PR #141 (`claude/b7-board`, worktree `.claude/worktrees/b7-board`): the OpenAPI
+filing routes, the TODO inventory, the fraud-header parser, the CSV VAT return contract and the
+TypeScript CDK spike. Two tracks still land on it before merge; a third starts batch 8
+(`claude/b8-board`, created from main when it lands). Tracks in worktrees, each merged by the
+coordinator when its tests are green, one push per batch of landed tracks:
 
 - [ ] **B10.2 / B10.3. ITSA Obligations, then the quarterly update filing (SE Business).**
   Two commits in the B10.1 pattern (Lambda, simulator, page, catalogue entry behind the
@@ -53,6 +37,19 @@ Batch 7 tracks, dispatched to worktrees at 11:10 UTC on 2026-09-06, each merged 
   Code. **Model**: Sonnet.
 - [ ] **B40b. Work `_developers/backlog/PLAN_REDUCE.md` top to bottom**, one commit per item,
   plan file updated in each. **Source**: BACKLOG 40b. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30p. One Telegram forwarder per environment, not per deployment** (batch 8). Every
+  deployment's `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity
+  bus, so while two prod sets stand every ops message reaches Telegram twice; the operator's
+  screenshot of 2026-09-06 shows each alarm, stack event and the budget test doubled. The
+  catch-all rule and `activityTelegramForwarder.js` move to the environment stack that owns the
+  bus, with a CDK test that the environment synth has one forwarder and an OpsStack synth
+  none, and the image build the environment deploy needs. **Source**: BACKLOG 30; board render
+  2026-09-06. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30o. Prove the triage chain on prod.** `SUBMIT_ALARM_TRIAGE_ROLE_ARN` is set on both
+  environments and the day guard counts only runs whose `run-triage` job executed (PR #139).
+  #140 was labelled `triage` at 12:01 UTC on 2026-09-06 (run 34031866561). Verified when that
+  run posts a triage comment on #140 with the guardrail's anonymised output. **Source**:
+  BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**: Fable (coordinator).
 
 Batches 4 (PR #136), 5 (PR #137) and 6 (PR #139) are merged. The items below are code complete
 on main and each names the event that verifies it.
@@ -85,8 +82,8 @@ on main and each names the event that verifies it.
   House routes), so that set needs the Companies House stack deleted first and the ApiStack
   deleted again. On the operator's yes of 2026-09-06 the three Companies House stacks were
   deleted and ci-claudff66's ApiStack delete was requested again. ci shows no
-  orphan stack now; verified when ci-claudf107, the next set, goes whole at its self-destruct
-  time of 11:53 UTC on 2026-09-06.
+  orphan stack now and ci-claudf107's self-destruct fired at 11:53 UTC on 2026-09-06; verified
+  when all eight of its stacks, `CompaniesHouseStack` included, are gone.
 - [ ] **B32.4 remainder. The probe upload step fails for the three read suites.** The renamed
   `probe-test.yml` fired on its own at 22:22 UTC on 2026-09-05 (run 33995729733) with all five
   scheduled suites, and every suite passed, so the schedule is verified. The three "upload web
@@ -210,27 +207,13 @@ on main and each names the event that verifies it.
   when a ci probe run after the merge finds a purchase row.
 ## Ready: Claude Code
 
-- [ ] **B30p. One Telegram forwarder per environment, not per deployment.** Every deployment's
-  `OpsStack` creates `<deployment>-app-activity-telegram` on the shared activity bus, so while
-  two prod sets stand (the normal state between a main deploy and the daily sweep) every ops
-  message reaches Telegram twice; the operator's screenshot of 2026-09-06 shows each alarm,
-  stack event and the budget test doubled. Move the rule and the forwarder Lambda
-  (`infra/main/java/.../stacks/OpsStack.java`, `activityTelegramForwarder.js`) to an
-  environment stack so one rule reads the bus per environment, or gate the rule on the
-  deployment being the last known good; CDK test that a synth of two deployments yields one
-  forwarder. **Source**: BACKLOG 30; board render 2026-09-06. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O12. Close #140 now and #138 after the 11:15 UTC reconcile run.** #140
-  `prod-app-api-5xx` on prod-6c85118 was the bundle-grant rejection in B30j's remainder, and
-  main's deploy of the PR #139 merge passed the suites that hit it. #138
-  `prod-app-account-stack-health` on prod-0967fab was the reconcile erroring hourly between
-  its deploy at 06:13 and the index's arrival at 09:15 on 2026-09-06; the 10:15 run was clean
-  on both prod sets and both alarms have been OK since, so it closes once the 11:15 run is
-  clean too. **Source**: board render 2026-09-06. **Owner**: Operator.
+- [ ] **O12. Close #138 and #140.** Both alarms are OK, the 11:15 UTC reconcile run was clean,
+  and each issue carries a comment with the cause and the recommendation to close. #140 also
+  carries the `triage` label for B30o's proof run; close it once that run has commented.
+  **Source**: board render 2026-09-06. **Owner**: Operator.
 - [ ] **B17a.5. Publish the videos** on https://www.youtube.com/@DIYAccountingSubmit with
   titles and descriptions drafted from the captions. The prod recordings are workflow
   artifacts, each with mp4, vtt, transcript and stills and 30-day retention:
@@ -255,9 +238,8 @@ on main and each names the event that verifies it.
   `COMPANIES_HOUSE_CLIENT_ID` variable and its secret as the `COMPANIES_HOUSE_CLIENT_SECRET`
   secret on the GitHub `ci` environment (done 2026-09-06: key "submit filing", three redirect
   URIs, id in `.env.ci`, secret on ci, and `ci/submit/companies-house/client_secret` in AWS
-  since main's environment deploy of the PR #139 merge). Remaining: on a standing ci set
-  (ci-claudf107 until 11:53 UTC on 2026-09-06, or the next push's), open the two filing
-  activities on the ci site and take one change through the sandbox with your own Companies
+  since main's environment deploy of the PR #139 merge). Remaining: on the ci set PR #141's
+  deploy creates, open the two filing activities on the ci site and take one change through the sandbox with your own Companies
   House sandbox sign-in. No credentials go into GitHub for this: Companies House filings need
   a person to authorise them, so an automated ci run would need a robot account with an
   authenticator secret, which is not wanted. **Source**: BACKLOG 34; issue #15. **Owner**:
@@ -291,18 +273,6 @@ on main and each names the event that verifies it.
 
 ## Blocked: Claude Code
 
-- [ ] **B30o. Set `SUBMIT_ALARM_TRIAGE_ROLE_ARN` on prod and prove the triage chain.** ci is
-  done: the variable points at `ci-env-alarm-triage-role`, and adding the `triage` label to
-  #134 ran the whole chain (run 34016641016: role assumed, guardrail read, comment posted).
-  The model call answered 404 until the Anthropic use-case form was submitted through
-  `bedrock put-use-case-for-model-access` in both accounts on 2026-09-06. The re-run
-  (34024132783) stopped at the day guard, which counted every workflow run including the ones
-  the guard or the role check had stopped; on main (6db5a181, merged in PR #139 at 10:48 UTC on
-  2026-09-06) the guard counts only runs whose `run-triage` job executed. Re-labelling #134
-  with `triage` dispatches the workflow, so it waits for the freeze to lift. Prod's
-  variable is set (`prod-env-alarm-triage-role` exists since run 34023929068 deployed the
-  observability stacks). **Source**: BACKLOG 30; issue #18. **Owner**: Claude Code. **Model**:
-  Fable (coordinator). Blocked on the freeze lift.
 - [ ] **B34.5. Lift the gate on the Companies House filings for prod.** After O11 and the
   operator's examination on ci: an OAuth web client key on the existing live application
   "DIY Accounting Submit - prod" (the one whose API key serves prod's lookup) with the prod
@@ -328,14 +298,10 @@ on main and each names the event that verifies it.
   **Model**: Haiku. Blocked on G1, G2c and a live sale.
 ## Discipline
 
-- **Freeze, 2026-09-06 10:30 UTC, operator's words:** "We need a freeze now you are creating
-  noise with the deploys. Do not push to origin or run a github workflow until the freeze is
-  lifted. You may work locally if you see a job fail but propose the fixes to me until the
-  freeze is lifted." While it stands: no `git push`, no `gh workflow run`, no `gh pr create`,
-  nothing that reaches GitHub Actions or AWS state; local commits, worktree tracks, reading
-  logs and drafting are fine, and a failed job gets a proposed fix in the reply. It lifts only
-  when the operator says so in their own words.
-- **Why the freeze:** a push per landed track turned one batch into six ci deploys and several
-  environment deploys in a morning, each able to open alarm issues and cancel each other
-  through the deploy concurrency group. Outside a freeze, push once per batch of landed
-  tracks, and prefer one dispatch that proves several things over several dispatches.
+- **Push once per batch of landed tracks, never per track**, and prefer one dispatch that
+  proves several things over several dispatches. A push per track turned one batch into six
+  ci deploys and several environment deploys in a morning on 2026-09-06, each able to open
+  alarm issues and cancel each other through the deploy concurrency group, and the operator
+  froze pushes twice. A freeze, when the operator calls one, stops `git push`,
+  `gh workflow run` and `gh pr create` until they lift it in their own words; local commits,
+  worktree tracks and reading logs continue, and a failed job gets a proposed fix in the reply.
