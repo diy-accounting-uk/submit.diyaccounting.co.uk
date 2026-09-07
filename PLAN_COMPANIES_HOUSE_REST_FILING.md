@@ -881,15 +881,10 @@ registered the ci redirect URI and put the client secret on the `ci` environment
 
 ## Open questions
 
-**Q1. Pricing when the ci-only gate lifts.** The plan puts both activities on the `default` bundle
-so nothing blocks the build. When the operator has tried them on ci, three options:
-
-- Leave them on `default` and free. Simplest, and it makes the limited-company story visible to
-  every user at no cost to us. Companies House charges nothing for either filing.
-- Move them to a new `resident-company` bundle with its own Stripe product. Highest revenue, most
-  work: a new bundle, a Stripe product and price, and catalogue changes.
-- Fold them into `resident-pro`. No new Stripe work, and it gives the existing top bundle a reason
-  to exist for limited companies.
+**Q1. Pricing.** Decided 2026-09-07: both register filings stay free on `default`. Companies
+House charges nothing for them, and free makes the limited-company story visible to every
+visitor. Limited-company work is priced as a `resident-company` bundle when accounts filing
+(`PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`) lands, with accounts filing as the paid activity.
 
 **Q2. One OAuth application or two.** The developer hub keys an application to an environment. If
 "DIY Accounting Submit - test" is sandbox-only, prod needs a second application with its own client
