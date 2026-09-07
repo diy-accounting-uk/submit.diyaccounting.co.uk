@@ -94,6 +94,11 @@ public class ApiStack extends Stack {
 
         String userPoolClientId();
 
+        @Value.Default
+        default String booksUserPoolClientId() {
+            return "";
+        }
+
         String customAuthorizerLambdaArn();
 
         String buildNumber();
@@ -242,6 +247,13 @@ public class ApiStack extends Stack {
                 .jwtAudience(List.of(props.userPoolClientId()))
                 .build();
 
+        // Same user pool, same issuer, but a books-client-scoped audience: a books token must
+        // never be accepted on the VAT or Companies House routes, and vice versa.
+        HttpJwtAuthorizer booksJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
+                        props.resourceNamePrefix() + "-BooksCognitoAuthorizer", issuer)
+                .jwtAudience(List.of(props.booksUserPoolClientId()))
+                .build();
+
         // Create custom Lambda authorizer for X-Authorization header
         IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
                 this,
@@ -283,7 +295,12 @@ public class ApiStack extends Stack {
             createdRouteKeys.add(routeKeyStr);
             firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.ingestFunctionName());
             createRouteForLambda(
-                    apiLambdaProps, jwtAuthorizer, customAuthorizer, createdRouteKeys, firstCreatorByRoute);
+                    apiLambdaProps,
+                    jwtAuthorizer,
+                    booksJwtAuthorizer,
+                    customAuthorizer,
+                    createdRouteKeys,
+                    firstCreatorByRoute);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -368,6 +385,7 @@ public class ApiStack extends Stack {
     private void createRouteForLambda(
             AbstractApiLambdaProps apiLambdaProps,
             HttpJwtAuthorizer jwtAuthorizer,
+            HttpJwtAuthorizer booksJwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
             java.util.Set<String> createdRouteKeys,
             java.util.Map<String, String> firstCreatorByRoute) {
@@ -394,9 +412,18 @@ public class ApiStack extends Stack {
                 .timeout(Duration.seconds(29))
                 .build();
 
-        // Create HTTP route with the appropriate authoriser
+        // Create HTTP route with the appropriate authoriser. A books route is checked ahead of
+        // the other two: its own JWT authoriser, scoped to the books client id, keeps a books
+        // token off every other route regardless of what jwtAuthorizer()/customAuthorizer() say.
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
-        if (apiLambdaProps.customAuthorizer()) {
+        if (apiLambdaProps.booksJwtAuthorizer()) {
+            HttpRoute.Builder.create(this, routeId)
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .authorizer(booksJwtAuthorizer)
+                    .build();
+        } else if (apiLambdaProps.customAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(routeKey)
@@ -447,7 +474,14 @@ public class ApiStack extends Stack {
                 String headRouteId = apiLambdaProps.ingestFunctionName() + "-Route-HEAD-" + keySuffix;
                 var headRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD);
 
-                if (apiLambdaProps.customAuthorizer()) {
+                if (apiLambdaProps.booksJwtAuthorizer()) {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .authorizer(booksJwtAuthorizer)
+                            .build();
+                } else if (apiLambdaProps.customAuthorizer()) {
                     HttpRoute.Builder.create(this, headRouteId)
                             .httpApi(this.httpApi)
                             .routeKey(headRouteKey)
@@ -471,6 +505,29 @@ public class ApiStack extends Stack {
 
                 infof(
                         "Created route HEAD %s for function %s (via auto-HEAD)",
+                        apiLambdaProps.urlPath(), fn.getFunctionName());
+            }
+        }
+
+        // A books route's CORS preflight is an unauthenticated OPTIONS route on the same path,
+        // answered by the same integration (the handler itself returns the 204). Deduped by path
+        // alone, not method, since PUT and DELETE on /api/v1/books/{bookId} share one preflight.
+        if (apiLambdaProps.optionsPreflightRoute()) {
+            String optionsRouteKeyStr = "OPTIONS " + apiLambdaProps.urlPath();
+            if (!createdRouteKeys.contains(optionsRouteKeyStr)) {
+                createdRouteKeys.add(optionsRouteKeyStr);
+                firstCreatorByRoute.put(optionsRouteKeyStr, apiLambdaProps.ingestFunctionName());
+
+                String optionsRouteId = apiLambdaProps.ingestFunctionName() + "-Route-OPTIONS-" + keySuffix;
+                var optionsRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.OPTIONS);
+                HttpRoute.Builder.create(this, optionsRouteId)
+                        .httpApi(this.httpApi)
+                        .routeKey(optionsRouteKey)
+                        .integration(integration)
+                        .build();
+
+                infof(
+                        "Created route OPTIONS %s for function %s (unauthenticated preflight)",
                         apiLambdaProps.urlPath(), fn.getFunctionName());
             }
         }

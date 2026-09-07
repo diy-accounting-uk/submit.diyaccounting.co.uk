@@ -215,10 +215,29 @@ class SubmitApplicationCdkResourceTest {
                 Map.of(
                         "RouteKey",
                         "POST /api/v1/companies-house/transaction/{transactionId}/registered-email-address"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/books/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/books/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
+
         // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
-        // the GET on the same path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 71);
+        // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
+        // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
+        // sharing), for 71 + 4 + 3 + 3 = 81.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 81);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
