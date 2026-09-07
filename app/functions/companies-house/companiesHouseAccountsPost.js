@@ -14,6 +14,7 @@ import {
   http200OkResponse,
   http201CreatedResponse,
   http500ServerErrorResponse,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -217,6 +218,9 @@ export async function ingestHandler(event) {
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+  // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
+  // from the page's developer-mode field; the real gateway ignores headers it does not know.
+  const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
 
   let submissionNumber;
   try {
@@ -237,7 +241,7 @@ export async function ingestHandler(event) {
       ixbrl,
     });
 
-    const gatewayResponse = await postToGateway(submissionXml);
+    const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {

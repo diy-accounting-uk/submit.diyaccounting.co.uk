@@ -187,7 +187,12 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       ixbrl: '<?xml version="1.0"?><html>fake ixbrl</html>',
     });
 
-    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>");
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
+  });
+
+  test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
+    await companiesHouseAccountsPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
   });
 
   test("rejects a company authentication code that is too short", async () => {

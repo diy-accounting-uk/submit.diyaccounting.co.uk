@@ -8,7 +8,7 @@
 // the existing receipts page.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, buildValidationError, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, buildValidationError, http500ServerErrorResponse, getHeader } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -88,7 +88,10 @@ export async function ingestHandler(event) {
 
   const { presenterId, presenterCode } = await resolvePresenterCredentials();
   const statusRequestXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber });
-  const gatewayResponse = await postToGateway(statusRequestXml);
+  // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
+  // from the page's developer-mode field; the real gateway ignores headers it does not know.
+  const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  const gatewayResponse = await postToGateway(statusRequestXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
   const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {

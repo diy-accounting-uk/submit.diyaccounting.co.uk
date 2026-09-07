@@ -132,6 +132,16 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       presenterCode: "presenter-code",
       submissionNumber: "00001A",
     });
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    await companiesHouseAccountsGetHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
   });
 
   test("writes a receipt and returns ACCEPT when the gateway accepts the filing", async () => {

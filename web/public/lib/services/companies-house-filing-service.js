@@ -236,11 +236,14 @@ export async function submitMicroEntityAccounts(accounts, extraHeaders = {}) {
 /**
  * Poll the gateway for the outcome of a submitted accounts filing.
  * @param {string} submissionNumber
+ * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override, so the
+ *   simulator scenario chosen for the submission also applies to the polls that follow it
  * @returns {Promise<object>} - statusCode is PENDING, PARKED, ACCEPT or REJECT
  */
-export async function pollMicroEntityAccounts(submissionNumber) {
+export async function pollMicroEntityAccounts(submissionNumber, extraHeaders = {}) {
   const response = await fetchWithIdToken(`/api/v1/companies-house/accounts/${submissionNumber}`, {
     method: "GET",
+    headers: extraHeaders,
   });
   const body = await response.json();
   if (!response.ok) {
