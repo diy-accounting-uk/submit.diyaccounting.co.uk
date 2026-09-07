@@ -24,9 +24,13 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the video publish `--public` fix
-and the GA4 BigQuery link export script. Its branch deploy stands a ci set with the ci-only
-accounts activity.
+Batches 11 (PR #148, the accounts filing) and the spreadsheets session's PR #149 (a second
+Cognito app client for the books pages) merged within a minute of each other at 05:57 UTC on
+2026-09-07. Their deploys collided in the concurrency group: the #149 environment deploy (run
+34088738808) runs first, the cancelled #148 environment deploy (run 34088798974, which adds
+the accounts async-requests table) is re-run after it, then the #148 prod deploy (run
+34088799182). The spreadsheets session's ci deploys of `claude/books-storage-api` share this
+repo's ci account; its failed run 34074004794 is diagnosed in the shared inbox.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
@@ -35,21 +39,20 @@ accounts activity.
   the operator labels any alarm issue `triage` (#138 serves, closed or not). Verified when that
   run posts the guardrail's anonymised comment. **Source**: BACKLOG 30; issue #18. **Owner**:
   Operator labels, Claude Code reads the run.
-- [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
-  needs no credentials** is PR #148 (batch 11): iXBRL generator, GovTalk envelope and presenter
-  authentication, simulator gateway route, three Lambdas with an async-requests table, the
-  ci-only activity and page, and the behaviour suite, which passes in the simulator lane on
-  both the accept and reject paths; Companies House's public validator accepts a generated
-  file. Verified when the merge's ci deploy shows the activity on ci and the operator has
-  previewed one set of accounts there. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude
-  Code, then the operator's look on ci.
-
 ## Ready: Claude Code
 
 Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O22. Preview one set of micro-entity accounts on ci.** The accounts filing activity
+  (`file-micro-entity-accounts`, ci only) is on main since PR #148: open it on a standing ci
+  set (any branch push or `gh workflow run deploy.yml -f environment-name=ci` from main makes
+  one), fill the FRS 105 balance sheet with round figures and use Preview, which renders the
+  iXBRL without calling Companies House; then Submit, which goes to the simulator gateway on
+  ci and shows the acknowledgement and poll. Say what reads wrong; the operator's eye on the
+  form and the rendered accounts is the check no test gives. **Source**: BACKLOG 34b; issue
+  #15. **Owner**: Operator.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
