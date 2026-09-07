@@ -14,7 +14,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c6e18fd (the 04:11 UTC scheduled deploy of main, run 34105362721,
-which ran at 09:19). prod-c980ac9 stands beside it as an orphan spare: B53.** A main deploy
+which ran at 09:19). prod-c980ac9 was named to `destroy-prod.yml` by the operator at 2026-09-07 evening; B53 holds
+the decision that stops it recurring.** A main deploy
 retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
 $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -38,33 +39,19 @@ next starts from main as `claude/b12-board`.
   Operator labels, Claude Code reads the run.
 ## Ready: Claude Code
 
-- [ ] **B53. Retire the orphan prod-c980ac9 and stop the scheduled deploy leaving one.**
-  `deploy.yml` carries `schedule: cron '11 4 * * *'`, so main deploys to prod every day whether
-  or not it changed. On a schedule event `set-origins` reports no existing deployment, so
-  `destroy previous` takes the sweep path rather than the direct destroy; the sweep's
-  candidates are the CloudFront alias targets that look like `prod-*` plus the last-known-good
-  pointer, which the run's own earlier job had already moved to the new set, so the replaced
-  set is never considered (run 34105362721: "No prod stacks found for destruction"). Two
-  steps: name `prod-c980ac9` to `destroy-prod.yml` now, the operator's yes first, since it is
-  a prod destroy; then either make the sweep consider every deployed `prod-*` set older than
-  `SELF_DESTRUCT_DELAY_HOURS` that is not the pointer, or drop the daily schedule, which is
-  the operator's decision (it costs a full prod deploy and a $46.88 set every day it fires
-  after a docs-only change). **Source**: this session's read of the prod account, 2026-09-07.
-  **Owner**: Claude Code, with the operator's yes for the destroy. **Model**: Sonnet.
-- [ ] **B47a. Why the Monday 06:00 UTC schedules do not fire.** `compliance.yml` and
-  `stack-drift.yml` both carry `cron: '0 6 * * 1'`; neither ran on 2026-09-07 (checked at 09:00
-  UTC), the second miss after the 2026-08-31 revival, and `codeql.yml`'s Sunday schedule did
-  fire on 2026-09-06. Both were dispatched by hand at 09:0x UTC on 2026-09-07 instead. Find the
-  cause from GitHub's rules for scheduled workflows (the workflow must be on the default
-  branch, schedules are dropped after 60 days without activity, high-load delays, a disabled
-  workflow state visible with `gh workflow view <name>` and the Actions API's `state`), and
-  compare the two files' histories with `codeql.yml`'s; fix what is found (a re-enable through
-  the API, or a change to the files) and record how a future miss is detected (the
-  `keepalive.yml` workflow may already exist for this; read it). Issue #43 closes when the next
-  scheduled `stack-drift` run is green. Feeds `PLAN_ONE_STOP_DASHBOARD.md`'s DORA and
-  drift panels (D8). **Source**: BACKLOG 47; issue #43.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **B53. Stop the scheduled deploy leaving an orphan prod set.** `deploy.yml` carries
+  `schedule: cron '11 4 * * *'`, so main deploys to prod every day whether or not it changed.
+  On a schedule event `set-origins` reports no existing deployment, so `destroy previous`
+  takes the sweep path; the sweep's candidates are the CloudFront alias targets that look like
+  `prod-*` plus the last-known-good pointer, which the run's own earlier job had already moved
+  to the new set, so the replaced set is never considered (run 34105362721: "No prod stacks
+  found for destruction"). The operator ran `gh workflow run destroy-prod.yml -f
+  deployment-name=prod-c980ac9` on 2026-09-07; confirm the eight `prod-c980ac9-app-*` stacks
+  are gone. The second step is yours to decide: fix the sweep to consider every deployed prod
+  set older than eight hours that is not the pointer, or drop the daily schedule, which
+  deploys a fresh prod set every day whether or not anything changed. **Source**: this
+  session's read of the prod account, 2026-09-07. **Owner**: Operator decides; Claude Code
+  builds either. **Model**: Sonnet.
 - [ ] **B52a. Split the two prod dashboards into operations and business.**
   `prod-env-operations` (thirteen widgets, `ObservabilityStack`) carries five business counts
   and three widgets that never render: the "all functions, all deployments" searches match
@@ -83,9 +70,82 @@ next starts from main as `claude/b12-board`.
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
   as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 (Slack
-  alerting: the issue half is delivered, the Slack half was not chosen; close or re-scope it
-  to the alarms panel, the operator's call). Superseded and archived on 2026-09-07:
+  alerting: the operator is closing it on 2026-09-07; Telegram and GitHub issues are enough). Superseded and archived on 2026-09-07:
   `PLAN_SECURITY_DETECTION_UPLIFT.md`, `SLACK_INTEGRATION_PLAN.md`, `PLAN_MCP_SERVER.md`.
+- [ ] **B52b. GA4 in BigQuery: one daily aggregate per panel.** Scheduled queries in the
+  `diyaccounting-ga4` project over the `analytics_523400333` export write one daily table per
+  panel: sessions by host and source, funnel steps, key events, downloads by product with the
+  product parameter. The nightly job copies them into the lake beside the Athena views. The
+  Data API pull in `ga4ReportPull.js` retires once each of its consumers reads the BigQuery
+  table instead. **Source**: BACKLOG 52; `PLAN_ONE_STOP_DASHBOARD.md` D5 and the BigQuery
+  decision. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B52c. Three sites, one visitor.** Synthetic tagging in submit's and spreadsheets'
+  `analytics.js` and the RUM client from the rule `classifyActor` applies; RUM and CLS on
+  spreadsheets; the root holding page moved from the submit stream to the gateway stream;
+  cross-domain linking and the four key events (subscribe, submit, donate, download) on
+  property 523400333 through backlog 49's tooling or the Admin API script. One PR per repo.
+  **Source**: BACKLOG 52; plan rows D3, D4. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B52d. Lake views.** Submissions by activity including the four Companies House
+  events; sources; the availability SLI and error budget from the probe metrics; alarm state
+  changes by family through the existing Firehose pattern; DORA rows (name, environment,
+  branch, sha, run id, duration, lead time, failure, recovery) from the deploy and destroy
+  workflows. **Source**: BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**:
+  Sonnet.
+- [ ] **B52e. Cost panel.** A FOCUS 1.2 Data Export from the management account into the
+  lake; the budgets and the anomaly monitor from
+  `_developers/archive/PLAN_COST_INSTRUMENTATION.md`; cost per submission as the unit figure.
+  **Source**: BACKLOG 52; plan row D7. **Owner**: Claude Code, the operator's yes for the
+  management-account export. **Model**: Sonnet. Blocked on that yes.
+- [ ] **B52f. Security panels.** Security Hub and GuardDuty findings and the GitHub alert
+  counts into the lake nightly; `lifecycle.toml` with each runtime's, dependency's,
+  certificate's and registration's end date, checked nightly against the AWS deprecation
+  lists and endoflife.date; an SBOM from the build matched against CISA's KEV catalogue;
+  CloudTrail metric filters for console sign-ins, root use, IAM and security-group changes;
+  WAF logs to the lake; the rotation record (S4). **Source**: BACKLOG 52; plan row D13.
+  **Owner**: Claude Code. **Model**: Sonnet, Opus for the traffic baselines. Waits on S1 for
+  the standards' findings.
+- [ ] **B52g. The page.** A private static page on submit behind an `operator` bundle no
+  customer holds, drawn from a nightly snapshot the metrics-publish Lambda writes, organised
+  by the five goals with deep links on every row and `experiments.toml` annotations; the
+  first experiment written from a baseline month, the hypothesis the operator's. **Source**:
+  BACKLOG 52; plan rows D1, D9, D11. **Owner**: Claude Code. **Model**: Sonnet. Waits on
+  B52d for the first views.
+- [ ] **B52h. Raw export and index.** One CSV per view and one JSON per goal to
+  `s3://<lake>/exports/<env>/<date>/` nightly; `scripts/analytics-pull.sh` to
+  `~/projects/diy-accounting-limited/analytics/<env>/`; an `analytics` source in
+  `../index/corpus.toml`; `reindex` after each pull. **Source**: BACKLOG 52; plan row D12.
+  **Owner**: Claude Code, the corpus change at the workspace root. **Model**: Sonnet. Waits
+  on B52d.
+- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** Both subscribed standards are
+  `INCOMPLETE` with reason `NO_AVAILABLE_CONFIGURATION_RECORDER`, and the one critical finding
+  says so. Add the recorder and delivery channel to the environment CDK (a recurring charge
+  per recorded item; name the figure in the PR), replace CIS 1.2.0 with 5.0, keep the AWS
+  Foundational standard, and triage the fourteen low and one medium findings. **Source**: the
+  prod account, 2026-09-07; `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude
+  Code, the operator's yes on the charge. **Model**: Sonnet.
+- [ ] **S2. CodeQL's 44 open high alerts.** 33 are `js/clear-text-logging`, 4 clear-text
+  storage, 2 CORS with credentials, and one each of incomplete sanitisation, incomplete URL
+  sanitisation, missing rate limiting, unvalidated dynamic method call and a weak algorithm.
+  Fix each or dismiss it with the reason on the alert; a dismissal without a reason is a fix
+  not done. **Source**: GitHub code scanning, 2026-09-07. **Owner**: Claude Code. **Model**:
+  Sonnet.
+- [ ] **S3. CloudTrail multi-region.** `prod-env-trail` records eu-west-2 only; the WAF,
+  the RUM monitor and the canaries' us-east-1 side are unseen. Set `IsMultiRegionTrail` in
+  `ObservabilityStack`, ci first. **Source**: the prod account, 2026-09-07. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **S4. A rotation record for secrets.** Every environment deploy rewrites every Secrets
+  Manager secret from the GitHub environment, so `LastChangedDate` is the last deploy and
+  `LastRotatedDate` is empty for all twelve. Keep the real rotation date per secret in a
+  record the deploy carries forward (a tag on the secret set only when the value changes, or
+  `secrets-rotation.toml` in the repo), and rotate the ones older than a year. **Source**: the
+  prod account, 2026-09-07. **Owner**: Claude Code; the operator rotates the third-party
+  values. **Model**: Sonnet.
+- [ ] **S5. Runtime lifecycle.** The four canaries run `syn-nodejs-puppeteer-11.0`, a Node 20
+  runtime; move them to the current Synthetics runtime. Three Lambdas run `NODEJS_22_X`
+  beside 23 on 24; move them. Record in `lifecycle.toml` (B52f) the ACM certificate's
+  2027-02-06 expiry and confirm it auto-renews by DNS validation, the local certificate
+  (BACKLOG 48), Java 25, the CDK major and Playwright. **Source**: the prod account,
+  2026-09-07. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
   asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
   `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
@@ -142,6 +202,12 @@ next starts from main as `claude/b12-board`.
   values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 ## Blocked: Claude Code
 
+- [ ] **B52i. The company P&L and balance sheet on the page.** The company's diya-gl book,
+  saved to the DIYA cloud by `../PLAN_FINANCE_AUTOMATION.md` phase 2, derived nightly with the
+  Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the five goals beside
+  the last set filed at Companies House. **Source**: BACKLOG 52; plan row D10. **Owner**:
+  Claude Code. **Model**: Sonnet. Blocked on the finance plan's phases 1 and 2 (no code yet)
+  and on M1 and M3.
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
   B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
   presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
