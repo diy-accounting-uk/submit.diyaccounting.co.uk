@@ -173,7 +173,7 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   await previewAccounts(page, screenshotPath);
   await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
-  await verifyFilingRejected(page, "9999", screenshotPath);
+  await verifyFilingRejected(page, "1", screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

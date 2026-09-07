@@ -78,7 +78,7 @@ describe("services/companiesHouseXmlGateway", () => {
     delete process.env.COMPANIES_HOUSE_PRESENTER_ID_ARN;
     delete process.env.COMPANIES_HOUSE_PRESENTER_CODE;
     delete process.env.COMPANIES_HOUSE_PRESENTER_CODE_ARN;
-    delete process.env.COMPANIES_HOUSE_XML_GATEWAY_URI;
+    delete process.env.COMPANIES_HOUSE_XMLGW_URI;
     delete process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   });
 
@@ -242,13 +242,13 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(getXmlGatewayUri()).toBe("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway");
     });
 
-    test("is overridable by COMPANIES_HOUSE_XML_GATEWAY_URI", () => {
-      process.env.COMPANIES_HOUSE_XML_GATEWAY_URI = "http://localhost:9000/v1-0/xmlgw/Gateway";
+    test("is overridable by COMPANIES_HOUSE_XMLGW_URI", () => {
+      process.env.COMPANIES_HOUSE_XMLGW_URI = "http://localhost:9000/v1-0/xmlgw/Gateway";
       expect(getXmlGatewayUri()).toBe("http://localhost:9000/v1-0/xmlgw/Gateway");
     });
 
     test("POSTs the envelope as text/xml and returns the raw text response", async () => {
-      process.env.COMPANIES_HOUSE_XML_GATEWAY_URI = "http://localhost:9000/v1-0/xmlgw/Gateway";
+      process.env.COMPANIES_HOUSE_XMLGW_URI = "http://localhost:9000/v1-0/xmlgw/Gateway";
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,

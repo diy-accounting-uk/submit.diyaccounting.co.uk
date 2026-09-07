@@ -429,9 +429,9 @@
           .join("\n");
       }
 
-      async function pollUntilSettled(submissionNumber) {
+      async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
         for (let attempt = 0; attempt < 20; attempt++) {
-          const result = await window.pollMicroEntityAccounts(submissionNumber);
+          const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
           if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
             return result;
           }
@@ -439,7 +439,7 @@
             `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        return window.pollMicroEntityAccounts(submissionNumber);
+        return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
       }
 
       async function handleSubmitFiling() {
@@ -454,15 +454,13 @@
         try {
           const accounts = { ...buildAccountsPayload(), companyAuthCode };
           const govTestScenario = document.getElementById("govTestScenario").value.trim();
-          const submission = await window.submitMicroEntityAccounts(
-            accounts,
-            govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {},
-          );
+          const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+          const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
           document.getElementById("filingResult").innerHTML =
             `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
           showView("resultView");
 
-          const outcome = await pollUntilSettled(submission.submissionNumber);
+          const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
           document.getElementById("filingResult").innerHTML =
             `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
           renderRejections(outcome.rejections);

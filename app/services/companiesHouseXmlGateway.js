@@ -297,20 +297,26 @@ export async function allocateSubmissionNumber() {
  * @returns {string}
  */
 export function getXmlGatewayUri() {
-  return process.env.COMPANIES_HOUSE_XML_GATEWAY_URI || DEFAULT_XML_GATEWAY_URI;
+  return process.env.COMPANIES_HOUSE_XMLGW_URI || DEFAULT_XML_GATEWAY_URI;
 }
 
 /**
  * POST a GovTalk envelope to the XML Gateway and return the raw text response.
  * @param {string} xml
+ * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override; the real
+ *   gateway ignores headers it does not know, so the same call shape reaches both.
  * @returns {Promise<{ok: boolean, status: number, data: string, headers: object, duration: number}>}
  */
-export async function postToGateway(xml) {
+export async function postToGateway(xml, extraHeaders = {}) {
   const url = getXmlGatewayUri();
 
   logger.info({ message: `POST ${url}`, url });
 
-  const result = await fetchTextWithTimeout(url, { method: "POST", headers: { "Content-Type": "text/xml" }, body: xml }, DEFAULT_TIMEOUTS.LONG);
+  const result = await fetchTextWithTimeout(
+    url,
+    { method: "POST", headers: { "Content-Type": "text/xml", ...extraHeaders }, body: xml },
+    DEFAULT_TIMEOUTS.LONG,
+  );
 
   logger.info({ message: `Response from POST ${url}`, url, status: result.status });
 

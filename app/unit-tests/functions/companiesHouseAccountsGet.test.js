@@ -97,6 +97,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       setupTestEnv({
         COMPANIES_HOUSE_XMLGW_URI: "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway",
         RECEIPTS_DYNAMODB_TABLE_NAME: "test-receipts-table",
+        COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
         ENVIRONMENT_NAME: "test",
       }),
     );
@@ -112,26 +113,42 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       }
       return {};
     });
-    mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterAuthCode: "presenter-code" });
+    mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
     mockBuildStatusRequest.mockReturnValue("<GovTalkMessage>status request</GovTalkMessage>");
-    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, text: "<GovTalkMessage>status response</GovTalkMessage>" });
+    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>status response</GovTalkMessage>", headers: {}, duration: 1 });
   });
 
   test("polls the gateway and returns PENDING while the submission is unresolved", async () => {
-    mockParseGatewayResponse.mockReturnValue({ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849" });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.statusCode).toBe("PENDING");
     expect(mockBuildStatusRequest).toHaveBeenCalledWith({
       presenterId: "presenter-id",
-      presenterAuthCode: "presenter-code",
+      presenterCode: "presenter-code",
       submissionNumber: "00001A",
     });
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    await companiesHouseAccountsGetHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
   });
 
   test("writes a receipt and returns ACCEPT when the gateway accepts the filing", async () => {
-    mockParseGatewayResponse.mockReturnValue({ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849" });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
@@ -145,10 +162,15 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
 
   test("returns REJECT with the reject reasons when the gateway rejects the filing", async () => {
     mockParseGatewayResponse.mockReturnValue({
-      statusCode: "REJECT",
-      submissionNumber: "00001A",
-      companyNumber: "06846849",
-      rejections: [{ rejectCode: "9999", description: "iXBRL validation failed", instanceNumber: "1" }],
+      errors: [],
+      statuses: [
+        {
+          statusCode: "REJECT",
+          submissionNumber: "00001A",
+          companyNumber: "06846849",
+          rejections: [{ rejectCode: "9999", description: "iXBRL validation failed", instanceNumber: "1" }],
+        },
+      ],
     });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
@@ -160,6 +182,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
   test("returns 500 when the gateway answers with GovTalkErrors", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [{ raisedBy: "Gateway", number: "502", type: "fatal", text: "Authentication Failure", location: "" }],
+      statuses: [],
     });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(500);

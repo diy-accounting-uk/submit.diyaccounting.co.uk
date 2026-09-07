@@ -8,7 +8,7 @@
 // the existing receipts page.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, buildValidationError, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, buildValidationError, http500ServerErrorResponse, getHeader } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -48,7 +48,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "RECEIPTS_DYNAMODB_TABLE_NAME"]);
+  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "RECEIPTS_DYNAMODB_TABLE_NAME", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
@@ -86,10 +86,13 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { presenterId, presenterAuthCode } = await resolvePresenterCredentials();
-  const statusRequestXml = buildStatusRequest({ presenterId, presenterAuthCode, submissionNumber });
-  const gatewayResponse = await postToGateway(statusRequestXml);
-  const parsed = parseGatewayResponse(gatewayResponse.text);
+  const { presenterId, presenterCode } = await resolvePresenterCredentials();
+  const statusRequestXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber });
+  // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
+  // from the page's developer-mode field; the real gateway ignores headers it does not know.
+  const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  const gatewayResponse = await postToGateway(statusRequestXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
+  const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {
     logger.error({ message: "Companies House gateway returned errors while polling", submissionNumber, errors: parsed.errors });
@@ -101,15 +104,19 @@ export async function ingestHandler(event) {
     });
   }
 
-  if (parsed.statusCode === "REJECT") {
-    await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
-    return http200OkResponse({ request, headers: { ...responseHeaders }, data: parsed });
+  // parseGatewayResponse() carries every Status element it found; a GetSubmissionStatus poll for
+  // one submission number always answers with exactly one.
+  const status = parsed.statuses[0];
+
+  if (status.statusCode === "REJECT") {
+    await putAsyncRequest(userSub, submissionNumber, "failed", status, asyncRequestsTableName);
+    return http200OkResponse({ request, headers: { ...responseHeaders }, data: status });
   }
 
-  if (parsed.statusCode === "ACCEPT") {
+  if (status.statusCode === "ACCEPT") {
     const receiptId = `${new Date().toISOString()}-${submissionNumber}`;
-    await putReceipt(userSub, receiptId, parsed, resolveActorClass());
-    const data = { ...parsed, receiptId };
+    await putReceipt(userSub, receiptId, status, resolveActorClass());
+    const data = { ...status, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", data, asyncRequestsTableName);
     await publishActivityEvent({
       event: "companies-house-accounts-accepted",
@@ -121,5 +128,5 @@ export async function ingestHandler(event) {
 
   // PENDING or PARKED: leave the request state as-is and hand the current snapshot back so the
   // page can keep polling.
-  return http200OkResponse({ request, headers: { ...responseHeaders }, data: parsed });
+  return http200OkResponse({ request, headers: { ...responseHeaders }, data: status });
 }

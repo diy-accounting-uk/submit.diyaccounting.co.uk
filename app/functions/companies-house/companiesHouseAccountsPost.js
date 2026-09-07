@@ -14,6 +14,7 @@ import {
   http200OkResponse,
   http201CreatedResponse,
   http500ServerErrorResponse,
+  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -139,9 +140,11 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,
-    balanceSheet: { currentYear, priorYear },
-    averageEmployees: numericAverageEmployees,
-    director: { name: directorName, dateApproved },
+    // buildMicroEntityAccounts() names the two years current/prior, not currentYear/priorYear.
+    balanceSheet: { current: currentYear, prior: priorYear },
+    averageNumberOfEmployees: numericAverageEmployees,
+    directorName,
+    dateOfApproval: dateApproved,
     statementsAccepted: statements,
   };
 }
@@ -187,7 +190,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["COMPANIES_HOUSE_XMLGW_URI"]);
+  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
@@ -215,29 +218,31 @@ export async function ingestHandler(event) {
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+  // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
+  // from the page's developer-mode field; the real gateway ignores headers it does not know.
+  const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
 
   let submissionNumber;
   try {
     const ixbrl = buildMicroEntityAccounts(accounts);
     submissionNumber = await allocateSubmissionNumber();
-    const { presenterId, presenterAuthCode } = await resolvePresenterCredentials();
+    const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
     await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
 
     const submissionXml = buildAccountsSubmission({
       presenterId,
-      presenterAuthCode,
+      presenterCode,
       companyNumber: accounts.companyNumber,
       companyName: accounts.companyName,
-      companyAuthCode: accounts.companyAuthCode,
+      companyAuthenticationCode: accounts.companyAuthCode,
       submissionNumber,
-      directorName: accounts.director.name,
-      dateSigned: accounts.director.dateApproved,
+      dateSigned: accounts.dateOfApproval,
       ixbrl,
     });
 
-    const gatewayResponse = await postToGateway(submissionXml);
-    const parsed = parseGatewayResponse(gatewayResponse.text);
+    const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
+    const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
       await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
