@@ -38,8 +38,11 @@ outputs:
     description: "Cognito User Pool ID"
     value: ${{ steps.cognito.outputs.USER_POOL_ID }}
   cognito-client-id:
-    description: "Cognito User Pool Client ID"
+    description: "Cognito User Pool Client ID (the main app client, selected by ClientName)"
     value: ${{ steps.cognito.outputs.CLIENT_ID }}
+  cognito-books-client-id:
+    description: "Cognito User Pool Client ID for the spreadsheets books pages (selected by ClientName; empty if not yet deployed)"
+    value: ${{ steps.cognito.outputs.BOOKS_CLIENT_ID }}
   http-api-id:
     description: "API Gateway HTTP API ID"
     value: ${{ steps.api-gateway.outputs.HTTP_API_ID }}
@@ -89,15 +92,33 @@ runs:
           --output text)
         echo "Found User Pool ARN: ${USER_POOL_ARN}"
 
+        # Select by ClientName, not list position: the pool carries a second client (the
+        # spreadsheets books pages), so array order is not a stable way to find the app client.
+        CLIENT_NAME="${{ inputs.environment-name }}-env-client"
         CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
           --user-pool-id "${USER_POOL_ID}" \
-          --query 'UserPoolClients[0].ClientId' \
+          --query "UserPoolClients[?ClientName=='${CLIENT_NAME}'].ClientId | [0]" \
           --output text)
+        if [ -z "$CLIENT_ID" ] || [ "$CLIENT_ID" = "None" ]; then
+          echo "ERROR: No Cognito User Pool Client named ${CLIENT_NAME} found in pool ${USER_POOL_ID}" >&2
+          exit 1
+        fi
         echo "Found Client ID: ${CLIENT_ID}"
+
+        BOOKS_CLIENT_NAME="${{ inputs.environment-name }}-env-books-client"
+        BOOKS_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
+          --user-pool-id "${USER_POOL_ID}" \
+          --query "UserPoolClients[?ClientName=='${BOOKS_CLIENT_NAME}'].ClientId | [0]" \
+          --output text 2>/dev/null || echo "")
+        if [ "$BOOKS_CLIENT_ID" = "None" ]; then
+          BOOKS_CLIENT_ID=""
+        fi
+        echo "Found Books Client ID: ${BOOKS_CLIENT_ID:-<not deployed>}"
 
         echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
         echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"
         echo "CLIENT_ID=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
+        echo "BOOKS_CLIENT_ID=${BOOKS_CLIENT_ID}" >> "$GITHUB_OUTPUT"
 
     - name: Lookup API Gateway from custom domain
       id: api-gateway
