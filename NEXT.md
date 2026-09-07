@@ -13,9 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c6e18fd (the 04:11 UTC scheduled deploy of main, run 34105362721,
-which ran at 09:19). The operator's `destroy-prod.yml` run of 2026-09-07 21:31 UTC removed prod-c980ac9; no spare
-stands. B53 holds the decision that stops it recurring.** A main deploy
+**Prod runs deployment prod-c6e18fd (the 2026-09-07 scheduled deploy of main, run 34105362721);
+no spare stands. B53b holds the decision that stops a spare recurring.** A main deploy
 retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
 $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -28,9 +27,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-PRs #148 (the accounts filing), #149 (the books Cognito client) and #150 (the books storage
-API) are merged and deployed; prod carries the first BooksStack. No batch branch is open; the
-next starts from main as `claude/b12-board`. Nothing is being worked at this render.
+Nothing is being worked at this render. No batch branch is open; the next starts from main as
+`claude/b12-board`.
 
 ## Ready, unblocking others
 
@@ -51,9 +49,7 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   and 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
-  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 was closed by the operator on 2026-09-07 (Telegram and GitHub issues are
-  enough). Superseded and archived on 2026-09-07:
-  `PLAN_SECURITY_DETECTION_UPLIFT.md`, `SLACK_INTEGRATION_PLAN.md`, `PLAN_MCP_SERVER.md`. Unblocks B52d.
+  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels). Unblocks B52d.
 - [ ] **B52d. Lake views.** Submissions by activity including the four Companies House
   events; sources; the availability SLI and error budget from the probe metrics; alarm state
   changes by family through the existing Firehose pattern; DORA rows (name, environment,
