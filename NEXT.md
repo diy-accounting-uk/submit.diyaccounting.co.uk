@@ -140,6 +140,20 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
 
 ## Ready
 
+- [ ] **B34.8. The standalone company-lookup page to prod.** The operator has seen it on ci
+  and calls it ready. Add `prod` to the `company-lookup` activity's `environments` in
+  `web/public/submit.catalogue.toml` (the two register filings already carry it); one PR.
+  **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B34.9. The `resident-ltd` bundle and the `resident-pro` union.** The operator's
+  decision of 2026-09-07: a single-function bundle `resident-ltd` at 99p a month shaped like
+  `resident-vat` and `resident-itsa` (`allocation = "on-subscription"`, 100 tokens, `P1M`,
+  `stripePriceAmount = 99`), carrying `file-micro-entity-accounts` as a metered activity at
+  one token; the two register filings stay free on `default`; `resident-pro` covers the union
+  of VAT, ITSA and ltd, so its activity lists gain the ITSA and accounts activities.
+  `listedInEnvironments` keeps `resident-ltd` off prod's listing until B34.6b puts the
+  accounts activity there. Then `stripe-catalogue-sync`: the product and price in test, then
+  live, and the ids onto `.env.ci`, `.env.prod` and the GitHub environments. **Source**:
+  BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
   `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
   amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
@@ -291,17 +305,14 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   budgets and the anomaly monitor from `_developers/archive/PLAN_COST_INSTRUMENTATION.md`;
   cost per submission as the unit figure. **Source**: BACKLOG 52; plan row D7. **Owner**:
   Claude Code. **Model**: Sonnet. Blocked on O25.
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
-  B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
-  presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
-  responses, correct the envelope and iXBRL where the sandbox's own validation differs from
-  the public schemas, and record what the sandbox returned in the simulator. With it, the
-  `resident-company` bundle: the operator decided on 2026-09-07 that the two register filings
-  stay free on `default` and limited-company work is priced when accounts filing lands, so
-  this item adds the bundle to the catalogue with accounts filing in it (a Stripe product and
-  price through `stripe-catalogue-sync`, the price the operator's). **Source**: BACKLOG 34b;
-  issue #15. **Owner**: Claude Code, price from the operator. **Model**: Sonnet. Blocked on
-  O16 and B34.6a.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
+  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
+  GitHub environment secret), read the real acknowledgement and poll responses, settle the
+  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
+  correct the envelope and iXBRL where the sandbox's own validation differs from the public
+  schemas, record what the sandbox returned in the simulator, then add `prod` to the
+  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
+  34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
 
 ## Blocked on a date
 
