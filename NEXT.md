@@ -32,17 +32,6 @@ the accounts async-requests table) is re-run after it, then the #148 prod deploy
 34088799182). The spreadsheets session's ci deploys of `claude/books-storage-api` share this
 repo's ci account; its failed run 34074004794 is diagnosed in the shared inbox.
 
-- [ ] **K1. Books storage API (PR #150) deploys on ci.** Handed to this session by the
-  operator on 2026-09-07 06:1x UTC from the spreadsheets session. Its ci deploy (run
-  34074004794) failed on `BooksCognitoAuthorizer` with "An empty audience value is not
-  permitted": `deploy.yml` never sets `COGNITO_BOOKS_CLIENT_ID`, so `SubmitApplication` passes
-  an empty audience, although `IdentityStack` (PR #149) writes the books client id to SSM
-  `/submit/<env>/spreadsheets-books-app-client-id`. Fix in the books-audience agent's worktree,
-  branch `claude/books-audience` (Sonnet): deploy.yml reads the parameter the way it reads
-  the main client id, synth throws on a blank value, the destroy and drift workflow edits and
-  the openapi.json merge checked. Then the branch is pushed to `claude/books-storage-api` and
-  PR #150's ci deploy is the proof. **Source**: operator, 2026-09-07; PR #150. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
   00:04 UTC on 2026-09-07 (run 34068635237) stopped at the day guard: more than three triage
