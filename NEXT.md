@@ -63,12 +63,6 @@ Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O20. Decide the price of the two Companies House filing activities.** They sit on the
-  free `default` bundle. `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 lists the options: leave them
-  free (Companies House charges nothing for either filing), a new `resident-company` bundle with
-  its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
-  catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
-
 ## Blocked: operator
 
 - [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
@@ -100,12 +94,16 @@ Nothing.
 
 ## Blocked: Claude Code
 
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After B34.6a and O16:
-  submit the FRS 105 accounts to the XML Gateway test service with the test presenter
-  credentials (a GitHub environment secret), read the real acknowledgement and poll responses,
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, and record HMRC-style test data in the simulator from what the sandbox returned.
-  **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
+  B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
+  presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
+  responses, correct the envelope and iXBRL where the sandbox's own validation differs from
+  the public schemas, and record what the sandbox returned in the simulator. With it, the
+  `resident-company` bundle: the operator decided on 2026-09-07 that the two register filings
+  stay free on `default` and limited-company work is priced when accounts filing lands, so
+  this item adds the bundle to the catalogue with accounts filing in it (a Stripe product and
+  price through `stripe-catalogue-sync`, the price the operator's). **Source**: BACKLOG 34b;
+  issue #15. **Owner**: Claude Code, price from the operator. **Model**: Sonnet. Blocked on
   O16 and B34.6a.
 
 ## Discipline
