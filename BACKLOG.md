@@ -40,7 +40,7 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 30 | B30o | Cut the alarms and canary runs the audit shows are dead weight | Cost analysis; `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
+| 30 | after 30a (2026-09-13) | Cut the alarms and canary runs the audit shows are dead weight; the triage chain is proven on #138 and the PR #147 resolver change waits on the next real alarm | Cost analysis; `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` | M | Hygiene. Largest recurring CloudWatch line after the composite consolidation. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 

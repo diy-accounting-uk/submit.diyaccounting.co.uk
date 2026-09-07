@@ -34,10 +34,6 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
 
 ## Ready, unblocking others
 
-- [ ] **O24. Label #138 `triage`.** The alarm-triage day guard cleared at 12:01 UTC on
-  2026-09-07 and no run has fired since. Add the `triage` label to issue #138 (closed serves)
-  so the resolver fix from PR #147 gets its prod run. Unblocks B30o. **Source**: BACKLOG 30.
-  **Owner**: Operator. **Model**: none.
 - [ ] **B52a. Split the two prod dashboards into operations and business.**
   `prod-env-operations` (thirteen widgets, `ObservabilityStack`) carries five business counts
   and three widgets that never render: the "all functions, all deployments" searches match
@@ -277,10 +273,6 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   `site-video-capture`), and publish them with `video-publish` beside the others. **Source**:
   BACKLOG 17b; issue #19. **Owner**: Claude Code. **Model**: Sonnet for the capture, Haiku
   for the publish. Blocked on O27.
-- [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
-  alarm is evidence; composite alarms are listed). Read the triage run O24's label starts and
-  confirm it posts the guardrail's anonymised comment; if it stops at a guard or fails, say
-  where. **Source**: BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. Blocked on O24.
 - [ ] **B53c. Build B53b's choice.** Either the sweep change in `destroy-prod.yml` (candidates
   from `DEPLOYED_DEPLOYMENT_NAMES`, older than `SELF_DESTRUCT_DELAY_HOURS`, not the pointer)
   or the schedule's removal from `deploy.yml`; ci first where the change is shared. **Source**:
