@@ -777,6 +777,81 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
+        // The books routes answer their own CORS (BOOKS_ALLOWED_ORIGINS, see booksCors.js): the
+        // /api/v1/* behaviour's CORS override above would stamp Access-Control-Allow-Origin: *
+        // over every response, breaking both the PUT preflight and the client's read of ETag.
+        // Same security headers, no corsBehavior, so CloudFront passes the handler's own through.
+        ResponseHeadersPolicy booksApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-BooksWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-books-whp")
+                .comment("Security headers for the books API, with no CORS override")
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy("default-src 'self'; "
+                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; "
+                                        + "style-src 'self' 'unsafe-inline'; "
+                                        + "frame-src 'self' https://"
+                                        + props.sharedNames().simulatorDomainName + "; "
+                                        + "frame-ancestors 'none'; "
+                                        + "form-action 'self';")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
+                                .override(true)
+                                .build())
+                        .build())
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Permissions-Policy")
+                                        .value("camera=(), microphone=(), geolocation=()")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("unsafe-none")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
+                        .build())
+                .build();
+
         // Custom error pages are served as static files via CloudFront error responses
         // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
         // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
@@ -839,6 +914,13 @@ public class EdgeStack extends Stack {
                 props.apiGatewayUrl(), webResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
+
+        // More specific than /api/v1/*, so CloudFront prefers this one for the books routes and
+        // leaves every other /api/v1/* route on the CORS-overriding policy above unaffected.
+        BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), booksApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+        additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
+        infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
 
         // Add behaviour for /tests/* and /docs/* with short TTL cache policy
         additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);

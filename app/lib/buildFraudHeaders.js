@@ -35,20 +35,27 @@ export async function detectVendorPublicIp() {
   if (vendorIpDetectionAttempted) {
     return cachedVendorPublicIp;
   }
-  vendorIpDetectionAttempted = true;
 
-  try {
-    const { response } = await fetchWithTimeout("https://checkip.amazonaws.com", {}, 3000);
-    if (response.ok) {
-      cachedVendorPublicIp = (await response.text()).trim();
-      logger.info({ message: "Detected vendor public IP", vendorPublicIp: cachedVendorPublicIp });
-    } else {
-      logger.warn({ message: "Failed to detect vendor public IP: non-OK response", status: response.status });
+  // A single transient network hiccup (e.g. a timeout reaching checkip.amazonaws.com) must not
+  // permanently disable a legally required fraud-prevention header for the rest of the process's
+  // life, so retry once before giving up.
+  const maxAttempts = 2;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { response } = await fetchWithTimeout("https://checkip.amazonaws.com", {}, 3000);
+      if (response.ok) {
+        cachedVendorPublicIp = (await response.text()).trim();
+        logger.info({ message: "Detected vendor public IP", vendorPublicIp: cachedVendorPublicIp });
+        break;
+      } else {
+        logger.warn({ message: "Failed to detect vendor public IP: non-OK response", status: response.status, attempt });
+      }
+    } catch (error) {
+      logger.warn({ message: "Failed to detect vendor public IP", error: error.message, attempt });
     }
-  } catch (error) {
-    logger.warn({ message: "Failed to detect vendor public IP", error: error.message });
   }
 
+  vendorIpDetectionAttempted = true;
   return cachedVendorPublicIp;
 }
 

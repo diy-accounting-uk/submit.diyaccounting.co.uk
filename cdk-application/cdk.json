@@ -16,6 +16,7 @@
     "googleClientSecretArn": "",
     "userPoolArn": "",
     "userPoolClientId": "",
+    "booksUserPoolClientId": "",
     "cloudTrailEnabled": "true",
     "subDomainName": "submit",
     "baseImageTag": "latest",

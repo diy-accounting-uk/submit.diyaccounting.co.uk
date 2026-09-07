@@ -13,6 +13,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTable;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTimeToLive;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -21,11 +22,16 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.kms.Key;
+import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
+import software.amazon.awscdk.services.s3.BucketEncryption;
+import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.constructs.Construct;
 
 public class DataStack extends Stack {
 
     public ITable receiptsTable;
+    public Bucket booksBucket;
     public ITable bundlesTable;
     public ITable bundlePostAsyncRequestsTable;
     public ITable bundleDeleteAsyncRequestsTable;
@@ -413,6 +419,29 @@ public class DataStack extends Stack {
                 this, props.resourceNamePrefix() + "-SecurityStateTTL", props.sharedNames().securityStateTableName, "ttl");
         infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
 
+        // Books bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
+        // Versioned so AWS Backup for S3 can cover it and a bad metadata write has a prior version;
+        // noncurrent versions expire after 30 days rather than being kept forever.
+        this.booksBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-Books")
+                .bucketName(props.sharedNames().booksBucketName)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .enforceSsl(true)
+                .versioned(true)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
+                .lifecycleRules(List.of(
+                        LifecycleRule.builder()
+                                .id("abort-incomplete-uploads")
+                                .abortIncompleteMultipartUploadAfter(Duration.days(1))
+                                .build(),
+                        LifecycleRule.builder()
+                                .id("expire-noncurrent-versions")
+                                .noncurrentVersionExpiration(Duration.days(30))
+                                .build()))
+                .build();
+        infof("Ensured books bucket with name %s", props.sharedNames().booksBucketName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "ReceiptsTableStreamArn", receiptsStreamArn);
@@ -508,6 +537,7 @@ public class DataStack extends Stack {
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
         cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
+        cfnOutput(this, "BooksBucketName", this.booksBucket.getBucketName());
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).
         // Used by migration 003 to encrypt the passphrase salt as a system#config item.

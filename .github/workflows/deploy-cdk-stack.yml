@@ -390,6 +390,7 @@ jobs:
           # Looked up from Cognito domain convention
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
+          COGNITO_BOOKS_CLIENT_ID: ${{ steps.lookup.outputs.cognito-books-client-id }}
           BASE_IMAGE_TAG: ${{ needs.params.outputs['base-image-tag'] }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.params.outputs['self-destruct-start-datetime'] }}
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"

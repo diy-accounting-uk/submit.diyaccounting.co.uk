@@ -34,6 +34,7 @@ import software.amazon.awscdk.assertions.Template;
             key = "COGNITO_USER_POOL_ARN",
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
+    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/client_secret"),
@@ -222,10 +223,29 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/books/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/books/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
+
         // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
-        // the GET on the same path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 77);
+        // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
+        // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
+        // sharing), for 77 + 4 + 3 + 3 = 87.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 87);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -258,6 +278,12 @@ class SubmitApplicationCdkResourceTest {
 
         // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
+
+        // /api/v1/books/* is more specific than /api/v1/*, so CloudFront routes it separately,
+        // to a response headers policy with no CORS override - the books routes answer their own
+        // CORS, and the API-wide policy's Access-Control-Allow-Origin: * would otherwise stamp
+        // over the handler's own header and break both the PUT preflight and the ETag read.
+        assertBooksBehaviourHasNoCorsOverride(edgeStackTemplate);
 
         // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining
         // them, landing Parquet directly in the shared analytics lake for the Glue catalog.
@@ -373,6 +399,51 @@ class SubmitApplicationCdkResourceTest {
         if (submitApplication.selfDestructStack != null) {
             assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.selfDestructStack));
         }
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "")
+    void shouldThrowWhenBooksUserPoolClientIdIsBlank() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalStateException.class, () -> new SubmitApplication(app, appProps));
+        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_BOOKS_CLIENT_ID"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                thrown.getMessage().contains("spreadsheets-books-app-client-id"));
+    }
+
+    /**
+     * Finds the /api/v1/books/* cache behaviour on the distribution and asserts its response
+     * headers policy carries no CorsConfig - unlike the /api/v1/* behaviour's policy, which
+     * overrides Access-Control-Allow-Origin to "*" for every other API route.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertBooksBehaviourHasNoCorsOverride(Template template) {
+        var distributions = template.findResources("AWS::CloudFront::Distribution");
+        org.junit.jupiter.api.Assertions.assertEquals(1, distributions.size());
+        var distributionConfig =
+                (Map<String, Object>) ((Map<String, Object>) distributions.values().iterator().next())
+                        .get("Properties");
+        var config = (Map<String, Object>) distributionConfig.get("DistributionConfig");
+        var cacheBehaviors = (List<Map<String, Object>>) config.get("CacheBehaviors");
+        var booksBehaviour = cacheBehaviors.stream()
+                .filter(behaviour -> "/api/v1/books/*".equals(behaviour.get("PathPattern")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a /api/v1/books/* cache behaviour"));
+
+        var policyRef = (Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId");
+        String policyLogicalId = (String) policyRef.get("Ref");
+        var policyResource = template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(policyLogicalId);
+        org.junit.jupiter.api.Assertions.assertTrue(
+                policyResource != null, "expected to find the books response headers policy resource");
+        var policyProperties = (Map<String, Object>) ((Map<String, Object>) policyResource).get("Properties");
+        var policyConfig = (Map<String, Object>) policyProperties.get("ResponseHeadersPolicyConfig");
+        org.junit.jupiter.api.Assertions.assertFalse(
+                policyConfig.containsKey("CorsConfig"), "expected the books response headers policy to carry no CorsConfig");
     }
 
     /**
