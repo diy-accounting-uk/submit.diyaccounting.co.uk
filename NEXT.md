@@ -26,7 +26,7 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 Batch 10 merged as PR #147 at 00:03 UTC on 2026-09-07; main's deploy (run 34068609812) and
 environment deploy (run 34068609757) are running. Batch 11 is `claude/b11-board` (local): the
-accounts filing and the video publish `--public` fix.
+accounts filing, the video publish `--public` fix and the GA4 BigQuery link export script.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
@@ -46,12 +46,6 @@ accounts filing and the video publish `--public` fix.
   update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
   that every page the catalogue names exists. Verified when main's deploy after the merge
   shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
-- [ ] **G7. Streaming export for the GA4 property.** In the GA4 streaming agent's worktree,
-  branch `claude/ops-ga4-streaming` (Sonnet): `scripts/ga4-bigquery-link-export.js` lists and
-  patches property 523400333's BigQuery link through the Admin API with the analytics
-  service account, dry run then `--streaming true`. Verified when the link reads
-  `streamingExportEnabled: true` and the first `events_intraday_*` table appears. **Source**:
-  operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
   needs no credentials.** `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` is on main. The app half
   (three Lambdas, CDK, the ci-only activity and page, the behaviour suite; c07c4690) is merged
