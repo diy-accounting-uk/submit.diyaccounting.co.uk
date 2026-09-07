@@ -24,13 +24,10 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batches 11 (PR #148, the accounts filing) and the spreadsheets session's PR #149 (a second
-Cognito app client for the books pages) merged within a minute of each other at 05:57 UTC on
-2026-09-07. Their deploys collided in the concurrency group: the #149 environment deploy (run
-34088738808) runs first, the cancelled #148 environment deploy (run 34088798974, which adds
-the accounts async-requests table) is re-run after it, then the #148 prod deploy (run
-34088799182). The spreadsheets session's ci deploys of `claude/books-storage-api` share this
-repo's ci account; its failed run 34074004794 is diagnosed in the shared inbox.
+PRs #148 (the accounts filing), #149 (the books Cognito client) and #150 (the books storage
+API, fixed by this session) are merged; the #150 merge's prod deploy (run 34099969706) is
+queued and carries the first BooksStack on prod. No batch branch is open; the next starts from
+main as `claude/b12-board`.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
@@ -41,7 +38,17 @@ repo's ci account; its failed run 34074004794 is diagnosed in the shared inbox.
   Operator labels, Claude Code reads the run.
 ## Ready: Claude Code
 
-Nothing.
+- [ ] **B47a. Why the Monday 06:00 UTC schedules do not fire.** `compliance.yml` and
+  `stack-drift.yml` both carry `cron: '0 6 * * 1'`; neither ran on 2026-09-07 (checked at 09:00
+  UTC), the second miss after the 2026-08-31 revival, and `codeql.yml`'s Sunday schedule did
+  fire on 2026-09-06. Both were dispatched by hand at 09:0x UTC on 2026-09-07 instead. Find the
+  cause from GitHub's rules for scheduled workflows (the workflow must be on the default
+  branch, schedules are dropped after 60 days without activity, high-load delays, a disabled
+  workflow state visible with `gh workflow view <name>` and the Actions API's `state`), and
+  compare the two files' histories with `codeql.yml`'s; fix what is found (a re-enable through
+  the API, or a change to the files) and record how a future miss is detected (the
+  `keepalive.yml` workflow may already exist for this; read it). **Source**: BACKLOG 47.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -84,11 +91,6 @@ Nothing.
   and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
   selector fix. **Source**: BACKLOG 34; issue #15. **Owner**: Operator registers and sets the
   values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
-- [ ] **O9 / B47. Watch the revived weekly `compliance` and `stack-drift` crons fire on their
-  own** on Monday 2026-09-07 06:00 UTC (`codeql` fired on its schedule on 2026-09-06, run
-  34022009649). If one misses, revive it the same way as on 2026-08-31 and tell Claude Code.
-  **Source**: BACKLOG 47. **Owner**: Operator. Date-gated: 2026-09-07.
-
 ## Blocked: Claude Code
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
