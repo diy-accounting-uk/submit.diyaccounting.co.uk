@@ -64,6 +64,9 @@ public class SubmitApplication {
         public String companiesHouseIdentityBaseUri;
         public String companiesHouseClientId;
         public String companiesHouseClientSecretArn;
+        public String companiesHouseXmlGatewayUri;
+        public String companiesHousePresenterIdArn;
+        public String companiesHousePresenterCodeArn;
         public String baseImageTag;
         public String selfDestructDelayHours;
         public String userPoolArn;
@@ -193,6 +196,18 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_CLIENT_SECRET_ARN",
                 appProps.companiesHouseClientSecretArn,
                 "(from companiesHouseClientSecretArn in cdk.json)");
+        var companiesHouseXmlGatewayUri = envOr(
+                "COMPANIES_HOUSE_XMLGW_URI",
+                appProps.companiesHouseXmlGatewayUri,
+                "(from companiesHouseXmlGatewayUri in cdk.json)");
+        var companiesHousePresenterIdArn = envOr(
+                "COMPANIES_HOUSE_PRESENTER_ID_ARN",
+                appProps.companiesHousePresenterIdArn,
+                "(from companiesHousePresenterIdArn in cdk.json)");
+        var companiesHousePresenterCodeArn = envOr(
+                "COMPANIES_HOUSE_PRESENTER_CODE_ARN",
+                appProps.companiesHousePresenterCodeArn,
+                "(from companiesHousePresenterCodeArn in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -322,6 +337,12 @@ public class SubmitApplication {
                         .companiesHouseClientId(companiesHouseClientId != null ? companiesHouseClientId : "")
                         .companiesHouseClientSecretArn(
                                 companiesHouseClientSecretArn != null ? companiesHouseClientSecretArn : "")
+                        .companiesHouseXmlGatewayUri(
+                                companiesHouseXmlGatewayUri != null ? companiesHouseXmlGatewayUri : "")
+                        .companiesHousePresenterIdArn(
+                                companiesHousePresenterIdArn != null ? companiesHousePresenterIdArn : "")
+                        .companiesHousePresenterCodeArn(
+                                companiesHousePresenterCodeArn != null ? companiesHousePresenterCodeArn : "")
                         .build());
 
         // Create the AccountStack

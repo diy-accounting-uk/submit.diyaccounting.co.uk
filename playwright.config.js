@@ -255,6 +255,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "fileMicroEntityAccountsBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/fileMicroEntityAccounts.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "captureDemo",
       testDir: "behaviour-tests",
       testMatch: ["**/captureDemo.behaviour.test.js"],

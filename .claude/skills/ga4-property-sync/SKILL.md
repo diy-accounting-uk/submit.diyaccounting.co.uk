@@ -83,3 +83,19 @@ script only makes the value available for that wiring, in each environment.
 - `--environment <ci|prod>` — which submit environment to sync. Required.
 - `--hostname <host>` — the hostname the web data stream should track. Required.
 - `--dry-run` — read and list only, no writes to Google or GitHub.
+
+## The shared property's BigQuery link
+
+The shared "DIY Accounting" property (523400333) is out of scope for this script. To read
+or change its BigQuery link's export settings — for example turning on streaming export
+so events reach `events_intraday_*` within minutes instead of the next day — use
+`scripts/ga4-bigquery-link-export.js` (`npm run ga4:bigquery-link-export --`) instead:
+
+```bash
+GA4_SERVICE_ACCOUNT_ARN=arn:aws:secretsmanager:eu-west-2:972912397388:secret:prod/submit/ga4/service_account \
+  AWS_PROFILE=submit-prod \
+  node scripts/ga4-bigquery-link-export.js --property-id 523400333 --streaming true --dry-run
+```
+
+Drop `--dry-run` to apply. It fails loudly if the property has no BigQuery link or more
+than one.

@@ -283,6 +283,13 @@
         "operationId" : "redeemPass"
       }
     },
+    "/companies-house/accounts/preview" : {
+      "post" : {
+        "summary" : "Preview a micro-entity accounts filing",
+        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+        "operationId" : "previewCompaniesHouseAccounts"
+      }
+    },
     "/hmrc/vat/obligation" : {
       "get" : {
         "summary" : "Get VAT obligations from HMRC",
@@ -631,6 +638,13 @@
         "operationId" : "listBooks"
       }
     },
+    "/companies-house/accounts" : {
+      "post" : {
+        "summary" : "Submit a micro-entity accounts filing",
+        "description" : "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAccounts"
+      }
+    },
     "/pass/admin" : {
       "post" : {
         "summary" : "Generate a new pass",
@@ -678,6 +692,22 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/companies-house/accounts/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a micro-entity accounts filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+        "operationId" : "getCompaniesHouseAccounts",
+        "parameters" : [ {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/hmrc/vat/liability" : {

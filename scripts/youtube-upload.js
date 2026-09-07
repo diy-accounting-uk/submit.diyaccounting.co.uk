@@ -35,7 +35,8 @@
 // --check obtains a token, looks up the signed-in channel and prints its title, without
 // uploading anything. It's the first thing to run after consent, to prove the credential works.
 //
-// Uploads are unlisted by default. Pass --public to publish publicly instead.
+// Uploads are unlisted by default. Pass --public to upload publicly, or, when everything is
+// already uploaded, to switch the uploaded videos to public.
 // Re-running is safe: an entry that already carries a videoId is skipped.
 
 import fs from "fs";
@@ -57,6 +58,7 @@ export const REFRESH_TOKEN_SECRET_NAME = "prod/submit/youtube/refresh_token";
 export const DEFAULT_QUOTA_PROJECT = "diyaccounting-ga4";
 
 const CHANNELS_ENDPOINT = "https://www.googleapis.com/youtube/v3/channels";
+const VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const UPLOAD_VIDEOS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/videos";
 const UPLOAD_CAPTIONS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/captions";
 
@@ -98,6 +100,10 @@ export function savePublishList(list, filePath = PUBLISH_LIST_PATH) {
 
 export function selectPendingUploads(list) {
   return list.videos.filter((entry) => entry.publish === true && !entry.videoId);
+}
+
+export function selectUploadedVideos(list) {
+  return list.videos.filter((entry) => entry.publish === true && entry.videoId);
 }
 
 export function recordVideoId(list, id, videoId) {
@@ -371,6 +377,22 @@ function buildMultipartRelated(parts) {
   return { body: Buffer.concat(segments), contentType: `multipart/related; boundary=${boundary}` };
 }
 
+export async function setVideoPrivacy({ videoId, privacyStatus, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+  const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=status`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "x-goog-user-project": quotaProject,
+    },
+    body: JSON.stringify({ id: videoId, status: { privacyStatus } }),
+  });
+  if (!response.ok) {
+    throw new Error(`Setting ${videoId} to ${privacyStatus} failed: ${response.status} ${await response.text()}`);
+  }
+  return (await response.json()).status.privacyStatus;
+}
+
 export async function uploadCaption({ entry, videoId, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
   const metadata = { snippet: { videoId, language: "en", name: "English", isDraft: false } };
   const { body, contentType } = buildMultipartRelated([
@@ -413,7 +435,14 @@ export async function main() {
   let list = loadPublishList();
   const pending = selectPendingUploads(list);
   if (pending.length === 0) {
-    console.log("Nothing to upload: every publish:true entry already has a videoId.");
+    if (!publicVideo) {
+      console.log("Nothing to upload: every publish:true entry already has a videoId.");
+      return;
+    }
+    for (const entry of selectUploadedVideos(list)) {
+      const status = await setVideoPrivacy({ videoId: entry.videoId, privacyStatus: "public", accessToken, quotaProject });
+      console.log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status}`);
+    }
     return;
   }
 

@@ -7,6 +7,8 @@
 
 import { fetchWithIdToken, authorizedFetch } from "./api-client.js";
 
+const JSON_CONTENT_TYPE_HEADERS = { "Content-Type": "application/json" };
+
 // Scope strings always use the live domain, even when the request itself is pointed at the
 // sandbox. Companies House's identity guide is explicit about this, so these two hosts are not
 // read from window.envReady - they never change with the environment.
@@ -193,6 +195,63 @@ export async function getTransaction(transactionId) {
   return body;
 }
 
+/**
+ * Render the FRS 105 micro-entity iXBRL from the balance sheet, without submitting anything.
+ * Carries no Companies House token: the Cognito id token is enough, matching the company lookup.
+ * @param {object} accounts
+ * @returns {Promise<{ixbrl: string}>}
+ */
+export async function previewMicroEntityAccounts(accounts) {
+  const response = await fetchWithIdToken("/api/v1/companies-house/accounts/preview", {
+    method: "POST",
+    headers: JSON_CONTENT_TYPE_HEADERS,
+    body: JSON.stringify(accounts),
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw filingErrorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Generate the iXBRL and submit it through the Companies House XML Gateway.
+ * @param {object} accounts - the same shape previewMicroEntityAccounts takes, plus companyAuthCode
+ * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override
+ * @returns {Promise<{submissionNumber: string, gatewayTimestamp: string, pollInterval: number}>}
+ */
+export async function submitMicroEntityAccounts(accounts, extraHeaders = {}) {
+  const response = await fetchWithIdToken("/api/v1/companies-house/accounts", {
+    method: "POST",
+    headers: { ...JSON_CONTENT_TYPE_HEADERS, ...extraHeaders },
+    body: JSON.stringify(accounts),
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw filingErrorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Poll the gateway for the outcome of a submitted accounts filing.
+ * @param {string} submissionNumber
+ * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override, so the
+ *   simulator scenario chosen for the submission also applies to the polls that follow it
+ * @returns {Promise<object>} - statusCode is PENDING, PARKED, ACCEPT or REJECT
+ */
+export async function pollMicroEntityAccounts(submissionNumber, extraHeaders = {}) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/accounts/${submissionNumber}`, {
+    method: "GET",
+    headers: extraHeaders,
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw filingErrorFromResponse(response, body);
+  }
+  return body;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.companiesHouseScope = companiesHouseScope;
@@ -205,4 +264,7 @@ if (typeof window !== "undefined") {
   window.putRegisteredEmailAddress = putRegisteredEmailAddress;
   window.closeCompaniesHouseTransaction = closeTransaction;
   window.getCompaniesHouseTransaction = getTransaction;
+  window.previewMicroEntityAccounts = previewMicroEntityAccounts;
+  window.submitMicroEntityAccounts = submitMicroEntityAccounts;
+  window.pollMicroEntityAccounts = pollMicroEntityAccounts;
 }

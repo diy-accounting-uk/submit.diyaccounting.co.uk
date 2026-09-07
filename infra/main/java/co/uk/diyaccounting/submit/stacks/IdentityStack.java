@@ -53,6 +53,7 @@ import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import software.constructs.IDependable;
 
@@ -62,6 +63,7 @@ public class IdentityStack extends Stack {
     public ISecret googleClientSecretsManagerSecret;
     public UserPool userPool;
     public UserPoolClient userPoolClient;
+    public UserPoolClient booksUserPoolClient;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
     public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
     public final UserPoolDomain userPoolDomain;
@@ -270,6 +272,35 @@ public class IdentityStack extends Stack {
                 .values()
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
+        // Books User Pool Client
+        // A second client on the same pool for the spreadsheets site's books pages. Sign-in stays
+        // on this pool's hosted UI (same Google IdP, no native Cognito login), then redirects back
+        // to the spreadsheets host - so this client needs no USER_PASSWORD_AUTH/USER_SRP_AUTH flow,
+        // only the authorization-code grant the hosted UI redirect uses.
+        this.booksUserPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-BooksUserPoolClient")
+                .userPool(userPool)
+                .userPoolClientName(props.resourceNamePrefix() + "-books-client")
+                .generateSecret(false)
+                .preventUserExistenceErrors(true)
+                .oAuth(OAuthSettings.builder()
+                        .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
+                        .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
+                        .callbackUrls(buildBooksUrls(props.envName()))
+                        .logoutUrls(buildBooksUrls(props.envName()))
+                        .build())
+                .supportedIdentityProviders(allProviders)
+                .build();
+        this.identityProviders
+                .values()
+                .forEach(idp -> this.booksUserPoolClient.getNode().addDependency(idp));
+
+        var booksUserPoolClientIdParameterName =
+                "/submit/%s/spreadsheets-books-app-client-id".formatted(props.envName());
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-BooksUserPoolClientIdParameter")
+                .parameterName(booksUserPoolClientIdParameterName)
+                .stringValue(this.booksUserPoolClient.getUserPoolClientId())
+                .build();
+
         // Create Cognito User Pool Domain
         this.userPoolDomain = UserPoolDomain.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomain")
                 .userPool(userPool)
@@ -294,6 +325,7 @@ public class IdentityStack extends Stack {
         cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
         cfnOutput(this, "UserPoolArn", this.userPool.getUserPoolArn());
         cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
+        cfnOutput(this, "BooksUserPoolClientId", this.booksUserPoolClient.getUserPoolClientId());
         cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
@@ -321,6 +353,25 @@ public class IdentityStack extends Stack {
         if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
             urls.add("https://" + sharedNames.envDomainName + "/");
             urls.add("https://" + sharedNames.envDomainName + "/auth/signed-out.html");
+        }
+        return urls;
+    }
+
+    // The four books pages, one per spreadsheets product, all served under /books/ on the
+    // spreadsheets site. Cognito requires an exact match per callback/logout URL, so both the
+    // /books/ landing path and each page are listed.
+    private static final List<String> BOOKS_PAGE_NAMES = List.of("bst.html", "se.html", "taxi.html", "ltd.html");
+
+    private static List<String> buildBooksUrls(String envName) {
+        var hosts = "prod".equals(envName)
+                ? List.of("https://spreadsheets.diyaccounting.co.uk")
+                : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
+        var urls = new java.util.ArrayList<String>();
+        for (var host : hosts) {
+            urls.add(host + "/books/");
+            for (var page : BOOKS_PAGE_NAMES) {
+                urls.add(host + "/books/" + page);
+            }
         }
         return urls;
     }

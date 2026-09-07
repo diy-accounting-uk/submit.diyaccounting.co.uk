@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-00c5690 (main's deploy of the PR #146 merge, run 34062870619);
-the deploy is retiring prod-cfb43ee and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-4463ec1 (main's deploy of the PR #147 merge, run 34068609812);
+the deploy retired prod-00c5690 and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -24,9 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 10 merged as PR #147 at 00:03 UTC on 2026-09-07; main's deploy (run 34068609812) and
-environment deploy (run 34068609757) are running. Batch 11 is `claude/b11-board` (local): the
-accounts filing and the video publish `--public` fix.
+Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the video publish `--public` fix
+and the GA4 BigQuery link export script. Its branch deploy stands a ci set with the ci-only
+accounts activity.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
@@ -35,33 +35,14 @@ accounts filing and the video publish `--public` fix.
   the operator labels any alarm issue `triage` (#138 serves, closed or not). Verified when that
   run posts the guardrail's anonymised comment. **Source**: BACKLOG 30; issue #18. **Owner**:
   Operator labels, Claude Code reads the run.
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod** is on batch 10 (PR #147,
-  8d61de38): the prod client id, the secret ARN and the live filing and identity URIs in
-  `.env.prod`, and `prod` in the two filing activities' `environments`; the filing suites stay
-  ci-only. Verified when main's deploy after the merge shows the two activities on
-  submit.diyaccounting.co.uk and one filing goes through with the operator's own Companies
-  House sign-in. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code, then the operator.
-- [ ] **B10.5. The ITSA dashboard page** is on batch 10 (PR #147, 7d94dab8):
-  `web/public/hmrc/itsa/dashboard.html` links Business Details, Obligations and the quarterly
-  update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
-  that every page the catalogue names exists. Verified when main's deploy after the merge
-  shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
-- [ ] **G7. Streaming export for the GA4 property.** In the GA4 streaming agent's worktree,
-  branch `claude/ops-ga4-streaming` (Sonnet): `scripts/ga4-bigquery-link-export.js` lists and
-  patches property 523400333's BigQuery link through the Admin API with the analytics
-  service account, dry run then `--streaming true`. Verified when the link reads
-  `streamingExportEnabled: true` and the first `events_intraday_*` table appears. **Source**:
-  operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
-  needs no credentials.** `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` is on main. The app half
-  (three Lambdas, CDK, the ci-only activity and page, the behaviour suite; c07c4690) is merged
-  on batch 11 with two placeholder service modules; the core half (simulator gateway route,
-  iXBRL generator, GovTalk envelope module) is in the accounts-core agent's worktree, branch
-  `claude/ltd-accounts-core`. After the merge: the async-requests table the plan left out
-  (`putAsyncRequest` runs with no table today), the simulator-lane suite, and the public
-  validator. Verified when `npm run test:fileMicroEntityAccountsBehaviour-simulator` passes on
-  the batch and the validator accepts a generated file. **Source**: BACKLOG 34b; issue #15.
-  **Owner**: Claude Code. **Model**: Sonnet.
+  needs no credentials** is PR #148 (batch 11): iXBRL generator, GovTalk envelope and presenter
+  authentication, simulator gateway route, three Lambdas with an async-requests table, the
+  ci-only activity and page, and the behaviour suite, which passes in the simulator lane on
+  both the accept and reject paths; Companies House's public validator accepts a generated
+  file. Verified when the merge's ci deploy shows the activity on ci and the operator has
+  previewed one set of accounts there. **Source**: BACKLOG 34b; issue #15. **Owner**: Claude
+  Code, then the operator's look on ci.
 
 ## Ready: Claude Code
 
@@ -69,11 +50,12 @@ Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
-- [ ] **O20. Decide the price of the two Companies House filing activities.** They sit on the
-  free `default` bundle. `PLAN_COMPANIES_HOUSE_REST_FILING.md` Q1 lists the options: leave them
-  free (Companies House charges nothing for either filing), a new `resident-company` bundle with
-  its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
-  catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
+- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
+  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
+  `default` bundle, with the live Companies House filing client. A real filing changes a real
+  company's register, so this is the operator's own company and sign-in. Tell Claude Code how
+  it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Operator.
 
 ## Blocked: operator
 
@@ -106,12 +88,16 @@ Nothing.
 
 ## Blocked: Claude Code
 
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After B34.6a and O16:
-  submit the FRS 105 accounts to the XML Gateway test service with the test presenter
-  credentials (a GitHub environment secret), read the real acknowledgement and poll responses,
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, and record HMRC-style test data in the simulator from what the sandbox returned.
-  **Source**: BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
+  B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
+  presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
+  responses, correct the envelope and iXBRL where the sandbox's own validation differs from
+  the public schemas, and record what the sandbox returned in the simulator. With it, the
+  `resident-company` bundle: the operator decided on 2026-09-07 that the two register filings
+  stay free on `default` and limited-company work is priced when accounts filing lands, so
+  this item adds the bundle to the catalogue with accounts filing in it (a Stripe product and
+  price through `stripe-catalogue-sync`, the price the operator's). **Source**: BACKLOG 34b;
+  issue #15. **Owner**: Claude Code, price from the operator. **Model**: Sonnet. Blocked on
   O16 and B34.6a.
 
 ## Discipline

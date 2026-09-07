@@ -26,6 +26,12 @@ class CompaniesHouseStackTest {
     private static final String CLIENT_SECRET_ARN =
             "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/client_secret";
 
+    private static final String PRESENTER_ID_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/presenter_id";
+
+    private static final String PRESENTER_CODE_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/presenter_code";
+
     private static CompaniesHouseStack synthCompaniesHouseStack() {
         return synthCompaniesHouseStack("", "");
     }
@@ -36,6 +42,14 @@ class CompaniesHouseStackTest {
 
     private static CompaniesHouseStack synthCompaniesHouseStack(
             String companiesHouseApiKeyArn, String companiesHouseClientSecretArn) {
+        return synthCompaniesHouseStack(companiesHouseApiKeyArn, companiesHouseClientSecretArn, "", "");
+    }
+
+    private static CompaniesHouseStack synthCompaniesHouseStack(
+            String companiesHouseApiKeyArn,
+            String companiesHouseClientSecretArn,
+            String companiesHousePresenterIdArn,
+            String companiesHousePresenterCodeArn) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -60,6 +74,9 @@ class CompaniesHouseStackTest {
                         .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
                         .companiesHouseClientId("test-companies-house-client-id")
                         .companiesHouseClientSecretArn(companiesHouseClientSecretArn)
+                        .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
+                        .companiesHousePresenterIdArn(companiesHousePresenterIdArn)
+                        .companiesHousePresenterCodeArn(companiesHousePresenterCodeArn)
                         .build());
     }
 
@@ -92,6 +109,9 @@ class CompaniesHouseStackTest {
                         .companiesHouseIdentityBaseUri("")
                         .companiesHouseClientId("")
                         .companiesHouseClientSecretArn("")
+                        .companiesHouseXmlGatewayUri("")
+                        .companiesHousePresenterIdArn("")
+                        .companiesHousePresenterCodeArn("")
                         .build());
     }
 
@@ -106,11 +126,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTenLambdas() {
+    void stackWiresThirteenLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 10);
+        template.resourceCountIs("AWS::Lambda::Function", 13);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -121,7 +141,10 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredOfficeAddressPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties("AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
     }
@@ -218,10 +241,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTenForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllThirteenForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(10, stack.lambdaFunctionProps.size());
+        assertEquals(13, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -233,7 +256,10 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/company/{companyNumber}/registered-office-address",
                         "/api/v1/companies-house/transaction/{transactionId}/registered-office-address",
                         "/api/v1/companies-house/company/{companyNumber}/registered-email-address/eligibility",
-                        "/api/v1/companies-house/transaction/{transactionId}/registered-email-address"),
+                        "/api/v1/companies-house/transaction/{transactionId}/registered-email-address",
+                        "/api/v1/companies-house/accounts/preview",
+                        "/api/v1/companies-house/accounts",
+                        "/api/v1/companies-house/accounts/{submissionNumber}"),
                 stack.lambdaFunctionProps.stream().map(p -> p.urlPath()).toList());
     }
 
@@ -337,14 +363,14 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lookupAndFilingLambdasQueryBundlesAndAllTenLambdasPublishActivityEvents() {
+    void lookupAndFilingLambdasQueryBundlesAndAllThirteenLambdasPublishActivityEvents() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
         // Every Lambda except the token exchange queries the bundles table: the two lookup
-        // routes, the registered office address read, and the six filing routes, all gated by
-        // enforceBundles(). The token exchange has no authorizer and so no user to check a bundle
-        // entitlement against.
+        // routes, the registered office address read, the six filing routes, and the three
+        // accounts routes, all gated by enforceBundles(). The token exchange has no authorizer
+        // and so no user to check a bundle entitlement against.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -353,7 +379,7 @@ class CompaniesHouseStackTest {
                                 "Statement",
                                 Match.arrayWith(
                                         List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                9);
+                12);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -362,7 +388,7 @@ class CompaniesHouseStackTest {
                                 "Statement",
                                 Match.arrayWith(
                                         List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                10);
+                13);
     }
 
     @Test
@@ -407,7 +433,10 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredOfficeAddressPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -469,7 +498,7 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackHealthAlarmCoversAllTenLambdas() {
+    void stackHealthAlarmCoversAllThirteenLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
@@ -478,6 +507,134 @@ class CompaniesHouseStackTest {
         // level (SubmitApplicationCdkResourceTest), this test only guards that the composite
         // alarm itself exists for this stack.
         template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
+    }
+
+    @Test
+    void accountsRoutesCarryTheirDesignedPathsMethodsAndJwtOnlyAuthorizer() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPreviewPostLambdaProps.httpMethod());
+        assertEquals(
+                "/api/v1/companies-house/accounts/preview", stack.companiesHouseAccountsPreviewPostLambdaProps.urlPath());
+        assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPostLambdaProps.httpMethod());
+        assertEquals("/api/v1/companies-house/accounts", stack.companiesHouseAccountsPostLambdaProps.urlPath());
+        assertEquals(HttpMethod.GET, stack.companiesHouseAccountsGetLambdaProps.httpMethod());
+        assertEquals(
+                "/api/v1/companies-house/accounts/{submissionNumber}",
+                stack.companiesHouseAccountsGetLambdaProps.urlPath());
+
+        // None of the three carries a Companies House OAuth token, so all three sit behind the
+        // JWT authorizer alone, unlike the six OAuth filing Lambdas above.
+        for (var props : List.of(
+                stack.companiesHouseAccountsPreviewPostLambdaProps,
+                stack.companiesHouseAccountsPostLambdaProps,
+                stack.companiesHouseAccountsGetLambdaProps)) {
+            assertEquals(true, props.jwtAuthorizer(), "accounts route " + props.urlPath() + " must use the JWT authorizer");
+            assertEquals(
+                    false, props.customAuthorizer(), "accounts route " + props.urlPath() + " must not use the custom authorizer");
+        }
+    }
+
+    @Test
+    void accountsLambdasCarryTheXmlGatewayUri() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertEquals(
+                    "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway", env.get("COMPANIES_HOUSE_XMLGW_URI"));
+        }
+    }
+
+    @Test
+    void blankXmlGatewayUriLeavesTheVariableUnsetAndStillSynths() {
+        CompaniesHouseStack stack = synthCompaniesHouseStackWithBlankOAuthConfig();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertFalse(
+                    env.containsKey("COMPANIES_HOUSE_XMLGW_URI"),
+                    "COMPANIES_HOUSE_XMLGW_URI must not be set when the gateway URI is blank");
+        }
+    }
+
+    @Test
+    void submitAndPollLambdasReadBothPresenterSecretsAndPreviewCannot() {
+        CompaniesHouseStack stack =
+                synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
+        Template template = Template.fromStack(stack);
+
+        // The wildcard suffix Secrets Manager requires, granted to exactly the submit and poll
+        // Lambda roles for each of the two presenter secrets.
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        PRESENTER_ID_ARN + "-*")))))))),
+                2);
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        PRESENTER_CODE_ARN + "-*")))))))),
+                2);
+    }
+
+    @Test
+    void blankPresenterSecretArnsGrantNothingAndStillSynth() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        Match.stringLikeRegexp(".*presenter_id.*"))))))))),
+                0);
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        Match.stringLikeRegexp(".*presenter_code.*"))))))))),
+                0);
     }
 
     @SuppressWarnings("unchecked")
