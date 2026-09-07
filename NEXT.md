@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4463ec1 (main's deploy of the PR #147 merge, run 34068609812);
-the deploy retired prod-00c5690 and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-c980ac9 (main's deploy of the PR #150 merge, run 34099969706);
+the deploy retired prod-2324fdd and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -25,9 +25,8 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 PRs #148 (the accounts filing), #149 (the books Cognito client) and #150 (the books storage
-API, fixed by this session) are merged; the #150 merge's prod deploy (run 34099969706) is
-queued and carries the first BooksStack on prod. No batch branch is open; the next starts from
-main as `claude/b12-board`.
+API) are merged and deployed; prod carries the first BooksStack. No batch branch is open; the
+next starts from main as `claude/b12-board`.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
