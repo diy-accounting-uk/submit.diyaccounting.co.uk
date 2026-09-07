@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-00c5690 (main's deploy of the PR #146 merge, run 34062870619);
-the deploy is retiring prod-cfb43ee and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
+**Prod runs deployment prod-4463ec1 (main's deploy of the PR #147 merge, run 34068609812);
+the deploy retired prod-00c5690 and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
 left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
@@ -24,9 +24,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 10 merged as PR #147 at 00:03 UTC on 2026-09-07; main's prod deploy (run 34068609812) is
-running. Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the video publish
-`--public` fix and the GA4 BigQuery link export script.
+Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the video publish `--public` fix
+and the GA4 BigQuery link export script. Its branch deploy stands a ci set with the ci-only
+accounts activity.
 
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
@@ -35,17 +35,6 @@ running. Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the vide
   the operator labels any alarm issue `triage` (#138 serves, closed or not). Verified when that
   run posts the guardrail's anonymised comment. **Source**: BACKLOG 30; issue #18. **Owner**:
   Operator labels, Claude Code reads the run.
-- [ ] **B34.5. Lift the gate on the Companies House filings for prod** is on batch 10 (PR #147,
-  8d61de38): the prod client id, the secret ARN and the live filing and identity URIs in
-  `.env.prod`, and `prod` in the two filing activities' `environments`; the filing suites stay
-  ci-only. Verified when main's deploy after the merge shows the two activities on
-  submit.diyaccounting.co.uk and one filing goes through with the operator's own Companies
-  House sign-in. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code, then the operator.
-- [ ] **B10.5. The ITSA dashboard page** is on batch 10 (PR #147, 7d94dab8):
-  `web/public/hmrc/itsa/dashboard.html` links Business Details, Obligations and the quarterly
-  update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
-  that every page the catalogue names exists. Verified when main's deploy after the merge
-  shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
 - [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
   needs no credentials** is PR #148 (batch 11): iXBRL generator, GovTalk envelope and presenter
   authentication, simulator gateway route, three Lambdas with an async-requests table, the
@@ -60,6 +49,13 @@ running. Batch 11 is PR #148 (`claude/b11-board`): the accounts filing, the vide
 Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
+
+- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
+  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
+  `default` bundle, with the live Companies House filing client. A real filing changes a real
+  company's register, so this is the operator's own company and sign-in. Tell Claude Code how
+  it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
+  **Owner**: Operator.
 
 ## Blocked: operator
 
