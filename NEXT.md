@@ -14,8 +14,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c6e18fd (the 04:11 UTC scheduled deploy of main, run 34105362721,
-which ran at 09:19). prod-c980ac9 was named to `destroy-prod.yml` by the operator at 2026-09-07 evening; B53 holds
-the decision that stops it recurring.** A main deploy
+which ran at 09:19). The operator's `destroy-prod.yml` run of 2026-09-07 21:31 UTC removed prod-c980ac9; no spare
+stands. B53 holds the decision that stops it recurring.** A main deploy
 retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
 $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -33,8 +33,9 @@ next starts from main as `claude/b12-board`.
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
   00:04 UTC on 2026-09-07 (run 34068635237) stopped at the day guard: more than three triage
-  runs executed in the previous 24 hours. The guard clears after 12:01 UTC on 2026-09-07; then
-  the operator labels any alarm issue `triage` (#138 serves, closed or not). Verified when that
+  runs executed in the previous 24 hours. The guard cleared at 12:01 UTC on 2026-09-07 and no
+  triage run has fired since; the operator labels any alarm issue `triage` (#138 serves,
+  closed or not). Verified when that
   run posts the guardrail's anonymised comment. **Source**: BACKLOG 30; issue #18. **Owner**:
   Operator labels, Claude Code reads the run.
 ## Ready: Claude Code
@@ -46,8 +47,11 @@ next starts from main as `claude/b12-board`.
   `prod-*` plus the last-known-good pointer, which the run's own earlier job had already moved
   to the new set, so the replaced set is never considered (run 34105362721: "No prod stacks
   found for destruction"). The operator ran `gh workflow run destroy-prod.yml -f
-  deployment-name=prod-c980ac9` on 2026-09-07; confirm the eight `prod-c980ac9-app-*` stacks
-  are gone. The second step is yours to decide: fix the sweep to consider every deployed prod
+  deployment-name=prod-c980ac9` on 2026-09-07 and the eight stacks are gone. The ci sweep has
+  the same shape of gap: `destroy-ci.yml`'s 14:23 UTC sweep left `ci-claudd9a1-app-BooksStack`
+  standing alone (created 07:37 UTC, self-destruct delay one hour), so a set reduced to one
+  stack is not swept either; name it to `destroy-ci.yml` and make the sweep count any
+  `*-app-*` stack. The second step is yours to decide: fix the sweep to consider every deployed prod
   set older than eight hours that is not the pointer, or drop the daily schedule, which
   deploys a fresh prod set every day whether or not anything changed. **Source**: this
   session's read of the prod account, 2026-09-07. **Owner**: Operator decides; Claude Code
