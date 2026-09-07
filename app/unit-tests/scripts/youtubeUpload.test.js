@@ -25,6 +25,8 @@ import {
   fetchOwnChannelTitle,
   uploadVideo,
   uploadCaption,
+  selectUploadedVideos,
+  setVideoPrivacy,
 } from "../../../scripts/youtube-upload.js";
 
 function makeTempDir() {
@@ -374,5 +376,39 @@ describe("uploadCaption", () => {
     expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
     expect(options.body.toString()).toContain("yt-video-id");
     expect(options.body.toString()).toContain("WEBVTT");
+  });
+});
+
+describe("selectUploadedVideos", () => {
+  test("keeps only the publishable entries that already have a video id", () => {
+    const list = {
+      videos: [
+        { id: "a", publish: true, videoId: "yt-a" },
+        { id: "b", publish: true, videoId: null },
+        { id: "c", publish: false, videoId: "yt-c" },
+      ],
+    };
+    expect(selectUploadedVideos(list).map((entry) => entry.id)).toEqual(["a"]);
+  });
+});
+
+describe("setVideoPrivacy", () => {
+  test("puts the new privacy status on the video and returns what YouTube recorded", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: { privacyStatus: "public" } }) });
+
+    const status = await setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+
+    expect(status).toBe("public");
+    const [url, options] = fetchImpl.mock.calls[0];
+    expect(url).toContain("/videos?part=status");
+    expect(options.method).toBe("PUT");
+    expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
+    expect(JSON.parse(options.body)).toEqual({ id: "yt-a", status: { privacyStatus: "public" } });
+  });
+
+  test("throws with YouTube's answer when the update is refused", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "forbidden" });
+
+    await expect(setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow("403 forbidden");
   });
 });
