@@ -366,7 +366,7 @@ Each step is one commit with its own acceptance check.
 | 8 ✅ | The authoriser and the routes | `AbstractApiLambdaProps.java`, `ApiStack.java`, its test, `infra/test/.../SubmitApplicationCdkResourceTest.java` (route count) — landed in one commit with step 7: `booksJwtAuthorizer()`/`optionsPreflightRoute()` on `AbstractApiLambdaProps` are inert until `ApiStack` consumes them, so there's no compiling, testable midpoint between the two | synth shows a second JWT authoriser on the books client id and an unauthenticated OPTIONS route per books path |
 | 9 ✅ | CloudFront | `EdgeStack.java`; no standalone `EdgeStackTest.java` exists, so its test is a new assertion in `infra/test/.../SubmitApplicationCdkResourceTest.java`, which already synths `submitApplication.edgeStack` | synth shows an `/api/v1/books/*` behaviour with a policy carrying no CORS override |
 | 10 ✅ | The system test | `app/system-tests/booksStorage.system.test.js` | `npm test` green |
-| 11 | The workflows | `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | the yaml lints and `deploy-api` waits on `deploy-books` |
+| 11 ✅ | The workflows | `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | the yaml lints and `deploy-api` waits on `deploy-books` |
 | 12 | The behaviour probe | `behaviour-tests/books.behaviour.test.js`, `playwright.config.js`, `package.json` | passes against ci after the deploy |
 
 ## 9. Open questions for the operator
