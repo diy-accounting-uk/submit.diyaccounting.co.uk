@@ -96,6 +96,7 @@ public class SubmitSharedNames {
     public String activityBusName;
     public String subscriptionsTableName;
     public String securityStateTableName;
+    public String booksBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
     public String distributionAccessLogGroupName;
@@ -597,6 +598,45 @@ public class SubmitSharedNames {
 
     public String billingStackId;
 
+    // Books Lambda names
+    public String booksStackId;
+
+    public String booksListGetIngestLambdaHandler;
+    public String booksListGetIngestLambdaFunctionName;
+    public String booksListGetIngestLambdaArn;
+    public String booksListGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod booksListGetLambdaHttpMethod;
+    public String booksListGetLambdaUrlPath;
+    public boolean booksListGetLambdaJwtAuthorizer;
+    public boolean booksListGetLambdaCustomAuthorizer;
+
+    public String booksVersionGetIngestLambdaHandler;
+    public String booksVersionGetIngestLambdaFunctionName;
+    public String booksVersionGetIngestLambdaArn;
+    public String booksVersionGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod booksVersionGetLambdaHttpMethod;
+    public String booksVersionGetLambdaUrlPath;
+    public boolean booksVersionGetLambdaJwtAuthorizer;
+    public boolean booksVersionGetLambdaCustomAuthorizer;
+
+    public String booksPutIngestLambdaHandler;
+    public String booksPutIngestLambdaFunctionName;
+    public String booksPutIngestLambdaArn;
+    public String booksPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod booksPutLambdaHttpMethod;
+    public String booksPutLambdaUrlPath;
+    public boolean booksPutLambdaJwtAuthorizer;
+    public boolean booksPutLambdaCustomAuthorizer;
+
+    public String booksDeleteIngestLambdaHandler;
+    public String booksDeleteIngestLambdaFunctionName;
+    public String booksDeleteIngestLambdaArn;
+    public String booksDeleteIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod booksDeleteLambdaHttpMethod;
+    public String booksDeleteLambdaUrlPath;
+    public boolean booksDeleteLambdaJwtAuthorizer;
+    public boolean booksDeleteLambdaCustomAuthorizer;
+
     // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
     public String alarmToGithubIssueLambdaHandler;
     public String alarmToGithubIssueLambdaFunctionName;
@@ -774,6 +814,7 @@ public class SubmitSharedNames {
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
+        this.booksBucketName = "%s-books-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);
@@ -794,6 +835,7 @@ public class SubmitSharedNames {
         this.companiesHouseStackId = "%s-app-CompaniesHouseStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.billingStackId = "%s-app-BillingStack".formatted(props.deploymentName);
+        this.booksStackId = "%s-app-BooksStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
@@ -2023,6 +2065,98 @@ public class SubmitSharedNames {
                 "Stripe webhook",
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
+
+        // Books List GET Lambda (books JWT auth, scoped to the books app client)
+        this.booksListGetLambdaHttpMethod = HttpMethod.GET;
+        this.booksListGetLambdaUrlPath = "/api/v1/books";
+        this.booksListGetLambdaJwtAuthorizer = false;
+        this.booksListGetLambdaCustomAuthorizer = false;
+        var booksListGetLambdaHandlerName = "booksListGet.ingestHandler";
+        var booksListGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(booksListGetLambdaHandlerName);
+        this.booksListGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, booksListGetLambdaHandlerDashed);
+        this.booksListGetIngestLambdaHandler =
+                "%s/books/%s".formatted(appLambdaHandlerPrefix, booksListGetLambdaHandlerName);
+        this.booksListGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, booksListGetLambdaHandlerDashed);
+        this.booksListGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.booksListGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.booksListGetLambdaHttpMethod,
+                this.booksListGetLambdaUrlPath,
+                "List the caller's books",
+                "Lists every stored book's metadata for the authenticated books user",
+                "listBooks"));
+
+        // Books Version GET Lambda (books JWT auth)
+        this.booksVersionGetLambdaHttpMethod = HttpMethod.GET;
+        this.booksVersionGetLambdaUrlPath = "/api/v1/books/{bookId}/versions/{version}";
+        this.booksVersionGetLambdaJwtAuthorizer = false;
+        this.booksVersionGetLambdaCustomAuthorizer = false;
+        var booksVersionGetLambdaHandlerName = "booksVersionGet.ingestHandler";
+        var booksVersionGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(booksVersionGetLambdaHandlerName);
+        this.booksVersionGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, booksVersionGetLambdaHandlerDashed);
+        this.booksVersionGetIngestLambdaHandler =
+                "%s/books/%s".formatted(appLambdaHandlerPrefix, booksVersionGetLambdaHandlerName);
+        this.booksVersionGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, booksVersionGetLambdaHandlerDashed);
+        this.booksVersionGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.booksVersionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.booksVersionGetLambdaHttpMethod,
+                this.booksVersionGetLambdaUrlPath,
+                "Read a book version",
+                "Reads one version of a stored book, or its latest version, for the authenticated books user",
+                "getBookVersion",
+                List.of(
+                        new ApiParameter("bookId", "path", true, "The book's id"),
+                        new ApiParameter("version", "path", true, "\"latest\" or a positive version number"))));
+
+        // Books PUT Lambda (books JWT auth)
+        this.booksPutLambdaHttpMethod = HttpMethod.PUT;
+        this.booksPutLambdaUrlPath = "/api/v1/books/{bookId}";
+        this.booksPutLambdaJwtAuthorizer = false;
+        this.booksPutLambdaCustomAuthorizer = false;
+        var booksPutLambdaHandlerName = "booksPut.ingestHandler";
+        var booksPutLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(booksPutLambdaHandlerName);
+        this.booksPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, booksPutLambdaHandlerDashed);
+        this.booksPutIngestLambdaHandler = "%s/books/%s".formatted(appLambdaHandlerPrefix, booksPutLambdaHandlerName);
+        this.booksPutIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, booksPutLambdaHandlerDashed);
+        this.booksPutIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.booksPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.booksPutLambdaHttpMethod,
+                this.booksPutLambdaUrlPath,
+                "Store a book version",
+                "Writes the next version of a book with optimistic concurrency via If-Match",
+                "putBook",
+                List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
+
+        // Books DELETE Lambda (books JWT auth)
+        this.booksDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.booksDeleteLambdaUrlPath = "/api/v1/books/{bookId}";
+        this.booksDeleteLambdaJwtAuthorizer = false;
+        this.booksDeleteLambdaCustomAuthorizer = false;
+        var booksDeleteLambdaHandlerName = "booksDelete.ingestHandler";
+        var booksDeleteLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(booksDeleteLambdaHandlerName);
+        this.booksDeleteIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, booksDeleteLambdaHandlerDashed);
+        this.booksDeleteIngestLambdaHandler =
+                "%s/books/%s".formatted(appLambdaHandlerPrefix, booksDeleteLambdaHandlerName);
+        this.booksDeleteIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, booksDeleteLambdaHandlerDashed);
+        this.booksDeleteIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.booksDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.booksDeleteLambdaHttpMethod,
+                this.booksDeleteLambdaUrlPath,
+                "Delete a book",
+                "Deletes a book and every stored version for the authenticated books user",
+                "deleteBook",
+                List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";
