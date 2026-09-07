@@ -47,8 +47,8 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   to submission, conversion to paid, running cost) from `PLAN_ONE_STOP_DASHBOARD.md`. One
   deliberate duplicate per quantity stays where two sources measure it. **Source**: BACKLOG
   52; `PLAN_ONE_STOP_DASHBOARD.md` row B52a. **Owner**: Claude Code. **Model**: Sonnet.
-  Related open work the plan's panels depend on, each tagged with its panel: B30o and
-  BACKLOG 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
+  Related open work the plan's panels depend on, each tagged with its panel: BACKLOG 30
+  and 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
   as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 was closed by the operator on 2026-09-07 (Telegram and GitHub issues are
