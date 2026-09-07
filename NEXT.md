@@ -223,7 +223,25 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
 
+- [ ] **B54. The `resident-books` bundle at 99p a month.** `BooksStack` already names the bundle
+  the storage API's put route checks (`BOOKS_BUNDLE_ID=resident-books`), but no such bundle exists
+  in `web/public/submit.catalogue.toml`, so every DIYA-GL subscriber looks unentitled. Add it
+  shaped like `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`,
+  `month`) carrying the DIYA-GL storage put as its activity, listed in every environment; then
+  `stripe-catalogue-sync`: the product and price in test, then live, and the ids onto `.env.ci`,
+  `.env.prod` and the GitHub environments. **Source**: spreadsheets board LP-21;
+  `PLAN_DIYA_GL_STORAGE.md` section 6. **Owner**: Claude Code. **Model**: Sonnet.
 ## Blocked on a machine task
+
+- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** `POST /api/v1/billing/checkout` and
+  the portal route sit behind the main Cognito authoriser, whose audience is the Submit app
+  client, so a token from the DIYA-GL client (`BooksCognitoAuthorizer`'s audience) is refused.
+  Accept the DIYA-GL audience on those two routes, or add DIYA-GL-scoped twins under
+  `BooksCognitoAuthorizer`; checkout takes the `resident-books` bundle; the proof is a behaviour
+  case on ci that subscribes with a DIYA-GL token and then puts a book. The spreadsheets side
+  (the subscribe button and the portal link in the account panel) is that board's LP-18 and
+  waits on this. **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 9.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B54.
 
 - [ ] **O26. Decide the ITSA client approach and the token cost per submission.** From
   B10.6's comparison, pick generated or hand-rolled; and set whether a quarterly update costs
