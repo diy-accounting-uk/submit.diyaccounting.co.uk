@@ -93,6 +93,20 @@ main as `claude/b12-board`.
   values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 ## Blocked: Claude Code
 
+- [ ] **D2. prod-env-IdentityStack drift: the Hosted UI user-pool client is MODIFIED.** The
+  hand-dispatched `stack-drift` run 34103728614 (2026-09-07 09:03 UTC) found every other prod
+  stack in sync or benign and `prodenvUserPoolClient` (AWS::Cognito::UserPoolClient) modified;
+  the log does not carry the property. Read it with
+  `aws --profile submit-prod cloudformation describe-stack-resource-drifts --stack-name
+  prod-env-IdentityStack --query "StackResourceDrifts[?StackResourceDriftStatus=='MODIFIED'].PropertyDifferences"`.
+  If it is `SupportedIdentityProviders` carrying `COGNITO`, a probe or video run turned native
+  auth on and its cleanup did not run: the fix is `npm run test:disableCognitoNative -- prod`
+  (a prod Cognito write, the operator's yes first) and making the workflows' disable step run
+  even when the tests fail (`skip-native-auth-disable` is only for debugging). If it is
+  anything else, say what and propose the fix. Issue #43 stays open until the next
+  scheduled drift run is green. **Source**: issue #43; stack-drift run of 2026-09-07.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on `aws sso login --sso-session
+  diyaccounting`.
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
   B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
   presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
