@@ -1,8 +1,8 @@
 # Publishing the demo videos
 
 `videos/publish.json` holds the title, description, tags and caption file for each demo
-video, read by `scripts/youtube-upload.js`. Three videos are `publish: true` and ready to
-go: `view-obligations`, `submit-return`, `view-return`. `itsa-business-details` is
+video, read by `scripts/youtube-upload.js`. Three videos are `publish: true` and public on
+the channel: `view-obligations`, `submit-return`, `view-return`. `itsa-business-details` is
 `publish: false` — it only exists as a ci recording, not a prod one, so it stays off the
 channel until the ITSA activity leaves the environments gate.
 
