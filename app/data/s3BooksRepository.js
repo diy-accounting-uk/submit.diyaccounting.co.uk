@@ -13,6 +13,19 @@ const logger = createLogger({ source: "app/data/s3BooksRepository.js" });
 
 let __s3Client = null;
 
+const BOOK_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+/**
+ * True when the given bookId is a valid v4 UUID. Rejecting anything else closes path traversal
+ * through the S3 key, since a bookId becomes a key segment directly.
+ *
+ * @param {string} bookId
+ * @returns {boolean}
+ */
+export function isValidBookId(bookId) {
+  return typeof bookId === "string" && BOOK_ID_PATTERN.test(bookId);
+}
+
 function getTableName() {
   const bucketName = process.env.BOOKS_BUCKET_NAME;
   if (!bucketName) {

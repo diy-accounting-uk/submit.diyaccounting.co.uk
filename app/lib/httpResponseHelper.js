@@ -94,6 +94,26 @@ export function http404NotFoundResponse({ request, headers, message, error }) {
   });
 }
 
+export function http412PreconditionFailedResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 412,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
+export function http413PayloadTooLargeResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 413,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http429TooManyRequestsResponse({ request, headers, message, retryAfterSeconds }) {
   const merged = { ...(headers || {}) };
   if (retryAfterSeconds !== undefined && retryAfterSeconds !== null) merged["Retry-After"] = String(retryAfterSeconds);
@@ -145,8 +165,9 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
     merged["x-correlationid"] = context.get("correlationId") || merged["x-request-id"];
   }
 
-  // Ensure client can read correlation and polling headers
-  merged["Access-Control-Expose-Headers"] = "x-request-id,x-correlationid,Location,Retry-After";
+  // Ensure client can read correlation and polling headers, plus the ETag the books routes use
+  // for optimistic concurrency.
+  merged["Access-Control-Expose-Headers"] = "x-request-id,x-correlationid,Location,Retry-After,ETag";
 
   const response = {
     statusCode: statusCode,

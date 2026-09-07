@@ -359,7 +359,7 @@ Each step is one commit with its own acceptance check.
 | 1 ✅ | The bucket and its name | `SubmitSharedNames.java`, `DataStack.java`, `BackupStack.java`, `infra/test/.../stacks/DataStackTest.java`, `infra/test/.../BackupStackCdkResourceTest.java` | `./mvnw clean verify` synthesises a versioned, encrypted, DESTROY bucket and the backup selection names it |
 | 2 ✅ | The zip reader and the store | `app/lib/zipMembers.js` and its test, a fixture zip under `fixtures/books/`, `app/data/s3BooksRepository.js` | the fixture's five members are read; truncated bytes throw |
 | 3 ✅ | The entitlement stub | `app/services/booksEntitlement.js`, its test | both enforced and unenforced paths pass |
-| 4 | The two read handlers | `booksListGet.js`, `booksVersionGet.js`, their tests, the two new response helpers | `npm run test:app-unit` green, every read case in section 6.5 |
+| 4 ✅ | The two read handlers | `booksListGet.js`, `booksVersionGet.js`, their tests, the two new response helpers, `app/lib/booksCors.js` (a shared CORS/preflight helper the plan didn't name but all four handlers need identically) | `npm run test:app-unit` green, every read case in section 6.5 |
 | 5 | The write handlers | `booksPut.js`, `booksDelete.js`, their tests | every write case in section 6.5, including 412, 413, 422, 403 and the cross-user 404 |
 | 6 | The route names | `SubmitSharedNames.java` — eight fields and a `PublishedLambda` per route | `./mvnw clean verify` regenerates `web/public/docs/api/openapi.json` with the four paths |
 | 7 | The stack | `BooksStack.java`, `SubmitApplication.java`, `infra/test/.../stacks/BooksStackTest.java` | synth shows four functions with the env vars and the prefix-scoped IAM of section 5.2 |
