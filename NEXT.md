@@ -24,20 +24,17 @@ workspace root); blocked operator items; blocked Claude Code items.
 
 ## In flight
 
-Batch 10 is PR #147 (`claude/b10-board`: the triage resolver, the prod filing gate, the ITSA
-dashboard, the catalogue-paths test and the YouTube upload on the project's own OAuth client);
-its branch deploy stood ci-claud7c57 at 23:05 UTC. Batch 11 is `claude/b11-board` (local), for
-the accounts filing.
+Batch 10 merged as PR #147 at 00:03 UTC on 2026-09-07; main's deploy (run 34068609812) and
+environment deploy (run 34068609757) are running. Batch 11 is `claude/b11-board` (local): the
+accounts filing and the video publish `--public` fix.
 
-- [ ] **B30o. Prove the triage chain on prod.** Relabelling #138 `triage` at 22:03 UTC on
-  2026-09-06 (run 34062903265) ran the fixed job as far as the evidence resolver, which stopped
-  it with "No alarm named prod-0967fab-app-account-stack-health was found", because the set was
-  retired and because the script never asked CloudWatch for composite alarms, so every
-  `-stack-health` alarm looked missing. PR #147 fixes both: a missing alarm becomes evidence
-  (`alarmFound: false`, the deployment's log-group prefix, the window, a note) and the triage
-  runs on. After the merge, the operator labels the next open alarm issue `triage` (any set, live
-  or retired). Verified when that run posts the guardrail's anonymised comment. **Source**:
-  BACKLOG 30; issue #18. **Owner**: Claude Code, then the operator labels.
+- [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
+  alarm is evidence; composite alarms are listed). Relabelling the closed #138 `triage` at
+  00:04 UTC on 2026-09-07 (run 34068635237) stopped at the day guard: more than three triage
+  runs executed in the previous 24 hours. The guard clears after 12:01 UTC on 2026-09-07; then
+  the operator labels any alarm issue `triage` (#138 serves, closed or not). Verified when that
+  run posts the guardrail's anonymised comment. **Source**: BACKLOG 30; issue #18. **Owner**:
+  Operator labels, Claude Code reads the run.
 - [ ] **B34.5. Lift the gate on the Companies House filings for prod** is on batch 10 (PR #147,
   8d61de38): the prod client id, the secret ARN and the live filing and identity URIs in
   `.env.prod`, and `prod` in the two filing activities' `environments`; the filing suites stay
@@ -49,6 +46,12 @@ the accounts filing.
   update, and the Self Assessment activity opens it first; six browser tests, plus a unit test
   that every page the catalogue names exists. Verified when main's deploy after the merge
   shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+- [ ] **G7. Streaming export for the GA4 property.** In the GA4 streaming agent's worktree,
+  branch `claude/ops-ga4-streaming` (Sonnet): `scripts/ga4-bigquery-link-export.js` lists and
+  patches property 523400333's BigQuery link through the Admin API with the analytics
+  service account, dry run then `--streaming true`. Verified when the link reads
+  `streamingExportEnabled: true` and the first `events_intraday_*` table appears. **Source**:
+  operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
   needs no credentials.** `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` is on main. The app half
   (three Lambdas, CDK, the ci-only activity and page, the behaviour suite; c07c4690) is merged
@@ -62,12 +65,7 @@ the accounts filing.
 
 ## Ready: Claude Code
 
-- [ ] **G7. Streaming export for the GA4 property.** The property has daily export only
-  (`events_YYYYMMDD`, no intraday table), so an event shows in BigQuery the next day. Turn on
-  streaming export on the BigQuery link with `scripts/ga4-property-sync.js` (the service
-  account holds admin; dry run first, then apply), so events land in `events_intraday_*` within
-  minutes. **Source**: operator, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
-
+Nothing.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
@@ -76,15 +74,6 @@ the accounts filing.
   free (Companies House charges nothing for either filing), a new `resident-company` bundle with
   its own Stripe product, or fold them into `resident-pro`. Tell Claude Code the answer; the
   catalogue and Stripe changes follow. **Source**: BACKLOG 34; issue #15. **Owner**: Operator.
-- [ ] **B17a.5. Publish the videos.** The three VAT recordings are on
-  https://www.youtube.com/@DIYAccountingSubmit as unlisted since 2026-09-07 00:45 UTC:
-  view-obligations MTwm38-r5GU, submit-return jo7LWb3ZpwY, view-return 8qWSW59oxAI, with
-  captions; the ids are in `videos/publish.json` (batch 10). The OAuth client and the channel
-  owner's refresh token are in Secrets Manager (`prod/submit/youtube/oauth_client`,
-  `prod/submit/youtube/refresh_token`), so no later run prompts. Remaining: the operator
-  watches the three, then Claude Code runs `npm run video:publish -- --public`. The ITSA
-  recording stays `publish: false` until the activity leaves the gate. **Source**: BACKLOG 17a.
-  **Owner**: Operator to watch, then Claude Code.
 
 ## Blocked: operator
 
