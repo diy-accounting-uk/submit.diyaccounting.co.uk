@@ -1,3 +1,5 @@
+> Archived 2026-09-07. Superseded by `PLAN_SUBMISSION_MCP.md`, which keeps the thin-client idea over the REST API and replaces the paste-a-code sign-in with OAuth against the Cognito pool.
+
 # Plan: MCP Server for DIY Accounting Submit
 
 ## Source Documents

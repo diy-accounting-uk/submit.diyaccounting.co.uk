@@ -45,7 +45,7 @@ This plan does not duplicate it; the submission MCP calls the same library funct
 the filing tools.
 
 **On the Submit side there is no MCP code.** Two designs exist in `_developers/` and disagree
-on authentication and hosting: `_developers/backlog/PLAN_MCP_SERVER.md` (a thin HTTP client
+on authentication and hosting: `_developers/archive/PLAN_MCP_SERVER.md` (a thin HTTP client
 over the deployed REST API, sign-in by pasting a code from a callback page, hosting deferred)
 and `_developers/archive/PLAN_ISSUE_648_mcp_server.md` (an OAuth device-code flow with a
 personal API token table). `web/public/mcp.html` is a coming-soon page. Neither design is on

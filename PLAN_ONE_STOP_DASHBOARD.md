@@ -1,9 +1,10 @@
 # PLAN: The one-stop dashboard
 
 Status: open, drafted 2026-09-07, reshaped the same evening around goals, levers and
-experiments. No code written. Backlog row 52; NEXT.md B52a is the first row.
+experiments, with the security goal and the related-work sweep added. No code written.
+Backlog row 52; NEXT.md B52a is the first row.
 
-One page the operator opens to see how DIY Accounting is doing against four goals, which levers
+One page the operator opens to see how DIY Accounting is doing against five goals, which levers
 are being pulled, and how each running experiment is moving its metric. The same data, exported
 raw and indexed in this workspace, is what Claude Code and Cowork read to propose the next
 experiment. The customer journeys it measures cross three sites: the apex and holding page
@@ -72,7 +73,7 @@ GA4-versus-Stripe-versus-events reconciliation.
 
 ## Goals, observations and levers
 
-The page is organised by the four goals, not by data source. Each goal has one headline
+The page is organised by the five goals, not by data source. Each goal has one headline
 observation, its target, the supporting observations that explain it, and the levers the
 operator can pull, each with the metric that shows the lever moved. Experiments sit under the
 goal they serve.
@@ -83,8 +84,9 @@ goal they serve.
 | Conversion to submission | Signed-in users who complete a submission within 30 days, by activity | Set from the first month's baseline, then raise | Funnel: visit, sign-in, HMRC or Companies House authorisation, first obligation view, first submission; drop-off per step; HMRC failures by class; synthetic and bot traffic excluded | Landing copy and demo videos (B17); the CSV and books import (row 16, `PLAN_SUBMISSION_MCP.md`); activity gating and free-bundle scope; email nudges after sign-in without a submission |
 | Conversion to paid | Paying customers as a share of submitters; revenue per month by product, subscriptions and donations | Set from baseline | Checkout starts and completions; renewals and churn; passes issued and redeemed; donations by channel; downloads by product on spreadsheets as the top of the funnel | Price and bundle catalogue (`stripe-catalogue-sync`); the free-bundle boundary; the donate prompt on the books pages; the resident-company bundle when accounts filing lands |
 | Low running cost | Monthly AWS and Google spend, and cost per submission | Steady-state target from the cost plan, cost per submission falling | Cost by service and by environment (FOCUS columns); spare deployment sets standing; canary and alarm spend; Lambda duration and memory | Deployment lifecycle (`destroy-*` workflows); alarm and canary cuts (B30o); scheduled ingestion cadence; log retention; reserved capacity |
+| Security | Days since the last unhandled finding above medium, across Security Hub, GuardDuty, CodeQL, Dependabot and secret scanning | Zero open above medium; every finding triaged within a week; the 72-hour breach clock never starts | Vulnerability and lifecycle calendar; global exploits matched to our stack; intrusion signals; rate-limit and WAF blocks; concerning traffic; secrets and access age; backup and restore proof | Dependency updates and runtime upgrades; WAF rules and thresholds; Security Hub standards and AWS Config; alarm coverage of the detection stacks; the pen test (row 27a); backups outside the account (issue #11) |
 
-The company P&L and balance sheet sit above the four goals as the outcome they serve.
+The company P&L and balance sheet sit above the five goals as the outcome they serve.
 
 **Experiments.** An experiment is a row in `experiments.toml` at this repo's root: id, goal,
 hypothesis, lever, the metric watched, start, end, the deployment or catalogue change that
@@ -140,13 +142,14 @@ experiment annotations and the deep links. Where a live figure helps (today's pr
 the current alarm list), the page reads it through the existing API with the operator's token,
 so the nightly snapshot and the live value sit side by side.
 
-**Looker Studio over BigQuery was the alternative and is not chosen.** It renders the GA4 half
-with no code and with Google's own funnel and attribution widgets, which is real value for the
-two conversion goals. It cannot show Stripe, alarms, cost, deployments, experiments or the
-accounts unless each is copied into BigQuery too, which doubles the pipeline, and it lives in a
-Google console with its own sign-in. The choice can be revisited if the GA4 panels prove
-awkward to draw by hand; the BigQuery export is on either way, and a Looker report over it can
-be added beside the page at any time without changing the plan.
+**GA4 stays in BigQuery; everything else is rolled by hand on the lake.** The operator's
+decision of 2026-09-07. The BigQuery export is the source for every visitor, funnel, download
+and source panel: scheduled queries in the `diyaccounting-ga4` project write one daily
+aggregate table per panel, and the nightly job copies those aggregates into the lake beside
+the Athena views, so the page and the raw export read one place. The Data API pull in
+`ga4ReportPull.js` stays only until each of its consumers has a BigQuery-fed replacement,
+then goes. Looker Studio is not used; the GA4 panels are drawn by the same page code as the
+rest.
 
 ## Raw data for indexing
 
@@ -159,6 +162,45 @@ tree is added to `index/corpus.toml` as its own source, the way `../PLAN_FINANCE
 adds `staging`. The pull runs from the operator's SSO session, read-only, and `reindex`
 follows it. The FOCUS cost export and the DORA rows land in the same tree. Nothing under
 `analytics/` is committed to a repository.
+
+## The security dashboard
+
+A fifth goal with its own panels on the same page, read from the prod account on
+2026-09-07.
+
+**What exists.** GuardDuty is on with no findings in its statistics. Security Hub is on with
+the CIS AWS Foundations Benchmark 1.2.0 and the AWS Foundational Security Best Practices
+subscribed, both `INCOMPLETE` because the account has no AWS Config recorder; its one
+critical finding says exactly that, beside one medium and fourteen low. CloudTrail runs as a
+single-region trail. `EdgeStack` carries a WAF with the managed rule groups and a rate rule
+(2,000 requests per five minutes per IP) with an alarm on it. `SecurityDetectionStack` alarms
+on DynamoDB data-event patterns (scan and data theft, issues #9 and #10, closed 2026-09-05)
+and `ScanDetectionStack` alarms on one IP raising 404s at rate. On GitHub: CodeQL has 44 open
+high alerts, 33 of them `js/clear-text-logging`; Dependabot has none open and 85 fixed;
+secret scanning has none. Lambda runs Node 22 and 24; the four canaries run
+`syn-nodejs-puppeteer-11.0` on Node 20. The ACM certificate runs to 2027-02-06; the local
+development certificate is backlog row 48 (due November 2026). Every environment deploy
+rewrites every secret in Secrets Manager, so their change dates carry no rotation age; a
+rotation record has to be kept separately.
+
+**Panels.**
+
+| Panel | Shows | Source | Gap |
+|---|---|---|---|
+| Vulnerabilities | Open CodeQL, Dependabot and secret-scanning alerts by severity and age; Security Hub findings by severity; GuardDuty findings | GitHub API nightly into the lake; Security Hub and GuardDuty findings through EventBridge into the lake | An AWS Config recorder so the standards complete; the CIS benchmark moved from 1.2.0 to 5.0; a nightly GitHub alerts pull |
+| Support lifecycle | A calendar: Node LTS and Lambda runtime deprecations, the canary runtime, Java and CDK majors, Playwright, the base image digest age, certificate expiries, the ICO registration renewal, Stripe API version | A `lifecycle.toml` in the repo with each item's end date and the source URL, checked nightly against the AWS deprecation lists and endoflife.date | The file and the check |
+| Global stability and exploits | CISA Known Exploited Vulnerabilities matched against the lockfiles and the base image SBOM; AWS Health events for the two accounts; HMRC and Companies House API status; GitHub and npm status | KEV feed nightly; AWS Health API; the upstream status pages | An SBOM from the build (`npm sbom`), the KEV match, the Health pull |
+| Intrusion signals | GuardDuty by type; CloudTrail: console sign-ins, root use, IAM and security-group changes, access-key use; Cognito failed sign-ins, password resets and new-device sign-ins by hour; the two detection stacks' alarms | CloudTrail is already in CloudWatch Logs; Cognito through its own CloudTrail events | Metric filters and a view for each; a multi-region trail |
+| Rate limits | WAF rate-rule blocks by IP and path; API Gateway throttles by route; Cognito throttles; the WAF managed rule group matches by rule | WAF and API Gateway metrics exist; WAF logs to the lake | WAF logging to S3 into the lake |
+| Concerning traffic | 404 scan hits per IP; request spikes per path against a seven-day baseline; geography changes; bot share; credential-stuffing shape on the token routes; HMRC fraud-prevention header validation failures | CloudFront logs in the lake, `ScanDetectionStack`, the HMRC validator feedback | Views and the baseline |
+| Secrets and access | Age since each secret's last real rotation; GitHub token ages; the GA4 service-account key age; who holds SSO, GitHub org, Stripe and Google console access | The rotation record; IAM Identity Center; the GitHub org API | The rotation record |
+| Data protection | PITR on every table; the cross-account vault's last copy (issue #11); the last restore test; retention TTLs running; the 72-hour breach clock's runbook link | Backup and DynamoDB APIs | The restore test as a scheduled proof |
+
+**Standards to align with, for this goal.** The OWASP Top 10 and ASVS for the application
+findings; NIST Cybersecurity Framework 2.0 for the panel headings (identify, protect, detect,
+respond, recover); the CIS AWS Foundations Benchmark at its current major in Security Hub;
+OpenSSF Scorecard for the repositories and SLSA provenance for the published packages;
+CISA's KEV catalogue as the exploit feed. The row is D13.
 
 ## Panel by panel
 
@@ -219,6 +261,7 @@ on NEXT.md.
 | D10 | The company P&L and balance sheet from the company's cloud book | finance plan phase 2; `PLAN_SUBMISSION_MCP.md` M1, M3 | Claude Code, Sonnet |
 | D11 | `experiments.toml`, the annotations, the open list; the first experiment written from a baseline month | D1 | Claude Code, Sonnet; the hypothesis is the operator's |
 | D12 | The raw export, `scripts/analytics-pull.sh`, the `analytics` corpus source, `reindex` | D1 | Claude Code, Sonnet; the corpus change at the workspace root |
+| D13 | The security panels: AWS Config recorder and the CIS 5.0 standard, findings and GitHub alerts into the lake, `lifecycle.toml` and its check, the SBOM and KEV match, the CloudTrail metric filters, WAF logs, the rotation record | D1; the operator's yes for Config and the multi-region trail (an environment deploy) | Claude Code, Sonnet; Opus for the traffic baselines |
 
 ## Verification
 
@@ -260,6 +303,27 @@ is one export away once the operator says yes on the management account. Experim
 raw export (D11, D12) are new but small, and they are what turns the page from a report into
 the loop the operator asked for: data Claude can read, a hypothesis in a file, and a line that
 shows whether it moved. The company accounts remain the far end, waiting on the finance plan.
+
+## Related work and its disposition
+
+Swept on 2026-09-07 across this repo's plans, boards and open issues.
+
+| Item | Relation to this plan | Disposition |
+|---|---|---|
+| `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`, NEXT.md B30o | The alarms panel reads the same state-change events; the triage chain's anonymised comments are the deep link | Keep; B30o proves the chain, D6 lands the events in the lake |
+| `PLAN_ALARM_TEARDOWN.md`, BACKLOG 30a (re-run the audit, due 2026-09-13) | Alarm and canary cuts are the running-cost lever; the audit's counts are the baseline | Keep; the audit becomes a nightly view under D6 |
+| `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` | Chaos checks that each alarm fires; the uptime SLI depends on the alarms being true | Keep as reference; not scheduled |
+| BACKLOG 47, NEXT.md B47a, issue #43 | The scheduled workflows feed the DORA and drift panels; #43 closes on a green scheduled drift run | Keep; B47a |
+| BACKLOG 39, NEXT.md B39.1, issue #13 (multi-URL Lighthouse) | Web vitals for the sibling sites, which the uptime goal wants at p75 | Keep; D3 takes the RUM half, Lighthouse stays the lab measure |
+| BACKLOG 43 | The monthly bill check against the cost plan's target | Keep; the cost panel (D7) replaces the hand check once FOCUS lands |
+| BACKLOG 49 | GA4 property changes as code; D3's cross-domain and key-event changes go through it or the Admin API script | Keep |
+| BACKLOG 27a (pen test), 46 (corpus credentials), 48 (certbot) , issue #11 (backups outside the account) | Security panels: lifecycle, secrets, data protection | Keep; each feeds a row of the security table |
+| Issue #18 (alerting in Slack with agents raising issues) | The alarm-to-issue chain delivered the issue half; Slack was not chosen | Operator's call: close, or re-scope to the alarms panel |
+| `_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` | Phases 0 to 3 delivered in January 2026; phase 4's ideas are the security panels | Archived 2026-09-07 |
+| `_developers/backlog/SLACK_INTEGRATION_PLAN.md` | Superseded by the alarm-to-issue chain | Archived 2026-09-07 |
+| `_developers/backlog/PLAN_MCP_SERVER.md` | Superseded by `PLAN_SUBMISSION_MCP.md` | Archived 2026-09-07 |
+| `_developers/backlog/METRIC_SON_DESIGN.md` | A second presentation of the same metrics | Keep as a horizon |
+| `_developers/archive/PLAN_USAGE_DATA_PIPELINE.md`, `PLAN_SCHEDULED_INGESTION.md`, `PLAN_GA4.md`, `PLAN_COST_INSTRUMENTATION.md`, `PLAN_COST_OPTIMISATION.md`, `PLAN_ALARM_CONSOLIDATION.md`, `PLAN_SYNTHETIC_NAMING_ALIGNMENT.md` | The delivered designs this plan builds on | Reference only |
 
 ## Related
 

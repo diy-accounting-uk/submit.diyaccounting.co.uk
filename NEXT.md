@@ -13,9 +13,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c980ac9 (main's deploy of the PR #150 merge, run 34099969706);
-the deploy retired prod-2324fdd and no spare stands.** A main deploy retires the previous set itself; a `prod-*-app-*` set
-left standing by anything else costs $46.88/month until named to `destroy-prod.yml`
+**Prod runs deployment prod-c6e18fd (the 04:11 UTC scheduled deploy of main, run 34105362721,
+which ran at 09:19). prod-c980ac9 stands beside it as an orphan spare: B53.** A main deploy
+retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
+$46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
 
 The board runs in five sections, in this order: in flight; ready for Claude Code; ready for
@@ -37,6 +38,19 @@ next starts from main as `claude/b12-board`.
   Operator labels, Claude Code reads the run.
 ## Ready: Claude Code
 
+- [ ] **B53. Retire the orphan prod-c980ac9 and stop the scheduled deploy leaving one.**
+  `deploy.yml` carries `schedule: cron '11 4 * * *'`, so main deploys to prod every day whether
+  or not it changed. On a schedule event `set-origins` reports no existing deployment, so
+  `destroy previous` takes the sweep path rather than the direct destroy; the sweep's
+  candidates are the CloudFront alias targets that look like `prod-*` plus the last-known-good
+  pointer, which the run's own earlier job had already moved to the new set, so the replaced
+  set is never considered (run 34105362721: "No prod stacks found for destruction"). Two
+  steps: name `prod-c980ac9` to `destroy-prod.yml` now, the operator's yes first, since it is
+  a prod destroy; then either make the sweep consider every deployed `prod-*` set older than
+  `SELF_DESTRUCT_DELAY_HOURS` that is not the pointer, or drop the daily schedule, which is
+  the operator's decision (it costs a full prod deploy and a $46.88 set every day it fires
+  after a docs-only change). **Source**: this session's read of the prod account, 2026-09-07.
+  **Owner**: Claude Code, with the operator's yes for the destroy. **Model**: Sonnet.
 - [ ] **B47a. Why the Monday 06:00 UTC schedules do not fire.** `compliance.yml` and
   `stack-drift.yml` both carry `cron: '0 6 * * 1'`; neither ran on 2026-09-07 (checked at 09:00
   UTC), the second miss after the 2026-08-31 revival, and `codeql.yml`'s Sunday schedule did
@@ -47,7 +61,8 @@ next starts from main as `claude/b12-board`.
   compare the two files' histories with `codeql.yml`'s; fix what is found (a re-enable through
   the API, or a change to the files) and record how a future miss is detected (the
   `keepalive.yml` workflow may already exist for this; read it). Issue #43 closes when the next
-  scheduled `stack-drift` run is green. **Source**: BACKLOG 47; issue #43.
+  scheduled `stack-drift` run is green. Feeds `PLAN_ONE_STOP_DASHBOARD.md`'s DORA and
+  drift panels (D8). **Source**: BACKLOG 47; issue #43.
   **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B52a. Split the two prod dashboards into operations and business.**
@@ -63,6 +78,14 @@ next starts from main as `claude/b12-board`.
   to submission, conversion to paid, running cost) from `PLAN_ONE_STOP_DASHBOARD.md`. One
   deliberate duplicate per quantity stays where two sources measure it. **Source**: BACKLOG
   52; `PLAN_ONE_STOP_DASHBOARD.md` row B52a. **Owner**: Claude Code. **Model**: Sonnet.
+  Related open work the plan's panels depend on, each tagged with its panel: B30o and
+  BACKLOG 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
+  issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
+  sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
+  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 (Slack
+  alerting: the issue half is delivered, the Slack half was not chosen; close or re-scope it
+  to the alarms panel, the operator's call). Superseded and archived on 2026-09-07:
+  `PLAN_SECURITY_DETECTION_UPLIFT.md`, `SLACK_INTEGRATION_PLAN.md`, `PLAN_MCP_SERVER.md`.
 - [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
   asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
   `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
