@@ -115,9 +115,41 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   A yes here, and whether it goes in `root.diyaccounting.co.uk`'s CDK or this repo's
   environment deploy through the management-account role. Unblocks B52e. **Source**: BACKLOG
   52; plan row D7. **Owner**: Operator. **Model**: none.
+- [ ] **O27. Examine the three VAT read pages on ci.** Liabilities, payments and penalties are
+  on main, ci only, on every bundle. Open them on a standing ci set, read each against the
+  HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
+  Unblocks B17b. **Source**: BACKLOG 17b; issue #19. **Owner**: Operator. **Model**: none.
+- [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
+  and the cumulative period-summary POST are on main behind the environments gate
+  (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
+  `hmrcItsaSelfEmploymentPeriodPost.js`). Create an HMRC sandbox test user with a
+  self-employment business through the create-test-user API, run the three against
+  test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
+  `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
+  simulator. Unblocks B11. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+  **Model**: Sonnet.
+- [ ] **B10.6. The ITSA facts and the client recommendation.** Confirm from gov.uk the MTD for
+  Income Tax mandate dates and income thresholds as they stand (the row proposed about £20k)
+  and write them into `_developers/hmrc/ITSA_SPIKE.md`; then a one-page comparison of an
+  OpenAPI-generated client from `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`
+  against the hand-rolled pattern the VAT client uses, with a recommendation. Unblocks O26.
+  **Source**: BACKLOG 10. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B22. Fraud-prevention header email check.** The parser
+  `app/lib/fraudPreventionHeaderReport.js` is built and tested; `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`
+  recommends a scheduled script over the gyb mail mirror at the workspace root, alerting
+  through the operational Telegram path when a month reads advisories, errors or zero
+  traffic. Build that path and write each month's result where B52k's compliance panel can
+  read it. Unblocks B52k's HMRC row. **Source**: BACKLOG 22; HMRC compliance. **Owner**:
+  Claude Code. **Model**: Sonnet.
 
 ## Ready
 
+- [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
+  `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
+  amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
+  the unit tests and the page, shaped as the three on main; every self-employment path takes
+  the `businessId` Business Details returns. **Source**: BACKLOG 10; issues #16, #20.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B53a. The lone ci BooksStack and the ci sweep.** `destroy-ci.yml`'s 14:23 UTC sweep
   on 2026-09-07 left `ci-claudd9a1-app-BooksStack` standing alone (created 07:37 UTC,
   self-destruct delay one hour): a set reduced to one stack is not swept. Dispatch
@@ -183,6 +215,16 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
 
 ## Blocked on a machine task
 
+- [ ] **O26. Decide the ITSA client approach and the token cost per submission.** From
+  B10.6's comparison, pick generated or hand-rolled; and set whether a quarterly update costs
+  the same one token as a VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**:
+  none. Blocked on B10.6.
+- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
+  and the final declaration (crystallisation) endpoints, then the recognition application and
+  the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
+  first, since the annual summary carries the whole year's figures and the books import
+  (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
+  Code. **Model**: Opus design, then Sonnet. Blocked on B10.4.
 - [ ] **B52g. The page.** A private static page on submit behind an `operator` bundle no
   customer holds, drawn from a nightly snapshot the metrics-publish Lambda writes, organised
   by the eight objectives with deep links on every row and `experiments.toml` annotations; the
@@ -229,6 +271,12 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
 
 ## Blocked on a human task
 
+- [ ] **B17b. VAT read-page videos.** After O27: add `prod` to the three activities'
+  environments in `web/public/submit.catalogue.toml`, record liabilities, payments and
+  penalties one video each in the 17a capture pattern (`videos/*.json`, `auth: "user"`,
+  `site-video-capture`), and publish them with `video-publish` beside the others. **Source**:
+  BACKLOG 17b; issue #19. **Owner**: Claude Code. **Model**: Sonnet for the capture, Haiku
+  for the publish. Blocked on O27.
 - [ ] **B30o. Prove the triage chain on prod.** The resolver fix merged in PR #147 (a missing
   alarm is evidence; composite alarms are listed). Read the triage run O24's label starts and
   confirm it posts the guardrail's anonymised comment; if it stops at a guard or fails, say
