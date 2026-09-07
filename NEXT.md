@@ -231,6 +231,7 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   `stripe-catalogue-sync`: the product and price in test, then live, and the ids onto `.env.ci`,
   `.env.prod` and the GitHub environments. **Source**: spreadsheets board LP-21;
   `PLAN_DIYA_GL_STORAGE.md` section 6. **Owner**: Claude Code. **Model**: Sonnet.
+
 ## Blocked on a machine task
 
 - [ ] **B55. Checkout and the portal for DIYA-GL tokens.** `POST /api/v1/billing/checkout` and
