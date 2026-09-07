@@ -14,24 +14,38 @@ channel until the ITSA activity leaves the environments gate.
    gh run download 33953044775 -n video-submit-return-prod -D target/videos/video-submit-return-prod
    gh run download 34058244686 -n video-view-return-prod -D target/videos/video-view-return-prod
    ```
-2. **Create an OAuth client** in the Google Cloud console for the project behind the
-   channel: APIs & Services → Credentials → Create Credentials → OAuth client ID → type
-   "Desktop app". Enable the YouTube Data API v3 and the
-   `https://www.googleapis.com/auth/youtube.upload` scope for it.
-3. **Export the client id and secret**:
+2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`,
+   signed in as the channel owner). Google blocks gcloud's own client from asking for YouTube
+   scopes, and a client created through the IAP API is locked to IAP, so this project needs
+   its own. The section is **Google Auth Platform** in the left menu:
+   - **Overview**: if there is a **Get started** button, App name `DIY Accounting Submit`, your
+     support email, Audience **External**, your contact email, agree, **Create**.
+   - **Audience**: publishing status stays **Testing**; under **Test users**, **Add users**,
+     your own Google account, **Save**.
+   - **Data Access**: **Add or remove scopes**, filter `youtube`, tick `.../auth/youtube.upload`
+     and `.../auth/youtube.force-ssl`, **Update**, **Save**.
+   - **Clients**: **Create client**, Application type **Desktop app**, Name `youtube-upload`,
+     **Create**, then **Download JSON** on the "OAuth client created" dialog (or the download
+     arrow on the client's row). Leave the file in Downloads; nothing is copied.
+   The full walk-through, with what each screen shows, is `.claude/skills/video-publish/SKILL.md`.
+3. **Store the downloaded client, then check the credential works**, without uploading
+   anything (the shell expands the glob):
    ```bash
-   export YOUTUBE_CLIENT_ID=...
-   export YOUTUBE_CLIENT_SECRET=...
+   node scripts/youtube-upload.js --store-client ~/Downloads/client_secret_*.json
+   npm run video:publish -- --check
    ```
+   `--store-client` writes the client id and secret into AWS Secrets Manager and prints the
+   secret name — the downloaded JSON file can then be deleted. `--check` opens a browser once
+   for consent (the loopback flow for Desktop clients), stores a refresh token in Secrets
+   Manager for later runs, and prints the signed-in channel's title. `x-goog-user-project`
+   carries `youtube.googleapis.com` quota to the `diyaccounting-ga4` Google Cloud project on
+   every request (override with `GOOGLE_CLOUD_QUOTA_PROJECT` if needed).
 4. **Run the upload**:
    ```bash
    npm run video:publish
    ```
-   First run prints a consent URL. Open it, sign in, and grant access — the browser then
-   redirects to a localhost address that refuses the connection, which is expected. Paste
-   the address (or just the `code` value) back into the terminal. The script stores the
-   refresh token at `~/.config/diyaccounting/youtube-token.json` and writes each returned
-   video id into `videos/publish.json`, so a re-run only uploads what's still missing.
+   Uploads are unlisted by default. The script writes each returned video id into
+   `videos/publish.json`, so a re-run only uploads what's still missing.
 5. **Review the three unlisted videos**, then re-run with `--public` to publish them:
    ```bash
    npm run video:publish -- --public

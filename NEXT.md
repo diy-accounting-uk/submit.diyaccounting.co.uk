@@ -25,8 +25,9 @@ workspace root); blocked operator items; blocked Claude Code items.
 ## In flight
 
 Batch 10 is PR #147 (`claude/b10-board`: the triage resolver, the prod filing gate, the ITSA
-dashboard, the catalogue-paths test and the YouTube upload on gcloud credentials). Main's prod
-deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-cfb43ee.
+dashboard, the catalogue-paths test and the YouTube upload on the project's own OAuth client);
+its branch deploy stood ci-claud7c57 at 23:05 UTC. Batch 11 is `claude/b11-board` (local), for
+the accounts filing.
 
 - [ ] **B30o. Prove the triage chain on prod.** Relabelling #138 `triage` at 22:03 UTC on
   2026-09-06 (run 34062903265) ran the fixed job as far as the evidence resolver, which stopped
@@ -49,23 +50,15 @@ deploy from the PR #146 merge (run 34062870619) is finishing its retire of prod-
   that every page the catalogue names exists. Verified when main's deploy after the merge
   shows it on ci. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
 - [ ] **B34.6a. Companies House accounts filing through the XML Gateway, everything that
-  needs no credentials.** `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` is on main (ea153e5a): the
-  accounts and gateway technical specifications, every schema, a worked accounts envelope, the
-  poll examples, the error table and a free XBRL validator are all public; only the test
-  presenter credentials are on request (O16). The build runs as two Sonnet tracks for batch
-  11: the core (simulator route, iXBRL generator, GovTalk envelope module) in the
-  accounts-core agent's worktree, branch `claude/ltd-accounts-core`, and the app (three
-  Lambdas, CDK, page, catalogue entry ci-only, behaviour suite) in the accounts-app agent's
-  worktree, branch `claude/ltd-accounts-app`. Verified when
-  `npm run test:fileMicroEntityAccountsBehaviour-simulator` passes on the merged batch and the
-  public validator accepts a generated file. **Source**: BACKLOG 34b; issue #15. **Owner**:
-  Claude Code. **Model**: Sonnet.
-- [ ] **A1. Stop the release, false positive, alarm, issue, triage, close cycle on
-  auto-destructing sets.** On main (PR #146). First real check passed: main's deploy retiring
-  prod-cfb43ee wrote `/submit/prod/alarm-silence/cfb43ee` at 22:52 UTC on 2026-09-06 and no
-  alarm issue or Telegram message named the set. Verified when the next ci self-destruct
-  passes the same way (ci-claud9501, on its schedule or the 02:34 sweep). **Source**: operator,
-  2026-09-06. **Owner**: Claude Code.
+  needs no credentials.** `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` is on main. The app half
+  (three Lambdas, CDK, the ci-only activity and page, the behaviour suite; c07c4690) is merged
+  on batch 11 with two placeholder service modules; the core half (simulator gateway route,
+  iXBRL generator, GovTalk envelope module) is in the accounts-core agent's worktree, branch
+  `claude/ltd-accounts-core`. After the merge: the async-requests table the plan left out
+  (`putAsyncRequest` runs with no table today), the simulator-lane suite, and the public
+  validator. Verified when `npm run test:fileMicroEntityAccountsBehaviour-simulator` passes on
+  the batch and the validator accepts a generated file. **Source**: BACKLOG 34b; issue #15.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: Claude Code
 

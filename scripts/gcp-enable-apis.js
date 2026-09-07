@@ -4,10 +4,10 @@
 
 // scripts/gcp-enable-apis.js
 //
-// Makes sure the Google APIs the analytics scripts call are enabled on the GA4 project, using
-// the same service account the scripts run as (it holds Owner there). Idempotent: an enabled
-// service is left alone. Runs first in google-roles.yml so a fresh project never needs a hand
-// click in the console.
+// Makes sure the Google APIs the analytics scripts and the YouTube quota project need are
+// enabled on the GA4 project, using the same service account the scripts run as (it holds
+// Owner there). Idempotent: an enabled service is left alone. Runs first in google-roles.yml
+// so a fresh project never needs a hand click in the console.
 //
 // Usage:
 //   node scripts/gcp-enable-apis.js [--dry-run] [--project diyaccounting-ga4]
@@ -27,6 +27,7 @@ export const REQUIRED_SERVICES = [
   "cloudbilling.googleapis.com",
   "billingbudgets.googleapis.com",
   "bigquery.googleapis.com",
+  "youtube.googleapis.com",
 ];
 
 export function parseArgs(argv) {

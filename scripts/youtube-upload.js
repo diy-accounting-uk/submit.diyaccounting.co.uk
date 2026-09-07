@@ -4,41 +4,81 @@
 //
 // Upload the videos drafted in videos/publish.json to https://www.youtube.com/@DIYAccountingSubmit.
 //
-// Usage: node scripts/youtube-upload.js [--public]
+// Usage: node scripts/youtube-upload.js [--check] [--public] [--client-file <path>]
+//        node scripts/youtube-upload.js --store-client <path>
 //
-// Requires YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET in the environment, from an
-// OAuth 2.0 client of type "Desktop app" in the Google Cloud console, with the
-// https://www.googleapis.com/auth/youtube.upload scope enabled.
+// Credentials come from an OAuth client of our own (type Desktop app), created once in the
+// Google Cloud console — see videos/PUBLISH.md. Google blocks gcloud's own OAuth client from
+// requesting YouTube scopes, and a client created through the IAP API is locked to IAP, so this
+// project needs its own.
 //
-// On first run this prints a consent URL. Open it, sign in, and grant access. The
-// browser then redirects to a localhost address that refuses the connection - that
-// is expected, because this script has no server listening there. Copy the address
-// from the browser's address bar (or just the "code" value in it) and paste it back
-// into this terminal. The resulting refresh token is stored at
-// ~/.config/diyaccounting/youtube-token.json, never in this repository, so later
-// runs need no further consent.
+// The client's id and secret (the JSON file the console downloads, shaped
+// {"installed": {"client_id", "client_secret", ...}}) come from one of two places:
+//   --client-file <path>   reads that JSON file directly
+//   (no flag)               reads it from AWS Secrets Manager secret prod/submit/youtube/oauth_client
+//                            in the submit-prod account
+//
+// --store-client <path> reads the downloaded JSON and writes it to that secret (creating it if
+// it doesn't exist yet), then exits. That is the only way the client id and secret reach AWS —
+// no id is ever typed or copied by hand.
+//
+// The first run (or any run after the stored refresh token secret is deleted) opens a browser
+// for consent via the OAuth loopback flow: a local HTTP server on a free port receives the
+// authorization code, exchanges it for tokens with access_type=offline and prompt=consent, and
+// stores the refresh token in Secrets Manager secret prod/submit/youtube/refresh_token. Every
+// later run reads that secret and never prompts.
+//
+// The YouTube Data API bills quota to a Google Cloud project with youtube.googleapis.com
+// enabled, so every request here carries an x-goog-user-project header naming that project -
+// default diyaccounting-ga4, overridable with the GOOGLE_CLOUD_QUOTA_PROJECT env var.
+//
+// --check obtains a token, looks up the signed-in channel and prints its title, without
+// uploading anything. It's the first thing to run after consent, to prove the credential works.
 //
 // Uploads are unlisted by default. Pass --public to publish publicly instead.
 // Re-running is safe: an entry that already carries a videoId is skipped.
 
 import fs from "fs";
-import os from "os";
 import path from "path";
-import readline from "readline";
+import http from "node:http";
+import net from "node:net";
+import { spawn } from "node:child_process";
 import { fileURLToPath } from "url";
+import { OAuth2Client } from "google-auth-library";
+import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
-export const TOKEN_PATH = path.join(os.homedir(), ".config", "diyaccounting", "youtube-token.json");
 
-const OAUTH_SCOPE = "https://www.googleapis.com/auth/youtube.upload";
-const OAUTH_REDIRECT_URI = "http://127.0.0.1:8912/oauth2callback";
-const OAUTH_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
-const OAUTH_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+export const OAUTH_SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"];
+
+export const CLIENT_SECRET_NAME = "prod/submit/youtube/oauth_client";
+export const REFRESH_TOKEN_SECRET_NAME = "prod/submit/youtube/refresh_token";
+
+export const DEFAULT_QUOTA_PROJECT = "diyaccounting-ga4";
+
+const CHANNELS_ENDPOINT = "https://www.googleapis.com/youtube/v3/channels";
 const UPLOAD_VIDEOS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/videos";
 const UPLOAD_CAPTIONS_ENDPOINT = "https://www.googleapis.com/upload/youtube/v3/captions";
 
 export function parseArgs(argv) {
-  return { publicVideo: argv.includes("--public") };
+  return {
+    publicVideo: argv.includes("--public"),
+    check: argv.includes("--check"),
+    clientFile: readFlagValue(argv, "--client-file"),
+    storeClient: readFlagValue(argv, "--store-client"),
+  };
+}
+
+function readFlagValue(argv, flag) {
+  const index = argv.indexOf(flag);
+  if (index === -1) {
+    return undefined;
+  }
+  const value = argv[index + 1];
+  if (!value) {
+    throw new Error(`${flag} requires a path argument`);
+  }
+  return value;
 }
 
 export function loadPublishList(filePath = PUBLISH_LIST_PATH) {
@@ -79,123 +119,211 @@ export function buildVideoResource(entry, { publicVideo }) {
   };
 }
 
-export function requireEnv(name, env = process.env) {
-  const value = env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable ${name}`);
-  }
-  return value;
-}
-
 function requireFile(filePath, label) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`Missing ${label}: ${filePath}`);
   }
 }
 
-function loadStoredToken(tokenPath) {
-  if (!fs.existsSync(tokenPath)) return null;
-  return JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+export function resolveQuotaProject(env = process.env) {
+  return env.GOOGLE_CLOUD_QUOTA_PROJECT || DEFAULT_QUOTA_PROJECT;
 }
 
-function saveStoredToken(token, tokenPath) {
-  fs.mkdirSync(path.dirname(tokenPath), { recursive: true });
-  fs.writeFileSync(tokenPath, JSON.stringify(token, null, 2) + "\n", { mode: 0o600 });
+let cachedSecretsManagerClient = null;
+
+function getSecretsManagerClient() {
+  if (!cachedSecretsManagerClient) {
+    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return cachedSecretsManagerClient;
 }
 
-export function buildConsentUrl(clientId) {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: OAUTH_REDIRECT_URI,
-    response_type: "code",
-    scope: OAUTH_SCOPE,
-    access_type: "offline",
-    prompt: "consent",
-  });
-  return `${OAUTH_AUTH_ENDPOINT}?${params.toString()}`;
-}
-
-export function extractAuthorizationCode(input) {
-  const trimmed = input.trim();
+async function readSecret({ smClient, secretId }) {
   try {
-    const url = new URL(trimmed);
-    const code = url.searchParams.get("code");
-    if (code) return code;
-  } catch {
-    // Not a URL - treat the whole input as the code.
+    const result = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }));
+    return result.SecretString;
+  } catch (error) {
+    if (error.name === "ResourceNotFoundException") {
+      return null;
+    }
+    throw error;
   }
-  return trimmed;
 }
 
-async function promptForCode(consentUrl) {
-  console.log("Open this URL, sign in, and grant access:");
-  console.log(consentUrl);
-  console.log("");
-  console.log("The browser then redirects to a localhost address that refuses the connection - that is expected.");
-  console.log('Paste the full address from the browser\'s address bar (or just the "code" value) below:');
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await new Promise((resolve) => rl.question("> ", resolve));
-  rl.close();
-  return extractAuthorizationCode(answer);
+async function readSecretRequired({ smClient, secretId, notFoundMessage }) {
+  const value = await readSecret({ smClient, secretId });
+  if (value === null) {
+    throw new Error(notFoundMessage);
+  }
+  return value;
 }
 
-async function exchangeCodeForToken({ clientId, clientSecret, code, fetchImpl }) {
-  const response = await fetchImpl(OAUTH_TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-      grant_type: "authorization_code",
-      redirect_uri: OAUTH_REDIRECT_URI,
-    }),
+// Secrets Manager has no upsert call: try an update first (the common case, once the secret
+// exists) and only create it when that fails because it doesn't exist yet.
+async function writeSecret({ smClient, secretId, secretString, description }) {
+  try {
+    await smClient.send(new UpdateSecretCommand({ SecretId: secretId, SecretString: secretString }));
+  } catch (error) {
+    if (error.name !== "ResourceNotFoundException") {
+      throw error;
+    }
+    await smClient.send(new CreateSecretCommand({ Name: secretId, SecretString: secretString, Description: description }));
+  }
+}
+
+export async function storeClientCredentials({ clientFile, smClient = getSecretsManagerClient() }) {
+  const raw = fs.readFileSync(clientFile, "utf8");
+  const parsed = JSON.parse(raw);
+  if (!parsed.installed || !parsed.installed.client_id || !parsed.installed.client_secret) {
+    throw new Error(`${clientFile} does not look like a Desktop OAuth client JSON (expected an "installed" object with client_id and client_secret)`);
+  }
+  await writeSecret({
+    smClient,
+    secretId: CLIENT_SECRET_NAME,
+    secretString: raw,
+    description: "YouTube Data API OAuth Desktop client for the video upload script",
+  });
+  console.log(`Stored the OAuth client credentials in Secrets Manager secret ${CLIENT_SECRET_NAME}`);
+}
+
+export async function resolveClientCredentials({ clientFile, smClient } = {}) {
+  const raw = clientFile
+    ? fs.readFileSync(clientFile, "utf8")
+    : await readSecretRequired({
+        smClient,
+        secretId: CLIENT_SECRET_NAME,
+        notFoundMessage: `No OAuth client credentials found in Secrets Manager secret ${CLIENT_SECRET_NAME}. Download a Desktop OAuth client JSON from the Google Cloud console and run:\n\n  node scripts/youtube-upload.js --store-client <path-to-downloaded-json>`,
+      });
+  const parsed = JSON.parse(raw);
+  const installed = parsed.installed;
+  if (!installed || !installed.client_id || !installed.client_secret) {
+    throw new Error(`OAuth client credentials from ${clientFile || CLIENT_SECRET_NAME} do not have the expected {"installed": {"client_id", "client_secret"}} shape`);
+  }
+  return { client_id: installed.client_id, client_secret: installed.client_secret };
+}
+
+function getFreeTcpPort() {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.on("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+function waitForAuthorizationCode({ port, redirectUri }) {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const url = new URL(req.url, redirectUri);
+      const error = url.searchParams.get("error");
+      const code = url.searchParams.get("code");
+      if (error) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end(`Consent failed: ${error}`);
+        server.close();
+        reject(new Error(`Google consent failed: ${error}`));
+        return;
+      }
+      if (!code) {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("No authorization code in the request");
+        return;
+      }
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      res.end("Signed in. You can close this tab and return to the terminal.");
+      server.close();
+      resolve(code);
+    });
+    server.listen(port, "127.0.0.1");
+  });
+}
+
+function openInBrowser(url) {
+  const platform = process.platform;
+  const [command, args] = platform === "darwin" ? ["open", [url]] : platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
+  const child = spawn(command, args, { stdio: "ignore", detached: true });
+  child.on("error", () => {}); // best effort: the URL above is already printed for opening by hand
+  child.unref();
+}
+
+// The loopback flow for Desktop OAuth clients: a local HTTP server receives the authorization
+// code Google redirects to, so nothing but this machine ever sees it.
+export async function runLoopbackConsent({ clientCredentials, scopes = OAUTH_SCOPES, OAuth2ClientImpl = OAuth2Client, openUrl = openInBrowser } = {}) {
+  const port = await getFreeTcpPort();
+  const redirectUri = `http://127.0.0.1:${port}/`;
+  const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret, redirectUri });
+  const authUrl = oAuth2Client.generateAuthUrl({ access_type: "offline", prompt: "consent", scope: scopes });
+
+  const codePromise = waitForAuthorizationCode({ port, redirectUri });
+  console.log(`Open this URL to sign in as the channel owner:\n\n  ${authUrl}\n`);
+  openUrl(authUrl);
+  const code = await codePromise;
+
+  const { tokens } = await oAuth2Client.getToken({ code, redirect_uri: redirectUri });
+  if (!tokens.refresh_token) {
+    throw new Error("Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run again so Google issues a fresh one.");
+  }
+  return tokens.refresh_token;
+}
+
+export async function obtainAccessToken({
+  clientFile,
+  smClient = getSecretsManagerClient(),
+  OAuth2ClientImpl = OAuth2Client,
+  runConsentFlow = runLoopbackConsent,
+} = {}) {
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient });
+  const storedRefreshTokenJson = await readSecret({ smClient, secretId: REFRESH_TOKEN_SECRET_NAME });
+
+  let refreshToken;
+  if (storedRefreshTokenJson) {
+    console.log(`using the stored refresh token from Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME}`);
+    refreshToken = JSON.parse(storedRefreshTokenJson).refresh_token;
+  } else {
+    console.log("no stored refresh token found; starting the browser consent flow");
+    refreshToken = await runConsentFlow({ clientCredentials, OAuth2ClientImpl });
+    await writeSecret({
+      smClient,
+      secretId: REFRESH_TOKEN_SECRET_NAME,
+      secretString: JSON.stringify({ refresh_token: refreshToken }),
+      description: "YouTube Data API refresh token for the video upload script",
+    });
+    console.log(`stored the refresh token in Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME}`);
+  }
+
+  const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret });
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
+  const { token } = await oAuth2Client.getAccessToken();
+  if (!token) {
+    throw new Error(`Google did not return an access token for the stored refresh token. Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run again to re-consent.`);
+  }
+  return token;
+}
+
+export async function fetchOwnChannelTitle({ accessToken, quotaProject, fetchImpl = fetch }) {
+  const response = await fetchImpl(`${CHANNELS_ENDPOINT}?part=snippet&mine=true`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
   });
   if (!response.ok) {
-    throw new Error(`Failed to exchange authorization code: ${response.status} ${await response.text()}`);
+    throw new Error(`Failed to look up the signed-in channel: ${response.status} ${await response.text()}`);
   }
-  return response.json();
+  const data = await response.json();
+  const channel = data.items && data.items[0];
+  if (!channel) {
+    throw new Error("The signed-in account has no YouTube channel linked to it.");
+  }
+  return channel.snippet.title;
 }
 
-async function refreshAccessToken({ clientId, clientSecret, refreshToken, fetchImpl }) {
-  const response = await fetchImpl(OAUTH_TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to refresh access token: ${response.status} ${await response.text()}`);
-  }
-  return response.json();
-}
-
-export async function ensureAccessToken({ clientId, clientSecret, tokenPath = TOKEN_PATH, fetchImpl = fetch, prompt = promptForCode }) {
-  const stored = loadStoredToken(tokenPath);
-  if (stored?.refreshToken) {
-    const refreshed = await refreshAccessToken({ clientId, clientSecret, refreshToken: stored.refreshToken, fetchImpl });
-    return refreshed.access_token;
-  }
-  const code = await prompt(buildConsentUrl(clientId));
-  const token = await exchangeCodeForToken({ clientId, clientSecret, code, fetchImpl });
-  if (!token.refresh_token) {
-    throw new Error(
-      "Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run this again.",
-    );
-  }
-  saveStoredToken({ refreshToken: token.refresh_token }, tokenPath);
-  return token.access_token;
-}
-
-async function initiateResumableUpload({ accessToken, resource, fileSize, mimeType, fetchImpl }) {
+async function initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType, fetchImpl }) {
   const response = await fetchImpl(`${UPLOAD_VIDEOS_ENDPOINT}?uploadType=resumable&part=snippet,status`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      "x-goog-user-project": quotaProject,
       "Content-Type": "application/json; charset=UTF-8",
       "X-Upload-Content-Length": String(fileSize),
       "X-Upload-Content-Type": mimeType,
@@ -212,10 +340,10 @@ async function initiateResumableUpload({ accessToken, resource, fileSize, mimeTy
   return location;
 }
 
-export async function uploadVideo({ entry, accessToken, publicVideo, fetchImpl = fetch }) {
+export async function uploadVideo({ entry, accessToken, quotaProject = resolveQuotaProject(), publicVideo, fetchImpl = fetch }) {
   const resource = buildVideoResource(entry, { publicVideo });
   const fileSize = fs.statSync(entry.videoFile).size;
-  const uploadUrl = await initiateResumableUpload({ accessToken, resource, fileSize, mimeType: "video/mp4", fetchImpl });
+  const uploadUrl = await initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType: "video/mp4", fetchImpl });
   const response = await fetchImpl(uploadUrl, {
     method: "PUT",
     headers: { "Content-Type": "video/mp4", "Content-Length": String(fileSize) },
@@ -243,7 +371,7 @@ function buildMultipartRelated(parts) {
   return { body: Buffer.concat(segments), contentType: `multipart/related; boundary=${boundary}` };
 }
 
-export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = fetch }) {
+export async function uploadCaption({ entry, videoId, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
   const metadata = { snippet: { videoId, language: "en", name: "English", isDraft: false } };
   const { body, contentType } = buildMultipartRelated([
     { contentType: "application/json; charset=UTF-8", body: JSON.stringify(metadata) },
@@ -251,7 +379,12 @@ export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = f
   ]);
   const response = await fetchImpl(`${UPLOAD_CAPTIONS_ENDPOINT}?uploadType=multipart&part=snippet`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": contentType, "Content-Length": String(body.length) },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "x-goog-user-project": quotaProject,
+      "Content-Type": contentType,
+      "Content-Length": String(body.length),
+    },
     body,
   });
   if (!response.ok) {
@@ -261,9 +394,21 @@ export async function uploadCaption({ entry, videoId, accessToken, fetchImpl = f
 }
 
 export async function main() {
-  const { publicVideo } = parseArgs(process.argv.slice(2));
-  const clientId = requireEnv("YOUTUBE_CLIENT_ID");
-  const clientSecret = requireEnv("YOUTUBE_CLIENT_SECRET");
+  const { publicVideo, check, clientFile, storeClient } = parseArgs(process.argv.slice(2));
+
+  if (storeClient) {
+    await storeClientCredentials({ clientFile: storeClient });
+    return;
+  }
+
+  const quotaProject = resolveQuotaProject();
+  const accessToken = await obtainAccessToken({ clientFile });
+
+  if (check) {
+    const title = await fetchOwnChannelTitle({ accessToken, quotaProject });
+    console.log(`Signed in as channel: ${title}`);
+    return;
+  }
 
   let list = loadPublishList();
   const pending = selectPendingUploads(list);
@@ -277,13 +422,11 @@ export async function main() {
     requireFile(entry.captionFile, `caption file for ${entry.id}`);
   }
 
-  const accessToken = await ensureAccessToken({ clientId, clientSecret });
-
   for (const entry of pending) {
     console.log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
-    const videoId = await uploadVideo({ entry, accessToken, publicVideo });
+    const videoId = await uploadVideo({ entry, accessToken, quotaProject, publicVideo });
     console.log(`  video id: ${videoId}`);
-    await uploadCaption({ entry, videoId, accessToken });
+    await uploadCaption({ entry, videoId, accessToken, quotaProject });
     console.log("  caption uploaded");
     list = recordVideoId(list, entry.id, videoId);
     savePublishList(list);

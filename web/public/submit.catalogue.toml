@@ -130,7 +130,6 @@ stripeInterval = "month"
 # Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
 # Tokens: 100 granted, refreshing monthly
 # Enables: the self-employed activity (quarterly updates and annual declarations)
-# Hidden in all environments until the ITSA pages land (B10)
 [[bundles]]
 id = "resident-itsa"
 name = "Resident ITSA"
@@ -147,7 +146,7 @@ stripeInterval = "month"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================
-# Hidden in production until the ITSA pages (B10) exist to claim the self-employed activity
+# Hidden in production
 
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
@@ -298,7 +297,7 @@ display = "always-with-upsell"
 bundles = ["resident-itsa"]
 tokenCost = 1
 metered = true
-paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/dashboard.html", "^/api/v1/hmrc/itsa.*"]
+paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
@@ -320,7 +319,7 @@ metered = false
 # The web/public/lib/toml-parser.js in-browser parser is line-based and does not support a
 # multi-line array, so this stays on one line, unlike the plan's example.
 paths = ["companies-house/changeRegisteredOffice.html", "^/api/v1/companies-house/transaction.*", "^/api/v1/companies-house/company/[^/]+/registered-office-address$", "^/api/v1/companies-house/token$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "change-registered-email"
@@ -329,7 +328,7 @@ display = "on-entitlement"
 bundles = ["default"]
 metered = false
 paths = ["companies-house/changeRegisteredEmail.html", "^/api/v1/companies-house/transaction.*", "^/api/v1/companies-house/company/[^/]+/registered-email-address/eligibility$", "^/api/v1/companies-house/token$"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-micro-entity-accounts"
