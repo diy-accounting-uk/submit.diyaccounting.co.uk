@@ -1,10 +1,10 @@
 # PLAN: The one-stop dashboard
 
-Status: open, drafted 2026-09-07, reshaped the same evening around goals, levers and
-experiments, with the security goal and the related-work sweep added. No code written.
+Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and
+experiments, with the security objective and the related-work sweep added. No code written.
 Backlog row 52; NEXT.md B52a is the first row.
 
-One page the operator opens to see how DIY Accounting is doing against five goals, which levers
+One page the operator opens to see how DIY Accounting is doing against five objectives, which levers
 are being pulled, and how each running experiment is moving its metric. The same data, exported
 raw and indexed in this workspace, is what Claude Code and Cowork read to propose the next
 experiment. The customer journeys it measures cross three sites: the apex and holding page
@@ -71,14 +71,14 @@ GA4-versus-Stripe-versus-events reconciliation.
   deliberately, as the reconciliation widget already does for purchases: same quantity, two
   sources, side by side.
 
-## Goals, observations and levers
+## Objectives, observations and levers
 
-The page is organised by the five goals, not by data source. Each goal has one headline
+The page is organised by the five objectives, not by data source. Each objective has one headline
 observation, its target, the supporting observations that explain it, and the levers the
 operator can pull, each with the metric that shows the lever moved. Experiments sit under the
-goal they serve.
+objective they serve.
 
-| Goal | Headline observation (the SLI) | Target (the SLO) | Supporting observations | Levers, each with its own metric |
+| Objective | Headline observation (the SLI) | Target (the SLO) | Supporting observations | Levers, each with its own metric |
 |---|---|---|---|---|
 | Uptime | Availability of the customer journey: probe pass rate over sign-in, obligations, submit on prod | 99.9 % monthly, error budget shown | Golden signals per route (latency p95, request rate, error rate, saturation as throttles); Core Web Vitals p75 (LCP, INP, CLS); alarm count by family; HMRC and Companies House upstream error rate | Deploy frequency and change failure rate (DORA); alarm consolidation (B30); provisioned concurrency; canary coverage of each activity |
 | Conversion to submission | Signed-in users who complete a submission within 30 days, by activity | Set from the first month's baseline, then raise | Funnel: visit, sign-in, HMRC or Companies House authorisation, first obligation view, first submission; drop-off per step; HMRC failures by class; synthetic and bot traffic excluded | Landing copy and demo videos (B17); the CSV and books import (row 16, `PLAN_SUBMISSION_MCP.md`); activity gating and free-bundle scope; email nudges after sign-in without a submission |
@@ -86,15 +86,15 @@ goal they serve.
 | Low running cost | Monthly AWS and Google spend, and cost per submission | Steady-state target from the cost plan, cost per submission falling | Cost by service and by environment (FOCUS columns); spare deployment sets standing; canary and alarm spend; Lambda duration and memory | Deployment lifecycle (`destroy-*` workflows); alarm and canary cuts (B30o); scheduled ingestion cadence; log retention; reserved capacity |
 | Security | Days since the last unhandled finding above medium, across Security Hub, GuardDuty, CodeQL, Dependabot and secret scanning | Zero open above medium; every finding triaged within a week; the 72-hour breach clock never starts | Vulnerability and lifecycle calendar; global exploits matched to our stack; intrusion signals; rate-limit and WAF blocks; concerning traffic; secrets and access age; backup and restore proof | Dependency updates and runtime upgrades; WAF rules and thresholds; Security Hub standards and AWS Config; alarm coverage of the detection stacks; the pen test (row 27a); backups outside the account (issue #11) |
 
-The company P&L and balance sheet sit above the five goals as the outcome they serve.
+The company P&L and balance sheet sit above the five objectives as the outcome they serve.
 
-**Experiments.** An experiment is a row in `experiments.toml` at this repo's root: id, goal,
+**Experiments.** An experiment is a row in `experiments.toml` at this repo's root: id, objective,
 hypothesis, lever, the metric watched, start, end, the deployment or catalogue change that
 began it, and the result once written. The page draws each experiment's start and end as a
-vertical annotation on the metric it watches and lists open experiments under their goal. The
+vertical annotation on the metric it watches and lists open experiments under their objective. The
 file is in git, so it is indexed, and Claude reads the experiment's window against the raw
 export to say whether the metric moved. Proposing an experiment is then a chat with the
-export, the goal table and this file in context; nothing else is needed for the advice, and
+export, the objective table and this file in context; nothing else is needed for the advice, and
 the page shows whether the advice worked.
 
 ## Standards to align with
@@ -120,7 +120,7 @@ Recognisable in 2026, each mapped to one part of the page:
   export rather than the CUR 2.0 the cost instrumentation plan named, so the columns
   (`BilledCost`, `ServiceName`, `Tags`) match the FinOps Framework vocabulary and any tool.
   Cost per submission is the unit-economics figure the framework asks for.
-- **GA4 key events and funnels** for the two conversion goals, with the AARRR stages
+- **GA4 key events and funnels** for the two conversion objectives, with the AARRR stages
   (acquisition, activation, retention, revenue, referral) as the funnel's labels, which is the
   product vocabulary most readers know.
 
@@ -128,16 +128,16 @@ Recognisable in 2026, each mapped to one part of the page:
 
 **CloudWatch keeps the operations dashboard and nothing else.** It is the right place for
 live signals: the alarms, RUM, Lambda and API Gateway metrics are born there, it costs about
-$3 a month, and it refreshes in seconds. It is the wrong place for the goals page: a widget
+$3 a month, and it refreshes in seconds. It is the wrong place for the objectives page: a widget
 cannot show a table or a balance sheet, metrics fall off after fifteen months so a year-on-year
 line dies, the 500-series limit already breaks three widgets, the console needs a sign-in the
 operator does not want to make daily, and nothing on it can be indexed for Claude.
 
-**The goals page is a private static page on submit, generated nightly from the lake.** The
+**The objectives page is a private static page on submit, generated nightly from the lake.** The
 metrics-publish Lambda that already runs each night writes one snapshot per environment
 (`snapshot.json`, plus one CSV per view) to a prefix the site serves behind the operator's own
 sign-in, on an activity gated to an `operator` bundle that no customer holds. The page is plain
-HTML with the site's chart style, reads the snapshot, draws the goal table, the panels, the
+HTML with the site's chart style, reads the snapshot, draws the objective table, the panels, the
 experiment annotations and the deep links. Where a live figure helps (today's probe pass rate,
 the current alarm list), the page reads it through the existing API with the operator's token,
 so the nightly snapshot and the live value sit side by side.
@@ -154,7 +154,7 @@ rest.
 ## Raw data for indexing
 
 Every figure on the page must be readable by Claude without the page. The nightly job writes,
-beside the snapshot, one CSV per Athena view and one JSON per goal (observation, target,
+beside the snapshot, one CSV per Athena view and one JSON per objective (observation, target,
 supporting metrics, levers, open experiments) to `s3://<lake>/exports/<env>/<date>/`. A pull
 script in this repo (`scripts/analytics-pull.sh`, the shape of `drive/pull.sh`) syncs that
 prefix to `~/projects/diy-accounting-limited/analytics/<env>/` at the workspace root, and that
@@ -165,7 +165,7 @@ follows it. The FOCUS cost export and the DORA rows land in the same tree. Nothi
 
 ## The security dashboard
 
-A fifth goal with its own panels on the same page, read from the prod account on
+A fifth objective with its own panels on the same page, read from the prod account on
 2026-09-07.
 
 **What exists.** GuardDuty is on with no findings in its statistics. Security Hub is on with
@@ -196,7 +196,7 @@ rotation record has to be kept separately.
 | Secrets and access | Age since each secret's last real rotation; GitHub token ages; the GA4 service-account key age; who holds SSO, GitHub org, Stripe and Google console access | The rotation record; IAM Identity Center; the GitHub org API | The rotation record |
 | Data protection | PITR on every table; the cross-account vault's last copy (issue #11); the last restore test; retention TTLs running; the 72-hour breach clock's runbook link | Backup and DynamoDB APIs | The restore test as a scheduled proof |
 
-**Standards to align with, for this goal.** The OWASP Top 10 and ASVS for the application
+**Standards to align with, for this objective.** The OWASP Top 10 and ASVS for the application
 findings; NIST Cybersecurity Framework 2.0 for the panel headings (identify, protect, detect,
 respond, recover); the CIS AWS Foundations Benchmark at its current major in Security Hub;
 OpenSSF Scorecard for the repositories and SLSA provenance for the published packages;
@@ -204,7 +204,7 @@ CISA's KEV catalogue as the exploit feed. The row is D13.
 
 ## Panel by panel
 
-| Panel | Goal | Source today | Gap | Work |
+| Panel | Objective | Source today | Gap | Work |
 |---|---|---|---|---|
 | Availability SLI and error budget | Uptime | Probe results as `behaviour-test` metrics; alarms as GitHub issues | The pass-rate SLI over a month, the budget, alarm state changes into the lake by family | D1, D6 |
 | Golden signals and web vitals | Uptime | Operations dashboard, three widgets broken | Narrow the searches to the live deployment; add CLS; RUM on the two sibling sites | B52a, D3 |
@@ -215,7 +215,7 @@ CISA's KEV catalogue as the exploit feed. The row is D13.
 | Downloads by product | Conversion to paid | Event counts by name only | Product parameter from the BigQuery export | D5 |
 | Cost and cost per submission | Low running cost | Nothing deployed | FOCUS 1.2 export from the management account into the lake; budgets and the anomaly monitor from the cost plan | D7 |
 | DORA delivery metrics | Uptime, cost | SSM pointer only | One lake row per deploy and destroy: name, environment, branch, sha, run id, duration, lead time from the PR; failure and recovery from the alarm issues | D8 |
-| Experiments | All | none | `experiments.toml`, annotations, the open list per goal | D11 |
+| Experiments | All | none | `experiments.toml`, annotations, the open list per objective | D11 |
 | Raw export and index | All | none | The nightly export, the pull script, the corpus source | D12 |
 | Deep links | All | none | Every row links to its object | D9 |
 | Company P&L and balance sheet | Outcome | none | The company's diya-gl book through the finance plan; nightly derivation with the Ltd engine | D10 |
@@ -226,7 +226,7 @@ CISA's KEV catalogue as the exploit feed. The row is D13.
 1. **The lake is the store; both dashboards and the export are renders of it.** Live signals
    stay in CloudWatch. Everything else reads an Athena view or a metric that exists or is
    added to `AnalyticsStack`. No second pipeline.
-2. **Operations in CloudWatch, goals on the page.** Explained under "Where each dashboard
+2. **Operations in CloudWatch, objectives on the page.** Explained under "Where each dashboard
    lives". The business widgets leave the operations dashboard; one deliberate duplicate per
    quantity stays where two sources measure the same thing.
 3. **One GA4 property, one visitor.** The three sites keep their streams in the shared
@@ -235,7 +235,7 @@ CISA's KEV catalogue as the exploit feed. The row is D13.
 4. **Synthetic traffic is tagged, not suppressed.** The client sets a GA4 user property and a
    RUM session attribute from the rule `classifyActor` applies on the server; every visitor
    panel splits on it; the SLI counts synthetic runs as the measurement they are.
-5. **Targets are set from a month of baseline, then written into the goal table.** Nothing is
+5. **Targets are set from a month of baseline, then written into the objective table.** Nothing is
    invented before the data exists; the uptime SLO alone starts at 99.9 % because the probes
    already give a month of history.
 6. **The company accounts come from the same engine customers use**, through the finance plan
@@ -248,7 +248,7 @@ on NEXT.md.
 
 | Row | What | Waits on | Owner, model |
 |---|---|---|---|
-| B52a | The split: narrow the three broken searches to the live deployment's functions and drop the canaries from them; move the five business widgets off the operations dashboard; find why sessions by country, passes and the conversion widget show nothing; write the goal table's first column as the analytics dashboard's new layout until the page exists | none | Claude Code, Sonnet |
+| B52a | The split: narrow the three broken searches to the live deployment's functions and drop the canaries from them; move the five business widgets off the operations dashboard; find why sessions by country, passes and the conversion widget show nothing; write the objective table's first column as the analytics dashboard's new layout until the page exists | none | Claude Code, Sonnet |
 | D1 | Views for submissions by activity, sources, the availability SLI and error budget; the page skeleton, the snapshot writer, the `operator` bundle and activity gate | B52a | Claude Code, Sonnet |
 | D2 | Donations and churn: confirm the Stripe account, label the Payment Links' charges; renewals and churn from the subscriptions stream; PayPal donations once the finance plan's pull exists | finance plan phase 1 for PayPal | Claude Code, Sonnet; operator confirms the account |
 | D3 | Synthetic tagging in the two `analytics.js` files and the RUM client; RUM and CLS on spreadsheets; the root page's stream id; cross-domain linking and the key events on the property | none; the GA4 changes through backlog row 49's tooling or the Admin API script | Claude Code, Sonnet; three repos |
@@ -295,8 +295,8 @@ on NEXT.md.
 
 ## Distance
 
-The uptime goal is closest: the probes, RUM and alarms exist, and B52a plus D1 and D6 turn
-them into an SLI with a budget. The two conversion goals have their funnel views built and
+The uptime objective is closest: the probes, RUM and alarms exist, and B52a plus D1 and D6 turn
+them into an SLI with a budget. The two conversion objectives have their funnel views built and
 apparently broken (the zero), so B52a's check decides whether that is a day's fix or a
 rebuild; the cross-site and synthetic work (D3, D4) is small and spread over three repos. Cost
 is one export away once the operator says yes on the management account. Experiments and the
@@ -314,7 +314,7 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 | `PLAN_ALARM_TEARDOWN.md`, BACKLOG 30a (re-run the audit, due 2026-09-13) | Alarm and canary cuts are the running-cost lever; the audit's counts are the baseline | Keep; the audit becomes a nightly view under D6 |
 | `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` | Chaos checks that each alarm fires; the uptime SLI depends on the alarms being true | Keep as reference; not scheduled |
 | BACKLOG 47, NEXT.md B47a, issue #43 | The scheduled workflows feed the DORA and drift panels; #43 closes on a green scheduled drift run | Keep; B47a |
-| BACKLOG 39, NEXT.md B39.1, issue #13 (multi-URL Lighthouse) | Web vitals for the sibling sites, which the uptime goal wants at p75 | Keep; D3 takes the RUM half, Lighthouse stays the lab measure |
+| BACKLOG 39, NEXT.md B39.1, issue #13 (multi-URL Lighthouse) | Web vitals for the sibling sites, which the uptime objective wants at p75 | Keep; D3 takes the RUM half, Lighthouse stays the lab measure |
 | BACKLOG 43 | The monthly bill check against the cost plan's target | Keep; the cost panel (D7) replaces the hand check once FOCUS lands |
 | BACKLOG 49 | GA4 property changes as code; D3's cross-domain and key-event changes go through it or the Admin API script | Keep |
 | BACKLOG 27a (pen test), 46 (corpus credentials), 48 (certbot) , issue #11 (backups outside the account) | Security panels: lifecycle, secrets, data protection | Keep; each feeds a row of the security table |

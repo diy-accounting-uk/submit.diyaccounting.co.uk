@@ -61,7 +61,7 @@ next starts from main as `claude/b12-board`.
   bundle operations, sign-ups and bundle grants off it. On `prod-env-analytics`
   (`AnalyticsDashboard`), find at the source why sessions by country and passes are empty over
   two weeks and why login-to-submission conversion reads zero against daily active users and
-  submissions, then lay the widgets out as the goal table's first column (uptime, conversion
+  submissions, then lay the widgets out as the objective table's first column (uptime, conversion
   to submission, conversion to paid, running cost) from `PLAN_ONE_STOP_DASHBOARD.md`. One
   deliberate duplicate per quantity stays where two sources measure it. **Source**: BACKLOG
   52; `PLAN_ONE_STOP_DASHBOARD.md` row B52a. **Owner**: Claude Code. **Model**: Sonnet.
@@ -106,11 +106,11 @@ next starts from main as `claude/b12-board`.
   the standards' findings.
 - [ ] **B52g. The page.** A private static page on submit behind an `operator` bundle no
   customer holds, drawn from a nightly snapshot the metrics-publish Lambda writes, organised
-  by the five goals with deep links on every row and `experiments.toml` annotations; the
+  by the five objectives with deep links on every row and `experiments.toml` annotations; the
   first experiment written from a baseline month, the hypothesis the operator's. **Source**:
   BACKLOG 52; plan rows D1, D9, D11. **Owner**: Claude Code. **Model**: Sonnet. Waits on
   B52d for the first views.
-- [ ] **B52h. Raw export and index.** One CSV per view and one JSON per goal to
+- [ ] **B52h. Raw export and index.** One CSV per view and one JSON per objective to
   `s3://<lake>/exports/<env>/<date>/` nightly; `scripts/analytics-pull.sh` to
   `~/projects/diy-accounting-limited/analytics/<env>/`; an `analytics` source in
   `../index/corpus.toml`; `reindex` after each pull. **Source**: BACKLOG 52; plan row D12.
@@ -204,7 +204,7 @@ next starts from main as `claude/b12-board`.
 
 - [ ] **B52i. The company P&L and balance sheet on the page.** The company's diya-gl book,
   saved to the DIYA cloud by `../PLAN_FINANCE_AUTOMATION.md` phase 2, derived nightly with the
-  Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the five goals beside
+  Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the five objectives beside
   the last set filed at Companies House. **Source**: BACKLOG 52; plan row D10. **Owner**:
   Claude Code. **Model**: Sonnet. Blocked on the finance plan's phases 1 and 2 (no code yet)
   and on M1 and M3.
