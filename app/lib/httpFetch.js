@@ -133,6 +133,30 @@ export async function fetchJsonWithTimeout(url, options = {}, timeoutMs = 30000)
   };
 }
 
+/**
+ * Perform an HTTP fetch and read the response as text, with timeout. The text sibling of
+ * fetchJsonWithTimeout, for endpoints that answer XML or other non-JSON bodies.
+ *
+ * @param {string} url - The URL to fetch
+ * @param {Object} options - Fetch options (method, headers, body, etc.)
+ * @param {number} timeoutMs - Timeout in milliseconds (default: 30000)
+ * @returns {Promise<{ok: boolean, status: number, data: string, headers: Object, duration: number}>}
+ */
+export async function fetchTextWithTimeout(url, options = {}, timeoutMs = 30000) {
+  const { response, duration } = await fetchWithTimeout(url, options, timeoutMs);
+
+  const data = await response.text();
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    data,
+    headers: normalizeHeaders(response.headers),
+    duration,
+    response,
+  };
+}
+
 // Default timeout values for different use cases
 export const DEFAULT_TIMEOUTS = {
   // Quick API calls (validation, lightweight endpoints)

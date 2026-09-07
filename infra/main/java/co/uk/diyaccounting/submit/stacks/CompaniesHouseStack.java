@@ -77,6 +77,18 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseRegisteredEmailAddressPostLambda;
     public ILogGroup companiesHouseRegisteredEmailAddressPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHouseAccountsPreviewPostLambdaProps;
+    public Function companiesHouseAccountsPreviewPostLambda;
+    public ILogGroup companiesHouseAccountsPreviewPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHouseAccountsPostLambdaProps;
+    public Function companiesHouseAccountsPostLambda;
+    public ILogGroup companiesHouseAccountsPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHouseAccountsGetLambdaProps;
+    public Function companiesHouseAccountsGetLambda;
+    public ILogGroup companiesHouseAccountsGetLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -117,6 +129,12 @@ public class CompaniesHouseStack extends Stack {
 
         String companiesHouseClientSecretArn();
 
+        String companiesHouseXmlGatewayUri();
+
+        String companiesHousePresenterIdArn();
+
+        String companiesHousePresenterCodeArn();
+
         @Override
         SubmitSharedNames sharedNames();
 
@@ -137,6 +155,13 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
+
+        // Lookup existing DynamoDB Receipts Table - only the accounts poll Lambda writes to it,
+        // for the accepted filing receipt.
+        ITable receiptsTable = Table.fromTableName(
+                this,
+                "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().receiptsTableName);
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
@@ -570,6 +595,110 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
 
+        // The accounts filing route: preview renders the iXBRL only, the other two reach the XML
+        // Gateway with the presenter credentials, never the OAuth filing base URI or client secret
+        // the six Lambdas above use.
+        var companiesHouseAccountsPreviewPostLambdaEnv = accountsFilingLambdaEnv(props);
+        var companiesHouseAccountsPreviewPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHouseAccountsPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouseAccountsPreviewPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseAccountsPreviewPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsPreviewPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouseAccountsPreviewPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseAccountsPreviewPostLambdaEnv)
+                        .build());
+        this.companiesHouseAccountsPreviewPostLambdaProps = companiesHouseAccountsPreviewPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseAccountsPreviewPostLambda = companiesHouseAccountsPreviewPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseAccountsPreviewPostLambdaLogGroup = companiesHouseAccountsPreviewPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseAccountsPreviewPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House accounts preview with ingestHandler %s",
+                this.companiesHouseAccountsPreviewPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaHandler);
+        // No presenter secret grant: preview never reaches the gateway.
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseAccountsPreviewPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+
+        var companiesHouseAccountsPostLambdaEnv = accountsFilingLambdaEnv(props);
+        var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHouseAccountsPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouseAccountsPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouseAccountsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouseAccountsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseAccountsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouseAccountsPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseAccountsPostLambdaEnv)
+                        .build());
+        this.companiesHouseAccountsPostLambdaProps = companiesHouseAccountsPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseAccountsPostLambda = companiesHouseAccountsPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseAccountsPostLambdaLogGroup = companiesHouseAccountsPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseAccountsPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House accounts submit with ingestHandler %s",
+                this.companiesHouseAccountsPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouseAccountsPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
+
+        var companiesHouseAccountsGetLambdaEnv =
+                accountsFilingLambdaEnv(props).with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHouseAccountsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().companiesHouseAccountsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouseAccountsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHouseAccountsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseAccountsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouseAccountsGetLambdaCustomAuthorizer)
+                        .environment(companiesHouseAccountsGetLambdaEnv)
+                        .build());
+        this.companiesHouseAccountsGetLambdaProps = companiesHouseAccountsGetLambdaUrlOrigin.apiProps;
+        this.companiesHouseAccountsGetLambda = companiesHouseAccountsGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseAccountsGetLambdaLogGroup = companiesHouseAccountsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseAccountsGetLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House accounts poll with ingestHandler %s",
+                this.companiesHouseAccountsGetLambda.getNode().getId(),
+                props.sharedNames().companiesHouseAccountsGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHouseAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
+        receiptsTable.grant(this.companiesHouseAccountsGetLambda, "dynamodb:PutItem");
+
         Lambda.stackHealthAlarm(
                 this,
                 props.resourceNamePrefix(),
@@ -584,7 +713,10 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseRegisteredOfficeAddressGetLambdaUrlOrigin,
                         companiesHouseRegisteredOfficeAddressPostLambdaUrlOrigin,
                         companiesHouseRegisteredEmailEligibilityGetLambdaUrlOrigin,
-                        companiesHouseRegisteredEmailAddressPostLambdaUrlOrigin));
+                        companiesHouseRegisteredEmailAddressPostLambdaUrlOrigin,
+                        companiesHouseAccountsPreviewPostLambdaUrlOrigin,
+                        companiesHouseAccountsPostLambdaUrlOrigin,
+                        companiesHouseAccountsGetLambdaUrlOrigin));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
@@ -609,6 +741,12 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "CompaniesHouseRegisteredEmailAddressPostLambdaArn",
                 this.companiesHouseRegisteredEmailAddressPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHouseAccountsPreviewPostLambdaArn",
+                this.companiesHouseAccountsPreviewPostLambda.getFunctionArn());
+        cfnOutput(this, "CompaniesHouseAccountsPostLambdaArn", this.companiesHouseAccountsPostLambda.getFunctionArn());
+        cfnOutput(this, "CompaniesHouseAccountsGetLambdaArn", this.companiesHouseAccountsGetLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",
@@ -702,5 +840,43 @@ public class CompaniesHouseStack extends Stack {
                     "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
                     fn.getFunctionName(), props.companiesHouseClientSecretArn(), secretArnWithWildcard);
         }
+    }
+
+    // Shared environment for the three accounts filing Lambdas: the bundles table, activity bus
+    // and environment name every Companies House Lambda carries, plus the XML Gateway URI, blank
+    // until B34.6b's sandbox proof lands (and, for prod, until the ci-only gate lifts) -
+    // PopulatedMap rejects a blank value outright, so it is set only when configured.
+    private static PopulatedMap<String, String> accountsFilingLambdaEnv(CompaniesHouseStackProps props) {
+        var env = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (StringUtils.isNotBlank(props.companiesHouseXmlGatewayUri())) {
+            env.with("COMPANIES_HOUSE_XMLGW_URI", props.companiesHouseXmlGatewayUri());
+        }
+        return env;
+    }
+
+    // Only the submit and poll Lambdas call grantCompaniesHousePresenterSecretsAccess: the preview
+    // Lambda renders the iXBRL and never reaches the gateway, so it must not carry
+    // secretsmanager:GetSecretValue on either presenter secret.
+    private static void grantCompaniesHousePresenterSecretsAccess(Function fn, CompaniesHouseStackProps props) {
+        grantWildcardSecretAccess(fn, props.companiesHousePresenterIdArn());
+        grantWildcardSecretAccess(fn, props.companiesHousePresenterCodeArn());
+    }
+
+    private static void grantWildcardSecretAccess(Function fn, String secretArn) {
+        if (StringUtils.isBlank(secretArn)) {
+            return;
+        }
+        String secretArnWithWildcard = secretArn.endsWith("-*") ? secretArn : secretArn + "-*";
+        fn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(secretArnWithWildcard))
+                .build());
+        infof(
+                "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
+                fn.getFunctionName(), secretArn, secretArnWithWildcard);
     }
 }

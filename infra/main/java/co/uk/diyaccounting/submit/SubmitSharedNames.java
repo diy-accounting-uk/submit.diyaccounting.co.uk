@@ -469,6 +469,33 @@ public class SubmitSharedNames {
     public boolean companiesHouseRegisteredEmailAddressPostLambdaJwtAuthorizer;
     public boolean companiesHouseRegisteredEmailAddressPostLambdaCustomAuthorizer;
 
+    public String companiesHouseAccountsPreviewPostIngestLambdaHandler;
+    public String companiesHouseAccountsPreviewPostIngestLambdaFunctionName;
+    public String companiesHouseAccountsPreviewPostIngestLambdaArn;
+    public String companiesHouseAccountsPreviewPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseAccountsPreviewPostLambdaHttpMethod;
+    public String companiesHouseAccountsPreviewPostLambdaUrlPath;
+    public boolean companiesHouseAccountsPreviewPostLambdaJwtAuthorizer;
+    public boolean companiesHouseAccountsPreviewPostLambdaCustomAuthorizer;
+
+    public String companiesHouseAccountsPostIngestLambdaHandler;
+    public String companiesHouseAccountsPostIngestLambdaFunctionName;
+    public String companiesHouseAccountsPostIngestLambdaArn;
+    public String companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseAccountsPostLambdaHttpMethod;
+    public String companiesHouseAccountsPostLambdaUrlPath;
+    public boolean companiesHouseAccountsPostLambdaJwtAuthorizer;
+    public boolean companiesHouseAccountsPostLambdaCustomAuthorizer;
+
+    public String companiesHouseAccountsGetIngestLambdaHandler;
+    public String companiesHouseAccountsGetIngestLambdaFunctionName;
+    public String companiesHouseAccountsGetIngestLambdaArn;
+    public String companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseAccountsGetLambdaHttpMethod;
+    public String companiesHouseAccountsGetLambdaUrlPath;
+    public boolean companiesHouseAccountsGetLambdaJwtAuthorizer;
+    public boolean companiesHouseAccountsGetLambdaCustomAuthorizer;
+
     public String supportTicketPostIngestLambdaHandler;
     public String supportTicketPostIngestLambdaFunctionName;
     public String supportTicketPostIngestLambdaArn;
@@ -1717,6 +1744,74 @@ public class SubmitSharedNames {
                                 "body",
                                 true,
                                 "Must be true - confirms the section 88A(2) Companies Act 2006 statement"))));
+
+        this.companiesHouseAccountsPreviewPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseAccountsPreviewPostLambdaUrlPath = "/api/v1/companies-house/accounts/preview";
+        this.companiesHouseAccountsPreviewPostLambdaJwtAuthorizer = true;
+        this.companiesHouseAccountsPreviewPostLambdaCustomAuthorizer = false;
+        var companiesHouseAccountsPreviewPostLambdaHandlerName = "companiesHouseAccountsPreviewPost.ingestHandler";
+        var companiesHouseAccountsPreviewPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsPreviewPostLambdaHandlerName);
+        this.companiesHouseAccountsPreviewPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseAccountsPreviewPostLambdaHandlerDashed);
+        this.companiesHouseAccountsPreviewPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseAccountsPreviewPostLambdaHandlerName);
+        this.companiesHouseAccountsPreviewPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsPreviewPostLambdaHandlerDashed);
+        this.companiesHouseAccountsPreviewPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseAccountsPreviewPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseAccountsPreviewPostLambdaHttpMethod,
+                this.companiesHouseAccountsPreviewPostLambdaUrlPath,
+                "Preview a micro-entity accounts filing",
+                "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+                "previewCompaniesHouseAccounts"));
+
+        this.companiesHouseAccountsPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseAccountsPostLambdaUrlPath = "/api/v1/companies-house/accounts";
+        this.companiesHouseAccountsPostLambdaJwtAuthorizer = true;
+        this.companiesHouseAccountsPostLambdaCustomAuthorizer = false;
+        var companiesHouseAccountsPostLambdaHandlerName = "companiesHouseAccountsPost.ingestHandler";
+        var companiesHouseAccountsPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsPostLambdaHandlerName);
+        this.companiesHouseAccountsPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseAccountsPostLambdaHandlerDashed);
+        this.companiesHouseAccountsPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseAccountsPostLambdaHandlerName);
+        this.companiesHouseAccountsPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsPostLambdaHandlerDashed);
+        this.companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseAccountsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseAccountsPostLambdaHttpMethod,
+                this.companiesHouseAccountsPostLambdaUrlPath,
+                "Submit a micro-entity accounts filing",
+                "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+                "postCompaniesHouseAccounts"));
+
+        this.companiesHouseAccountsGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseAccountsGetLambdaUrlPath = "/api/v1/companies-house/accounts/{submissionNumber}";
+        this.companiesHouseAccountsGetLambdaJwtAuthorizer = true;
+        this.companiesHouseAccountsGetLambdaCustomAuthorizer = false;
+        var companiesHouseAccountsGetLambdaHandlerName = "companiesHouseAccountsGet.ingestHandler";
+        var companiesHouseAccountsGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsGetLambdaHandlerName);
+        this.companiesHouseAccountsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseAccountsGetLambdaHandlerDashed);
+        this.companiesHouseAccountsGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseAccountsGetLambdaHandlerName);
+        this.companiesHouseAccountsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsGetLambdaHandlerDashed);
+        this.companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseAccountsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseAccountsGetLambdaHttpMethod,
+                this.companiesHouseAccountsGetLambdaUrlPath,
+                "Poll a micro-entity accounts filing",
+                "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+                "getCompaniesHouseAccounts",
+                List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
 
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
         this.supportTicketPostLambdaUrlPath = "/api/v1/support/ticket";

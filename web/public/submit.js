@@ -46,6 +46,9 @@ import {
   putRegisteredEmailAddress,
   closeTransaction,
   getTransaction,
+  previewMicroEntityAccounts,
+  submitMicroEntityAccounts,
+  pollMicroEntityAccounts,
 } from "./lib/services/companies-house-filing-service.js";
 
 // Debug widgets initial setup
@@ -374,6 +377,9 @@ if (typeof window !== "undefined") {
   window.putRegisteredEmailAddress = putRegisteredEmailAddress;
   window.closeCompaniesHouseTransaction = closeTransaction;
   window.getCompaniesHouseTransaction = getTransaction;
+  window.previewMicroEntityAccounts = previewMicroEntityAccounts;
+  window.submitMicroEntityAccounts = submitMicroEntityAccounts;
+  window.pollMicroEntityAccounts = pollMicroEntityAccounts;
 
   // RUM functions
   window.hasRumConsent = hasRumConsent;
