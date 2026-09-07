@@ -41,7 +41,7 @@ outputs:
     description: "Cognito User Pool Client ID (the main app client, selected by ClientName)"
     value: ${{ steps.cognito.outputs.CLIENT_ID }}
   cognito-books-client-id:
-    description: "Cognito User Pool Client ID for the spreadsheets books pages (selected by ClientName; empty if not yet deployed)"
+    description: "Cognito User Pool Client ID for the spreadsheets books pages (selected by ClientName)"
     value: ${{ steps.cognito.outputs.BOOKS_CLIENT_ID }}
   http-api-id:
     description: "API Gateway HTTP API ID"
@@ -105,6 +105,9 @@ runs:
         fi
         echo "Found Client ID: ${CLIENT_ID}"
 
+        # Looked up leniently (unlike the main client above): destroy workflows call this
+        # action before their CloudFormation cleanup runs, and must not abort stack deletion
+        # just because the books client lookup had a transient problem.
         BOOKS_CLIENT_NAME="${{ inputs.environment-name }}-env-books-client"
         BOOKS_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
           --user-pool-id "${USER_POOL_ID}" \
@@ -113,7 +116,7 @@ runs:
         if [ "$BOOKS_CLIENT_ID" = "None" ]; then
           BOOKS_CLIENT_ID=""
         fi
-        echo "Found Books Client ID: ${BOOKS_CLIENT_ID:-<not deployed>}"
+        echo "Found Books Client ID: ${BOOKS_CLIENT_ID:-<not found>}"
 
         echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
         echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"

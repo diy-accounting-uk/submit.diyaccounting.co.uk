@@ -288,6 +288,7 @@ jobs:
             "${DEPLOYMENT_NAME}-app-CompaniesHouseStack" \
             "${DEPLOYMENT_NAME}-app-AccountStack" \
             "${DEPLOYMENT_NAME}-app-BillingStack" \
+            "${DEPLOYMENT_NAME}-app-BooksStack" \
             "${DEPLOYMENT_NAME}-app-ApiStack" \
             "${DEPLOYMENT_NAME}-app-OpsStack"; do
             detect_drift "$STACK" "eu-west-2"

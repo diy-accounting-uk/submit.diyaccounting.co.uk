@@ -303,6 +303,7 @@ public class BackupStack extends Stack {
         ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().passesTableName);
         ITable subscriptionsTable =
                 importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
+        String booksBucketArn = "arn:aws:s3:::" + props.sharedNames().booksBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
                 .backupPlan(this.backupPlan)
@@ -312,7 +313,8 @@ public class BackupStack extends Stack {
                         BackupResource.fromDynamoDbTable(bundlesTable),
                         BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
                         BackupResource.fromDynamoDbTable(passesTable),
-                        BackupResource.fromDynamoDbTable(subscriptionsTable)))
+                        BackupResource.fromDynamoDbTable(subscriptionsTable),
+                        BackupResource.fromArn(booksBucketArn)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();
 

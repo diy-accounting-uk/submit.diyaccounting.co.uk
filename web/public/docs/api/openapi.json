@@ -108,6 +108,36 @@
         "operationId" : "sessionBeacon"
       }
     },
+    "/books/{bookId}" : {
+      "put" : {
+        "summary" : "Store a book version",
+        "description" : "Writes the next version of a book with optimistic concurrency via If-Match",
+        "operationId" : "putBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Delete a book",
+        "description" : "Deletes a book and every stored version for the authenticated books user",
+        "operationId" : "deleteBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/hmrc/vat/return" : {
       "post" : {
         "summary" : "Submit VAT return to HMRC",
@@ -599,6 +629,13 @@
             "description" : "Request accepted for processing (async)"
           }
         }
+      }
+    },
+    "/books" : {
+      "get" : {
+        "summary" : "List the caller's books",
+        "description" : "Lists every stored book's metadata for the authenticated books user",
+        "operationId" : "listBooks"
       }
     },
     "/companies-house/accounts" : {
@@ -1119,6 +1156,30 @@
             "description" : "Token exchanged successfully"
           }
         }
+      }
+    },
+    "/books/{bookId}/versions/{version}" : {
+      "get" : {
+        "summary" : "Read a book version",
+        "description" : "Reads one version of a stored book, or its latest version, for the authenticated books user",
+        "operationId" : "getBookVersion",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "version",
+          "in" : "path",
+          "required" : true,
+          "description" : "\"latest\" or a positive version number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/companies-house/transaction" : {

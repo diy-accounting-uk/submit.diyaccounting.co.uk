@@ -231,6 +231,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "booksBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/books.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "changeRegisteredOfficeBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/changeRegisteredOffice.behaviour.test.js"],
