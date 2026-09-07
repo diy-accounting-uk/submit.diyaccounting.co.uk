@@ -139,9 +139,11 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,
-    balanceSheet: { currentYear, priorYear },
-    averageEmployees: numericAverageEmployees,
-    director: { name: directorName, dateApproved },
+    // buildMicroEntityAccounts() names the two years current/prior, not currentYear/priorYear.
+    balanceSheet: { current: currentYear, prior: priorYear },
+    averageNumberOfEmployees: numericAverageEmployees,
+    directorName,
+    dateOfApproval: dateApproved,
     statementsAccepted: statements,
   };
 }
@@ -187,7 +189,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["COMPANIES_HOUSE_XMLGW_URI"]);
+  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
@@ -220,24 +222,23 @@ export async function ingestHandler(event) {
   try {
     const ixbrl = buildMicroEntityAccounts(accounts);
     submissionNumber = await allocateSubmissionNumber();
-    const { presenterId, presenterAuthCode } = await resolvePresenterCredentials();
+    const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
     await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
 
     const submissionXml = buildAccountsSubmission({
       presenterId,
-      presenterAuthCode,
+      presenterCode,
       companyNumber: accounts.companyNumber,
       companyName: accounts.companyName,
-      companyAuthCode: accounts.companyAuthCode,
+      companyAuthenticationCode: accounts.companyAuthCode,
       submissionNumber,
-      directorName: accounts.director.name,
-      dateSigned: accounts.director.dateApproved,
+      dateSigned: accounts.dateOfApproval,
       ixbrl,
     });
 
     const gatewayResponse = await postToGateway(submissionXml);
-    const parsed = parseGatewayResponse(gatewayResponse.text);
+    const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
       await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);

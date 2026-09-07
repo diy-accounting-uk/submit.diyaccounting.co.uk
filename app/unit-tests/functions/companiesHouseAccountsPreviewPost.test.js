@@ -151,7 +151,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     await companiesHouseAccountsPreviewPostHandler(buildEvent());
     const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
     expect(input.companyNumber).toBe("06846849");
-    expect(input.balanceSheet.currentYear.fixedAssets).toBe(1000);
+    expect(input.balanceSheet.current.fixedAssets).toBe(1000);
     expect(input.companyAuthCode).toBeUndefined();
   });
 

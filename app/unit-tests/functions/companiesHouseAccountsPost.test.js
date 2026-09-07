@@ -141,6 +141,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       process.env,
       setupTestEnv({
         COMPANIES_HOUSE_XMLGW_URI: "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway",
+        COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
         ENVIRONMENT_NAME: "test",
       }),
     );
@@ -155,10 +156,10 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
     mockBuildMicroEntityAccounts.mockReturnValue('<?xml version="1.0"?><html>fake ixbrl</html>');
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
-    mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterAuthCode: "presenter-code" });
+    mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
     mockBuildAccountsSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
-    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, text: "<GovTalkMessage>ack</GovTalkMessage>" });
-    mockParseGatewayResponse.mockReturnValue({ gatewayTimestamp: "2026-01-15T10:00:00Z", pollInterval: 1 });
+    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
+    mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-01-15T10:00:00Z", pollInterval: 1 });
   });
 
   test("generates the iXBRL, submits the envelope and returns the submission number", async () => {
@@ -177,12 +178,11 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
-      presenterAuthCode: "presenter-code",
+      presenterCode: "presenter-code",
       companyNumber: "06846849",
       companyName: "DIY ACCOUNTING LIMITED",
-      companyAuthCode: "AB12CD",
+      companyAuthenticationCode: "AB12CD",
       submissionNumber: "00001A",
-      directorName: "Jo Director",
       dateSigned: "2026-01-15",
       ixbrl: '<?xml version="1.0"?><html>fake ixbrl</html>',
     });

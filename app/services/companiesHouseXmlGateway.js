@@ -297,7 +297,7 @@ export async function allocateSubmissionNumber() {
  * @returns {string}
  */
 export function getXmlGatewayUri() {
-  return process.env.COMPANIES_HOUSE_XML_GATEWAY_URI || DEFAULT_XML_GATEWAY_URI;
+  return process.env.COMPANIES_HOUSE_XMLGW_URI || DEFAULT_XML_GATEWAY_URI;
 }
 
 /**

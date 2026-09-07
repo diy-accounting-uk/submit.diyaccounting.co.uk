@@ -139,6 +139,9 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const hmrcItsaSelfEmploymentPeriodPostAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaSelfEmploymentPeriodPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPostAsyncTable, endpoint);
+
+    const companiesHouseAccountsAsyncTable = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
+    if (companiesHouseAccountsAsyncTable) await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
@@ -318,6 +321,7 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.COMPANIES_HOUSE_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_FILING_BASE_URI = result.baseUrl;
+      process.env.COMPANIES_HOUSE_XMLGW_URI = `${result.baseUrl}/v1-0/xmlgw/Gateway`;
 
       return {
         stop: result.stop,

@@ -90,6 +90,7 @@ public class SubmitSharedNames {
     public String hmrcItsaBusinessDetailsGetAsyncRequestsTableName;
     public String hmrcItsaObligationsGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName;
+    public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
     public String bundleCapacityTableName;
@@ -795,6 +796,8 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-obligations-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-period-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.companiesHouseAccountsAsyncRequestsTableName =
+                "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
         this.passesTableName = "%s-passes".formatted(this.envResourceNamePrefix);
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);

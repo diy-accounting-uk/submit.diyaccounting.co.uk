@@ -38,6 +38,7 @@ public class DataStack extends Stack {
     public ITable hmrcItsaBusinessDetailsGetAsyncRequestsTable;
     public ITable hmrcItsaObligationsGetAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable;
+    public ITable companiesHouseAccountsAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
     public ITable bundleCapacityTable;
@@ -321,6 +322,24 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA Self-Employment Period POST async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName);
 
+        // Companies House accounts filing async request storage - the submission-number counter
+        // allocateSubmissionNumber() increments also lives here, keyed apart from any real
+        // request id.
+        this.companiesHouseAccountsAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-CompaniesHouseAccountsAsyncRequestsTable",
+                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-CompaniesHouseAccountsAsyncTTL",
+                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured Companies House accounts async requests DynamoDB table with name %s",
+                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName);
+
         // HMRC API requests storage - audit trail for HMRC interactions
         // 28-day retention via TTL on "ttl" attribute
         this.hmrcApiRequestsTable = ensureTable(
@@ -469,6 +488,14 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableArn",
                 this.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "CompaniesHouseAccountsAsyncRequestsTableName",
+                this.companiesHouseAccountsAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "CompaniesHouseAccountsAsyncRequestsTableArn",
+                this.companiesHouseAccountsAsyncRequestsTable.getTableArn());
         cfnOutput(this, "HmrcApiRequestsTableName", this.hmrcApiRequestsTable.getTableName());
         cfnOutput(this, "HmrcApiRequestsArn", this.hmrcApiRequestsTable.getTableArn());
         cfnOutput(this, "PassesTableName", this.passesTable.getTableName());

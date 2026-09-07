@@ -163,6 +163,13 @@ public class CompaniesHouseStack extends Stack {
                 "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().receiptsTableName);
 
+        // Lookup existing DynamoDB Companies House accounts async-requests table - the submit and
+        // poll Lambdas read and write it; allocateSubmissionNumber()'s counter item lives there too.
+        ITable companiesHouseAccountsAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedCompaniesHouseAccountsAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName);
+
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Region and account for Secrets Manager access
@@ -631,7 +638,10 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsPreviewPostLambda, bundlesTable, region, account, props, activityBusArn, false);
 
-        var companiesHouseAccountsPostLambdaEnv = accountsFilingLambdaEnv(props);
+        var companiesHouseAccountsPostLambdaEnv = accountsFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName());
         var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -663,9 +673,14 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseAccountsPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
-        var companiesHouseAccountsGetLambdaEnv =
-                accountsFilingLambdaEnv(props).with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        var companiesHouseAccountsGetLambdaEnv = accountsFilingLambdaEnv(props)
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName());
         var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -698,6 +713,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseAccountsGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsGetLambda, props);
         receiptsTable.grant(this.companiesHouseAccountsGetLambda, "dynamodb:PutItem");
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseAccountsGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
         Lambda.stackHealthAlarm(
                 this,
