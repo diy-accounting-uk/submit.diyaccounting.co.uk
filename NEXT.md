@@ -55,8 +55,8 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   BACKLOG 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
-  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 (Slack
-  alerting: the operator is closing it on 2026-09-07; Telegram and GitHub issues are enough). Superseded and archived on 2026-09-07:
+  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels), issue #18 was closed by the operator on 2026-09-07 (Telegram and GitHub issues are
+  enough). Superseded and archived on 2026-09-07:
   `PLAN_SECURITY_DETECTION_UPLIFT.md`, `SLACK_INTEGRATION_PLAN.md`, `PLAN_MCP_SERVER.md`. Unblocks B52d.
 - [ ] **B52d. Lake views.** Submissions by activity including the four Companies House
   events; sources; the availability SLI and error budget from the probe metrics; alarm state
@@ -150,12 +150,12 @@ next starts from main as `claude/b12-board`. Nothing is being worked at this ren
   the unit tests and the page, shaped as the three on main; every self-employment path takes
   the `businessId` Business Details returns. **Source**: BACKLOG 10; issues #16, #20.
   **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53a. The lone ci BooksStack and the ci sweep.** `destroy-ci.yml`'s 14:23 UTC sweep
-  on 2026-09-07 left `ci-claudd9a1-app-BooksStack` standing alone (created 07:37 UTC,
-  self-destruct delay one hour): a set reduced to one stack is not swept. Dispatch
-  `gh workflow run destroy-ci.yml -f deployment-name=ci-claudd9a1`, then make the sweep count
-  any `*-app-*` stack when it sizes a set. **Source**: the ci account, 2026-09-07. **Owner**:
-  Claude Code. **Model**: Sonnet.
+- [ ] **B53a. The ci sweep and the stale ci pointer.** `destroy-ci.yml`'s 14:23 UTC sweep on
+  2026-09-07 left `ci-claudd9a1-app-BooksStack` standing alone (a set reduced to one stack is
+  not swept); the 22:09 UTC run removed it. Two fixes remain: make the sweep count any
+  `*-app-*` stack when it sizes a set, and clear `/submit/ci/last-known-good-deployment` when
+  the set it names is gone (it still reads `ci-claudd9a1` with no stacks behind it).
+  **Source**: the ci account, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B52b. GA4 in BigQuery: one daily aggregate per panel.** Scheduled queries in the
   `diyaccounting-ga4` project over the `analytics_523400333` export write one daily table per
   panel: sessions by host and source, funnel steps, key events, downloads by product with the
