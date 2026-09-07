@@ -9,16 +9,20 @@ import os from "os";
 import path from "path";
 
 import {
+  CLIENT_SECRET_NAME,
+  REFRESH_TOKEN_SECRET_NAME,
+  DEFAULT_QUOTA_PROJECT,
   parseArgs,
   loadPublishList,
   savePublishList,
   selectPendingUploads,
   recordVideoId,
   buildVideoResource,
-  requireEnv,
-  buildConsentUrl,
-  extractAuthorizationCode,
-  ensureAccessToken,
+  resolveQuotaProject,
+  resolveClientCredentials,
+  storeClientCredentials,
+  obtainAccessToken,
+  fetchOwnChannelTitle,
   uploadVideo,
   uploadCaption,
 } from "../../../scripts/youtube-upload.js";
@@ -27,12 +31,35 @@ function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "youtube-upload-test-"));
 }
 
+function notFound() {
+  return Object.assign(new Error("not found"), { name: "ResourceNotFoundException" });
+}
+
+function fakeSmClient() {
+  return { send: vi.fn() };
+}
+
 describe("parseArgs", () => {
-  test("defaults to unlisted", () => {
-    expect(parseArgs([])).toEqual({ publicVideo: false });
+  test("defaults to unlisted, no check, no client file or store", () => {
+    expect(parseArgs([])).toEqual({ publicVideo: false, check: false, clientFile: undefined, storeClient: undefined });
   });
   test("reads --public", () => {
-    expect(parseArgs(["--public"])).toEqual({ publicVideo: true });
+    expect(parseArgs(["--public"]).publicVideo).toBe(true);
+  });
+  test("reads --check", () => {
+    expect(parseArgs(["--check"]).check).toBe(true);
+  });
+  test("reads --client-file with its path", () => {
+    expect(parseArgs(["--client-file", "/tmp/client.json"]).clientFile).toBe("/tmp/client.json");
+  });
+  test("reads --store-client with its path", () => {
+    expect(parseArgs(["--store-client", "/tmp/client.json"]).storeClient).toBe("/tmp/client.json");
+  });
+  test("fails when --client-file has no path argument", () => {
+    expect(() => parseArgs(["--client-file"])).toThrow(/--client-file requires a path argument/);
+  });
+  test("fails when --store-client has no path argument", () => {
+    expect(() => parseArgs(["--store-client"])).toThrow(/--store-client requires a path argument/);
   });
 });
 
@@ -118,71 +145,179 @@ describe("buildVideoResource", () => {
   });
 });
 
-describe("requireEnv", () => {
-  test("throws when the variable is missing", () => {
-    expect(() => requireEnv("YOUTUBE_CLIENT_ID", {})).toThrow(/YOUTUBE_CLIENT_ID/);
+describe("resolveQuotaProject", () => {
+  test("defaults to diyaccounting-ga4", () => {
+    expect(resolveQuotaProject({})).toBe(DEFAULT_QUOTA_PROJECT);
   });
-  test("returns the value when present", () => {
-    expect(requireEnv("YOUTUBE_CLIENT_ID", { YOUTUBE_CLIENT_ID: "abc" })).toBe("abc");
-  });
-});
-
-describe("buildConsentUrl", () => {
-  test("carries the client id and the upload scope", () => {
-    const url = new URL(buildConsentUrl("my-client-id"));
-    expect(url.searchParams.get("client_id")).toBe("my-client-id");
-    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/youtube.upload");
-    expect(url.searchParams.get("access_type")).toBe("offline");
+  test("honours GOOGLE_CLOUD_QUOTA_PROJECT", () => {
+    expect(resolveQuotaProject({ GOOGLE_CLOUD_QUOTA_PROJECT: "other-project" })).toBe("other-project");
   });
 });
 
-describe("extractAuthorizationCode", () => {
-  test("pulls the code out of a pasted redirect URL", () => {
-    expect(extractAuthorizationCode("http://127.0.0.1:8912/oauth2callback?code=4/abc-123&scope=x")).toBe("4/abc-123");
-  });
-  test("treats a bare pasted value as the code itself", () => {
-    expect(extractAuthorizationCode("  4/abc-123  ")).toBe("4/abc-123");
-  });
-});
+const CLIENT_JSON = JSON.stringify({ installed: { client_id: "client-123", client_secret: "shh", auth_uri: "https://accounts.google.com/o/oauth2/auth" } });
 
-describe("ensureAccessToken", () => {
+describe("resolveClientCredentials", () => {
   let dir;
   beforeEach(() => (dir = makeTempDir()));
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-  test("refreshes silently when a token is already stored", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    fs.writeFileSync(tokenPath, JSON.stringify({ refreshToken: "stored-refresh-token" }));
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "fresh-access-token" }) });
-    const prompt = vi.fn();
+  test("reads client id and secret from --client-file", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
 
-    const accessToken = await ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt });
+    const credentials = await resolveClientCredentials({ clientFile: filePath });
 
-    expect(accessToken).toBe("fresh-access-token");
-    expect(prompt).not.toHaveBeenCalled();
-    const [, options] = fetchImpl.mock.calls[0];
-    expect(options.body.get("refresh_token")).toBe("stored-refresh-token");
-    expect(options.body.get("grant_type")).toBe("refresh_token");
+    expect(credentials).toEqual({ client_id: "client-123", client_secret: "shh" });
   });
 
-  test("runs the consent flow and stores the refresh token when nothing is stored yet", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "first-access-token", refresh_token: "first-refresh-token" }) });
-    const prompt = vi.fn().mockResolvedValue("pasted-code");
+  test("fails naming the expected shape when the file doesn't have an installed client", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, JSON.stringify({ web: {} }));
 
-    const accessToken = await ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt });
-
-    expect(accessToken).toBe("first-access-token");
-    expect(prompt).toHaveBeenCalledOnce();
-    expect(JSON.parse(fs.readFileSync(tokenPath, "utf8"))).toEqual({ refreshToken: "first-refresh-token" });
+    await expect(resolveClientCredentials({ clientFile: filePath })).rejects.toThrow(/"installed"/);
   });
 
-  test("fails loudly when Google returns no refresh token on first consent", async () => {
-    const tokenPath = path.join(dir, "youtube-token.json");
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ access_token: "only-access-token" }) });
-    const prompt = vi.fn().mockResolvedValue("pasted-code");
+  test("reads client id and secret from Secrets Manager when no file is given", async () => {
+    const smClient = fakeSmClient();
+    smClient.send.mockResolvedValueOnce({ SecretString: CLIENT_JSON });
 
-    await expect(ensureAccessToken({ clientId: "id", clientSecret: "secret", tokenPath, fetchImpl, prompt })).rejects.toThrow(/refresh token/);
+    const credentials = await resolveClientCredentials({ smClient });
+
+    expect(credentials).toEqual({ client_id: "client-123", client_secret: "shh" });
+    expect(smClient.send.mock.calls[0][0].input).toEqual({ SecretId: CLIENT_SECRET_NAME });
+  });
+
+  test("fails naming --store-client when the secret does not exist", async () => {
+    const smClient = fakeSmClient();
+    smClient.send.mockRejectedValueOnce(notFound());
+
+    await expect(resolveClientCredentials({ smClient })).rejects.toThrow(/--store-client/);
+  });
+});
+
+describe("storeClientCredentials", () => {
+  let dir;
+  beforeEach(() => (dir = makeTempDir()));
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("fails naming the expected shape when the downloaded file isn't a Desktop client", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, JSON.stringify({ web: {} }));
+    const smClient = fakeSmClient();
+
+    await expect(storeClientCredentials({ clientFile: filePath, smClient })).rejects.toThrow(/Desktop OAuth client/);
+    expect(smClient.send).not.toHaveBeenCalled();
+  });
+
+  test("updates the secret when it already exists", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
+    const smClient = fakeSmClient();
+    smClient.send.mockResolvedValueOnce({});
+
+    await storeClientCredentials({ clientFile: filePath, smClient });
+
+    expect(smClient.send).toHaveBeenCalledTimes(1);
+    expect(smClient.send.mock.calls[0][0].input).toEqual({ SecretId: CLIENT_SECRET_NAME, SecretString: CLIENT_JSON });
+  });
+
+  test("creates the secret when it doesn't exist yet", async () => {
+    const filePath = path.join(dir, "client.json");
+    fs.writeFileSync(filePath, CLIENT_JSON);
+    const smClient = fakeSmClient();
+    smClient.send.mockRejectedValueOnce(notFound()).mockResolvedValueOnce({});
+
+    await storeClientCredentials({ clientFile: filePath, smClient });
+
+    expect(smClient.send).toHaveBeenCalledTimes(2);
+    expect(smClient.send.mock.calls[1][0].input).toEqual({
+      Name: CLIENT_SECRET_NAME,
+      SecretString: CLIENT_JSON,
+      Description: "YouTube Data API OAuth Desktop client for the video upload script",
+    });
+  });
+});
+
+function fakeOAuth2ClientImpl(getAccessTokenResult) {
+  const instances = [];
+  const OAuth2ClientImpl = vi.fn(function FakeOAuth2Client(options) {
+    instances.push(this);
+    this.options = options;
+    this.setCredentials = vi.fn();
+    this.getAccessToken = vi.fn().mockResolvedValue(getAccessTokenResult);
+  });
+  OAuth2ClientImpl.instances = instances;
+  return OAuth2ClientImpl;
+}
+
+describe("obtainAccessToken", () => {
+  let dir;
+  beforeEach(() => (dir = makeTempDir()));
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("uses a stored refresh token without running the consent flow", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON }) // client credentials
+      .mockResolvedValueOnce({ SecretString: JSON.stringify({ refresh_token: "stored-refresh-token" }) }); // refresh token
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: "fresh-access-token" });
+    const runConsentFlow = vi.fn();
+
+    const token = await obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow });
+
+    expect(token).toBe("fresh-access-token");
+    expect(runConsentFlow).not.toHaveBeenCalled();
+    expect(OAuth2ClientImpl.instances[0].setCredentials).toHaveBeenCalledWith({ refresh_token: "stored-refresh-token" });
+  });
+
+  test("runs the consent flow and stores the refresh token when none is stored yet", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON }) // client credentials
+      .mockRejectedValueOnce(notFound()) // no stored refresh token
+      .mockResolvedValueOnce({}); // writeSecret (update succeeds)
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: "fresh-access-token" });
+    const runConsentFlow = vi.fn().mockResolvedValue("new-refresh-token");
+
+    const token = await obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow });
+
+    expect(token).toBe("fresh-access-token");
+    expect(runConsentFlow).toHaveBeenCalledWith({ clientCredentials: { client_id: "client-123", client_secret: "shh" }, OAuth2ClientImpl });
+    expect(smClient.send.mock.calls[2][0].input).toEqual({
+      SecretId: REFRESH_TOKEN_SECRET_NAME,
+      SecretString: JSON.stringify({ refresh_token: "new-refresh-token" }),
+    });
+    expect(OAuth2ClientImpl.instances[0].setCredentials).toHaveBeenCalledWith({ refresh_token: "new-refresh-token" });
+  });
+
+  test("fails loudly when Google returns no access token for the stored refresh token", async () => {
+    const smClient = fakeSmClient();
+    smClient.send
+      .mockResolvedValueOnce({ SecretString: CLIENT_JSON })
+      .mockResolvedValueOnce({ SecretString: JSON.stringify({ refresh_token: "stored-refresh-token" }) });
+    const OAuth2ClientImpl = fakeOAuth2ClientImpl({ token: null });
+
+    await expect(obtainAccessToken({ smClient, OAuth2ClientImpl, runConsentFlow: vi.fn() })).rejects.toThrow(REFRESH_TOKEN_SECRET_NAME);
+  });
+});
+
+describe("fetchOwnChannelTitle", () => {
+  test("returns the signed-in channel's title", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit" } }] }) });
+
+    const title = await fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+
+    expect(title).toBe("DIY Accounting Submit");
+    const [url, options] = fetchImpl.mock.calls[0];
+    expect(url).toContain("/youtube/v3/channels?part=snippet&mine=true");
+    expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
+    expect(options.headers.Authorization).toBe("Bearer token");
+  });
+
+  test("fails loudly when no channel is linked to the account", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+
+    await expect(fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(/no YouTube channel/);
   });
 });
 
@@ -201,11 +336,12 @@ describe("uploadVideo", () => {
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ location: "https://upload.example/session-1" }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "yt-video-id" }) });
 
-    const videoId = await uploadVideo({ entry, accessToken: "token", publicVideo: false, fetchImpl });
+    const videoId = await uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl });
 
     expect(videoId).toBe("yt-video-id");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(fetchImpl.mock.calls[1][0]).toBe("https://upload.example/session-1");
+    expect(fetchImpl.mock.calls[0][1].headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
   });
 
   test("fails loudly when the resumable session has no Location header", async () => {
@@ -214,7 +350,7 @@ describe("uploadVideo", () => {
     const entry = { id: "clip", videoFile, title: "t", description: "d", tags: [], categoryId: "27" };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, headers: new Headers() });
 
-    await expect(uploadVideo({ entry, accessToken: "token", publicVideo: false, fetchImpl })).rejects.toThrow(/Location header/);
+    await expect(uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl })).rejects.toThrow(/Location header/);
   });
 });
 
@@ -229,12 +365,13 @@ describe("uploadCaption", () => {
     const entry = { id: "clip", captionFile };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "caption-id" }) });
 
-    const result = await uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", fetchImpl });
+    const result = await uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
 
     expect(result).toEqual({ id: "caption-id" });
     const [url, options] = fetchImpl.mock.calls[0];
     expect(url).toContain("/captions?uploadType=multipart");
     expect(options.headers["Content-Type"]).toMatch(/^multipart\/related; boundary=/);
+    expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
     expect(options.body.toString()).toContain("yt-video-id");
     expect(options.body.toString()).toContain("WEBVTT");
   });
