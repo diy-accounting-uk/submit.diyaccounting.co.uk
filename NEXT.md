@@ -49,6 +49,14 @@ next starts from main as `claude/b12-board`.
   `keepalive.yml` workflow may already exist for this; read it). **Source**: BACKLOG 47.
   **Owner**: Claude Code. **Model**: Sonnet.
 
+- [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
+  asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
+  `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
+  cannot sign in to the books pages without Google. Read the `BooksUserPoolClientId` output
+  as well and apply the same `COGNITO` provider change to that client on enable and disable
+  (the credentials file stays one file); one-line reply to the spreadsheets inbox when it is
+  on main. **Source**: BACKLOG 50; spreadsheets board H16. **Owner**: Claude Code. **Model**: Sonnet.
+
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
 - [ ] **O22. Preview one set of micro-entity accounts on ci.** The accounts filing activity
@@ -68,12 +76,17 @@ next starts from main as `claude/b12-board`.
 
 ## Blocked: operator
 
-- [ ] **O16 / B34b. Chase Companies House for the XML Gateway test presenter credentials on
-  2026-09-21.** The presenter account exists (ID E0000052288, code in the operator's
-  credentials store); the test presenter credentials and the accounts specification were
-  requested from xml@companieshouse.gov.uk on 2026-09-05. When they arrive, put the code on the
-  GitHub environments as a secret and tell Claude Code, which starts B34.6. **Source**: BACKLOG
-  34b; issue #15. **Owner**: Operator. Date-gated: chase on 2026-09-21.
+- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
+  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
+  once they have the presenter's name, contact name, address, email address and telephone
+  number, and then issue the test presenter credentials to use in every test submission; the
+  specification they pointed at is the public TIS set the build already follows. Reply with
+  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
+  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
+  the credentials arrive, put them on the GitHub `ci` environment as the secrets
+  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
+  which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
+  **Owner**: Operator.
 - [ ] **O17 / B34.7. Automated Companies House sandbox sign-in for the filing suites.** Batch
   9 (6957651c) carries the suites' sandbox sign-in with the authenticator step, off by default:
   `deploy.yml` and `probe-test.yml` run the two filing suites only when the dispatch input
