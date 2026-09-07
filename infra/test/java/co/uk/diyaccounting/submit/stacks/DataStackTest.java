@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -288,11 +289,13 @@ class DataStackTest {
         // table's PITR wait shares one Provider-backed onEvent/isComplete Lambda pair plus that
         // Provider's own framework onEvent/isComplete/onTimeout Lambdas. Every one of those six
         // must carry the explicit, retained LogGroup KindCdk hands it — otherwise CDK gives it a
-        // bare auto-created log group with no retention and no removal policy.
+        // bare auto-created log group with no retention and no removal policy. The books bucket's
+        // autoDeleteObjects adds a seventh, CDK's own singleton auto-delete-objects handler, which
+        // carries no explicit log group because CDK owns that construct entirely.
         assertEquals(
-                6,
+                7,
                 template.findResources("AWS::Lambda::Function").size(),
-                "expected only the singleton AwsCustomResource provider Lambda");
+                "expected only the singleton AwsCustomResource provider Lambda plus CDK's auto-delete-objects handler");
         assertEveryLambdaHasAnExplicitLogGroup(template);
     }
 
@@ -305,6 +308,12 @@ class DataStackTest {
     private static void assertEveryLambdaHasAnExplicitLogGroup(Template template) {
         var missing = new ArrayList<String>();
         template.findResources("AWS::Lambda::Function").forEach((id, resource) -> {
+            // CDK's own singleton auto-delete-objects handler (added once per stack by any bucket
+            // with autoDeleteObjects(true)) is a framework-owned construct with no hook for this
+            // stack to give it an explicit log group.
+            if (id.startsWith("CustomS3AutoDeleteObjectsCustomResourceProvider")) {
+                return;
+            }
             var properties = (Map<String, Object>) resource.get("Properties");
             var loggingConfig = properties == null ? null : (Map<String, Object>) properties.get("LoggingConfig");
             if (loggingConfig == null || !loggingConfig.containsKey("LogGroup")) {
@@ -336,5 +345,42 @@ class DataStackTest {
         var streamResource = resource.values().iterator().next();
         Object dependsOn = ((Map<?, ?>) streamResource).get("DependsOn");
         assertEquals(true, dependsOn != null, "expected the stream custom resource to declare a DependsOn");
+    }
+
+    @Test
+    void booksBucketIsVersionedEncryptedAndDestroyable() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String expectedBucketName = SubmitSharedNames.forDocs().booksBucketName;
+
+        template.hasResourceProperties(
+                "AWS::S3::Bucket",
+                Map.of(
+                        "BucketName",
+                        expectedBucketName,
+                        "VersioningConfiguration",
+                        Map.of("Status", "Enabled"),
+                        "BucketEncryption",
+                        Match.objectLike(Map.of(
+                                "ServerSideEncryptionConfiguration",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "ServerSideEncryptionByDefault",
+                                        Map.of("SSEAlgorithm", "AES256"))))))),
+                        "PublicAccessBlockConfiguration",
+                        Map.of(
+                                "BlockPublicAcls", true,
+                                "BlockPublicPolicy", true,
+                                "IgnorePublicAcls", true,
+                                "RestrictPublicBuckets", true)));
+
+        template.hasResource(
+                "AWS::S3::Bucket",
+                Map.of(
+                        "Properties",
+                        Match.objectLike(Map.of("BucketName", expectedBucketName)),
+                        "DeletionPolicy",
+                        "Delete",
+                        "UpdateReplacePolicy",
+                        "Delete"));
     }
 }

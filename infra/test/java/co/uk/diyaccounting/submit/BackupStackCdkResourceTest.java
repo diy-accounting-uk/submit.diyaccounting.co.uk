@@ -122,7 +122,7 @@ class BackupStackCdkResourceTest {
     }
 
     @Test
-    void everyTableHoldingCustomerOrComplianceDataIsSelected() {
+    void everyCriticalTableAndTheBooksBucketAreSelected() {
         Template template = synthBackupStack(Optional.of(CROSS_ACCOUNT_VAULT_ARN));
 
         var selections = template.findResources("AWS::Backup::BackupSelection");
@@ -141,7 +141,8 @@ class BackupStackCdkResourceTest {
                                         selectedTable("prod-env-bundles"),
                                         selectedTable("prod-env-hmrc-api-requests"),
                                         selectedTable("prod-env-passes"),
-                                        selectedTable("prod-env-subscriptions"))))))));
+                                        selectedTable("prod-env-subscriptions"),
+                                        "arn:aws:s3:::prod-env-books-972912397388")))))));
     }
 
     private static Matcher selectedTable(String tableName) {

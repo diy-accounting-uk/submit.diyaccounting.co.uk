@@ -14,6 +14,7 @@ import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.BillingStack;
+import co.uk.diyaccounting.submit.stacks.BooksStack;
 import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
@@ -37,6 +38,7 @@ public class SubmitApplication {
     public final CompaniesHouseStack companiesHouseStack;
     public final AccountStack accountStack;
     public final BillingStack billingStack;
+    public final BooksStack booksStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
     public final EdgeStack edgeStack;
@@ -69,6 +71,7 @@ public class SubmitApplication {
         public String selfDestructDelayHours;
         public String userPoolArn;
         public String userPoolClientId;
+        public String booksUserPoolClientId;
         public String bundlesTableArn;
         public String hostedZoneId;
         public String certificateArn;
@@ -152,6 +155,16 @@ public class SubmitApplication {
         var cognitoUserPoolArn = envOr("COGNITO_USER_POOL_ARN", appProps.userPoolArn, "(from userPoolArn in cdk.json)");
         var cognitoUserPoolClientId =
                 envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from userPoolClientId in cdk.json)");
+        var cognitoBooksUserPoolClientId = envOr(
+                "COGNITO_BOOKS_CLIENT_ID",
+                appProps.booksUserPoolClientId,
+                "(from booksUserPoolClientId in cdk.json)");
+        // The books page runs on the spreadsheets site's own origins, not this deployment's;
+        // prod is the one live spreadsheets domain, every other deployment uses the shared ci one
+        // plus local dev.
+        var booksAllowedOrigins = "prod".equals(envName)
+                ? "https://spreadsheets.diyaccounting.co.uk"
+                : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
         var cognitoUserPoolId = cognitoUserPoolArn != null
                 ? cognitoUserPoolArn.split("/")[1]
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
@@ -382,6 +395,26 @@ public class SubmitApplication {
                         .baseUrl(sharedNames.publicBaseUrl)
                         .build());
 
+        // Create the BooksStack
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.booksStackId, deploymentName, envName);
+        this.booksStack = new BooksStack(
+                app,
+                sharedNames.booksStackId,
+                BooksStack.BooksStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .booksBucketName(sharedNames.booksBucketName)
+                        .booksAllowedOrigins(booksAllowedOrigins)
+                        .build());
+
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -394,6 +427,7 @@ public class SubmitApplication {
         lambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.booksStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -409,6 +443,7 @@ public class SubmitApplication {
                         .lambdaFunctions(lambdaFunctions)
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
+                        .booksUserPoolClientId(cognitoBooksUserPoolClientId != null ? cognitoBooksUserPoolClientId : "")
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
                         .regionalCertificateArn(regionalCertificateArn)
@@ -418,6 +453,7 @@ public class SubmitApplication {
         this.apiStack.addStackDependency(companiesHouseStack);
         this.apiStack.addStackDependency(authStack);
         this.apiStack.addStackDependency(billingStack);
+        this.apiStack.addStackDependency(booksStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");
