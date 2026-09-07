@@ -324,6 +324,7 @@
     "stripe:cancel": "node scripts/stripe-cancel-subscription.js",
     "stripe:trigger-lifecycle": "bash scripts/stripe-trigger-lifecycle.sh",
     "stripe:configure-policies": "node scripts/stripe-configure-policies.js",
+    "ga4:bigquery-link-export": "node scripts/ga4-bigquery-link-export.js",
     "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",
     "seo:structured-data-prod": "npm run seo:structured-data-submit-prod",
     "seo:structured-data-submit-ci": "npx sdtt --url https://ci-submit.diyaccounting.co.uk/ --presets Google SocialMedia",
