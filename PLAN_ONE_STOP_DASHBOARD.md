@@ -1,13 +1,14 @@
 # PLAN: The one-stop dashboard
 
-Status: open, drafted 2026-09-07. No code written. Backlog row 52.
+Status: open, drafted 2026-09-07, reshaped the same evening around goals, levers and
+experiments. No code written. Backlog row 52; NEXT.md B52a is the first row.
 
-One page the operator opens to see how DIY Accounting is doing: money in, who is visiting and
-what they do, what gets downloaded and filed, what is alarming, what AWS costs, what is
-deployed, and in the end the company's own P&L and balance sheet. The customer journeys it
-measures cross three sites: the apex and holding page (`../root.diyaccounting.co.uk`, and the
-gateway at `../www.diyaccounting.co.uk`), the spreadsheets site with the books pages
-(`../spreadsheets.diyaccounting.co.uk`), and this one.
+One page the operator opens to see how DIY Accounting is doing against four goals, which levers
+are being pulled, and how each running experiment is moving its metric. The same data, exported
+raw and indexed in this workspace, is what Claude Code and Cowork read to propose the next
+experiment. The customer journeys it measures cross three sites: the apex and holding page
+(`../root.diyaccounting.co.uk`, and the gateway at `../www.diyaccounting.co.uk`), the
+spreadsheets site with the books pages (`../spreadsheets.diyaccounting.co.uk`), and this one.
 
 ## User assertions (verbatim)
 
@@ -15,125 +16,221 @@ gateway at `../www.diyaccounting.co.uk`), the spreadsheets site with the books p
 > journeys should span ../spreadsheets ../root* and this directory) and ultimately I want the
 > actual company P&L and balance sheet on there (delivered with ../PLAN_FINANCE_AUTOMATION.md)
 
-From the notebook page (2026-09-07), numbered as written:
+> My goals to push up are: uptime, conversations to submissions, conversions to paid, low
+> running costs. I would like these general areas displayed in terms of their performance from
+> observations and also on the same dashbard if not another axis, I would like to see the levers
+> I have to influence those goals. I don't mind a bit of duplication to help with comparison and
+> please see what the 2026 observation standards are (I would like to align to something modern
+> and recognisable), and I would also like your advise on whether cloudwatch dashboards are the
+> best place for this, and I would also like to be able to download the raw data so that it can
+> be indexed here for you (Claude code) to access.
 
-1. Revenue: donation, subscription
-2. Visitors: human + bot + synthetics, to diya, submit (subscribe, submit) and spreadsheets
-   (donate, download), with goals
-3. Downloads by product / time
-4. Submissions by activity / time
-5. Sources / time
-6. Alarms / time
-7. AWS cost / time
-8. Deployments / time, tagged by branch
+> Higher level goal: I want to be able to get enough information to have Claude Code or Cowork
+> advise on experiments to work on my goals and I want the dashboards to see how these are
+> progressing.
 
-Boxed beside them: deep links; an invoicing MCP; trigger an MCP chat service.
+From the notebook page (2026-09-07), numbered as written: 1 revenue (donation, subscription);
+2 visitors (human, bot, synthetic) to diya, submit (subscribe, submit) and spreadsheets
+(donate, download), with goals; 3 downloads by product over time; 4 submissions by activity
+over time; 5 sources over time; 6 alarms over time; 7 AWS cost over time; 8 deployments over
+time tagged by branch. Boxed beside them: deep links; an invoicing MCP; trigger an MCP chat
+service.
 
-## Where we stand
+## The two dashboards today
 
-More of this exists than the ask suggests. `_developers/archive/PLAN_USAGE_DATA_PIPELINE.md`
-shipped an analytics lake and a dashboard, and the code confirms it:
+Read from the prod account on 2026-09-07 (`aws cloudwatch get-dashboard`).
 
-- **`AnalyticsStack`** (`{env}-env-AnalyticsStack`): a lake bucket, Glue tables, Firehose from
-  the activity event bus and four DynamoDB streams, eleven Athena views under
-  `infra/main/resources/analytics/views/`, a nightly `analyticsMetricsPublish` Lambda that
-  turns the views into 23 CloudWatch metrics in `Submit/Analytics`, and the CloudWatch dashboard
-  `{env}-analytics` built by `stacks/analytics/AnalyticsDashboard.java`: active users, sessions
-  by country, submissions by outcome, login-to-submission conversion, revenue by product, passes
-  issued and redeemed, HMRC failures by class, and a GA4-versus-Stripe-versus-events
-  reconciliation widget.
-- **`IngestionStack`**: nightly pulls of GA4 through the Data API (`ga4ReportPull.js`), Stripe
-  balance transactions and charges (`stripeReconcile.js`), and CloudFront access logs.
-- **GA4 is one property for all three sites.** "DIY Accounting" (523400333) carries the
-  gateway, spreadsheets and submit streams (`google-analytics.toml`), with daily and streaming
-  export to BigQuery in the `diyaccounting-ga4` project. The nightly pull reads that property
-  with `hostName`, `pagePath`, `eventName` and `sessionDefaultChannelGroup` dimensions, so
-  gateway and spreadsheets pageviews and event counts already land in the lake. The root
-  holding page fires the submit stream's measurement id rather than the gateway's.
-- **Actor classification exists server-side.** `app/lib/activityAlert.js` marks every activity
-  event `customer`, `test-user`, `probe` or `system` from the email domain and the `test_`
-  request-id prefix, and the views filter on it. Nothing marks synthetic traffic in GA4 or RUM.
-- **Alarms** reach GitHub as issues through `alarmToGithubIssue.js`; the state-change events
-  pass through one EventBridge rule in `OpsStack`. **RUM** (web vitals, JS errors) runs on
-  submit only. **Cost**: `_developers/archive/PLAN_COST_INSTRUMENTATION.md` designed the CUR
-  export, budgets and anomaly monitor; none is applied. **Deployments**: the only persistent
-  record is the SSM `last-known-good-deployment` parameter per environment; ci names carry the
-  branch by construction, prod names carry the commit sha.
-- **Downloads and donations** happen on the spreadsheets site, which fires GA4 events for
-  both (`ecommerce-events.js`, `books-events.js`) and nothing else. The four Stripe donation
-  Payment Links and the PayPal donate button report nowhere in this repo.
-- **The company's own books** are the subject of `../PLAN_FINANCE_AUTOMATION.md`: staged
-  PayPal, Stripe and NatWest downloads become a diya-gl book, from which the Ltd engine in the
-  spreadsheets repo computes the published P&L and balance sheet. No code yet; the March to
-  August 2026 staging is phase 1.
+**`prod-env-operations`**, built by `ObservabilityStack` per environment, thirteen widgets:
+RUM p75 LCP, RUM p75 INP, RUM JS errors, GitHub probe tests, VAT submissions, HMRC
+authentications, bundle operations, sign-ups and Cognito auth, bundle grants and cap
+enforcement, active bundle allocations, Lambda errors, Lambda throttles, Lambda p95 duration.
+
+- The three "all functions, all deployments" widgets never render. Each is a `SEARCH` over
+  every `prod-*` Lambda function; CloudWatch holds about 4,700 `Errors` series under that
+  prefix (retired deployments keep their series for fifteen months, and each function has a
+  series per alias and version) against a limit of 500 series per widget. About 230 of them are
+  canary functions, which the widgets were not meant to show at all.
+- Five of the thirteen are business counts, not operations: VAT submissions, HMRC
+  authentications, bundle operations, sign-ups, bundle grants. They count Lambda invocations of
+  the live deployment, which is a fair proxy on the day and wrong as history, because a deploy
+  renames the functions.
+
+**`prod-env-analytics`**, built by `AnalyticsDashboard` from the lake's nightly metrics, eight
+widgets: active users, sessions by country, submissions by outcome, login-to-submission
+conversion, revenue by product, passes issued and redeemed, HMRC failures by class, and the
+GA4-versus-Stripe-versus-events reconciliation.
+
+- Three widgets are empty over two weeks (sessions by country, passes, bundle grants on the
+  other board) and the conversion widget reads zero against 22 to 38 daily active users and a
+  handful of submissions. Each is either a metric the publisher never emits with that dimension
+  or a view whose join finds nothing; B52a checks each one at the source before anything is
+  moved.
+- Submissions, sign-ups and bundle activity appear on both dashboards from different sources
+  (Lambda invocations there, activity events here). That duplication is worth keeping once,
+  deliberately, as the reconciliation widget already does for purchases: same quantity, two
+  sources, side by side.
+
+## Goals, observations and levers
+
+The page is organised by the four goals, not by data source. Each goal has one headline
+observation, its target, the supporting observations that explain it, and the levers the
+operator can pull, each with the metric that shows the lever moved. Experiments sit under the
+goal they serve.
+
+| Goal | Headline observation (the SLI) | Target (the SLO) | Supporting observations | Levers, each with its own metric |
+|---|---|---|---|---|
+| Uptime | Availability of the customer journey: probe pass rate over sign-in, obligations, submit on prod | 99.9 % monthly, error budget shown | Golden signals per route (latency p95, request rate, error rate, saturation as throttles); Core Web Vitals p75 (LCP, INP, CLS); alarm count by family; HMRC and Companies House upstream error rate | Deploy frequency and change failure rate (DORA); alarm consolidation (B30); provisioned concurrency; canary coverage of each activity |
+| Conversion to submission | Signed-in users who complete a submission within 30 days, by activity | Set from the first month's baseline, then raise | Funnel: visit, sign-in, HMRC or Companies House authorisation, first obligation view, first submission; drop-off per step; HMRC failures by class; synthetic and bot traffic excluded | Landing copy and demo videos (B17); the CSV and books import (row 16, `PLAN_SUBMISSION_MCP.md`); activity gating and free-bundle scope; email nudges after sign-in without a submission |
+| Conversion to paid | Paying customers as a share of submitters; revenue per month by product, subscriptions and donations | Set from baseline | Checkout starts and completions; renewals and churn; passes issued and redeemed; donations by channel; downloads by product on spreadsheets as the top of the funnel | Price and bundle catalogue (`stripe-catalogue-sync`); the free-bundle boundary; the donate prompt on the books pages; the resident-company bundle when accounts filing lands |
+| Low running cost | Monthly AWS and Google spend, and cost per submission | Steady-state target from the cost plan, cost per submission falling | Cost by service and by environment (FOCUS columns); spare deployment sets standing; canary and alarm spend; Lambda duration and memory | Deployment lifecycle (`destroy-*` workflows); alarm and canary cuts (B30o); scheduled ingestion cadence; log retention; reserved capacity |
+
+The company P&L and balance sheet sit above the four goals as the outcome they serve.
+
+**Experiments.** An experiment is a row in `experiments.toml` at this repo's root: id, goal,
+hypothesis, lever, the metric watched, start, end, the deployment or catalogue change that
+began it, and the result once written. The page draws each experiment's start and end as a
+vertical annotation on the metric it watches and lists open experiments under their goal. The
+file is in git, so it is indexed, and Claude reads the experiment's window against the raw
+export to say whether the metric moved. Proposing an experiment is then a chat with the
+export, the goal table and this file in context; nothing else is needed for the advice, and
+the page shows whether the advice worked.
+
+## Standards to align with
+
+Recognisable in 2026, each mapped to one part of the page:
+
+- **SLIs and SLOs with error budgets, and the four golden signals** (latency, traffic, errors,
+  saturation), from Google's SRE practice, for uptime. The probe suites already measure the
+  customer journey; the SLI is their pass rate.
+- **Core Web Vitals** (LCP, INP, CLS at p75) for page experience. RUM already records p75 LCP
+  and INP on submit; CLS and the two sibling sites are the gap.
+- **OpenTelemetry semantic conventions** for naming the custom metrics and their attributes.
+  The traces, metrics and logs conventions are stable in 2026. The `Submit/Analytics` and
+  `Submit/BundleCapacity` metrics keep their namespaces but take OTel names and attribute keys
+  (`http.route`, `error.type`, `deployment.environment.name`), so a future move off CloudWatch
+  is a re-export, not a rename.
+- **DORA's five delivery metrics** (deployment frequency, lead time for changes, change
+  failure rate, failed deployment recovery time, deployment rework rate) for the deployments
+  panel, computed from the Actions runs and the alarm issues each deploy opens. This is the
+  notebook's "deployments by branch" made comparable to anyone else's.
+- **FinOps FOCUS** for cost. AWS Data Exports has published FOCUS 1.2 since re:Invent 2025;
+  the specification is at 1.3 with 1.4 ratified in June 2026. The cost panel reads a FOCUS
+  export rather than the CUR 2.0 the cost instrumentation plan named, so the columns
+  (`BilledCost`, `ServiceName`, `Tags`) match the FinOps Framework vocabulary and any tool.
+  Cost per submission is the unit-economics figure the framework asks for.
+- **GA4 key events and funnels** for the two conversion goals, with the AARRR stages
+  (acquisition, activation, retention, revenue, referral) as the funnel's labels, which is the
+  product vocabulary most readers know.
+
+## Where each dashboard lives
+
+**CloudWatch keeps the operations dashboard and nothing else.** It is the right place for
+live signals: the alarms, RUM, Lambda and API Gateway metrics are born there, it costs about
+$3 a month, and it refreshes in seconds. It is the wrong place for the goals page: a widget
+cannot show a table or a balance sheet, metrics fall off after fifteen months so a year-on-year
+line dies, the 500-series limit already breaks three widgets, the console needs a sign-in the
+operator does not want to make daily, and nothing on it can be indexed for Claude.
+
+**The goals page is a private static page on submit, generated nightly from the lake.** The
+metrics-publish Lambda that already runs each night writes one snapshot per environment
+(`snapshot.json`, plus one CSV per view) to a prefix the site serves behind the operator's own
+sign-in, on an activity gated to an `operator` bundle that no customer holds. The page is plain
+HTML with the site's chart style, reads the snapshot, draws the goal table, the panels, the
+experiment annotations and the deep links. Where a live figure helps (today's probe pass rate,
+the current alarm list), the page reads it through the existing API with the operator's token,
+so the nightly snapshot and the live value sit side by side.
+
+**Looker Studio over BigQuery was the alternative and is not chosen.** It renders the GA4 half
+with no code and with Google's own funnel and attribution widgets, which is real value for the
+two conversion goals. It cannot show Stripe, alarms, cost, deployments, experiments or the
+accounts unless each is copied into BigQuery too, which doubles the pipeline, and it lives in a
+Google console with its own sign-in. The choice can be revisited if the GA4 panels prove
+awkward to draw by hand; the BigQuery export is on either way, and a Looker report over it can
+be added beside the page at any time without changing the plan.
+
+## Raw data for indexing
+
+Every figure on the page must be readable by Claude without the page. The nightly job writes,
+beside the snapshot, one CSV per Athena view and one JSON per goal (observation, target,
+supporting metrics, levers, open experiments) to `s3://<lake>/exports/<env>/<date>/`. A pull
+script in this repo (`scripts/analytics-pull.sh`, the shape of `drive/pull.sh`) syncs that
+prefix to `~/projects/diy-accounting-limited/analytics/<env>/` at the workspace root, and that
+tree is added to `index/corpus.toml` as its own source, the way `../PLAN_FINANCE_AUTOMATION.md`
+adds `staging`. The pull runs from the operator's SSO session, read-only, and `reindex`
+follows it. The FOCUS cost export and the DORA rows land in the same tree. Nothing under
+`analytics/` is committed to a repository.
 
 ## Panel by panel
 
-| Panel | Source today | Gap | Work |
-|---|---|---|---|
-| 1 Revenue | `v_revenue_daily` from the Stripe pull (subscriptions and bundles) | Donations: confirm the Payment Links sit in the same Stripe account the nightly pull reads and label them by product; PayPal donations need the PayPal API from the finance plan's phase 1 | D2 |
-| 2 Visitors and goals | GA4 sessions, users and events per host in the lake; conversion views for submit | Synthetic traffic tagged in GA4 and RUM (a `actor` user property set when the signed-in user is `synthetic-*@test.diyaccounting.co.uk` or the run carries a `test_` correlation id); bot share from the CloudFront logs' user-agent class; the root page's stream id; cross-domain linking so one visitor keeps one session from apex to submit; the four goals as GA4 key events | D3, D4 |
-| 3 Downloads by product | Event counts by name only; no product dimension in the Data API pull | Read the download events with their `product` parameter from the BigQuery export instead of the Data API | D5 |
-| 4 Submissions by activity | `v_submissions_daily` counts VAT returns only | Add the Companies House events (`companies-house-accounts-submitted`, `companies-house-filing-submitted`, the two register filings) and group by activity | D1 |
-| 5 Sources | `sessionDefaultChannelGroup` is pulled | A view and a widget | D1 |
-| 6 Alarms | GitHub issues; EventBridge state changes | Deliver the state-change events to the lake through the existing Firehose pattern; a view by family and day | D6 |
-| 7 AWS cost | Nothing deployed | Apply the cost instrumentation plan's CUR 2.0 export into the lake and its budgets; a daily Cost Explorer pull is the fallback if the CUR lands slowly | D7 |
-| 8 Deployments by branch | SSM pointer, current value only | Publish one lake row from `set-last-known-good-deployment` and from the destroy workflows: name, environment, branch, sha, run id, duration; ci and prod both | D8 |
-| Deep links | none | Every row on the page links to its object: the issue, the run, the stack, the receipt, the GA4 report | D9 |
-| Company P&L and balance sheet | none | The company's diya-gl book saved to the DIYA cloud through the finance plan; a nightly derivation with the Ltd engine; the two statements rendered on the page | D10 |
-| Invoicing MCP, chat trigger | none | Horizon: the finance plan's dividend vouchers and sales invoices generated from the book's `dividends` and `members` tables, exposed as tools on the submission MCP; a button on the page that opens a chat with the MCP attached | after `PLAN_SUBMISSION_MCP.md` M4 |
+| Panel | Goal | Source today | Gap | Work |
+|---|---|---|---|---|
+| Availability SLI and error budget | Uptime | Probe results as `behaviour-test` metrics; alarms as GitHub issues | The pass-rate SLI over a month, the budget, alarm state changes into the lake by family | D1, D6 |
+| Golden signals and web vitals | Uptime | Operations dashboard, three widgets broken | Narrow the searches to the live deployment; add CLS; RUM on the two sibling sites | B52a, D3 |
+| Funnel to submission | Conversion to submission | `v_login_to_submission_funnel`, `v_signup_to_first_submission`, conversion widget reads zero | Verify the views; add the Companies House events; synthetic and bot exclusion; cross-site sessions | B52a, D1, D3, D4 |
+| Submissions by activity | Conversion to submission | `v_submissions_daily` counts VAT only | Add the Companies House events, group by activity | D1 |
+| Sources | Both conversions | `sessionDefaultChannelGroup` pulled | A view and a panel | D1 |
+| Revenue, checkout, renewals | Conversion to paid | `v_revenue_daily` from the Stripe pull | Donations: confirm the Payment Links' account, label by product; PayPal donations from the finance plan; churn from the subscriptions table stream | D2 |
+| Downloads by product | Conversion to paid | Event counts by name only | Product parameter from the BigQuery export | D5 |
+| Cost and cost per submission | Low running cost | Nothing deployed | FOCUS 1.2 export from the management account into the lake; budgets and the anomaly monitor from the cost plan | D7 |
+| DORA delivery metrics | Uptime, cost | SSM pointer only | One lake row per deploy and destroy: name, environment, branch, sha, run id, duration, lead time from the PR; failure and recovery from the alarm issues | D8 |
+| Experiments | All | none | `experiments.toml`, annotations, the open list per goal | D11 |
+| Raw export and index | All | none | The nightly export, the pull script, the corpus source | D12 |
+| Deep links | All | none | Every row links to its object | D9 |
+| Company P&L and balance sheet | Outcome | none | The company's diya-gl book through the finance plan; nightly derivation with the Ltd engine | D10 |
+| Invoicing MCP, chat trigger | Horizon | none | The finance plan's vouchers and invoices as tools on the submission MCP; a button that opens a chat with the export attached | after `PLAN_SUBMISSION_MCP.md` M4 |
 
 ## Decisions
 
-1. **The lake is the store; the page is a render.** Every panel reads an Athena view or a
-   metric that already exists or is added to `AnalyticsStack`. The dashboard adds no second
-   pipeline. The reconciliation widget's principle carries over: where two sources measure the
-   same thing (GA4 purchases against Stripe charges, GA4 downloads against CloudFront log hits),
-   show both.
-2. **The page is a private static page on submit, generated nightly.** The CloudWatch dashboard
-   stays for operations, but it cannot render a balance sheet or carry deep links well and it
-   needs the console. The nightly metrics job writes one JSON snapshot per environment to a
-   prefix the site serves behind the operator's own sign-in, on an activity gated to an
-   `operator` bundle that no customer holds. The page is plain HTML and the existing chart
-   style. **Alternative**: Looker Studio over the BigQuery export, which gives a page with no
-   code for the GA4 half but cannot show the Stripe, alarm, cost, deployment or accounts data
-   without moving them into BigQuery too. The operator may prefer it for the visitor panels.
+1. **The lake is the store; both dashboards and the export are renders of it.** Live signals
+   stay in CloudWatch. Everything else reads an Athena view or a metric that exists or is
+   added to `AnalyticsStack`. No second pipeline.
+2. **Operations in CloudWatch, goals on the page.** Explained under "Where each dashboard
+   lives". The business widgets leave the operations dashboard; one deliberate duplicate per
+   quantity stays where two sources measure the same thing.
 3. **One GA4 property, one visitor.** The three sites keep their streams in the shared
-   property. Cross-domain measurement is configured on that property so a visitor arriving at
-   the apex and subscribing on submit is one session with one source. The root holding page
-   moves to the gateway stream or gets its own.
-4. **Synthetic traffic is tagged, not suppressed.** Probe and behaviour runs are a load the
-   sites should measure. The client sets a GA4 user property and a RUM session attribute from
-   the same rule `classifyActor` applies on the server, and every visitor panel splits on it.
-5. **The company accounts come from the same engine customers use.** No spreadsheet is read by
-   hand. The finance plan produces the book; `derive_micro_entity_accounts` and the published
-   statements from `PLAN_SUBMISSION_MCP.md` produce the figures; this page shows them beside
-   the last filed set.
+   property; cross-domain measurement is configured so an apex arrival that subscribes on
+   submit is one session with one source. The root holding page moves to the gateway stream.
+4. **Synthetic traffic is tagged, not suppressed.** The client sets a GA4 user property and a
+   RUM session attribute from the rule `classifyActor` applies on the server; every visitor
+   panel splits on it; the SLI counts synthetic runs as the measurement they are.
+5. **Targets are set from a month of baseline, then written into the goal table.** Nothing is
+   invented before the data exists; the uptime SLO alone starts at 99.9 % because the probes
+   already give a month of history.
+6. **The company accounts come from the same engine customers use**, through the finance plan
+   and `PLAN_SUBMISSION_MCP.md`, never from a spreadsheet read by hand.
 
 ## Sequence
 
-Rows D1 to D9 are `claude/dash-<n>-<topic>` branches here unless the table names another repo.
+Rows are `claude/dash-<n>-<topic>` branches here unless the table names another repo. B52a is
+on NEXT.md.
 
 | Row | What | Waits on | Owner, model |
 |---|---|---|---|
-| D1 | Views and metrics for submissions by activity and traffic sources; the page skeleton with those two panels, the snapshot writer, the `operator` bundle and activity gate | none | Claude Code, Sonnet |
-| D2 | Donations: confirm the Stripe account, label the Payment Links' charges by product in `v_revenue_daily`; PayPal donations once the finance plan's PayPal pull exists | finance plan phase 1 for PayPal | Claude Code, Sonnet; operator confirms the account |
-| D3 | Synthetic tagging in `analytics.js` and the RUM client on submit, the same on spreadsheets' `analytics.js`; the root page's stream id (root repo); cross-domain linking and the four key events on the property | none; the GA4 property changes go through backlog row 49's tooling or the Admin API script | Claude Code, Sonnet; three repos, one PR each |
-| D4 | Bot share from CloudFront logs by user-agent class; the visitors panel with human, bot and synthetic | D3 | Claude Code, Sonnet |
-| D5 | Downloads by product from the BigQuery export (a scheduled query into the lake, or Athena's BigQuery connector); the panel | the export, already on | Claude Code, Sonnet |
-| D6 | Alarm state changes into the lake; the panel by family | none | Claude Code, Sonnet |
-| D7 | Apply the cost instrumentation plan: CUR 2.0 export, tags, budgets, anomaly monitor; the panel | operator's yes for the management-account export | Claude Code, Sonnet; the plan is written |
-| D8 | Deployment rows from the deploy and destroy workflows; the panel by branch | none | Claude Code, Sonnet |
+| B52a | The split: narrow the three broken searches to the live deployment's functions and drop the canaries from them; move the five business widgets off the operations dashboard; find why sessions by country, passes and the conversion widget show nothing; write the goal table's first column as the analytics dashboard's new layout until the page exists | none | Claude Code, Sonnet |
+| D1 | Views for submissions by activity, sources, the availability SLI and error budget; the page skeleton, the snapshot writer, the `operator` bundle and activity gate | B52a | Claude Code, Sonnet |
+| D2 | Donations and churn: confirm the Stripe account, label the Payment Links' charges; renewals and churn from the subscriptions stream; PayPal donations once the finance plan's pull exists | finance plan phase 1 for PayPal | Claude Code, Sonnet; operator confirms the account |
+| D3 | Synthetic tagging in the two `analytics.js` files and the RUM client; RUM and CLS on spreadsheets; the root page's stream id; cross-domain linking and the key events on the property | none; the GA4 changes through backlog row 49's tooling or the Admin API script | Claude Code, Sonnet; three repos |
+| D4 | Bot share from CloudFront logs by user-agent class; the visitors panel by human, bot, synthetic | D3 | Claude Code, Sonnet |
+| D5 | Downloads by product from the BigQuery export | the export, already on | Claude Code, Sonnet |
+| D6 | Alarm state changes into the lake; alarms by family; the error budget burn | D1 | Claude Code, Sonnet |
+| D7 | FOCUS 1.2 Data Export from the management account into the lake, tags, budgets, the anomaly monitor; cost per submission | operator's yes for the management-account export | Claude Code, Sonnet; the cost plan is the design, with the export format changed |
+| D8 | DORA rows from the deploy and destroy workflows and the alarm issues; the panel | none | Claude Code, Sonnet |
 | D9 | Deep links on every row | D1 | Claude Code, Haiku |
-| D10 | The company P&L and balance sheet: the nightly derivation over the company's cloud book and the panel | finance plan phase 2; `PLAN_SUBMISSION_MCP.md` M1 and M3; the published diya-gl package | Claude Code, Sonnet |
+| D10 | The company P&L and balance sheet from the company's cloud book | finance plan phase 2; `PLAN_SUBMISSION_MCP.md` M1, M3 | Claude Code, Sonnet |
+| D11 | `experiments.toml`, the annotations, the open list; the first experiment written from a baseline month | D1 | Claude Code, Sonnet; the hypothesis is the operator's |
+| D12 | The raw export, `scripts/analytics-pull.sh`, the `analytics` corpus source, `reindex` | D1 | Claude Code, Sonnet; the corpus change at the workspace root |
 
 ## Verification
 
 - Each panel's figure for one day is reproduced by hand from its source: a GA4 explore, the
   Stripe dashboard, the GitHub issues list, Cost Explorer, the Actions run list.
-- A probe run against prod appears in the visitors panel as synthetic and in no other class.
+- The three operations widgets render, and no canary appears in them.
+- A probe run against prod appears in the visitors panel as synthetic and in no other class,
+  and counts in the availability SLI.
 - A visit that starts on the apex and subscribes on submit is one GA4 session with the apex's
   source.
+- `corpus-loom` answers "what was the submission conversion in the week of an experiment's
+  start" from the pulled export alone.
 - The company balance sheet on the page equals the Ltd engine's published balance sheet for
   the same book, and its prior-year column equals the last set filed at Companies House.
 - The page is reachable signed in as the operator and returns the site's normal denial to any
@@ -143,24 +240,26 @@ Rows D1 to D9 are `claude/dash-<n>-<topic>` branches here unless the table names
 
 | Dependency | Where | State |
 |---|---|---|
-| Downloads, donations and books events on the spreadsheets site; its `analytics.js` for synthetic tagging | `../spreadsheets.diyaccounting.co.uk` | Events exist; tagging is D3 |
+| Downloads, donations and books events, `analytics.js` and RUM on the spreadsheets site | `../spreadsheets.diyaccounting.co.uk` | Events exist; tagging and RUM are D3 |
 | The root holding page's GA4 stream id | `../root.diyaccounting.co.uk` | One-line change, D3 |
 | Cross-domain linking and key events on GA4 property 523400333 | Google Analytics Admin; backlog row 49 wants this as code | Operator or the Admin API script |
 | The BigQuery export and its scheduled queries | `diyaccounting-ga4` project; the GA4 service account in Secrets Manager | Export on; queries are D5 |
-| CUR 2.0 export from the management account | AWS management account 887764105431 | Designed in the cost plan, not applied |
-| The company's diya-gl book | `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2, Cowork sessions plus backlog rows | Drafted 2026-08-31, no code |
+| FOCUS 1.2 Data Export from the management account | AWS management account 887764105431 | Designed as CUR 2.0 in the cost plan, not applied; format changes to FOCUS |
+| The `analytics` corpus source | `../index/corpus.toml` at the workspace root | D12 |
+| The company's diya-gl book | `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2 | Drafted 2026-08-31, no code |
 | The Ltd engine as a published package | spreadsheets board H7 | Ready to start |
 | Which Stripe account holds the donation Payment Links | Stripe dashboard | Operator confirms |
 
 ## Distance
 
-Half the panels are a view and a widget away, because the lake, the ingestion and the GA4
-property already span the three sites: submissions by activity, sources, alarms, deployments
-and the page itself (D1, D6, D8, D9) need no outside party. Visitors and downloads (D3 to D5)
-need small changes in the two sibling repos and one GA4 property change. Cost (D7) needs the
-operator's yes on the management account. The company P&L and balance sheet (D10) is the far
-end: it waits on the finance plan's staging and ingest, which has not started, and on the
-submission MCP's derivation; the rendering itself is small once the book exists.
+The uptime goal is closest: the probes, RUM and alarms exist, and B52a plus D1 and D6 turn
+them into an SLI with a budget. The two conversion goals have their funnel views built and
+apparently broken (the zero), so B52a's check decides whether that is a day's fix or a
+rebuild; the cross-site and synthetic work (D3, D4) is small and spread over three repos. Cost
+is one export away once the operator says yes on the management account. Experiments and the
+raw export (D11, D12) are new but small, and they are what turns the page from a report into
+the loop the operator asked for: data Claude can read, a hypothesis in a file, and a line that
+shows whether it moved. The company accounts remain the far end, waiting on the finance plan.
 
 ## Related
 
@@ -170,3 +269,6 @@ submission MCP's derivation; the rendering itself is small once the book exists.
 - `_developers/backlog/METRIC_SON_DESIGN.md` can sit on the page as a second presentation of
   the same metrics.
 - `../PLAN_FINANCE_AUTOMATION.md`, `PLAN_SUBMISSION_MCP.md`
+- Standards: Google SRE workbook (SLOs, golden signals); web.dev Core Web Vitals;
+  opentelemetry.io semantic conventions; dora.dev; focus.finops.org (specification 1.3, 1.4);
+  GA4 key events.

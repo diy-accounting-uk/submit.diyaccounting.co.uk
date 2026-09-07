@@ -46,9 +46,23 @@ next starts from main as `claude/b12-board`.
   workflow state visible with `gh workflow view <name>` and the Actions API's `state`), and
   compare the two files' histories with `codeql.yml`'s; fix what is found (a re-enable through
   the API, or a change to the files) and record how a future miss is detected (the
-  `keepalive.yml` workflow may already exist for this; read it). **Source**: BACKLOG 47.
+  `keepalive.yml` workflow may already exist for this; read it). Issue #43 closes when the next
+  scheduled `stack-drift` run is green. **Source**: BACKLOG 47; issue #43.
   **Owner**: Claude Code. **Model**: Sonnet.
 
+- [ ] **B52a. Split the two prod dashboards into operations and business.**
+  `prod-env-operations` (thirteen widgets, `ObservabilityStack`) carries five business counts
+  and three widgets that never render: the "all functions, all deployments" searches match
+  about 4,700 `prod-*` Lambda series (retired deployments' functions, canaries, one series per
+  alias and version) against CloudWatch's 500 per widget. Narrow those searches to the live
+  deployment's functions and exclude `cwsyn-*`; move VAT submissions, HMRC authentications,
+  bundle operations, sign-ups and bundle grants off it. On `prod-env-analytics`
+  (`AnalyticsDashboard`), find at the source why sessions by country and passes are empty over
+  two weeks and why login-to-submission conversion reads zero against daily active users and
+  submissions, then lay the widgets out as the goal table's first column (uptime, conversion
+  to submission, conversion to paid, running cost) from `PLAN_ONE_STOP_DASHBOARD.md`. One
+  deliberate duplicate per quantity stays where two sources measure it. **Source**: BACKLOG
+  52; `PLAN_ONE_STOP_DASHBOARD.md` row B52a. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
   asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
   `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
@@ -105,20 +119,6 @@ next starts from main as `claude/b12-board`.
   values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 ## Blocked: Claude Code
 
-- [ ] **D2. prod-env-IdentityStack drift: the Hosted UI user-pool client is MODIFIED.** The
-  hand-dispatched `stack-drift` run 34103728614 (2026-09-07 09:03 UTC) found every other prod
-  stack in sync or benign and `prodenvUserPoolClient` (AWS::Cognito::UserPoolClient) modified;
-  the log does not carry the property. Read it with
-  `aws --profile submit-prod cloudformation describe-stack-resource-drifts --stack-name
-  prod-env-IdentityStack --query "StackResourceDrifts[?StackResourceDriftStatus=='MODIFIED'].PropertyDifferences"`.
-  If it is `SupportedIdentityProviders` carrying `COGNITO`, a probe or video run turned native
-  auth on and its cleanup did not run: the fix is `npm run test:disableCognitoNative -- prod`
-  (a prod Cognito write, the operator's yes first) and making the workflows' disable step run
-  even when the tests fail (`skip-native-auth-disable` is only for debugging). If it is
-  anything else, say what and propose the fix. Issue #43 stays open until the next
-  scheduled drift run is green. **Source**: issue #43; stack-drift run of 2026-09-07.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on `aws sso login --sso-session
-  diyaccounting`.
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof and the price.** After
   B34.6a and O16: submit the FRS 105 accounts to the XML Gateway test service with the test
   presenter credentials (a GitHub environment secret), read the real acknowledgement and poll
