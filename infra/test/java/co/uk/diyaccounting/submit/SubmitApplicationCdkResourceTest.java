@@ -271,6 +271,12 @@ class SubmitApplicationCdkResourceTest {
         // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
 
+        // /api/v1/books/* is more specific than /api/v1/*, so CloudFront routes it separately,
+        // to a response headers policy with no CORS override - the books routes answer their own
+        // CORS, and the API-wide policy's Access-Control-Allow-Origin: * would otherwise stamp
+        // over the handler's own header and break both the PUT preflight and the ETag read.
+        assertBooksBehaviourHasNoCorsOverride(edgeStackTemplate);
+
         // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining
         // them, landing Parquet directly in the shared analytics lake for the Glue catalog.
         edgeStackTemplate.resourceCountIs("AWS::Logs::DeliverySource", 1);
@@ -385,6 +391,36 @@ class SubmitApplicationCdkResourceTest {
         if (submitApplication.selfDestructStack != null) {
             assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.selfDestructStack));
         }
+    }
+
+    /**
+     * Finds the /api/v1/books/* cache behaviour on the distribution and asserts its response
+     * headers policy carries no CorsConfig - unlike the /api/v1/* behaviour's policy, which
+     * overrides Access-Control-Allow-Origin to "*" for every other API route.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertBooksBehaviourHasNoCorsOverride(Template template) {
+        var distributions = template.findResources("AWS::CloudFront::Distribution");
+        org.junit.jupiter.api.Assertions.assertEquals(1, distributions.size());
+        var distributionConfig =
+                (Map<String, Object>) ((Map<String, Object>) distributions.values().iterator().next())
+                        .get("Properties");
+        var config = (Map<String, Object>) distributionConfig.get("DistributionConfig");
+        var cacheBehaviors = (List<Map<String, Object>>) config.get("CacheBehaviors");
+        var booksBehaviour = cacheBehaviors.stream()
+                .filter(behaviour -> "/api/v1/books/*".equals(behaviour.get("PathPattern")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a /api/v1/books/* cache behaviour"));
+
+        var policyRef = (Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId");
+        String policyLogicalId = (String) policyRef.get("Ref");
+        var policyResource = template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(policyLogicalId);
+        org.junit.jupiter.api.Assertions.assertTrue(
+                policyResource != null, "expected to find the books response headers policy resource");
+        var policyProperties = (Map<String, Object>) ((Map<String, Object>) policyResource).get("Properties");
+        var policyConfig = (Map<String, Object>) policyProperties.get("ResponseHeadersPolicyConfig");
+        org.junit.jupiter.api.Assertions.assertFalse(
+                policyConfig.containsKey("CorsConfig"), "expected the books response headers policy to carry no CorsConfig");
     }
 
     /**
