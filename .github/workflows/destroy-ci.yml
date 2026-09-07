@@ -683,6 +683,7 @@ jobs:
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
+          COGNITO_BOOKS_CLIENT_ID: ${{ steps.lookup.outputs.cognito-books-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

@@ -292,6 +292,7 @@ jobs:
       prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
       cognito-user-pool-arn: ${{ steps.lookup-cognito.outputs.cognito-user-pool-arn }}
       cognito-client-id: ${{ steps.lookup-cognito.outputs.cognito-client-id }}
+      cognito-books-client-id: ${{ steps.lookup-cognito.outputs.cognito-books-client-id }}
 
   test:
     name: 'delegate to test workflow'
@@ -1190,6 +1191,7 @@ jobs:
           # Looked up from Cognito domain convention in names job
           COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
+          COGNITO_BOOKS_CLIENT_ID: ${{ needs.names.outputs.cognito-books-client-id }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
 
@@ -1529,6 +1531,7 @@ jobs:
           # Looked up from Cognito domain convention in names job
           COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
+          COGNITO_BOOKS_CLIENT_ID: ${{ needs.names.outputs.cognito-books-client-id }}
 
   deploy-ops:
     name: 'deploy OpsStack via deploy-cdk-stack.yml'

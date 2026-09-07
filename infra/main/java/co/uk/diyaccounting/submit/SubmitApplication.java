@@ -420,6 +420,16 @@ public class SubmitApplication {
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.apiStackId, deploymentName, envName);
 
+        // The books authorizer's JWT audience cannot be blank (AWS::ApiGatewayV2::Authorizer
+        // rejects an empty audience value at deploy time). Fail synth here instead, naming the
+        // env var and the SSM parameter IdentityStack writes it to during the environment deploy.
+        if (cognitoBooksUserPoolClientId == null || cognitoBooksUserPoolClientId.isBlank()) {
+            throw new IllegalStateException(
+                    "COGNITO_BOOKS_CLIENT_ID is not set and booksUserPoolClientId is blank in cdk.json. Set it "
+                            + "from the /submit/" + envName + "/spreadsheets-books-app-client-id SSM parameter, "
+                            + "written by IdentityStack during the environment deploy.");
+        }
+
         // Create a map of Lambda function references from other stacks
         List<AbstractApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
@@ -443,7 +453,7 @@ public class SubmitApplication {
                         .lambdaFunctions(lambdaFunctions)
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
-                        .booksUserPoolClientId(cognitoBooksUserPoolClientId != null ? cognitoBooksUserPoolClientId : "")
+                        .booksUserPoolClientId(cognitoBooksUserPoolClientId)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
                         .regionalCertificateArn(regionalCertificateArn)
