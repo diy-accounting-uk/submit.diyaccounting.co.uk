@@ -106,7 +106,7 @@ next starts from main as `claude/b12-board`.
   the standards' findings.
 - [ ] **B52g. The page.** A private static page on submit behind an `operator` bundle no
   customer holds, drawn from a nightly snapshot the metrics-publish Lambda writes, organised
-  by the five objectives with deep links on every row and `experiments.toml` annotations; the
+  by the eight objectives with deep links on every row and `experiments.toml` annotations; the
   first experiment written from a baseline month, the hypothesis the operator's. **Source**:
   BACKLOG 52; plan rows D1, D9, D11. **Owner**: Claude Code. **Model**: Sonnet. Waits on
   B52d for the first views.
@@ -116,6 +116,25 @@ next starts from main as `claude/b12-board`.
   `../index/corpus.toml`; `reindex` after each pull. **Source**: BACKLOG 52; plan row D12.
   **Owner**: Claude Code, the corpus change at the workspace root. **Model**: Sonnet. Waits
   on B52d.
+- [ ] **B52j. Retention and operator-effort views.** Returning submitters by quarter keyed
+  by hashed subject, renewals and cancellations from the subscriptions stream; a nightly pull
+  of Actions runs by trigger and actor, issue timelines and commits by author, classified into
+  operator interventions. **Source**: BACKLOG 52; plan row D14. **Owner**: Claude Code.
+  **Model**: Sonnet. Waits on B52d.
+- [ ] **B52k. Compliance panel.** Accessibility results from `compliance.yml` (pa11y, axe
+  WCAG 2.1 AA and 2.2 AA) into the lake; HMRC's monthly fraud-prevention header email to
+  `app/lib/fraudPreventionHeaderReport.js` along `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`'s path
+  (BACKLOG 22) with the result into the lake; `compliance.toml` for the standing items (the
+  HMRC questionnaires, terms-of-use items, the Companies House presenter and test account,
+  ICO registration, the 72-hour breach clock) with a date and an owner each. **Source**:
+  BACKLOG 52 and 22; plan row D15. **Owner**: Claude Code. **Model**: Sonnet. Waits on B52d.
+- [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
+  block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
+  effect per unit cost, and the next experiment proposed with its predicted effect and
+  interval; Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for
+  allocations once experiments exist. Its one line per objective goes on the page. **Source**:
+  BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
+  Opus for the models, Sonnet for the notebook. Blocked on B52h and three months of export.
 - [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** Both subscribed standards are
   `INCOMPLETE` with reason `NO_AVAILABLE_CONFIGURATION_RECORDER`, and the one critical finding
   says so. Add the recorder and delivery channel to the environment CDK (a recurring charge
@@ -156,6 +175,12 @@ next starts from main as `claude/b12-board`.
 
 ## Ready: operator (brief: `../BRIEF_OPERATOR_TASKS_2026-09-04.md`)
 
+- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
+  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
+  one with conversion import from GA4 property 523400333's key events, and a reserve floor
+  the loop must not spend below. Name the floor to Claude Code with the account id; the first
+  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
+  D17. **Owner**: Operator.
 - [ ] **O22. Preview one set of micro-entity accounts on ci.** The accounts filing activity
   (`file-micro-entity-accounts`, ci only) is on main since PR #148: open it on a standing ci
   set (any branch push or `gh workflow run deploy.yml -f environment-name=ci` from main makes
@@ -202,9 +227,14 @@ next starts from main as `claude/b12-board`.
   values, then Claude Code runs and fixes. **Model**: Sonnet. Blocked on the four values.
 ## Blocked: Claude Code
 
+- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and
+  payback on the page; the reinvestment fraction as a lever with the reserve floor; paid
+  traffic and article boosts as experiment rows with on-off or geographic controls. **Source**:
+  BACKLOG 52; plan row D17. **Owner**: Claude Code, the operator sets the fraction and the
+  floor. **Model**: Sonnet. Blocked on B52e's revenue data, B52l and O23.
 - [ ] **B52i. The company P&L and balance sheet on the page.** The company's diya-gl book,
   saved to the DIYA cloud by `../PLAN_FINANCE_AUTOMATION.md` phase 2, derived nightly with the
-  Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the five objectives beside
+  Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the eight objectives beside
   the last set filed at Companies House. **Source**: BACKLOG 52; plan row D10. **Owner**:
   Claude Code. **Model**: Sonnet. Blocked on the finance plan's phases 1 and 2 (no code yet)
   and on M1 and M3.

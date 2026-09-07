@@ -1,10 +1,10 @@
 # PLAN: The one-stop dashboard
 
 Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and
-experiments, with the security objective and the related-work sweep added. No code written.
+experiments, then widened to eight objectives with the optimisation and reinvestment loop. No code written.
 Backlog row 52; NEXT.md B52a is the first row.
 
-One page the operator opens to see how DIY Accounting is doing against five objectives, which levers
+One page the operator opens to see how DIY Accounting is doing against eight objectives, which levers
 are being pulled, and how each running experiment is moving its metric. The same data, exported
 raw and indexed in this workspace, is what Claude Code and Cowork read to propose the next
 experiment. The customer journeys it measures cross three sites: the apex and holding page
@@ -73,7 +73,7 @@ GA4-versus-Stripe-versus-events reconciliation.
 
 ## Objectives, observations and levers
 
-The page is organised by the five objectives, not by data source. Each objective has one headline
+The page is organised by the eight objectives, not by data source. Each objective has one headline
 observation, its target, the supporting observations that explain it, and the levers the
 operator can pull, each with the metric that shows the lever moved. Experiments sit under the
 objective they serve.
@@ -85,8 +85,11 @@ objective they serve.
 | Conversion to paid | Paying customers as a share of submitters; revenue per month by product, subscriptions and donations | Set from baseline | Checkout starts and completions; renewals and churn; passes issued and redeemed; donations by channel; downloads by product on spreadsheets as the top of the funnel | Price and bundle catalogue (`stripe-catalogue-sync`); the free-bundle boundary; the donate prompt on the books pages; the resident-company bundle when accounts filing lands |
 | Low running cost | Monthly AWS and Google spend, and cost per submission | Steady-state target from the cost plan, cost per submission falling | Cost by service and by environment (FOCUS columns); spare deployment sets standing; canary and alarm spend; Lambda duration and memory | Deployment lifecycle (`destroy-*` workflows); alarm and canary cuts (B30o); scheduled ingestion cadence; log retention; reserved capacity |
 | Security | Days since the last unhandled finding above medium, across Security Hub, GuardDuty, CodeQL, Dependabot and secret scanning | Zero open above medium; every finding triaged within a week; the 72-hour breach clock never starts | Vulnerability and lifecycle calendar; global exploits matched to our stack; intrusion signals; rate-limit and WAF blocks; concerning traffic; secrets and access age; backup and restore proof | Dependency updates and runtime upgrades; WAF rules and thresholds; Security Hub standards and AWS Config; alarm coverage of the detection stacks; the pen test (row 27a); backups outside the account (issue #11) |
+| Retention | Submitters in a quarter who also submitted the previous quarter, and paying customers renewing | Set from baseline, then raise | Returning submitters by activity; renewals and cancellations by bundle; time from period end to submission; receipts viewed; sign-ins without a submission | Reminder emails before a period end; the obligations and receipts views; the books import so the second return is easier than the first; the renewal price |
+| Operator effort | Operator interventions per week: hand-dispatched workflows, console visits, support emails answered, alarm issues a person touched, board items closed by hand | Falling every month; the automation's whole purpose | Interventions by kind; agent hours per landed item; mean time an alarm issue waits for a person; the ratio of Claude Code commits to operator commits | Every automation row on the board; the triage chain; the inbox and board skills; the operator brief |
+| Compliance | Open compliance findings across the checks below, and days since the last finding above advisory | Zero open; every monthly HMRC report "correct"; every accessibility run clean | Accessibility (pa11y, axe WCAG 2.1 AA and 2.2 AA from `compliance.yml`); HMRC's monthly fraud-prevention header report (correct, advisories, errors, zero traffic); HMRC production-approval questionnaires kept current; MTD terms-of-use items; Companies House presenter and test-account standing and the XML Gateway package reference; ICO registration and the 72-hour breach clock; privacy commitments; licence and attribution checks | Header fixes; the accessibility fixes; the questionnaires' answers; the presenter account's details; the privacy policy; backlog 22's email-to-parser path |
 
-The company P&L and balance sheet sit above the five objectives as the outcome they serve.
+The company P&L and balance sheet sit above the eight objectives as the outcome they serve.
 
 **Experiments.** An experiment is a row in `experiments.toml` at this repo's root: id, objective,
 hypothesis, lever, the metric watched, start, end, the deployment or catalogue change that
@@ -202,6 +205,71 @@ respond, recover); the CIS AWS Foundations Benchmark at its current major in Sec
 OpenSSF Scorecard for the repositories and SLSA provenance for the published packages;
 CISA's KEV catalogue as the exploit feed. The row is D13.
 
+## Optimisation and the reinvestment loop
+
+The operator's aim, stated 2026-09-07: enough data to have Claude propose experiments,
+optimisation across several variables at once, and a feedback loop that reinvests income for
+sustained growth and excellence in the other objectives. The operator will buy traffic
+(Google Ads) and boost articles to generate data where the organic volume is too small to
+measure.
+
+**What is being optimised.** A scalar score over the objectives, each objective's reading
+normalised against its target and weighted, subject to constraints (a cash reserve, the
+uptime SLO, zero open findings above medium). The levers split into continuous ones (spend
+per channel and per week, price, the free-bundle boundary as a number of submissions, Lambda
+memory, provisioned concurrency, the WAF rate threshold, the reinvestment fraction) and
+discrete ones (a feature on or off, a page variant). The methods differ by lever type.
+
+**The ladder of methods, and where each fits.** Linear algebra was the first rung, not the
+whole answer: a least-squares fit is a first-order model of the response, and Newton-Raphson
+is what finds the optimum of a second-order one. Each rung below needs more data than the
+one before and handles more shape.
+
+1. **Least squares on the export** (first-order). Ranks levers within a block by estimated
+   effect per unit cost. Honest for the cost block, which is linear in usage, and for the
+   funnels after taking logs. It says which lever to test next, not what its effect is.
+2. **Response-surface methods** (second-order). A designed set of experiments over two or
+   three continuous levers fits a quadratic; a Newton step on the fitted surface gives the
+   next setting; repeat as the surface is refined. This is Newton-Raphson applied where it
+   belongs, to a smooth model fitted from noisy runs, not to the noisy data directly.
+   Quasi-Newton (BFGS) does the same without forming the Hessian by hand.
+3. **Bayesian optimisation** with a Gaussian-process model. The standard in 2026 for noisy,
+   expensive experiments over a handful of continuous knobs, because it chooses each next
+   experiment by expected improvement and works from a few dozen evaluations. This is the
+   rung for price, the bundle boundary and the infrastructure knobs.
+4. **Bandits** (Thompson sampling) for allocation. Ad spend across channels, article boosts
+   across articles, and page variants are allocation problems, not surface problems: the
+   bandit shifts budget towards what pays while it keeps sampling the rest. It runs
+   continuously and needs no fitted surface.
+5. **Marketing-mix modelling** for spend to revenue. Response to spend saturates and lags
+   (adstock), so the recognisable models are Bayesian MMMs with Hill saturation curves,
+   which is what Google's Meridian and Meta's Robyn implement as open source. Saturation
+   makes the spend objective concave, so once the curves are fitted, gradient methods on
+   them are well behaved and the budget split across channels is a constrained convex
+   problem with a closed form at the margin: spend until the marginal return per pound is
+   equal across channels.
+6. **The reinvestment loop as a control problem.** Income in a month sets the next month's
+   budget through a reinvestment fraction; budget through the fitted curves sets traffic;
+   traffic through the funnels sets submissions and income. That is a discrete-time system
+   with a delay (the VAT quarter dominates the lag), and the fraction is the control input.
+   The page shows the loop's state (trailing income, reserve, budget, return per pound,
+   payback period) and the fraction is a lever with a floor on the reserve. Change it slowly,
+   once per cycle, and hold it when the estimated return per pound drops below one; a fast
+   controller on a quarterly signal oscillates.
+
+**Making the bought traffic identifiable.** Spend without a design measures nothing. Each
+paid test is an experiment row: on-off weeks or geographic splits so the effect has a
+control, a holdout for incrementality, and the metric watched named before it starts. The
+sources panel then reads per-channel return, and the boosted articles read as a source
+each. The Ads accounts were cancelled in 2026 (`google-analytics.toml`), so a new account
+with conversion import from GA4's key events is an operator step before the first test.
+
+**What the operator sees.** Under each objective the page lists the open experiments with
+their predicted and observed effect, and one line from the optimiser: the next experiment it
+would run, the lever, the setting, the expected effect with its interval, and the cost. Claude
+reads the same export and the same models when asked for advice, so the page and the advice
+agree. Rows D16 and D17.
+
 ## Panel by panel
 
 | Panel | Objective | Source today | Gap | Work |
@@ -215,6 +283,9 @@ CISA's KEV catalogue as the exploit feed. The row is D13.
 | Downloads by product | Conversion to paid | Event counts by name only | Product parameter from the BigQuery export | D5 |
 | Cost and cost per submission | Low running cost | Nothing deployed | FOCUS 1.2 export from the management account into the lake; budgets and the anomaly monitor from the cost plan | D7 |
 | DORA delivery metrics | Uptime, cost | SSM pointer only | One lake row per deploy and destroy: name, environment, branch, sha, run id, duration, lead time from the PR; failure and recovery from the alarm issues | D8 |
+| Returning submitters and renewals | Retention | Receipts and subscriptions tables, activity events | A view keyed by hashed subject across quarters; renewal and cancellation events from the subscriptions stream | D14 |
+| Operator interventions | Operator effort | Actions runs by trigger and actor, issue timelines, the mail mirror, the boards' git history | A nightly pull of runs, issues and commits by actor; a classification of each intervention | D14 |
+| Compliance findings | Compliance | `compliance.yml` weekly; HMRC's monthly email and `app/lib/fraudPreventionHeaderReport.js`; the questionnaires in `_developers/reference/` | The accessibility results into the lake; backlog 22's email-to-parser path; a `compliance.toml` for the standing items (questionnaires, presenter account, ICO, terms of use) with a date and an owner each | D15 |
 | Experiments | All | none | `experiments.toml`, annotations, the open list per objective | D11 |
 | Raw export and index | All | none | The nightly export, the pull script, the corpus source | D12 |
 | Deep links | All | none | Every row links to its object | D9 |
@@ -262,6 +333,10 @@ on NEXT.md.
 | D11 | `experiments.toml`, the annotations, the open list; the first experiment written from a baseline month | D1 | Claude Code, Sonnet; the hypothesis is the operator's |
 | D12 | The raw export, `scripts/analytics-pull.sh`, the `analytics` corpus source, `reindex` | D1 | Claude Code, Sonnet; the corpus change at the workspace root |
 | D13 | The security panels: AWS Config recorder and the CIS 5.0 standard, findings and GitHub alerts into the lake, `lifecycle.toml` and its check, the SBOM and KEV match, the CloudTrail metric filters, WAF logs, the rotation record | D1; the operator's yes for Config and the multi-region trail (an environment deploy) | Claude Code, Sonnet; Opus for the traffic baselines |
+| D14 | Retention and operator-effort views: returning submitters by quarter keyed by hashed subject, renewals and cancellations from the subscriptions stream; a nightly pull of Actions runs by trigger and actor, issue timelines and commits by author, classified into interventions | D1 | Claude Code, Sonnet |
+| D15 | The compliance panel: accessibility results from `compliance.yml` into the lake; backlog 22's path from HMRC's monthly email to `fraudPreventionHeaderReport.js` and the result into the lake; `compliance.toml` for the standing items with dates and owners | D1; `PLAN_FRAUD_HEADER_EMAIL_CHECK.md` | Claude Code, Sonnet |
+| D16 | The optimiser: a notebook over the raw export that computes the per-block correlations, fits the block models (linear cost, log-linear funnels, Hill curves for spend), ranks levers by effect per unit cost, and proposes the next experiment with its predicted effect; Bayesian optimisation for the continuous knobs and a bandit for allocations once experiments exist | D12; three months of export | Claude Code, Opus for the models, Sonnet for the notebook |
+| D17 | The reinvestment loop: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment fraction as a lever with a reserve floor; paid-traffic experiments as rows with on-off or geographic controls; the Ads account with GA4 conversion import | D2, D16; the operator opens the Ads account and sets the reserve floor | Claude Code, Sonnet; the operator's decisions |
 
 ## Verification
 
@@ -276,6 +351,11 @@ on NEXT.md.
   start" from the pulled export alone.
 - The company balance sheet on the page equals the Ltd engine's published balance sheet for
   the same book, and its prior-year column equals the last set filed at Companies House.
+- The optimiser's proposed experiment, once run, lands inside the interval it predicted more
+  often than not over a quarter; a proposal that keeps missing is a model to refit, not a
+  lever to keep pulling.
+- A paid-traffic week shows in the sources panel as its own source with a control week
+  beside it.
 - The page is reachable signed in as the operator and returns the site's normal denial to any
   other user and to the synthetic users.
 
@@ -292,6 +372,8 @@ on NEXT.md.
 | The company's diya-gl book | `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2 | Drafted 2026-08-31, no code |
 | The Ltd engine as a published package | spreadsheets board H7 | Ready to start |
 | Which Stripe account holds the donation Payment Links | Stripe dashboard | Operator confirms |
+| A Google Ads account with GA4 conversion import, and the article-boost channels | Google Ads; the publishing platforms | Operator opens; both earlier Ads accounts were cancelled |
+| HMRC's monthly fraud-prevention header email reaching the parser | `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, backlog 22 | Parser built; the path is that plan's open work |
 
 ## Distance
 
@@ -318,6 +400,7 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 | BACKLOG 43 | The monthly bill check against the cost plan's target | Keep; the cost panel (D7) replaces the hand check once FOCUS lands |
 | BACKLOG 49 | GA4 property changes as code; D3's cross-domain and key-event changes go through it or the Admin API script | Keep |
 | BACKLOG 27a (pen test), 46 (corpus credentials), 48 (certbot) , issue #11 (backups outside the account) | Security panels: lifecycle, secrets, data protection | Keep; each feeds a row of the security table |
+| `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, BACKLOG 22 | The compliance panel's HMRC header report is that plan's parser with its email path built | Keep; D15 |
 | Issue #18 (alerting in Slack with agents raising issues) | The alarm-to-issue chain delivered the issue half; Slack was not chosen | Operator's call: close, or re-scope to the alarms panel |
 | `_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` | Phases 0 to 3 delivered in January 2026; phase 4's ideas are the security panels | Archived 2026-09-07 |
 | `_developers/backlog/SLACK_INTEGRATION_PLAN.md` | Superseded by the alarm-to-issue chain | Archived 2026-09-07 |
