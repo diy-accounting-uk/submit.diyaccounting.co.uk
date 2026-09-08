@@ -469,6 +469,13 @@
                                                 <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitBackupAccount"></attribute>
                                             </manifest>
                                         </jar>
+
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-cost.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-cost.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitCostReporting"></attribute>
+                                            </manifest>
+                                        </jar>
                                     </target>
                                 </configuration>
                             </execution>
@@ -501,6 +508,11 @@
                                             <file>${project.build.directory}/submit-backup.jar</file>
                                             <type>jar</type>
                                             <classifier>submit-backup</classifier>
+                                        </artifact>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-cost.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-cost</classifier>
                                         </artifact>
                                     </artifacts>
                                 </configuration>
@@ -663,6 +675,60 @@
                                             <file>${project.build.directory}/submit-backup.jar</file>
                                             <type>jar</type>
                                             <classifier>submit-backup</classifier>
+                                        </artifact>
+                                    </artifacts>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>cdk-cost</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>retag-cost</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}-dist.jar" tofile="${project.build.directory}/submit-cost.jar"></copy>
+                                        <jar jarfile="${project.build.directory}/submit-cost.jar" update="true" zip64Mode="as-needed">
+                                            <manifest>
+                                                <attribute name="Main-Class" value="co.uk.diyaccounting.submit.SubmitCostReporting"></attribute>
+                                            </manifest>
+                                        </jar>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>attach-cost</id>
+                                <goals>
+                                    <goal>attach-artifact</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <artifacts>
+                                        <artifact>
+                                            <file>${project.build.directory}/submit-cost.jar</file>
+                                            <type>jar</type>
+                                            <classifier>submit-cost</classifier>
                                         </artifact>
                                     </artifacts>
                                 </configuration>

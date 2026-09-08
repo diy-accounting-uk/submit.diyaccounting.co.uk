@@ -24,6 +24,7 @@ import {
   resolveChatConfig,
   synthesizeFromCloudFormation,
   synthesizeFromCloudWatchAlarm,
+  synthesizeFromSns,
   resolveEventDetail,
   handler,
 } from "@app/functions/ops/activityTelegramForwarder.js";
@@ -472,7 +473,36 @@ describe("activityTelegramForwarder", () => {
     });
   });
 
+  describe("synthesizeFromSns", () => {
+    test("keeps the subject and the message's first line", () => {
+      const detail = synthesizeFromSns({
+        Subject: "AWS Budget Notification",
+        Message: "ci budget has exceeded 85% of the budgeted amount.\nMore detail follows.",
+      });
+      expect(detail.summary).toBe(
+        "AWS Budget Notification: ci budget has exceeded 85% of the budgeted amount.",
+      );
+      expect(detail.actor).toBe("system");
+      expect(detail.flow).toBe("operational");
+      expect(detail.event).toBe("cost-alert");
+    });
+
+    test("falls back to a default subject when none is given", () => {
+      const detail = synthesizeFromSns({ Message: "anomaly detected" });
+      expect(detail.summary).toBe("Cost alert: anomaly detected");
+    });
+  });
+
   describe("resolveEventDetail", () => {
+    test("dispatches SNS-wrapped notifications", () => {
+      const event = {
+        Records: [{ Sns: { Subject: "Cost anomaly detected", Message: "impact $45.89" } }],
+      };
+      const detail = resolveEventDetail(event);
+      expect(detail.flow).toBe("operational");
+      expect(detail.summary).toBe("Cost anomaly detected: impact $45.89");
+    });
+
     test("dispatches CloudFormation events", () => {
       const event = {
         source: "aws.cloudformation",

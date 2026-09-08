@@ -164,6 +164,14 @@ class AnalyticsDashboardTest {
         assertTrue(probePassRateIndex < submissionIndex, "expected the availability SLI before Conversion to submission");
         assertTrue(completionsIndex > submissionIndex, "expected completions by activity under Conversion to submission");
         assertTrue(completionsIndex < paidIndex, "expected completions by activity before Conversion to paid");
+
+        // B52e: the running cost widgets sit under their own heading, after Conversion to paid.
+        assertTrue(dashboardBody.contains("CostDailyByService"));
+        assertTrue(dashboardBody.contains("CostPerSubmission"));
+        assertTrue(dashboardBody.contains("CostMonthlyActual"));
+        assertTrue(dashboardBody.contains("CostMonthlyTarget"));
+        int costDailyIndex = dashboardBody.indexOf("CostDailyByService");
+        assertTrue(costDailyIndex > costIndex, "expected the cost widgets under Running cost");
     }
 
     @Test
