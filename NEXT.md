@@ -49,7 +49,7 @@ Wave 2, from the same batch:
 |---|---|---|---|
 | B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | WT_B55 |
 | B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | WT_B52C |
-| B52b (GA4 in BigQuery: scheduled queries as code, applied by a workflow) | bigquery | Sonnet | WT_B52B |
+| B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
 B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
 the batch's ci set after the push.
