@@ -645,7 +645,7 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 | `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`, NEXT.md B30o | The alarms panel reads the same state-change events; the triage chain's anonymised comments are the deep link | Keep; B30o proves the chain, D6 lands the events in the lake |
 | `PLAN_ALARM_TEARDOWN.md`, BACKLOG 30a (re-run the audit, due 2026-09-13) | Alarm and canary cuts are the running-cost lever; the audit's counts are the baseline | Keep; the audit becomes a nightly view under D6 |
 | `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` | Chaos checks that each alarm fires; the uptime SLI depends on the alarms being true | Keep as reference; not scheduled |
-| BACKLOG 47, NEXT.md B47a, issue #43 | The scheduled workflows feed the DORA and drift panels; #43 closes on a green scheduled drift run | Keep; B47a |
+| BACKLOG 47, NEXT.md D2 | The scheduled workflows feed the DORA and drift panels; the Monday crons' first proof is 2026-09-14 | Keep; D2 |
 | BACKLOG 39, NEXT.md B39.1, issue #13 (multi-URL Lighthouse) | Web vitals for the sibling sites, which the uptime objective wants at p75 | Keep; D3 takes the RUM half, Lighthouse stays the lab measure |
 | BACKLOG 43 | The monthly bill check against the cost plan's target | Keep; the cost panel (D7) replaces the hand check once FOCUS lands |
 | BACKLOG 49 | GA4 property changes as code; D3's cross-domain and key-event changes go through it or the Admin API script | Keep |
