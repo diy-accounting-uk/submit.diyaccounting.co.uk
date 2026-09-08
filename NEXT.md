@@ -30,9 +30,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 Batch 12 is PR #151 (`claude/b12-board`). Its first ci run failed three ways, fixed in one
 commit (7b2e27d7, pushed 2026-09-08 01:53 UTC): the multi-region trail needs global service
 events, the activity_events data-quality ruleset keeps its construct id, the ITSA dashboard
-test expects six links. The second run is deploy 34178163853 and test 34178163486; the
-environment deploy that carries the trail and ruleset fixes must run green before the app
-deploy can. Merging the PR is the
+test expects six links. The operator restarted both deploys by hand at 01:56 UTC:
+environment deploy 34178321771, then deploy 34178333024; nothing is pushed to the branch
+until both complete. Merging the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
 it is verified on main. Wave 1 ran in worktrees under `.claude/worktrees/`, one agent per file
