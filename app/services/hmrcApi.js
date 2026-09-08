@@ -503,10 +503,18 @@ export async function hmrcHttpGet(
 }
 
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
+  return hmrcHttpWriteRequest("POST", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+}
+
+export async function hmrcHttpPut(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
+  return hmrcHttpWriteRequest("PUT", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+}
+
+async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
   const httpRequestTimeoutMillis = 295000;
   const httpRequest = {
-    method: "POST",
+    method,
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
@@ -523,7 +531,7 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   }
 
   logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
+    message: `Request to ${method} ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     ...httpRequest,
   });
@@ -560,7 +568,7 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   }
 
   logger.info({
-    message: `Response from POST ${hmrcRequestUrl}`,
+    message: `Response from ${method} ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     status: hmrcResponse.status,
     hmrcResponseBody,
