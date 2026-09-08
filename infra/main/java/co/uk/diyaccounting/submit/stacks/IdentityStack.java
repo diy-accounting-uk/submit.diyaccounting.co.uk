@@ -44,7 +44,10 @@ import software.amazon.awscdk.services.cognito.UserPoolClientIdentityProvider;
 import software.amazon.awscdk.services.cognito.UserPoolDomain;
 import software.amazon.awscdk.services.cognito.UserPoolIdentityProviderGoogle;
 import software.amazon.awscdk.services.cognito.UserPoolOperation;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.WebIdentityPrincipal;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
 import software.amazon.awscdk.services.lambda.Function;
@@ -330,6 +333,91 @@ public class IdentityStack extends Stack {
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
         cfnOutput(this, "CognitoGoogleIdpId", this.googleIdentityProvider.getProviderName());
+
+        // Role the spreadsheets repository's GitHub Actions assumes to mint and rotate its own
+        // Cognito test user against this pool, and purge that user's DynamoDB data between runs,
+        // the same two scripts (ensure-cognito-test-user.js, delete-user-data.js) this repository
+        // runs on itself. The role name is fixed so the spreadsheets workflow can reference the
+        // ARN without reading a CloudFormation output from this repository's stacks.
+        var spreadsheetsBehaviourRoleName = props.envName() + "-env-spreadsheets-behaviour-role";
+        var githubOidcProviderArn = "arn:aws:iam::" + props.getEnv().getAccount()
+                + ":oidc-provider/token.actions.githubusercontent.com";
+        var spreadsheetsBehaviourRole = Role.Builder.create(
+                        this, props.resourceNamePrefix() + "-SpreadsheetsBehaviourRole")
+                .roleName(spreadsheetsBehaviourRoleName)
+                .assumedBy(new WebIdentityPrincipal(
+                        githubOidcProviderArn,
+                        Map.of(
+                                "StringEquals",
+                                Map.of("token.actions.githubusercontent.com:aud", "sts.amazonaws.com"),
+                                "StringLike",
+                                Map.of(
+                                        "token.actions.githubusercontent.com:sub",
+                                        "repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*"))))
+                .build();
+
+        // scripts/ensure-cognito-test-user.js: create the durable test user, rotate its password,
+        // and enrol its TOTP device. It calls InitiateAuth, not AdminInitiateAuth, because the
+        // user pool client has ALLOW_USER_PASSWORD_AUTH but not ALLOW_ADMIN_USER_PASSWORD_AUTH.
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of(
+                        "cognito-idp:AdminCreateUser",
+                        "cognito-idp:AdminGetUser",
+                        "cognito-idp:AdminSetUserPassword",
+                        "cognito-idp:AdminSetUserMFAPreference",
+                        "cognito-idp:AssociateSoftwareToken",
+                        "cognito-idp:VerifySoftwareToken",
+                        "cognito-idp:InitiateAuth"))
+                .resources(List.of(this.userPool.getUserPoolArn()))
+                .build());
+
+        // scripts/ensure-cognito-test-user.js looks up the pool and client ids from this stack's
+        // outputs rather than hardcoding them.
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cloudformation:DescribeStacks"))
+                .resources(List.of(String.format(
+                        "arn:aws:cloudformation:%s:%s:stack/%s/*",
+                        props.getEnv().getRegion(),
+                        props.getEnv().getAccount(),
+                        props.sharedNames().identityStackId)))
+                .build());
+
+        // scripts/delete-user-data.js purges the eight tables it queries by hashedSub: a Query on
+        // each, then a delete on seven and, on receipts, an anonymizing update before the delete.
+        var purgedTableNames = List.of(
+                props.sharedNames().receiptsTableName,
+                props.sharedNames().bundlesTableName,
+                props.sharedNames().hmrcApiRequestsTableName,
+                props.sharedNames().bundlePostAsyncRequestsTableName,
+                props.sharedNames().bundleDeleteAsyncRequestsTableName,
+                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
+                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
+                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+        var purgedTableArns = purgedTableNames.stream()
+                .map(tableName -> String.format(
+                        "arn:aws:dynamodb:%s:%s:table/%s",
+                        props.getEnv().getRegion(), props.getEnv().getAccount(), tableName))
+                .toList();
+
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:Query", "dynamodb:DeleteItem"))
+                .resources(purgedTableArns)
+                .build());
+
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("dynamodb:UpdateItem"))
+                .resources(List.of(String.format(
+                        "arn:aws:dynamodb:%s:%s:table/%s",
+                        props.getEnv().getRegion(),
+                        props.getEnv().getAccount(),
+                        props.sharedNames().receiptsTableName)))
+                .build());
+
+        cfnOutput(this, "SpreadsheetsBehaviourRoleArn", spreadsheetsBehaviourRole.getRoleArn());
 
         infof(
                 "IdentityStack %s created successfully for %s",

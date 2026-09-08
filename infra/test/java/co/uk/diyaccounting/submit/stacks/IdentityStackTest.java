@@ -7,10 +7,13 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -155,5 +158,160 @@ class IdentityStackTest {
         template.hasResourceProperties(
                 "AWS::SSM::Parameter",
                 Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-books-app-client-id")));
+    }
+
+    @Test
+    void spreadsheetsBehaviourRoleNameIsFixedPerEnvironment() {
+        Template ciTemplate = Template.fromStack(synthIdentityStack("ci"));
+        ciTemplate.hasResourceProperties(
+                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "ci-env-spreadsheets-behaviour-role")));
+
+        Template prodTemplate = Template.fromStack(synthIdentityStack("prod"));
+        prodTemplate.hasResourceProperties(
+                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "prod-env-spreadsheets-behaviour-role")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void spreadsheetsBehaviourRoleTrustsOnlyTheSpreadsheetsRepositoryViaGithubOidc() {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+
+        var role = findRoleProperties(template, "ci-env-spreadsheets-behaviour-role");
+        var assumeRolePolicy = (Map<String, Object>) role.get("AssumeRolePolicyDocument");
+        var statements = (List<Map<String, Object>>) assumeRolePolicy.get("Statement");
+        assertEquals(1, statements.size(), "expected a single trust statement");
+
+        var statement = statements.get(0);
+        var principal = (Map<String, Object>) statement.get("Principal");
+        var federated = String.valueOf(principal.get("Federated"));
+        assertTrue(
+                federated.endsWith(":oidc-provider/token.actions.githubusercontent.com"),
+                "expected the existing GitHub OIDC provider referenced by ARN, got " + federated);
+
+        var condition = (Map<String, Object>) statement.get("Condition");
+        var stringEquals = (Map<String, Object>) condition.get("StringEquals");
+        assertEquals("sts.amazonaws.com", stringEquals.get("token.actions.githubusercontent.com:aud"));
+
+        var stringLike = (Map<String, Object>) condition.get("StringLike");
+        assertEquals(
+                "repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*",
+                stringLike.get("token.actions.githubusercontent.com:sub"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void spreadsheetsBehaviourRoleGrantsNoActionOutsideTheApprovedList() {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+
+        Set<String> allowedActions = Set.of(
+                "cognito-idp:AdminCreateUser",
+                "cognito-idp:AdminGetUser",
+                "cognito-idp:AdminSetUserPassword",
+                "cognito-idp:AdminSetUserMFAPreference",
+                "cognito-idp:AssociateSoftwareToken",
+                "cognito-idp:VerifySoftwareToken",
+                "cognito-idp:InitiateAuth",
+                "cloudformation:DescribeStacks",
+                "dynamodb:Query",
+                "dynamodb:DeleteItem",
+                "dynamodb:UpdateItem");
+
+        Set<String> grantedActions = actionsGrantedToRole(template, "ci-env-spreadsheets-behaviour-role");
+
+        assertFalse(grantedActions.isEmpty(), "expected the role to have at least one granted action");
+        var unexpected =
+                grantedActions.stream().filter(action -> !allowedActions.contains(action)).toList();
+        assertTrue(unexpected.isEmpty(), "granted actions outside the approved list: " + unexpected);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void spreadsheetsBehaviourRoleDynamoDbGrantsCoverExactlyTheEightPurgedTables() {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+
+        Set<String> expectedTableArns = Set.of(
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-receipts",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-bundles",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-hmrc-api-requests",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-bundle-post-async-requests",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-bundle-delete-async-requests",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-hmrc-vat-return-post-async-requests",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-hmrc-vat-return-get-async-requests",
+                "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-hmrc-vat-obligation-get-async-requests");
+
+        Set<String> grantedResources = new HashSet<>();
+        for (Map<String, Object> statement :
+                policyStatementsForRole(template, "ci-env-spreadsheets-behaviour-role")) {
+            var action = statement.get("Action");
+            boolean isDynamoDbStatement = action instanceof List<?> actions
+                    ? actions.stream().anyMatch(a -> String.valueOf(a).startsWith("dynamodb:"))
+                    : String.valueOf(action).startsWith("dynamodb:");
+            if (!isDynamoDbStatement) continue;
+
+            var resource = statement.get("Resource");
+            if (resource instanceof List<?> resources) {
+                resources.forEach(r -> grantedResources.add(String.valueOf(r)));
+            } else {
+                grantedResources.add(String.valueOf(resource));
+            }
+        }
+
+        assertEquals(expectedTableArns, grantedResources);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> findRoleProperties(Template template, String roleName) {
+        for (Map<String, Object> role :
+                template.findResources("AWS::IAM::Role").values()) {
+            var properties = (Map<String, Object>) role.get("Properties");
+            if (roleName.equals(properties.get("RoleName"))) {
+                return properties;
+            }
+        }
+        throw new AssertionError("no IAM role named " + roleName);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String findRoleLogicalId(Template template, String roleName) {
+        for (var entry : template.findResources("AWS::IAM::Role").entrySet()) {
+            var properties = (Map<String, Object>) entry.getValue().get("Properties");
+            if (roleName.equals(properties.get("RoleName"))) {
+                return entry.getKey();
+            }
+        }
+        throw new AssertionError("no IAM role named " + roleName);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> policyStatementsForRole(Template template, String roleName) {
+        String roleLogicalId = findRoleLogicalId(template, roleName);
+        List<Map<String, Object>> statements = new java.util.ArrayList<>();
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            var properties = (Map<String, Object>) policy.get("Properties");
+            var roles = (List<Object>) properties.get("Roles");
+            boolean belongsToRole = roles.stream()
+                    .map(r -> (Map<String, Object>) r)
+                    .anyMatch(ref -> roleLogicalId.equals(ref.get("Ref")));
+            if (!belongsToRole) continue;
+
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            statements.addAll((List<Map<String, Object>>) document.get("Statement"));
+        }
+        return statements;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<String> actionsGrantedToRole(Template template, String roleName) {
+        Set<String> grantedActions = new HashSet<>();
+        for (Map<String, Object> statement : policyStatementsForRole(template, roleName)) {
+            var action = statement.get("Action");
+            if (action instanceof List<?> actions) {
+                actions.forEach(a -> grantedActions.add(String.valueOf(a)));
+            } else {
+                grantedActions.add(String.valueOf(action));
+            }
+        }
+        return grantedActions;
     }
 }
