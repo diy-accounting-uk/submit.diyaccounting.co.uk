@@ -34,7 +34,7 @@ pushed to a branch while its deploy runs.
 |---|---|---|---|
 | B52f (security panels: the nightly security lake Lambda, lifecycle check and alarm, `sbom.yml`, the fourteen CIS metric filters, WAF blocks, the rotation record) | on the batch | Sonnet | — |
 | B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`; five of eight objectives fill as their sources land) | on the batch | Sonnet | — |
-| B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
+| B52h, B52j, B52k (the raw export and `analytics-pull.sh`, the retention and operator-effort views, the compliance lake and `compliance.toml`) | on the batch | Sonnet | — |
 | B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
 | B56 (the two remaining CodeQL redirect alerts: the return URL is built from the allow-list origin) | on the batch | Haiku | — |
 | B52e (the cost panel: the FOCUS 1.2 export from the management account, the operator's yes of 2026-09-08; budgets, the anomaly monitor, cost per submission) | cost | Sonnet | `agent-afe7452b59b922fc9` |
