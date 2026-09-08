@@ -35,8 +35,10 @@ value from the environment, the simulator's SPA fallback, the alarm namespace te
 simulator billing mocks' `returnTo` redirects), fixed on the batch as f208d2d3; the PR's
 CodeQL check is green. The eighth deploy failed only on the DIYA-GL suite's book put (412: the
 durable test user's book from the seventh run already existed), so the case now puts a fresh
-book id each run and deletes it after reading it back (89b715e3, pushed 12:2x UTC); the ninth
-deploy is the proof. Merging the PR is the operator's yes to the Config and
+book id each run and deletes it after reading it back (89b715e3). The ninth deploy
+(34223937175) passed sign-in, checkout, the put and the read, and failed on the delete with
+500: the delete Lambda's role lacked `s3:GetObject`, which the handler's metadata read needs;
+the grant is on the batch and the tenth deploy is the proof. Merging the PR is the operator's yes to the Config and
 GuardDuty charge; the PR body carries the CodeQL dismissals to apply and the note that issue
 #43 can close. Each item's body stays in its section below until it is verified on main. Wave 1
 ran in worktrees under `.claude/worktrees/`, one agent per file area, all merged and removed:
