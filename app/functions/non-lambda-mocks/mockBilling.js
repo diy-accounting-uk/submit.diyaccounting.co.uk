@@ -7,6 +7,7 @@
 // by granting the bundle and redirecting to the success URL.
 
 import { createLogger } from "../../lib/logger.js";
+import { resolveAllowedReturnTo } from "../billing/billingReturnUrl.js";
 
 const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockBilling.js" });
 
@@ -107,8 +108,11 @@ export function apiEndpoint(app) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
+    const allowedReturnTo = resolveAllowedReturnTo(returnTo);
     const sessionParam = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : "";
-    const target = returnTo ? `${returnTo}?checkout=success${sessionParam}` : `${baseUrl}bundles.html?checkout=success${sessionParam}`;
+    const target = allowedReturnTo
+      ? `${allowedReturnTo}?checkout=success${sessionParam}`
+      : `${baseUrl}bundles.html?checkout=success${sessionParam}`;
     res.redirect(target);
   });
 
@@ -116,7 +120,7 @@ export function apiEndpoint(app) {
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     logger.info({ message: "Mock billing portal session created" });
-    res.json({ portalUrl: req.query.returnTo || `${baseUrl}bundles.html` });
+    res.json({ portalUrl: resolveAllowedReturnTo(req.query.returnTo) || `${baseUrl}bundles.html` });
   });
 
   logger.info({ message: "Mock billing routes registered (Stripe not configured)" });
