@@ -547,7 +547,9 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
   } finally {
     clearTimeout(timeout);
   }
-  const hmrcResponseBody = await hmrcResponse.json();
+  // HMRC's amend-period-summary PUT returns 204 with no body, unlike every other write
+  // endpoint here - fall back to {} rather than let response.json() throw on an empty body.
+  const hmrcResponseBody = await hmrcResponse.json().catch(() => ({}));
 
   // Normalise response headers to a plain object (Headers is not marshallable)
   let responseHeadersObj = {};

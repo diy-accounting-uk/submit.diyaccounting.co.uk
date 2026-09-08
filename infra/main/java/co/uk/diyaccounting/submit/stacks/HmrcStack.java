@@ -83,6 +83,10 @@ public class HmrcStack extends Stack {
     public Function hmrcItsaSelfEmploymentPeriodGetLambda;
     public ILogGroup hmrcItsaSelfEmploymentPeriodGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcItsaSelfEmploymentPeriodPutLambdaProps;
+    public Function hmrcItsaSelfEmploymentPeriodPutLambda;
+    public ILogGroup hmrcItsaSelfEmploymentPeriodPutLambdaLogGroup;
+
     public AbstractApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
     public ILogGroup receiptGetLambdaLogGroup;
@@ -197,6 +201,12 @@ public class HmrcStack extends Stack {
                 this,
                 "ImportedHmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Self-Employment Period PUT (amend) async request table
+        ITable hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName);
 
         // Lookup existing DynamoDB HMRC VAT Obligation GET async request table
         ITable hmrcVatObligationGetAsyncRequestsTable = Table.fromTableName(
@@ -1179,6 +1189,83 @@ public class HmrcStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaSelfEmploymentPeriodGetLambda.getFunctionName());
 
+        // ITSA Self-Employment Period PUT (amend)
+        var itsaSelfEmploymentPeriodPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaCustomAuthorizer)
+                        .environment(itsaSelfEmploymentPeriodPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaSelfEmploymentPeriodPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaProps = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaSelfEmploymentPeriodPutLambda = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaLogGroup = hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentPeriodPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA self-employment period amendment with ingestHandler %s and worker %s",
+                this.hmrcItsaSelfEmploymentPeriodPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler);
+
+        // Grant the ITSA self-employment period amendment Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaSelfEmploymentPeriodPutLambda, hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaSelfEmploymentPeriodPutLambda.getFunctionName());
+
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -1262,6 +1349,7 @@ public class HmrcStack extends Stack {
                         hmrcItsaSelfEmploymentPeriodPostLambdaUrlOrigin,
                         hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin,
                         hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin,
+                        hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin,
                         myReceiptsLambdaUrlOrigin));
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());

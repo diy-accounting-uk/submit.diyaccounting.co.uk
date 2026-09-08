@@ -148,6 +148,10 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaSelfEmploymentPeriodGetAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodGetAsyncTable, endpoint);
 
+    const hmrcItsaSelfEmploymentPeriodPutAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodPutAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPutAsyncTable, endpoint);
+
     const companiesHouseAccountsAsyncTable = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncTable) await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncTable, endpoint);
   } else {

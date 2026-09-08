@@ -62,3 +62,16 @@ export function getSelfEmploymentPeriodDetailForScenario(scenario, periodId) {
 
   return { periodSummary: defaultPeriodSummary(periodId) };
 }
+
+/**
+ * Get the amend-a-period-summary response for a Gov-Test-Scenario header. The default and
+ * STATEFUL scenarios accept the amendment with no body - HMRC's amend endpoint returns 204.
+ * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @returns {null|{status: number, body: object}}
+ */
+export function getSelfEmploymentPeriodAmendErrorForScenario(scenario) {
+  if (!scenario) return null;
+
+  const scenarioUpper = scenario.toUpperCase();
+  return errorScenarios[scenarioUpper] || null;
+}

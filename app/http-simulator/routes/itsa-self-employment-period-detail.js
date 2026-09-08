@@ -6,7 +6,11 @@
 // Handles: GET /individuals/business/self-employment/{nino}/{businessId}/period/{taxYear}/{periodId}
 
 import { randomUUID } from "crypto";
-import { getSelfEmploymentPeriodDetailForScenario } from "../scenarios/itsa-self-employment-period-detail.js";
+import {
+  getSelfEmploymentPeriodDetailForScenario,
+  getSelfEmploymentPeriodAmendErrorForScenario,
+} from "../scenarios/itsa-self-employment-period-detail.js";
+import { findEmptyOptionalSections } from "./itsa-self-employment-period.js";
 
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
@@ -63,5 +67,35 @@ export function apiEndpoint(app) {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("x-correlationid", randomUUID());
     res.json(result.periodSummary);
+  });
+
+  // PUT /individuals/business/self-employment/{nino}/{businessId}/period/{taxYear}/{periodId}
+  app.put("/individuals/business/self-employment/:nino/:businessId/period/:taxYear/:periodId", (req, res) => {
+    const { nino, businessId, taxYear, periodId } = req.params;
+    const govTestScenario = req.headers["gov-test-scenario"];
+
+    console.log(
+      `[http-simulator:itsa-self-employment-period-detail] PUT /individuals/business/self-employment/${nino}/${businessId}/period/${taxYear}/${periodId}`,
+    );
+
+    if (!validatePathParams(req, res)) return;
+
+    const emptySectionPaths = findEmptyOptionalSections(req.body);
+    if (emptySectionPaths.length > 0) {
+      return res.status(400).json({
+        code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+        message: "An empty or non-matching body was submitted",
+        paths: emptySectionPaths,
+      });
+    }
+
+    const scenarioError = getSelfEmploymentPeriodAmendErrorForScenario(govTestScenario);
+    if (scenarioError) {
+      return res.status(scenarioError.status).json(scenarioError.body);
+    }
+
+    // Default and STATEFUL: HMRC's amend endpoint returns 204 with no body.
+    res.setHeader("x-correlationid", randomUUID());
+    res.status(204).send();
   });
 }

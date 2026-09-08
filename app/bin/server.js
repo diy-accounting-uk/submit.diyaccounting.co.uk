@@ -28,6 +28,7 @@ import { apiEndpoint as hmrcItsaObligationsGetApiEndpoint } from "../functions/h
 import { apiEndpoint as hmrcItsaSelfEmploymentPeriodPostApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
 import { apiEndpoint as hmrcItsaSelfEmploymentPeriodsGetApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodsGet.js";
 import { apiEndpoint as hmrcItsaSelfEmploymentPeriodGetApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodGet.js";
+import { apiEndpoint as hmrcItsaSelfEmploymentPeriodPutApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
@@ -260,6 +261,7 @@ hmrcItsaObligationsGetApiEndpoint(app);
 hmrcItsaSelfEmploymentPeriodPostApiEndpoint(app);
 hmrcItsaSelfEmploymentPeriodsGetApiEndpoint(app);
 hmrcItsaSelfEmploymentPeriodGetApiEndpoint(app);
+hmrcItsaSelfEmploymentPeriodPutApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
