@@ -25,6 +25,14 @@ public interface AbstractApiLambdaProps extends AbstractLambdaProps {
         return false;
     }
 
+    /** True for a billing checkout or portal route: authorised by the third JWT authoriser,
+     * which accepts both the main app client's and the books client's audience, ahead of
+     * {@link #booksJwtAuthorizer()} and {@link #jwtAuthorizer()}. */
+    @Value.Default
+    default boolean billingJwtAuthorizer() {
+        return false;
+    }
+
     /** True to also create an unauthenticated OPTIONS route on the same path, for CORS
      * preflight, answered by the same integration as the primary route. */
     @Value.Default

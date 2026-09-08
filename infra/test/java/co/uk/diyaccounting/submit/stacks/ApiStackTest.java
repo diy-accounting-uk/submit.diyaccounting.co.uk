@@ -84,6 +84,24 @@ class ApiStackTest {
                 .optionsPreflightRoute(true)
                 .build();
 
+        var billingCheckoutRoute = ApiLambdaProps.builder()
+                .idPrefix("billing-checkout")
+                .ingestFunctionName("test-billing-checkout-fn")
+                .ingestHandler("app/functions/billing/billingCheckoutPost.ingestHandler")
+                .ingestLambdaArn("arn:aws:lambda:eu-west-2:111111111111:function:test-billing-checkout-fn")
+                .ingestProvisionedConcurrencyAliasArn(
+                        "arn:aws:lambda:eu-west-2:111111111111:function:test-billing-checkout-fn:pc")
+                .provisionedConcurrencyAliasName("pc")
+                .baseImageTag("latest")
+                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .httpMethod(HttpMethod.POST)
+                .urlPath("/api/v1/billing/checkout")
+                .jwtAuthorizer(false)
+                .customAuthorizer(false)
+                .billingJwtAuthorizer(true)
+                .build();
+
         return new ApiStack(
                 app,
                 "TestApiStack",
@@ -98,7 +116,7 @@ class ApiStackTest {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled("false")
                         .sharedNames(sharedNames)
-                        .lambdaFunctions(List.of(regularRoute, booksPutRoute, booksDeleteRoute))
+                        .lambdaFunctions(List.of(regularRoute, booksPutRoute, booksDeleteRoute, billingCheckoutRoute))
                         .userPoolId("eu-west-2_123456789")
                         .userPoolClientId(USER_POOL_CLIENT_ID)
                         .booksUserPoolClientId(BOOKS_USER_POOL_CLIENT_ID)
@@ -111,11 +129,11 @@ class ApiStackTest {
     }
 
     @Test
-    void createsASecondJwtAuthoriserScopedToTheBooksClientId() {
+    void createsThreeJwtAuthorisersScopedToMainBooksAndBothClientIds() {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::ApiGatewayV2::Authorizer", 2);
+        template.resourceCountIs("AWS::ApiGatewayV2::Authorizer", 3);
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
@@ -126,6 +144,12 @@ class ApiStackTest {
                 Match.objectLike(Map.of(
                         "JwtConfiguration",
                         Match.objectLike(Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID))))));
+        template.hasResourceProperties(
+                "AWS::ApiGatewayV2::Authorizer",
+                Match.objectLike(Map.of(
+                        "JwtConfiguration",
+                        Match.objectLike(
+                                Map.of("Audience", List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID))))));
     }
 
     @Test
@@ -149,6 +173,29 @@ class ApiStackTest {
         assertEquals(
                 mainAuthorizerId,
                 refOf(((Map<?, ?>) regularRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
+    }
+
+    @Test
+    void aBillingRouteIsAuthorisedByTheBillingAuthoriserAcceptingBothAudiences() {
+        ApiStack stack = synthApiStack();
+        Template template = Template.fromStack(stack);
+
+        var billingAuthorizers = template.findResources(
+                "AWS::ApiGatewayV2::Authorizer",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "JwtConfiguration",
+                                Map.of("Audience", List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID)))));
+        assertEquals(1, billingAuthorizers.size(), "expected exactly one billing authoriser with both audiences");
+        String billingAuthorizerId = billingAuthorizers.keySet().iterator().next();
+
+        var checkoutRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "POST /api/v1/billing/checkout")));
+        assertEquals(1, checkoutRoutes.size());
+        assertEquals(
+                billingAuthorizerId,
+                refOf(((Map<?, ?>) checkoutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
     }
 
     @Test

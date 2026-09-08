@@ -330,16 +330,19 @@ export function createSimulatorServer() {
   });
 
   // Mock billing endpoints — fakes Stripe like the simulator fakes OAuth
-  app.post("/api/v1/billing/checkout-session", (req, res) => {
+  app.post("/api/v1/billing/checkout", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
     const bundleId = req.body?.bundleId || "resident-pro";
+    const returnTo = req.body?.returnTo;
     const sessionId = `sim_cs_${Date.now()}`;
-    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}`;
+    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}${
+      returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
+    }`;
     res.json({ data: { checkoutUrl } });
   });
 
   app.get("/simulator/checkout", (req, res) => {
-    const { bundleId = "resident-pro" } = req.query;
+    const { bundleId = "resident-pro", returnTo } = req.query;
     // Auto-complete checkout: grant the bundle and redirect to success
     const userBundles = bundles.get(req.user.sub) || [];
     const existing = userBundles.find((b) => b.bundleId === bundleId);
@@ -370,12 +373,13 @@ export function createSimulatorServer() {
       bundles.set(req.user.sub, userBundles);
     }
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
-    res.redirect(`${baseUrl}bundles.html?checkout=success`);
+    res.redirect(returnTo ? `${returnTo}?checkout=success` : `${baseUrl}bundles.html?checkout=success`);
   });
 
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
-    res.json({ data: { portalUrl: `${baseUrl}bundles.html` } });
+    const { returnTo } = req.query;
+    res.json({ data: { portalUrl: returnTo || `${baseUrl}bundles.html` } });
   });
 
   // In-memory receipts store
