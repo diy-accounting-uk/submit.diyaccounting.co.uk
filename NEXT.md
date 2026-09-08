@@ -26,9 +26,29 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 13 gathers on `claude/b13-board` (local, from main at 5c28d639); one push and one PR when
-its tracks are merged and green, and that push's ci set serves B10.4, O22 and O27. Nothing is
-pushed to a branch while its deploy runs.
+Batch 13 is `claude/b13-board`, local only, in the worktree `.claude/worktrees/b12` (the
+worktree keeps its old directory name); its tip merges main at 5c28d639 plus the tracks below.
+Maven and `npm test` are green on it with the page, security and analytics tracks merged (203
+files, 2442 tests). The operator's standing instruction of 2026-09-08: no board item enters
+"in flight" from here; only a bug that blocks this batch's PR may be worked. The sequence that
+remains, in order, each step recorded here as it lands:
+
+1. The cost agent (`agent-afe7452b59b922fc9`, Sonnet) finishes B52e and reports; merge its
+   branch into `claude/b13-board` in the batch worktree, resolve conflicts keeping both sides'
+   constructs, remove its worktree and branch.
+2. In the batch worktree: `npm ci`, then `./mvnw clean verify` and `npm test` green.
+3. Push once (`GIT_SSH_COMMAND="ssh -i ~/.ssh/id_antony_polycode_mbp_2025 -o IdentitiesOnly=yes
+   -o BatchMode=yes" git push -u origin claude/b13-board`); the push starts the ci deploy when
+   it touches paths in `deploy.yml`'s filter, otherwise `gh workflow run deploy.yml --ref
+   claude/b13-board`. Open the PR with `gh pr create` naming every track. Never push to the
+   branch while its `deploy environment` or `deploy` run is in progress.
+4. Watch the deploy; a failure gets its fix committed on the batch and pushed once the run
+   has completed. A stale ci set (a resource CloudFormation records but AWS lacks) is destroyed
+   from the branch ref before the next deploy: `gh workflow run destroy-ci.yml --ref
+   claude/b13-board -f deployment-name=<set> -f sweep-for-stacks=false`, then the deploy.
+5. When the deploy and the PR's checks are green, the PR is the operator's to merge. After
+   the merge: strip every batch-13 item from this file, keep only what remains, tell the
+   spreadsheets session (inbox `~/.claude/inboxes/spreadsheets.md`) that B50a is on main.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
