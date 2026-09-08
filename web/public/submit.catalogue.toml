@@ -255,6 +255,19 @@ stripeInterval = "month"
 # ====================
 # Hidden in production until there are production credentials which have been validated by a trial user and checked by HMRC
 
+# operator: The one-stop objectives dashboard, for the site operator only
+# Unlocked by: operator pass (email-restricted, admin-issued to the operator's own account)
+# Payment: None
+# No customer holds this bundle; enforceBundles denies everyone else the same way it denies
+# any other unmatched bundle
+[[bundles]]
+id = "operator"
+name = "Operator"
+levelName = "Operator"
+enable = "on-pass"
+hidden = true
+allocation = "on-email-match"
+
 [[activities]]
 id = "bundle"
 name = "View and edit your bundles"
@@ -440,6 +453,14 @@ display = "always"
 bundles = ["default"]
 metered = false
 paths = ["about.html"]
+
+[[activities]]
+id = "operator-dashboard"
+name = "Operator Dashboard"
+display = "never"
+bundles = ["operator"]
+metered = false
+paths = ["operator/dashboard.html", "^/api/v1/operator/.*"]
 
 # Passes:
 # Example invite pass record in DynamoDB:
