@@ -2025,9 +2025,14 @@ public class SubmitSharedNames {
         this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, this.provisionedConcurrencyAliasName);
 
-        // Session Beacon POST Lambda (public, no auth)
+        // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
+        // the bare /api/session/beacon the endpoint used before: CloudFront only forwards
+        // /api/v1/* and /api/v1/books/* to API Gateway, so a bare /api/* path fell through to
+        // the default S3 behaviour (GET/HEAD/OPTIONS only) and every POST here was rejected by
+        // CloudFront before it ever reached this Lambda - zero invocations, and so zero
+        // new-session and logout activity events ever reached the lake.
         this.sessionBeaconPostLambdaHttpMethod = HttpMethod.POST;
-        this.sessionBeaconPostLambdaUrlPath = "/api/session/beacon";
+        this.sessionBeaconPostLambdaUrlPath = "/api/v1/session/beacon";
         this.sessionBeaconPostLambdaJwtAuthorizer = false;
         this.sessionBeaconPostLambdaCustomAuthorizer = false;
         var sessionBeaconPostLambdaHandlerName = "sessionBeaconPost.ingestHandler";
