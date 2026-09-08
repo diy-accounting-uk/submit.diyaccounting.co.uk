@@ -124,7 +124,11 @@ jobs:
         if: ${{ needs.params.outputs.deployment-name == '' }}
         run: |
           PARAMETER_NAME="/submit/${{ needs.params.outputs.github-environment }}/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
       - name: Resolve deployment name
         id: deployment-name
