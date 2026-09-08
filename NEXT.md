@@ -40,11 +40,6 @@ pushed to a branch while its deploy runs.
 
 ## Ready, unblocking others
 
-- [ ] **O26. Decide the ITSA client approach and the token cost per submission.** B10.6's
-  comparison in `_developers/hmrc/ITSA_SPIKE.md` recommends keeping the hand-rolled `hmrcApi.js`
-  pattern over an OpenAPI-generated client (the generated piece replaces only URL and header
-  construction). Pick one, and set whether a quarterly update costs the same one token as a
-  VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -108,12 +103,6 @@ pushed to a branch while its deploy runs.
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
-- [ ] **O29. Install the fraud-header check's launchd agent.** `scripts/co.uk.diyaccounting.submit.fraud-header-check.plist`
-  runs `scripts/fraud-header-email-check.js` on the 5th and 12th at 09:00; install and uninstall
-  commands are `_developers/SETUP.md` step 9. It publishes through the activity bus, so it needs
-  AWS credentials the SSO profiles cannot refresh unattended, the same gap the certbot agent
-  has; say whether an access key for this one script is acceptable or the check stays a
-  session-time run. **Source**: B22. **Owner**: Operator. **Model**: none.
 ## Blocked on a machine task
 
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission

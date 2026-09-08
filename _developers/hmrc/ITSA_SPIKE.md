@@ -210,3 +210,5 @@ Recommendation: keep the hand-rolled pattern. The generated-client benefit (type
 smallest exactly where this repo's endpoints are simplest (one query string or one small JSON
 body), and every endpoint needs bespoke request/response handling around the raw HTTP call
 regardless of how that call is made.
+
+Decision (2026-09-08): the hand-rolled client stays; one ITSA quarterly update costs one token, the same as a VAT return.
