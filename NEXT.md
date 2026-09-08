@@ -88,6 +88,18 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
   authenticated later, and whether they wrote to support; then say whether a fix or a reply is
   owed. The issue closes when the cause is known. **Source**: issue #152. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B57. A role in submit-ci for the spreadsheets ci behaviour run's test user.** The
+  spreadsheets session's ask of 2026-09-08 (its board's operator decision): one IAM role in
+  367191799875 that GitHub OIDC from `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*`
+  can assume, scoped to what `scripts/ensure-cognito-test-user.js` needs on the ci pool only
+  (`cognito-idp:AdminCreateUser`, `AdminGetUser`, `AdminSetUserPassword`,
+  `AdminSetUserMFAPreference`, `AssociateSoftwareToken`, `VerifySoftwareToken`, `InitiateAuth`),
+  `cloudformation:DescribeStacks` on `ci-env-IdentityStack`, and the script's DynamoDB purge;
+  in `IdentityStack.java` or a small stack beside it, ci only, with the ARN as a stack output.
+  Lane name `spreadsheetsBehaviour` (its own durable user). Reply to the spreadsheets inbox
+  with the ARN once the environment deploy carrying it is green. Starts on the operator's word
+  after PR #153 merges. **Source**: spreadsheets inbox 2026-09-08 17:57 UTC. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
