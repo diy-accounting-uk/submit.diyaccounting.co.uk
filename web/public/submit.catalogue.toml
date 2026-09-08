@@ -148,6 +148,46 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # ====================
 # Hidden in production
 
+# resident-ltd: micro-entity accounts filing subscription — publicly visible, no pass required
+# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# Tokens: 100 granted, refreshing monthly
+# Enables: filing micro-entity accounts to Companies House
+[[bundles]]
+id = "resident-ltd"
+name = "Resident Ltd"
+description = "File micro-entity accounts to Companies House. £0.99/month, cancel anytime."
+levelName = "Resident"
+enable = "always"
+hidden = false
+allocation = "on-subscription"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+stripePriceAmount = 99
+stripeCurrency = "gbp"
+stripeInterval = "month"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
+# listedInEnvironments
+# ====================
+# Hidden in production
+
+# resident-books: DIYA-GL book storage subscription — listed in every environment
+# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# Tokens: 100 granted, refreshing monthly
+# Enables: saving and loading DIYA-GL books
+[[bundles]]
+id = "resident-books"
+name = "Resident Books"
+description = "Save and load DIYA-GL books. £0.99/month, cancel anytime."
+levelName = "Resident"
+enable = "always"
+hidden = false
+allocation = "on-subscription"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+stripePriceAmount = 99
+stripeCurrency = "gbp"
+stripeInterval = "month"
+
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
 # Payment: None (admin manually sends pass to verified customers via email support)
@@ -186,7 +226,9 @@ tokenRefreshInterval = "P1M"
 # Unlocked by: resident-pro-test-pass (synthetic), resident-pro-pass (production), Stripe monthly subscription
 # Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
 # Tokens: 100 granted, refreshing monthly
-# Enables: all activities including generating digital/physical passes (costs 10 tokens each)
+# Enables: the union of resident-vat, resident-itsa and resident-ltd — VAT submission, Self
+# Assessment and micro-entity accounts filing — plus generating digital/physical passes (costs
+# 10 tokens each)
 # Access to all authenticated activities including VAT submission for subscribed users
 # Note: resident-pro-comp (above) grants this level for free via on-email-match — comp passes bypass subscription
 [[bundles]]
@@ -294,7 +336,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "self-employed"
 name = "Self Assessment (HMRC)"
 display = "always-with-upsell"
-bundles = ["resident-itsa"]
+bundles = ["resident-itsa", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "^/api/v1/hmrc/itsa.*"]
@@ -308,7 +350,7 @@ display = "on-entitlement"
 bundles = ["default"]
 metered = false
 paths = ["companies-house/companySearch.html", "^/api/v1/companies-house.*"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "change-registered-office"
@@ -334,10 +376,22 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "file-micro-entity-accounts"
 name = "File Micro-entity Accounts (Companies House)"
 display = "on-entitlement"
-bundles = ["default"]
-metered = false
+bundles = ["resident-ltd", "resident-pro"]
+tokenCost = 1
+metered = true
 paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "diya-gl-storage"
+name = "Save DIYA-GL books"
+display = "on-entitlement"
+bundles = ["resident-books"]
+metered = false
+# The books PUT route (app/services/booksEntitlement.js) checks the resident-books bundle
+# id directly rather than reading this activity, so this entry documents the entitlement
+# without adding a second enforcement path.
+paths = ["^/api/v1/books.*"]
 
 [[activities]]
 id = "my-receipts"
