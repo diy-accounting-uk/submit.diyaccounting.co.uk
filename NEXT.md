@@ -39,7 +39,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
-| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | landed in `agent-ade3c05057d2d847a`; merges to the batch after the batch build | Sonnet | `agent-ade3c05057d2d847a` |
+| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | on the batch | Sonnet | — |
 | B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
 | B52d and B55 designs | on the batch: `PLAN_ONE_STOP_DASHBOARD.md` "B52d design", `PLAN_DIYA_GL_STORAGE.md` section 10 | Opus | — |
 
