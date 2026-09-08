@@ -34,8 +34,12 @@ test expects six links. The operator's restarted environment deploy (34178321771
 deploys 34178333024 and 34196507268 failed on two more pipeline faults, fixed in 224f8f94
 (pushed 2026-09-08 07:3x UTC, after both had finished): the probe-metric and DORA-row jobs
 used the local `dora-row` action without a checkout, and the DIYA-GL client lookup ran the aws
-CLI inside the Playwright container, which has only the SDK. Nothing is pushed to the branch
-while a deploy runs. Merging the PR is the
+CLI inside the Playwright container, which has only the SDK. The third run failed on the
+stale ci set ci-claud87a7 (metric filters CloudFormation still recorded were gone) and on the
+DIYA-GL suite returning to localhost; on the operator's go the set was destroyed (run
+34206631274) and a118b917 (the suite returns to ci-spreadsheets) pushed at 08:5x UTC, so the
+fourth run deploys a fresh set. Nothing is pushed to the branch while a deploy runs. Merging
+the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
 it is verified on main. Wave 1 ran in worktrees under `.claude/worktrees/`, one agent per file
