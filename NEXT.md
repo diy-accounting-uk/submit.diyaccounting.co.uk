@@ -49,7 +49,7 @@ Wave 2, from the same batch:
 |---|---|---|---|
 | B55 (checkout and the portal for DIYA-GL tokens; the route is `/api/v1/billing/checkout`; the ci behaviour case) | on the batch | Sonnet | — |
 | B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
-| B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-a19ab3fa8247c3e4d` |
+| B52d (the five lake views, the alarm, DORA and probe writers, the ga4_daily pull) | on the batch; the batch build runs | Sonnet | — |
 | B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
@@ -75,12 +75,14 @@ B10.4 runs against the batch's ci set after the push.
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
   as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels). Unblocks B52d.
-- [ ] **B52d. Lake views.** Submissions by activity including the four Companies House
-  events; sources; the availability SLI and error budget from the probe metrics; alarm state
-  changes by family through the existing Firehose pattern; DORA rows (name, environment,
-  branch, sha, run id, duration, lead time, failure, recovery) from the deploy and destroy
-  workflows. **Source**: BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**:
-  Sonnet. Unblocks B52g, B52h, B52j and B52k.
+- [ ] **B52d. Lake views.** On the batch: the five views (submissions by activity with the
+  Companies House events, traffic sources, the availability SLI and error budget, alarm state
+  changes by family, DORA runs), the alarm-to-lake Firehose delivery, the `dora-row` composite
+  action on the deploy, destroy and probe workflows, the nightly pull of the four `ga4_daily`
+  aggregates, data-quality rows for the new sources and their dashboard widgets. Remaining:
+  the first nightly run after merge fills the views; the next board reads them. **Source**:
+  BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**: Sonnet. Unblocks B52g,
+  B52h, B52j and B52k.
 - [ ] **B47a. The Monday 06:00 UTC schedules fire late, not never.** `compliance.yml` and
   `stack-drift.yml` both ran on 2026-09-07 as `schedule` events, green, at 11:39 and 11:44 UTC:
   GitHub queues the top-of-the-hour slot hardest, and both sat on `0 6 * * 1`. On the batch:
