@@ -132,6 +132,7 @@ public class SubmitSharedNames {
     public String analyticsStackId;
     public String ingestionStackId;
     public String securityDetectionStackId;
+    public String securityBaselineStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -747,6 +748,7 @@ public class SubmitSharedNames {
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
         this.securityDetectionStackId = "%s-env-SecurityDetectionStack".formatted(props.envName);
+        this.securityBaselineStackId = "%s-env-SecurityBaselineStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
@@ -2025,9 +2027,14 @@ public class SubmitSharedNames {
         this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, this.provisionedConcurrencyAliasName);
 
-        // Session Beacon POST Lambda (public, no auth)
+        // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
+        // the bare /api/session/beacon the endpoint used before: CloudFront only forwards
+        // /api/v1/* and /api/v1/books/* to API Gateway, so a bare /api/* path fell through to
+        // the default S3 behaviour (GET/HEAD/OPTIONS only) and every POST here was rejected by
+        // CloudFront before it ever reached this Lambda - zero invocations, and so zero
+        // new-session and logout activity events ever reached the lake.
         this.sessionBeaconPostLambdaHttpMethod = HttpMethod.POST;
-        this.sessionBeaconPostLambdaUrlPath = "/api/session/beacon";
+        this.sessionBeaconPostLambdaUrlPath = "/api/v1/session/beacon";
         this.sessionBeaconPostLambdaJwtAuthorizer = false;
         this.sessionBeaconPostLambdaCustomAuthorizer = false;
         var sessionBeaconPostLambdaHandlerName = "sessionBeaconPost.ingestHandler";
@@ -2164,7 +2171,7 @@ public class SubmitSharedNames {
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
 
-        // Books List GET Lambda (books JWT auth, scoped to the books app client)
+        // Books List GET Lambda (DIYA-GL JWT auth, scoped to the DIYA-GL app client)
         this.booksListGetLambdaHttpMethod = HttpMethod.GET;
         this.booksListGetLambdaUrlPath = "/api/v1/books";
         this.booksListGetLambdaJwtAuthorizer = false;

@@ -106,7 +106,7 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void dashboardHasSevenRowsOfWidgetsAllReadingTheAnalyticsNamespace() throws Exception {
+    void dashboardIsLaidOutByObjectiveWithAHeadingPerObjective() throws Exception {
         Template template = synthAnalyticsDashboard();
 
         var dashboards = template.findResources("AWS::CloudWatch::Dashboard");
@@ -120,8 +120,24 @@ class AnalyticsDashboardTest {
         // the raw JSON text for the pieces of the dashboard definition that must be present,
         // rather than trying to decode the join at the template layer.
         assertTrue(dashboardBody.contains("Submit/Analytics"), "dashboard should read the Submit/Analytics namespace");
+
+        // One heading per objective, in the order PLAN_ONE_STOP_DASHBOARD.md's objective table
+        // lists them.
+        int uptimeIndex = dashboardBody.indexOf("## Uptime");
+        int submissionIndex = dashboardBody.indexOf("## Conversion to submission");
+        int paidIndex = dashboardBody.indexOf("## Conversion to paid");
+        int costIndex = dashboardBody.indexOf("## Running cost");
+        assertTrue(uptimeIndex >= 0, "expected an Uptime heading");
+        assertTrue(submissionIndex > uptimeIndex, "expected Conversion to submission after Uptime");
+        assertTrue(paidIndex > submissionIndex, "expected Conversion to paid after Conversion to submission");
+        assertTrue(costIndex > paidIndex, "expected Running cost after Conversion to paid");
+
         assertTrue(dashboardBody.contains("ActiveUsers"));
+        assertTrue(dashboardBody.contains("NewAccounts"));
+        assertTrue(dashboardBody.contains("HmrcAuthentications"));
         assertTrue(dashboardBody.contains("LoginToSubmissionConversion"));
+        assertTrue(dashboardBody.contains("BundleOperations"));
+        assertTrue(dashboardBody.contains("BundleGrants"));
         assertTrue(dashboardBody.contains("RevenueGbp"));
         assertTrue(dashboardBody.contains("PassesIssued"));
         assertTrue(dashboardBody.contains("PassesRedeemed"));

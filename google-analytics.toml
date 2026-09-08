@@ -26,6 +26,15 @@ url = "https://submit.diyaccounting.co.uk"
 stream_id = "13497119809"
 measurement_id = "G-T81V5NL5MB"
 
+# The four conversions the one-stop dashboard tracks, and the GA4 event name each fires as.
+# "purchase" covers both subscribe (a submit bundle checkout) and donate (a spreadsheets
+# donation) — scripts/ga4-key-events-sync.js marks it once rather than proposing a duplicate.
+[key_events]
+subscribe = "purchase"
+submit = "submit_vat_return"
+donate = "purchase"
+download = "runner_download"
+
 # Retired GA4 property (www site)
 # Trashed 2026-09-05; permanent deletion ~2026-10-10, restorable until then from Admin>Account>Trash.
 # Kept as a reference record here. Property 523400333 is the account's only live property.

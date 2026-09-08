@@ -18,7 +18,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildBeaconEvent(body, headers = {}) {
   return {
-    requestContext: { requestId: "test-request-id", http: { method: "POST", path: "/api/session/beacon" } },
+    requestContext: { requestId: "test-request-id", http: { method: "POST", path: "/api/v1/session/beacon" } },
     headers: {
       "user-agent": "Mozilla/5.0 (Macintosh) AppleWebKit/537.36 Chrome/120 Safari/537.36",
       "cloudfront-viewer-country": "GB",

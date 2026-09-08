@@ -88,10 +88,33 @@ class SubmitEnvironmentCdkResourceTest {
         Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 45);
         Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 19);
 
-        // 8) Observability stack should enable CloudTrail (Trail present)
+        // 8) Observability stack should enable CloudTrail (Trail present), covering every region
+        // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
         Template observability = Template.fromStack(env.observabilityStack);
         observability.resourceCountIs("AWS::CloudTrail::Trail", 1);
+        observability.hasResourceProperties(
+                "AWS::CloudTrail::Trail", Match.objectLike(Map.of("IsMultiRegionTrail", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
+
+        // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack
+        // manages the CIS v5.0.0 and AWS Foundational Security Best Practices subscriptions
+        // instead of the Hub auto-enabling CIS v1.2.0 on creation.
+        observability.hasResourceProperties(
+                "AWS::SecurityHub::Hub", Match.objectLike(Map.of("EnableDefaultStandards", false)));
+
+        // 8a) SecurityBaselineStack: the Config recorder, its delivery channel and bucket, and
+        // the standards-swap custom resources (disable CIS v1.2.0, enable CIS v5.0.0, keep AWS
+        // Foundational Security Best Practices).
+        Template securityBaseline = Template.fromStack(env.securityBaselineStack);
+        securityBaseline.resourceCountIs("AWS::Config::ConfigurationRecorder", 1);
+        securityBaseline.resourceCountIs("AWS::Config::DeliveryChannel", 1);
+        securityBaseline.resourceCountIs("AWS::IAM::ServiceLinkedRole", 1);
+        securityBaseline.hasResourceProperties(
+                "AWS::Config::ConfigurationRecorder",
+                Match.objectLike(Map.of(
+                        "RecordingGroup",
+                        Match.objectLike(Map.of("AllSupported", true, "IncludeGlobalResourceTypes", true)))));
+        assertSecurityHubStandardsSwap(securityBaseline);
 
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
@@ -114,6 +137,13 @@ class SubmitEnvironmentCdkResourceTest {
         // an Allow, its Bedrock Allow names only the two pinned models, and the guardrail and both
         // of its SSM parameters exist.
         assertAlarmTriageResources(observability);
+
+        // 8c) Operations dashboard: nine widgets across four rows plus the RUM and probe rows,
+        // narrowed to the live deployment (a CloudFormation dynamic reference to the
+        // last-known-good-deployment SSM parameter, not a bare "test-" prefix matching every
+        // retired deployment's functions), with the business widgets moved to the analytics
+        // dashboard and one deliberate duplicate (VAT submissions) kept here.
+        assertOperationsDashboardScopedToLiveDeployment(observability);
 
         // The stack's composite health alarm routes through OpsStack's AlarmStateChangeRule, which matches
         // this environment's shared-alarm prefix `{envName}-env-` (OpsStack itself is an app-level
@@ -161,7 +191,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 14);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 12);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 13);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -269,6 +299,68 @@ class SubmitEnvironmentCdkResourceTest {
                 .anyMatch(field -> "eventName".equals(field.get("Field"))
                         && List.of("GetRecords").equals(field.get("NotEquals"))));
         assertTrue(dataFields.stream().noneMatch(field -> "readOnly".equals(field.get("Field"))));
+    }
+
+    /**
+     * The CIS v1.2.0 -> v5.0.0 swap runs as three {@code Custom::AWS} resources sharing one
+     * provider: disable the v1.2.0 subscription, enable v5.0.0, and (re-)enable AWS Foundational
+     * Security Best Practices so it stays subscribed either way.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertSecurityHubStandardsSwap(Template template) {
+        var customResources = template.findResources("Custom::AWS");
+        var calls = customResources.values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(properties -> String.valueOf(properties.get("Create")))
+                .toList();
+
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchDisableStandards")
+                        && call.contains("cis-aws-foundations-benchmark/v/1.2.0")),
+                "expected a Custom::AWS resource disabling the CIS v1.2.0 standard");
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
+                        && call.contains("cis-aws-foundations-benchmark/v/5.0.0")),
+                "expected a Custom::AWS resource enabling the CIS v5.0.0 standard");
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
+                        && call.contains("aws-foundational-security-best-practices/v/1.0.0")),
+                "expected a Custom::AWS resource keeping AWS Foundational Security Best Practices enabled");
+    }
+
+    /**
+     * The Errors, Throttles, p95 Duration and VAT-submissions widgets all resolve the live
+     * deployment from the last-known-good-deployment SSM parameter rather than a bare
+     * per-environment prefix (which matched every retired deployment's functions and broke
+     * CloudWatch's 500-series SEARCH limit); the four widgets that moved to the business
+     * dashboard are gone from this one.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertOperationsDashboardScopedToLiveDeployment(Template observability) {
+        Map<String, Map<String, Object>> dashboards = observability.findResources("AWS::CloudWatch::Dashboard");
+        assertEquals(1, dashboards.size());
+        var properties = (Map<String, Object>) dashboards.values().iterator().next().get("Properties");
+        var dashboardBody = String.valueOf(properties.get("DashboardBody"));
+
+        // StringParameter.valueForStringParameter renders as a Ref to an
+        // AWS::SSM::Parameter::Value<String> template parameter, whose logical id is the SSM
+        // parameter's path with punctuation stripped.
+        assertTrue(
+                dashboardBody.contains("lastknowngooddeployment"),
+                "expected the live deployment name to come from the last-known-good-deployment SSM parameter, got: "
+                        + dashboardBody);
+
+        assertTrue(dashboardBody.contains("VAT Submissions (live deployment)"));
+        assertTrue(dashboardBody.contains("Active Bundle Allocations (reconciled)"));
+        assertTrue(dashboardBody.contains("Lambda Errors (live deployment)"));
+        assertTrue(dashboardBody.contains("Lambda Throttles (live deployment)"));
+        assertTrue(dashboardBody.contains("Lambda p95 Duration (live deployment)"));
+
+        assertFalse(dashboardBody.contains("HMRC Authentications"));
+        assertFalse(dashboardBody.contains("Bundle Operations"));
+        assertFalse(dashboardBody.contains("Sign-ups & Cognito Auth"));
+        assertFalse(dashboardBody.contains("Bundle Grants & Cap Enforcement"));
+        assertFalse(dashboardBody.contains("all deployments"));
     }
 
     /**

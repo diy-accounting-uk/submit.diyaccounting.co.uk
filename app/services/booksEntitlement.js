@@ -4,7 +4,7 @@
 // app/services/booksEntitlement.js
 //
 // Gates the books PUT route on an active subscription. A stub until the billing row wires up the
-// books bundle: BOOKS_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every caller
+// DIYA-GL bundle: BOOKS_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every caller
 // passes.
 
 import { createLogger } from "../lib/logger.js";
@@ -13,7 +13,7 @@ import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/services/booksEntitlement.js" });
 
-const DEFAULT_BOOKS_BUNDLE_ID = "resident-books";
+const DEFAULT_BOOKS_BUNDLE_ID = "resident-diya-gl";
 
 /**
  * @param {string} sub - the raw Cognito sub
@@ -33,7 +33,7 @@ export async function entitlementFor(sub) {
   const matchingBundle = bundles.find((bundle) => bundle.bundleId === booksBundleId);
 
   if (!matchingBundle) {
-    logger.info({ message: "No matching books bundle", bundleId: booksBundleId });
+    logger.info({ message: "No matching DIYA-GL bundle", bundleId: booksBundleId });
     return { allowed: false, reason: "no-subscription", bundleId: null, expiry: null, checkedAt };
   }
 
@@ -51,7 +51,7 @@ export async function entitlementFor(sub) {
   }
 
   logger.info({
-    message: "Books bundle found but not active",
+    message: "DIYA-GL bundle found but not active",
     bundleId: matchingBundle.bundleId,
     subscriptionStatus: matchingBundle.subscriptionStatus,
     expiry: matchingBundle.expiry,
