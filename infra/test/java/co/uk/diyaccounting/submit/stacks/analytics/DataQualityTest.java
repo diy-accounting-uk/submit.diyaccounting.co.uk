@@ -164,7 +164,7 @@ class DataQualityTest {
         Template template = synthDataQuality();
 
         // One errors alarm plus one Glue-published rules-failed alarm per target; no DLQ-depth alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (var resource : alarms.values()) {
@@ -242,7 +242,8 @@ class DataQualityTest {
                 "curated/alarm-state-changes/*",
                 "curated/dora/*",
                 "curated/compliance/accessibility/*",
-                "curated/compliance/fraud-headers/*");
+                "curated/compliance/fraud-headers/*",
+                "curated/cost/focus/*");
         var expectedCondition = Match.objectLike(Map.of("StringLike", Map.of("s3:prefix", expectedPrefixes)));
         var expectedStatement = Match.objectLike(
                 Map.of("Action", "s3:ListBucket", "Condition", expectedCondition));
