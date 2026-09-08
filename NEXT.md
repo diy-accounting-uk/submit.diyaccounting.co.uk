@@ -14,7 +14,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c6e18fd (the 2026-09-07 scheduled deploy of main, run 34105362721);
-no spare stands. B53b holds the decision that stops a spare recurring.** A main deploy
+no spare stands. B53c stops a spare recurring.** A main deploy
 retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
 $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -35,7 +35,7 @@ agent per file area; each item's body stays in its section below until it is ver
 |---|---|---|---|
 | B34.8, B34.9, B54 (catalogue, Stripe products and price ids, test and live) | on the batch | Sonnet | — |
 | B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
-| B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
+| B52a (the two prod dashboards, the beacon route, the funnel and passes views) | on the batch | Sonnet | — |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
@@ -48,11 +48,12 @@ Wave 2, from the same batch:
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
 | B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | `agent-ab24f41486e1a3121` |
-| B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | `agent-ab747ac3d36def78c` |
+| B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
+| B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-b52d` |
+| B53c (the prod sweep considers every standing set) | sweep | Sonnet | `agent-b53c` |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
-B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
-the batch's ci set after the push.
+B10.4 runs against the batch's ci set after the push.
 
 ## Ready, unblocking others
 
@@ -106,17 +107,6 @@ the batch's ci set after the push.
   record the deploy carries forward (a tag on the secret set only when the value changes, or
   `secrets-rotation.toml` in the repo) and list the ones older than a year. Unblocks S4b.
   **Source**: the prod account, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53b. Decide: fix the prod sweep or drop the daily schedule.** `deploy.yml` carries
-  `schedule: cron '11 4 * * *'`, so main deploys to prod every day whether or not it changed.
-  On a schedule event `set-origins` reports no existing deployment, so `destroy previous`
-  takes the sweep path; the sweep's candidates are the CloudFront alias targets that look like
-  `prod-*` plus the last-known-good pointer, which the run's own earlier job had already moved
-  to the new set, so the replaced set is never considered (run 34105362721: "No prod stacks
-  found for destruction"; prod-c980ac9 stood until the operator's destroy at 21:31 UTC). The
-  choice: fix the sweep to consider every deployed prod set older than eight hours that is not
-  the pointer, or drop the daily schedule, which deploys a fresh prod set every day whether or
-  not anything changed. Unblocks B53c. **Source**: the prod account, 2026-09-07. **Owner**:
-  Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -174,6 +164,12 @@ the batch's ci set after the push.
   accounts activity there. Then `stripe-catalogue-sync`: the product and price in test, then
   live, and the ids onto `.env.ci`, `.env.prod` and the GitHub environments. **Source**:
   BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B53c. The prod sweep considers every standing set.** The operator's decision of
+  2026-09-08: fix the sweep, keep the daily schedule. `destroy-prod.yml`'s sweep lists every
+  `prod-*-app-*` set in both regions, keeps the last-known-good pointer's set and any younger
+  than `SELF_DESTRUCT_DELAY_HOURS`, and destroys one other set per run; the explicit
+  `deployment-name` path stays. **Source**: the prod account, 2026-09-07. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
   `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
   amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
@@ -335,10 +331,6 @@ the batch's ci set after the push.
   `site-video-capture`), and publish them with `video-publish` beside the others. **Source**:
   BACKLOG 17b; issue #19. **Owner**: Claude Code. **Model**: Sonnet for the capture, Haiku
   for the publish. Blocked on O27.
-- [ ] **B53c. Build B53b's choice.** Either the sweep change in `destroy-prod.yml` (candidates
-  from `DEPLOYED_DEPLOYMENT_NAMES`, older than `SELF_DESTRUCT_DELAY_HOURS`, not the pointer)
-  or the schedule's removal from `deploy.yml`; ci first where the change is shared. **Source**:
-  B53b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on B53b.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
