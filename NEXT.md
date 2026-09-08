@@ -33,7 +33,7 @@ agent per file area; each item's body stays in its section below until it is ver
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B34.8, B34.9, B54 (catalogue) | merged to the batch at fc21444a; the Stripe test and live runs wait on the operator's "go" | Sonnet | — |
+| B34.8, B34.9, B54 (catalogue, Stripe products and price ids, test and live) | on the batch | Sonnet | — |
 | B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
@@ -52,8 +52,7 @@ Wave 2, from the same batch:
 | B52b (GA4 in BigQuery: scheduled queries as code, applied by a workflow) | bigquery | Sonnet | WT_B52B |
 
 B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
-the batch's ci set after the push. The Stripe test and live runs for B34.9 and B54 wait on the
-operator's "go" per `stripe-catalogue-sync`.
+the batch's ci set after the push.
 
 ## Ready, unblocking others
 
