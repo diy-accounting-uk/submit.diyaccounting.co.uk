@@ -96,10 +96,15 @@ app.use((req, res, next) => {
 });
 
 // Basic CORS middleware (mostly for local tools and OPTIONS where needed)
+const LOCAL_DEV_ORIGINS = [
+  "https://local.submit.diyaccounting.co.uk:3443",
+  "http://localhost:3000",
+  "http://localhost:8080",
+];
 app.use((req, res, next) => {
-  // Allow same-origin, and also enable generic CORS for dev tools
+  // Allow only known local dev origins, not every origin a caller sends.
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && LOCAL_DEV_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }

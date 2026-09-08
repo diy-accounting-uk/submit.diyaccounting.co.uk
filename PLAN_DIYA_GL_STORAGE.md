@@ -377,3 +377,156 @@ that ordering is undefined, so a deploy could hand `COGNITO_CLIENT_ID` the books
 the existing routes' authoriser. The query must select by `ClientName` (`{env}-env-client`,
 `{env}-env-books-client`) and export `COGNITO_BOOKS_CLIENT_ID` alongside. It sits in LP-15's files,
 so whichever row lands first should carry it.
+
+## 10. Checkout and the portal for DIYA-GL tokens
+
+The subscribe button on the DIYA-GL pages calls Submit's checkout with a DIYA-GL token. Two
+things stop it today.
+
+**The audience.** `POST /api/v1/billing/checkout-session` and `GET /api/v1/billing/portal` sit
+behind `<prefix>-CognitoAuthorizer` (`ApiStack.java`), whose only audience is Submit's own app
+client. API Gateway refuses a DIYA-GL token before the Lambda runs, because
+`<prefix>-BooksCognitoAuthorizer`'s audience is the DIYA-GL app client
+(`<prefix>-BooksUserPoolClient`, built in `IdentityStack.java`).
+
+**The path.** `startSubscription()` in the sibling's `public/books/cloud.js` calls
+`POST {apiBase}/billing/checkout`. No such route exists.
+
+### The choice
+
+**A. One more authoriser, two audiences, two routes.** A third `HttpJwtAuthorizer`,
+`<prefix>-BillingCognitoAuthorizer`, same issuer, `jwtAudience(List.of(userPoolClientId,
+booksUserPoolClientId))`, attached to the checkout and portal routes only.
+
+**B. Twin routes.** A second checkout path and a second portal path under
+`BooksCognitoAuthorizer`, each with its own `ApiLambda` entry and its own name in
+`SubmitSharedNames`.
+
+**Recommended: A.** It is one authoriser, one handler and one route per job, and because it is
+attached to two routes only, a DIYA-GL token still reaches nothing on the VAT or Companies House
+side, so decision D10 holds. B doubles the route names, the OpenAPI paths and the drift surface
+for behaviour that is identical whichever token arrives.
+
+### CDK
+
+`ApiStack.java`, beside the two authorisers already built from `issuer`:
+
+```java
+HttpJwtAuthorizer billingJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
+                props.resourceNamePrefix() + "-BillingCognitoAuthorizer", issuer)
+        .jwtAudience(List.of(props.userPoolClientId(), props.booksUserPoolClientId()))
+        .build();
+```
+
+`AbstractApiLambdaProps` gains `billingJwtAuthorizer()`, `@Value.Default` false.
+`createRouteForLambda` tests it first, ahead of the `booksJwtAuthorizer()` branch, in both the
+main route and the auto-HEAD route.
+
+`BillingStack.java`: `billingCheckoutPostLambda` and `billingPortalGetLambda` swap
+`.jwtAuthorizer(true)` for `.billingJwtAuthorizer(true)`. `billingCheckoutSessionGetLambda` and
+`billingRecoverPostLambda` keep the main authoriser. The checkout Lambda gains
+`STRIPE_PRICE_ID_RESIDENT_DIYA_GL` and `STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL` from the price ids
+B54 lands, and both gain `BILLING_RETURN_URL_ORIGINS` (see "Return URLs").
+
+`SubmitSharedNames.java`: `billingCheckoutPostLambdaUrlPath` becomes `/api/v1/billing/checkout`
+and `billingCheckoutSessionGetLambdaUrlPath` becomes `/api/v1/billing/checkout/{id}`, which is
+what the button calls. Every caller in this repo moves with them, no alias left behind:
+`web/public/bundles.html` (two fetches), the `registerLambdaRoute` calls in
+`app/functions/billing/billingCheckoutPost.js` and `billingCheckoutSessionGet.js`,
+`app/bin/simulator-server.js`, `app/functions/non-lambda-mocks/mockBilling.js`, and
+`behaviour-tests/steps/behaviour-bundle-steps.js`. `./mvnw clean verify` regenerates
+`web/public/docs/api/openapi.json`.
+
+`BooksStack.java` and `app/services/booksEntitlement.js`: `BOOKS_BUNDLE_ID` and
+`DEFAULT_BOOKS_BUNDLE_ID` become `resident-diya-gl`, matching the catalogue entry B54 adds.
+
+### The handler
+
+`billingCheckoutPost.js` needs no allow-list work: `resolveStripePriceId` turns any `bundleId`
+into `STRIPE_[TEST_]PRICE_ID_<UPPER_SNAKE>` and 500s when that variable is unset, so
+`resident-diya-gl` works as soon as B54's price ids are on the Lambda. What it does need is a
+body: `startSubscription()` sends none today and the handler defaults to `resident-pro`, so the
+sibling must send `{"bundleId":"resident-diya-gl","returnTo":"<the DIYA-GL page's own URL>"}`.
+That change is on the launch plan's side, and this row is not done until it lands.
+
+**The subject already agrees, and the builder proves it rather than changing code.**
+`billingCheckoutPost.js` computes `hashSub(userSub)` from the token's `sub` and puts it in
+`metadata.hashedSub` and `client_reference_id`. `billingWebhookPost.js` reads it back and writes
+`putBundleByHashedSub(hashedSub, ...)` to `{env}-env-bundles`.
+`booksEntitlement.entitlementFor(sub)` calls `getUserBundles(sub)`, which applies the same
+`hashSub` internally (`app/data/dynamoDbBundleRepository.js`). `IdentityStack` builds one
+`UserPool` and hangs both `<prefix>-UserPoolClient` and `<prefix>-BooksUserPoolClient` on it, so
+`sub` is the same person's `sub` whichever client issued the token. The behaviour case below is
+what checks this end to end; nothing in the handlers moves for it.
+
+### Return URLs
+
+Both handlers build their URLs server-side from `DIY_SUBMIT_BASE_URL` and always land on Submit's
+`bundles.html`. A DIYA-GL subscriber has to come back to the page they left.
+
+Add an optional `returnTo`: in the checkout body, and in the portal's query string. Both handlers
+check its origin against `BILLING_RETURN_URL_ORIGINS`, a comma-separated list in the shape
+`BOOKS_ALLOWED_ORIGINS` already uses in `BooksStack` — ci
+`https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000`, prod
+`https://spreadsheets.diyaccounting.co.uk`, both plus the site's own `DIY_SUBMIT_BASE_URL` origin.
+An origin that is not on the list is ignored and the existing URL is used, so a bad `returnTo`
+never 400s and never redirects off-site.
+
+| URL | With `returnTo` | Without |
+|---|---|---|
+| checkout `success_url` | `<returnTo>?checkout=success&session_id={CHECKOUT_SESSION_ID}` | unchanged |
+| checkout `cancel_url` | `<returnTo>?checkout=canceled` | unchanged |
+| portal `return_url` | `<returnTo>` | unchanged |
+
+Unit cases in `app/unit-tests/billing/billingCheckoutPost.test.js` and
+`billingPortalGet.test.js`: an allowed `returnTo` is used, a foreign origin falls back to
+`bundles.html`, a missing `returnTo` behaves as it does now, and `resident-diya-gl` resolves its
+price id in both live and test mode.
+
+### The behaviour case on ci
+
+`resident-diya-gl` is listed for purchase on ci only until the operator lifts it, so this runs on
+ci and there is no prod variant yet.
+
+New spec `behaviour-tests/diyaGlSubscription.behaviour.test.js`, project
+`diyaGlSubscriptionBehaviour`, with a `playwright.config.js` project and a
+`test:diyaGlSubscriptionBehaviour-ci` script in `package.json`. Its own steps go in
+`behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js`; the Stripe and storage steps are
+imported, not copied.
+
+**Getting a DIYA-GL token.** The ci suites sign in by driving the Cognito hosted UI in the
+browser, not through an SDK call: `loginWithCognitoOrMockAuth` in
+`behaviour-tests/steps/behaviour-login-steps.js`, with `TEST_AUTH_USERNAME`, `TEST_AUTH_PASSWORD`
+and `TEST_AUTH_TOTP_SECRET`, after `scripts/enable-cognito-native-test.js` has added `COGNITO` to
+the client's `SupportedIdentityProviders`. That script and
+`scripts/toggle-cognito-native-auth.js` are being extended to the DIYA-GL app client in this
+wave, so the test signs in against the DIYA-GL client id and reads the id token the DIYA-GL page
+stores, exactly as `behaviour-tests/books.behaviour.test.js` reads its own.
+
+**Steps.**
+
+1. Open the ci DIYA-GL page and sign in through the hosted UI on the DIYA-GL app client. Read the
+   id token from the page.
+2. `PUT {apiBase}/books/<id>` with the fixture zip. Assert 403 `subscription-required`. This step
+   only means something when `BOOKS_ENTITLEMENT_ENFORCED` is `true` on ci; with the stub still
+   off it is skipped, and the test says so in its skip message rather than passing quietly.
+3. `POST {apiBase}/billing/checkout` with `Authorization: Bearer <the DIYA-GL id token>` and
+   `{"bundleId":"resident-diya-gl","returnTo":"<the ci DIYA-GL page URL>"}`. Assert 200 and a
+   `url` on `checkout.stripe.com`. This is the assertion that the audience change works: before
+   it, API Gateway answers 401 with no Lambda invocation.
+4. Complete the Stripe test checkout with `ensureBundleViaCheckout` from
+   `behaviour-tests/steps/behaviour-bundle-steps.js`, the same card-filling path
+   `payment.behaviour.test.js` uses, then `waitForBundleWebhookActivation` for the bundle row.
+5. Assert the browser came back to the DIYA-GL page with `checkout=success`, not to
+   `bundles.html`.
+6. `PUT {apiBase}/books/<id>` with the fixture zip, then `GET {apiBase}/books/<id>/latest`, and
+   assert the bytes match. These are `books.behaviour.test.js`'s own put-and-read steps, imported
+   from its steps file.
+7. `GET {apiBase}/billing/portal?returnTo=<the ci DIYA-GL page URL>` with the same token. Assert
+   200 and a `billing.stripe.com` URL.
+
+Steps 3 and 6 together are the row's point: the subscriber of a DIYA-GL token and the reader of
+`getUserBundles(sub)` are the same subject.
+
+**Depends on** B54 for the `resident-diya-gl` catalogue entry and its Stripe test and live price
+ids, and on the sibling's `startSubscription()` sending the bundle id and `returnTo`.

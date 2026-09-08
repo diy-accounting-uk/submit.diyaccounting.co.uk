@@ -105,7 +105,7 @@ class BooksStackTest {
                                         "BOOKS_MAX_PER_USER", "20",
                                         "BOOKS_VERSIONS_KEPT", "30",
                                         "BOOKS_ENTITLEMENT_ENFORCED", "false",
-                                        "BOOKS_BUNDLE_ID", "resident-books",
+                                        "BOOKS_BUNDLE_ID", "resident-diya-gl",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
     }
 
