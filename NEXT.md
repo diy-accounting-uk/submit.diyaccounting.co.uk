@@ -14,7 +14,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c6e18fd (the 2026-09-07 scheduled deploy of main, run 34105362721);
-no spare stands. B53b holds the decision that stops a spare recurring.** A main deploy
+no spare stands. B53c stops a spare recurring.** A main deploy
 retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
 $46.88/month until named to `destroy-prod.yml`
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
@@ -35,11 +35,11 @@ agent per file area; each item's body stays in its section below until it is ver
 |---|---|---|---|
 | B34.8, B34.9, B54 (catalogue, Stripe products and price ids, test and live) | on the batch | Sonnet | — |
 | B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
-| B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
+| B52a (the two prod dashboards, the beacon route, the funnel and passes views) | on the batch | Sonnet | — |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
-| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
+| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | on the batch | Sonnet | — |
 | B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
 | B52d and B55 designs | on the batch: `PLAN_ONE_STOP_DASHBOARD.md` "B52d design", `PLAN_DIYA_GL_STORAGE.md` section 10 | Opus | — |
 
@@ -47,12 +47,13 @@ Wave 2, from the same batch:
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | WT_B55 |
-| B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | WT_B52C |
+| B55 (checkout and the portal for DIYA-GL tokens; the route is `/api/v1/billing/checkout`; the ci behaviour case) | on the batch | Sonnet | — |
+| B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
+| B52d (the five lake views, the alarm, DORA and probe writers, the ga4_daily pull) | on the batch; the batch build runs | Sonnet | — |
+| B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
-B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
-the batch's ci set after the push.
+B10.4 runs against the batch's ci set after the push.
 
 ## Ready, unblocking others
 
@@ -74,12 +75,14 @@ the batch's ci set after the push.
   issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
   sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
   as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels). Unblocks B52d.
-- [ ] **B52d. Lake views.** Submissions by activity including the four Companies House
-  events; sources; the availability SLI and error budget from the probe metrics; alarm state
-  changes by family through the existing Firehose pattern; DORA rows (name, environment,
-  branch, sha, run id, duration, lead time, failure, recovery) from the deploy and destroy
-  workflows. **Source**: BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**:
-  Sonnet. Unblocks B52g, B52h, B52j and B52k.
+- [ ] **B52d. Lake views.** On the batch: the five views (submissions by activity with the
+  Companies House events, traffic sources, the availability SLI and error budget, alarm state
+  changes by family, DORA runs), the alarm-to-lake Firehose delivery, the `dora-row` composite
+  action on the deploy, destroy and probe workflows, the nightly pull of the four `ga4_daily`
+  aggregates, data-quality rows for the new sources and their dashboard widgets. Remaining:
+  the first nightly run after merge fills the views; the next board reads them. **Source**:
+  BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**: Sonnet. Unblocks B52g,
+  B52h, B52j and B52k.
 - [ ] **B47a. The Monday 06:00 UTC schedules fire late, not never.** `compliance.yml` and
   `stack-drift.yml` both ran on 2026-09-07 as `schedule` events, green, at 11:39 and 11:44 UTC:
   GitHub queues the top-of-the-hour slot hardest, and both sat on `0 6 * * 1`. On the batch:
@@ -106,17 +109,6 @@ the batch's ci set after the push.
   record the deploy carries forward (a tag on the secret set only when the value changes, or
   `secrets-rotation.toml` in the repo) and list the ones older than a year. Unblocks S4b.
   **Source**: the prod account, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53b. Decide: fix the prod sweep or drop the daily schedule.** `deploy.yml` carries
-  `schedule: cron '11 4 * * *'`, so main deploys to prod every day whether or not it changed.
-  On a schedule event `set-origins` reports no existing deployment, so `destroy previous`
-  takes the sweep path; the sweep's candidates are the CloudFront alias targets that look like
-  `prod-*` plus the last-known-good pointer, which the run's own earlier job had already moved
-  to the new set, so the replaced set is never considered (run 34105362721: "No prod stacks
-  found for destruction"; prod-c980ac9 stood until the operator's destroy at 21:31 UTC). The
-  choice: fix the sweep to consider every deployed prod set older than eight hours that is not
-  the pointer, or drop the daily schedule, which deploys a fresh prod set every day whether or
-  not anything changed. Unblocks B53c. **Source**: the prod account, 2026-09-07. **Owner**:
-  Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -174,6 +166,16 @@ the batch's ci set after the push.
   accounts activity there. Then `stripe-catalogue-sync`: the product and price in test, then
   live, and the ids onto `.env.ci`, `.env.prod` and the GitHub environments. **Source**:
   BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B53c. The prod sweep destroys the set a scheduled deploy replaces.** On the batch: the
+  cause was `destroy-prod.yml` trusting `github.event_name`, which a reusable workflow inherits
+  from its caller, so `deploy.yml`'s daily schedule made the destroy sweep instead of honouring
+  the explicit `deployment-name` it was passed (run 34105362721 left prod-c980ac9 standing).
+  Both destroy workflows now let an explicit name win, and the prod sweep itself lists every
+  `prod-*` set in both regions, keeps the pointer's set and any younger than
+  `SELF_DESTRUCT_DELAY_HOURS`, destroys one other set per run and clears a pointer with no
+  stacks behind it. Remaining: the first scheduled main deploy after merge proves it (the
+  replaced set goes in the same run). **Source**: the prod account, 2026-09-07; the
+  operator's decision of 2026-09-08. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
   `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
   amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
@@ -263,16 +265,16 @@ the batch's ci set after the push.
 
 ## Blocked on a machine task
 
-- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** `POST /api/v1/billing/checkout` and
-  the portal route sit behind the main Cognito authoriser, whose audience is the Submit app
-  client, so a token from the DIYA-GL client (`BooksCognitoAuthorizer`'s audience) is refused.
-  Accept the DIYA-GL audience on those two routes, or add DIYA-GL-scoped twins under
-  `BooksCognitoAuthorizer`; checkout takes the `resident-diya-gl` bundle; the proof is a behaviour
-  case on ci that subscribes with a DIYA-GL token and then puts a book. The spreadsheets side
-  (the subscribe button and the portal link in the account panel) is that board's LP-18 and
-  waits on this. **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 9.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B54.
-
+- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** On the batch: a third JWT
+  authoriser carrying both audiences on the checkout and portal routes only; the checkout
+  route is `POST /api/v1/billing/checkout` (the `checkout-session` paths are gone, every
+  caller moved); `bundleId` and `returnTo` in the body with the allow-list from
+  `BILLING_RETURN_URL_ORIGINS`; the ITSA, Ltd and DIYA-GL price ids wired through
+  `BillingStack`; `diyaGlSubscription.behaviour.test.js` runs on ci deploys with the DIYA-GL
+  client id from the identity stack. Remaining: the first ci run of that suite is the proof;
+  the spreadsheets side's subscribe button sends `{bundleId, returnTo}` (its board's LP-18).
+  **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 10. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **O26. Decide the ITSA client approach and the token cost per submission.** From
   B10.6's comparison, pick generated or hand-rolled; and set whether a quarterly update costs
   the same one token as a VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**:
@@ -335,10 +337,6 @@ the batch's ci set after the push.
   `site-video-capture`), and publish them with `video-publish` beside the others. **Source**:
   BACKLOG 17b; issue #19. **Owner**: Claude Code. **Model**: Sonnet for the capture, Haiku
   for the publish. Blocked on O27.
-- [ ] **B53c. Build B53b's choice.** Either the sweep change in `destroy-prod.yml` (candidates
-  from `DEPLOYED_DEPLOYMENT_NAMES`, older than `SELF_DESTRUCT_DELAY_HOURS`, not the pointer)
-  or the schedule's removal from `deploy.yml`; ci first where the change is shared. **Source**:
-  B53b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on B53b.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
