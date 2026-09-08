@@ -47,7 +47,7 @@ Wave 2, from the same batch:
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | `agent-ab24f41486e1a3121` |
+| B55 (checkout and the portal for DIYA-GL tokens; the route is `/api/v1/billing/checkout`; the ci behaviour case) | on the batch | Sonnet | — |
 | B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
 | B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-a19ab3fa8247c3e4d` |
 | B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
@@ -263,16 +263,16 @@ B10.4 runs against the batch's ci set after the push.
 
 ## Blocked on a machine task
 
-- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** `POST /api/v1/billing/checkout` and
-  the portal route sit behind the main Cognito authoriser, whose audience is the Submit app
-  client, so a token from the DIYA-GL client (`BooksCognitoAuthorizer`'s audience) is refused.
-  Accept the DIYA-GL audience on those two routes, or add DIYA-GL-scoped twins under
-  `BooksCognitoAuthorizer`; checkout takes the `resident-diya-gl` bundle; the proof is a behaviour
-  case on ci that subscribes with a DIYA-GL token and then puts a book. The spreadsheets side
-  (the subscribe button and the portal link in the account panel) is that board's LP-18 and
-  waits on this. **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 9.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on B54.
-
+- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** On the batch: a third JWT
+  authoriser carrying both audiences on the checkout and portal routes only; the checkout
+  route is `POST /api/v1/billing/checkout` (the `checkout-session` paths are gone, every
+  caller moved); `bundleId` and `returnTo` in the body with the allow-list from
+  `BILLING_RETURN_URL_ORIGINS`; the ITSA, Ltd and DIYA-GL price ids wired through
+  `BillingStack`; `diyaGlSubscription.behaviour.test.js` runs on ci deploys with the DIYA-GL
+  client id from the identity stack. Remaining: the first ci run of that suite is the proof;
+  the spreadsheets side's subscribe button sends `{bundleId, returnTo}` (its board's LP-18).
+  **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 10. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **O26. Decide the ITSA client approach and the token cost per submission.** From
   B10.6's comparison, pick generated or hand-rolled; and set whether a quarterly update costs
   the same one token as a VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**:
