@@ -26,7 +26,7 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
 
 /**
- * The eight Athena views that answer the operator's recurring business questions, each backed
+ * The Athena views that answer the operator's recurring business questions, each backed
  * by {@code activity_events_all} and/or the {@code dynamo_*} and {@code stripe_*} catalog
  * tables, never the raw sources directly.
  *
@@ -74,6 +74,10 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_hmrc_failures_by_class",
                     "HMRC submission failures each day, by failure class",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_business_activity_daily",
+                    "HMRC authentications, bundle grants and bundle deletions each day",
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_signup_to_first_submission",
