@@ -38,7 +38,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
 | S2 (CodeQL fixes; dismissals written up for the operator) | codeql | Sonnet | `agent-a6e21bbdd321cc0a4` |
-| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | lifecycle | Haiku | `agent-a36fbb164167fdb98` |
+| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
 | B22 (fraud-header email check) | fraud-header | Sonnet | `agent-a3e396613eb4ac63a` |
 | B52d and B55 designs into their plan docs | design | Opus | `agent-a09db863e980dd495` |
