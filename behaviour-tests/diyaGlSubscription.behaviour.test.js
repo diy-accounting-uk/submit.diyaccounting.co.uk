@@ -13,6 +13,7 @@
 // from the browser (see behaviour-diya-gl-subscription-steps.js for why); only the interactive
 // hosted-UI sign-in and the real Stripe Checkout page need a browser.
 
+import crypto from "node:crypto";
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import fs from "node:fs";
@@ -27,6 +28,7 @@ import {
   getDiyaGlBillingPortal,
   putDiyaGlBook,
   getDiyaGlBookLatest,
+  deleteDiyaGlBook,
 } from "./steps/behaviour-diya-gl-subscription-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -99,7 +101,9 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   addOnPageLogging(page);
 
   const apiBase = new URL("api/v1", baseUrl).toString().replace(/\/$/, "");
-  const bookId = "bbbbbbbb-cccc-4ddd-8eee-ffffffffffff";
+  // A fresh id each run: the durable test user keeps its books, and a put on an existing book
+  // without its current etag answers 412.
+  const bookId = crypto.randomUUID();
   const redirectUri = diyaGlPageUrl;
 
   /* ****************************************** */
@@ -169,6 +173,9 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   const read = await getDiyaGlBookLatest({ apiBase, idToken, bookId });
   expect(read.status).toBe(200);
   expect(read.body.zipBase64).toBe(FIXTURE_ZIP_BASE64);
+
+  const deleted = await deleteDiyaGlBook({ apiBase, idToken, bookId });
+  expect(deleted.status).toBe(200);
 
   /* ************************************ */
   /*  THE BILLING PORTAL, SAME TOKEN TOO  */

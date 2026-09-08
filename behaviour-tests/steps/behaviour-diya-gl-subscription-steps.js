@@ -137,3 +137,12 @@ export async function getDiyaGlBookLatest({ apiBase, idToken, bookId }) {
   const body = await response.json().catch(() => ({}));
   return { status: response.status, body };
 }
+
+export async function deleteDiyaGlBook({ apiBase, idToken, bookId }) {
+  const response = await fetch(`${apiBase}/books/${bookId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  return { status: response.status, body };
+}
