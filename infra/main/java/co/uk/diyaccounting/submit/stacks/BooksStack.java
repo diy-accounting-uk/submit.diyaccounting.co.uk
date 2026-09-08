@@ -286,7 +286,7 @@ public class BooksStack extends Stack {
                 .build());
         this.booksDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of("s3:DeleteObject"))
+                .actions(List.of("s3:GetObject", "s3:DeleteObject"))
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         SubHashSaltHelper.grantSaltAccess(this.booksDeleteLambda, region, account, props.envName());
