@@ -464,6 +464,9 @@ jobs:
           # UI directly; unused by every other suite.
           COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
+          # returns there; the ci client also lists localhost:3000 for local runs.
+          SPREADSHEETS_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://spreadsheets.diyaccounting.co.uk/' || 'https://ci-spreadsheets.diyaccounting.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
@@ -502,6 +505,9 @@ jobs:
           # UI directly; unused by every other suite.
           COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
+          # returns there; the ci client also lists localhost:3000 for local runs.
+          SPREADSHEETS_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://spreadsheets.diyaccounting.co.uk/' || 'https://ci-spreadsheets.diyaccounting.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
