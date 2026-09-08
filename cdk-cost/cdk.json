@@ -1,0 +1,12 @@
+{
+  "app": "java -jar ../target/submit-cost.jar",
+  "output": "../cdk-submit-cost.out",
+  "context": {
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/core:newStyleStackSynthesis": true,
+    "@aws-cdk/core:stackRelativeExports": true,
+    "bucketName": "diy-accounting-cost-focus-887764105431",
+    "exportName": "diy-focus-1-2",
+    "readerRoleArns": "arn:aws:iam::972912397388:role/prod-env-cost-focus-copy-role,arn:aws:iam::367191799875:role/ci-env-cost-focus-copy-role"
+  }
+}
