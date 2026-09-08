@@ -261,18 +261,16 @@ public class AlarmStateChangeDelivery extends Construct {
         this.deliveryStream.getNode().addDependency(this.glueTable);
 
         // ============================================================================
-        // EventBridge rule: every alarm on this environment's alarms into the lake
+        // EventBridge rule: every alarm on this environment's alarms into the lake. No
+        // eventBus() call: a Rule with none targets the account's default bus, the same way
+        // OpsStack's AlarmStateChangeRule reads every alarm in the account without naming one.
         // ============================================================================
-        IEventBus defaultBus =
-                software.amazon.awscdk.services.events.EventBus.fromEventBusName(this, "DefaultBus", "default");
-
         var importedStream =
                 DeliveryStream.fromDeliveryStreamArn(this, "AlarmStateChangesStreamRef", this.deliveryStream.getAttrArn());
 
         this.rule = Rule.Builder.create(this, "AlarmToLakeRule")
                 .ruleName(prefix + "-alarm-to-lake")
                 .description("Deliver every alarm state change on this environment's alarms to the analytics lake")
-                .eventBus(defaultBus)
                 .eventPattern(EventPattern.builder()
                         .source(List.of("aws.cloudwatch"))
                         .detailType(List.of("CloudWatch Alarm State Change"))
