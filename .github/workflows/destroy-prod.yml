@@ -66,12 +66,19 @@ jobs:
         run: |
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
+          # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
+          # and this run is on a schedule. A reusable workflow call inherits github.event_name from
+          # whatever triggered the caller, so deploy.yml's own daily schedule makes event_name
+          # "schedule" here too even when deploy.yml passed an explicit deployment-name to destroy.
+          # Trusting event_name alone then threw away that explicit name and swept instead, so the
+          # deployment deploy.yml had just replaced was judged by sweep-age rules, not destroyed
+          # outright. Only fall back to sweeping when no explicit deployment-name is present.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
+          DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
           if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" = "schedule" ]; then
+          elif [ -z "$DEPLOYMENT_NAME" ] && [ "$EVENT_NAME" = "schedule" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
           else
             echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
