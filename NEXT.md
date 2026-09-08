@@ -37,7 +37,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | B47a, B53a, S4a (workflows) | workflows | Sonnet | `agent-afb14a84da1eaeaee` |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
-| S2 (CodeQL fixes; dismissals written up for the operator) | codeql | Sonnet | `agent-a6e21bbdd321cc0a4` |
+| S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
 | B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
