@@ -30,9 +30,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 Batch 12 is PR #151 (`claude/b12-board`). Its first ci run failed three ways, fixed in one
 commit (7b2e27d7, pushed 2026-09-08 01:53 UTC): the multi-region trail needs global service
 events, the activity_events data-quality ruleset keeps its construct id, the ITSA dashboard
-test expects six links. The operator restarted both deploys by hand at 01:56 UTC:
-environment deploy 34178321771, then deploy 34178333024; nothing is pushed to the branch
-until both complete. Merging the PR is the
+test expects six links. The operator's restarted environment deploy (34178321771) is green; the
+deploys 34178333024 and 34196507268 failed on two more pipeline faults, fixed in 224f8f94
+(pushed 2026-09-08 07:3x UTC, after both had finished): the probe-metric and DORA-row jobs
+used the local `dora-row` action without a checkout, and the DIYA-GL client lookup ran the aws
+CLI inside the Playwright container, which has only the SDK. Nothing is pushed to the branch
+while a deploy runs. Merging the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
 it is verified on main. Wave 1 ran in worktrees under `.claude/worktrees/`, one agent per file
