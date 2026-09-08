@@ -57,7 +57,10 @@ export function resolveChatConfig() {
  */
 export function escapeTelegramMarkdown(text) {
   if (!text) return "";
-  return text.replace(/([_*`[])/g, "\\$1");
+  // Backslash is MarkdownV1's own escape character, so it must be escaped along with the
+  // other special characters in the same pass. Escaping it in a later, separate pass would
+  // also double-escape the backslashes this function has just inserted.
+  return text.replace(/([\\_*`[])/g, "\\$1");
 }
 
 /**
