@@ -33,14 +33,14 @@ agent per file area; each item's body stays in its section below until it is ver
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B34.8, B34.9, B54 (catalogue; Stripe dry runs only) | catalogue | Sonnet | `agent-a37e71ea69c6c0488` |
+| B34.8, B34.9, B54 (catalogue) | merged to the batch at fc21444a; the Stripe test and live runs wait on the operator's "go" | Sonnet | — |
 | B47a, B53a, S4a (workflows) | workflows | Sonnet | `agent-afb14a84da1eaeaee` |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
 | S2 (CodeQL fixes; dismissals written up for the operator) | codeql | Sonnet | `agent-a6e21bbdd321cc0a4` |
-| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | lifecycle | Haiku | `agent-a36fbb164167fdb98` |
+| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
-| B22 (fraud-header email check) | fraud-header | Sonnet | `agent-a3e396613eb4ac63a` |
+| B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
 | B52d and B55 designs into their plan docs | design | Opus | `agent-a09db863e980dd495` |
 
 Wave 2 starts as wave 1's tracks merge: B52d and B55 from the designs, B10.4 against the batch's
@@ -208,10 +208,10 @@ operator's "go" per `stripe-catalogue-sync`.
   2027-02-06 expiry and confirm it auto-renews by DNS validation, the local certificate
   (BACKLOG 48), Java 25, the CDK major and Playwright. **Source**: the prod account,
   2026-09-07. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
+- [ ] **B50. Add the DIYA-GL app client to the native-auth toggle.** The spreadsheets session
   asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
   `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
-  cannot sign in to the books pages without Google. Read the `BooksUserPoolClientId` output
+  cannot sign in to the DIYA-GL pages without Google. Read the `BooksUserPoolClientId` output
   as well and apply the same `COGNITO` provider change to that client on enable and disable
   (the credentials file stays one file); one-line reply to the spreadsheets inbox when it is
   on main. **Source**: BACKLOG 50; spreadsheets board H16. **Owner**: Claude Code. **Model**: Haiku.
@@ -229,6 +229,12 @@ operator's "go" per `stripe-catalogue-sync`.
   ci and shows the acknowledgement and poll. Say what reads wrong; the operator's eye on the
   form and the rendered accounts is the check no test gives. **Source**: BACKLOG 34b; issue
   #15. **Owner**: Operator. **Model**: none.
+- [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
+  first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
+  advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
+  prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
+  to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
+  is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
@@ -236,11 +242,14 @@ operator's "go" per `stripe-catalogue-sync`.
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
 
-- [ ] **B54. The `resident-books` bundle at 99p a month.** `BooksStack` already names the bundle
-  the storage API's put route checks (`BOOKS_BUNDLE_ID=resident-books`), but no such bundle exists
-  in `web/public/submit.catalogue.toml`, so every DIYA-GL subscriber looks unentitled. Add it
-  shaped like `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`,
-  `month`) carrying the DIYA-GL storage put as its activity, listed in every environment; then
+- [ ] **B54. The `resident-diya-gl` bundle at 99p a month.** The bundle the storage API's put
+  route checks (`BOOKS_BUNDLE_ID` in `BooksStack`) is `resident-diya-gl`, titled "DIYA-GL" (the
+  operator's naming of 2026-09-08: DIYA-GL in titles and prose, `diya-gl` in identifiers, never
+  "books" as a product name). It sits in `web/public/submit.catalogue.toml` shaped like
+  `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`, `month`)
+  carrying the DIYA-GL storage put as its activity. `resident-diya-gl`, `resident-ltd` and
+  `resident-itsa` are listed for purchase on ci only (`listedInEnvironments` without `prod`) until
+  the operator lifts each one; the catalogue change is on the batch. Remaining:
   `stripe-catalogue-sync`: the product and price in test, then live, and the ids onto `.env.ci`,
   `.env.prod` and the GitHub environments. **Source**: spreadsheets board LP-21;
   `PLAN_DIYA_GL_STORAGE.md` section 6. **Owner**: Claude Code. **Model**: Sonnet.
@@ -251,7 +260,7 @@ operator's "go" per `stripe-catalogue-sync`.
   the portal route sit behind the main Cognito authoriser, whose audience is the Submit app
   client, so a token from the DIYA-GL client (`BooksCognitoAuthorizer`'s audience) is refused.
   Accept the DIYA-GL audience on those two routes, or add DIYA-GL-scoped twins under
-  `BooksCognitoAuthorizer`; checkout takes the `resident-books` bundle; the proof is a behaviour
+  `BooksCognitoAuthorizer`; checkout takes the `resident-diya-gl` bundle; the proof is a behaviour
   case on ci that subscribes with a DIYA-GL token and then puts a book. The spreadsheets side
   (the subscribe button and the portal link in the account panel) is that board's LP-18 and
   waits on this. **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 9.

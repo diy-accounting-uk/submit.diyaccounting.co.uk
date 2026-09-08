@@ -55,7 +55,7 @@ the board. This plan supersedes both.
 in the request body. `companiesHouseAccountsPost.js` wants the seven FRS 105 balance sheet
 lines for the current and prior year and checks they add up. The CSV contract in
 `_developers/CSV_VAT_RETURN_CONTRACT.md` has a reader (`app/lib/vatReturnCsv.js`) and no
-import endpoint (backlog row 16). Nothing in `app/` opens a diya-gl book; the books storage API
+import endpoint (backlog row 16). Nothing in `app/` opens a diya-gl book; the DIYA-GL storage API
 (`PLAN_DIYA_GL_STORAGE.md`, live on prod since PR #150) stores the zip opaquely and returns it
 base64-encoded from `GET /api/v1/books/{bookId}/versions/{version}`.
 
