@@ -32,9 +32,9 @@ the role plus everything on `claude/b13-board`) merged at ebaeb7de on 2026-09-08
 34279820085, deploy 34279821140, test 34279819393), so the ci role
 `arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role` exists. The merge started
 main's environment deploy 34284851371 (which creates the prod role and the cost export),
-deploy 34284851786 (the next prod set, which retires prod-5c28d63), `sbom.yml` 34284850847 on
-its first run, test 34284850878 and CodeQL 34284850917; their results and the new prod set go
-on the prod line above when they land. The operator's standing instruction: no board item
+deploy 34284851786 (the next prod set, which retires prod-5c28d63), test 34284850878 and
+CodeQL 34284850917 (green); their results and the new prod set go on the prod line above when
+they land. `sbom.yml`'s first run (34284850847) failed on its own match rule: B58 below. The operator's standing instruction: no board item
 enters "in flight" without their word.
 
 Origin branches to delete once the operator is done with them: `claude/b12-board`,
@@ -68,6 +68,15 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   authenticated later, and whether they wrote to support; then say whether a fix or a reply is
   owed. The issue closes when the cause is known. **Source**: issue #152. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B58. The SBOM check's KEV match over-matches.** `sbom.yml`'s first run on main
+  (34284850847) failed with "37 SBOM component(s) matched CISA's Known Exploited
+  Vulnerabilities catalogue": the step compares a package's bare name with a KEV entry's
+  product field, and generic names collide, so the workflow fails every push to main.
+  Narrow the match in `sbom.yml`'s inline script to entries whose `vendorProject` or `product`
+  names an npm package (or drop KEV for the GitHub advisory database `npm audit` already
+  consults, which knows package identities), and make a match list the pairs in the summary.
+  Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
+  **Model**: Haiku.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
