@@ -67,12 +67,15 @@ jobs:
         run: |
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
+          # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
+          # and this run is on a schedule. A reusable workflow call inherits github.event_name from
+          # the caller, so an explicit deployment-name must win over the event.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
+          DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
           if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" = "schedule" ]; then
+          elif [ -z "$DEPLOYMENT_NAME" ] && [ "$EVENT_NAME" = "schedule" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
           else
             echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
