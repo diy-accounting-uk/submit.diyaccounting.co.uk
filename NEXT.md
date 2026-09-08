@@ -36,8 +36,11 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
    back on the new AWS Budget's forecast notification (Budgets accepts only `GREATER_THAN`,
    `LESS_THAN` and `EQUAL_TO`), and the deploy's simulator vatSchemes suite lost a screenshot
    to a navigation race after the HMRC sign-in click (the step now waits for the next document
-   first; the suite had passed on main's merge deploy). The second run: environment deploy
-   34273259978, deploy 34273260002, test 34273259263, CodeQL 34273265807. A
+   first; the suite had passed on main's merge deploy). The second run's environment deploy
+   (34273259978), test and CodeQL are green; its deploy (34273260002) failed on HmrcStack and
+   the suites after it because the ci set from the first run self-destructed underneath it, so
+   the operator dispatched a fresh deploy, 34277995271 (third run, 20:59 UTC), which is the
+   proof. A
    failure gets its fix committed on the batch and pushed once the run has completed, never
    while a `deploy environment` or `deploy` run is in progress. A stale ci set (a resource
    CloudFormation records but AWS lacks) is destroyed from the branch ref before the next
