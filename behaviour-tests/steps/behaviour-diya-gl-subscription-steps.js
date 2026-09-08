@@ -40,12 +40,19 @@ export async function signInWithDiyaGlHostedUi(
       `&scope=${encodeURIComponent("openid profile email")}` +
       `&state=diya-gl-subscription-behaviour`;
 
-    // The callback URL is a real DIYA-GL page whose own sign-in script exchanges the code and
-    // strips it from the address bar on load, so answer that navigation with a blank page and
-    // read the code from the URL the browser arrived on instead.
+    // The callback URL is a real DIYA-GL page whose own sign-in script (cloud.js) exchanges the
+    // code and strips it from the address bar on load. Record the navigation request that
+    // carries the code, and serve that script empty so the page leaves the code alone.
     const isCallback = (url) => url.toString().startsWith(redirectUri);
-    await page.route(isCallback, (route) =>
-      route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>DIYA-GL sign-in</title>" }),
+    let callbackRequestUrl = null;
+    const rememberCallback = (request) => {
+      if (request.isNavigationRequest() && request.url().startsWith(redirectUri)) {
+        callbackRequestUrl = request.url();
+      }
+    };
+    page.on("request", rememberCallback);
+    await page.route("**/books/cloud.js", (route) =>
+      route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
     );
 
     await page.goto(authorizeUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -58,11 +65,12 @@ export async function signInWithDiyaGlHostedUi(
     }
 
     await page.waitForURL(isCallback, { timeout: 30_000 });
-    const callbackUrl = new URL(page.url());
-    await page.unroute(isCallback);
+    page.off("request", rememberCallback);
+    await page.unroute("**/books/cloud.js");
+    const callbackUrl = new URL(callbackRequestUrl || page.url());
     const code = callbackUrl.searchParams.get("code");
     if (!code) {
-      throw new Error(`No authorization code on the DIYA-GL hosted UI callback: ${page.url()}`);
+      throw new Error(`No authorization code on the DIYA-GL hosted UI callback: ${callbackUrl}`);
     }
 
     const tokenResponse = await fetch(`${cognitoBaseUri.replace(/\/$/, "")}/oauth2/token`, {
