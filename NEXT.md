@@ -27,8 +27,25 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Nothing is being worked at this render. No batch branch is open; the next starts from main as
-`claude/b12-board`.
+Batch 12 gathers on `claude/b12-board` (local, from main at 7e11b39c); one push and one PR when
+the wave's tracks are merged and green. Wave 1 runs in worktrees under `.claude/worktrees/`, one
+agent per file area; each item's body stays in its section below until it is verified on main.
+
+| Items | Agent | Model | Worktree |
+|---|---|---|---|
+| B34.8, B34.9, B54 (catalogue; Stripe dry runs only) | catalogue | Sonnet | `agent-a37e71ea69c6c0488` |
+| B47a, B53a, S4a (workflows) | workflows | Sonnet | `agent-afb14a84da1eaeaee` |
+| B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
+| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
+| S2 (CodeQL fixes; dismissals written up for the operator) | codeql | Sonnet | `agent-a6e21bbdd321cc0a4` |
+| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | lifecycle | Haiku | `agent-a36fbb164167fdb98` |
+| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
+| B22 (fraud-header email check) | fraud-header | Sonnet | `agent-a3e396613eb4ac63a` |
+| B52d and B55 designs into their plan docs | design | Opus | `agent-a09db863e980dd495` |
+
+Wave 2 starts as wave 1's tracks merge: B52d and B55 from the designs, B10.4 against the batch's
+ci set, B52b, B52c (submit's part). The Stripe test and live runs for B34.9 and B54 wait on the
+operator's "go" per `stripe-catalogue-sync`.
 
 ## Ready, unblocking others
 
