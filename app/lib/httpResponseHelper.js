@@ -178,14 +178,19 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
       ...data,
     }),
   };
-  if (request) {
+  // Log only fields that cannot carry a secret: the request path (no query string),
+  // the response status and the request id. Never the raw response body/headers or
+  // anything sourced from process.env, both of which can carry customer or credential data.
+  const requestPath = request instanceof URL ? request.pathname : undefined;
+  if (requestPath) {
     levelledLogger({
       message: "Responding to request with response",
-      request: sanitiseString(request.toString()),
-      response: sanitiseData(response),
+      path: requestPath,
+      statusCode,
+      requestId: merged["x-request-id"],
     });
   } else {
-    levelledLogger({ message: "Responding with response", response: sanitiseData(response) });
+    levelledLogger({ message: "Responding with response", statusCode, requestId: merged["x-request-id"] });
   }
   return response;
 }
