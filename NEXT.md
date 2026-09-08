@@ -57,8 +57,11 @@ pushed to a branch while its deploy runs.
   (`prod-c6e18fd-app-api-5xx`, one datapoint) sits on a set that is gone, with its Lambda log
   group; what survives is the API access log (`/aws/apigw/prod-env/access`: four `500` on
   `POST /api/v1/hmrc/token`, request ids DXd9lgMWrPEEMEA=, DXeLThvPLPEEJjg=, DXeffggJLPEEPZw=,
-  DXe2mjJArPEEJ0w=, about two minutes apart, one caller retrying) and the lake's activity
-  events. Follow `vat-submission-failure-alarm-user-lookup`'s method: find the actor's hashed
+  DXe2mjJArPEEJ0w=, about two minutes apart, one caller retrying; two more `500` at 09:3x UTC
+  on prod-c6d0ed3, every other token exchange that day `200`) and the lake's activity events.
+  The prod destroy now deletes a retired set's Lambda log groups, which is what removed this
+  alarm's evidence; part of the fix is to keep prod log groups (their retention is already
+  short) or export the window to the lake before deleting. Follow `vat-submission-failure-alarm-user-lookup`'s method: find the actor's hashed
   subject from the activity events of that window, what `hmrcTokenPost.js` answers 500 for
   (HMRC's token endpoint erroring, or a thrown error before the reply), whether the same actor
   authenticated later, and whether they wrote to support; then say whether a fix or a reply is
