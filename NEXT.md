@@ -38,7 +38,11 @@ CLI inside the Playwright container, which has only the SDK. The third run faile
 stale ci set ci-claud87a7 (metric filters CloudFormation still recorded were gone) and on the
 DIYA-GL suite returning to localhost; on the operator's go the set was destroyed (run
 34206631274) and a118b917 (the suite returns to ci-spreadsheets) pushed at 09:09 UTC; the
-fourth run is the dispatched deploy 34208557329 on a fresh set. Nothing is pushed to the branch while a deploy runs. Merging
+fourth run, deploy 34208557329, failed on EdgeStack: the destroy left the custom-resource
+provider's log group in us-east-1 and the same deployment name recreates it, so every suite
+then found no site. The ci destroy gains the prod destroy's leftover log-group step (c39af090,
+local). Next, in order, once the run completes: push, destroy ci-claud87a7 again from the
+branch, dispatch the deploy. Nothing is pushed to the branch while a deploy runs. Merging
 the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
