@@ -2,7 +2,8 @@
 -- export. The step names match infra/main/resources/analytics/views/v_ga4_funnel_daily.sql,
 -- which counts the same steps from the lake's own copy of this export, so the two stay
 -- comparable. A session is user_pseudo_id joined to ga_session_id, because ga_session_id alone
--- repeats across users.
+-- repeats across users. Only submit's own hostnames count: the spreadsheets site sends the
+-- same begin_checkout and purchase events for donations.
 SELECT day,
        count(distinct if(event_name = 'session_start',  session_key, null)) AS sessions,
        count(distinct if(event_name = 'login',          session_key, null)) AS logins,
@@ -18,5 +19,6 @@ FROM (
   FROM   `diyaccounting-ga4.analytics_523400333.events_*`
   WHERE  _TABLE_SUFFIX = format_date('%Y%m%d', date_sub(current_date(), interval 2 day))
     AND  event_name IN ('session_start', 'login', 'begin_checkout', 'purchase')
+    AND  device.web_info.hostname LIKE '%submit.diyaccounting.co.uk'
 )
 GROUP  BY 1
