@@ -13,11 +13,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c6e18fd (the 2026-09-07 scheduled deploy of main, run 34105362721);
-no spare stands. B53c stops a spare recurring.** A main deploy
-retires the previous set itself; a `prod-*-app-*` set left standing by anything else costs
-$46.88/month until named to `destroy-prod.yml`
-(`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in issue #43.
+**Prod runs deployment prod-5c28d63 (the merge of PR #151, run 34236942090, 2026-09-08 14:14
+UTC), which retired prod-c6d0ed3; no spare stands.** A main deploy retires the previous set
+itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
+`destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in
+issue #43, which can close.
 
 The board runs in six sections, in this order: in flight; ready and unblocking other items;
 ready; blocked on a machine task; blocked on a human task; blocked on a date. Operator items
@@ -27,100 +27,23 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 12 is PR #151 (`claude/b12-board`, tip 558417d8). Its seventh ci deploy, run 34217902778,
-is green on every stack and every behaviour suite, the DIYA-GL subscription case included; the
-six runs before it each found one pipeline fault, all fixed on the branch. Open on the PR: its
-CodeQL check reports five new alerts on lines the S2 fixes introduced (54 to 58: a logged
-value from the environment, the simulator's SPA fallback, the alarm namespace test, and the
-simulator billing mocks' `returnTo` redirects), fixed on the batch as f208d2d3; the PR's
-CodeQL check is green. The eighth deploy failed only on the DIYA-GL suite's book put (412: the
-durable test user's book from the seventh run already existed), so the case now puts a fresh
-book id each run and deletes it after reading it back (89b715e3). The ninth deploy
-(34223937175) passed sign-in, checkout, the put and the read, and failed on the delete with
-500: the delete Lambda's role lacked `s3:GetObject`, which the handler's metadata read needs;
-the grant is pushed as 46ed14ba (12:5x UTC) and the tenth deploy is the proof. Merging the PR is the operator's yes to the Config and
-GuardDuty charge; the PR body carries the CodeQL dismissals to apply and the note that issue
-#43 can close. Each item's body stays in its section below until it is verified on main. Wave 1
-ran in worktrees under `.claude/worktrees/`, one agent per file area, all merged and removed:
+Batch 13 gathers on `claude/b13-board` (local, from main at 5c28d639); one push and one PR when
+its tracks are merged and green, and that push's ci set serves B10.4, O22 and O27. Nothing is
+pushed to a branch while its deploy runs.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B34.8, B34.9, B54 (catalogue, Stripe products and price ids, test and live) | on the batch | Sonnet | — |
-| B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
-| B52a (the two prod dashboards, the beacon route, the funnel and passes views) | on the batch | Sonnet | — |
-| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
-| S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
-| S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
-| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | on the batch | Sonnet | — |
-| B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
-| B52d and B55 designs | on the batch: `PLAN_ONE_STOP_DASHBOARD.md` "B52d design", `PLAN_DIYA_GL_STORAGE.md` section 10 | Opus | — |
-
-Wave 2, from the same batch:
-
-| Items | Agent | Model | Worktree |
-|---|---|---|---|
-| B55 (checkout and the portal for DIYA-GL tokens; the route is `/api/v1/billing/checkout`; the ci behaviour case) | on the batch | Sonnet | — |
-| B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
-| B52d (the five lake views, the alarm, DORA and probe writers, the ga4_daily pull) | on the batch | Sonnet | — |
-| B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
-| B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
-
-B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can use the same set.
+| B52f (security panels: findings, lifecycle, SBOM, CIS metric filters, WAF, rotation) | security | Sonnet | `agent-ae70b2f1c409d5755` |
+| B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`) | page | Sonnet | `agent-acfb9c2c058707764` |
+| B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
 
 ## Ready, unblocking others
 
-- [ ] **B52a. Split the two prod dashboards into operations and business.**
-  `prod-env-operations` (thirteen widgets, `ObservabilityStack`) carries five business counts
-  and three widgets that never render: the "all functions, all deployments" searches match
-  about 4,700 `prod-*` Lambda series (retired deployments' functions, canaries, one series per
-  alias and version) against CloudWatch's 500 per widget. Narrow those searches to the live
-  deployment's functions and exclude `cwsyn-*`; move VAT submissions, HMRC authentications,
-  bundle operations, sign-ups and bundle grants off it. On `prod-env-analytics`
-  (`AnalyticsDashboard`), find at the source why sessions by country and passes are empty over
-  two weeks and why login-to-submission conversion reads zero against daily active users and
-  submissions, then lay the widgets out as the objective table's first column (uptime, conversion
-  to submission, conversion to paid, running cost) from `PLAN_ONE_STOP_DASHBOARD.md`. One
-  deliberate duplicate per quantity stays where two sources measure it. **Source**: BACKLOG
-  52; `PLAN_ONE_STOP_DASHBOARD.md` row B52a. **Owner**: Claude Code. **Model**: Sonnet.
-  Related open work the plan's panels depend on, each tagged with its panel: BACKLOG 30
-  and 30a (alarms; the audit re-run due 2026-09-13 becomes a nightly view), B47a and
-  issue #43 (the DORA and drift panels), B39.1 and issue #13 (web vitals on the sibling
-  sites), BACKLOG 43 (the cost panel replaces the monthly hand check), BACKLOG 49 (GA4 changes
-  as code for D3), BACKLOG 27a, 46, 48 and issue #11 (the security panels). Unblocks B52d.
-- [ ] **B52d. Lake views.** On the batch: the five views (submissions by activity with the
-  Companies House events, traffic sources, the availability SLI and error budget, alarm state
-  changes by family, DORA runs), the alarm-to-lake Firehose delivery, the `dora-row` composite
-  action on the deploy, destroy and probe workflows, the nightly pull of the four `ga4_daily`
-  aggregates, data-quality rows for the new sources and their dashboard widgets. Remaining:
-  the first nightly run after merge fills the views; the next board reads them. **Source**:
-  BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**: Sonnet. Unblocks B52g,
-  B52h, B52j and B52k.
-- [ ] **B47a. The Monday 06:00 UTC schedules fire late, not never.** `compliance.yml` and
-  `stack-drift.yml` both ran on 2026-09-07 as `schedule` events, green, at 11:39 and 11:44 UTC:
-  GitHub queues the top-of-the-hour slot hardest, and both sat on `0 6 * * 1`. On the batch:
-  the crons move to `6 6 * * 1` and `36 6 * * 1`, and `keepalive.yml` fails when any scheduled
-  workflow's last schedule run is older than its cadence plus a day. Remaining: the Monday
-  2026-09-14 runs prove the new slots. The operator can close issue #43 now: its condition
-  was a green scheduled `stack-drift` run, which run 34118146012 is; its three findings are
-  API read-back normalisation and the promotion aliases, none a redeploy fixes. **Source**:
-  BACKLOG 47; issue #43. **Owner**: Claude Code, the operator closes #43. **Model**: Sonnet.
-- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** On the batch: a new
-  `SecurityBaselineStack` (the recorder, its service-linked role, a delivery bucket with 90-day
-  expiry, CIS 5.0.0 in place of 1.2.0 beside the AWS Foundational standard), and the fix for
-  `SECURITY_SERVICES_ENABLED` resolving false on every deploy, so ci gains its own GuardDuty
-  detector and Security Hub for the first time. The operator's yes before the PR merges: about
-  $15 to $20 a month for Config across both accounts plus ci's GuardDuty. The fourteen low
-  findings (CIS CloudWatch.1 to .14, a metric filter and alarm each, needing global service
-  events on the trail) are B52f's CloudTrail metric filters; the one medium is an ACM renewal
-  notice that DNS validation handles. **Source**: the prod account, 2026-09-07;
-  `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude Code, the operator's yes on
-  the charge. **Model**: Sonnet. Unblocks B52f.
-- [ ] **S4a. A rotation record for secrets.** Every environment deploy rewrites every Secrets
-  Manager secret from the GitHub environment, so `LastChangedDate` is the last deploy and
-  `LastRotatedDate` is empty for all twelve. Keep the real rotation date per secret in a
-  record the deploy carries forward (a tag on the secret set only when the value changes, or
-  `secrets-rotation.toml` in the repo) and list the ones older than a year. Unblocks S4b.
-  **Source**: the prod account, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **O26. Decide the ITSA client approach and the token cost per submission.** B10.6's
+  comparison in `_developers/hmrc/ITSA_SPIKE.md` recommends keeping the hand-rolled `hmrcApi.js`
+  pattern over an OpenAPI-generated client (the generated piece replaces only URL and header
+  construction). Pick one, and set whether a quarterly update costs the same one token as a
+  VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -146,96 +69,11 @@ B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can us
   self-employment business through the create-test-user API, run the three against
   test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
   `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
-  simulator. Unblocks B11. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
+  simulator. Unblocks B11. Runs against the ci set batch 13's push creates. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
   **Model**: Sonnet.
-- [ ] **B10.6. The ITSA facts and the client recommendation.** Confirm from gov.uk the MTD for
-  Income Tax mandate dates and income thresholds as they stand (the row proposed about £20k)
-  and write them into `_developers/hmrc/ITSA_SPIKE.md`; then a one-page comparison of an
-  OpenAPI-generated client from `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`
-  against the hand-rolled pattern the VAT client uses, with a recommendation. Unblocks O26.
-  **Source**: BACKLOG 10. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B22. Fraud-prevention header email check.** The parser
-  `app/lib/fraudPreventionHeaderReport.js` is built and tested; `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`
-  recommends a scheduled script over the gyb mail mirror at the workspace root, alerting
-  through the operational Telegram path when a month reads advisories, errors or zero
-  traffic. Build that path and write each month's result where B52k's compliance panel can
-  read it. Unblocks B52k's HMRC row. **Source**: BACKLOG 22; HMRC compliance. **Owner**:
-  Claude Code. **Model**: Sonnet.
 
 ## Ready
 
-- [ ] **B34.8. The standalone company-lookup page to prod.** The operator has seen it on ci
-  and calls it ready. Add `prod` to the `company-lookup` activity's `environments` in
-  `web/public/submit.catalogue.toml` (the two register filings already carry it); one PR.
-  **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B34.9. The `resident-ltd` bundle and the `resident-pro` union.** The operator's
-  decision of 2026-09-07: a single-function bundle `resident-ltd` at 99p a month shaped like
-  `resident-vat` and `resident-itsa` (`allocation = "on-subscription"`, 100 tokens, `P1M`,
-  `stripePriceAmount = 99`), carrying `file-micro-entity-accounts` as a metered activity at
-  one token; the two register filings stay free on `default`; `resident-pro` covers the union
-  of VAT, ITSA and ltd, so its activity lists gain the ITSA and accounts activities.
-  `listedInEnvironments` keeps `resident-ltd` off prod's listing until B34.6b puts the
-  accounts activity there. Then `stripe-catalogue-sync`: the product and price in test, then
-  live, and the ids onto `.env.ci`, `.env.prod` and the GitHub environments. **Source**:
-  BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53c. The prod sweep destroys the set a scheduled deploy replaces.** On the batch: the
-  cause was `destroy-prod.yml` trusting `github.event_name`, which a reusable workflow inherits
-  from its caller, so `deploy.yml`'s daily schedule made the destroy sweep instead of honouring
-  the explicit `deployment-name` it was passed (run 34105362721 left prod-c980ac9 standing).
-  Both destroy workflows now let an explicit name win, and the prod sweep itself lists every
-  `prod-*` set in both regions, keeps the pointer's set and any younger than
-  `SELF_DESTRUCT_DELAY_HOURS`, destroys one other set per run and clears a pointer with no
-  stacks behind it. Remaining: the first scheduled main deploy after merge proves it (the
-  replaced set goes in the same run). **Source**: the prod account, 2026-09-07; the
-  operator's decision of 2026-09-08. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
-  `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
-  amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
-  the unit tests and the page, shaped as the three on main; every self-employment path takes
-  the `businessId` Business Details returns. **Source**: BACKLOG 10; issues #16, #20.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53a. The ci sweep and the stale ci pointer.** `destroy-ci.yml`'s 14:23 UTC sweep on
-  2026-09-07 left `ci-claudd9a1-app-BooksStack` standing alone (a set reduced to one stack is
-  not swept); the 22:09 UTC run removed it. Two fixes remain: make the sweep count any
-  `*-app-*` stack when it sizes a set, and clear `/submit/ci/last-known-good-deployment` when
-  the set it names is gone (it still reads `ci-claudd9a1` with no stacks behind it).
-  **Source**: the ci account, 2026-09-07. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B52b. GA4 in BigQuery: one daily aggregate per panel.** Scheduled queries in the
-  `diyaccounting-ga4` project over the `analytics_523400333` export write one daily table per
-  panel: sessions by host and source, funnel steps, key events, downloads by product with the
-  product parameter. The nightly job copies them into the lake beside the Athena views. The
-  Data API pull in `ga4ReportPull.js` retires once each of its consumers reads the BigQuery
-  table instead. **Source**: BACKLOG 52; `PLAN_ONE_STOP_DASHBOARD.md` D5 and the BigQuery
-  decision. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B52c. Three sites, one visitor.** Synthetic tagging in submit's and spreadsheets'
-  `analytics.js` and the RUM client from the rule `classifyActor` applies; RUM and CLS on
-  spreadsheets; the root holding page moved from the submit stream to the gateway stream;
-  cross-domain linking and the four key events (subscribe, submit, donate, download) on
-  property 523400333 through backlog 49's tooling or the Admin API script. One PR per repo.
-  **Source**: BACKLOG 52; plan rows D3, D4. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **S2. CodeQL's 44 open high alerts.** 33 are `js/clear-text-logging`, 4 clear-text
-  storage, 2 CORS with credentials, and one each of incomplete sanitisation, incomplete URL
-  sanitisation, missing rate limiting, unvalidated dynamic method call and a weak algorithm.
-  Fix each or dismiss it with the reason on the alert; a dismissal without a reason is a fix
-  not done. **Source**: GitHub code scanning, 2026-09-07. **Owner**: Claude Code. **Model**:
-  Sonnet.
-- [ ] **S3. CloudTrail multi-region.** `prod-env-trail` records eu-west-2 only; the WAF,
-  the RUM monitor and the canaries' us-east-1 side are unseen. Set `IsMultiRegionTrail` in
-  `ObservabilityStack`, ci first. **Source**: the prod account, 2026-09-07. **Owner**: Claude
-  Code. **Model**: Haiku.
-- [ ] **S5. Runtime lifecycle.** The four canaries run `syn-nodejs-puppeteer-11.0`, a Node 20
-  runtime; move them to the current Synthetics runtime. Three Lambdas run `NODEJS_22_X`
-  beside 23 on 24; move them. Record in `lifecycle.toml` (B52f) the ACM certificate's
-  2027-02-06 expiry and confirm it auto-renews by DNS validation, the local certificate
-  (BACKLOG 48), Java 25, the CDK major and Playwright. **Source**: the prod account,
-  2026-09-07. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B50. Add the DIYA-GL app client to the native-auth toggle.** The spreadsheets session
-  asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
-  `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
-  cannot sign in to the DIYA-GL pages without Google. Read the `BooksUserPoolClientId` output
-  as well and apply the same `COGNITO` provider change to that client on enable and disable
-  (the credentials file stays one file); one-line reply to the spreadsheets inbox when it is
-  on main. **Source**: BACKLOG 50; spreadsheets board H16. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -262,73 +100,30 @@ B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can us
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
-
-- [ ] **B54. The `resident-diya-gl` bundle at 99p a month.** The bundle the storage API's put
-  route checks (`BOOKS_BUNDLE_ID` in `BooksStack`) is `resident-diya-gl`, titled "DIYA-GL" (the
-  operator's naming of 2026-09-08: DIYA-GL in titles and prose, `diya-gl` in identifiers, never
-  "books" as a product name). It sits in `web/public/submit.catalogue.toml` shaped like
-  `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`, `month`)
-  carrying the DIYA-GL storage put as its activity. `resident-diya-gl`, `resident-ltd` and
-  `resident-itsa` are listed for purchase on ci only (`listedInEnvironments` without `prod`) until
-  the operator lifts each one; the catalogue change is on the batch. Remaining:
-  `stripe-catalogue-sync`: the product and price in test, then live, and the ids onto `.env.ci`,
-  `.env.prod` and the GitHub environments. **Source**: spreadsheets board LP-21;
-  `PLAN_DIYA_GL_STORAGE.md` section 6. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **O30. Apply the CodeQL dismissals PR #151 lists.** Thirty-five alerts with a reason each
+  in the PR body (pass codes in sessionStorage, infrastructure names in logs, the Companies
+  House MD5), on the alerts page. **Source**: S2. **Owner**: Operator. **Model**: none.
+- [ ] **O29. Install the fraud-header check's launchd agent.** `scripts/co.uk.diyaccounting.submit.fraud-header-check.plist`
+  runs `scripts/fraud-header-email-check.js` on the 5th and 12th at 09:00; install and uninstall
+  commands are `_developers/SETUP.md` step 9. It publishes through the activity bus, so it needs
+  AWS credentials the SSO profiles cannot refresh unattended, the same gap the certbot agent
+  has; say whether an access key for this one script is acceptable or the check stays a
+  session-time run. **Source**: B22. **Owner**: Operator. **Model**: none.
+- [ ] **S4b. Rotate, or date, the twelve third-party secrets.** `secrets-rotation.toml` lists
+  each secret's console with `last_rotated` blank, because nobody knows the dates; the deploy
+  now stamps `rotated-at` only when a value changes. For each of HMRC, Stripe, Google,
+  Telegram, Companies House and the GitHub issue-bot token: rotate in its console and put the
+  new value on the GitHub environments, or write the known date into the toml. **Source**:
+  S4a. **Owner**: Operator. **Model**: none.
 
 ## Blocked on a machine task
 
-- [ ] **B55. Checkout and the portal for DIYA-GL tokens.** On the batch: a third JWT
-  authoriser carrying both audiences on the checkout and portal routes only; the checkout
-  route is `POST /api/v1/billing/checkout` (the `checkout-session` paths are gone, every
-  caller moved); `bundleId` and `returnTo` in the body with the allow-list from
-  `BILLING_RETURN_URL_ORIGINS`; the ITSA, Ltd and DIYA-GL price ids wired through
-  `BillingStack`; `diyaGlSubscription.behaviour.test.js` runs on ci deploys with the DIYA-GL
-  client id from the identity stack. Remaining: the first ci run of that suite is the proof;
-  the spreadsheets side's subscribe button sends `{bundleId, returnTo}` (its board's LP-18).
-  **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 10. **Owner**:
-  Claude Code. **Model**: Sonnet.
-- [ ] **O26. Decide the ITSA client approach and the token cost per submission.** From
-  B10.6's comparison, pick generated or hand-rolled; and set whether a quarterly update costs
-  the same one token as a VAT return. **Source**: BACKLOG 10. **Owner**: Operator. **Model**:
-  none. Blocked on B10.6.
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
   and the final declaration (crystallisation) endpoints, then the recognition application and
   the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
   first, since the annual summary carries the whole year's figures and the books import
   (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet. Blocked on B10.4.
-- [ ] **B52g. The page.** A private static page on submit behind an `operator` bundle no
-  customer holds, drawn from a nightly snapshot the metrics-publish Lambda writes, organised
-  by the eight objectives with deep links on every row and `experiments.toml` annotations; the
-  first experiment written from a baseline month, the hypothesis the operator's. **Source**:
-  BACKLOG 52; plan rows D1, D9, D11. **Owner**: Claude Code. **Model**: Sonnet. Waits on
-  B52d for the first views.
-- [ ] **B52h. Raw export and index.** One CSV per view and one JSON per objective to
-  `s3://<lake>/exports/<env>/<date>/` nightly; `scripts/analytics-pull.sh` to
-  `~/projects/diy-accounting-limited/analytics/<env>/`; an `analytics` source in
-  `../index/corpus.toml`; `reindex` after each pull. **Source**: BACKLOG 52; plan row D12.
-  **Owner**: Claude Code, the corpus change at the workspace root. **Model**: Sonnet. Waits
-  on B52d.
-- [ ] **B52j. Retention and operator-effort views.** Returning submitters by quarter keyed
-  by hashed subject, renewals and cancellations from the subscriptions stream; a nightly pull
-  of Actions runs by trigger and actor, issue timelines and commits by author, classified into
-  operator interventions. **Source**: BACKLOG 52; plan row D14. **Owner**: Claude Code.
-  **Model**: Sonnet. Waits on B52d.
-- [ ] **B52k. Compliance panel.** Accessibility results from `compliance.yml` (pa11y, axe
-  WCAG 2.1 AA and 2.2 AA) into the lake; HMRC's monthly fraud-prevention header email to
-  `app/lib/fraudPreventionHeaderReport.js` along `PLAN_FRAUD_HEADER_EMAIL_CHECK.md`'s path
-  (BACKLOG 22) with the result into the lake; `compliance.toml` for the standing items (the
-  HMRC questionnaires, terms-of-use items, the Companies House presenter and test account,
-  ICO registration, the 72-hour breach clock) with a date and an owner each. **Source**:
-  BACKLOG 52 and 22; plan row D15. **Owner**: Claude Code. **Model**: Sonnet. Waits on B52d.
-- [ ] **B52f. Security panels.** Security Hub and GuardDuty findings and the GitHub alert
-  counts into the lake nightly; `lifecycle.toml` with each runtime's, dependency's,
-  certificate's and registration's end date, checked nightly against the AWS deprecation
-  lists and endoflife.date; an SBOM from the build matched against CISA's KEV catalogue;
-  CloudTrail metric filters for console sign-ins, root use, IAM and security-group changes;
-  WAF logs to the lake; the rotation record (S4). **Source**: BACKLOG 52; plan row D13.
-  **Owner**: Claude Code. **Model**: Sonnet, Opus for the traffic baselines. Waits on S1 for
-  the standards' findings.
 - [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
   block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
   effect per unit cost, and the next experiment proposed with its predicted effect and
@@ -336,10 +131,6 @@ B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can us
   allocations once experiments exist. Its one line per objective goes on the page. **Source**:
   BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
   Opus for the models, Sonnet for the notebook. Blocked on B52h and three months of export.
-- [ ] **S4b. Rotate the third-party secrets S4a lists as older than a year.** HMRC, Stripe,
-  Google, Telegram, Companies House and the GitHub issue bot token, each in its own console,
-  then the new value onto the GitHub environments. **Source**: S4a. **Owner**: Operator.
-  **Model**: none. Blocked on S4a.
 
 ## Blocked on a human task
 
@@ -385,6 +176,14 @@ B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can us
   `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
   which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
   **Owner**: Operator. **Model**: none.
+- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main on
+  2026-09-09 must retire the set it replaces (prod-5c28d63) in the same run; the board of that
+  day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
+  Haiku. Blocked on the date.
+- [ ] **D2. The Monday crons' first proof.** `compliance.yml` at 06:06 and `stack-drift.yml` at
+  06:36 UTC on 2026-09-14 fire as schedule events; `keepalive.yml`'s staleness step is the
+  standing check. **Source**: B47a. **Owner**: Claude Code. **Model**: Haiku. Blocked on the
+  date.
 
 ## Discipline
 
