@@ -33,6 +33,8 @@ jobs:
   keepalive:
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v7
+
       - name: Re-enable every workflow to reset GitHub's 60-day inactivity clock
         shell: bash
         env:
@@ -85,3 +87,77 @@ jobs:
 
           echo ""
           echo "All workflows are active or intentionally disabled_manually"
+
+      # A workflow can stay "active" and still not fire on time: GitHub's schedule event
+      # queues behind other runs at busy times, and the start of every hour is the busiest
+      # (https://docs.github.com/actions/using-workflows/events-that-trigger-workflows#schedule).
+      # compliance.yml and stack-drift.yml both sat on '0 6 * * 1' and landed 5-7 hours late
+      # some weeks. Re-enabling above only catches a workflow GitHub disabled outright; this
+      # step catches the quieter case where a schedule keeps queuing later than its own cadence
+      # allows for, by comparing each workflow's last schedule-triggered run against its cron.
+      - name: Check every scheduled workflow fired within its cadence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          FAILURES=()
+
+          for file in .github/workflows/*.yml; do
+            if ! grep -qE '^[[:space:]]*schedule:[[:space:]]*$' "$file"; then
+              continue
+            fi
+
+            cron=$(grep -oE "cron:[[:space:]]*[\"'][^\"']+[\"']" "$file" | head -1 \
+              | sed -E "s/cron:[[:space:]]*[\"']([^\"']+)[\"']/\1/")
+            if [ -z "${cron:-}" ]; then
+              continue
+            fi
+
+            read -r _ _ DOM MONTH DOW <<< "$cron"
+
+            if [ "$DOM" = "*" ] && [ "$MONTH" = "*" ] && [[ "$DOW" =~ ^[0-6]$ ]]; then
+              cadence=7
+            elif [ "$DOM" = "*" ] && [ "$MONTH" = "*" ] && [ "$DOW" = "*" ]; then
+              cadence=1
+            elif [ "$MONTH" = "*" ] && [ "$DOW" = "*" ] && [[ "$DOM" =~ ^[0-9]{1,2}$ ]]; then
+              cadence=32
+            else
+              echo "SKIP  ${file}: cron '${cron}' does not match a recognised daily/weekly/monthly shape"
+              continue
+            fi
+
+            workflow_file=$(basename "$file")
+            last_run=$(gh api "repos/${REPO}/actions/workflows/${workflow_file}/runs?event=schedule&per_page=1" \
+              --jq '.workflow_runs[0].created_at // empty')
+
+            if [ -z "$last_run" ]; then
+              echo "MISS  ${workflow_file}: no schedule-triggered run recorded yet (cron '${cron}', cadence ${cadence}d)"
+              FAILURES+=("${workflow_file}: no schedule-triggered run recorded yet")
+              continue
+            fi
+
+            last_epoch=$(date -d "$last_run" +%s)
+            now_epoch=$(date +%s)
+            age_days=$(( (now_epoch - last_epoch) / 86400 ))
+            threshold=$((cadence + 1))
+
+            if [ "$age_days" -gt "$threshold" ]; then
+              echo "MISS  ${workflow_file}: last schedule run was ${age_days}d ago, cadence ${cadence}d (cron '${cron}')"
+              FAILURES+=("${workflow_file}: last schedule run ${age_days}d ago, expected every ${cadence}d")
+            else
+              echo "OK    ${workflow_file}: last schedule run ${age_days}d ago, cadence ${cadence}d"
+            fi
+          done
+
+          if [ "${#FAILURES[@]}" -gt 0 ]; then
+            echo ""
+            echo "FAIL: ${#FAILURES[@]} scheduled workflow(s) have not fired within their cadence"
+            printf '  - %s\n' "${FAILURES[@]}"
+            exit 1
+          fi
+
+          echo ""
+          echo "Every scheduled workflow fired within its cadence"

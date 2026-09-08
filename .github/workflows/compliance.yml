@@ -5,7 +5,7 @@ run-name: "compliance test of ${{ github.ref_name }}"
 
 on:
   schedule:
-    - cron: '0 6 * * 1'  # Weekly on Monday at 6am UTC
+    - cron: '6 6 * * 1'  # Weekly on Monday, just after 6am UTC to dodge the top-of-hour queue
   workflow_dispatch:
     inputs:
       environment-name:
