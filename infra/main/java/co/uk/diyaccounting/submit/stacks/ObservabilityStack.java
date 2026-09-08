@@ -193,7 +193,9 @@ public class ObservabilityStack extends Stack {
                     .sendToCloudWatchLogs(true)
                     // Retention is set via AwsCustomResource above, not here
                     .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
+                    // Multi-region so the trail also covers the WAF, the RUM monitor and the
+                    // canaries' us-east-1 activity, not only eu-west-2.
+                    .isMultiRegionTrail(true)
                     .build();
 
             // Ensure the LogGroup is created before the Trail tries to use it
@@ -416,8 +418,12 @@ public class ObservabilityStack extends Stack {
 
             // Security Hub aggregates findings from GuardDuty, IAM Access Analyzer, and other
             // AWS services. It provides compliance checks against CIS AWS Foundations Benchmark.
+            // Default standards are off: SecurityBaselineStack subscribes CIS AWS Foundations
+            // Benchmark v5.0.0 and AWS Foundational Security Best Practices explicitly instead,
+            // since this property only takes effect when the Hub is first created and cannot swap
+            // an already-subscribed standard's version.
             CfnHub securityHub = CfnHub.Builder.create(this, props.resourceNamePrefix() + "-SecurityHub")
-                    .enableDefaultStandards(true) // Enable CIS AWS Foundations Benchmark
+                    .enableDefaultStandards(false)
                     .build();
 
             // EventBridge rule to route CRITICAL and HIGH severity Security Hub findings to SNS
