@@ -263,7 +263,7 @@ public class KindCdk {
                 .build();
 
         Function onEventFunction = Function.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "OnEvent")
-                .runtime(Runtime.NODEJS_22_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.onEvent")
                 .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
@@ -279,7 +279,7 @@ public class KindCdk {
                 .build();
 
         Function isCompleteFunction = Function.Builder.create(stack, ENSURE_PITR_PROVIDER_ID + "IsComplete")
-                .runtime(Runtime.NODEJS_22_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.isComplete")
                 .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
