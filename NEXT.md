@@ -44,8 +44,10 @@ then found no site. The ci destroy gains the prod destroy's leftover log-group s
 pushed 09:5x UTC); the destroy of ci-claud87a7 with it (run 34210362217) deleted the provider
 log group; the fifth deploy (34211701773) was green everywhere but the DIYA-GL suite, whose
 callback page stripped the authorization code before the test read it. The sign-in step now
-answers the callback navigation itself (996d9ccc, pushed 10:4x UTC); the sixth deploy,
-34215324365, is the proof. Nothing is pushed to the branch while a deploy runs. Merging
+answers the callback navigation itself (996d9ccc); the sixth deploy (34215324365) showed the
+real page still loaded and consumed the code, so the step now records the callback request
+as the browser makes it and serves the page's `cloud.js` empty (558417d8, pushed 11:2x UTC);
+the seventh deploy is the proof. Nothing is pushed to the branch while a deploy runs. Merging
 the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
