@@ -193,7 +193,9 @@ public class ObservabilityStack extends Stack {
                     .sendToCloudWatchLogs(true)
                     // Retention is set via AwsCustomResource above, not here
                     .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
+                    // Multi-region so the trail also covers the WAF, the RUM monitor and the
+                    // canaries' us-east-1 activity, not only eu-west-2.
+                    .isMultiRegionTrail(true)
                     .build();
 
             // Ensure the LogGroup is created before the Trail tries to use it

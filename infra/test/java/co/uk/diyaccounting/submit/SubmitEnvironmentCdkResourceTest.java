@@ -88,9 +88,12 @@ class SubmitEnvironmentCdkResourceTest {
         Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 45);
         Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 19);
 
-        // 8) Observability stack should enable CloudTrail (Trail present)
+        // 8) Observability stack should enable CloudTrail (Trail present), covering every region
+        // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
         Template observability = Template.fromStack(env.observabilityStack);
         observability.resourceCountIs("AWS::CloudTrail::Trail", 1);
+        observability.hasResourceProperties(
+                "AWS::CloudTrail::Trail", Match.objectLike(Map.of("IsMultiRegionTrail", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
 
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
