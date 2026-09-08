@@ -1446,3 +1446,81 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           REGIONAL_CERTIFICATE_ARN: ${{ vars.SUBMIT_REGIONAL_CERTIFICATE_ARN }}
           BASE_IMAGE_TAG: env-billing-webhook-${{ github.sha }}
+
+  deploy-cost-export:
+    name: 'deploy cost export'
+    needs:
+      - names
+    # A single org-wide resource in the management account, not one per environment: running it
+    # from both the ci and prod pipelines would deploy the same CloudFormation stack twice with
+    # nothing gained, so it rides the prod pipeline only.
+    if: ${{ needs.names.outputs.environment-name == 'prod' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      ROOT_ACTIONS_ROLE_ARN: 'arn:aws:iam::887764105431:role/root-github-actions-role'
+      ROOT_DEPLOY_ROLE_ARN: 'arn:aws:iam::887764105431:role/root-deployment-role'
+      COST_ACCOUNT_ID: '887764105431'
+    steps:
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.ROOT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume management account deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.ROOT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Node dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Build cost CDK app
+        run: |
+          ./mvnw --errors clean verify -DskipTests -P cdk-cost \
+            -Dmaven.compiler.source=${{ env.JAVA_VERSION }} \
+            -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+
+      - name: Deploy FOCUS cost export (CDK)
+        working-directory: cdk-cost
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ env.COST_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+        run: |
+          npx cdk deploy --all \
+            --require-approval never \
+            --ci true \
+            --no-notices \
+            --outputs-file ../cdk-submit-cost.out/cdk-outputs-cost.json
