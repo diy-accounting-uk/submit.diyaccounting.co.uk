@@ -47,22 +47,22 @@ describe("booksEntitlement", () => {
     expect(getUserBundles).not.toHaveBeenCalled();
   });
 
-  test("allows a caller with an active, unexpired books bundle", async () => {
+  test("allows a caller with an active, unexpired DIYA-GL bundle", async () => {
     process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-books", subscriptionStatus: "active", expiry: future }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: future }]);
 
     const result = await entitlementFor("active-sub");
 
     expect(result.allowed).toBe(true);
     expect(result.reason).toBe("active-subscription");
-    expect(result.bundleId).toBe("resident-books");
+    expect(result.bundleId).toBe("resident-diya-gl");
   });
 
-  test("reports expired for a books bundle whose expiry has passed", async () => {
+  test("reports expired for a DIYA-GL bundle whose expiry has passed", async () => {
     process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
     const past = new Date(Date.now() - 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-books", subscriptionStatus: "canceled", expiry: past }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: past }]);
 
     const result = await entitlementFor("expired-sub");
 

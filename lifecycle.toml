@@ -1,0 +1,60 @@
+# DIY Accounting Submit - Lifecycle & Deprecation Tracker
+#
+# Tracks runtime versions, dependencies, certificates, and other lifecycle items.
+# Current as of 2026-09-08.
+
+[[lifecycle]]
+name = "Lambda Node.js Runtime"
+kind = "runtime"
+current = "24.0"
+end_date = ""  # Node.js 24 LTS lifecycle TBD
+source = "https://nodejs.org/about/releases/"
+action = "Updated from Node.js 22 to 24 in Sept 2026"
+
+[[lifecycle]]
+name = "Synthetics Puppeteer Runtime"
+kind = "runtime"
+current = "syn-nodejs-puppeteer-12.0"
+end_date = ""  # AWS deprecation schedule TBD
+source = "https://docs.aws.amazon.com/AmazonCloudWatch/latest/synthetics/CloudWatch-Synthetics-runtimes.html"
+action = "Updated from 11.0 to 12.0 in Sept 2026. Version 11.0 is deprecated per AWS CloudWatch Synthetics documentation."
+
+[[lifecycle]]
+name = "ACM Certificate (*.submit.diyaccounting.co.uk, prod)"
+kind = "certificate"
+current = "arn:aws:acm:eu-west-2:972912397388:certificate/eea7a266-4b80-42d9-9d10-39af2455ce5b"
+end_date = "2027-02-06"
+source = "aws acm describe-certificate"
+action = "Eligible for DNS renewal via AWS Certificate Manager"
+
+[[lifecycle]]
+name = "Local Development Certificate (certbot)"
+kind = "certificate"
+current = "local.submit.diyaccounting.co.uk"
+end_date = "2026-11-29"
+source = "_developers/SETUP.md - renewal via certbot renew with custom directory flags"
+action = "Renewal runs weekly via launchd on Sundays 05:00. Manual refresh required in week of 2026-11-29."
+
+[[lifecycle]]
+name = "Java Compiler Target"
+kind = "runtime"
+current = "25"
+end_date = ""
+source = "pom.xml (maven.compiler.target)"
+action = "Tracks Maven compiler configuration and GitHub Actions JAVA_VERSION environment variable"
+
+[[lifecycle]]
+name = "AWS CDK"
+kind = "dependency"
+current = "2.266.0"
+end_date = ""
+source = "pom.xml (cdk.version property)"
+action = "CDK major version: 2. No deprecation timeline available."
+
+[[lifecycle]]
+name = "Playwright Test Framework"
+kind = "dependency"
+current = "1.62.1"
+end_date = ""
+source = "package.json (@playwright/test)"
+action = "Behaviour tests use Playwright for browser automation. Tracks test framework versions."
