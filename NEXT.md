@@ -27,32 +27,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 12 is PR #151 (`claude/b12-board`). Its first ci run failed three ways, fixed in one
-commit (7b2e27d7, pushed 2026-09-08 01:53 UTC): the multi-region trail needs global service
-events, the activity_events data-quality ruleset keeps its construct id, the ITSA dashboard
-test expects six links. The operator's restarted environment deploy (34178321771) is green; the
-deploys 34178333024 and 34196507268 failed on two more pipeline faults, fixed in 224f8f94
-(pushed 2026-09-08 07:3x UTC, after both had finished): the probe-metric and DORA-row jobs
-used the local `dora-row` action without a checkout, and the DIYA-GL client lookup ran the aws
-CLI inside the Playwright container, which has only the SDK. The third run failed on the
-stale ci set ci-claud87a7 (metric filters CloudFormation still recorded were gone) and on the
-DIYA-GL suite returning to localhost; on the operator's go the set was destroyed (run
-34206631274) and a118b917 (the suite returns to ci-spreadsheets) pushed at 09:09 UTC; the
-fourth run, deploy 34208557329, failed on EdgeStack: the destroy left the custom-resource
-provider's log group in us-east-1 and the same deployment name recreates it, so every suite
-then found no site. The ci destroy gains the prod destroy's leftover log-group step (c39af090,
-pushed 09:5x UTC); the destroy of ci-claud87a7 with it (run 34210362217) deleted the provider
-log group; the fifth deploy (34211701773) was green everywhere but the DIYA-GL suite, whose
-callback page stripped the authorization code before the test read it. The sign-in step now
-answers the callback navigation itself (996d9ccc); the sixth deploy (34215324365) showed the
-real page still loaded and consumed the code, so the step now records the callback request
-as the browser makes it and serves the page's `cloud.js` empty (558417d8, pushed 11:2x UTC);
-the seventh deploy is the proof. Nothing is pushed to the branch while a deploy runs. Merging
-the PR is the
-operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
-apply and the note that issue #43 can close. Each item's body stays in its section below until
-it is verified on main. Wave 1 ran in worktrees under `.claude/worktrees/`, one agent per file
-area, all merged and removed:
+Batch 12 is PR #151 (`claude/b12-board`, tip 558417d8). Its seventh ci deploy, run 34217902778,
+is green on every stack and every behaviour suite, the DIYA-GL subscription case included; the
+six runs before it each found one pipeline fault, all fixed on the branch. Open on the PR: its
+CodeQL check reports five new alerts on lines the S2 fixes introduced (54 to 58: a logged
+value from the environment, the simulator's SPA fallback, the alarm namespace test, and the
+simulator billing mocks' `returnTo` redirects); a Sonnet agent is fixing them on the batch,
+then one push and one more ci deploy. Merging the PR is the operator's yes to the Config and
+GuardDuty charge; the PR body carries the CodeQL dismissals to apply and the note that issue
+#43 can close. Each item's body stays in its section below until it is verified on main. Wave 1
+ran in worktrees under `.claude/worktrees/`, one agent per file area, all merged and removed:
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
