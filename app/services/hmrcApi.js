@@ -503,10 +503,18 @@ export async function hmrcHttpGet(
 }
 
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
+  return hmrcHttpWriteRequest("POST", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+}
+
+export async function hmrcHttpPut(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
+  return hmrcHttpWriteRequest("PUT", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+}
+
+async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
   const httpRequestTimeoutMillis = 295000;
   const httpRequest = {
-    method: "POST",
+    method,
     headers: {
       ...hmrcRequestHeaders,
       ...govClientHeaders,
@@ -523,7 +531,7 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   }
 
   logger.info({
-    message: `Request to POST ${hmrcRequestUrl}`,
+    message: `Request to ${method} ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     ...httpRequest,
   });
@@ -539,7 +547,9 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   } finally {
     clearTimeout(timeout);
   }
-  const hmrcResponseBody = await hmrcResponse.json();
+  // HMRC's amend-period-summary PUT returns 204 with no body, unlike every other write
+  // endpoint here - fall back to {} rather than let response.json() throw on an empty body.
+  const hmrcResponseBody = await hmrcResponse.json().catch(() => ({}));
 
   // Normalise response headers to a plain object (Headers is not marshallable)
   let responseHeadersObj = {};
@@ -560,7 +570,7 @@ export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClient
   }
 
   logger.info({
-    message: `Response from POST ${hmrcRequestUrl}`,
+    message: `Response from ${method} ${hmrcRequestUrl}`,
     url: hmrcRequestUrl,
     status: hmrcResponse.status,
     hmrcResponseBody,

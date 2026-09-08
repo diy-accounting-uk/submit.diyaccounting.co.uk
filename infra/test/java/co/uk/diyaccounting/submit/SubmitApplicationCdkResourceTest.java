@@ -79,8 +79,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 20);
-        assertStackHealthAlarm(hmrcStackTemplate, 11, 9, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
+        assertStackHealthAlarm(hmrcStackTemplate, 14, 12, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -245,7 +245,7 @@ class SubmitApplicationCdkResourceTest {
         // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
         // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
         // sharing), for 77 + 4 + 3 + 3 = 87.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 87);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 91);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
