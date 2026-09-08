@@ -3,16 +3,20 @@
 
 // app/functions/analytics/dataQualityRun.js
 //
-// Daily job that starts one Glue Data Quality evaluation run over activity_events. It does not
-// wait for the run to finish: Glue runs evaluation asynchronously and, with CloudWatchMetricsEnabled
-// set, publishes glue.data.quality.rules.passed/failed to the "Glue Data Quality" namespace itself,
-// so a CloudWatch alarm on that metric is the pass/fail signal, not this Lambda's return value.
+// Daily job that starts one Glue Data Quality evaluation run per target table (activity_events,
+// alarm_state_changes, dora_runs). It does not wait for a run to finish: Glue runs evaluation
+// asynchronously and, with CloudWatchMetricsEnabled set, publishes
+// glue.data.quality.rules.passed/failed to the "Glue Data Quality" namespace itself, so a
+// CloudWatch alarm on that metric is the pass/fail signal, not this Lambda's return value.
 //
-// activity_events uses Athena partition projection, so the catalog carries no partitions and
+// Every target table uses Athena partition projection, so the catalog carries no partitions and
 // Athena queries never need any. Glue Data Quality runs on Spark, which reads partitions from the
-// catalog only, so before every run this Lambda registers whatever year=*/month=*/day=* partitions
-// exist in S3 but are missing from the catalog. Idempotent: partitions already registered are left
-// alone, and a partition another concurrent run just created is tolerated as already-existing.
+// catalog only, so before every run this Lambda registers whatever partitions exist in S3 but are
+// missing from the catalog. activity_events and alarm_state_changes partition on
+// year=*/month=*/day=*; dora_runs partitions on a single dt=YYYY-MM-DD level, so
+// registerPartitions dispatches on config.partitionScheme. Idempotent: partitions already
+// registered are left alone, and a partition another concurrent run just created is tolerated as
+// already-existing.
 
 import {
   GlueClient,
@@ -55,28 +59,62 @@ function getS3Client() {
   return cachedS3Client;
 }
 
+// dora_runs partitions on a single dt=YYYY-MM-DD level; every other target partitions on
+// year=*/month=*/day=*, the scheme registerPartitions defaults to when a target carries none.
+const DT_PARTITIONED_TABLES = new Set(["dora_runs"]);
+
 /**
  * Required environment configuration for the run, read once so a missing variable fails fast
- * with a clear message rather than as an opaque Glue validation error.
+ * with a clear message rather than as an opaque Glue validation error. GLUE_DATA_QUALITY_TARGETS
+ * is a JSON array of `{table, ruleset, curatedPrefix}`, one entry per table this run evaluates.
  *
- * @returns {{databaseName: string, tableName: string, rulesetName: string, roleArn: string, lakeBucketName: string, curatedPrefix: string}}
+ * @returns {{databaseName: string, roleArn: string, lakeBucketName: string, targets: {table: string, ruleset: string, curatedPrefix: string}[]}}
  */
 export function readConfig() {
   const databaseName = process.env.GLUE_DATABASE_NAME;
-  const tableName = process.env.GLUE_DATA_QUALITY_TABLE_NAME;
-  const rulesetName = process.env.GLUE_DATA_QUALITY_RULESET_NAME;
   const roleArn = process.env.GLUE_DATA_QUALITY_ROLE_ARN;
   const lakeBucketName = process.env.ANALYTICS_LAKE_BUCKET_NAME;
-  const curatedPrefix = process.env.GLUE_DATA_QUALITY_CURATED_PREFIX;
+  const targetsJson = process.env.GLUE_DATA_QUALITY_TARGETS;
 
-  const missing = Object.entries({ databaseName, tableName, rulesetName, roleArn, lakeBucketName, curatedPrefix })
+  const missing = Object.entries({ databaseName, roleArn, lakeBucketName, targetsJson })
     .filter(([, value]) => !value)
-    .map(([name]) => name);
+    .map(([name]) => (name === "targetsJson" ? "targets" : name));
   if (missing.length > 0) {
     throw new Error(`Missing required environment variable(s) for dataQualityRun: ${missing.join(", ")}`);
   }
 
-  return { databaseName, tableName, rulesetName, roleArn, lakeBucketName, curatedPrefix };
+  let targets;
+  try {
+    targets = JSON.parse(targetsJson);
+  } catch (error) {
+    throw new Error(`GLUE_DATA_QUALITY_TARGETS is not valid JSON: ${error.message}`);
+  }
+  if (!Array.isArray(targets) || targets.length === 0) {
+    throw new Error("GLUE_DATA_QUALITY_TARGETS must be a non-empty JSON array");
+  }
+
+  return { databaseName, roleArn, lakeBucketName, targets };
+}
+
+/**
+ * Merge the shared config with one target's table, ruleset and curated prefix into the shape
+ * every per-table helper below expects, plus the partition scheme dora_runs' dt=YYYY-MM-DD
+ * layout needs instead of the year/month/day default.
+ *
+ * @param {{databaseName: string, roleArn: string, lakeBucketName: string}} sharedConfig
+ * @param {{table: string, ruleset: string, curatedPrefix: string}} target
+ * @returns {{databaseName: string, tableName: string, rulesetName: string, roleArn: string, lakeBucketName: string, curatedPrefix: string, partitionScheme: string}}
+ */
+export function buildTargetConfig(sharedConfig, target) {
+  return {
+    databaseName: sharedConfig.databaseName,
+    tableName: target.table,
+    rulesetName: target.ruleset,
+    roleArn: sharedConfig.roleArn,
+    lakeBucketName: sharedConfig.lakeBucketName,
+    curatedPrefix: target.curatedPrefix,
+    partitionScheme: DT_PARTITIONED_TABLES.has(target.table) ? "dt" : "year-month-day",
+  };
 }
 
 /**
@@ -146,6 +184,40 @@ export function parsePartitionPrefix(prefix) {
   if (!match) return null;
   const [, year, month, day] = match;
   return { values: [String(Number(year)), String(Number(month)), String(Number(day))], location: prefix };
+}
+
+// Matches a curated dora-runs partition prefix, e.g. "curated/dora/dt=2026-09-08/". Unlike the
+// year/month/day scheme, dt is a single "date"-typed partition column, so the S3 folder name is
+// kept as-is rather than unpadded.
+const DT_PARTITION_PREFIX_PATTERN = /dt=(\d{4}-\d{2}-\d{2})\/$/;
+
+/**
+ * Lists the immediate dt=YYYY-MM-DD partition prefixes one level below `curatedPrefix`: unlike
+ * the year/month/day scheme, a table partitioned on a single dt column needs only one delimited
+ * listing, not three.
+ *
+ * @param {import("@aws-sdk/client-s3").S3Client} s3Client
+ * @param {string} bucketName
+ * @param {string} curatedPrefix
+ * @returns {Promise<string[]>}
+ */
+export async function listDtPartitionPrefixes(s3Client, bucketName, curatedPrefix) {
+  return listCommonPrefixes(s3Client, bucketName, curatedPrefix);
+}
+
+/**
+ * Parses a dt=YYYY-MM-DD partition prefix into the catalog Values and the S3 location to
+ * register it under.
+ *
+ * @param {string} prefix
+ * @returns {{values: string[], location: string}|null} null when the prefix doesn't match the
+ *   expected dt=YYYY-MM-DD/ shape.
+ */
+export function parseDtPartitionPrefix(prefix) {
+  const match = DT_PARTITION_PREFIX_PATTERN.exec(prefix);
+  if (!match) return null;
+  const [, dt] = match;
+  return { values: [dt], location: prefix };
 }
 
 /**
@@ -221,23 +293,28 @@ export async function registerMissingPartitions(glueClient, config, partitions, 
 }
 
 /**
- * Registers every year/month/day partition present in S3 but missing from the catalog.
- * Listing failures and registration failures both throw: a caught-and-logged failure here would
- * let the evaluation run start over an empty (or stale) dataset without anyone noticing.
+ * Registers every partition present in S3 but missing from the catalog, for one target table.
+ * `config.partitionScheme` selects the layout: "dt" for a single dt=YYYY-MM-DD level (dora_runs),
+ * "year-month-day" (the default) for the three-level year=/month=/day= layout every other target
+ * uses. Listing failures and registration failures both throw: a caught-and-logged failure here
+ * would let the evaluation run start over an empty (or stale) dataset without anyone noticing.
  *
- * @param {{databaseName: string, tableName: string, lakeBucketName: string, curatedPrefix: string}} config
+ * @param {{databaseName: string, tableName: string, lakeBucketName: string, curatedPrefix: string, partitionScheme?: string}} config
  * @returns {Promise<{registered: number}>}
  */
 export async function registerPartitions(config) {
   const s3Client = getS3Client();
   const glueClient = getGlueClient();
+  const isDtScheme = config.partitionScheme === "dt";
+  const listPrefixes = isDtScheme ? listDtPartitionPrefixes : listPartitionPrefixes;
+  const parsePrefix = isDtScheme ? parseDtPartitionPrefix : parsePartitionPrefix;
 
   let partitionPrefixes;
   try {
-    partitionPrefixes = await listPartitionPrefixes(s3Client, config.lakeBucketName, config.curatedPrefix);
+    partitionPrefixes = await listPrefixes(s3Client, config.lakeBucketName, config.curatedPrefix);
   } catch (error) {
     logger.error({
-      message: "Failed to list curated activity-events partitions from S3",
+      message: `Failed to list curated ${config.tableName} partitions from S3`,
       bucket: config.lakeBucketName,
       prefix: config.curatedPrefix,
       error: error.message,
@@ -245,10 +322,10 @@ export async function registerPartitions(config) {
     throw error;
   }
 
-  const candidates = partitionPrefixes.map(parsePartitionPrefix).filter((candidate) => candidate !== null);
+  const candidates = partitionPrefixes.map(parsePrefix).filter((candidate) => candidate !== null);
   if (candidates.length === 0) {
     logger.info({
-      message: "No curated activity-events partitions found in S3",
+      message: `No curated ${config.tableName} partitions found in S3`,
       bucket: config.lakeBucketName,
       prefix: config.curatedPrefix,
     });
@@ -259,7 +336,7 @@ export async function registerPartitions(config) {
   const missing = candidates.filter((candidate) => !registeredKeys.has(candidate.values.join("/")));
   if (missing.length === 0) {
     logger.info({
-      message: "All curated activity-events partitions already registered",
+      message: `All curated ${config.tableName} partitions already registered`,
       count: candidates.length,
     });
     return { registered: 0 };
@@ -275,7 +352,7 @@ export async function registerPartitions(config) {
 
   const registered = await registerMissingPartitions(glueClient, config, missing, storageDescriptor);
   logger.info({
-    message: "Registered missing activity_events partitions",
+    message: `Registered missing ${config.tableName} partitions`,
     registered,
     missing: missing.length,
     alreadyRegistered: candidates.length - missing.length,
@@ -309,34 +386,44 @@ export function buildEvaluationRunParams(config) {
 }
 
 /**
- * Registers any missing partitions, then starts today's evaluation run. Any failure from the S3
+ * For every configured target, registers any missing partitions then starts today's evaluation
+ * run. Runs one target after another rather than concurrently, and any failure from the S3
  * listing, the Glue partition APIs, or the Glue evaluation-run API is rethrown rather than
- * swallowed: a caught-and-logged failure here would leave the schedule looking healthy while
- * the ruleset silently stopped running (or ran over an empty dataset).
+ * swallowed: a caught-and-logged failure here would leave the schedule looking healthy while a
+ * ruleset silently stopped running (or ran over an empty dataset), and the remaining targets
+ * would be left unevaluated with nothing to say so.
  *
- * @returns {Promise<{runId: string}>}
+ * @returns {Promise<{runIds: Record<string, string>}>}
  */
 export async function handler() {
-  const config = readConfig();
+  const sharedConfig = readConfig();
 
-  await registerPartitions(config);
+  const runIds = {};
+  for (const target of sharedConfig.targets) {
+    const config = buildTargetConfig(sharedConfig, target);
 
-  const params = buildEvaluationRunParams(config);
+    await registerPartitions(config);
 
-  try {
-    const result = await getGlueClient().send(new StartDataQualityRulesetEvaluationRunCommand(params));
-    logger.info({
-      message: "Started Glue data quality evaluation run",
-      ruleset: config.rulesetName,
-      runId: result.RunId,
-    });
-    return { runId: result.RunId };
-  } catch (error) {
-    logger.error({
-      message: "Failed to start Glue data quality evaluation run",
-      ruleset: config.rulesetName,
-      error: error.message,
-    });
-    throw error;
+    const params = buildEvaluationRunParams(config);
+    try {
+      const result = await getGlueClient().send(new StartDataQualityRulesetEvaluationRunCommand(params));
+      logger.info({
+        message: "Started Glue data quality evaluation run",
+        table: config.tableName,
+        ruleset: config.rulesetName,
+        runId: result.RunId,
+      });
+      runIds[config.tableName] = result.RunId;
+    } catch (error) {
+      logger.error({
+        message: "Failed to start Glue data quality evaluation run",
+        table: config.tableName,
+        ruleset: config.rulesetName,
+        error: error.message,
+      });
+      throw error;
+    }
   }
+
+  return { runIds };
 }

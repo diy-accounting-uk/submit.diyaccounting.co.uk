@@ -242,12 +242,50 @@ public class AnalyticsDashboard extends Construct {
         var dashboardRows = new ArrayList<List<IWidget>>();
 
         dashboardRows.add(List.of(heading("Uptime")));
+        dashboardRows.add(List.of(
+                SingleValueWidget.Builder.create()
+                        .title("Availability SLI")
+                        .metrics(List.of(search("ProbePassRate", "Suite")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Error Budget Remaining")
+                        .left(List.of(search("ErrorBudgetRemaining", "Suite")))
+                        .width(12)
+                        .height(6)
+                        .build()));
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("Alarms Fired by Family")
+                .left(List.of(search("AlarmsFired", "Family")))
+                .width(24)
+                .height(6)
+                .build()));
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("HMRC Failures by Class")
                 .left(List.of(search("HmrcFailures", "FailureClass")))
                 .width(24)
                 .height(6)
                 .build()));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Deployment Frequency")
+                        .left(List.of(search("Deploys", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Lead Time for Changes (hours)")
+                        .left(List.of(search("DeployLeadTimeHours", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Deploy Failure Rate")
+                        .left(List.of(search("DeployFailureRate", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build()));
 
         dashboardRows.add(List.of(heading("Conversion to submission")));
         dashboardRows.add(List.of(
@@ -260,6 +298,19 @@ public class AnalyticsDashboard extends Construct {
                 GraphWidget.Builder.create()
                         .title("Sessions by Country (top 5)")
                         .left(List.of(search("Sessions", "Country")))
+                        .width(12)
+                        .height(6)
+                        .build()));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Completions by Activity")
+                        .left(List.of(search("CompletionsByActivity", "Activity")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Sessions by Channel")
+                        .left(List.of(search("SessionsByChannel", "Channel")))
                         .width(12)
                         .height(6)
                         .build()));

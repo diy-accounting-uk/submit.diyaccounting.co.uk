@@ -93,10 +93,35 @@ public class BusinessViews extends Construct {
                     "v_purchase_reconciliation_daily",
                     "GA4, Stripe and activity-event purchase counts each day, side by side",
                     List.of("stripe_charges", "activity_events_all", "v_ga4_funnel_daily"),
-                    List.of("v_ga4_funnel_daily")));
+                    List.of("v_ga4_funnel_daily")),
+            new ViewDefinition(
+                    "v_submissions_by_activity_daily",
+                    "Completions each day by activity (VAT, ITSA, Companies House), not VAT only",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
+            new ViewDefinition(
+                    "v_availability_sli_daily",
+                    "The uptime SLI: probe pass rate and error budget remaining each day, by suite",
+                    List.of("probe_runs")),
+            new ViewDefinition(
+                    "v_alarm_state_changes_daily",
+                    "Alarms fired and cleared each day, by family",
+                    List.of("alarm_state_changes")),
+            new ViewDefinition(
+                    "v_dora_runs_daily",
+                    "Deploy and destroy runs each day: frequency, lead time and failure rate",
+                    List.of("dora_runs")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<AwsCustomResource> viewResources = new ArrayList<>();
+
+    /**
+     * Every view's {@link AwsCustomResource}, by {@link ViewDefinition#name()}, so a caller can
+     * add an edge onto the one view that actually reads a table it owns rather than every view
+     * unconditionally.
+     */
+    public final Map<String, AwsCustomResource> viewResourcesByName = new java.util.LinkedHashMap<>();
 
     @Value.Immutable
     public interface BusinessViewsProps {
@@ -166,8 +191,6 @@ public class BusinessViews extends Construct {
         // v_purchase_reconciliation_daily reading v_ga4_funnel_daily) needs an explicit
         // dependency edge, added below once both resources exist. VIEWS is declared with every
         // dependency earlier in the list than its dependent, so a single forward pass suffices.
-        var viewResourcesByName = new java.util.LinkedHashMap<String, AwsCustomResource>();
-
         for (ViewDefinition view : VIEWS) {
             var sql = loadResourceText("analytics/views/" + view.name() + ".sql");
             var queryName = view.name().replace('_', '-');
@@ -206,10 +229,10 @@ public class BusinessViews extends Construct {
             // policy has to be depended on explicitly or a view could run before its grant lands.
             viewResource.getNode().addDependency(viewGrant);
             this.viewResources.add(viewResource);
-            viewResourcesByName.put(view.name(), viewResource);
+            this.viewResourcesByName.put(view.name(), viewResource);
 
             for (String dependsOnView : view.dependsOnViews()) {
-                var upstream = viewResourcesByName.get(dependsOnView);
+                var upstream = this.viewResourcesByName.get(dependsOnView);
                 if (upstream == null) {
                     throw new IllegalStateException(
                             "%s depends on %s, which must be declared earlier in VIEWS".formatted(

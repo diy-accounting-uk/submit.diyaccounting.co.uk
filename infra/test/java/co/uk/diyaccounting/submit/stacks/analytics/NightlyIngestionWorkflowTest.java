@@ -23,7 +23,7 @@ import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 
 /**
- * Instantiates {@link NightlyIngestionWorkflow} standalone in a throwaway stack with five plain
+ * Instantiates {@link NightlyIngestionWorkflow} standalone in a throwaway stack with six plain
  * (non-Docker) Lambdas standing in for the real job Lambdas, the same "own tests independent of
  * how it is wired in" pattern {@link DataQualityTest} and {@link AnalyticsDashboardTest} use.
  */
@@ -49,6 +49,7 @@ class NightlyIngestionWorkflowTest {
         var ga4ReportPullLambda = testLambda(stack, "Ga4ReportPullLambda", "docs-env-ga4-report-pull");
         var ga4EventExportPullLambda =
                 testLambda(stack, "Ga4EventExportPullLambda", "docs-env-ga4-event-export-pull");
+        var ga4DailyPullLambda = testLambda(stack, "Ga4DailyPullLambda", "docs-env-ga4-daily-pull");
         var dataQualityRunLambda = testLambda(stack, "DataQualityRunLambda", "docs-env-data-quality-run");
         var metricsPublishLambda =
                 testLambda(stack, "MetricsPublishLambda", "docs-env-analytics-metrics-publish");
@@ -62,6 +63,7 @@ class NightlyIngestionWorkflowTest {
                         .stripeReconcileLambda(stripeReconcileLambda)
                         .ga4ReportPullLambda(ga4ReportPullLambda)
                         .ga4EventExportPullLambda(ga4EventExportPullLambda)
+                        .ga4DailyPullLambda(ga4DailyPullLambda)
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .build());
@@ -98,13 +100,13 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void definitionRunsThreeIngestionJobsInParallelThenDataQualityThenMetricsPublishThenSucceed() {
+    void definitionRunsFourIngestionJobsInParallelThenDataQualityThenMetricsPublishThenSucceed() {
         Template template = synthWorkflow();
 
         var definitionText = joinedDefinitionString(template);
 
         // State names appear in the definition text in the order the Chain wires them: the
-        // Parallel branch's three tasks, then data quality, then metrics publish. Each state's
+        // Parallel branch's four tasks, then data quality, then metrics publish. Each state's
         // own definition is keyed as "<name>":{ - distinct from the "Next":"<name>" reference to
         // it, which appears earlier (the Parallel state's own "Next" points at "data quality
         // run" before its Branches array even starts), so indexOf on the bare name would find
@@ -113,6 +115,7 @@ class NightlyIngestionWorkflowTest {
         int stripeIndex = definitionText.indexOf("\"Stripe reconciliation\":{");
         int ga4ReportIndex = definitionText.indexOf("\"GA4 report pull\":{");
         int ga4EventIndex = definitionText.indexOf("\"GA4 event export pull\":{");
+        int ga4DailyIndex = definitionText.indexOf("\"GA4 daily aggregate pull\":{");
         int dataQualityIndex = definitionText.indexOf("\"data quality run\":{");
         int metricsPublishIndex = definitionText.indexOf("\"metrics publish\":{");
 
@@ -121,16 +124,19 @@ class NightlyIngestionWorkflowTest {
         assertTrue(ga4ReportIndex > parallelIndex, "GA4 report pull task should be nested inside the parallel branch");
         assertTrue(
                 ga4EventIndex > parallelIndex, "GA4 event export pull task should be nested inside the parallel branch");
+        assertTrue(
+                ga4DailyIndex > parallelIndex, "GA4 daily aggregate pull task should be nested inside the parallel branch");
         assertTrue(dataQualityIndex > parallelIndex, "data quality should run after the parallel branch");
         assertTrue(metricsPublishIndex > dataQualityIndex, "metrics publish should run after data quality");
 
-        // Exactly three LambdaInvoke tasks named as the ingestion jobs sit in the parallel
-        // branch: the definition contains no fourth job's state key between the parallel
+        // Exactly four LambdaInvoke tasks named as the ingestion jobs sit in the parallel
+        // branch: the definition contains no fifth job's state key between the parallel
         // branch's open and the data quality task.
         var parallelBranchSlice = definitionText.substring(parallelIndex, dataQualityIndex);
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"Stripe reconciliation\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 report pull\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 event export pull\":{"));
+        assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 daily aggregate pull\":{"));
 
         assertTrue(definitionText.contains("\"Type\":\"Parallel\""), "expected a Parallel state");
         assertTrue(definitionText.contains("\"Type\":\"Succeed\""), "expected a Succeed state");
@@ -143,11 +149,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Five tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Six tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                5,
+                6,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),

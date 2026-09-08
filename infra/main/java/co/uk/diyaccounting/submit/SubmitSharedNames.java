@@ -153,6 +153,11 @@ public class SubmitSharedNames {
     public String dynamoStreamToFirehoseLambdaHandler;
     public String dynamoStreamToFirehoseLambdaArn;
     public String dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn;
+    public String alarmStateChangeDeliveryStreamName;
+    public String alarmStateChangeTransformLambdaFunctionName;
+    public String alarmStateChangeTransformLambdaHandler;
+    public String alarmStateChangeTransformLambdaArn;
+    public String alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn;
 
     // Env-level Telegram forwarder Lambda (EventBridge target, not API): one per environment,
     // shared by every deployment's OpsStack rules instead of each deployment building its own.
@@ -842,6 +847,14 @@ public class SubmitSharedNames {
                 .formatted(props.regionName, props.awsAccount, this.dynamoStreamToFirehoseLambdaFunctionName);
         this.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.dynamoStreamToFirehoseLambdaArn, this.provisionedConcurrencyAliasName);
+        this.alarmStateChangeDeliveryStreamName = "%s-alarm-state-changes".formatted(this.envResourceNamePrefix);
+        this.alarmStateChangeTransformLambdaFunctionName =
+                "%s-alarm-state-change-transform".formatted(this.envResourceNamePrefix);
+        this.alarmStateChangeTransformLambdaHandler = "app/functions/analytics/alarmStateChangeTransform.handler";
+        this.alarmStateChangeTransformLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.alarmStateChangeTransformLambdaFunctionName);
+        this.alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.alarmStateChangeTransformLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Env-level Telegram forwarder Lambda: one instance shared by every deployment's OpsStack
         // rules, instead of each deployment building its own copy of the same catch-all rule.

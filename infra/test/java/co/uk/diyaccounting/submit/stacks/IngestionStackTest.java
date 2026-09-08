@@ -109,21 +109,21 @@ class IngestionStackTest {
         Template template = Template.fromStack(ingestionStack);
 
         // Importing the lake bucket by name creates no bucket of its own. The constructor wires
-        // three jobs: Stripe reconciliation, the GA4 Data API report pull and the GA4 BigQuery
-        // event export pull; nothing else self-registers yet. Every job's function name is
-        // stable across every redeploy of this env-scoped stack, so their log groups go through
-        // the idempotent AwsCustomResource path, adding one more Lambda function: the shared
-        // create-if-missing/retention singleton provider.
+        // four jobs: Stripe reconciliation, the GA4 Data API report pull, the GA4 BigQuery event
+        // export pull and the GA4 daily aggregate pull; nothing else self-registers yet. Every
+        // job's function name is stable across every redeploy of this env-scoped stack, so their
+        // log groups go through the idempotent AwsCustomResource path, adding one more Lambda
+        // function: the shared create-if-missing/retention singleton provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
 
         // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
-        // state machine and one scheduler schedule replace them. Three job Errors alarms plus
+        // state machine and one scheduler schedule replace them. Four job Errors alarms plus
         // the state machine's ExecutionsFailed alarm; the ExecutionsMissed alarm is prod-only,
-        // so a non-prod envName ("docs") gives four alarms, not five.
+        // so a non-prod envName ("docs") gives five alarms, not six.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 5);
         template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
@@ -246,9 +246,9 @@ class IngestionStackTest {
         template.resourceCountIs("AWS::SQS::Queue", 0);
         template.resourceCountIs("AWS::Events::Rule", 0);
 
-        // Three pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
+        // Four pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
         // this test's own job alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
@@ -276,7 +276,7 @@ class IngestionStackTest {
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
     }
 
     @Test
@@ -290,7 +290,7 @@ class IngestionStackTest {
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
         Template template =
                 Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
     }
 
     @Test
@@ -457,8 +457,9 @@ class IngestionStackTest {
                 "analytics_523400333",
                 "europe-west2"));
 
-        // Both GA4 jobs share the same service-account secret, so this ARN grant now appears
-        // on two Lambda roles: the pre-existing ga4ReportPull grant plus this job's own.
+        // All three GA4 jobs share the same service-account secret, so this ARN grant now
+        // appears on three Lambda roles: the pre-existing ga4ReportPull grant, this job's own,
+        // and the ga4DailyPull job's.
         configured.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -470,7 +471,7 @@ class IngestionStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))),
-                2);
+                3);
     }
 
     @Test

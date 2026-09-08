@@ -171,6 +171,65 @@ export const METRIC_DEFINITIONS = [
     usesReconciliationDate: true,
     sql: (day) => `SELECT activity_activations FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
+  {
+    metricName: "CompletionsByActivity",
+    unit: "Count",
+    valueColumn: "completions",
+    dimension: { name: "Activity", column: "activity" },
+    sql: (day) =>
+      `SELECT activity, sum(completions) AS completions FROM v_submissions_by_activity_daily WHERE day = DATE '${day}' GROUP BY activity`,
+  },
+  {
+    metricName: "SessionsByChannel",
+    unit: "Count",
+    valueColumn: "sessions",
+    dimension: { name: "Channel", column: "channel" },
+    sql: (day) => `SELECT channel, sessions FROM v_traffic_sources_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "ProbePassRate",
+    unit: "None",
+    valueColumn: "pass_rate",
+    dimension: { name: "Suite", column: "suite" },
+    sql: (day) => `SELECT suite, pass_rate FROM v_availability_sli_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "ErrorBudgetRemaining",
+    unit: "Count",
+    valueColumn: "budget_remaining_runs",
+    dimension: { name: "Suite", column: "suite" },
+    sql: (day) => `SELECT suite, budget_remaining_runs FROM v_availability_sli_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "AlarmsFired",
+    unit: "Count",
+    valueColumn: "times_fired",
+    dimension: { name: "Family", column: "family" },
+    sql: (day) =>
+      `SELECT family, sum(times_fired) AS times_fired FROM v_alarm_state_changes_daily WHERE day = DATE '${day}' GROUP BY family`,
+  },
+  {
+    metricName: "Deploys",
+    unit: "Count",
+    valueColumn: "runs",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) => `SELECT environment, runs FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "DeployLeadTimeHours",
+    unit: "None",
+    valueColumn: "lead_time_hours",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) =>
+      `SELECT environment, median_lead_time_seconds / 3600.0 AS lead_time_hours FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "DeployFailureRate",
+    unit: "None",
+    valueColumn: "failure_rate",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) => `SELECT environment, failure_rate FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
+  },
 ];
 
 let cachedAthenaClient = null;
