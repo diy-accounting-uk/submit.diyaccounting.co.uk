@@ -208,10 +208,10 @@ operator's "go" per `stripe-catalogue-sync`.
   2027-02-06 expiry and confirm it auto-renews by DNS validation, the local certificate
   (BACKLOG 48), Java 25, the CDK major and Playwright. **Source**: the prod account,
   2026-09-07. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B50. Add the books app client to the native-auth toggle.** The spreadsheets session
+- [ ] **B50. Add the DIYA-GL app client to the native-auth toggle.** The spreadsheets session
   asked on 2026-09-07 (inbox): `scripts/toggle-cognito-native-auth.js` reads only the
   `UserPoolClientId` output of the identity stack, so the spreadsheets ci behaviour case
-  cannot sign in to the books pages without Google. Read the `BooksUserPoolClientId` output
+  cannot sign in to the DIYA-GL pages without Google. Read the `BooksUserPoolClientId` output
   as well and apply the same `COGNITO` provider change to that client on enable and disable
   (the credentials file stays one file); one-line reply to the spreadsheets inbox when it is
   on main. **Source**: BACKLOG 50; spreadsheets board H16. **Owner**: Claude Code. **Model**: Haiku.
@@ -236,11 +236,14 @@ operator's "go" per `stripe-catalogue-sync`.
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
 
-- [ ] **B54. The `resident-books` bundle at 99p a month.** `BooksStack` already names the bundle
-  the storage API's put route checks (`BOOKS_BUNDLE_ID=resident-books`), but no such bundle exists
-  in `web/public/submit.catalogue.toml`, so every DIYA-GL subscriber looks unentitled. Add it
-  shaped like `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`,
-  `month`) carrying the DIYA-GL storage put as its activity, listed in every environment; then
+- [ ] **B54. The `resident-diya-gl` bundle at 99p a month.** The bundle the storage API's put
+  route checks (`BOOKS_BUNDLE_ID` in `BooksStack`) is `resident-diya-gl`, titled "DIYA-GL" (the
+  operator's naming of 2026-09-08: DIYA-GL in titles and prose, `diya-gl` in identifiers, never
+  "books" as a product name). It sits in `web/public/submit.catalogue.toml` shaped like
+  `resident-itsa` (`allocation = "on-subscription"`, `stripePriceAmount = 99`, `gbp`, `month`)
+  carrying the DIYA-GL storage put as its activity. `resident-diya-gl`, `resident-ltd` and
+  `resident-itsa` are listed for purchase on ci only (`listedInEnvironments` without `prod`) until
+  the operator lifts each one; the catalogue change is on the batch. Remaining:
   `stripe-catalogue-sync`: the product and price in test, then live, and the ids onto `.env.ci`,
   `.env.prod` and the GitHub environments. **Source**: spreadsheets board LP-21;
   `PLAN_DIYA_GL_STORAGE.md` section 6. **Owner**: Claude Code. **Model**: Sonnet.
@@ -251,7 +254,7 @@ operator's "go" per `stripe-catalogue-sync`.
   the portal route sit behind the main Cognito authoriser, whose audience is the Submit app
   client, so a token from the DIYA-GL client (`BooksCognitoAuthorizer`'s audience) is refused.
   Accept the DIYA-GL audience on those two routes, or add DIYA-GL-scoped twins under
-  `BooksCognitoAuthorizer`; checkout takes the `resident-books` bundle; the proof is a behaviour
+  `BooksCognitoAuthorizer`; checkout takes the `resident-diya-gl` bundle; the proof is a behaviour
   case on ci that subscribes with a DIYA-GL token and then puts a book. The spreadsheets side
   (the subscribe button and the portal link in the account panel) is that board's LP-18 and
   waits on this. **Source**: spreadsheets board LP-18; `PLAN_DIYA_GL_STORAGE.md` section 9.

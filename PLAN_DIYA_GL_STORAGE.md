@@ -1,11 +1,11 @@
 # PLAN: the diya-gl book storage API
 
-The spreadsheets site's books pages hold a year of accounts in a 15 KB zip and recalculate it in the
+The spreadsheets site's DIYA-GL pages hold a year of accounts in a 15 KB zip and recalculate it in the
 browser. The paid tier stores that zip for a signed-in user. This is the Submit side: one S3 bucket
 per environment, four routes on the existing HTTP API, a metadata sidecar per book, and an
 entitlement hook the billing row fills in later. The launch plan is
 `spreadsheets.diyaccounting.co.uk/PLAN_DIYA_GL_LAUNCH.md`, row LP-16; build this after LP-15 lands
-the books app client on the shared pool.
+the DIYA-GL app client on the shared pool.
 
 ## 1. Assertions and decisions this rests on
 
@@ -92,7 +92,7 @@ Quotas: a decoded zip over 2 MB is 413 `book-too-large`; a 21st book is 403 `boo
 
 All four sit on the existing HTTP API under `/api/v1/books`, behind the books JWT authoriser
 (section 5.3). The caller sends `Authorization: Bearer <idToken>`, as every other page here does.
-The authoriser's audience is the books app client id, so only that client's tokens are accepted; the
+The authoriser's audience is the DIYA-GL app client id, so only that client's tokens are accepted; the
 handler reads `sub` from `event.requestContext.authorizer.jwt.claims` via
 `extractUserFromAuthorizerContext`.
 
@@ -172,7 +172,7 @@ export async function entitlementFor(sub)
    `app/data/dynamoDbBundleRepository.js`. That reads the env bundles table `{env}-env-bundles`, the
    row `billingWebhookPost.js` writes through `putBundleByHashedSub` on
    `checkout.session.completed`.
-3. A bundle whose `bundleId` equals `process.env.BOOKS_BUNDLE_ID` (default `resident-books`, beside
+3. A bundle whose `bundleId` equals `process.env.BOOKS_BUNDLE_ID` (default `resident-diya-gl`, beside
    `resident-vat` and `resident-itsa` in `web/public/submit.catalogue.toml`) with
    `subscriptionStatus === "active"` and `Date.parse(expiry) > Date.now()` is allowed, with the
    reason `active-subscription`. A match whose expiry has passed is `expired`; no match is
@@ -202,7 +202,7 @@ All four get `BOOKS_BUCKET_NAME`, `ENVIRONMENT_NAME`, and `BOOKS_ALLOWED_ORIGINS
 `https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000`; prod:
 `https://spreadsheets.diyaccounting.co.uk`). The put function also gets `BOOKS_MAX_BYTES=2097152`,
 `BOOKS_MAX_PER_USER=20`, `BOOKS_VERSIONS_KEPT=30`, `BOOKS_ENTITLEMENT_ENFORCED=false`,
-`BOOKS_BUNDLE_ID=resident-books` and `BUNDLE_DYNAMODB_TABLE_NAME`.
+`BOOKS_BUNDLE_ID=resident-diya-gl` and `BUNDLE_DYNAMODB_TABLE_NAME`.
 
 IAM per function, on the bucket only. No function gets the bucket root or `s3:*`.
 
@@ -327,7 +327,7 @@ the test registry as the billing tests do.
 | `booksDelete` removes every object, and 404s an unknown book | 4 objects under the prefix; no metadata | 200 `deletedObjects: 4`; 404 |
 | preflight is answered without a token, and only for a listed origin | `OPTIONS` with an allow-listed `Origin` and no auth header; then `Origin: https://evil.example` | 204 echoing the origin; 204 with no `Access-Control-Allow-Origin` |
 | `zipMembers` reads a real diya-gl zip and throws on truncated bytes | a fixture zip under `fixtures/books/`; its first 40 bytes | the five member names; `NotAZipError` |
-| `booksEntitlement` reads an active and an expired bundle | `resident-books` active with a future expiry; the same expired | `"active-subscription"`; `allowed: false, reason: "expired"` |
+| `booksEntitlement` reads an active and an expired bundle | `resident-diya-gl` active with a future expiry; the same expired | `"active-subscription"`; `allowed: false, reason: "expired"` |
 
 ## 7. Verification ladder
 
