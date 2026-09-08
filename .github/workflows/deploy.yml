@@ -2101,6 +2101,30 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-diya-gl-subscription:
+    # The three subscription bundles list on ci only until the operator lifts each one.
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
+    name: 'diyaGlSubscriptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'diyaGlSubscriptionBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-fraud-prevention-headers-vat-synthetic:
     if: ${{ !cancelled() }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
@@ -2483,6 +2507,7 @@ jobs:
       - web-test-liability-synthetic
       - web-test-vat-payment-synthetic
       - web-test-vat-penalty-synthetic
+      - web-test-diya-gl-subscription
       - web-test-fraud-prevention-headers-vat-synthetic
       - web-test-compliance-synthetic
       - web-test-help-synthetic
