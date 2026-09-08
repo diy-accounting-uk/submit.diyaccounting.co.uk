@@ -42,7 +42,10 @@ fourth run, deploy 34208557329, failed on EdgeStack: the destroy left the custom
 provider's log group in us-east-1 and the same deployment name recreates it, so every suite
 then found no site. The ci destroy gains the prod destroy's leftover log-group step (c39af090,
 pushed 09:5x UTC); the destroy of ci-claud87a7 with it (run 34210362217) deleted the provider
-log group, and the fifth deploy is run 34211701773. Nothing is pushed to the branch while a deploy runs. Merging
+log group; the fifth deploy (34211701773) was green everywhere but the DIYA-GL suite, whose
+callback page stripped the authorization code before the test read it. The sign-in step now
+answers the callback navigation itself (996d9ccc, pushed 10:4x UTC); the sixth deploy is the
+proof. Nothing is pushed to the branch while a deploy runs. Merging
 the PR is the
 operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
 apply and the note that issue #43 can close. Each item's body stays in its section below until
