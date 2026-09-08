@@ -338,6 +338,256 @@ on NEXT.md.
 | D16 | The optimiser: a notebook over the raw export that computes the per-block correlations, fits the block models (linear cost, log-linear funnels, Hill curves for spend), ranks levers by effect per unit cost, and proposes the next experiment with its predicted effect; Bayesian optimisation for the continuous knobs and a bandit for allocations once experiments exist | D12; three months of export | Claude Code, Opus for the models, Sonnet for the notebook |
 | D17 | The reinvestment loop: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment fraction as a lever with a reserve floor; paid-traffic experiments as rows with on-off or geographic controls; the Ads account with GA4 conversion import | D2, D16; the operator opens the Ads account and sets the reserve floor | Claude Code, Sonnet; the operator's decisions |
 
+## B52d design
+
+Five Athena views and three writers. Each view is one `.sql` file under
+`infra/main/resources/analytics/views/`, one `ViewDefinition` in `BusinessViews.VIEWS`, one
+`CfnNamedQuery` and one `CREATE OR REPLACE VIEW` custom resource, exactly as the ten existing
+views work. Three of the five read tables that do not exist yet, so the writers come first.
+
+### The three new sources
+
+| Source | Writer | S3 prefix under the lake | Glue table |
+|---|---|---|---|
+| CloudWatch alarm state changes | EventBridge rule to a Firehose stream | `curated/alarm-state-changes/year=/month=/day=/` | `alarm_state_changes` |
+| Deploy and destroy runs | a workflow step | `curated/dora/dt=<date>/<run-id>-<attempt>.json` | `dora_runs` |
+| Probe runs | the same workflow step | `curated/probe/dt=<date>/<run-id>-<suite>.json` | `probe_runs` |
+
+Everything lands under `curated/`, so the lake's `age-curated` and `expire-curated` lifecycle
+rules cover the new prefixes unchanged. The paths carry no `env=` key, because ci and prod have
+separate accounts and separate lake buckets; the environment is a column instead.
+
+#### The alarm writer
+
+New construct `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AlarmStateChangeDelivery.java`,
+built by `AnalyticsStack` beside `TableChangeDelivery` and modelled on it.
+
+**Rule.** A `Rule` on the default bus, id `AlarmToLakeRule`, name `{env}-env-alarm-to-lake`,
+source `aws.cloudwatch`, detail type `CloudWatch Alarm State Change`, `detail.alarmName` matched
+on the single prefix `{envName}-`. One rule per environment, not per deployment: `OpsStack`'s
+`AlarmStateChangeRule` is built once per live deployment and two of its prefixes overlap, so
+copying that shape would double every environment-scoped row while two sets are up. The
+`{envName}-` prefix covers `{env}-env-` and `{env}-<slug>-app-` alike and excludes the `check-`
+alarms, matching what `alarmToGithubIssue.js` already sees.
+
+**Stream.** A `CfnDeliveryStream`, `DirectPut`, named
+`sharedNames.alarmStateChangeDeliveryStreamName` = `{env}-env-alarm-state-changes`, log group from
+`sharedNames.deliveryStreamLogGroupName(...)`, prefix
+`curated/alarm-state-changes/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/`,
+error prefix `errors/alarm-state-changes/...`, buffering 900 s and 128 MiB, Parquet with Snappy
+and a `schemaConfiguration` on the Glue table. The rule targets it with `FirehoseDeliveryStream`,
+as `ActivityToLakeRule` does.
+
+**Transform.** `app/functions/analytics/alarmStateChangeTransform.js`, a Firehose processor built
+like `activityEventTransform.js`, function name `{env}-env-alarm-state-change-transform`, handler
+`app/functions/analytics/alarmStateChangeTransform.handler`. EventBridge delivers the envelope
+with no trailing newline and ISO-8601 timestamps, and the JSON SerDe takes neither, so the
+transform reuses `toParquetTimestamp` and writes one flat row per line. It flattens the fields
+`resolveAlarmDetail` in `alarmToGithubIssue.js` already names, and imports `alarmFamilyKey` and
+`alarmDeploymentSlug` from `app/lib/alarmName.js` so one definition of a family serves the issue
+chain and the lake.
+
+**Columns** for `alarm_state_changes`, partition projection on `year`/`month`/`day` over
+2026–2035, the shape `TableChangeDelivery.buildGlueTable` uses: `event_id string`,
+`event_ts timestamp` (from `detail.state.timestamp`), `ingest_ts timestamp`, `alarm_name string`,
+`alarm_arn string` (`resources[0]`), `family string`, `deployment_slug string`, `state string`,
+`previous_state string`, `reason string`, `region string`, `namespace string`,
+`metric_name string`, `period_seconds bigint`, `threshold double` (from the parsed
+`state.reasonData`), `env string`, `detail_json string`.
+
+**Tests.** `app/unit-tests/analytics/alarmStateChangeTransform.test.js`: a real alarm state
+change envelope flattens to the declared columns, `family` drops the deployment slug, and a
+record that will not parse comes back `ProcessingFailed`. `AlarmStateChangeDeliveryTest.java`,
+shaped like `TableChangeDeliveryTest`: one rule carrying the `aws.cloudwatch` pattern and the
+`{envName}-` prefix, one delivery stream writing the curated prefix with Parquet conversion, and
+one Glue table with the columns above.
+
+#### The DORA and probe writer
+
+One composite action, `.github/actions/put-lake-row/action.yml`, with inputs `bucket`, `key` and
+`row`. It pipes the JSON string to `aws s3 cp - s3://<bucket>/<key>`. The bucket,
+`{env}-env-analytics-lake-<account>`, is an input the caller resolves from the `names` job.
+
+Credentials are the two-hop OIDC every job already uses: `vars.SUBMIT_ACTIONS_ROLE_ARN`
+(`github-actions-role`), then `vars.SUBMIT_DEPLOY_ROLE_ARN` (`github-deploy-role`), both created
+by `infra/aws-accounts/setup-oidc-roles.sh`. `github-deploy-role` carries `AdministratorAccess`
+and the lake bucket policy denies only non-TLS traffic, so this writes with no policy change. If
+that role is scoped down later, keep `s3:PutObject` on
+`arn:aws:s3:::{env}-env-analytics-lake-*/curated/dora/*` and `.../curated/probe/*`.
+
+**Callers.** `deploy.yml` gains a final job `record-dora` with `if: always()`, needing `names`,
+`deploy-publish`, `set-origins` and the `web-test` fan-in. `destroy-ci.yml` and `destroy-prod.yml`
+gain the same step at the end of `destroy`, also `if: always()`. `probe-test.yml` writes one probe
+row per suite in `publish-cloudwatch-metric`, beside the existing `put-metric-data` call.
+
+**The DORA row**, one JSON object per file at `curated/dora/dt=<YYYY-MM-DD>/<run-id>-<attempt>.json`:
+
+| Column | Source |
+|---|---|
+| `workflow` | `github.workflow`: `deploy`, `destroy-ci`, `destroy-prod` |
+| `environment`, `deployment` | `needs.names.outputs.environment-name`, `.deployment-name` |
+| `branch`, `sha` | `github.ref_name`, `github.sha` |
+| `run_id`, `run_attempt`, `run_number`, `actor`, `trigger` | the matching `github.*` contexts, with `event_name` as `trigger` |
+| `started_at` | `gh api repos/${{ github.repository }}/actions/runs/${{ github.run_id }} --jq .run_started_at` |
+| `finished_at`, `duration_seconds` | `date -u +%FT%TZ` in the step, and the difference from `started_at` |
+| `conclusion` | `success` when every needed job's `result` is `success`, else `failure` |
+| `merged_at` | `gh api repos/${{ github.repository }}/commits/${{ github.sha }}/pulls --jq '.[0].merged_at'` |
+| `lead_time_seconds` | `finished_at` minus `merged_at`; both null for a push with no pull request |
+
+Change failure rate and time to restore are not columns. They come from joining these rows to the
+`[ALARM]` issues the triage chain opens, on environment and time, which is D14's nightly pull.
+
+**The probe row** at `curated/probe/dt=<date>/<run-id>-<suite>.json`: `environment`,
+`deployment`, `suite`, `run_id`, `run_attempt`, `finished_at`, `duration_seconds`, `trigger` and
+`passed`, the same `needs.behaviour-test.result == 'success'` the CloudWatch metric already reads.
+The `behaviour-test` metric in the apex-domain namespace stays as it is; the row is what Athena
+can read, and one step writes both, so they agree.
+
+**Glue tables.** New construct `.../stacks/analytics/WorkflowRunTables.java`, built by
+`AnalyticsStack` and modelled line for line on `Ga4Tables`: two `CfnTable`s, `dora_runs` and
+`probe_runs`, `classification=json`, one `dt` partition-projection column (`date`, `yyyy-MM-dd`,
+range `2026-01-01,NOW`, one-day interval) and a `storage.location.template` of
+`s3://<lake>/curated/{dora,probe}/dt=${dt}/`. Test `WorkflowRunTablesTest.java`, shaped like
+`Ga4TablesTest`.
+
+### The five views
+
+Every view reads a catalogue table, never a raw source, and each is added to `BusinessViews.VIEWS`
+with its `readTables` so the shared IAM grant covers it. `AnalyticsStack` adds the dependency edges
+in `businessViews.viewResources.forEach`: the alarm table for view 4, `WorkflowRunTables` for 3 and 5.
+
+**1. `v_submissions_by_activity_daily`** — source `activity_events_all`, partitioned
+year/month/day by projection over `curated/activity-events/`.
+
+```sql
+CREATE OR REPLACE VIEW v_submissions_by_activity_daily AS
+SELECT day, activity, outcome,
+       count(*)                   AS completions,
+       count(DISTINCT hashed_sub) AS customers
+FROM  (SELECT date(event_ts) AS day, hashed_sub,
+              coalesce(outcome, 'success') AS outcome,
+              CASE event
+                WHEN 'vat-return-submitted'                            THEN 'vat-return'
+                WHEN 'vat-return-failed'                               THEN 'vat-return'
+                WHEN 'itsa-self-employment-period-created'             THEN 'itsa-period'
+                WHEN 'companies-house-accounts-submitted'              THEN 'ch-accounts'
+                WHEN 'companies-house-accounts-accepted'               THEN 'ch-accounts'
+                WHEN 'companies-house-accounts-failed'                 THEN 'ch-accounts'
+                WHEN 'companies-house-registered-office-address-filed' THEN 'ch-registered-office'
+                WHEN 'companies-house-registered-email-address-filed'  THEN 'ch-registered-email'
+                WHEN 'company-profile-viewed'                          THEN 'company-lookup'
+              END AS activity
+       FROM   activity_events_all
+       WHERE  actor = 'customer')
+WHERE  activity IS NOT NULL
+GROUP  BY 1, 2, 3
+```
+
+Panel: a `GraphWidget` titled "Completions by Activity" on a new `CompletionsByActivity` metric,
+`dimension: {name: "Activity", column: "activity"}`, summing `completions` over outcomes.
+`v_submissions_daily` stays: it answers the VAT-only question and three metrics already read it.
+
+**2. `v_traffic_sources_daily`** — source `ga4_traffic` (`dt` projection over
+`curated/ga4/report=traffic/`), which already carries `sessionDefaultChannelGroup`.
+
+```sql
+CREATE OR REPLACE VIEW v_traffic_sources_daily AS
+SELECT date(parse_datetime(date, 'yyyyMMdd')) AS day,
+       coalesce(sessionDefaultChannelGroup, 'unassigned') AS channel,
+       sum(sessions)        AS sessions,
+       sum(newUsers)        AS new_users,
+       sum(engagedSessions) AS engaged_sessions,
+       if(sum(sessions) = 0, NULL,
+          cast(sum(engagedSessions) AS double) / sum(sessions)) AS engagement_rate
+FROM   ga4_traffic
+GROUP  BY 1, 2
+```
+
+Panel: "Sessions by Channel", metric `SessionsByChannel` dimensioned `Channel`. The GA4 pull
+writes `date` as `yyyyMMdd`; check one row of `curated/ga4/report=traffic/` before trusting that.
+
+**3. `v_availability_sli_daily`** — source `probe_runs`.
+
+```sql
+CREATE OR REPLACE VIEW v_availability_sli_daily AS
+SELECT date(from_iso8601_timestamp(finished_at)) AS day,
+       suite,
+       count(*)                                     AS runs,
+       count_if(passed)                             AS passes,
+       cast(count_if(passed) AS double) / count(*)  AS pass_rate,
+       count(*) - count_if(passed)                  AS failed_runs,
+       0.001 * count(*)                             AS budget_runs,
+       (0.001 * count(*)) - (count(*) - count_if(passed)) AS budget_remaining_runs
+FROM   probe_runs
+GROUP  BY 1, 2
+```
+
+The 99.9 % target comes from the plan's decision 5 and sits in the SQL as `0.001`. The budget is
+counted in probe runs, the resolution the measurement has: the scheduled probe runs two suites
+every four hours, so a month holds about 360 runs per suite and one failure spends more than a
+month's budget. Finer resolution comes from raising the probe cadence in the workflow's cron.
+Panels: "Availability SLI" (a `SingleValueWidget` on `ProbePassRate`, dimensioned `Suite`) and
+"Error Budget Remaining" (a `GraphWidget` on `ErrorBudgetRemaining`, same dimension).
+
+**4. `v_alarm_state_changes_daily`** — source `alarm_state_changes`.
+
+```sql
+CREATE OR REPLACE VIEW v_alarm_state_changes_daily AS
+SELECT date(event_ts) AS day,
+       family,
+       env,
+       count_if(state = 'ALARM' AND previous_state <> 'ALARM') AS times_fired,
+       count_if(state = 'OK'    AND previous_state =  'ALARM') AS times_cleared,
+       count(DISTINCT alarm_name)                              AS alarms_in_family,
+       max(event_ts)                                           AS last_change_ts
+FROM   alarm_state_changes
+GROUP  BY 1, 2, 3
+```
+
+Panel: "Alarms Fired by Family", metric `AlarmsFired` dimensioned `Family`. Minutes in alarm need
+each ALARM paired with its next OK, a window function over the same table; that belongs with D6's
+burn chart, not here.
+
+**5. `v_dora_runs_daily`** — source `dora_runs`.
+
+```sql
+CREATE OR REPLACE VIEW v_dora_runs_daily AS
+SELECT date(from_iso8601_timestamp(finished_at)) AS day,
+       workflow,
+       environment,
+       count(*)                                          AS runs,
+       count_if(conclusion = 'success')                  AS successes,
+       approx_percentile(duration_seconds, 0.5)          AS median_duration_seconds,
+       approx_percentile(lead_time_seconds, 0.5)         AS median_lead_time_seconds,
+       cast(count_if(conclusion <> 'success') AS double) / count(*) AS failure_rate
+FROM   dora_runs
+GROUP  BY 1, 2, 3
+```
+
+Panels: "Deployment Frequency" (`Deploys`, dimensioned `Environment`), "Lead Time for Changes"
+(`DeployLeadTimeHours`) and "Deploy Failure Rate" (`DeployFailureRate`). The row keeps `branch`,
+`sha`, `run_id` and `actor` for the deep links D9 adds.
+
+### Verifying each view
+
+**In CDK.** `BusinessViewsTest` already asserts one named query and one custom resource per view,
+one singleton provider, and that every declared name appears in a `CREATE OR REPLACE VIEW`
+statement exactly once. Raising `VIEW_COUNT` to 15 and adding the five names to
+`expectedViewNames` is the whole change; a missing `.sql` file fails the synth in `loadResourceText`.
+
+**In the nightly run.** Every view gets a `METRIC_DEFINITIONS` entry in
+`analyticsMetricsPublish.js`, so an Athena error stops the run and a day with no rows leaves a
+visible gap on the widget. That takes the count from 23 metrics to 31, about $2.40 a month more.
+
+**Emptiness.** `DataQuality` runs one DQDL ruleset over `activity_events` today, named in the
+runner Lambda's `GLUE_DATA_QUALITY_*` environment variables. Widen it to a list: the construct
+takes a target per table and the Lambda reads one `GLUE_DATA_QUALITY_TARGETS` JSON array of
+`{table, ruleset, curatedPrefix}`, starting an evaluation run per entry. Two new rulesets,
+`{env}_env_alarm_state_changes_dq` and `{env}_env_dora_runs_dq`, each carry `RowCount > 0`,
+`IsComplete` on the timestamp column, and for alarms `ColumnValues "state" in
+["ALARM","OK","INSUFFICIENT_DATA"]`. `{prefix}-data-quality-rules-failed` is dimensioned by
+ruleset name, so the same loop builds one alarm per target and `DataQualityTest` asserts three.
+
 ## Verification
 
 - Each panel's figure for one day is reproduced by hand from its source: a GA4 explore, the
