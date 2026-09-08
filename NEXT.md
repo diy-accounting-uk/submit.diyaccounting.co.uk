@@ -32,8 +32,8 @@ is green on every stack and every behaviour suite, the DIYA-GL subscription case
 six runs before it each found one pipeline fault, all fixed on the branch. Open on the PR: its
 CodeQL check reports five new alerts on lines the S2 fixes introduced (54 to 58: a logged
 value from the environment, the simulator's SPA fallback, the alarm namespace test, and the
-simulator billing mocks' `returnTo` redirects); a Sonnet agent is fixing them on the batch,
-then one push and one more ci deploy. Merging the PR is the operator's yes to the Config and
+simulator billing mocks' `returnTo` redirects), fixed on the batch and pushed as f208d2d3 at
+12:0x UTC; the eighth ci deploy and the PR's CodeQL check on that tip are the proof. Merging the PR is the operator's yes to the Config and
 GuardDuty charge; the PR body carries the CodeQL dismissals to apply and the note that issue
 #43 can close. Each item's body stays in its section below until it is verified on main. Wave 1
 ran in worktrees under `.claude/worktrees/`, one agent per file area, all merged and removed:
