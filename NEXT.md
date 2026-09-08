@@ -16,8 +16,7 @@ PR; the operator merges.
 **Prod runs deployment prod-5c28d63 (the merge of PR #151, run 34236942090, 2026-09-08 14:14
 UTC), which retired prod-c6d0ed3; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
-`destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Issue #43 (the standing drift findings) is still open and can
-close: its condition, a green scheduled `stack-drift` run, was met on 2026-09-07.
+`destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
 The board runs in six sections, in this order: in flight; ready and unblocking other items;
 ready; blocked on a machine task; blocked on a human task; blocked on a date. Operator items
