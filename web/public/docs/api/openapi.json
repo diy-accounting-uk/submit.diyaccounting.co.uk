@@ -101,13 +101,6 @@
         } ]
       }
     },
-    "/api/session/beacon" : {
-      "post" : {
-        "summary" : "Session beacon",
-        "description" : "Records a new browser session for activity monitoring",
-        "operationId" : "sessionBeacon"
-      }
-    },
     "/books/{bookId}" : {
       "put" : {
         "summary" : "Store a book version",
@@ -987,6 +980,13 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/session/beacon" : {
+      "post" : {
+        "summary" : "Session beacon",
+        "description" : "Records a new browser session for activity monitoring",
+        "operationId" : "sessionBeacon"
       }
     },
     "/support/ticket" : {
