@@ -1,0 +1,110 @@
+name: ga4 bigquery sync
+run-name: "ga4 bigquery sync (${{ inputs.dry_run == 'true' && 'dry run' || 'apply' }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: ga4-bigquery-sync-${{ github.ref_name }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the plan without changing anything'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'analytics/bigquery/**'
+      - 'analytics/ga4-bigquery.toml'
+      - 'scripts/ga4-bigquery-sync.js'
+      - '.github/workflows/ga4-bigquery-sync.yml'
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  ga4-bigquery-sync:
+    name: ${{ inputs.dry_run == 'true' && 'dry run' || 'apply' }}
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Resolve GA4 service account key
+        id: resolve
+        run: |
+          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$GA4_SERVICE_ACCOUNT_ARN" --query SecretString --output text)
+          echo "::add-mask::${SECRET_JSON}"
+          {
+            echo "credentials-json<<GA4_SERVICE_ACCOUNT_JSON_EOF"
+            echo "${SECRET_JSON}"
+            echo "GA4_SERVICE_ACCOUNT_JSON_EOF"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
+
+      - name: Run ga4-bigquery-sync
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            node scripts/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
+          else
+            node scripts/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
+          fi
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "# GA4 in BigQuery sync (${{ inputs.dry_run == 'true' && 'dry run' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f ga4-bigquery-sync.log ]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat ga4-bigquery-sync.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
