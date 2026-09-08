@@ -93,7 +93,8 @@ class SubmitEnvironmentCdkResourceTest {
         Template observability = Template.fromStack(env.observabilityStack);
         observability.resourceCountIs("AWS::CloudTrail::Trail", 1);
         observability.hasResourceProperties(
-                "AWS::CloudTrail::Trail", Match.objectLike(Map.of("IsMultiRegionTrail", true)));
+                "AWS::CloudTrail::Trail",
+                Match.objectLike(Map.of("IsMultiRegionTrail", true, "IncludeGlobalServiceEvents", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
 
         // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack

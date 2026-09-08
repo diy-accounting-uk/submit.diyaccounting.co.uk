@@ -171,7 +171,13 @@ public class DataQuality extends Construct {
         // ============================================================================
         for (Target target : this.targets) {
             var rulesetName = rulesetName(props.envName(), target.tableName());
-            var ruleset = CfnDataQualityRuleset.Builder.create(this, prefix + "-" + target.tableName() + "-Ruleset")
+            // The activity_events ruleset keeps the construct id it was first deployed under: a
+            // Glue ruleset name is unique, and a changed logical id makes CloudFormation create the
+            // replacement before it deletes the original, which the change set refuses.
+            var rulesetId = ACTIVITY_EVENTS_TABLE_NAME.equals(target.tableName())
+                    ? prefix + "-DataQualityRuleset"
+                    : prefix + "-" + target.tableName() + "-Ruleset";
+            var ruleset = CfnDataQualityRuleset.Builder.create(this, rulesetId)
                     .name(rulesetName)
                     .description("Data quality checks over " + target.tableName())
                     .ruleset(target.ruleset())
