@@ -23,7 +23,7 @@ describe("buildStripeProductsFromCatalog", () => {
     expect(byBundleId["resident-vat"]).toMatchObject({ name: "Resident VAT", priceAmount: 99, currency: "gbp", interval: "month" });
     expect(byBundleId["resident-itsa"]).toMatchObject({ name: "Resident ITSA", priceAmount: 99, currency: "gbp", interval: "month" });
     expect(byBundleId["resident-ltd"]).toMatchObject({ name: "Resident Ltd", priceAmount: 99, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident-books"]).toMatchObject({ name: "Resident Books", priceAmount: 99, currency: "gbp", interval: "month" });
+    expect(byBundleId["resident-diya-gl"]).toMatchObject({ name: "DIYA-GL", priceAmount: 99, currency: "gbp", interval: "month" });
   });
 
   test("skips a bundle without Stripe price fields", () => {

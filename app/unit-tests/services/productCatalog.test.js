@@ -102,7 +102,7 @@ describe("productCatalogHelper", () => {
     const bundleIds = getStripeSubscriptionBundles(catalog)
       .map((b) => b.id)
       .sort();
-    expect(bundleIds).toEqual(["resident-books", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
+    expect(bundleIds).toEqual(["resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
   });
 
   describe("isActivityListedInEnvironment", () => {

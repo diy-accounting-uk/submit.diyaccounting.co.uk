@@ -170,13 +170,13 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # ====================
 # Hidden in production
 
-# resident-books: DIYA-GL book storage subscription — listed in every environment
+# resident-diya-gl: DIYA-GL book storage subscription — publicly visible, no pass required
 # Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
 # Tokens: 100 granted, refreshing monthly
 # Enables: saving and loading DIYA-GL books
 [[bundles]]
-id = "resident-books"
-name = "Resident Books"
+id = "resident-diya-gl"
+name = "DIYA-GL"
 description = "Save and load DIYA-GL books. £0.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
@@ -187,6 +187,10 @@ tokenRefreshInterval = "P1M"
 stripePriceAmount = 99
 stripeCurrency = "gbp"
 stripeInterval = "month"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
+# listedInEnvironments
+# ====================
+# Hidden in production
 
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
@@ -386,9 +390,9 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
 display = "on-entitlement"
-bundles = ["resident-books"]
+bundles = ["resident-diya-gl"]
 metered = false
-# The books PUT route (app/services/booksEntitlement.js) checks the resident-books bundle
+# The DIYA-GL storage PUT route (app/services/booksEntitlement.js) checks the resident-diya-gl bundle
 # id directly rather than reading this activity, so this entry documents the entitlement
 # without adding a second enforcement path.
 paths = ["^/api/v1/books.*"]

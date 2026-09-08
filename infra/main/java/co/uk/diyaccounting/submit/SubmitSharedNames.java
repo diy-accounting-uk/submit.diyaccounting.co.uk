@@ -2164,7 +2164,7 @@ public class SubmitSharedNames {
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
 
-        // Books List GET Lambda (books JWT auth, scoped to the books app client)
+        // Books List GET Lambda (DIYA-GL JWT auth, scoped to the DIYA-GL app client)
         this.booksListGetLambdaHttpMethod = HttpMethod.GET;
         this.booksListGetLambdaUrlPath = "/api/v1/books";
         this.booksListGetLambdaJwtAuthorizer = false;
