@@ -45,7 +45,9 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
    create hit "already exists"; every suite then failed or was cancelled on a set the operator
    called hosed. Fix 34116c67, pushed at 21:4x UTC on the operator's word without waiting for a
    destroy: `deploy-cdk-stack.yml` deletes a provider log group in either region when no stack
-   of that name stands before deploying. The fourth run's ids go here. A
+   of that name stands before deploying. That push started only test (34279675154) and CodeQL
+   (34279679245), since the workflow it touched is outside `deploy.yml`'s path filter, so the
+   fourth deploy was dispatched: 34279784522 (21:5x UTC). A
    failure gets its fix committed on the batch and pushed once the run has completed, never
    while a `deploy environment` or `deploy` run is in progress. A stale ci set (a resource
    CloudFormation records but AWS lacks) is destroyed from the branch ref before the next
@@ -68,8 +70,12 @@ DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it
 (`agent-a87458237abeb2e66`). The operator's instruction of 21:3x UTC: it does not join the
 batch; when it lands, create a branch off `claude/b13-board` (`claude/ops-spreadsheets-role`),
 cherry-pick the commit there, push that branch once and open its PR against `claude/b13-board`,
-so its environment deploy proves the ci role while PR #153 stays as it is. The spreadsheets
-session has the ARNs.
+so its environment deploy proves the ci role while PR #153 stays as it is. Done: the role is
+PR #154 (`claude/ops-spreadsheets-role`, tip 39c89124, pushed 21:5x UTC, base `claude/b13-board`);
+its runs' ids go here. The role leaves out the subject-hash salt read the purge script needs
+(another repository's identity reading the salt would also trip the salt-read alarm), so the
+spreadsheets run skips the purge; the spreadsheets session has the ARNs and that gap. After
+PR #153 merges, PR #154's base moves to main (`gh pr edit 154 --base main`) and it merges next.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
