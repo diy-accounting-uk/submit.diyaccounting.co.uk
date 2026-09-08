@@ -212,7 +212,7 @@ public class IdentityStack extends Stack {
 
         var preTokenGenFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreTokenGeneration")
                 .functionName(preTokenGenFunctionName)
-                .runtime(Runtime.NODEJS_22_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("index.handler")
                 .code(Code.fromAsset(preTokenGenAssetDir.toString()))
