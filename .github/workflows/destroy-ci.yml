@@ -67,12 +67,15 @@ jobs:
         run: |
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
+          # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
+          # and this run is on a schedule. A reusable workflow call inherits github.event_name from
+          # the caller, so an explicit deployment-name must win over the event.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
+          DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
           if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" = "schedule" ]; then
+          elif [ -z "$DEPLOYMENT_NAME" ] && [ "$EVENT_NAME" = "schedule" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
           else
             echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
@@ -381,14 +384,18 @@ jobs:
           # A deployment can lose every stack an older self-destruct pass knew to delete except
           # one it didn't (added after that pass's stack list was written), leaving only that one
           # stack standing with no sibling to name the deployment through PUBLIC/PUBLISHED/DEPLOYED
-          # above. Find those by scanning live stacks directly, so the next sweep still finds them.
-          LEFTOVER_STACK_NAMES=$(aws cloudformation describe-stacks --region eu-west-2 \
-            --query "Stacks[].StackName" --output text 2>/dev/null | tr '\t' '\n' \
-            | grep -E '^ci-[a-z0-9]+-app-' || echo "")
+          # above. Find those by scanning live stacks directly, so the next sweep still finds them,
+          # even when only a single app or del stack is what's left of a deployment.
+          LEFTOVER_STACK_NAMES=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[].StackName" --output text 2>/dev/null
+            done | tr '\t' '\n' | grep -E '^ci-[a-zA-Z0-9-]+-(app|del)-' || echo ""
+          )
 
           LEFTOVER_DEPLOYMENT_NAMES=""
           for STACK_NAME in $LEFTOVER_STACK_NAMES; do
-            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(ci-[a-z0-9]+)-app-.*/\1/')
+            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(ci-[a-zA-Z0-9-]+)-(app|del)-.*/\1/')
             if [ "$PREFIX" != "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME" ]; then
               LEFTOVER_DEPLOYMENT_NAMES="$LEFTOVER_DEPLOYMENT_NAMES $PREFIX"
             fi
@@ -447,6 +454,36 @@ jobs:
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
           echo "SWEEPER_HIT=$SWEEPER_HIT" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+
+      # The keep list above always protects the deployment SSM names as last-known-good, so if
+      # that deployment's own stacks are already gone (an explicit dispatch destroyed it directly,
+      # bypassing the keep list, or the last straggler stack from the leftover scan above finally
+      # cleared), the pointer is left naming nothing. Clear it so a future sweep, and every other
+      # workflow that reads it, stop treating an empty name as something to protect or fall back to.
+      - name: Clear last-known-good pointer if it names a deployment with no stacks left
+        run: |
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+
+          if [ -z "$LAST_KNOWN_GOOD" ] || [ "$LAST_KNOWN_GOOD" = "None" ]; then
+            echo "No last-known-good ci deployment set, nothing to check"
+            exit 0
+          fi
+
+          REMAINING_STACKS=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[?starts_with(StackName, '${LAST_KNOWN_GOOD}-')].StackName" \
+                --output text 2>/dev/null || echo ""
+            done | tr '\t' '\n' | grep -c . || true
+          )
+
+          if [ "${REMAINING_STACKS:-0}" -eq 0 ]; then
+            echo "Last-known-good ci deployment $LAST_KNOWN_GOOD has no stacks left, clearing $PARAMETER_NAME"
+            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "" --overwrite
+          else
+            echo "Last-known-good ci deployment $LAST_KNOWN_GOOD still has $REMAINING_STACKS stack(s), leaving $PARAMETER_NAME alone"
+          fi
 
     outputs:
       sweeper-hit: ${{ steps.select-stack.outputs.SWEEPER_HIT }}
@@ -719,3 +756,99 @@ jobs:
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
+
+      # CDK custom-resource provider Lambdas create their own log groups outside the stacks, so
+      # they survive stack deletion with no retention.
+      - name: Delete leftover Lambda log groups
+        if: ${{ !cancelled() }}
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          set -euo pipefail
+          for REGION in eu-west-2 us-east-1; do
+            REMAINING=$(aws cloudformation describe-stacks --region "$REGION" \
+              --query "Stacks[?starts_with(StackName, '${DEPLOYMENT}-')].StackName" --output text)
+            if [ -n "$REMAINING" ] && [ "$REMAINING" != "None" ]; then
+              echo "Stacks still present for ${DEPLOYMENT} in ${REGION}, leaving its log groups: ${REMAINING}"
+              continue
+            fi
+            LOG_GROUPS=$(aws logs describe-log-groups --region "$REGION" \
+              --log-group-name-prefix "/aws/lambda/${DEPLOYMENT}-" \
+              --query "logGroups[].logGroupName" --output text | tr '\t' '\n')
+            for LOG_GROUP in $LOG_GROUPS; do
+              [ -z "$LOG_GROUP" ] || [ "$LOG_GROUP" = "None" ] && continue
+              echo "Deleting log group ${LOG_GROUP} in ${REGION}"
+              aws logs delete-log-group --region "$REGION" --log-group-name "$LOG_GROUP" \
+                || echo "Failed to delete ${LOG_GROUP} in ${REGION}"
+            done
+          done
+
+      # DORA row for the one-stop dashboard, written whether this destroy run succeeded or
+      # failed, so a failed teardown counts towards the failure rate rather than leaving a gap.
+      - name: Build the DORA row
+        if: always()
+        id: dora-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DORA_WORKFLOW: ${{ github.workflow }}
+          DORA_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
+          DORA_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          DORA_BRANCH: ${{ github.ref_name }}
+          DORA_SHA: ${{ github.sha }}
+          DORA_RUN_ID: ${{ github.run_id }}
+          DORA_RUN_ATTEMPT: ${{ github.run_attempt }}
+          DORA_RUN_NUMBER: ${{ github.run_number }}
+          DORA_ACTOR: ${{ github.actor }}
+          DORA_TRIGGER: ${{ github.event_name }}
+          DORA_REPOSITORY: ${{ github.repository }}
+          DORA_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${DORA_REPOSITORY}/actions/runs/${DORA_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          MERGED_AT=$(gh api "repos/${DORA_REPOSITORY}/commits/${DORA_SHA}/pulls" --jq '.[0].merged_at // empty' || echo "")
+
+          if [ "$DORA_JOB_STATUS" = "success" ]; then CONCLUSION="success"; else CONCLUSION="failure"; fi
+
+          ROW=$(jq -nc \
+            --arg workflow "$DORA_WORKFLOW" \
+            --arg environment "$DORA_ENVIRONMENT" \
+            --arg deployment "$DORA_DEPLOYMENT" \
+            --arg branch "$DORA_BRANCH" \
+            --arg sha "$DORA_SHA" \
+            --arg run_id "$DORA_RUN_ID" \
+            --argjson run_attempt "$DORA_RUN_ATTEMPT" \
+            --argjson run_number "$DORA_RUN_NUMBER" \
+            --arg actor "$DORA_ACTOR" \
+            --arg trigger "$DORA_TRIGGER" \
+            --arg started_at "$STARTED_AT" \
+            --arg finished_at "$FINISHED_AT" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg conclusion "$CONCLUSION" \
+            --arg merged_at "$MERGED_AT" \
+            '{
+              workflow: $workflow, environment: $environment, deployment: $deployment,
+              branch: $branch, sha: $sha, run_id: $run_id, run_attempt: $run_attempt,
+              run_number: $run_number, actor: $actor, trigger: $trigger,
+              started_at: $started_at, finished_at: $finished_at,
+              duration_seconds: $duration_seconds, conclusion: $conclusion,
+              merged_at: (if $merged_at == "" then null else $merged_at end),
+              lead_time_seconds: (
+                if $merged_at == "" then null
+                else (($finished_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)
+                      - ($merged_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime))
+                end
+              )
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the DORA row to the lake
+        if: always()
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.dora-row.outputs.key }}
+          row: ${{ steps.dora-row.outputs.row }}

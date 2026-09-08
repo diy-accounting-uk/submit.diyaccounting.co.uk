@@ -90,6 +90,9 @@ public class SubmitSharedNames {
     public String hmrcItsaBusinessDetailsGetAsyncRequestsTableName;
     public String hmrcItsaObligationsGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName;
+    public String hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName;
+    public String hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName;
+    public String hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName;
     public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
@@ -132,6 +135,7 @@ public class SubmitSharedNames {
     public String analyticsStackId;
     public String ingestionStackId;
     public String securityDetectionStackId;
+    public String securityBaselineStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -149,6 +153,11 @@ public class SubmitSharedNames {
     public String dynamoStreamToFirehoseLambdaHandler;
     public String dynamoStreamToFirehoseLambdaArn;
     public String dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn;
+    public String alarmStateChangeDeliveryStreamName;
+    public String alarmStateChangeTransformLambdaFunctionName;
+    public String alarmStateChangeTransformLambdaHandler;
+    public String alarmStateChangeTransformLambdaArn;
+    public String alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn;
 
     // Env-level Telegram forwarder Lambda (EventBridge target, not API): one per environment,
     // shared by every deployment's OpsStack rules instead of each deployment building its own.
@@ -370,6 +379,51 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodPostLambdaUrlPath;
     public boolean hmrcItsaSelfEmploymentPeriodPostLambdaJwtAuthorizer;
     public boolean hmrcItsaSelfEmploymentPeriodPostLambdaCustomAuthorizer;
+
+    public String hmrcItsaSelfEmploymentPeriodsGetIngestLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodsGetLambdaQueueName;
+    public String hmrcItsaSelfEmploymentPeriodsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaSelfEmploymentPeriodsGetLambdaHttpMethod;
+    public String hmrcItsaSelfEmploymentPeriodsGetLambdaUrlPath;
+    public boolean hmrcItsaSelfEmploymentPeriodsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaSelfEmploymentPeriodsGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaSelfEmploymentPeriodGetIngestLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodGetWorkerLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodGetWorkerLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodGetLambdaQueueName;
+    public String hmrcItsaSelfEmploymentPeriodGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaSelfEmploymentPeriodGetLambdaHttpMethod;
+    public String hmrcItsaSelfEmploymentPeriodGetLambdaUrlPath;
+    public boolean hmrcItsaSelfEmploymentPeriodGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaSelfEmploymentPeriodGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler;
+    public String hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn;
+    public String hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentPeriodPutLambdaQueueName;
+    public String hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaSelfEmploymentPeriodPutLambdaHttpMethod;
+    public String hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath;
+    public boolean hmrcItsaSelfEmploymentPeriodPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaSelfEmploymentPeriodPutLambdaCustomAuthorizer;
 
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
@@ -747,6 +801,7 @@ public class SubmitSharedNames {
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
         this.securityDetectionStackId = "%s-env-SecurityDetectionStack".formatted(props.envName);
+        this.securityBaselineStackId = "%s-env-SecurityBaselineStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
@@ -792,6 +847,14 @@ public class SubmitSharedNames {
                 .formatted(props.regionName, props.awsAccount, this.dynamoStreamToFirehoseLambdaFunctionName);
         this.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.dynamoStreamToFirehoseLambdaArn, this.provisionedConcurrencyAliasName);
+        this.alarmStateChangeDeliveryStreamName = "%s-alarm-state-changes".formatted(this.envResourceNamePrefix);
+        this.alarmStateChangeTransformLambdaFunctionName =
+                "%s-alarm-state-change-transform".formatted(this.envResourceNamePrefix);
+        this.alarmStateChangeTransformLambdaHandler = "app/functions/analytics/alarmStateChangeTransform.handler";
+        this.alarmStateChangeTransformLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
+                .formatted(props.regionName, props.awsAccount, this.alarmStateChangeTransformLambdaFunctionName);
+        this.alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.alarmStateChangeTransformLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Env-level Telegram forwarder Lambda: one instance shared by every deployment's OpsStack
         // rules, instead of each deployment building its own copy of the same catch-all rule.
@@ -836,6 +899,12 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-obligations-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-period-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-self-employment-periods-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-self-employment-period-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-self-employment-period-put-async-requests".formatted(this.envResourceNamePrefix);
         this.companiesHouseAccountsAsyncRequestsTableName =
                 "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
@@ -1476,6 +1545,155 @@ public class SubmitSharedNames {
                                 false,
                                 "When true, validates HMRC Fraud Prevention Headers"))));
 
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaUrlPath = "/api/v1/hmrc/itsa/self-employment/periods";
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerName = "hmrcItsaSelfEmploymentPeriodsGet.ingestHandler";
+        var hmrcItsaSelfEmploymentPeriodsGetLambdaWorkerHandlerName = "hmrcItsaSelfEmploymentPeriodsGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentPeriodPost uses.
+        var hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerDashed = "hmrc-itsa-se-periods-get";
+        this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodsGetLambdaWorkerHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn);
+        this.hmrcItsaSelfEmploymentPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaSelfEmploymentPeriodsGetLambdaHttpMethod,
+                this.hmrcItsaSelfEmploymentPeriodsGetLambdaUrlPath,
+                "List ITSA self-employment period summaries",
+                "Lists the cumulative period summaries filed for a self-employment business in a tax year",
+                "getItsaSelfEmploymentPeriods",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaUrlPath = "/api/v1/hmrc/itsa/self-employment/period";
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaCustomAuthorizer = true;
+        var hmrcItsaSelfEmploymentPeriodGetLambdaHandlerName = "hmrcItsaSelfEmploymentPeriodGet.ingestHandler";
+        var hmrcItsaSelfEmploymentPeriodGetLambdaWorkerHandlerName = "hmrcItsaSelfEmploymentPeriodGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentPeriodPost uses.
+        var hmrcItsaSelfEmploymentPeriodGetLambdaHandlerDashed = "hmrc-itsa-se-period-get";
+        this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaSelfEmploymentPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodGetLambdaHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodGetLambdaWorkerHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn);
+        this.hmrcItsaSelfEmploymentPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaSelfEmploymentPeriodGetLambdaHttpMethod,
+                this.hmrcItsaSelfEmploymentPeriodGetLambdaUrlPath,
+                "Retrieve an ITSA self-employment period summary",
+                "Retrieves one self-employment period summary by tax year and period id",
+                "getItsaSelfEmploymentPeriod",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("periodId", "query", true, "The period id from a listed period summary"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath = "/api/v1/hmrc/itsa/self-employment/period";
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaCustomAuthorizer = true;
+        var hmrcItsaSelfEmploymentPeriodPutLambdaHandlerName = "hmrcItsaSelfEmploymentPeriodPut.ingestHandler";
+        var hmrcItsaSelfEmploymentPeriodPutLambdaWorkerHandlerName = "hmrcItsaSelfEmploymentPeriodPut.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentPeriodPost uses.
+        var hmrcItsaSelfEmploymentPeriodPutLambdaHandlerDashed = "hmrc-itsa-se-period-put";
+        this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaSelfEmploymentPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodPutLambdaHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentPeriodPutLambdaWorkerHandlerName);
+        this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn);
+        this.hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaSelfEmploymentPeriodPutLambdaHttpMethod,
+                this.hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath,
+                "Amend an ITSA self-employment period summary",
+                "Amends the income, expenses and disallowable expenses of an existing self-employment period summary",
+                "putItsaSelfEmploymentPeriod",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("periodId", "body", true, "The period id from a listed period summary"),
+                        new ApiParameter("periodIncome", "body", false, "Income for the period"),
+                        new ApiParameter("periodExpenses", "body", false, "Expenses for the period"),
+                        new ApiParameter("periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
         this.receiptGetLambdaHttpMethod = HttpMethod.GET;
         this.receiptGetLambdaUrlPath = "/api/v1/hmrc/receipt";
         this.receiptGetLambdaJwtAuthorizer = true;
@@ -2025,9 +2243,14 @@ public class SubmitSharedNames {
         this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, this.provisionedConcurrencyAliasName);
 
-        // Session Beacon POST Lambda (public, no auth)
+        // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
+        // the bare /api/session/beacon the endpoint used before: CloudFront only forwards
+        // /api/v1/* and /api/v1/books/* to API Gateway, so a bare /api/* path fell through to
+        // the default S3 behaviour (GET/HEAD/OPTIONS only) and every POST here was rejected by
+        // CloudFront before it ever reached this Lambda - zero invocations, and so zero
+        // new-session and logout activity events ever reached the lake.
         this.sessionBeaconPostLambdaHttpMethod = HttpMethod.POST;
-        this.sessionBeaconPostLambdaUrlPath = "/api/session/beacon";
+        this.sessionBeaconPostLambdaUrlPath = "/api/v1/session/beacon";
         this.sessionBeaconPostLambdaJwtAuthorizer = false;
         this.sessionBeaconPostLambdaCustomAuthorizer = false;
         var sessionBeaconPostLambdaHandlerName = "sessionBeaconPost.ingestHandler";
@@ -2048,10 +2271,10 @@ public class SubmitSharedNames {
                 "Records a new browser session for activity monitoring",
                 "sessionBeacon"));
 
-        // Billing Checkout POST Lambda (JWT auth)
+        // Billing Checkout POST Lambda (billing JWT auth: main and books client audiences)
         this.billingCheckoutPostLambdaHttpMethod = HttpMethod.POST;
-        this.billingCheckoutPostLambdaUrlPath = "/api/v1/billing/checkout-session";
-        this.billingCheckoutPostLambdaJwtAuthorizer = true;
+        this.billingCheckoutPostLambdaUrlPath = "/api/v1/billing/checkout";
+        this.billingCheckoutPostLambdaJwtAuthorizer = false;
         this.billingCheckoutPostLambdaCustomAuthorizer = false;
         var billingCheckoutPostLambdaHandlerName = "billingCheckoutPost.ingestHandler";
         var billingCheckoutPostLambdaHandlerDashed =
@@ -2073,7 +2296,7 @@ public class SubmitSharedNames {
 
         // Billing Checkout Session GET Lambda (JWT auth)
         this.billingCheckoutSessionGetLambdaHttpMethod = HttpMethod.GET;
-        this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout-session/{id}";
+        this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout/{id}";
         this.billingCheckoutSessionGetLambdaJwtAuthorizer = true;
         this.billingCheckoutSessionGetLambdaCustomAuthorizer = false;
         var billingCheckoutSessionGetLambdaHandlerName = "billingCheckoutSessionGet.ingestHandler";
@@ -2095,10 +2318,10 @@ public class SubmitSharedNames {
                 "getCheckoutSession",
                 List.of(new ApiParameter("id", "path", true, "The Stripe checkout session id"))));
 
-        // Billing Portal GET Lambda (JWT auth)
+        // Billing Portal GET Lambda (billing JWT auth: main and books client audiences)
         this.billingPortalGetLambdaHttpMethod = HttpMethod.GET;
         this.billingPortalGetLambdaUrlPath = "/api/v1/billing/portal";
-        this.billingPortalGetLambdaJwtAuthorizer = true;
+        this.billingPortalGetLambdaJwtAuthorizer = false;
         this.billingPortalGetLambdaCustomAuthorizer = false;
         var billingPortalGetLambdaHandlerName = "billingPortalGet.ingestHandler";
         var billingPortalGetLambdaHandlerDashed =
@@ -2164,7 +2387,7 @@ public class SubmitSharedNames {
                 "Receives Stripe webhook events for subscription lifecycle",
                 "stripeWebhook"));
 
-        // Books List GET Lambda (books JWT auth, scoped to the books app client)
+        // Books List GET Lambda (DIYA-GL JWT auth, scoped to the DIYA-GL app client)
         this.booksListGetLambdaHttpMethod = HttpMethod.GET;
         this.booksListGetLambdaUrlPath = "/api/v1/books";
         this.booksListGetLambdaJwtAuthorizer = false;

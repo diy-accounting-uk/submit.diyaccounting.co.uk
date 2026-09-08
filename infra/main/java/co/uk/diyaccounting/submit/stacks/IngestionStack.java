@@ -433,6 +433,84 @@ public class IngestionStack extends Stack {
                 "Pull two days ago's GA4 BigQuery event export into the analytics lake");
 
         // ============================================================================
+        // GA4 daily aggregate pull job: the lake's copy of the four one-stop-dashboard tables
+        // analytics/ga4-bigquery.toml maintains in BigQuery's ga4_daily dataset
+        // ============================================================================
+        var ga4DailyPullFunctionName = prefix + "-ga4-daily-pull";
+
+        var ga4DailyPullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+        if (props.ga4BigQueryProjectId() != null
+                && !props.ga4BigQueryProjectId().isBlank()) {
+            ga4DailyPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
+        }
+        if (props.ga4BigQueryLocation() != null
+                && !props.ga4BigQueryLocation().isBlank()) {
+            ga4DailyPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
+        }
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
+            ga4DailyPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
+        }
+
+        IRepository ga4DailyPullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-Ga4DailyPull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        // Same exposure as the other GA4 jobs above: env-scoped, stable function name - use the
+        // idempotent create-if-missing path, not a plain LogGroup.
+        var ga4DailyPullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-Ga4DailyPullLogGroup", "/aws/lambda/" + ga4DailyPullFunctionName);
+
+        var ga4DailyPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4DailyPullFn")
+                .functionName(ga4DailyPullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        ga4DailyPullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/ga4DailyPull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(5))
+                .memorySize(512)
+                .architecture(Architecture.ARM_64)
+                .environment(ga4DailyPullEnv)
+                .logGroup(ga4DailyPullLogGroup.logGroup())
+                .build();
+        ga4DailyPullLambda.getNode().addDependency(ga4DailyPullLogGroup.ensureResource());
+
+        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_daily/*"))
+                .build());
+
+        // Same GA4 service-account secret the other GA4 jobs read: one BigQuery-enabled service
+        // account for the Data API, the raw event export and these daily aggregates alike.
+        if (props.ga4ServiceAccountArn() != null
+                && !props.ga4ServiceAccountArn().isBlank()) {
+            var ga4DailyPullSecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
+                    ? props.ga4ServiceAccountArn()
+                    : props.ga4ServiceAccountArn() + "-*";
+            ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(ga4DailyPullSecretArnWithWildcard))
+                    .build());
+        }
+
+        registerIngestionJob(
+                "Ga4DailyPull",
+                ga4DailyPullFunctionName,
+                ga4DailyPullLambda,
+                "Pull two days ago's GA4 daily aggregate tables into the analytics lake");
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -455,6 +533,7 @@ public class IngestionStack extends Stack {
                         .stripeReconcileLambda(stripeReconcileLambda)
                         .ga4ReportPullLambda(ga4ReportPullLambda)
                         .ga4EventExportPullLambda(ga4EventExportPullLambda)
+                        .ga4DailyPullLambda(ga4DailyPullLambda)
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .build());

@@ -21,7 +21,7 @@ const logger = createLogger({ source: "app/functions/billing/billingCheckoutSess
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "get", "/api/v1/billing/checkout-session/:id", ingestHandler);
+  registerLambdaRoute(app, "get", "/api/v1/billing/checkout/:id", ingestHandler);
 }
 /* v8 ignore stop */
 

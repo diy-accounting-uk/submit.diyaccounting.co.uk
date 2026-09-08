@@ -25,6 +25,7 @@ import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.SingleValueWidget;
+import software.amazon.awscdk.services.cloudwatch.TextWidget;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -229,10 +230,64 @@ public class AnalyticsDashboard extends Construct {
 
         // ============================================================================
         // Dashboard
+        //
+        // Laid out by objective, in the order PLAN_ONE_STOP_DASHBOARD.md's objective table
+        // lists them (uptime, conversion to submission, conversion to paid, running cost),
+        // each objective's widgets under its own heading. HMRC authentications, bundle
+        // operations, sign-ups and bundle grants moved here from the operations dashboard,
+        // which counted them as Lambda invocations of the live deployment - a fair proxy on
+        // the day but wrong as history, since a deploy renames the functions.
         // ============================================================================
         var dashboardName = sharedNames.envResourceNamePrefix + "-analytics";
         var dashboardRows = new ArrayList<List<IWidget>>();
 
+        dashboardRows.add(List.of(heading("Uptime")));
+        dashboardRows.add(List.of(
+                SingleValueWidget.Builder.create()
+                        .title("Availability SLI")
+                        .metrics(List.of(search("ProbePassRate", "Suite")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Error Budget Remaining")
+                        .left(List.of(search("ErrorBudgetRemaining", "Suite")))
+                        .width(12)
+                        .height(6)
+                        .build()));
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("Alarms Fired by Family")
+                .left(List.of(search("AlarmsFired", "Family")))
+                .width(24)
+                .height(6)
+                .build()));
+        dashboardRows.add(List.of(GraphWidget.Builder.create()
+                .title("HMRC Failures by Class")
+                .left(List.of(search("HmrcFailures", "FailureClass")))
+                .width(24)
+                .height(6)
+                .build()));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Deployment Frequency")
+                        .left(List.of(search("Deploys", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Lead Time for Changes (hours)")
+                        .left(List.of(search("DeployLeadTimeHours", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Deploy Failure Rate")
+                        .left(List.of(search("DeployFailureRate", "Environment")))
+                        .width(8)
+                        .height(6)
+                        .build()));
+
+        dashboardRows.add(List.of(heading("Conversion to submission")));
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
                         .title("Active Users")
@@ -246,14 +301,38 @@ public class AnalyticsDashboard extends Construct {
                         .width(12)
                         .height(6)
                         .build()));
-
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Completions by Activity")
+                        .left(List.of(search("CompletionsByActivity", "Activity")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Sessions by Channel")
+                        .left(List.of(search("SessionsByChannel", "Channel")))
+                        .width(12)
+                        .height(6)
+                        .build()));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("New Accounts (Sign-ups)")
+                        .left(List.of(metric("NewAccounts")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("HMRC Authentications")
+                        .left(List.of(metric("HmrcAuthentications")))
+                        .width(12)
+                        .height(6)
+                        .build()));
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("Submissions by Outcome")
                 .left(List.of(search("Submissions", "Outcome")))
                 .width(24)
                 .height(6)
                 .build()));
-
         dashboardRows.add(List.of(SingleValueWidget.Builder.create()
                 .title("Login-to-Submission Conversion (7 day)")
                 .metrics(List.of(metric("LoginToSubmissionConversion")))
@@ -261,27 +340,32 @@ public class AnalyticsDashboard extends Construct {
                 .height(4)
                 .build()));
 
+        dashboardRows.add(List.of(heading("Conversion to paid")));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Bundle Operations")
+                        .left(List.of(search("BundleOperations", "Activity")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Bundle Grants")
+                        .left(List.of(metric("BundleGrants")))
+                        .width(12)
+                        .height(6)
+                        .build()));
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("Revenue (GBP) by Product")
                 .left(List.of(search("RevenueGbp", "Product")))
                 .width(24)
                 .height(6)
                 .build()));
-
         dashboardRows.add(List.of(GraphWidget.Builder.create()
                 .title("Passes Issued and Redeemed by Type")
                 .left(List.of(search("PassesIssued", "PassType"), search("PassesRedeemed", "PassType")))
                 .width(24)
                 .height(6)
                 .build()));
-
-        dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("HMRC Failures by Class")
-                .left(List.of(search("HmrcFailures", "FailureClass")))
-                .width(24)
-                .height(6)
-                .build()));
-
         // The three counts plotted together so a gap between sources is visible without a
         // query. Not the two gap metrics themselves: METRIC_DEFINITIONS in
         // analyticsMetricsPublish.js publishes only the three raw counts, and this widget reads
@@ -293,6 +377,10 @@ public class AnalyticsDashboard extends Construct {
                 .height(6)
                 .build()));
 
+        // Running cost has no widgets yet: the FOCUS cost export and cost-per-submission views
+        // land in a later row. The heading holds its place in the objective order.
+        dashboardRows.add(List.of(heading("Running cost")));
+
         this.dashboard = Dashboard.Builder.create(this, prefix + "-AnalyticsDashboard")
                 .dashboardName(dashboardName)
                 .widgets(dashboardRows)
@@ -303,6 +391,15 @@ public class AnalyticsDashboard extends Construct {
                 "AnalyticsDashboardUrl",
                 "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#dashboards:name="
                         + dashboardName);
+    }
+
+    /** A section heading, one per objective, above the widgets that answer it. */
+    private static TextWidget heading(String objective) {
+        return TextWidget.Builder.create()
+                .markdown("## " + objective)
+                .width(24)
+                .height(1)
+                .build();
     }
 
     private static Metric metric(String metricName) {

@@ -66,12 +66,19 @@ jobs:
         run: |
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          # Compute isSweeping: true if sweep-for-stacks=true OR schedule trigger
+          # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
+          # and this run is on a schedule. A reusable workflow call inherits github.event_name from
+          # whatever triggered the caller, so deploy.yml's own daily schedule makes event_name
+          # "schedule" here too even when deploy.yml passed an explicit deployment-name to destroy.
+          # Trusting event_name alone then threw away that explicit name and swept instead, so the
+          # deployment deploy.yml had just replaced was judged by sweep-age rules, not destroyed
+          # outright. Only fall back to sweeping when no explicit deployment-name is present.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
+          DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
           if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
-          elif [ "$EVENT_NAME" = "schedule" ]; then
+          elif [ -z "$DEPLOYMENT_NAME" ] && [ "$EVENT_NAME" = "schedule" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
           else
             echo "isSweeping=false" | tee -a "$GITHUB_OUTPUT"
@@ -296,29 +303,33 @@ jobs:
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
           echo "Self-destruct delay hours: $SELF_DESTRUCT_DELAY_HOURS"
 
-          # Function to get the most recent creation time for a deployment's stacks
-          get_deployment_age_hours() {
+          # Report a deployment's age from its oldest stack's CreationTime, so a set the deploy
+          # pipeline is still in the middle of building looks exactly as old as it truly is, and
+          # whether any of its stacks is still mid-update (a CREATE_IN_PROGRESS/UPDATE_IN_PROGRESS/
+          # etc. status). Prints "<age_hours> <true|false>"; age_hours is -1 when no stack was found.
+          get_deployment_stack_info() {
             local deployment_name="$1"
-            local most_recent_timestamp=0
+            local oldest_timestamp=0
+            local has_in_progress="false"
 
-            echo "Checking age of deployment: $deployment_name" >&2
+            echo "Checking stacks for deployment: $deployment_name" >&2
 
             if ! [[ "$deployment_name" =~ ^prod-[a-zA-Z0-9-]+$ ]]; then
               echo "Invalid deployment name format: $deployment_name" >&2
-              echo "-1"
+              echo "-1 false"
               return
             fi
 
             for REGION in eu-west-2 us-east-1; do
               local stack_info=$(aws cloudformation describe-stacks \
                 --region "$REGION" \
-                --query "Stacks[?starts_with(StackName, '${deployment_name}-')].CreationTime" \
-                --output text 2>/dev/null | tr '\t' '\n' || echo "")
+                --query "Stacks[?starts_with(StackName, '${deployment_name}-')].[CreationTime,StackStatus]" \
+                --output text 2>/dev/null || echo "")
 
               if [ -n "$stack_info" ]; then
                 echo "Found stacks in $REGION for $deployment_name" >&2
 
-                while IFS= read -r creation_time; do
+                while IFS=$'\t' read -r creation_time stack_status; do
                   [ -z "$creation_time" ] && continue
                   local epoch=$(date -d "$creation_time" +%s 2>/dev/null)
                   if [ -z "$epoch" ]; then
@@ -329,25 +340,29 @@ jobs:
                     echo "Invalid epoch value: $epoch for creation time: $creation_time" >&2
                     continue
                   fi
-                  if [ "$epoch" -gt "$most_recent_timestamp" ]; then
-                    most_recent_timestamp="$epoch"
+                  if [ "$oldest_timestamp" -eq 0 ] || [ "$epoch" -lt "$oldest_timestamp" ]; then
+                    oldest_timestamp="$epoch"
+                  fi
+                  if [[ "$stack_status" == *_IN_PROGRESS ]]; then
+                    echo "Stack in $REGION for $deployment_name is $stack_status" >&2
+                    has_in_progress="true"
                   fi
                 done <<< "$stack_info"
               fi
             done
 
-            if [ "$most_recent_timestamp" -eq 0 ]; then
+            if [ "$oldest_timestamp" -eq 0 ]; then
               echo "No valid stacks found for deployment $deployment_name" >&2
-              echo "-1"
+              echo "-1 false"
               return
             fi
 
             local current_timestamp=$(date +%s)
-            local age_seconds=$((current_timestamp - most_recent_timestamp))
+            local age_seconds=$((current_timestamp - oldest_timestamp))
             local age_hours=$((age_seconds / 3600))
 
-            echo "Deployment $deployment_name age: $age_hours hours (most recent stack created at $(date -d "@$most_recent_timestamp" -Iseconds))" >&2
-            echo "$age_hours"
+            echo "Deployment $deployment_name age: $age_hours hours (oldest stack created at $(date -d "@$oldest_timestamp" -Iseconds)), in-progress=$has_in_progress" >&2
+            echo "$age_hours $has_in_progress"
           }
 
           STACK_DEPLOYMENT_NAMES_TO_KEEP=()
@@ -377,7 +392,31 @@ jobs:
           ALL_CANDIDATE_DEPLOYMENT_NAMES="$PUBLISHED_DEPLOYMENT_NAMES $DEPLOYED_DEPLOYMENT_NAMES"
           ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 
-          SELECTED_DEPLOYMENT_NAME=""
+          # A deployment can lose every stack an older self-destruct pass knew to delete except
+          # one it didn't (added after that pass's stack list was written), leaving only that one
+          # stack standing with no sibling to name the deployment through PUBLIC/PUBLISHED/DEPLOYED
+          # above. Find those by scanning live stacks directly, so the next sweep still finds them,
+          # even when only a single app or del stack is what's left of a deployment.
+          LEFTOVER_STACK_NAMES=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[].StackName" --output text 2>/dev/null
+            done | tr '\t' '\n' | grep -E '^prod-[a-zA-Z0-9-]+-(app|del)-' || echo ""
+          )
+
+          LEFTOVER_DEPLOYMENT_NAMES=""
+          for STACK_NAME in $LEFTOVER_STACK_NAMES; do
+            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(prod-[a-zA-Z0-9-]+)-(app|del)-.*/\1/')
+            if [ "$PREFIX" != "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME" ]; then
+              LEFTOVER_DEPLOYMENT_NAMES="$LEFTOVER_DEPLOYMENT_NAMES $PREFIX"
+            fi
+          done
+
+          echo "Leftover deployment names found from stray app stacks: $LEFTOVER_DEPLOYMENT_NAMES"
+          ALL_CANDIDATE_DEPLOYMENT_NAMES="$ALL_CANDIDATE_DEPLOYMENT_NAMES $LEFTOVER_DEPLOYMENT_NAMES"
+          ALL_CANDIDATE_DEPLOYMENT_NAMES=$(echo "$ALL_CANDIDATE_DEPLOYMENT_NAMES" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+          ELIGIBLE_DEPLOYMENT_NAMES=()
 
           for DEPLOYMENT_NAME in $ALL_CANDIDATE_DEPLOYMENT_NAMES; do
             [ -z "$DEPLOYMENT_NAME" ] && continue
@@ -395,10 +434,15 @@ jobs:
               continue
             fi
 
-            DEPLOYMENT_AGE_HOURS=$(get_deployment_age_hours "$DEPLOYMENT_NAME")
+            read -r DEPLOYMENT_AGE_HOURS DEPLOYMENT_IN_PROGRESS <<< "$(get_deployment_stack_info "$DEPLOYMENT_NAME")"
 
             if [ "$DEPLOYMENT_AGE_HOURS" -eq -1 ]; then
               echo "Could not determine age for $DEPLOYMENT_NAME, skipping"
+              continue
+            fi
+
+            if [ "$DEPLOYMENT_IN_PROGRESS" = "true" ]; then
+              echo "Skipping $DEPLOYMENT_NAME as one of its stacks is still *_IN_PROGRESS"
               continue
             fi
 
@@ -408,16 +452,23 @@ jobs:
             fi
 
             echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_DELAY_HOURS hours), eligible for destruction"
-
-            SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
-            echo "Selected deployment for destruction: Environment='prod', Deployment='$SELECTED_DEPLOYMENT_NAME'"
-            break
+            ELIGIBLE_DEPLOYMENT_NAMES+=("$DEPLOYMENT_NAME")
           done
 
-          if [ -z "$SELECTED_DEPLOYMENT_NAME" ]; then
+          # Destroy at most one set per run — the rest wait for the next sweep so each run's
+          # dependency-ordered stack deletion (and its CDK destroy cleanup pass) only ever targets
+          # a single deployment at a time.
+          if [ "${#ELIGIBLE_DEPLOYMENT_NAMES[@]}" -eq 0 ]; then
             echo "No prod stacks found for destruction"
+            SELECTED_DEPLOYMENT_NAME=""
             SWEEPER_HIT="false"
           else
+            SELECTED_DEPLOYMENT_NAME="${ELIGIBLE_DEPLOYMENT_NAMES[0]}"
+            echo "Selected deployment for destruction: Environment='prod', Deployment='$SELECTED_DEPLOYMENT_NAME'"
+            if [ "${#ELIGIBLE_DEPLOYMENT_NAMES[@]}" -gt 1 ]; then
+              REMAINING_ELIGIBLE_DEPLOYMENT_NAMES=("${ELIGIBLE_DEPLOYMENT_NAMES[@]:1}")
+              echo "Also eligible, left as candidates for the next run: ${REMAINING_ELIGIBLE_DEPLOYMENT_NAMES[*]}"
+            fi
             echo "Stacks found for destruction prod/${SELECTED_DEPLOYMENT_NAME}"
             SWEEPER_HIT="true"
           fi
@@ -426,6 +477,36 @@ jobs:
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
           echo "SWEEPER_HIT=$SWEEPER_HIT" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+
+      # The keep list above always protects the deployment SSM names as last-known-good, so if
+      # that deployment's own stacks are already gone (an explicit dispatch destroyed it directly,
+      # bypassing the keep list, or the last straggler stack from the leftover scan above finally
+      # cleared), the pointer is left naming nothing. Clear it so a future sweep, and every other
+      # workflow that reads it, stop treating an empty name as something to protect or fall back to.
+      - name: Clear last-known-good pointer if it names a deployment with no stacks left
+        run: |
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+
+          if [ -z "$LAST_KNOWN_GOOD" ] || [ "$LAST_KNOWN_GOOD" = "None" ]; then
+            echo "No last-known-good prod deployment set, nothing to check"
+            exit 0
+          fi
+
+          REMAINING_STACKS=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[?starts_with(StackName, '${LAST_KNOWN_GOOD}-')].StackName" \
+                --output text 2>/dev/null || echo ""
+            done | tr '\t' '\n' | grep -c . || true
+          )
+
+          if [ "${REMAINING_STACKS:-0}" -eq 0 ]; then
+            echo "Last-known-good prod deployment $LAST_KNOWN_GOOD has no stacks left, clearing $PARAMETER_NAME"
+            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "" --overwrite
+          else
+            echo "Last-known-good prod deployment $LAST_KNOWN_GOOD still has $REMAINING_STACKS stack(s), leaving $PARAMETER_NAME alone"
+          fi
 
     outputs:
       sweeper-hit: ${{ steps.select-stack.outputs.SWEEPER_HIT }}
@@ -749,3 +830,72 @@ jobs:
                 || echo "Failed to delete ${LOG_GROUP} in ${REGION}"
             done
           done
+
+      # DORA row for the one-stop dashboard, written whether this destroy run succeeded or
+      # failed, so a failed teardown counts towards the failure rate rather than leaving a gap.
+      - name: Build the DORA row
+        if: always()
+        id: dora-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DORA_WORKFLOW: ${{ github.workflow }}
+          DORA_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
+          DORA_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          DORA_BRANCH: ${{ github.ref_name }}
+          DORA_SHA: ${{ github.sha }}
+          DORA_RUN_ID: ${{ github.run_id }}
+          DORA_RUN_ATTEMPT: ${{ github.run_attempt }}
+          DORA_RUN_NUMBER: ${{ github.run_number }}
+          DORA_ACTOR: ${{ github.actor }}
+          DORA_TRIGGER: ${{ github.event_name }}
+          DORA_REPOSITORY: ${{ github.repository }}
+          DORA_JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${DORA_REPOSITORY}/actions/runs/${DORA_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          MERGED_AT=$(gh api "repos/${DORA_REPOSITORY}/commits/${DORA_SHA}/pulls" --jq '.[0].merged_at // empty' || echo "")
+
+          if [ "$DORA_JOB_STATUS" = "success" ]; then CONCLUSION="success"; else CONCLUSION="failure"; fi
+
+          ROW=$(jq -nc \
+            --arg workflow "$DORA_WORKFLOW" \
+            --arg environment "$DORA_ENVIRONMENT" \
+            --arg deployment "$DORA_DEPLOYMENT" \
+            --arg branch "$DORA_BRANCH" \
+            --arg sha "$DORA_SHA" \
+            --arg run_id "$DORA_RUN_ID" \
+            --argjson run_attempt "$DORA_RUN_ATTEMPT" \
+            --argjson run_number "$DORA_RUN_NUMBER" \
+            --arg actor "$DORA_ACTOR" \
+            --arg trigger "$DORA_TRIGGER" \
+            --arg started_at "$STARTED_AT" \
+            --arg finished_at "$FINISHED_AT" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg conclusion "$CONCLUSION" \
+            --arg merged_at "$MERGED_AT" \
+            '{
+              workflow: $workflow, environment: $environment, deployment: $deployment,
+              branch: $branch, sha: $sha, run_id: $run_id, run_attempt: $run_attempt,
+              run_number: $run_number, actor: $actor, trigger: $trigger,
+              started_at: $started_at, finished_at: $finished_at,
+              duration_seconds: $duration_seconds, conclusion: $conclusion,
+              merged_at: (if $merged_at == "" then null else $merged_at end),
+              lead_time_seconds: (
+                if $merged_at == "" then null
+                else (($finished_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)
+                      - ($merged_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime))
+                end
+              )
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the DORA row to the lake
+        if: always()
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.dora-row.outputs.key }}
+          row: ${{ steps.dora-row.outputs.row }}

@@ -254,6 +254,15 @@ public class ApiStack extends Stack {
                 .jwtAudience(List.of(props.booksUserPoolClientId()))
                 .build();
 
+        // Same user pool and issuer again, but with both audiences: the checkout and portal
+        // routes accept a token from either client, since a DIYA-GL subscriber checks out and
+        // manages their subscription with a books-client token, while everyone else uses the
+        // main client's.
+        HttpJwtAuthorizer billingJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
+                        props.resourceNamePrefix() + "-BillingCognitoAuthorizer", issuer)
+                .jwtAudience(List.of(props.userPoolClientId(), props.booksUserPoolClientId()))
+                .build();
+
         // Create custom Lambda authorizer for X-Authorization header
         IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
                 this,
@@ -298,6 +307,7 @@ public class ApiStack extends Stack {
                     apiLambdaProps,
                     jwtAuthorizer,
                     booksJwtAuthorizer,
+                    billingJwtAuthorizer,
                     customAuthorizer,
                     createdRouteKeys,
                     firstCreatorByRoute);
@@ -386,6 +396,7 @@ public class ApiStack extends Stack {
             AbstractApiLambdaProps apiLambdaProps,
             HttpJwtAuthorizer jwtAuthorizer,
             HttpJwtAuthorizer booksJwtAuthorizer,
+            HttpJwtAuthorizer billingJwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
             java.util.Set<String> createdRouteKeys,
             java.util.Map<String, String> firstCreatorByRoute) {
@@ -412,11 +423,20 @@ public class ApiStack extends Stack {
                 .timeout(Duration.seconds(29))
                 .build();
 
-        // Create HTTP route with the appropriate authoriser. A books route is checked ahead of
-        // the other two: its own JWT authoriser, scoped to the books client id, keeps a books
-        // token off every other route regardless of what jwtAuthorizer()/customAuthorizer() say.
+        // Create HTTP route with the appropriate authoriser. A billing route is checked first:
+        // its authoriser accepts either client's audience, since a DIYA-GL subscriber checks out
+        // and manages billing with a books-client token. A books route is checked next: its own
+        // JWT authoriser, scoped to the books client id, keeps a books token off every other
+        // route regardless of what jwtAuthorizer()/customAuthorizer() say.
         var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
-        if (apiLambdaProps.booksJwtAuthorizer()) {
+        if (apiLambdaProps.billingJwtAuthorizer()) {
+            HttpRoute.Builder.create(this, routeId)
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .authorizer(billingJwtAuthorizer)
+                    .build();
+        } else if (apiLambdaProps.booksJwtAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
                     .httpApi(this.httpApi)
                     .routeKey(routeKey)
@@ -474,7 +494,14 @@ public class ApiStack extends Stack {
                 String headRouteId = apiLambdaProps.ingestFunctionName() + "-Route-HEAD-" + keySuffix;
                 var headRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD);
 
-                if (apiLambdaProps.booksJwtAuthorizer()) {
+                if (apiLambdaProps.billingJwtAuthorizer()) {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .authorizer(billingJwtAuthorizer)
+                            .build();
+                } else if (apiLambdaProps.booksJwtAuthorizer()) {
                     HttpRoute.Builder.create(this, headRouteId)
                             .httpApi(this.httpApi)
                             .routeKey(headRouteKey)

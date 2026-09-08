@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Amend a Period Summary - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Amend a Period Summary</h1>
+      <p class="subtitle">Correct the income and expenses on a quarterly update already filed with HMRC</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Amend Form -->
+      <div id="periodAmendForm" class="form-container">
+        <div class="form-toggle-buttons">
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Form</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2>Amend a Period Summary</h2>
+          <form id="itsaSelfEmploymentPeriodAmendForm">
+            <div class="form-group">
+              <label for="nino">National Insurance number</label>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                placeholder="e.g., AB123456C"
+                maxlength="9"
+                spellcheck="false"
+                autocapitalize="characters"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="businessId">Business ID</label>
+              <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" />
+            </div>
+
+            <div class="form-group">
+              <label for="taxYear">Tax year</label>
+              <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+            </div>
+
+            <div class="form-group">
+              <label for="periodId">Period ID</label>
+              <p id="periodId-hint" class="hint">From the Period Summaries list, for example 2023-04-06_2023-07-05.</p>
+              <input type="text" id="periodId" name="periodId" required placeholder="e.g., 2023-04-06_2023-07-05" aria-describedby="periodId-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="turnover">Turnover</label>
+              <p id="turnover-hint" class="hint">The corrected takings, fees, sales or money earned by the business for this period.</p>
+              <input type="number" id="turnover" name="turnover" step="0.01" min="0" aria-describedby="turnover-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="otherIncome">Other income</label>
+              <input type="number" id="otherIncome" name="otherIncome" step="0.01" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="costOfGoods">Cost of goods</label>
+              <input type="number" id="costOfGoods" name="costOfGoods" step="0.01" />
+            </div>
+
+            <div class="form-group">
+              <label for="otherExpenses">Other expenses</label>
+              <input type="number" id="otherExpenses" name="otherExpenses" step="0.01" />
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+              <select id="testScenario" name="testScenario">
+                <option value="">Default (amend succeeds)</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="TAX_YEAR_NOT_SUPPORTED">Tax year not supported</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div style="margin-top: 10px">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                  >Validate Fraud Prevention Headers</label
+                >
+              </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn">Amend Period Summary</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="periodAmendResults" class="results-container" style="display: none">
+        <h3>Period Summary Amended</h3>
+        <p>HMRC has accepted the amendment.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Amend Another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script>
+      function hideSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
+        }
+      }
+
+      function showSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
+        }
+      }
+
+      function cancelRequest() {
+        sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        showSearchCriteria();
+        document.getElementById("periodAmendResults").style.display = "none";
+        hideStatus();
+      }
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
+          }
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) {
+          continuePeriodAmend();
+        }
+      }
+
+      function readAmendData(source) {
+        const periodIncome = {};
+        if (source.turnover !== "" && source.turnover !== undefined) periodIncome.turnover = Number(source.turnover);
+        if (source.otherIncome !== "" && source.otherIncome !== undefined) periodIncome.other = Number(source.otherIncome);
+
+        const periodExpenses = {};
+        if (source.costOfGoods !== "" && source.costOfGoods !== undefined) periodExpenses.costOfGoods = Number(source.costOfGoods);
+        if (source.otherExpenses !== "" && source.otherExpenses !== undefined) periodExpenses.otherExpenses = Number(source.otherExpenses);
+
+        return {
+          nino: (source.nino || "").trim().toUpperCase(),
+          businessId: (source.businessId || "").trim(),
+          taxYear: (source.taxYear || "").trim(),
+          periodId: (source.periodId || "").trim(),
+          periodIncome,
+          periodExpenses,
+        };
+      }
+
+      async function amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+
+        const requestHeaders = {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...govClientHeaders,
+        };
+        if (testScenario) requestHeaders["Gov-Test-Scenario"] = testScenario;
+
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount) {
+          requestHeaders["hmrcAccount"] = hmrcAccount;
+        }
+
+        const response = await window.authorizedFetch("/api/v1/hmrc/itsa/self-employment/period", {
+          method: "PUT",
+          headers: {
+            ...requestHeaders,
+            "x-wait-time-ms": "0",
+          },
+          body: JSON.stringify({ ...amendData, runFraudPreventionHeaderValidation }),
+          pollPendingMessage: "Still processing...",
+          pollSuccessMessage: "Period summary amended.",
+          pollErrorMessage: "Failed to amend the period summary.",
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          const error = new Error(result.message || "Failed to amend the period summary");
+          error.status = response.status;
+          throw error;
+        }
+        return result;
+      }
+
+      async function continuePeriodAmend() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingSelfEmploymentPeriodAmendRequest") || "null");
+
+          if (!pendingRequest) return;
+
+          hideSearchCriteria();
+          showLoading();
+          hideStatus();
+          showStatus("Amending period summary...", "info");
+
+          await amendPeriod(pendingRequest.amendData, pendingRequest.testScenario, pendingRequest.runFraudPreventionHeaderValidation, accessToken);
+
+          document.getElementById("periodAmendResults").style.display = "block";
+          hideStatus();
+
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          if (error.status === 401) {
+            sessionStorage.removeItem("hmrcAccessToken");
+            sessionStorage.removeItem("hmrcTokenScope");
+            showStatus("Access token expired. Please re-authenticate.", "error");
+          } else {
+            showStatus(`Failed to amend the period summary: ${error.message}`, "error");
+          }
+          showSearchCriteria();
+          sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const amendData = readAmendData({
+          nino: formData.get("nino"),
+          businessId: formData.get("businessId"),
+          taxYear: formData.get("taxYear"),
+          periodId: formData.get("periodId"),
+          turnover: formData.get("turnover"),
+          otherIncome: formData.get("otherIncome"),
+          costOfGoods: formData.get("costOfGoods"),
+          otherExpenses: formData.get("otherExpenses"),
+        });
+        const testScenario = formData.get("testScenario");
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!amendData.nino || !amendData.businessId || !amendData.taxYear || !amendData.periodId) {
+          showStatus("Please fill in the National Insurance number, business ID, tax year and period ID.", "error");
+          return;
+        }
+
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken) {
+            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          }
+          try {
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            const state = generateRandomState();
+            const requestData = { amendData, testScenario, runFraudPreventionHeaderValidation };
+
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+            const currentActivity = `${location.pathname}`;
+
+            sessionStorage.setItem("oauth_state", state);
+            sessionStorage.setItem("pendingSelfEmploymentPeriodAmendRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("currentActivity", currentActivity);
+
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+            try {
+              window.__correlation?.prepareRedirect?.();
+            } catch {}
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
+        } else {
+          try {
+            showLoading();
+            hideStatus();
+            showStatus("Amending period summary...", "info");
+
+            await amendPeriod(amendData, testScenario, runFraudPreventionHeaderValidation, accessToken);
+
+            document.getElementById("periodAmendResults").style.display = "block";
+            hideStatus();
+          } catch (error) {
+            if (error.status === 401) {
+              sessionStorage.removeItem("hmrcAccessToken");
+              sessionStorage.removeItem("hmrcTokenScope");
+              showStatus("Access token expired. Please try again.", "error");
+            } else {
+              showStatus(`Failed to amend the period summary: ${error.message}`, "error");
+            }
+          } finally {
+            hideLoading();
+          }
+        }
+      }
+
+      document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
+        showSearchCriteria();
+      });
+
+      document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+        cancelRequest();
+      });
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        const form = document.getElementById("itsaSelfEmploymentPeriodAmendForm");
+        const resultsContainer = document.getElementById("periodAmendResults");
+        form.reset();
+        resultsContainer.style.display = "none";
+        showSearchCriteria();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.getElementById("itsaSelfEmploymentPeriodAmendForm").addEventListener("submit", handleFormSubmission);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>

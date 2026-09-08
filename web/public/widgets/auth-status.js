@@ -207,10 +207,10 @@
         provider: readIdentityProvider(),
       });
       if (navigator.sendBeacon) {
-        navigator.sendBeacon("/api/session/beacon", new Blob([body], { type: "application/json" }));
+        navigator.sendBeacon("/api/v1/session/beacon", new Blob([body], { type: "application/json" }));
         return;
       }
-      fetch("/api/session/beacon", {
+      fetch("/api/v1/session/beacon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,

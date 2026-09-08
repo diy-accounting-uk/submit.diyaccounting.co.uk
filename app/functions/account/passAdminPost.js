@@ -103,7 +103,7 @@ export async function ingestHandler(event) {
     await publishActivityEvent({
       event: "pass-generated",
       summary: "Pass generated: " + bundleId,
-      detail: { bundleId },
+      detail: { bundleId, passTypeId },
     });
 
     return http200OkResponse({

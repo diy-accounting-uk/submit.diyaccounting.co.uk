@@ -208,7 +208,7 @@ public class BooksStack extends Stack {
                 .with("BOOKS_MAX_PER_USER", "20")
                 .with("BOOKS_VERSIONS_KEPT", "30")
                 .with("BOOKS_ENTITLEMENT_ENFORCED", "false")
-                .with("BOOKS_BUNDLE_ID", "resident-books")
+                .with("BOOKS_BUNDLE_ID", "resident-diya-gl")
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var booksPutApiLambda = new ApiLambda(
                 this,

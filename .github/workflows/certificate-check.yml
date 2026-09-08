@@ -9,7 +9,7 @@ run-name: "certificate check of ${{ github.ref_name }}"
 
 on:
   schedule:
-    - cron: '17 6 * * 1' # Weekly on Monday, after the 06:00 compliance run
+    - cron: '17 6 * * 1' # Weekly on Monday, after the compliance run
   workflow_dispatch:
 
 concurrency:

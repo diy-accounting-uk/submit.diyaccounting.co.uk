@@ -1,0 +1,26 @@
+name: "Write a DORA or probe row to the lake"
+description: "Writes one JSON row to the analytics lake, for the DORA and probe panels on the one-stop dashboard"
+
+inputs:
+  bucket:
+    description: "The analytics lake bucket, e.g. ci-env-analytics-lake-367191799875"
+    required: true
+  key:
+    description: "The S3 key to write the row to, e.g. curated/dora/dt=2026-09-08/12345-1.json"
+    required: true
+  row:
+    description: "The row, as a JSON object string"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Write row to the lake
+      shell: bash
+      env:
+        DORA_ROW_BUCKET: ${{ inputs.bucket }}
+        DORA_ROW_KEY: ${{ inputs.key }}
+        DORA_ROW_JSON: ${{ inputs.row }}
+      run: |
+        set -euo pipefail
+        printf '%s' "$DORA_ROW_JSON" | aws s3 cp - "s3://${DORA_ROW_BUCKET}/${DORA_ROW_KEY}" --content-type application/json

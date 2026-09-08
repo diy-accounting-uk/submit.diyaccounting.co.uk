@@ -192,8 +192,10 @@ public class ObservabilityStack extends Stack {
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
                     // Retention is set via AwsCustomResource above, not here
-                    .includeGlobalServiceEvents(false)
-                    .isMultiRegionTrail(false)
+                    .includeGlobalServiceEvents(true)
+                    // Multi-region so the trail also covers the WAF, the RUM monitor and the
+                    // canaries' us-east-1 activity, not only eu-west-2.
+                    .isMultiRegionTrail(true)
                     .build();
 
             // Ensure the LogGroup is created before the Trail tries to use it
@@ -416,8 +418,12 @@ public class ObservabilityStack extends Stack {
 
             // Security Hub aggregates findings from GuardDuty, IAM Access Analyzer, and other
             // AWS services. It provides compliance checks against CIS AWS Foundations Benchmark.
+            // Default standards are off: SecurityBaselineStack subscribes CIS AWS Foundations
+            // Benchmark v5.0.0 and AWS Foundational Security Best Practices explicitly instead,
+            // since this property only takes effect when the Hub is first created and cannot swap
+            // an already-subscribed standard's version.
             CfnHub securityHub = CfnHub.Builder.create(this, props.resourceNamePrefix() + "-SecurityHub")
-                    .enableDefaultStandards(true) // Enable CIS AWS Foundations Benchmark
+                    .enableDefaultStandards(false)
                     .build();
 
             // EventBridge rule to route CRITICAL and HIGH severity Security Hub findings to SNS
@@ -528,10 +534,17 @@ public class ObservabilityStack extends Stack {
                 ? props.apexDomain()
                 : props.sharedNames().envDomainName;
 
-        // Lambda function search pattern for this environment
-        // Pattern matches: {env}-*-submit-*-app-{function-name}
-        // Example: prod-abc123-submit-diyaccounting-co-uk-app-hmrc-vat-return-post-ingest-handler
-        String lambdaSearchPrefix = props.envName() + "-";
+        // Live deployment: the environment's last-known-good deployment slug (e.g.
+        // "prod-c6e18fd"), read as a CloudFormation dynamic reference so the search patterns
+        // below track whichever deployment is live without a redeploy of this stack. Function
+        // names are "{liveDeploymentName}-app-{function-name}"; scoping to this prefix keeps
+        // each widget under CloudWatch's 500-series SEARCH limit — an unscoped "{envName}-"
+        // prefix matches every retired deployment's functions (CloudWatch keeps their series
+        // for fifteen months) plus the cwsyn-* canaries — and drops the canaries as a side
+        // effect, since they carry no "-app-" segment.
+        String liveDeploymentName = StringParameter.valueForStringParameter(
+                this, "/submit/%s/last-known-good-deployment".formatted(props.envName()));
+        String liveDeploymentFunctionPrefix = liveDeploymentName + "-app-";
 
         // Row 1: Real User Traffic (RUM) and Web Vitals
         Metric inpP75 = Metric.Builder.create()
@@ -576,92 +589,22 @@ public class ObservabilityStack extends Stack {
                 .height(6)
                 .build()));
 
-        // Row 3: Business Metrics - Key Lambda function invocations across all deployments
-        // Using SEARCH to aggregate across deployment-specific function names
+        // Row 3: VAT submissions on the live deployment - the one deliberate duplicate kept
+        // here. The business dashboard's "Submissions by Outcome" widget counts the same VAT
+        // submissions from activity events, so this Lambda-invocation count sits next to it as
+        // a second source on the same quantity. HMRC authentications, bundle operations,
+        // sign-ups and bundle grants moved to the business dashboard (AnalyticsDashboard),
+        // since they are business counts rather than operations.
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
-                        .title("VAT Submissions (all deployments)")
+                        .title("VAT Submissions (live deployment)")
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*hmrc-vat-return-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                        lambdaSearchPrefix))
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%shmrc-vat-return-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
+                                        liveDeploymentFunctionPrefix))
                                 .label("hmrcVatReturnPost")
                                 .period(Duration.hours(1))
                                 .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("HMRC Authentications (all deployments)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*hmrc-token-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                        lambdaSearchPrefix))
-                                .label("hmrcTokenPost")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
-
-        // Row 4: More Business Metrics
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Bundle Operations (all deployments)")
-                        .left(List.of(
-                                MathExpression.Builder.create()
-                                        .expression(String.format(
-                                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*bundle-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                                lambdaSearchPrefix))
-                                        .label("bundlePost")
-                                        .period(Duration.hours(1))
-                                        .build(),
-                                MathExpression.Builder.create()
-                                        .expression(String.format(
-                                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*bundle-get-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                                lambdaSearchPrefix))
-                                        .label("bundleGet")
-                                        .period(Duration.hours(1))
-                                        .build()))
-                        .width(12)
-                        .height(6)
-                        .build(),
-                GraphWidget.Builder.create()
-                        .title("Sign-ups & Cognito Auth (all deployments)")
-                        .left(List.of(MathExpression.Builder.create()
-                                .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*cognito-token-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
-                                        lambdaSearchPrefix))
-                                .label("cognitoTokenPost")
-                                .period(Duration.hours(1))
-                                .build()))
-                        .width(12)
-                        .height(6)
-                        .build()));
-
-        // Row 5: Bundle Capacity Metrics (EMF from bundlePost and reconciliation Lambda)
-        dashboardRows.add(List.of(
-                GraphWidget.Builder.create()
-                        .title("Bundle Grants & Cap Enforcement")
-                        .left(List.of(
-                                Metric.Builder.create()
-                                        .namespace("Submit/BundleCapacity")
-                                        .metricName("BundleGranted")
-                                        .statistic("Sum")
-                                        .period(Duration.hours(1))
-                                        .build(),
-                                Metric.Builder.create()
-                                        .namespace("Submit/BundleCapacity")
-                                        .metricName("BundleCapReached")
-                                        .statistic("Sum")
-                                        .period(Duration.hours(1))
-                                        .build(),
-                                Metric.Builder.create()
-                                        .namespace("Submit/BundleCapacity")
-                                        .metricName("BundleAlreadyGranted")
-                                        .statistic("Sum")
-                                        .period(Duration.hours(1))
-                                        .build()))
                         .width(12)
                         .height(6)
                         .build(),
@@ -742,14 +685,16 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.BREACHING)
                 .build();
 
-        // Row 6: Lambda Errors across all deployments (was Row 5)
+        // Row 6: Lambda errors and throttles on the live deployment. Narrowed from an
+        // unscoped "{envName}-" prefix, which matched every retired deployment's functions
+        // (about 4,700 series) against CloudWatch's 500-series SEARCH limit and never rendered.
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
-                        .title("Lambda Errors (all functions, all deployments)")
+                        .title("Lambda Errors (live deployment)")
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Errors\"', 'Sum', 300)",
-                                        lambdaSearchPrefix))
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Errors\"', 'Sum', 300)",
+                                        liveDeploymentFunctionPrefix))
                                 .label("Errors by function")
                                 .period(Duration.minutes(5))
                                 .build()))
@@ -757,11 +702,11 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build(),
                 GraphWidget.Builder.create()
-                        .title("Lambda Throttles (all functions, all deployments)")
+                        .title("Lambda Throttles (live deployment)")
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
-                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Throttles\"', 'Sum', 300)",
-                                        lambdaSearchPrefix))
+                                        "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Throttles\"', 'Sum', 300)",
+                                        liveDeploymentFunctionPrefix))
                                 .label("Throttles by function")
                                 .period(Duration.minutes(5))
                                 .build()))
@@ -769,13 +714,13 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
-        // Row 7: Lambda Performance across all deployments (was Row 6)
+        // Row 7: Lambda p95 duration on the live deployment, same narrowing as row 6.
         dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Lambda p95 Duration (all functions, all deployments)")
+                .title("Lambda p95 Duration (live deployment)")
                 .left(List.of(MathExpression.Builder.create()
                         .expression(String.format(
-                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"%s.*\" MetricName=\"Duration\"', 'p95', 300)",
-                                lambdaSearchPrefix))
+                                "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Duration\"', 'p95', 300)",
+                                liveDeploymentFunctionPrefix))
                         .label("p95 Duration by function")
                         .period(Duration.minutes(5))
                         .build()))

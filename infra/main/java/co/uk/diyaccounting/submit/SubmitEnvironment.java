@@ -21,6 +21,7 @@ import co.uk.diyaccounting.submit.stacks.IngestionStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityStack;
 import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.ScanDetectionStack;
+import co.uk.diyaccounting.submit.stacks.SecurityBaselineStack;
 import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
@@ -35,6 +36,7 @@ public class SubmitEnvironment {
     public final ObservabilityStack observabilityStack;
     public final ObservabilityUE1Stack observabilityUE1Stack;
     public final SecurityDetectionStack securityDetectionStack;
+    public final SecurityBaselineStack securityBaselineStack;
     public final DataStack dataStack;
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
@@ -147,8 +149,16 @@ public class SubmitEnvironment {
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var accessLogGroupRetentionPeriodDays = Integer.parseInt(
                 envOr("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS", appProps.accessLogGroupRetentionPeriodDays, "30"));
-        var securityServicesEnabled =
-                Boolean.parseBoolean(envOr("SECURITY_SERVICES_ENABLED", appProps.securityServicesEnabled, "true"));
+        // envOr's third argument is only a log label, so the fallback has to be the second one
+        // (see baseImageTag below) - this call passed "true" as that label instead, so
+        // Boolean.parseBoolean(null) silently disabled GuardDuty, Security Hub and the Config
+        // recorder on every deployment that never sets SECURITY_SERVICES_ENABLED, which is every
+        // deployment today.
+        var securityServicesEnabled = Boolean.parseBoolean(envOr(
+                "SECURITY_SERVICES_ENABLED",
+                appProps.securityServicesEnabled == null || appProps.securityServicesEnabled.isBlank()
+                        ? "true"
+                        : appProps.securityServicesEnabled));
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var authCertificateArn =
                 envOr("AUTH_CERTIFICATE_ARN", appProps.authCertificateArn, "(from authCertificateArn in cdk.json)");
@@ -256,6 +266,27 @@ public class SubmitEnvironment {
                         .cloudTrailLogGroupPrefix(appProps.cloudTrailLogGroupPrefix)
                         .build());
         this.securityDetectionStack.addStackDependency(this.observabilityStack);
+
+        // Create SecurityBaselineStack with the AWS Config recorder Security Hub's standards need,
+        // and the CIS AWS Foundations Benchmark v1.2.0 -> v5.0.0 standards swap. Depends on
+        // ObservabilityStack so the account-singleton Security Hub Hub it creates exists first.
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.securityBaselineStackId, deploymentName, envName);
+        this.securityBaselineStack = new SecurityBaselineStack(
+                app,
+                sharedNames.securityBaselineStackId,
+                SecurityBaselineStack.SecurityBaselineStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .securityServicesEnabled(securityServicesEnabled)
+                        .build());
+        this.securityBaselineStack.addStackDependency(this.observabilityStack);
 
         // Create ObservabilityUE1Stack with resources used in monitoring the application us-east-1
         infof(

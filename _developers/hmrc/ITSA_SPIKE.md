@@ -158,3 +158,55 @@ Two things the handler needs that the VAT handlers do not:
 The sandbox `Gov-Test-Scenario` values for this endpoint are `PROPERTY`, `FOREIGN_PROPERTY`,
 `BUSINESS_AND_PROPERTY`, `UNSPECIFIED`, `NOT_FOUND` and `STATEFUL`, with the default returning a
 self-employment business.
+
+## Mandate dates and thresholds
+
+Read 2026-09-08 from gov.uk's own guidance page:
+
+- Qualifying income over £50,000 for the 2024 to 2025 tax year: mandatory from 6 April 2026.
+- Qualifying income over £30,000 for the 2025 to 2026 tax year: mandatory from 6 April 2027.
+- Qualifying income over £20,000 for the 2026 to 2027 tax year: mandatory from 6 April 2028.
+
+The backlog's proposed "about £20k for the final phase" figure is right, and the date sits a year
+further out than a straight-line reading of the £50k/£30k gap would suggest: £30,000 to £20,000
+took a full extra year, made law by the Income Tax (Digital Obligations) Regulations 2026, which
+also puts the number this brings into scope at about 970,000 more sole traders and landlords.
+
+The Self Employment Business API sits at v5.0, marked beta on HMRC's developer hub, live in both
+sandbox and production. HMRC has stopped taking new production credential requests for 2026-27
+quarterly update products on this version, stating "the market window for these products has now
+closed." That closure affects live onboarding for that specific tax year only; it does not affect
+sandbox development, which is what this batch targets.
+
+Sources:
+- https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax
+- https://www.gov.uk/government/publications/making-tax-digital-for-income-tax-self-assessment-reducing-the-mandation-threshold-from-30000-to-20000-from-april-2028/reduction-of-the-mandation-threshold-from-30000-to-20000-from-april-2028
+- https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0
+
+## Generated client vs the hand-rolled HMRC client pattern
+
+Every HMRC handler in this repo, VAT and ITSA alike, calls the same hand-rolled client:
+`app/services/hmrcApi.js` exports `hmrcHttpGet`/`hmrcHttpPost`/`hmrcHttpPut`, `buildHmrcHeaders`
+(fraud-prevention headers, `Gov-Test-Scenario`, the `Accept: application/vnd.hmrc.{version}+json`
+header), and the error mappers (`http403ForbiddenFromHmrcResponse` and siblings). Each handler adds
+its own request validation (`app/lib/hmrcValidation.js`, or a local regex like
+`BUSINESS_ID_PATTERN`) and its own body shape (`app/lib/vatReturnTypes.js` for VAT,
+`buildSelfEmploymentPeriodRequestBody`/`buildAmendSelfEmploymentPeriodRequestBody` for ITSA
+periods). `hmrcVatReturnPost.js` and every `hmrcItsa*.js` file in this batch follow the identical
+shape. No package currently in `package.json` reads an OpenAPI spec at build or run time.
+
+An OpenAPI-generated client (`openapi-typescript` + `openapi-fetch` against
+`_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`, or `openapi-generator`'s
+javascript-fetch target) would give typed request/response shapes and save writing
+`buildSelfEmploymentPeriodRequestBody` by hand, at the cost of a generation step per HMRC API
+version bump and a thinner seam for the app-specific pieces every handler needs anyway: the
+async ingest/worker split, bundle enforcement, fraud-header building, audit-trail writes to
+DynamoDB, and the sandbox/live base URI switch. A generated client covers the HTTP call; it does
+not touch any of those, so a handler would still wrap the generated call in the same amount of
+code this repo already writes around `hmrcHttpGet`/`hmrcHttpPost`/`hmrcHttpPut` - the generated
+piece only replaces the URL string and the header list, not the handler.
+
+Recommendation: keep the hand-rolled pattern. The generated-client benefit (typed shapes) is
+smallest exactly where this repo's endpoints are simplest (one query string or one small JSON
+body), and every endpoint needs bespoke request/response handling around the raw HTTP call
+regardless of how that call is made.

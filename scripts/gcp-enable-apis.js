@@ -27,6 +27,7 @@ export const REQUIRED_SERVICES = [
   "cloudbilling.googleapis.com",
   "billingbudgets.googleapis.com",
   "bigquery.googleapis.com",
+  "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
 ];
 
