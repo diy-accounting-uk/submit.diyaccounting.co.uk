@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,8 +37,10 @@ import software.constructs.Construct;
 import software.constructs.IDependable;
 
 /**
- * Glue Data Quality over {@code activity_events}: a ruleset in DQDL, a Lambda that starts one
- * evaluation run when invoked, and an alarm on the {@code failed} metric Glue itself publishes.
+ * Glue Data Quality over three catalog tables: {@code activity_events}, {@code
+ * alarm_state_changes} and {@code dora_runs}. One ruleset, one CloudWatch alarm on the {@code
+ * failed} metric and one entry in the runner Lambda's target list per table; one shared
+ * evaluation role and one runner Lambda for all three.
  *
  * <p>No schedule, DLQ or rule of its own: {@code IngestionStack}'s {@code
  * NightlyIngestionWorkflow} state machine invokes {@link #runLambda} directly as one step in the
@@ -50,16 +53,17 @@ import software.constructs.IDependable;
  */
 public class DataQuality extends Construct {
 
-    // Must match AnalyticsStack's ACTIVITY_EVENTS_CURATED_TABLE_NAME: the ruleset targets the
-    // typed Parquet table, not the JSON spike table, since only the typed table has the promoted
-    // columns (actor, flow, outcome, ...) the rules below check.
-    private static final String TARGET_TABLE_NAME = "activity_events";
+    /** One table Glue Data Quality evaluates: its ruleset name suffix, curated prefix and DQDL text. */
+    private record Target(String tableName, String curatedPrefix, String ruleset) {}
 
-    // Must match AnalyticsStack's ACTIVITY_EVENTS_CURATED_PREFIX: the runner Lambda lists this S3
-    // prefix to find partitions to register in the catalog before Glue Data Quality reads them.
-    private static final String TARGET_TABLE_CURATED_PREFIX = "curated/activity-events/";
+    private static final String ACTIVITY_EVENTS_TABLE_NAME = "activity_events";
+    private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
+    private static final String ALARM_STATE_CHANGES_TABLE_NAME = "alarm_state_changes";
+    private static final String ALARM_STATE_CHANGES_CURATED_PREFIX = "curated/alarm-state-changes/";
+    private static final String DORA_RUNS_TABLE_NAME = "dora_runs";
+    private static final String DORA_RUNS_CURATED_PREFIX = "curated/dora/";
 
-    private static final String RULESET =
+    private static final String ACTIVITY_EVENTS_RULESET =
             """
             Rules = [
                 RowCount > 0,
@@ -77,15 +81,34 @@ public class DataQuality extends Construct {
             ]
             """;
 
+    private static final String ALARM_STATE_CHANGES_RULESET =
+            """
+            Rules = [
+                RowCount > 0,
+                IsComplete "event_ts",
+                ColumnValues "state" in ["ALARM","OK","INSUFFICIENT_DATA"]
+            ]
+            """;
+
+    private static final String DORA_RUNS_RULESET =
+            """
+            Rules = [
+                RowCount > 0,
+                IsComplete "finished_at"
+            ]
+            """;
+
+    private final List<Target> targets;
+
     private static final String GLUE_METRICS_NAMESPACE = "Glue Data Quality";
     private static final String GLUE_FAILED_METRIC_NAME = "glue.data.quality.rules.failed";
     private static final String RULESET_DIMENSION_NAME = "RulesetName";
 
-    public final CfnDataQualityRuleset ruleset;
+    public final List<CfnDataQualityRuleset> rulesets = new ArrayList<>();
     public final Role evaluationRole;
     public final Function runLambda;
     public final Alarm errorsAlarm;
-    public final Alarm rulesFailedAlarm;
+    public final List<Alarm> rulesFailedAlarms = new ArrayList<>();
 
     @Value.Immutable
     public interface DataQualityProps {
@@ -98,7 +121,7 @@ public class DataQuality extends Construct {
         String glueDatabaseName();
 
         /**
-         * The Glue database resource, so the ruleset carries an explicit CloudFormation
+         * The Glue database resource, so every ruleset carries an explicit CloudFormation
          * dependency on it. Optional because a standalone test of this construct has no separate
          * database resource to depend on.
          */
@@ -108,16 +131,16 @@ public class DataQuality extends Construct {
         }
 
         /**
-         * The curated {@code activity_events} Glue table resource, so the ruleset waits for it to
-         * exist before targeting it. Optional for the same reason as {@link
-         * #glueDatabaseDependency()}.
+         * Each target table's Glue table resource, keyed by table name, so its ruleset waits for
+         * the table to exist before targeting it. A table with no entry here (or in a standalone
+         * test of this construct) carries no such dependency.
          */
         @Value.Default
-        default Optional<IDependable> targetTableDependency() {
-            return Optional.empty();
+        default Map<String, IDependable> targetTableDependencies() {
+            return Map.of();
         }
 
-        /** The analytics lake bucket, so the evaluation role can read the table's S3 location. */
+        /** The analytics lake bucket, so the evaluation role can read every target table's S3 location. */
         IBucket lakeBucket();
 
         String baseImageTag();
@@ -136,34 +159,51 @@ public class DataQuality extends Construct {
 
         var stack = Stack.of(this);
         var prefix = props.resourceNamePrefix();
-        // Underscored like glueDatabaseName: Glue and Athena identifiers reject hyphens.
-        var rulesetName = "%s_env_activity_events_dq".formatted(props.envName());
+
+        this.targets = List.of(
+                new Target(ACTIVITY_EVENTS_TABLE_NAME, ACTIVITY_EVENTS_CURATED_PREFIX, ACTIVITY_EVENTS_RULESET),
+                new Target(
+                        ALARM_STATE_CHANGES_TABLE_NAME, ALARM_STATE_CHANGES_CURATED_PREFIX, ALARM_STATE_CHANGES_RULESET),
+                new Target(DORA_RUNS_TABLE_NAME, DORA_RUNS_CURATED_PREFIX, DORA_RUNS_RULESET));
 
         // ============================================================================
-        // Ruleset
+        // Rulesets, one per target table
         // ============================================================================
-        this.ruleset = CfnDataQualityRuleset.Builder.create(this, prefix + "-DataQualityRuleset")
-                .name(rulesetName)
-                .description("Data quality checks over " + TARGET_TABLE_NAME)
-                .ruleset(RULESET)
-                .targetTable(CfnDataQualityRuleset.DataQualityTargetTableProperty.builder()
-                        .databaseName(props.glueDatabaseName())
-                        .tableName(TARGET_TABLE_NAME)
-                        .build())
-                .build();
-        props.glueDatabaseDependency()
-                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
-        props.targetTableDependency()
-                .ifPresent(dependency -> this.ruleset.getNode().addDependency(dependency));
+        for (Target target : this.targets) {
+            var rulesetName = rulesetName(props.envName(), target.tableName());
+            var ruleset = CfnDataQualityRuleset.Builder.create(this, prefix + "-" + target.tableName() + "-Ruleset")
+                    .name(rulesetName)
+                    .description("Data quality checks over " + target.tableName())
+                    .ruleset(target.ruleset())
+                    .targetTable(CfnDataQualityRuleset.DataQualityTargetTableProperty.builder()
+                            .databaseName(props.glueDatabaseName())
+                            .tableName(target.tableName())
+                            .build())
+                    .build();
+            props.glueDatabaseDependency().ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
+            Optional.ofNullable(props.targetTableDependencies().get(target.tableName()))
+                    .ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
+            this.rulesets.add(ruleset);
+        }
 
         // ============================================================================
-        // Evaluation role: assumed by Glue, not by the Lambda, to read the table and publish
-        // the CloudWatch metric
+        // Evaluation role: assumed by Glue, not by the Lambda, to read every target table and
+        // publish the CloudWatch metric
         // ============================================================================
         this.evaluationRole = Role.Builder.create(this, prefix + "-DataQualityEvaluationRole")
                 .roleName(prefix + "-data-quality-eval")
                 .assumedBy(new ServicePrincipal("glue.amazonaws.com"))
                 .build();
+
+        var targetTableArns = this.targets.stream()
+                .map(target -> glueTableArn(stack, props.glueDatabaseName(), target.tableName()))
+                .toList();
+        var rulesetArns = this.targets.stream()
+                .map(target -> glueRulesetArn(stack, rulesetName(props.envName(), target.tableName())))
+                .toList();
+        var curatedPrefixResources = this.targets.stream()
+                .map(target -> props.lakeBucket().getBucketArn() + "/" + target.curatedPrefix() + "*")
+                .toList();
 
         this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -173,10 +213,7 @@ public class DataQuality extends Construct {
                         "glue:GetTableVersion",
                         "glue:GetTableVersions",
                         "glue:GetPartitions"))
-                .resources(List.of(
-                        glueCatalogArn(stack),
-                        glueDatabaseArn(stack, props.glueDatabaseName()),
-                        glueTableArn(stack, props.glueDatabaseName(), TARGET_TABLE_NAME)))
+                .resources(withCatalogAndDatabase(stack, props.glueDatabaseName(), targetTableArns))
                 .build());
 
         // The evaluation session reads its own run and ruleset back and publishes the result
@@ -188,15 +225,13 @@ public class DataQuality extends Construct {
                         "glue:GetDataQualityRulesetEvaluationRun",
                         "glue:GetDataQualityResult",
                         "glue:PublishDataQuality"))
-                .resources(List.of(glueRulesetArn(stack, rulesetName)))
+                .resources(rulesetArns)
                 .build());
 
         this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject", "s3:GetBucketLocation", "s3:ListBucket"))
-                .resources(List.of(
-                        props.lakeBucket().getBucketArn(),
-                        props.lakeBucket().getBucketArn() + "/curated/activity-events/*"))
+                .resources(prepend(props.lakeBucket().getBucketArn(), curatedPrefixResources))
                 .build());
 
         // CloudWatch's PutMetricData has no ARN form to scope to, so the wildcard resource is
@@ -245,42 +280,43 @@ public class DataQuality extends Construct {
                 .environment(Map.of(
                         "ENVIRONMENT_NAME", props.envName(),
                         "GLUE_DATABASE_NAME", props.glueDatabaseName(),
-                        "GLUE_DATA_QUALITY_TABLE_NAME", TARGET_TABLE_NAME,
-                        "GLUE_DATA_QUALITY_RULESET_NAME", rulesetName,
                         "GLUE_DATA_QUALITY_ROLE_ARN", this.evaluationRole.getRoleArn(),
                         "ANALYTICS_LAKE_BUCKET_NAME", props.lakeBucket().getBucketName(),
-                        "GLUE_DATA_QUALITY_CURATED_PREFIX", TARGET_TABLE_CURATED_PREFIX))
+                        "GLUE_DATA_QUALITY_TARGETS", buildTargetsJson(props.envName(), this.targets)))
                 .build();
         this.runLambda.getNode().addDependency(runLambdaLogGroup.ensureResource());
 
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("glue:StartDataQualityRulesetEvaluationRun"))
-                .resources(List.of(glueRulesetArn(stack, rulesetName)))
+                .resources(rulesetArns)
                 .build());
 
         // Starting a run validates the ruleset's target table through the catalog, so the
         // caller needs the same read the evaluation role has. GetPartitions/BatchCreatePartition
         // let it register partitions from S3 before the run starts, since Glue Data Quality reads
-        // partitions from the catalog only and activity_events uses Athena partition projection
+        // partitions from the catalog only and these tables use Athena partition projection
         // (no partitions registered by default).
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(
                         List.of("glue:GetDatabase", "glue:GetTable", "glue:GetPartitions", "glue:BatchCreatePartition"))
-                .resources(List.of(
-                        glueCatalogArn(stack),
-                        glueDatabaseArn(stack, props.glueDatabaseName()),
-                        glueTableArn(stack, props.glueDatabaseName(), TARGET_TABLE_NAME)))
+                .resources(withCatalogAndDatabase(stack, props.glueDatabaseName(), targetTableArns))
                 .build());
 
-        // Lists the curated activity-events prefix to discover partitions to register; scoped to
-        // that one prefix so the Lambda can't enumerate the rest of the lake bucket.
+        // Lists each target's curated prefix to discover partitions to register; scoped to those
+        // prefixes so the Lambda can't enumerate the rest of the lake bucket.
         this.runLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
                 .resources(List.of(props.lakeBucket().getBucketArn()))
-                .conditions(Map.of("StringLike", Map.of("s3:prefix", TARGET_TABLE_CURATED_PREFIX + "*")))
+                .conditions(Map.of(
+                        "StringLike",
+                        Map.of(
+                                "s3:prefix",
+                                this.targets.stream()
+                                        .map(target -> target.curatedPrefix() + "*")
+                                        .toList())))
                 .build());
 
         // The Lambda only ever hands this one role to Glue: iam:PassRole is scoped to it, with
@@ -308,24 +344,69 @@ public class DataQuality extends Construct {
                 .build();
 
         // ============================================================================
-        // Data-quality-failed alarm: Glue publishes this metric itself once
+        // Data-quality-failed alarm, one per target: Glue publishes this metric itself once
         // CloudWatchMetricsEnabled is set on the evaluation run, dimensioned by ruleset name
         // ============================================================================
-        this.rulesFailedAlarm = Alarm.Builder.create(this, prefix + "-DataQualityRulesFailedAlarm")
-                .alarmName(prefix + "-data-quality-rules-failed")
-                .alarmDescription("At least one data quality rule failed on " + TARGET_TABLE_NAME + " in 24 hours")
-                .metric(Metric.Builder.create()
-                        .namespace(GLUE_METRICS_NAMESPACE)
-                        .metricName(GLUE_FAILED_METRIC_NAME)
-                        .dimensionsMap(Map.of(RULESET_DIMENSION_NAME, rulesetName))
-                        .statistic("Sum")
-                        .period(Duration.hours(24))
-                        .build())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
+        for (Target target : this.targets) {
+            var rulesetName = rulesetName(props.envName(), target.tableName());
+            var alarm = Alarm.Builder.create(this, prefix + "-" + target.tableName() + "-DataQualityRulesFailedAlarm")
+                    .alarmName(prefix + "-" + target.tableName().replace('_', '-') + "-data-quality-rules-failed")
+                    .alarmDescription("At least one data quality rule failed on " + target.tableName() + " in 24 hours")
+                    .metric(Metric.Builder.create()
+                            .namespace(GLUE_METRICS_NAMESPACE)
+                            .metricName(GLUE_FAILED_METRIC_NAME)
+                            .dimensionsMap(Map.of(RULESET_DIMENSION_NAME, rulesetName))
+                            .statistic("Sum")
+                            .period(Duration.hours(24))
+                            .build())
+                    .threshold(1)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+            this.rulesFailedAlarms.add(alarm);
+        }
+    }
+
+    // Underscored like glueDatabaseName: Glue and Athena identifiers reject hyphens.
+    private static String rulesetName(String envName, String tableName) {
+        return "%s_env_%s_dq".formatted(envName, tableName);
+    }
+
+    private static String buildTargetsJson(String envName, List<Target> targets) {
+        var builder = new StringBuilder("[");
+        for (int i = 0; i < targets.size(); i++) {
+            if (i > 0) builder.append(",");
+            var target = targets.get(i);
+            builder.append("{\"table\":\"")
+                    .append(escapeJson(target.tableName()))
+                    .append("\",\"ruleset\":\"")
+                    .append(escapeJson(rulesetName(envName, target.tableName())))
+                    .append("\",\"curatedPrefix\":\"")
+                    .append(escapeJson(target.curatedPrefix()))
+                    .append("\"}");
+        }
+        builder.append("]");
+        return builder.toString();
+    }
+
+    private static String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static List<String> withCatalogAndDatabase(Stack stack, String databaseName, List<String> tableArns) {
+        var all = new ArrayList<String>();
+        all.add(glueCatalogArn(stack));
+        all.add(glueDatabaseArn(stack, databaseName));
+        all.addAll(tableArns);
+        return all;
+    }
+
+    private static List<String> prepend(String first, List<String> rest) {
+        var all = new ArrayList<String>();
+        all.add(first);
+        all.addAll(rest);
+        return all;
     }
 
     private static String glueCatalogArn(Stack stack) {
