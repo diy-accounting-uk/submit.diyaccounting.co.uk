@@ -53,6 +53,17 @@ pushed to a branch while its deploy runs.
   on main, ci only, on every bundle. Open them on a standing ci set, read each against the
   HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
   Unblocks B17b. **Source**: BACKLOG 17b; issue #19. **Owner**: Operator. **Model**: none.
+- [ ] **B30p. The four HMRC token-exchange 500s of 2026-09-08 06:23 to 06:29 UTC.** Issue #152
+  (`prod-c6e18fd-app-api-5xx`, one datapoint) sits on a set that is gone, with its Lambda log
+  group; what survives is the API access log (`/aws/apigw/prod-env/access`: four `500` on
+  `POST /api/v1/hmrc/token`, request ids DXd9lgMWrPEEMEA=, DXeLThvPLPEEJjg=, DXeffggJLPEEPZw=,
+  DXe2mjJArPEEJ0w=, about two minutes apart, one caller retrying) and the lake's activity
+  events. Follow `vat-submission-failure-alarm-user-lookup`'s method: find the actor's hashed
+  subject from the activity events of that window, what `hmrcTokenPost.js` answers 500 for
+  (HMRC's token endpoint erroring, or a thrown error before the reply), whether the same actor
+  authenticated later, and whether they wrote to support; then say whether a fix or a reply is
+  owed. The issue closes when the cause is known. **Source**: issue #152. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
