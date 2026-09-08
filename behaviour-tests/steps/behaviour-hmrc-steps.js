@@ -90,6 +90,9 @@ export async function submitHmrcAuth(page, screenshotPath = defaultScreenshotPat
     console.log(`[USER INTERACTION] Clicking: Sign in button - Submitting HMRC credentials`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submit-hmrc-auth.png` });
     await loggedClick(page, page.getByRole("button", { name: "Sign in" }), "Sign in");
+    // The click starts a navigation; a screenshot taken while the page is being torn down fails
+    // with "Unable to capture screenshot", so wait for the next document first.
+    await page.waitForLoadState("domcontentloaded");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-submit-hmrc-auth-clicked.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);

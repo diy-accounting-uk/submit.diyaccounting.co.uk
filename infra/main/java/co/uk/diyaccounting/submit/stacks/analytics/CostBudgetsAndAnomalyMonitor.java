@@ -132,7 +132,7 @@ public class CostBudgetsAndAnomalyMonitor {
                         CfnBudget.NotificationWithSubscribersProperty.builder()
                                 .notification(CfnBudget.NotificationProperty.builder()
                                         .notificationType("FORECASTED")
-                                        .comparisonOperator("GREATER_THAN_OR_EQUAL_TO")
+                                        .comparisonOperator("GREATER_THAN")
                                         .threshold(100)
                                         .thresholdType("PERCENTAGE")
                                         .build())
