@@ -40,7 +40,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | S2 (CodeQL fixes; dismissals written up for the operator) | codeql | Sonnet | `agent-a6e21bbdd321cc0a4` |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
-| B22 (fraud-header email check) | fraud-header | Sonnet | `agent-a3e396613eb4ac63a` |
+| B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
 | B52d and B55 designs into their plan docs | design | Opus | `agent-a09db863e980dd495` |
 
 Wave 2 starts as wave 1's tracks merge: B52d and B55 from the designs, B10.4 against the batch's
@@ -229,6 +229,12 @@ operator's "go" per `stripe-catalogue-sync`.
   ci and shows the acknowledgement and poll. Say what reads wrong; the operator's eye on the
   form and the rendered accounts is the check no test gives. **Source**: BACKLOG 34b; issue
   #15. **Owner**: Operator. **Model**: none.
+- [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
+  first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
+  advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
+  prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
+  to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
+  is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
