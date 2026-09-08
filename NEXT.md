@@ -37,6 +37,7 @@ pushed to a branch while its deploy runs.
 | B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
 | B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
 | B56 (the two remaining CodeQL redirect alerts: the return URL is built from the allow-list origin) | on the batch | Haiku | — |
+| B52e (the cost panel: the FOCUS 1.2 export from the management account, the operator's yes of 2026-09-08; budgets, the anomaly monitor, cost per submission) | cost | Sonnet | `agent-b52e` |
 
 ## Ready, unblocking others
 
@@ -48,12 +49,6 @@ pushed to a branch while its deploy runs.
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
   REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34;
   issue #15. **Owner**: Operator. **Model**: none.
-- [ ] **O25. Say yes to the FOCUS cost export from the management account.** The cost panel
-  needs an AWS Data Exports FOCUS 1.2 export from account 887764105431 into the analytics
-  lake, a write in the management account with a small monthly charge for the export bucket.
-  A yes here, and whether it goes in `root.diyaccounting.co.uk`'s CDK or this repo's
-  environment deploy through the management-account role. Unblocks B52e. **Source**: BACKLOG
-  52; plan row D7. **Owner**: Operator. **Model**: none.
 - [ ] **O27. Examine the three VAT read pages on ci.** Liabilities, payments and penalties are
   on main, ci only, on every bundle. Open them on a standing ci set, read each against the
   HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
@@ -130,10 +125,6 @@ pushed to a branch while its deploy runs.
   and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
   selector fix. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17.
-- [ ] **B52e. Cost panel.** The FOCUS 1.2 Data Export O25 approves, into the lake; the
-  budgets and the anomaly monitor from `_developers/archive/PLAN_COST_INSTRUMENTATION.md`;
-  cost per submission as the unit figure. **Source**: BACKLOG 52; plan row D7. **Owner**:
-  Claude Code. **Model**: Sonnet. Blocked on O25.
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
   GitHub environment secret), read the real acknowledgement and poll responses, settle the
