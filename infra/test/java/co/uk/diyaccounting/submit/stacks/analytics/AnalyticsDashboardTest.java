@@ -145,6 +145,25 @@ class AnalyticsDashboardTest {
         assertTrue(dashboardBody.contains("Ga4Purchases"));
         assertTrue(dashboardBody.contains("StripePaidCharges"));
         assertTrue(dashboardBody.contains("ActivityActivations"));
+
+        // B52d panels: the uptime SLI, alarms by family and DORA delivery metrics sit under
+        // Uptime; completions by activity and sessions by channel sit under Conversion to
+        // submission, all above their heading's next objective.
+        assertTrue(dashboardBody.contains("ProbePassRate"));
+        assertTrue(dashboardBody.contains("ErrorBudgetRemaining"));
+        assertTrue(dashboardBody.contains("AlarmsFired"));
+        assertTrue(dashboardBody.contains("Deploys"));
+        assertTrue(dashboardBody.contains("DeployLeadTimeHours"));
+        assertTrue(dashboardBody.contains("DeployFailureRate"));
+        assertTrue(dashboardBody.contains("CompletionsByActivity"));
+        assertTrue(dashboardBody.contains("SessionsByChannel"));
+
+        int probePassRateIndex = dashboardBody.indexOf("ProbePassRate");
+        int completionsIndex = dashboardBody.indexOf("CompletionsByActivity");
+        assertTrue(probePassRateIndex > uptimeIndex, "expected the availability SLI under Uptime");
+        assertTrue(probePassRateIndex < submissionIndex, "expected the availability SLI before Conversion to submission");
+        assertTrue(completionsIndex > submissionIndex, "expected completions by activity under Conversion to submission");
+        assertTrue(completionsIndex < paidIndex, "expected completions by activity before Conversion to paid");
     }
 
     @Test
