@@ -33,7 +33,7 @@ agent per file area; each item's body stays in its section below until it is ver
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B34.8, B34.9, B54 (catalogue; Stripe dry runs only) | catalogue | Sonnet | `agent-a37e71ea69c6c0488` |
+| B34.8, B34.9, B54 (catalogue) | merged to the batch at fc21444a; the Stripe test and live runs wait on the operator's "go" | Sonnet | — |
 | B47a, B53a, S4a (workflows) | workflows | Sonnet | `agent-afb14a84da1eaeaee` |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
