@@ -1,5 +1,8 @@
+-- ga4ReportPull.js reformats GA4's "YYYYMMDD" date dimension to "YYYY-MM-DD" before it ever
+-- reaches the lake (formatGa4Date), so this column already parses as an ISO date, unlike the
+-- raw GA4 API response.
 CREATE OR REPLACE VIEW v_traffic_sources_daily AS
-SELECT date(parse_datetime(date, 'yyyyMMdd')) AS day,
+SELECT date(date) AS day,
        coalesce(sessionDefaultChannelGroup, 'unassigned') AS channel,
        sum(sessions)        AS sessions,
        sum(newUsers)        AS new_users,
