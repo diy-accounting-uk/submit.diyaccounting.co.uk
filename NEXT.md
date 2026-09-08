@@ -27,9 +27,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 12 gathers on `claude/b12-board` (local, from main at 7e11b39c); one push and one PR when
-the wave's tracks are merged and green. Wave 1 runs in worktrees under `.claude/worktrees/`, one
-agent per file area; each item's body stays in its section below until it is verified on main.
+Batch 12 is PR #151 (`claude/b12-board`, pushed once at 5283df3f on 2026-09-08 01:32 UTC);
+its ci deploy is run 34177004903, the environment deploy 34177004774. Merging the PR is the
+operator's yes to the Config and GuardDuty charge; the PR body carries the CodeQL dismissals to
+apply and the note that issue #43 can close. Each item's body stays in its section below until
+it is verified on main. Wave 1 ran in worktrees under `.claude/worktrees/`, one agent per file
+area, all merged and removed:
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
@@ -49,11 +52,11 @@ Wave 2, from the same batch:
 |---|---|---|---|
 | B55 (checkout and the portal for DIYA-GL tokens; the route is `/api/v1/billing/checkout`; the ci behaviour case) | on the batch | Sonnet | — |
 | B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
-| B52d (the five lake views, the alarm, DORA and probe writers, the ga4_daily pull) | on the batch; the batch build runs | Sonnet | — |
+| B52d (the five lake views, the alarm, DORA and probe writers, the ga4_daily pull) | on the batch | Sonnet | — |
 | B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
-B10.4 runs against the batch's ci set after the push.
+B10.4 runs against PR #151's ci set once its deploy is green; O22 and O27 can use the same set.
 
 ## Ready, unblocking others
 
