@@ -190,7 +190,8 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 3);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 21);
+        // 22, not 21: CostFocusTables adds cost_focus over the nightly FOCUS export copy.
+        analytics.resourceCountIs("AWS::Glue::Table", 22);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 18);
         // The lake and the Athena results bucket

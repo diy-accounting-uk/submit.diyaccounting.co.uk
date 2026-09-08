@@ -17,6 +17,9 @@ import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
+import co.uk.diyaccounting.submit.stacks.analytics.CostBudgetsAndAnomalyMonitor;
+import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
+import co.uk.diyaccounting.submit.stacks.analytics.CostFocusTables;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
@@ -450,6 +453,15 @@ public class AnalyticsStack extends Stack {
         workflowRunTables.doraRunsTable.addResourceDependency(this.glueDatabase);
         workflowRunTables.probeRunsTable.addResourceDependency(this.glueDatabase);
 
+        var costFocusTables = new CostFocusTables(
+                this,
+                CostFocusTables.CostFocusTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        costFocusTables.costFocusTable.addResourceDependency(this.glueDatabase);
+
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
         // Partition projection replaces a crawler: no MSCK REPAIR, no partition-registration
@@ -753,6 +765,32 @@ public class AnalyticsStack extends Stack {
                         .lakeBucket(this.lakeBucket)
                         .glueDatabaseName(sharedNames.glueDatabaseName)
                         .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .build());
+
+        // ============================================================================
+        // Cost: the nightly copy of the management account's FOCUS export, and this
+        // account's own budget and (prod only) anomaly monitor. B52e / PLAN_ONE_STOP_DASHBOARD.md
+        // row D7; the export itself lives in the management account (see CostExportStack, the
+        // cdk-cost app).
+        // ============================================================================
+        new CostFocusIngestion(
+                this,
+                CostFocusIngestion.CostFocusIngestionProps.builder()
+                        .idPrefix(prefix)
+                        .focusExportBucketName(co.uk.diyaccounting.submit.SubmitCostReporting.DEFAULT_BUCKET_NAME)
+                        .focusExportS3Prefix(CostExportStack.EXPORT_S3_PREFIX)
+                        .lakeBucket(this.lakeBucket)
+                        .curatedPrefix("curated/cost/focus")
+                        .build());
+
+        new CostBudgetsAndAnomalyMonitor(
+                this,
+                CostBudgetsAndAnomalyMonitor.CostBudgetsAndAnomalyMonitorProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
+                        .monthlyBudgetUsd(isProd ? 120 : 30)
+                        .telegramForwarderLambdaArn(sharedNames.activityTelegramForwarderLambdaArn)
+                        .createAnomalyMonitor(isProd)
                         .build());
 
         // ============================================================================
