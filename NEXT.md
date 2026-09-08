@@ -50,7 +50,7 @@ Wave 2, from the same batch:
 | B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | `agent-ab24f41486e1a3121` |
 | B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
 | B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-a19ab3fa8247c3e4d` |
-| B53c (the prod sweep considers every standing set) | sweep | Sonnet | `agent-ae48daceb69d2093e` |
+| B53c (the destroy workflows honour an explicit deployment name over the caller's event; the prod sweep considers every standing set) | on the batch | Sonnet | — |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
 B10.4 runs against the batch's ci set after the push.
@@ -164,12 +164,16 @@ B10.4 runs against the batch's ci set after the push.
   accounts activity there. Then `stripe-catalogue-sync`: the product and price in test, then
   live, and the ids onto `.env.ci`, `.env.prod` and the GitHub environments. **Source**:
   BACKLOG 34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B53c. The prod sweep considers every standing set.** The operator's decision of
-  2026-09-08: fix the sweep, keep the daily schedule. `destroy-prod.yml`'s sweep lists every
-  `prod-*-app-*` set in both regions, keeps the last-known-good pointer's set and any younger
-  than `SELF_DESTRUCT_DELAY_HOURS`, and destroys one other set per run; the explicit
-  `deployment-name` path stays. **Source**: the prod account, 2026-09-07. **Owner**: Claude
-  Code. **Model**: Sonnet.
+- [ ] **B53c. The prod sweep destroys the set a scheduled deploy replaces.** On the batch: the
+  cause was `destroy-prod.yml` trusting `github.event_name`, which a reusable workflow inherits
+  from its caller, so `deploy.yml`'s daily schedule made the destroy sweep instead of honouring
+  the explicit `deployment-name` it was passed (run 34105362721 left prod-c980ac9 standing).
+  Both destroy workflows now let an explicit name win, and the prod sweep itself lists every
+  `prod-*` set in both regions, keeps the pointer's set and any younger than
+  `SELF_DESTRUCT_DELAY_HOURS`, destroys one other set per run and clears a pointer with no
+  stacks behind it. Remaining: the first scheduled main deploy after merge proves it (the
+  replaced set goes in the same run). **Source**: the prod account, 2026-09-07; the
+  operator's decision of 2026-09-08. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B10.5. The remaining ITSA phase 1 endpoints, one PR each.** From
   `_developers/reference/hmrc-mtd-self-employment-business-api-5.0.yaml`: list, retrieve and
   amend the cumulative period summaries, each as `hmrcItsa<Name>.js` with the simulator route,
