@@ -399,6 +399,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

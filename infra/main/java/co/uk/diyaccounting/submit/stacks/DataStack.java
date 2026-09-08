@@ -45,6 +45,7 @@ public class DataStack extends Stack {
     public ITable hmrcItsaObligationsGetAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable;
+    public ITable hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable;
     public ITable companiesHouseAccountsAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
@@ -345,6 +346,22 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA Self-Employment Periods GET async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName);
 
+        // HMRC ITSA Self-Employment Period GET (retrieve one) async request storage
+        this.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodGetAsyncTTL",
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Self-Employment Period GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName);
+
         // Companies House accounts filing async request storage - the submission-number counter
         // allocateSubmissionNumber() increments also lives here, keyed apart from any real
         // request id.
@@ -542,6 +559,14 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableArn",
                 this.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName",
+                this.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableArn",
+                this.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "CompaniesHouseAccountsAsyncRequestsTableName",
