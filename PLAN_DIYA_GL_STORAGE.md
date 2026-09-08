@@ -371,17 +371,6 @@ Each step is one commit with its own acceptance check.
 
 ## 9. Open questions for the operator
 
-**The Payment Link and the subscriber key.** Section 5c decided a Stripe Payment Link carrying the
-Cognito subject as `client_reference_id`. `billingWebhookPost.js` reads
-`session.metadata?.hashedSub || session.client_reference_id` and writes the bundle under that value
-as the hashed sub, while
-`getUserBundles(sub)` looks the row up under `hashSub(sub)`. A raw subject therefore lands a row
-nobody reads, and every subscriber looks unentitled. Two ways out, both for LP-18: route the
-subscribe button through the existing `POST /api/v1/billing/checkout` so the server sets
-`metadata.hashedSub` and the Payment Link goes away, or add a small route returning the caller's own
-hashed sub for the page to pass. The first reuses working code, the second keeps the one-click link
-the launch plan priced. LP-16 works either way: `entitlementFor` only asks `getUserBundles(sub)`.
-
 **The client-id lookup picks the first client.** `.github/actions/lookup-resources/action.yml`
 resolves the app client with `UserPoolClients[0].ClientId`. With LP-15's second client on the pool
 that ordering is undefined, so a deploy could hand `COGNITO_CLIENT_ID` the books client and break
