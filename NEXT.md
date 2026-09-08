@@ -26,65 +26,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 13 is PR #153 (`claude/b13-board`, tip e8dd1384, pushed once on 2026-09-08 at 19:0x UTC),
-the worktree `.claude/worktrees/b12` (its old directory name). Maven and `npm test` are green on
-that tip (2453 tests). The operator's standing instruction of 2026-09-08: no board item enters
-"in flight" from here; only a bug that blocks this PR may be worked. What remains, in order:
+Batch 13 and the spreadsheets behaviour role are on main: PR #154 (`claude/ops-spreadsheets-role`,
+the role plus everything on `claude/b13-board`) merged at ebaeb7de on 2026-09-08 22:14 UTC; PR
+#153 is closed as superseded. The role branch's own ci runs were green (environment deploy
+34279820085, deploy 34279821140, test 34279819393), so the ci role
+`arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role` exists. The merge started
+main's environment deploy 34284851371 (which creates the prod role and the cost export),
+deploy 34284851786 (the next prod set, which retires prod-5c28d63), `sbom.yml` 34284850847 on
+its first run, test 34284850878 and CodeQL 34284850917; their results and the new prod set go
+on the prod line above when they land. The operator's standing instruction: no board item
+enters "in flight" without their word.
 
-1. The first run (2026-09-08 19:0x UTC) failed two ways, both fixed in 52a98d50 and pushed
-   at 19:5x UTC after every run had completed: the environment deploy's AnalyticsStack rolled
-   back on the new AWS Budget's forecast notification (Budgets accepts only `GREATER_THAN`,
-   `LESS_THAN` and `EQUAL_TO`), and the deploy's simulator vatSchemes suite lost a screenshot
-   to a navigation race after the HMRC sign-in click (the step now waits for the next document
-   first; the suite had passed on main's merge deploy). The second run's environment deploy
-   (34273259978), test and CodeQL are green; its deploy (34273260002) failed on HmrcStack and
-   the suites after it because the ci set from the first run self-destructed underneath it, so
-   the operator dispatched a fresh deploy, 34277995271 (third run, 20:59 UTC). That run failed
-   on EdgeStack: the previous set's AwsCustomResource provider log group in us-east-1 had been
-   recreated by the provider's last log lines after its stack was gone, so the new EdgeStack's
-   create hit "already exists"; every suite then failed or was cancelled on a set the operator
-   called hosed. Fix 34116c67, pushed at 21:4x UTC on the operator's word without waiting for a
-   destroy: `deploy-cdk-stack.yml` deletes a provider log group in either region when no stack
-   of that name stands before deploying. That push started only test (34279675154) and CodeQL
-   (34279679245), since the workflow it touched is outside `deploy.yml`'s path filter, so the
-   fourth deploy was dispatched: 34279784522 (21:5x UTC). A
-   failure gets its fix committed on the batch and pushed once the run has completed, never
-   while a `deploy environment` or `deploy` run is in progress. A stale ci set (a resource
-   CloudFormation records but AWS lacks) is destroyed from the branch ref before the next
-   deploy: `gh workflow run destroy-ci.yml --ref claude/b13-board -f deployment-name=<set>
-   -f sweep-for-stacks=false`, then `gh workflow run deploy.yml --ref claude/b13-board`.
-2. When the deploy and the checks are green, PR #153 is the operator's to merge; that deploy's
-   ci set serves B10.4, O22 and O27 for an hour.
-3. After the merge: strip every batch-13 item from this file, keep only what remains, and tell
-   the spreadsheets session (inbox `~/.claude/inboxes/spreadsheets.md`) that B50a and B57 are
-   on main.
-
-The operator's addition of 2026-09-08 21:1x UTC, the one exception to the freeze: **B57**, a
-role in each deployment account for the spreadsheets ci behaviour run's test user, as IaC in
-`IdentityStack.java` for ci and prod with fixed names
-(`arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role`,
-`arn:aws:iam::972912397388:role/prod-env-spreadsheets-behaviour-role`; trust
-`token.actions.githubusercontent.com`, sub `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*`;
-Cognito admin calls on the pool, `DescribeStacks` on the identity stack, the test-user script's
-DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it in a worktree
-(`agent-a87458237abeb2e66`). The operator's instruction of 21:3x UTC: it does not join the
-batch; when it lands, create a branch off `claude/b13-board` (`claude/ops-spreadsheets-role`),
-cherry-pick the commit there, push that branch once and open its PR against main, so the PR
-carries the role plus the whole batch while PR #153 stays as it is. Done: the role is
-PR #154 (`claude/ops-spreadsheets-role`, tip 39c89124, pushed 21:5x UTC, base main: it carries
-the role plus everything on `claude/b13-board`, so merging it lands both);
-its runs: environment deploy 34279820085, deploy 34279821140, test 34279819393. The role leaves out the subject-hash salt read the purge script needs
-(another repository's identity reading the salt would also trip the salt-read alarm), so the
-spreadsheets run skips the purge; the spreadsheets session has the ARNs and that gap.
-
-| Items | Agent | Model | Worktree |
-|---|---|---|---|
-| B52f (security panels: the nightly security lake Lambda, lifecycle check and alarm, `sbom.yml`, the fourteen CIS metric filters, WAF blocks, the rotation record) | on the batch | Sonnet | — |
-| B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`; five of eight objectives fill as their sources land) | on the batch | Sonnet | — |
-| B52h, B52j, B52k (the raw export and `analytics-pull.sh`, the retention and operator-effort views, the compliance lake and `compliance.toml`) | on the batch | Sonnet | — |
-| B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
-| B56 (the two remaining CodeQL redirect alerts: the return URL is built from the allow-list origin) | on the batch | Haiku | — |
-| B52e (the cost panel: `cdk-cost/` deploys the FOCUS 1.2 export in the management account through `root-github-actions-role`, no operator step; the nightly copy, three `v_cost_*` views, four metrics, budgets and the anomaly monitor by SNS to Telegram, the Running cost widgets) | on the batch, wired at cd28dde2 | Sonnet | — |
+Origin branches to delete once the operator is done with them: `claude/b12-board`,
+`claude/b13-board`, `claude/ops-spreadsheets-role` (all merged).
 
 ## Ready, unblocking others
 
