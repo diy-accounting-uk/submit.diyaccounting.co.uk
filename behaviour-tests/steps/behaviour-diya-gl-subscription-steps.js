@@ -40,6 +40,14 @@ export async function signInWithDiyaGlHostedUi(
       `&scope=${encodeURIComponent("openid profile email")}` +
       `&state=diya-gl-subscription-behaviour`;
 
+    // The callback URL is a real DIYA-GL page whose own sign-in script exchanges the code and
+    // strips it from the address bar on load, so answer that navigation with a blank page and
+    // read the code from the URL the browser arrived on instead.
+    const isCallback = (url) => url.toString().startsWith(redirectUri);
+    await page.route(isCallback, (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>DIYA-GL sign-in</title>" }),
+    );
+
     await page.goto(authorizeUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
     await submitHostedUINativeAuth(page, screenshotPath);
@@ -49,8 +57,9 @@ export async function signInWithDiyaGlHostedUi(
       await handleTotpChallenge(page, totpSecret, screenshotPath);
     }
 
-    await page.waitForURL((url) => url.toString().startsWith(redirectUri), { timeout: 30_000 });
+    await page.waitForURL(isCallback, { timeout: 30_000 });
     const callbackUrl = new URL(page.url());
+    await page.unroute(isCallback);
     const code = callbackUrl.searchParams.get("code");
     if (!code) {
       throw new Error(`No authorization code on the DIYA-GL hosted UI callback: ${page.url()}`);
