@@ -43,6 +43,10 @@ describe("activityTelegramForwarder", () => {
       expect(escapeTelegramMarkdown("[link]")).toBe("\\[link]");
     });
 
+    test("escapes a literal backslash so it cannot unescape the following character", () => {
+      expect(escapeTelegramMarkdown("\\*bold*")).toBe("\\\\\\*bold\\*");
+    });
+
     test("handles empty and null input", () => {
       expect(escapeTelegramMarkdown("")).toBe("");
       expect(escapeTelegramMarkdown(null)).toBe("");

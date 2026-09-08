@@ -14,14 +14,16 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("buildStripeProductsFromCatalog", () => {
   const catalog = loadCatalogFromRoot();
 
-  test("returns the three Stripe-priced products with the correct amounts", () => {
+  test("returns the five Stripe-priced products with the correct amounts", () => {
     const products = buildStripeProductsFromCatalog(catalog);
     const byBundleId = Object.fromEntries(products.map((p) => [p.bundleId, p]));
 
-    expect(products).toHaveLength(3);
+    expect(products).toHaveLength(5);
     expect(byBundleId["resident-pro"]).toMatchObject({ name: "Resident Pro", priceAmount: 999, currency: "gbp", interval: "month" });
     expect(byBundleId["resident-vat"]).toMatchObject({ name: "Resident VAT", priceAmount: 99, currency: "gbp", interval: "month" });
     expect(byBundleId["resident-itsa"]).toMatchObject({ name: "Resident ITSA", priceAmount: 99, currency: "gbp", interval: "month" });
+    expect(byBundleId["resident-ltd"]).toMatchObject({ name: "Resident Ltd", priceAmount: 99, currency: "gbp", interval: "month" });
+    expect(byBundleId["resident-diya-gl"]).toMatchObject({ name: "DIYA-GL", priceAmount: 99, currency: "gbp", interval: "month" });
   });
 
   test("skips a bundle without Stripe price fields", () => {

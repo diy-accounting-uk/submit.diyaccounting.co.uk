@@ -267,7 +267,13 @@ export const EVIDENCE_RULES = [
   },
   {
     id: 13,
-    match: (ctx) => (ctx.namespace || "").endsWith("submit.diyaccounting.co.uk"),
+    // Namespace is "<env>-submit.diyaccounting.co.uk" (e.g. "prod-submit.diyaccounting.co.uk").
+    // Require the "-" separator so an unrelated namespace that merely ends with the domain
+    // (e.g. "evilsubmit.diyaccounting.co.uk") cannot match.
+    match: (ctx) => {
+      const namespace = ctx.namespace || "";
+      return namespace === "submit.diyaccounting.co.uk" || namespace.endsWith("-submit.diyaccounting.co.uk");
+    },
     build: () => ({
       noEvidenceReason: "The evidence is a GitHub Actions run, not an AWS resource.",
       extraLinks: [
