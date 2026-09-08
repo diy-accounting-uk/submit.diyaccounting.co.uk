@@ -24,6 +24,7 @@ import {
   generateRequestId,
   prepareRedirect,
 } from "./lib/utils/correlation-utils.js";
+import { classifyVisitorKind } from "./lib/utils/visitor-kind.js";
 
 // Services layer
 import { checkAuthStatus, checkTokenExpiry, ensureSession } from "./lib/services/auth-service.js";
@@ -213,6 +214,10 @@ async function maybeInitRum() {
       enableXRay: true,
     });
     /* eslint-enable sonarjs/no-parameter-reassignment */
+
+    // Tags the session so the visitor panels can exclude synthetic traffic; queued on the
+    // cwr stub above, so it applies once the real RUM client has loaded.
+    window.cwr("addSessionAttributes", { visitor_kind: classifyVisitorKind() });
   } catch (e) {
     console.warn("Failed to init RUM:", e);
   }

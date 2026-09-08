@@ -64,7 +64,7 @@ test.describe("ITSA Dashboard", () => {
     await delay(200);
   }
 
-  test("links to the three ITSA pages in the order a user follows them", async ({ page }) => {
+  test("links to the six ITSA pages in the order a user follows them", async ({ page }) => {
     page.on("pageerror", (err) => {
       console.log("[PAGE_ERROR]", err?.message || String(err));
     });
@@ -73,10 +73,13 @@ test.describe("ITSA Dashboard", () => {
     await loadDashboard(page);
 
     const links = page.locator(".dashboard-step a.btn");
-    await expect(links).toHaveCount(3);
+    await expect(links).toHaveCount(6);
     await expect(links.nth(0)).toHaveAttribute("href", "businessDetails.html");
     await expect(links.nth(1)).toHaveAttribute("href", "obligations.html");
     await expect(links.nth(2)).toHaveAttribute("href", "selfEmploymentPeriod.html");
+    await expect(links.nth(3)).toHaveAttribute("href", "selfEmploymentPeriods.html");
+    await expect(links.nth(4)).toHaveAttribute("href", "selfEmploymentPeriodView.html");
+    await expect(links.nth(5)).toHaveAttribute("href", "selfEmploymentPeriodAmend.html");
   });
 
   test("marks the synthetic mode banner visible when the sandbox account is selected", async ({ page }) => {

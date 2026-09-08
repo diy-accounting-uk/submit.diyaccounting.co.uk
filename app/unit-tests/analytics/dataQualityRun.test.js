@@ -63,9 +63,12 @@ const fakeS3Client = new S3Client();
 const {
   handler,
   readConfig,
+  buildTargetConfig,
   buildEvaluationRunParams,
   listPartitionPrefixes,
   parsePartitionPrefix,
+  listDtPartitionPrefixes,
+  parseDtPartitionPrefix,
   listRegisteredPartitionKeys,
   registerMissingPartitions,
   registerPartitions,
@@ -73,21 +76,34 @@ const {
 
 const ENV_KEYS = [
   "GLUE_DATABASE_NAME",
-  "GLUE_DATA_QUALITY_TABLE_NAME",
-  "GLUE_DATA_QUALITY_RULESET_NAME",
   "GLUE_DATA_QUALITY_ROLE_ARN",
   "ANALYTICS_LAKE_BUCKET_NAME",
-  "GLUE_DATA_QUALITY_CURATED_PREFIX",
+  "GLUE_DATA_QUALITY_TARGETS",
+];
+
+const VALID_TARGETS = [
+  { table: "activity_events", ruleset: "ci_env_activity_events_dq", curatedPrefix: "curated/activity-events/" },
+  {
+    table: "alarm_state_changes",
+    ruleset: "ci_env_alarm_state_changes_dq",
+    curatedPrefix: "curated/alarm-state-changes/",
+  },
+  { table: "dora_runs", ruleset: "ci_env_dora_runs_dq", curatedPrefix: "curated/dora/" },
 ];
 
 function setValidEnv() {
   process.env.GLUE_DATABASE_NAME = "ci_env_analytics";
-  process.env.GLUE_DATA_QUALITY_TABLE_NAME = "activity_events";
-  process.env.GLUE_DATA_QUALITY_RULESET_NAME = "ci_env_activity_events_dq";
   process.env.GLUE_DATA_QUALITY_ROLE_ARN = "arn:aws:iam::111111111111:role/ci-env-data-quality-run";
   process.env.ANALYTICS_LAKE_BUCKET_NAME = "ci-env-analytics-lake-111111111111";
-  process.env.GLUE_DATA_QUALITY_CURATED_PREFIX = "curated/activity-events/";
+  process.env.GLUE_DATA_QUALITY_TARGETS = JSON.stringify(VALID_TARGETS);
 }
+
+const VALID_SHARED_CONFIG = {
+  databaseName: "ci_env_analytics",
+  roleArn: "arn:aws:iam::111111111111:role/ci-env-data-quality-run",
+  lakeBucketName: "ci-env-analytics-lake-111111111111",
+  targets: VALID_TARGETS,
+};
 
 const VALID_CONFIG = {
   databaseName: "ci_env_analytics",
@@ -123,18 +139,57 @@ describe("dataQualityRun", () => {
   });
 
   describe("readConfig", () => {
-    test("reads all six required variables", () => {
+    test("reads the shared variables and parses the targets array", () => {
       setValidEnv();
-      expect(readConfig()).toEqual(VALID_CONFIG);
+      expect(readConfig()).toEqual(VALID_SHARED_CONFIG);
     });
 
     test("throws naming every missing variable rather than silently defaulting", () => {
       setValidEnv();
-      delete process.env.GLUE_DATA_QUALITY_RULESET_NAME;
       delete process.env.GLUE_DATA_QUALITY_ROLE_ARN;
       delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
 
-      expect(() => readConfig()).toThrow(/rulesetName, roleArn, lakeBucketName/);
+      expect(() => readConfig()).toThrow(/roleArn, lakeBucketName/);
+    });
+
+    test("throws when GLUE_DATA_QUALITY_TARGETS is not valid JSON", () => {
+      setValidEnv();
+      process.env.GLUE_DATA_QUALITY_TARGETS = "not json";
+
+      expect(() => readConfig()).toThrow(/not valid JSON/);
+    });
+
+    test("throws when GLUE_DATA_QUALITY_TARGETS is an empty array", () => {
+      setValidEnv();
+      process.env.GLUE_DATA_QUALITY_TARGETS = "[]";
+
+      expect(() => readConfig()).toThrow(/non-empty JSON array/);
+    });
+  });
+
+  describe("buildTargetConfig", () => {
+    test("merges the shared config with one target's table, ruleset and curated prefix", () => {
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[0]);
+
+      expect(config).toEqual({
+        databaseName: "ci_env_analytics",
+        tableName: "activity_events",
+        rulesetName: "ci_env_activity_events_dq",
+        roleArn: "arn:aws:iam::111111111111:role/ci-env-data-quality-run",
+        lakeBucketName: "ci-env-analytics-lake-111111111111",
+        curatedPrefix: "curated/activity-events/",
+        partitionScheme: "year-month-day",
+      });
+    });
+
+    test("selects the dt partition scheme for dora_runs", () => {
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[2]);
+      expect(config.partitionScheme).toBe("dt");
+    });
+
+    test("selects the year-month-day partition scheme for alarm_state_changes", () => {
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[1]);
+      expect(config.partitionScheme).toBe("year-month-day");
     });
   });
 
@@ -164,6 +219,33 @@ describe("dataQualityRun", () => {
     test("returns null for a prefix that isn't a day partition", () => {
       expect(parsePartitionPrefix("curated/activity-events/year=2026/month=08/")).toBeNull();
       expect(parsePartitionPrefix("curated/activity-events/")).toBeNull();
+    });
+  });
+
+  describe("parseDtPartitionPrefix", () => {
+    test("parses a dt=YYYY-MM-DD prefix, keeping the date as-is", () => {
+      expect(parseDtPartitionPrefix("curated/dora/dt=2026-09-08/")).toEqual({
+        values: ["2026-09-08"],
+        location: "curated/dora/dt=2026-09-08/",
+      });
+    });
+
+    test("returns null for a prefix that isn't a dt partition", () => {
+      expect(parseDtPartitionPrefix("curated/dora/")).toBeNull();
+      expect(parseDtPartitionPrefix("curated/dora/year=2026/")).toBeNull();
+    });
+  });
+
+  describe("listDtPartitionPrefixes", () => {
+    test("lists the dt partitions one level below the curated prefix", async () => {
+      mockS3Send.mockResolvedValueOnce(
+        listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]),
+      );
+
+      const prefixes = await listDtPartitionPrefixes(fakeS3Client, "ci-env-analytics-lake-111111111111", "curated/dora/");
+
+      expect(prefixes).toEqual(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]);
+      expect(mockS3Send).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -334,30 +416,58 @@ describe("dataQualityRun", () => {
       await expect(registerPartitions(VALID_CONFIG)).rejects.toThrow("access denied");
       expect(mockGlueSend).not.toHaveBeenCalled();
     });
+
+    test("registers dt-scheme partitions for a dora_runs-shaped config", async () => {
+      const doraConfig = { ...VALID_CONFIG, tableName: "dora_runs", curatedPrefix: "curated/dora/", partitionScheme: "dt" };
+      mockS3Send.mockResolvedValueOnce(
+        listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]),
+      );
+      mockGlueSend
+        .mockResolvedValueOnce({ Partitions: [{ Values: ["2026-09-07"] }] }) // GetPartitions
+        .mockResolvedValueOnce({ Table: { StorageDescriptor: SAMPLE_STORAGE_DESCRIPTOR } }) // GetTable
+        .mockResolvedValueOnce({}); // BatchCreatePartition
+
+      const result = await registerPartitions(doraConfig);
+
+      expect(result).toEqual({ registered: 1 });
+      const batchCreateCall = mockGlueSend.mock.calls[2][0];
+      expect(batchCreateCall.input.PartitionInputList).toHaveLength(1);
+      expect(batchCreateCall.input.PartitionInputList[0].Values).toEqual(["2026-09-08"]);
+    });
   });
 
   describe("handler", () => {
-    test("registers partitions, then starts the evaluation run and returns its run id", async () => {
+    test("registers partitions and starts one evaluation run per target, in order", async () => {
       setValidEnv();
-      mockS3Send.mockResolvedValueOnce(listObjectsResponse([]));
-      mockGlueSend.mockResolvedValue({ RunId: "dqrun-123" });
+      mockS3Send.mockResolvedValue(listObjectsResponse([]));
+      mockGlueSend
+        .mockResolvedValueOnce({ RunId: "dqrun-activity" })
+        .mockResolvedValueOnce({ RunId: "dqrun-alarm" })
+        .mockResolvedValueOnce({ RunId: "dqrun-dora" });
 
       const result = await handler();
 
-      expect(result).toEqual({ runId: "dqrun-123" });
-      expect(mockGlueSend).toHaveBeenCalledTimes(1);
-      const command = mockGlueSend.mock.calls[0][0];
-      expect(command.input.RulesetNames).toEqual(["ci_env_activity_events_dq"]);
-      expect(command.input.AdditionalRunOptions).toEqual({ CloudWatchMetricsEnabled: true });
+      expect(result).toEqual({
+        runIds: {
+          activity_events: "dqrun-activity",
+          alarm_state_changes: "dqrun-alarm",
+          dora_runs: "dqrun-dora",
+        },
+      });
+      expect(mockGlueSend).toHaveBeenCalledTimes(3);
+      expect(mockGlueSend.mock.calls[0][0].input.RulesetNames).toEqual(["ci_env_activity_events_dq"]);
+      expect(mockGlueSend.mock.calls[1][0].input.RulesetNames).toEqual(["ci_env_alarm_state_changes_dq"]);
+      expect(mockGlueSend.mock.calls[2][0].input.RulesetNames).toEqual(["ci_env_dora_runs_dq"]);
+      expect(mockGlueSend.mock.calls[0][0].input.AdditionalRunOptions).toEqual({ CloudWatchMetricsEnabled: true });
     });
 
-    test("rethrows a Glue API error rather than returning success", async () => {
+    test("rethrows a Glue API error rather than continuing to the remaining targets", async () => {
       setValidEnv();
-      mockS3Send.mockResolvedValueOnce(listObjectsResponse([]));
-      const apiError = new Error("Glue is unavailable");
-      mockGlueSend.mockRejectedValue(apiError);
+      mockS3Send.mockResolvedValue(listObjectsResponse([]));
+      mockGlueSend.mockRejectedValueOnce(new Error("Glue is unavailable"));
 
       await expect(handler()).rejects.toThrow("Glue is unavailable");
+      expect(mockGlueSend).toHaveBeenCalledTimes(1);
     });
 
     test("fails fast on missing configuration without calling S3 or Glue", async () => {
@@ -366,7 +476,7 @@ describe("dataQualityRun", () => {
       expect(mockGlueSend).not.toHaveBeenCalled();
     });
 
-    test("does not start the evaluation run when partition registration fails", async () => {
+    test("does not start any evaluation run when partition registration fails", async () => {
       setValidEnv();
       mockS3Send.mockRejectedValue(new Error("access denied"));
 

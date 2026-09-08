@@ -1,0 +1,64 @@
+# GA4 in BigQuery, as code.
+#
+# scripts/ga4-bigquery-sync.js reads this file, lists the live ga4_daily dataset and its
+# BigQuery Data Transfer scheduled queries, diffs them against what is written here, and
+# creates or updates the difference. A query removed from this file is no longer managed by
+# the script; delete its scheduled query by hand afterwards.
+#
+# Source: analytics_523400333.events_* in project diyaccounting-ga4, GA4's own daily export
+# for the shared "DIY Accounting" property (google-analytics.toml), not a lake copy. Each
+# query writes one day at a time (event_date two days back, matching the margin
+# app/functions/analytics/ga4EventExportPull.js gives the export) into its own table in the
+# ga4_daily dataset, partitioned on the query's `partition_field` and replaced one partition
+# per run, so a rerun for the same day is idempotent. The nightly lake job copies these tables
+# alongside the Athena views (PLAN_ONE_STOP_DASHBOARD.md, "Where each dashboard lives").
+#
+# The service account (ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com) already
+# holds Owner on this project via analytics/google-roles.toml, which covers creating the
+# dataset and the scheduled queries.
+
+[dataset]
+project_id = "diyaccounting-ga4"
+dataset_id = "ga4_daily"
+location = "europe-west2"
+description = "One daily aggregate table per one-stop-dashboard panel, built from the GA4 BigQuery export."
+
+[[queries]]
+name = "sessions_by_host_source_daily"
+panel = "Sessions by host and source (uptime, both conversions)"
+description = "Sessions by hostname, session-level source/medium and visitor kind"
+sql_file = "analytics/bigquery/sessions_by_host_source_daily.sql"
+destination_table = "sessions_by_host_source_daily"
+partition_field = "day"
+write_disposition = "WRITE_TRUNCATE"
+schedule = "every day 04:30"
+
+[[queries]]
+name = "funnel_steps_daily"
+panel = "Funnel to submission (conversion to submission)"
+description = "Distinct GA4 sessions reaching each funnel step: session_start, login, begin_checkout, purchase"
+sql_file = "analytics/bigquery/funnel_steps_daily.sql"
+destination_table = "funnel_steps_daily"
+partition_field = "day"
+write_disposition = "WRITE_TRUNCATE"
+schedule = "every day 04:30"
+
+[[queries]]
+name = "key_events_daily"
+panel = "Key events by hostname (conversion to submission, conversion to paid)"
+description = "Key events by hostname: subscribe, submit, donate, download"
+sql_file = "analytics/bigquery/key_events_daily.sql"
+destination_table = "key_events_daily"
+partition_field = "day"
+write_disposition = "WRITE_TRUNCATE"
+schedule = "every day 04:30"
+
+[[queries]]
+name = "downloads_by_product_daily"
+panel = "Downloads by product (conversion to paid)"
+description = "Downloads by the product event parameter"
+sql_file = "analytics/bigquery/downloads_by_product_daily.sql"
+destination_table = "downloads_by_product_daily"
+partition_field = "day"
+write_disposition = "WRITE_TRUNCATE"
+schedule = "every day 04:30"

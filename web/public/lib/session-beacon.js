@@ -6,7 +6,7 @@
 
   try {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/session/beacon", true);
+    xhr.open("POST", "/api/v1/session/beacon", true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.send(JSON.stringify({ page: window.location.pathname }));
   } catch {

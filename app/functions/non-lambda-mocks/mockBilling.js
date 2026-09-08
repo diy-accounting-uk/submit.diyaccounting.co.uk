@@ -7,6 +7,7 @@
 // by granting the bundle and redirecting to the success URL.
 
 import { createLogger } from "../../lib/logger.js";
+import { resolveAllowedReturnTo } from "../billing/billingReturnUrl.js";
 
 const logger = createLogger({ source: "app/functions/non-lambda-mocks/mockBilling.js" });
 
@@ -18,9 +19,10 @@ const mockCheckoutSessions = new Map();
 
 export function apiEndpoint(app) {
   // Mock checkout session — returns a local auto-complete URL instead of a Stripe hosted page
-  app.post("/api/v1/billing/checkout-session", async (req, res) => {
+  app.post("/api/v1/billing/checkout", async (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     const bundleId = req.body?.bundleId || "resident-pro";
+    const returnTo = req.body?.returnTo;
     const sessionId = `sim_cs_${Date.now()}`;
     mockCheckoutSessions.set(sessionId, { bundleId, amountTotal: MOCK_AMOUNT_TOTAL, currency: MOCK_CURRENCY });
 
@@ -35,14 +37,19 @@ export function apiEndpoint(app) {
       logger.warn({ message: "Mock checkout session: could not decode JWT, bundle grant may fail" });
     }
 
-    const params = new URLSearchParams({ session: sessionId, bundleId, ...(userSub && { sub: userSub }) });
+    const params = new URLSearchParams({
+      session: sessionId,
+      bundleId,
+      ...(userSub && { sub: userSub }),
+      ...(returnTo && { returnTo }),
+    });
     const checkoutUrl = `${baseUrl}simulator/checkout?${params}`;
     logger.info({ message: "Mock checkout session created", sessionId, bundleId, checkoutUrl });
     res.json({ checkoutUrl });
   });
 
   // Mock checkout session retrieval — mirrors billingCheckoutSessionGet.js against the in-memory store
-  app.get("/api/v1/billing/checkout-session/:id", (req, res) => {
+  app.get("/api/v1/billing/checkout/:id", (req, res) => {
     const session = mockCheckoutSessions.get(req.params.id);
     if (!session) {
       res.status(404).json({ message: "Checkout session not found" });
@@ -55,7 +62,7 @@ export function apiEndpoint(app) {
   // Matches the shape of bundle records created by billingWebhookPost.js:handleCheckoutComplete()
   // so that "Manage Subscription" buttons render in the simulator.
   app.get("/simulator/checkout", async (req, res) => {
-    const { bundleId = "resident-pro", sub: userSub, session: sessionId } = req.query;
+    const { bundleId = "resident-pro", sub: userSub, session: sessionId, returnTo } = req.query;
     logger.info({ message: "Mock checkout auto-completing", bundleId, userSub });
 
     if (userSub) {
@@ -101,15 +108,19 @@ export function apiEndpoint(app) {
     }
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
+    const allowedReturnTo = resolveAllowedReturnTo(returnTo);
     const sessionParam = sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : "";
-    res.redirect(`${baseUrl}bundles.html?checkout=success${sessionParam}`);
+    const target = allowedReturnTo
+      ? `${allowedReturnTo}?checkout=success${sessionParam}`
+      : `${baseUrl}bundles.html?checkout=success${sessionParam}`;
+    res.redirect(target);
   });
 
   // Mock billing portal — redirects back to bundles page
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
     logger.info({ message: "Mock billing portal session created" });
-    res.json({ portalUrl: `${baseUrl}bundles.html` });
+    res.json({ portalUrl: resolveAllowedReturnTo(req.query.returnTo) || `${baseUrl}bundles.html` });
   });
 
   logger.info({ message: "Mock billing routes registered (Stripe not configured)" });

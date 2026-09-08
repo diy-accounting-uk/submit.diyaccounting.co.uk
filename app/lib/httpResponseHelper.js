@@ -178,10 +178,19 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
       ...data,
     }),
   };
-  if (request) {
-    levelledLogger({ message: "Responding to request with response", request: request.toString(), response: sanitiseData(response) });
+  // Log only fields that cannot carry a secret: the request path (no query string),
+  // the response status and the request id. Never the raw response body/headers or
+  // anything sourced from process.env, both of which can carry customer or credential data.
+  const requestPath = request instanceof URL ? request.pathname : undefined;
+  if (requestPath) {
+    levelledLogger({
+      message: "Responding to request with response",
+      path: requestPath,
+      statusCode,
+      requestId: merged["x-request-id"],
+    });
   } else {
-    levelledLogger({ message: "Responding with response", response: sanitiseData(response) });
+    levelledLogger({ message: "Responding with response", statusCode, requestId: merged["x-request-id"] });
   }
   return response;
 }
@@ -258,7 +267,7 @@ export function extractRequest(event) {
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
-      logger.info({ message: "Processing request with event", request: request.toString(), event: sanitiseData(event) });
+      logger.info({ message: "Processing request with event", request: sanitiseString(request.toString()), event: sanitiseData(event) });
     } catch (err) {
       logger.warn({ message: "Error building request URL from event", error: err, event: sanitiseData(event) });
       request = "https://unknown-url"; // Fallback URL in case of error

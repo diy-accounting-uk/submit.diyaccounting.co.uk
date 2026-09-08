@@ -16,6 +16,7 @@ import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingPortalGet.js" });
 
@@ -28,6 +29,7 @@ export function apiEndpoint(app) {
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+  const returnTo = resolveAllowedReturnTo(request.searchParams.get("returnTo"));
 
   let decodedToken;
   try {
@@ -69,7 +71,7 @@ export async function ingestHandler(event) {
 
     const session = await stripe.billingPortal.sessions.create({
       customer: subscriptionBundle.stripeCustomerId,
-      return_url: `${baseUrl}bundles.html`,
+      return_url: returnTo || `${baseUrl}bundles.html`,
     });
 
     logger.info({ message: "Billing portal session created", hashedSub: hashSub(userSub) });

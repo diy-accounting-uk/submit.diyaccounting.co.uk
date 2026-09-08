@@ -5,6 +5,12 @@
 -- read off the passes table's own change log instead, where every change record (insert or
 -- update) carries the pass type. A redemption is a change record whose use_count rose over
 -- the previous change record for the same pass.
+--
+-- The lag() has to run over every change record (insert and modify), not just the modifies:
+-- almost every pass is single-use, so its only modify is the redemption itself, and the
+-- use_count it needs to compare against is the insert's starting 0. Filtering to modifies
+-- before computing the lag left that first (and usually only) modify with no previous row to
+-- compare against, so passes_redeemed was always zero.
 CREATE OR REPLACE VIEW v_pass_redemptions_daily AS
 WITH issued AS (
   SELECT date(event_ts) AS day,
@@ -13,19 +19,19 @@ WITH issued AS (
   FROM   activity_events_all
   WHERE  actor = 'customer' AND event = 'pass-generated' AND pass_type_id IS NOT NULL
   GROUP  BY 1, 2),
-redemption_candidates AS (
+pass_history AS (
   SELECT change_ts,
+         change_type,
          pass_type_id,
          use_count,
          lag(use_count) OVER (PARTITION BY pass_id ORDER BY change_ts) AS previous_use_count
-  FROM   dynamo_passes
-  WHERE  change_type = 'MODIFY'),
+  FROM   dynamo_passes),
 redeemed AS (
   SELECT date(change_ts) AS day,
          pass_type_id,
          count(*) AS passes_redeemed
-  FROM   redemption_candidates
-  WHERE  previous_use_count IS NOT NULL AND use_count > previous_use_count
+  FROM   pass_history
+  WHERE  change_type = 'MODIFY' AND previous_use_count IS NOT NULL AND use_count > previous_use_count
   GROUP  BY 1, 2)
 SELECT coalesce(issued.day, redeemed.day) AS day,
        coalesce(issued.pass_type_id, redeemed.pass_type_id) AS pass_type_id,

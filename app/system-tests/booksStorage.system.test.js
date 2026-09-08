@@ -180,7 +180,7 @@ function putBody(overrides = {}) {
   };
 }
 
-describe("System: books storage end to end", () => {
+describe("System: DIYA-GL storage end to end", () => {
   beforeEach(() => {
     fakeBucket.objects.clear();
     process.env.BOOKS_BUCKET_NAME = "system-test-books-bucket";

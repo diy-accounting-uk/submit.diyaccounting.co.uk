@@ -91,7 +91,7 @@ describe("logout beacon", () => {
     await globalThis.window.AuthStatus.logout();
 
     expect(beacons).toHaveLength(1);
-    expect(beacons[0].url).toBe("/api/session/beacon");
+    expect(beacons[0].url).toBe("/api/v1/session/beacon");
     expect(beacons[0].type).toBe("application/json");
     expect(beaconBodies()[0]).toEqual({ event: "logout", email: "someone@example.com", provider: "Google" });
   });

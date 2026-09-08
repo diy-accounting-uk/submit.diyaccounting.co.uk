@@ -208,7 +208,7 @@ public class BooksStack extends Stack {
                 .with("BOOKS_MAX_PER_USER", "20")
                 .with("BOOKS_VERSIONS_KEPT", "30")
                 .with("BOOKS_ENTITLEMENT_ENFORCED", "false")
-                .with("BOOKS_BUNDLE_ID", "resident-books")
+                .with("BOOKS_BUNDLE_ID", "resident-diya-gl")
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var booksPutApiLambda = new ApiLambda(
                 this,
@@ -286,7 +286,7 @@ public class BooksStack extends Stack {
                 .build());
         this.booksDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of("s3:DeleteObject"))
+                .actions(List.of("s3:GetObject", "s3:DeleteObject"))
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         SubHashSaltHelper.grantSaltAccess(this.booksDeleteLambda, region, account, props.envName());

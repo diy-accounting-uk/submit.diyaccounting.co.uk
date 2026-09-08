@@ -29,10 +29,13 @@ const PUT_METRIC_DATA_BATCH_SIZE = 20;
  * Each definition names a view under infra/main/resources/analytics/views and the columns
  * it reads from it. The views are the contract: a column renamed there has to be renamed here.
  *
- * 23 CloudWatch metrics total, up from the 20 PLAN_USAGE_DATA_PIPELINE.md named as a cost guard
- * at $0.30/metric/month: this list's three purchase-reconciliation entries add $0.90/month. They
- * publish the three counts v_purchase_reconciliation_daily carries, not its two gap columns: a
- * gap is meaningful next to its two sides, and a bare difference metric reads as noise on its own.
+ * Up from the 20 PLAN_USAGE_DATA_PIPELINE.md named as a cost guard at $0.30/metric/month: the
+ * purchase-reconciliation trio (Ga4Purchases, StripePaidCharges, ActivityActivations) adds
+ * $0.90/month, and HmrcAuthentications, BundleOperations and BundleGrants — moved off the
+ * operations dashboard, where they counted Lambda invocations that reset on every deploy —
+ * add another $0.90/month. The purchase-reconciliation trio publishes the three counts
+ * v_purchase_reconciliation_daily carries, not its two gap columns: a gap is meaningful next to
+ * its two sides, and a bare difference metric reads as noise on its own.
  */
 export const METRIC_DEFINITIONS = [
   {
@@ -95,6 +98,37 @@ export const METRIC_DEFINITIONS = [
       `SELECT failure_class, sum(failures) AS failures FROM v_hmrc_failures_by_class WHERE day = DATE '${day}' GROUP BY failure_class`,
   },
   {
+    // Moved from the operations dashboard, which counted Lambda invocations of the live
+    // deployment - a fair proxy on the day but wrong as history, since a deploy renames the
+    // functions and the count resets.
+    metricName: "HmrcAuthentications",
+    unit: "Count",
+    valueColumn: "operations",
+    dimension: null,
+    sql: (day) =>
+      `SELECT operations FROM v_business_activity_daily WHERE day = DATE '${day}' AND activity = 'hmrc-token-exchanged'`,
+  },
+  {
+    // Moved from the operations dashboard's "Bundle Operations" widget, which summed
+    // bundlePost and bundleGet Lambda invocations. Bundle reads carry no activity event, so
+    // this counts the two state-changing operations activity events do carry.
+    metricName: "BundleOperations",
+    unit: "Count",
+    valueColumn: "operations",
+    dimension: { name: "Activity", column: "activity" },
+    sql: (day) =>
+      `SELECT activity, operations FROM v_business_activity_daily WHERE day = DATE '${day}' AND activity IN ('bundle-granted', 'bundle-deleted')`,
+  },
+  {
+    // Moved from the operations dashboard's "Bundle Grants & Cap Enforcement" widget, which
+    // read the Submit/BundleCapacity EMF metric emitted per deployment.
+    metricName: "BundleGrants",
+    unit: "Count",
+    valueColumn: "operations",
+    dimension: null,
+    sql: (day) => `SELECT operations FROM v_business_activity_daily WHERE day = DATE '${day}' AND activity = 'bundle-granted'`,
+  },
+  {
     metricName: "NewAccounts",
     unit: "Count",
     valueColumn: "new_accounts",
@@ -136,6 +170,65 @@ export const METRIC_DEFINITIONS = [
     dimension: null,
     usesReconciliationDate: true,
     sql: (day) => `SELECT activity_activations FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "CompletionsByActivity",
+    unit: "Count",
+    valueColumn: "completions",
+    dimension: { name: "Activity", column: "activity" },
+    sql: (day) =>
+      `SELECT activity, sum(completions) AS completions FROM v_submissions_by_activity_daily WHERE day = DATE '${day}' GROUP BY activity`,
+  },
+  {
+    metricName: "SessionsByChannel",
+    unit: "Count",
+    valueColumn: "sessions",
+    dimension: { name: "Channel", column: "channel" },
+    sql: (day) => `SELECT channel, sessions FROM v_traffic_sources_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "ProbePassRate",
+    unit: "None",
+    valueColumn: "pass_rate",
+    dimension: { name: "Suite", column: "suite" },
+    sql: (day) => `SELECT suite, pass_rate FROM v_availability_sli_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "ErrorBudgetRemaining",
+    unit: "Count",
+    valueColumn: "budget_remaining_runs",
+    dimension: { name: "Suite", column: "suite" },
+    sql: (day) => `SELECT suite, budget_remaining_runs FROM v_availability_sli_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "AlarmsFired",
+    unit: "Count",
+    valueColumn: "times_fired",
+    dimension: { name: "Family", column: "family" },
+    sql: (day) =>
+      `SELECT family, sum(times_fired) AS times_fired FROM v_alarm_state_changes_daily WHERE day = DATE '${day}' GROUP BY family`,
+  },
+  {
+    metricName: "Deploys",
+    unit: "Count",
+    valueColumn: "runs",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) => `SELECT environment, runs FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "DeployLeadTimeHours",
+    unit: "None",
+    valueColumn: "lead_time_hours",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) =>
+      `SELECT environment, median_lead_time_seconds / 3600.0 AS lead_time_hours FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "DeployFailureRate",
+    unit: "None",
+    valueColumn: "failure_rate",
+    dimension: { name: "Environment", column: "environment" },
+    sql: (day) => `SELECT environment, failure_rate FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
   },
 ];
 

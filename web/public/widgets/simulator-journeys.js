@@ -36,10 +36,11 @@ export class SimulatorJourney {
    */
   _setupMessageListener() {
     this._messageHandler = (event) => {
+      if (event.source !== this.iframe.contentWindow) return;
       const msg = event.data;
       if (!msg || msg.type !== "simulator-response") return;
       const resolve = this._pendingResponses.get(msg.id);
-      if (resolve) {
+      if (typeof resolve === "function") {
         this._pendingResponses.delete(msg.id);
         resolve(msg);
       }

@@ -56,10 +56,10 @@ class DataQualityTest {
     }
 
     @Test
-    void createsOneRulesetTargetingActivityEvents() {
+    void createsOneRulesetPerTarget() {
         Template template = synthDataQuality();
 
-        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
+        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 3);
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(
@@ -68,6 +68,42 @@ class DataQualityTest {
                         "TargetTable",
                         Match.objectLike(
                                 Map.of("DatabaseName", "docs_env_analytics", "TableName", "activity_events")))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_alarm_state_changes_dq",
+                        "TargetTable",
+                        Match.objectLike(
+                                Map.of("DatabaseName", "docs_env_analytics", "TableName", "alarm_state_changes")))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_dora_runs_dq",
+                        "TargetTable",
+                        Match.objectLike(Map.of("DatabaseName", "docs_env_analytics", "TableName", "dora_runs")))));
+    }
+
+    @Test
+    void alarmStateChangesAndDoraRunsRulesetsCarryTheirRules() {
+        Template template = synthDataQuality();
+
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_alarm_state_changes_dq",
+                        "Ruleset",
+                        Match.stringLikeRegexp(
+                                "[\\s\\S]*RowCount > 0[\\s\\S]*ALARM[\\s\\S]*OK[\\s\\S]*INSUFFICIENT_DATA[\\s\\S]*"))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_dora_runs_dq",
+                        "Ruleset",
+                        Match.stringLikeRegexp("[\\s\\S]*RowCount > 0[\\s\\S]*finished_at[\\s\\S]*"))));
     }
 
     @Test
@@ -108,11 +144,11 @@ class DataQualityTest {
     }
 
     @Test
-    void alarmsCarryNoSnsActionAndTheFailedAlarmWatchesTheGlueDataQualityMetric() {
+    void alarmsCarryNoSnsActionAndOneFailedAlarmPerTargetWatchesTheGlueDataQualityMetric() {
         Template template = synthDataQuality();
 
-        // Errors alarm plus the Glue-published rules-failed alarm; no DLQ-depth alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
+        // One errors alarm plus one Glue-published rules-failed alarm per target; no DLQ-depth alarm.
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (var resource : alarms.values()) {
@@ -123,15 +159,18 @@ class DataQualityTest {
                     "no alarm in this construct should carry an SNS action: " + properties);
         }
 
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "Namespace",
-                        "Glue Data Quality",
-                        "MetricName",
-                        "glue.data.quality.rules.failed",
-                        "Dimensions",
-                        List.of(Map.of("Name", "RulesetName", "Value", "docs_env_activity_events_dq")))));
+        for (String rulesetName :
+                List.of("docs_env_activity_events_dq", "docs_env_alarm_state_changes_dq", "docs_env_dora_runs_dq")) {
+            template.hasResourceProperties(
+                    "AWS::CloudWatch::Alarm",
+                    Match.objectLike(Map.of(
+                            "Namespace",
+                            "Glue Data Quality",
+                            "MetricName",
+                            "glue.data.quality.rules.failed",
+                            "Dimensions",
+                            List.of(Map.of("Name", "RulesetName", "Value", rulesetName)))));
+        }
     }
 
     @Test
@@ -178,24 +217,19 @@ class DataQualityTest {
                                         Match.arrayWith(
                                                 List.of("glue:GetPartitions", "glue:BatchCreatePartition")))))))))));
 
+        var expectedPrefixes = List.of(
+                "curated/activity-events/*", "curated/alarm-state-changes/*", "curated/dora/*");
+        var expectedCondition = Match.objectLike(Map.of("StringLike", Map.of("s3:prefix", expectedPrefixes)));
+        var expectedStatement = Match.objectLike(
+                Map.of("Action", "s3:ListBucket", "Condition", expectedCondition));
+        var expectedDocument = Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(expectedStatement))));
+
         template.hasResourceProperties(
-                "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "s3:ListBucket",
-                                        "Condition",
-                                        Match.objectLike(
-                                                Map.of(
-                                                        "StringLike",
-                                                        Map.of("s3:prefix", "curated/activity-events/*"))))))))))));
+                "AWS::IAM::Policy", Match.objectLike(Map.of("PolicyDocument", expectedDocument)));
     }
 
     @Test
-    void runnerLambdaEnvironmentCarriesLakeBucketAndCuratedPrefix() {
+    void runnerLambdaEnvironmentCarriesLakeBucketAndTheThreeTargets() {
         Template template = synthDataQuality();
 
         template.hasResourceProperties(
@@ -205,8 +239,28 @@ class DataQualityTest {
                         Match.objectLike(Map.of(
                                 "Variables",
                                 Match.objectLike(Map.of(
-                                        "ANALYTICS_LAKE_BUCKET_NAME", "docs-env-analytics-lake-111111111111",
-                                        "GLUE_DATA_QUALITY_CURATED_PREFIX", "curated/activity-events/")))))));
+                                        "ANALYTICS_LAKE_BUCKET_NAME", "docs-env-analytics-lake-111111111111")))))));
+
+        var functions = template.findResources("AWS::Lambda::Function");
+        boolean found = false;
+        for (Map<String, Object> function : functions.values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) function.get("Properties");
+            if (properties == null) continue;
+            @SuppressWarnings("unchecked")
+            var environment = (Map<String, Object>) properties.get("Environment");
+            if (environment == null) continue;
+            @SuppressWarnings("unchecked")
+            var variables = (Map<String, Object>) environment.get("Variables");
+            if (variables == null || !variables.containsKey("GLUE_DATA_QUALITY_TARGETS")) continue;
+
+            found = true;
+            String json = String.valueOf(variables.get("GLUE_DATA_QUALITY_TARGETS"));
+            for (String tableName : List.of("activity_events", "alarm_state_changes", "dora_runs")) {
+                assertTrue(json.contains(tableName), "expected " + tableName + " in GLUE_DATA_QUALITY_TARGETS: " + json);
+            }
+        }
+        assertTrue(found, "Expected one Lambda function with a GLUE_DATA_QUALITY_TARGETS environment variable");
     }
 
     @Test

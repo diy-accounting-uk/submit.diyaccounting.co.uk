@@ -3,10 +3,10 @@
 
 // behaviour-tests/books.behaviour.test.js
 //
-// Drives the books storage API's four routes as the spreadsheets site's books page will: sign in
+// Drives the DIYA-GL storage API's four routes as the spreadsheets site's DIYA-GL pages will: sign in
 // through Submit's hosted UI, read the id token it leaves in localStorage, then navigate to a page
 // on the spreadsheets origin and call the API from there with fetch, so the browser enforces the
-// same CORS the deployed API answers with. Before LP-15 lands the books app client, this runs
+// same CORS the deployed API answers with. Before LP-15 lands the DIYA-GL app client, this runs
 // against the existing client id, which the books authoriser does not yet accept in production -
 // this probe is written and exercised locally but not run against ci in this change.
 

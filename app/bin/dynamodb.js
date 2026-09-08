@@ -394,6 +394,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIODS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

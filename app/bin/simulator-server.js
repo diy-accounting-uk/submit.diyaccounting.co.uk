@@ -12,6 +12,7 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { createApp as createHttpSimulatorApp } from "../http-simulator/server.js";
 import { reset as resetState } from "../http-simulator/state/store.js";
+import { resolveAllowedReturnTo } from "../functions/billing/billingReturnUrl.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,7 +44,7 @@ export function createSimulatorServer() {
       "http://localhost:3000",
       "http://localhost:8080",
     ];
-    if (origin && allowedOrigins.some((o) => origin.startsWith(o.replace(/:\d+$/, "")))) {
+    if (origin && allowedOrigins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
     }
@@ -309,16 +310,19 @@ export function createSimulatorServer() {
   });
 
   // Mock billing endpoints — fakes Stripe like the simulator fakes OAuth
-  app.post("/api/v1/billing/checkout-session", (req, res) => {
+  app.post("/api/v1/billing/checkout", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
     const bundleId = req.body?.bundleId || "resident-pro";
+    const returnTo = req.body?.returnTo;
     const sessionId = `sim_cs_${Date.now()}`;
-    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}`;
+    const checkoutUrl = `${baseUrl}simulator/checkout?session=${sessionId}&bundleId=${bundleId}${
+      returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
+    }`;
     res.json({ data: { checkoutUrl } });
   });
 
   app.get("/simulator/checkout", (req, res) => {
-    const { bundleId = "resident-pro" } = req.query;
+    const { bundleId = "resident-pro", returnTo } = req.query;
     // Auto-complete checkout: grant the bundle and redirect to success
     const userBundles = bundles.get(req.user.sub) || [];
     const existing = userBundles.find((b) => b.bundleId === bundleId);
@@ -349,12 +353,14 @@ export function createSimulatorServer() {
       bundles.set(req.user.sub, userBundles);
     }
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
-    res.redirect(`${baseUrl}bundles.html?checkout=success`);
+    const allowedReturnTo = resolveAllowedReturnTo(returnTo);
+    res.redirect(allowedReturnTo ? `${allowedReturnTo}?checkout=success` : `${baseUrl}bundles.html?checkout=success`);
   });
 
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
-    res.json({ data: { portalUrl: `${baseUrl}bundles.html` } });
+    const { returnTo } = req.query;
+    res.json({ data: { portalUrl: resolveAllowedReturnTo(returnTo) || `${baseUrl}bundles.html` } });
   });
 
   // In-memory receipts store
@@ -572,9 +578,12 @@ export function createSimulatorServer() {
   // Serve static files
   app.use(express.static(staticPath, { dotfiles: "allow" }));
 
-  // SPA fallback - serve index.html for unmatched routes
+  // SPA fallback - serve index.html for unmatched routes. Read once at startup and serve the
+  // cached string, so the handler itself performs no file system access per request.
+  const spaFallbackHtml = fs.readFileSync(path.join(staticPath, "index.html"), "utf8");
   app.get("*", (req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send(spaFallbackHtml);
   });
 
   return app;

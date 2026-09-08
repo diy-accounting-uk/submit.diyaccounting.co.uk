@@ -212,7 +212,7 @@ public class IdentityStack extends Stack {
 
         var preTokenGenFunction = Function.Builder.create(this, props.resourceNamePrefix() + "-PreTokenGeneration")
                 .functionName(preTokenGenFunctionName)
-                .runtime(Runtime.NODEJS_22_X)
+                .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("index.handler")
                 .code(Code.fromAsset(preTokenGenAssetDir.toString()))
@@ -273,7 +273,7 @@ public class IdentityStack extends Stack {
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
 
         // Books User Pool Client
-        // A second client on the same pool for the spreadsheets site's books pages. Sign-in stays
+        // A second client on the same pool for the spreadsheets site's DIYA-GL pages. Sign-in stays
         // on this pool's hosted UI (same Google IdP, no native Cognito login), then redirects back
         // to the spreadsheets host - so this client needs no USER_PASSWORD_AUTH/USER_SRP_AUTH flow,
         // only the authorization-code grant the hosted UI redirect uses.
@@ -357,7 +357,7 @@ public class IdentityStack extends Stack {
         return urls;
     }
 
-    // The four books pages, one per spreadsheets product, all served under /books/ on the
+    // The four DIYA-GL pages, one per spreadsheets product, all served under /books/ on the
     // spreadsheets site. Cognito requires an exact match per callback/logout URL, so both the
     // /books/ landing path and each page are listed.
     private static final List<String> BOOKS_PAGE_NAMES = List.of("bst.html", "se.html", "taxi.html", "ltd.html");

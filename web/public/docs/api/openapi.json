@@ -64,13 +64,6 @@
         }
       }
     },
-    "/billing/checkout-session" : {
-      "post" : {
-        "summary" : "Create billing checkout session",
-        "description" : "Creates a Stripe checkout session for subscription",
-        "operationId" : "createCheckoutSession"
-      }
-    },
     "/companies-house/transaction/{transactionId}" : {
       "get" : {
         "summary" : "Get a Companies House transaction",
@@ -99,13 +92,6 @@
             "type" : "string"
           }
         } ]
-      }
-    },
-    "/api/session/beacon" : {
-      "post" : {
-        "summary" : "Session beacon",
-        "description" : "Records a new browser session for activity monitoring",
-        "operationId" : "sessionBeacon"
       }
     },
     "/books/{bookId}" : {
@@ -517,6 +503,158 @@
             "description" : "Request completed successfully"
           }
         }
+      },
+      "get" : {
+        "summary" : "Retrieve an ITSA self-employment period summary",
+        "description" : "Retrieves one self-employment period summary by tax year and period id",
+        "operationId" : "getItsaSelfEmploymentPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The period id from a listed period summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Amend an ITSA self-employment period summary",
+        "description" : "Amends the income, expenses and disallowable expenses of an existing self-employment period summary",
+        "operationId" : "putItsaSelfEmploymentPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The period id from a listed period summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodIncome",
+          "in" : "body",
+          "required" : false,
+          "description" : "Income for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodExpenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Expenses for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "periodDisallowableExpenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Disallowable expenses for the period",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/bundle" : {
@@ -694,6 +832,22 @@
         }
       }
     },
+    "/billing/checkout/{id}" : {
+      "get" : {
+        "summary" : "Retrieve a billing checkout session",
+        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
+        "operationId" : "getCheckoutSession",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Stripe checkout session id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
         "summary" : "Poll a micro-entity accounts filing",
@@ -777,6 +931,71 @@
         "summary" : "Get billing portal URL",
         "description" : "Creates a Stripe billing portal session URL",
         "operationId" : "getBillingPortal"
+      }
+    },
+    "/hmrc/itsa/self-employment/periods" : {
+      "get" : {
+        "summary" : "List ITSA self-employment period summaries",
+        "description" : "Lists the cumulative period summaries filed for a self-employment business in a tax year",
+        "operationId" : "getItsaSelfEmploymentPeriods",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/session/beacon" : {
+      "post" : {
+        "summary" : "Session beacon",
+        "description" : "Records a new browser session for activity monitoring",
+        "operationId" : "sessionBeacon"
       }
     },
     "/support/ticket" : {
@@ -1087,22 +1306,6 @@
         "operationId" : "stripeWebhook"
       }
     },
-    "/billing/checkout-session/{id}" : {
-      "get" : {
-        "summary" : "Retrieve a billing checkout session",
-        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
-        "operationId" : "getCheckoutSession",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Stripe checkout session id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
     "/billing/recover" : {
       "post" : {
         "summary" : "Recover billing subscription",
@@ -1328,6 +1531,13 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/billing/checkout" : {
+      "post" : {
+        "summary" : "Create billing checkout session",
+        "description" : "Creates a Stripe checkout session for subscription",
+        "operationId" : "createCheckoutSession"
       }
     }
   },

@@ -13,13 +13,16 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
+import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
+import co.uk.diyaccounting.submit.stacks.analytics.WorkflowRunTables;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.io.IOException;
@@ -378,8 +381,29 @@ public class AnalyticsStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
                         .build());
 
+        var alarmStateChangeDelivery = new AlarmStateChangeDelivery(
+                this,
+                prefix + "-AlarmStateChangeDelivery",
+                AlarmStateChangeDelivery.AlarmStateChangeDeliveryProps.builder()
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseDependency(Optional.of(this.glueDatabase))
+                        .sharedNames(sharedNames)
+                        .envName(props.envName())
+                        .resourceNamePrefix(prefix)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
         Lambda.stackHealthAlarm(
-                this, prefix, "analytics", List.of(transformLambda, tableChangeDelivery.consumerLambdaConstruct));
+                this,
+                prefix,
+                "analytics",
+                List.of(
+                        transformLambda,
+                        tableChangeDelivery.consumerLambdaConstruct,
+                        alarmStateChangeDelivery.transformLambdaConstruct));
 
         var stripeTables = new StripeReconciliationTables(
                 this,
@@ -403,6 +427,28 @@ public class AnalyticsStack extends Stack {
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
         ga4Tables.bqEventsTable.addResourceDependency(this.glueDatabase);
+
+        var ga4DailyTables = new Ga4DailyTables(
+                this,
+                Ga4DailyTables.Ga4DailyTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        ga4DailyTables.sessionsByHostSourceTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.funnelStepsTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.keyEventsTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.downloadsByProductTable.addResourceDependency(this.glueDatabase);
+
+        var workflowRunTables = new WorkflowRunTables(
+                this,
+                WorkflowRunTables.WorkflowRunTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        workflowRunTables.doraRunsTable.addResourceDependency(this.glueDatabase);
+        workflowRunTables.probeRunsTable.addResourceDependency(this.glueDatabase);
 
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
@@ -523,7 +569,10 @@ public class AnalyticsStack extends Stack {
                         .resourceNamePrefix(prefix)
                         .glueDatabaseName(sharedNames.glueDatabaseName)
                         .glueDatabaseDependency(Optional.of(this.glueDatabase))
-                        .targetTableDependency(Optional.of(curatedActivityEventsTable))
+                        .targetTableDependencies(Map.of(
+                                "activity_events", curatedActivityEventsTable,
+                                "alarm_state_changes", alarmStateChangeDelivery.glueTable,
+                                "dora_runs", workflowRunTables.doraRunsTable))
                         .lakeBucket(this.lakeBucket)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
@@ -673,6 +722,23 @@ public class AnalyticsStack extends Stack {
             tableChangeDelivery.glueTables.forEach(r.getNode()::addDependency);
             r.getNode().addDependency(stripeTables.chargesTable);
         });
+        // The three new sources each feed exactly one view, so their dependency edges are added
+        // by view name rather than unconditionally on every view.
+        businessViews
+                .viewResourcesByName
+                .get("v_alarm_state_changes_daily")
+                .getNode()
+                .addDependency(alarmStateChangeDelivery.glueTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_availability_sli_daily")
+                .getNode()
+                .addDependency(workflowRunTables.probeRunsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_dora_runs_daily")
+                .getNode()
+                .addDependency(workflowRunTables.doraRunsTable);
 
         new AnalyticsDashboard(
                 this,

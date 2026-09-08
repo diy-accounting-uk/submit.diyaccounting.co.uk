@@ -56,6 +56,7 @@ on:
           - 'companiesHouseBehaviour'
           - 'changeRegisteredOfficeBehaviour'
           - 'changeRegisteredEmailBehaviour'
+          - 'diyaGlSubscriptionBehaviour'
           - 'allBehaviour'
         default: 'submitVatBehaviour'
       generate-test-reports:
@@ -270,15 +271,21 @@ jobs:
         if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
         run: |
           PARAMETER_NAME="/submit/prod/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
-          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
       - name: If not main, read back last known good ci deployment from SSM Parameter Store
         if: ${{ needs.params.outputs.deployment-name == '' && github.ref != 'refs/heads/main' }}
         run: |
           PARAMETER_NAME="/submit/ci/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
-          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
       - name: If last-known-good-deployment set use that otherwise use current deployment name
         id: deployment-name
@@ -397,6 +404,16 @@ jobs:
             echo "Skipping Cognito test user setup (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
           fi
 
+      - name: Look up the DIYA-GL app client for the DIYA-GL subscription suite
+        id: diya-gl-client
+        if: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' }}
+        shell: bash
+        run: |
+          # This job runs in the Playwright container, which has the AWS SDK but not the CLI.
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-env-IdentityStack"
+          BOOKS_CLIENT_ID=$(node scripts/stack-output.js "$STACK_NAME" BooksUserPoolClientId)
+          echo "books-client-id=$BOOKS_CLIENT_ID" | tee -a "$GITHUB_OUTPUT"
+
       - name: Stagger HMRC API calls
         if: ${{ !cancelled() }}
         run: |
@@ -443,6 +460,13 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+          # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
+          # UI directly; unused by every other suite.
+          COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
+          # returns there; the ci client also lists localhost:3000 for local runs.
+          SPREADSHEETS_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://spreadsheets.diyaccounting.co.uk/' || 'https://ci-spreadsheets.diyaccounting.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
@@ -477,6 +501,13 @@ jobs:
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
+          # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
+          # UI directly; unused by every other suite.
+          COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
+          # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
+          # returns there; the ci client also lists localhost:3000 for local runs.
+          SPREADSHEETS_BASE_URL: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && (needs.names.outputs.environment-name == 'prod' && 'https://spreadsheets.diyaccounting.co.uk/' || 'https://ci-spreadsheets.diyaccounting.co.uk/') || '' }}
           # The two Companies House filing suites sign in to the real sandbox on ci; unused by
           # every other suite.
           COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
@@ -586,6 +617,9 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v6
@@ -621,6 +655,55 @@ jobs:
             --dimensions test=${{ matrix.suite }} \
             --value "$VALUE" \
             --region ${{ env.AWS_REGION }}
+
+      # Probe row for the one-stop dashboard's availability SLI, reading the same pass/fail
+      # this step's CloudWatch metric already reads, so the two always agree.
+      - name: Build the probe row
+        if: ${{ !cancelled() }}
+        id: probe-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROBE_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
+          PROBE_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          PROBE_SUITE: ${{ matrix.suite }}
+          PROBE_RUN_ID: ${{ github.run_id }}
+          PROBE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PROBE_TRIGGER: ${{ github.event_name }}
+          PROBE_REPOSITORY: ${{ github.repository }}
+          PROBE_BEHAVIOUR_TEST_RESULT: ${{ needs.behaviour-test.result }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${PROBE_REPOSITORY}/actions/runs/${PROBE_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          if [ "$PROBE_BEHAVIOUR_TEST_RESULT" = "success" ]; then PASSED=true; else PASSED=false; fi
+
+          ROW=$(jq -nc \
+            --arg environment "$PROBE_ENVIRONMENT" \
+            --arg deployment "$PROBE_DEPLOYMENT" \
+            --arg suite "$PROBE_SUITE" \
+            --arg run_id "$PROBE_RUN_ID" \
+            --argjson run_attempt "$PROBE_RUN_ATTEMPT" \
+            --arg finished_at "$FINISHED_AT" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg trigger "$PROBE_TRIGGER" \
+            --argjson passed "$PASSED" \
+            '{
+              environment: $environment, deployment: $deployment, suite: $suite,
+              run_id: $run_id, run_attempt: $run_attempt, finished_at: $finished_at,
+              duration_seconds: $duration_seconds, trigger: $trigger, passed: $passed
+            }')
+
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "dt=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Write the probe row to the lake
+        if: ${{ !cancelled() }}
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: 'curated/probe/dt=${{ steps.probe-row.outputs.dt }}/${{ github.run_id }}-${{ matrix.suite }}.json'
+          row: ${{ steps.probe-row.outputs.row }}
 
   upload-web-test-results:
     if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}

@@ -26,6 +26,9 @@ import { apiEndpoint as hmrcVatReturnGetApiEndpoint } from "../functions/hmrc/hm
 import { apiEndpoint as hmrcItsaBusinessDetailsGetApiEndpoint } from "../functions/hmrc/hmrcItsaBusinessDetailsGet.js";
 import { apiEndpoint as hmrcItsaObligationsGetApiEndpoint } from "../functions/hmrc/hmrcItsaObligationsGet.js";
 import { apiEndpoint as hmrcItsaSelfEmploymentPeriodPostApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
+import { apiEndpoint as hmrcItsaSelfEmploymentPeriodsGetApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodsGet.js";
+import { apiEndpoint as hmrcItsaSelfEmploymentPeriodGetApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodGet.js";
+import { apiEndpoint as hmrcItsaSelfEmploymentPeriodPutApiEndpoint } from "../functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js";
 import { apiEndpoint as hmrcReceiptGetApiEndpoint } from "../functions/hmrc/hmrcReceiptGet.js";
 import { apiEndpoint as companiesHouseSearchGetApiEndpoint } from "../functions/companies-house/companiesHouseSearchGet.js";
 import { apiEndpoint as companiesHouseCompanyGetApiEndpoint } from "../functions/companies-house/companiesHouseCompanyGet.js";
@@ -96,10 +99,15 @@ app.use((req, res, next) => {
 });
 
 // Basic CORS middleware (mostly for local tools and OPTIONS where needed)
+const LOCAL_DEV_ORIGINS = [
+  "https://local.submit.diyaccounting.co.uk:3443",
+  "http://localhost:3000",
+  "http://localhost:8080",
+];
 app.use((req, res, next) => {
-  // Allow same-origin, and also enable generic CORS for dev tools
+  // Allow only known local dev origins, not every origin a caller sends.
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && LOCAL_DEV_ORIGINS.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
   }
@@ -256,6 +264,9 @@ hmrcVatReturnGetApiEndpoint(app);
 hmrcItsaBusinessDetailsGetApiEndpoint(app);
 hmrcItsaObligationsGetApiEndpoint(app);
 hmrcItsaSelfEmploymentPeriodPostApiEndpoint(app);
+hmrcItsaSelfEmploymentPeriodsGetApiEndpoint(app);
+hmrcItsaSelfEmploymentPeriodGetApiEndpoint(app);
+hmrcItsaSelfEmploymentPeriodPutApiEndpoint(app);
 hmrcReceiptGetApiEndpoint(app);
 companiesHouseSearchGetApiEndpoint(app);
 companiesHouseCompanyGetApiEndpoint(app);
