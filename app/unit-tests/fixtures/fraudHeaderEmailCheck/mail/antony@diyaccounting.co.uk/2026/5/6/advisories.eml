@@ -1,0 +1,33 @@
+Date: Wed, 6 May 2026 10:30:00 +0000
+From: HMRC fraud prevention <noreply@tax.service.gov.uk>
+To: developer@example.com
+Subject: Improve fraud prevention headers for DIY Accounting Submit
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="OUTER-BOUNDARY"
+
+--OUTER-BOUNDARY
+Content-Type: multipart/alternative; boundary="INNER-BOUNDARY"
+
+--INNER-BOUNDARY
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html><body><p>Improve fraud prevention headers for DIY Accounting Submit</p></body=
+></html>
+
+--INNER-BOUNDARY
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Improve fraud prevention headers for DIY Accounting Submit
+
+Dear Example Developer
+
+Your application=E2=80=99s fraud prevention headers have advisories.
+
+In production, in April 2026, DIY Accounting Submit has advisories that you need t=
+o review.
+
+--INNER-BOUNDARY--
+--OUTER-BOUNDARY--

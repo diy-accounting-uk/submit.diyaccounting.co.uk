@@ -13,7 +13,7 @@ const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.j
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "post", "/api/session/beacon", ingestHandler);
+  registerLambdaRoute(app, "post", "/api/v1/session/beacon", ingestHandler);
 }
 /* v8 ignore stop */
 

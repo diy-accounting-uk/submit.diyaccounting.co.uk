@@ -101,13 +101,6 @@
         } ]
       }
     },
-    "/api/session/beacon" : {
-      "post" : {
-        "summary" : "Session beacon",
-        "description" : "Records a new browser session for activity monitoring",
-        "operationId" : "sessionBeacon"
-      }
-    },
     "/books/{bookId}" : {
       "put" : {
         "summary" : "Store a book version",
@@ -777,6 +770,13 @@
         "summary" : "Get billing portal URL",
         "description" : "Creates a Stripe billing portal session URL",
         "operationId" : "getBillingPortal"
+      }
+    },
+    "/session/beacon" : {
+      "post" : {
+        "summary" : "Session beacon",
+        "description" : "Records a new browser session for activity monitoring",
+        "operationId" : "sessionBeacon"
       }
     },
     "/support/ticket" : {

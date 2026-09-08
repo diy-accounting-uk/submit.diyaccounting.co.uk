@@ -41,7 +41,7 @@ outputs:
     description: "Cognito User Pool Client ID (the main app client, selected by ClientName)"
     value: ${{ steps.cognito.outputs.CLIENT_ID }}
   cognito-books-client-id:
-    description: "Cognito User Pool Client ID for the spreadsheets books pages (selected by ClientName)"
+    description: "Cognito User Pool Client ID for the spreadsheets DIYA-GL pages (selected by ClientName)"
     value: ${{ steps.cognito.outputs.BOOKS_CLIENT_ID }}
   http-api-id:
     description: "API Gateway HTTP API ID"
@@ -93,7 +93,7 @@ runs:
         echo "Found User Pool ARN: ${USER_POOL_ARN}"
 
         # Select by ClientName, not list position: the pool carries a second client (the
-        # spreadsheets books pages), so array order is not a stable way to find the app client.
+        # spreadsheets DIYA-GL pages), so array order is not a stable way to find the app client.
         CLIENT_NAME="${{ inputs.environment-name }}-env-client"
         CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
           --user-pool-id "${USER_POOL_ID}" \

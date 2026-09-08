@@ -139,6 +139,44 @@ ENVIRONMENT_NAME=myprod npm run cdk:synth-application
 ```
 - Deploy via GitHub Actions: push to main or run the deploy workflow and select your environment name.
 
+9) Fraud prevention header monthly check
+- `scripts/fraud-header-email-check.js` reads HMRC's monthly fraud prevention header report out
+  of the gyb mail mirror (`mail/` at the workspace root, next to this repo — see the workspace's
+  `mail-sync` skill), parses it, and posts an activity event to the operational Telegram chat
+  when the month has advisories, errors, zero traffic, or never sent a report at all. A correct
+  month posts nothing.
+- Publishing the alert needs AWS credentials for the environment whose Telegram chat should hear
+  about it, and that environment's activity bus name:
+```bash
+AWS_PROFILE=submit-prod ACTIVITY_BUS_NAME=prod-activity-bus node scripts/fraud-header-email-check.js
+```
+- `--dry-run` prints the decision and the would-be activity event without writing the result
+  record or publishing anything — use it to check what the script would do:
+```bash
+node scripts/fraud-header-email-check.js --dry-run
+```
+- Each run's result (correct, advisories, errors, zero-traffic, missing, or pending) lands as
+  JSON in `data/compliance/fraud-prevention-headers/<YYYY-MM>.json`, for a compliance panel to
+  read later.
+- A launchd agent runs it unattended on the 5th and the 12th of each month at 09:00 local time:
+  label `co.uk.diyaccounting.submit.fraud-header-check`, plist template in
+  `scripts/co.uk.diyaccounting.submit.fraud-header-check.plist`, logs in `~/Library/Logs`. Fill
+  in the plist's repo path and username, then install it:
+```bash
+cp scripts/co.uk.diyaccounting.submit.fraud-header-check.plist \
+  ~/Library/LaunchAgents/co.uk.diyaccounting.submit.fraud-header-check.plist
+# edit WorkingDirectory, StandardOutPath and StandardErrorPath in the copy first
+launchctl load ~/Library/LaunchAgents/co.uk.diyaccounting.submit.fraud-header-check.plist
+```
+  Uninstall with:
+```bash
+launchctl unload ~/Library/LaunchAgents/co.uk.diyaccounting.submit.fraud-header-check.plist
+rm ~/Library/LaunchAgents/co.uk.diyaccounting.submit.fraud-header-check.plist
+```
+  The AWS profile is SSO-backed and cannot refresh unattended, so in a week the credentials have
+  expired, the publish step logs a warning and does nothing — run
+  `aws sso login --sso-session diyaccounting` and the check by hand to catch up.
+
 # Build and run locally
 
 ## Java code formatting (Maven Spotless + Palantir Java Format)

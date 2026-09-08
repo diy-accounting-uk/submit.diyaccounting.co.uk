@@ -72,11 +72,18 @@ describe("productCatalogHelper", () => {
     expect(residentItsa.listedInEnvironments).not.toContain("prod");
   });
 
-  it("self-employed activity should be granted by resident-itsa", () => {
+  it("self-employed activity should be granted by resident-itsa and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa"]);
+    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa", "resident-pro"]);
     expect(isActivityAvailable(catalog, "self-employed", "resident-itsa")).toBe(true);
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
+  });
+
+  it("file-micro-entity-accounts activity should be granted by resident-ltd and resident-pro", () => {
+    const catalog = parseCatalog(tomlText);
+    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident-pro"]);
+    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
+    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
   it("resident-pro, resident-vat and resident-itsa should carry Stripe price fields", () => {
@@ -90,12 +97,12 @@ describe("productCatalogHelper", () => {
     expect(residentItsa).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
   });
 
-  it("getStripeSubscriptionBundles should return exactly the three Stripe-priced bundles", () => {
+  it("getStripeSubscriptionBundles should return exactly the five Stripe-priced bundles", () => {
     const catalog = parseCatalog(tomlText);
     const bundleIds = getStripeSubscriptionBundles(catalog)
       .map((b) => b.id)
       .sort();
-    expect(bundleIds).toEqual(["resident-itsa", "resident-pro", "resident-vat"]);
+    expect(bundleIds).toEqual(["resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
   });
 
   describe("isActivityListedInEnvironment", () => {
@@ -119,13 +126,19 @@ describe("productCatalogHelper", () => {
     });
   });
 
-  it("vat-liabilities, vat-payments, vat-penalties, self-employed and company-lookup stay out of prod until examined on ci", () => {
+  it("vat-liabilities, vat-payments, vat-penalties and self-employed stay out of prod until examined on ci", () => {
     const catalog = parseCatalog(tomlText);
-    const gatedActivityIds = ["vat-liabilities", "vat-payments", "vat-penalties", "self-employed", "company-lookup"];
+    const gatedActivityIds = ["vat-liabilities", "vat-payments", "vat-penalties", "self-employed"];
     for (const activityId of gatedActivityIds) {
       const activity = catalog.activities.find((a) => a.id === activityId);
       expect(activity.environments).toContain("ci");
       expect(activity.environments).not.toContain("prod");
     }
+  });
+
+  it("company-lookup should be available in prod alongside the register filings", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "company-lookup");
+    expect(activity.environments).toContain("prod");
   });
 });

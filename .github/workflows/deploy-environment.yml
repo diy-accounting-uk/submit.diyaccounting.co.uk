@@ -185,54 +185,40 @@ jobs:
 
       - name: Create secret in AWS from secrets.GOOGLE_CLIENT_SECRET
         run: |
-          if ! aws secretsmanager describe-secret --secret-id $GOOGLE_CLIENT_SECRET_ARN ; then
-            echo "Creating secret $GOOGLE_CLIENT_SECRET_ARN"
-            aws secretsmanager create-secret --name "${{ needs.names.outputs.environment-name }}/submit/google/client_secret" --secret-string "${{ secrets.GOOGLE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $GOOGLE_CLIENT_SECRET_ARN already exists, updating"
-            aws secretsmanager update-secret --secret-id $GOOGLE_CLIENT_SECRET_ARN --secret-string "${{ secrets.GOOGLE_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/google/client_secret" \
+            "${{ secrets.GOOGLE_CLIENT_SECRET }}"
         env:
-          GOOGLE_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/google/client_secret
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.HMRC_CLIENT_SECRET
         run: |
-          if ! aws secretsmanager describe-secret --secret-id $HMRC_CLIENT_SECRET_ARN ; then
-            echo "Creating secret $HMRC_CLIENT_SECRET_ARN"
-            aws secretsmanager create-secret --name "${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret" --secret-string "${{ secrets.HMRC_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $HMRC_CLIENT_SECRET_ARN already exists, updating"
-            aws secretsmanager update-secret --secret-id $HMRC_CLIENT_SECRET_ARN --secret-string "${{ secrets.HMRC_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret" \
+            "${{ secrets.HMRC_CLIENT_SECRET }}"
         env:
-          HMRC_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.HMRC_SANDBOX_CLIENT_SECRET
         run: |
-          if ! aws secretsmanager describe-secret --secret-id $HMRC_SANDBOX_CLIENT_SECRET_ARN ; then
-            echo "Creating secret $HMRC_SANDBOX_CLIENT_SECRET_ARN"
-            aws secretsmanager create-secret --name "${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret" --secret-string "${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $HMRC_SANDBOX_CLIENT_SECRET_ARN already exists, updating"
-            aws secretsmanager update-secret --secret-id $HMRC_SANDBOX_CLIENT_SECRET_ARN --secret-string "${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret" \
+            "${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}"
         env:
-          HMRC_SANDBOX_CLIENT_SECRET_ARN: arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_API_KEY
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/api_key"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_API_KEY }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.COMPANIES_HOUSE_API_KEY }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/companies-house/api_key" \
+            "${{ secrets.COMPANIES_HOUSE_API_KEY }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_CLIENT_SECRET
         env:
           COMPANIES_HOUSE_CLIENT_SECRET: ${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           # The Companies House filing client secret is set on the GitHub Environment by hand once
           # the developer-hub application exists. Until then the environment deploys without it
@@ -241,16 +227,14 @@ jobs:
             echo "::notice::COMPANIES_HOUSE_CLIENT_SECRET is not set on this environment; skipping the secret"
             exit 0
           fi
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/client_secret"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
-          else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_CLIENT_SECRET}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/companies-house/client_secret" \
+            "${COMPANIES_HOUSE_CLIENT_SECRET}"
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_PRESENTER_ID
         env:
           COMPANIES_HOUSE_PRESENTER_ID: ${{ secrets.COMPANIES_HOUSE_PRESENTER_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           # The Companies House XML Gateway test presenter id and authentication code are set on
           # the GitHub Environment by hand once Companies House emails them. Until then the
@@ -259,121 +243,98 @@ jobs:
             echo "::notice::COMPANIES_HOUSE_PRESENTER_ID is not set on this environment; skipping the secret"
             exit 0
           fi
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_id"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_ID}" --region ${{ env.AWS_REGION }}
-          else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_ID}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_id" \
+            "${COMPANIES_HOUSE_PRESENTER_ID}"
 
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_PRESENTER_CODE
         env:
           COMPANIES_HOUSE_PRESENTER_CODE: ${{ secrets.COMPANIES_HOUSE_PRESENTER_CODE }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           if [ -z "${COMPANIES_HOUSE_PRESENTER_CODE}" ]; then
             echo "::notice::COMPANIES_HOUSE_PRESENTER_CODE is not set on this environment; skipping the secret"
             exit 0
           fi
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_code"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_CODE}" --region ${{ env.AWS_REGION }}
-          else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${COMPANIES_HOUSE_PRESENTER_CODE}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/companies-house/presenter_code" \
+            "${COMPANIES_HOUSE_PRESENTER_CODE}"
 
       - name: Create secret in AWS from secrets.STRIPE_SECRET_KEY
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/secret_key"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/stripe/secret_key" \
+            "${{ secrets.STRIPE_SECRET_KEY }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.STRIPE_TEST_SECRET_KEY
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_secret_key"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.STRIPE_TEST_SECRET_KEY }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/stripe/test_secret_key" \
+            "${{ secrets.STRIPE_TEST_SECRET_KEY }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create Stripe webhook secret (live mode) from environment secret
+        env:
+          SECRET_VALUE: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret"
-          SECRET_VALUE="${{ secrets.STRIPE_WEBHOOK_SECRET }}"
           if [ -z "$SECRET_VALUE" ]; then
             echo "No STRIPE_WEBHOOK_SECRET in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/stripe/webhook_secret" \
+            "$SECRET_VALUE"
 
       - name: Create Stripe test webhook secret from environment secret
+        env:
+          SECRET_VALUE: ${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret"
-          SECRET_VALUE="${{ secrets.STRIPE_TEST_WEBHOOK_SECRET }}"
           if [ -z "$SECRET_VALUE" ]; then
             echo "No STRIPE_TEST_WEBHOOK_SECRET in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret" \
+            "$SECRET_VALUE"
 
       - name: Create secret in AWS from secrets.GA4_SERVICE_ACCOUNT_JSON
+        env:
+          SECRET_VALUE: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/ga4/service_account"
-          SECRET_VALUE='${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}'
           if [ -z "$SECRET_VALUE" ]; then
             echo "No GA4_SERVICE_ACCOUNT_JSON in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          else
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "$SECRET_VALUE" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/ga4/service_account" \
+            "$SECRET_VALUE"
 
       - name: Create secret in AWS from secrets.TELEGRAM_BOT_TOKEN
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/telegram/bot_token"
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.TELEGRAM_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.TELEGRAM_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/telegram/bot_token" \
+            "${{ secrets.TELEGRAM_BOT_TOKEN }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
 
       - name: Create secret in AWS from secrets.ISSUE_BOT_TOKEN
+        env:
+          SECRET_VALUE: ${{ secrets.ISSUE_BOT_TOKEN }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         run: |
-          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/github/issue_bot_token"
-          if [ -z "${{ secrets.ISSUE_BOT_TOKEN }}" ]; then
+          if [ -z "$SECRET_VALUE" ]; then
             echo "No ISSUE_BOT_TOKEN in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
-          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
-            echo "Creating secret $SECRET_NAME"
-            aws secretsmanager create-secret --name "$SECRET_NAME" --secret-string "${{ secrets.ISSUE_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
-          else
-            echo "Secret $SECRET_NAME already exists, updating"
-            aws secretsmanager update-secret --secret-id "$SECRET_NAME" --secret-string "${{ secrets.ISSUE_BOT_TOKEN }}" --region ${{ env.AWS_REGION }}
-          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/github/issue_bot_token" \
+            "$SECRET_VALUE"
 
       - name: Create user sub hash salt (if not exists)
         run: |
@@ -390,6 +351,8 @@ jobs:
               --secret-string "$REGISTRY" \
               --region ${{ env.AWS_REGION }} \
               --tags Key=Purpose,Value=user-sub-hashing Key=Critical,Value=true Key=BackupRequired,Value=true
+            aws secretsmanager tag-resource --secret-id "$SECRET_NAME" \
+              --tags "Key=rotated-at,Value=$(date -u +%Y-%m-%d)" --region ${{ env.AWS_REGION }}
             echo "Salt secret created in registry format (current: v1)"
           else
             echo "Salt secret $SECRET_NAME already exists - preserving existing value"
