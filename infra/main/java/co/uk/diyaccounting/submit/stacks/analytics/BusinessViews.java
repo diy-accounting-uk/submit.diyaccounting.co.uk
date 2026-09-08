@@ -131,7 +131,19 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_compliance_status",
                     "Open compliance findings each day, by area",
-                    List.of("compliance_accessibility", "compliance_fraud_headers")));
+                    List.of("compliance_accessibility", "compliance_fraud_headers")),
+            new ViewDefinition(
+                    "v_cost_daily",
+                    "Billed cost each day from the FOCUS export, by service, deployment and stack",
+                    List.of("cost_focus")),
+            new ViewDefinition(
+                    "v_cost_per_submission_daily",
+                    "The day's cost divided by the day's completed submissions",
+                    List.of("v_cost_daily", "v_submissions_by_activity_daily")),
+            new ViewDefinition(
+                    "v_cost_vs_target_monthly",
+                    "Each month's billed cost against the steady-state target",
+                    List.of("v_cost_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<AwsCustomResource> viewResources = new ArrayList<>();

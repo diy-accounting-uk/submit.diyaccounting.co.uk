@@ -59,7 +59,7 @@ class DataQualityTest {
     void createsOneRulesetPerTarget() {
         Template template = synthDataQuality();
 
-        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 5);
+        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(

@@ -66,6 +66,8 @@ public class DataQuality extends Construct {
     private static final String COMPLIANCE_ACCESSIBILITY_CURATED_PREFIX = "curated/compliance/accessibility/";
     private static final String COMPLIANCE_FRAUD_HEADERS_TABLE_NAME = "compliance_fraud_headers";
     private static final String COMPLIANCE_FRAUD_HEADERS_CURATED_PREFIX = "curated/compliance/fraud-headers/";
+    private static final String COST_FOCUS_TABLE_NAME = "cost_focus";
+    private static final String COST_FOCUS_CURATED_PREFIX = "curated/cost/focus/";
 
     private static final String ACTIVITY_EVENTS_RULESET =
             """
@@ -91,6 +93,14 @@ public class DataQuality extends Construct {
                 RowCount > 0,
                 IsComplete "event_ts",
                 ColumnValues "state" in ["ALARM","OK","INSUFFICIENT_DATA"]
+            ]
+            """;
+
+    private static final String COST_FOCUS_RULESET =
+            """
+            Rules = [
+                RowCount > 0,
+                IsComplete "billed_cost"
             ]
             """;
 
@@ -192,7 +202,8 @@ public class DataQuality extends Construct {
                 new Target(
                         COMPLIANCE_FRAUD_HEADERS_TABLE_NAME,
                         COMPLIANCE_FRAUD_HEADERS_CURATED_PREFIX,
-                        COMPLIANCE_FRAUD_HEADERS_RULESET));
+                        COMPLIANCE_FRAUD_HEADERS_RULESET),
+                new Target(COST_FOCUS_TABLE_NAME, COST_FOCUS_CURATED_PREFIX, COST_FOCUS_RULESET));
 
         // ============================================================================
         // Rulesets, one per target table

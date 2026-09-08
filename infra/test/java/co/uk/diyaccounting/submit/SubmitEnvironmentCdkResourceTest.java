@@ -197,11 +197,11 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 5);
+        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 27);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 23);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 26);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 

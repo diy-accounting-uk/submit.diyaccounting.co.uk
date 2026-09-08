@@ -393,11 +393,8 @@ public class AnalyticsDashboard extends Construct {
 
     /**
      * The "Running cost" objective row: daily spend by service from the FOCUS export, cost per
-     * submission, and the month's spend against the $64.77 steady-state target. The three metric
-     * names read here (CostDailyByService, CostPerSubmission, CostMonthlyActual,
-     * CostMonthlyTarget) are not published yet: {@code analyticsMetricsPublish.js} gets its
-     * {@code METRIC_DEFINITIONS} entries once {@code BusinessViews} carries the matching
-     * {@code v_cost_*} views, so these widgets stay empty until then rather than failing.
+     * submission, and the month's spend against the $64.77 steady-state target, from the metrics
+     * {@code analyticsMetricsPublish.js} publishes off the {@code v_cost_*} views.
      */
     private List<List<IWidget>> runningCostWidgetRows() {
         var rows = new ArrayList<List<IWidget>>();
