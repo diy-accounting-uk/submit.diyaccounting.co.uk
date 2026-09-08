@@ -88,6 +88,7 @@ public class SubmitEnvironment {
         public String telegramTestChatId;
         public String telegramLiveChatId;
         public String telegramOpsChatId;
+        public String githubTokenSecretArn;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -207,6 +208,12 @@ public class SubmitEnvironment {
                 "GA4_BIGQUERY_LOCATION",
                 appProps.ga4BigQueryLocation,
                 "(from ga4BigQueryLocation in cdk.json)");
+        // Same secret OpsStack's alarm-to-issue Lambda reads, resolved by GitHub Actions from
+        // AWS at deploy time and passed as an env var, matching stripeSecretKeyArn above.
+        var githubTokenSecretArn = envOr(
+                "GITHUB_TOKEN_SECRET_ARN",
+                appProps.githubTokenSecretArn,
+                "(from githubTokenSecretArn in cdk.json)");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -439,6 +446,7 @@ public class SubmitEnvironment {
                         .ga4BigQueryProjectId(ga4BigQueryProjectId != null ? ga4BigQueryProjectId : "")
                         .ga4BigQueryDatasetId(ga4BigQueryDatasetId != null ? ga4BigQueryDatasetId : "")
                         .ga4BigQueryLocation(ga4BigQueryLocation != null ? ga4BigQueryLocation : "")
+                        .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

@@ -143,6 +143,21 @@ public class IngestionStack extends Stack {
             return "";
         }
 
+        // The issue-bot token OpsStack's alarm-to-issue Lambda also reads, from cdk.json's
+        // githubTokenSecretArn context value. Defaulted to blank rather than made required so
+        // a caller that has not been updated to pass it yet still compiles; the operator effort
+        // pull job simply gets no secret grant and fails at invocation time until the operator
+        // creates the secret and the caller is updated, the same guard stripeSecretKeyArn uses.
+        @Value.Default
+        default String githubTokenSecretArn() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubRepo() {
+            return "diy-accounting-uk/submit.diyaccounting.co.uk";
+        }
+
         static ImmutableIngestionStackProps.Builder builder() {
             return ImmutableIngestionStackProps.builder();
         }
@@ -511,18 +526,90 @@ public class IngestionStack extends Stack {
                 "Pull two days ago's GA4 daily aggregate tables into the analytics lake");
 
         // ============================================================================
+        // Operator effort pull job: GitHub Actions runs, issue timeline events and commits,
+        // pulled through the REST API with the same issue-bot token OpsStack's alarm-to-issue
+        // Lambda reads
+        // ============================================================================
+        var operatorEffortPullFunctionName = prefix + "-operator-effort-pull";
+
+        var operatorEffortPullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                .with("GITHUB_REPO", props.githubRepo());
+        if (props.githubTokenSecretArn() != null
+                && !props.githubTokenSecretArn().isBlank()) {
+            operatorEffortPullEnv.with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn());
+        }
+
+        IRepository operatorEffortPullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-OperatorEffortPull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        // Same exposure as the other jobs above: env-scoped, stable function name - use the
+        // idempotent create-if-missing path, not a plain LogGroup.
+        var operatorEffortPullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-OperatorEffortPullLogGroup", "/aws/lambda/" + operatorEffortPullFunctionName);
+
+        var operatorEffortPullLambda = DockerImageFunction.Builder.create(this, prefix + "-OperatorEffortPullFn")
+                .functionName(operatorEffortPullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        operatorEffortPullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/operatorEffortPull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(2))
+                .memorySize(512)
+                .architecture(Architecture.ARM_64)
+                .environment(operatorEffortPullEnv)
+                .logGroup(operatorEffortPullLogGroup.logGroup())
+                .build();
+        operatorEffortPullLambda.getNode().addDependency(operatorEffortPullLogGroup.ensureResource());
+
+        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        operatorEffortPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/operator/*"))
+                .build());
+
+        if (props.githubTokenSecretArn() != null
+                && !props.githubTokenSecretArn().isBlank()) {
+            var githubTokenArnWithWildcard = props.githubTokenSecretArn().endsWith("*")
+                    ? props.githubTokenSecretArn()
+                    : props.githubTokenSecretArn() + "-*";
+            operatorEffortPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(githubTokenArnWithWildcard))
+                    .build());
+        }
+
+        registerIngestionJob(
+                "OperatorEffortPull",
+                operatorEffortPullFunctionName,
+                operatorEffortPullLambda,
+                "Pull yesterday's GitHub Actions runs, issue events and commits into the analytics lake");
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
         // ============================================================================
-        // DataQuality and AnalyticsDashboard live in AnalyticsStack, which this stack already
-        // depends on (see SubmitEnvironment), so their Lambdas are imported by name rather than
-        // passed as a cross-stack object reference - the same import-by-name habit the rest of
-        // this repo uses for a resource owned by a sibling stack.
+        // DataQuality, AnalyticsDashboard and RawExport live in AnalyticsStack, which this stack
+        // already depends on (see SubmitEnvironment), so their Lambdas are imported by name
+        // rather than passed as a cross-stack object reference - the same import-by-name habit
+        // the rest of this repo uses for a resource owned by a sibling stack.
         var dataQualityRunLambda =
                 Function.fromFunctionName(this, prefix + "-DataQualityRun-Import", prefix + "-data-quality-run");
         var metricsPublishLambda = Function.fromFunctionName(
                 this, prefix + "-AnalyticsMetricsPublish-Import", prefix + "-analytics-metrics-publish");
+        var rawExportPublishLambda = Function.fromFunctionName(
+                this, prefix + "-RawExportPublish-Import", prefix + "-raw-export-publish");
 
         new NightlyIngestionWorkflow(
                 this,
@@ -534,8 +621,10 @@ public class IngestionStack extends Stack {
                         .ga4ReportPullLambda(ga4ReportPullLambda)
                         .ga4EventExportPullLambda(ga4EventExportPullLambda)
                         .ga4DailyPullLambda(ga4DailyPullLambda)
+                        .operatorEffortPullLambda(operatorEffortPullLambda)
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
+                        .rawExportPublishLambda(rawExportPublishLambda)
                         .build());
 
         infof("IngestionStack %s created successfully for %s", this.getNode().getId(), prefix);

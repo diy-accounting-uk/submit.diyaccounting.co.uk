@@ -17,9 +17,12 @@ import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
+import co.uk.diyaccounting.submit.stacks.analytics.ComplianceTables;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
+import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
+import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.WorkflowRunTables;
@@ -450,6 +453,27 @@ public class AnalyticsStack extends Stack {
         workflowRunTables.doraRunsTable.addResourceDependency(this.glueDatabase);
         workflowRunTables.probeRunsTable.addResourceDependency(this.glueDatabase);
 
+        var operatorEffortTables = new OperatorEffortTables(
+                this,
+                OperatorEffortTables.OperatorEffortTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        operatorEffortTables.workflowRunsTable.addResourceDependency(this.glueDatabase);
+        operatorEffortTables.issueEventsTable.addResourceDependency(this.glueDatabase);
+        operatorEffortTables.commitsTable.addResourceDependency(this.glueDatabase);
+
+        var complianceTables = new ComplianceTables(
+                this,
+                ComplianceTables.ComplianceTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        complianceTables.accessibilityTable.addResourceDependency(this.glueDatabase);
+        complianceTables.fraudHeadersTable.addResourceDependency(this.glueDatabase);
+
         var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
 
         // Partition projection replaces a crawler: no MSCK REPAIR, no partition-registration
@@ -572,7 +596,9 @@ public class AnalyticsStack extends Stack {
                         .targetTableDependencies(Map.of(
                                 "activity_events", curatedActivityEventsTable,
                                 "alarm_state_changes", alarmStateChangeDelivery.glueTable,
-                                "dora_runs", workflowRunTables.doraRunsTable))
+                                "dora_runs", workflowRunTables.doraRunsTable,
+                                "compliance_accessibility", complianceTables.accessibilityTable,
+                                "compliance_fraud_headers", complianceTables.fraudHeadersTable))
                         .lakeBucket(this.lakeBucket)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
@@ -739,6 +765,31 @@ public class AnalyticsStack extends Stack {
                 .get("v_dora_runs_daily")
                 .getNode()
                 .addDependency(workflowRunTables.doraRunsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_operator_interventions_daily")
+                .getNode()
+                .addDependency(operatorEffortTables.workflowRunsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_operator_interventions_daily")
+                .getNode()
+                .addDependency(operatorEffortTables.issueEventsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_operator_interventions_daily")
+                .getNode()
+                .addDependency(operatorEffortTables.commitsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_compliance_status")
+                .getNode()
+                .addDependency(complianceTables.accessibilityTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_compliance_status")
+                .getNode()
+                .addDependency(complianceTables.fraudHeadersTable);
 
         new AnalyticsDashboard(
                 this,
@@ -746,6 +797,20 @@ public class AnalyticsStack extends Stack {
                         .idPrefix(prefix)
                         .envName(props.envName())
                         .sharedNames(sharedNames)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .build());
+
+        new RawExport(
+                this,
+                RawExport.RawExportProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
@@ -826,6 +891,16 @@ public class AnalyticsStack extends Stack {
                 .id("expire-errors")
                 .prefix("errors/")
                 .expiration(Duration.days(isProd ? 30 : 14))
+                .build());
+
+        // The raw export is a nightly re-derivable snapshot of the Athena views, pulled down to
+        // analytics/<env>/ at the workspace root within days of landing (scripts/analytics-pull.sh)
+        // - the lake copy only needs to outlive a missed pull, not stand as the export's own
+        // archive.
+        rules.add(LifecycleRule.builder()
+                .id("expire-exports")
+                .prefix("exports/")
+                .expiration(Duration.days(isProd ? 90 : 14))
                 .build());
 
         if (isProd) {

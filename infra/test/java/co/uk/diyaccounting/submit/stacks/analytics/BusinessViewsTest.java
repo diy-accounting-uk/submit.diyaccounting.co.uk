@@ -28,7 +28,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 16;
+    private static final int VIEW_COUNT = 21;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -96,7 +96,12 @@ class BusinessViewsTest {
                 "v_traffic_sources_daily",
                 "v_availability_sli_daily",
                 "v_alarm_state_changes_daily",
-                "v_dora_runs_daily");
+                "v_dora_runs_daily",
+                "v_returning_submitters_quarterly",
+                "v_subscription_renewals_daily",
+                "v_subscription_cancellations_daily",
+                "v_operator_interventions_daily",
+                "v_compliance_status");
 
         var customResources = template.findResources("Custom::AWS");
         var viewNamesFound = new ArrayList<String>();
