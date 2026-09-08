@@ -628,6 +628,55 @@ jobs:
             --value "$VALUE" \
             --region ${{ env.AWS_REGION }}
 
+      # Probe row for the one-stop dashboard's availability SLI, reading the same pass/fail
+      # this step's CloudWatch metric already reads, so the two always agree.
+      - name: Build the probe row
+        if: ${{ !cancelled() }}
+        id: probe-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROBE_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
+          PROBE_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          PROBE_SUITE: ${{ matrix.suite }}
+          PROBE_RUN_ID: ${{ github.run_id }}
+          PROBE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          PROBE_TRIGGER: ${{ github.event_name }}
+          PROBE_REPOSITORY: ${{ github.repository }}
+          PROBE_BEHAVIOUR_TEST_RESULT: ${{ needs.behaviour-test.result }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${PROBE_REPOSITORY}/actions/runs/${PROBE_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          if [ "$PROBE_BEHAVIOUR_TEST_RESULT" = "success" ]; then PASSED=true; else PASSED=false; fi
+
+          ROW=$(jq -nc \
+            --arg environment "$PROBE_ENVIRONMENT" \
+            --arg deployment "$PROBE_DEPLOYMENT" \
+            --arg suite "$PROBE_SUITE" \
+            --arg run_id "$PROBE_RUN_ID" \
+            --argjson run_attempt "$PROBE_RUN_ATTEMPT" \
+            --arg finished_at "$FINISHED_AT" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg trigger "$PROBE_TRIGGER" \
+            --argjson passed "$PASSED" \
+            '{
+              environment: $environment, deployment: $deployment, suite: $suite,
+              run_id: $run_id, run_attempt: $run_attempt, finished_at: $finished_at,
+              duration_seconds: $duration_seconds, trigger: $trigger, passed: $passed
+            }')
+
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "dt=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Write the probe row to the lake
+        if: ${{ !cancelled() }}
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: 'curated/probe/dt=${{ steps.probe-row.outputs.dt }}/${{ github.run_id }}-${{ matrix.suite }}.json'
+          row: ${{ steps.probe-row.outputs.row }}
+
   upload-web-test-results:
     if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
     name: 'upload web test results ${{ matrix.suite }}'

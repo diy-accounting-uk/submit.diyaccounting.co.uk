@@ -2610,6 +2610,112 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
+  # DORA row for the one-stop dashboard's deployment-frequency, lead-time and failure-rate
+  # panels: one row per deploy run, written regardless of how the run ended so a failed deploy
+  # counts towards the failure rate rather than leaving a silent gap.
+  record-dora:
+    if: always()
+    name: 'record DORA row'
+    needs:
+      - names
+      - deploy-publish
+      - set-origins
+      - web-test
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.names.outputs.environment-name }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Build the DORA row
+        id: dora-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DORA_WORKFLOW: ${{ github.workflow }}
+          DORA_ENVIRONMENT: ${{ needs.names.outputs.environment-name }}
+          DORA_DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          DORA_BRANCH: ${{ github.ref_name }}
+          DORA_SHA: ${{ github.sha }}
+          DORA_RUN_ID: ${{ github.run_id }}
+          DORA_RUN_ATTEMPT: ${{ github.run_attempt }}
+          DORA_RUN_NUMBER: ${{ github.run_number }}
+          DORA_ACTOR: ${{ github.actor }}
+          DORA_TRIGGER: ${{ github.event_name }}
+          DORA_REPOSITORY: ${{ github.repository }}
+          DORA_DEPLOY_PUBLISH_RESULT: ${{ needs.deploy-publish.result }}
+          DORA_SET_ORIGINS_RESULT: ${{ needs.set-origins.result }}
+          DORA_WEB_TEST_RESULT: ${{ needs.web-test.result }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${DORA_REPOSITORY}/actions/runs/${DORA_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          MERGED_AT=$(gh api "repos/${DORA_REPOSITORY}/commits/${DORA_SHA}/pulls" --jq '.[0].merged_at // empty' || echo "")
+
+          CONCLUSION="success"
+          if [ "$DORA_DEPLOY_PUBLISH_RESULT" != "success" ] || [ "$DORA_SET_ORIGINS_RESULT" != "success" ] || [ "$DORA_WEB_TEST_RESULT" != "success" ]; then
+            CONCLUSION="failure"
+          fi
+
+          ROW=$(jq -nc \
+            --arg workflow "$DORA_WORKFLOW" \
+            --arg environment "$DORA_ENVIRONMENT" \
+            --arg deployment "$DORA_DEPLOYMENT" \
+            --arg branch "$DORA_BRANCH" \
+            --arg sha "$DORA_SHA" \
+            --arg run_id "$DORA_RUN_ID" \
+            --argjson run_attempt "$DORA_RUN_ATTEMPT" \
+            --argjson run_number "$DORA_RUN_NUMBER" \
+            --arg actor "$DORA_ACTOR" \
+            --arg trigger "$DORA_TRIGGER" \
+            --arg started_at "$STARTED_AT" \
+            --arg finished_at "$FINISHED_AT" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg conclusion "$CONCLUSION" \
+            --arg merged_at "$MERGED_AT" \
+            '{
+              workflow: $workflow, environment: $environment, deployment: $deployment,
+              branch: $branch, sha: $sha, run_id: $run_id, run_attempt: $run_attempt,
+              run_number: $run_number, actor: $actor, trigger: $trigger,
+              started_at: $started_at, finished_at: $finished_at,
+              duration_seconds: $duration_seconds, conclusion: $conclusion,
+              merged_at: (if $merged_at == "" then null else $merged_at end),
+              lead_time_seconds: (
+                if $merged_at == "" then null
+                else (($finished_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)
+                      - ($merged_at | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime))
+                end
+              )
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the DORA row to the lake
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.dora-row.outputs.key }}
+          row: ${{ steps.dora-row.outputs.row }}
+
   # Run workflow: .github/workflows/destroy-prod.yml to destroy previous prod deployments but not the holding page (`-holding`)
   # Without a status function GitHub applies success() over the whole ancestor chain, and the
   # scenario web-test jobs skipped by skipTestScenarios sit in that chain, so this job would
