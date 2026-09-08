@@ -381,14 +381,18 @@ jobs:
           # A deployment can lose every stack an older self-destruct pass knew to delete except
           # one it didn't (added after that pass's stack list was written), leaving only that one
           # stack standing with no sibling to name the deployment through PUBLIC/PUBLISHED/DEPLOYED
-          # above. Find those by scanning live stacks directly, so the next sweep still finds them.
-          LEFTOVER_STACK_NAMES=$(aws cloudformation describe-stacks --region eu-west-2 \
-            --query "Stacks[].StackName" --output text 2>/dev/null | tr '\t' '\n' \
-            | grep -E '^ci-[a-z0-9]+-app-' || echo "")
+          # above. Find those by scanning live stacks directly, so the next sweep still finds them,
+          # even when only a single app or del stack is what's left of a deployment.
+          LEFTOVER_STACK_NAMES=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[].StackName" --output text 2>/dev/null
+            done | tr '\t' '\n' | grep -E '^ci-[a-zA-Z0-9-]+-(app|del)-' || echo ""
+          )
 
           LEFTOVER_DEPLOYMENT_NAMES=""
           for STACK_NAME in $LEFTOVER_STACK_NAMES; do
-            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(ci-[a-z0-9]+)-app-.*/\1/')
+            PREFIX=$(echo "$STACK_NAME" | sed -E 's/^(ci-[a-zA-Z0-9-]+)-(app|del)-.*/\1/')
             if [ "$PREFIX" != "$LAST_KNOWN_GOOD_DEPLOYMENT_NAME" ]; then
               LEFTOVER_DEPLOYMENT_NAMES="$LEFTOVER_DEPLOYMENT_NAMES $PREFIX"
             fi
@@ -447,6 +451,36 @@ jobs:
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME"
           echo "SWEEPER_HIT=$SWEEPER_HIT" >> $GITHUB_OUTPUT
           echo "SELECTED_DEPLOYMENT_NAME=$SELECTED_DEPLOYMENT_NAME" >> $GITHUB_OUTPUT
+
+      # The keep list above always protects the deployment SSM names as last-known-good, so if
+      # that deployment's own stacks are already gone (an explicit dispatch destroyed it directly,
+      # bypassing the keep list, or the last straggler stack from the leftover scan above finally
+      # cleared), the pointer is left naming nothing. Clear it so a future sweep, and every other
+      # workflow that reads it, stop treating an empty name as something to protect or fall back to.
+      - name: Clear last-known-good pointer if it names a deployment with no stacks left
+        run: |
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+
+          if [ -z "$LAST_KNOWN_GOOD" ] || [ "$LAST_KNOWN_GOOD" = "None" ]; then
+            echo "No last-known-good ci deployment set, nothing to check"
+            exit 0
+          fi
+
+          REMAINING_STACKS=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[?starts_with(StackName, '${LAST_KNOWN_GOOD}-')].StackName" \
+                --output text 2>/dev/null || echo ""
+            done | tr '\t' '\n' | grep -c . || true
+          )
+
+          if [ "${REMAINING_STACKS:-0}" -eq 0 ]; then
+            echo "Last-known-good ci deployment $LAST_KNOWN_GOOD has no stacks left, clearing $PARAMETER_NAME"
+            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "" --overwrite
+          else
+            echo "Last-known-good ci deployment $LAST_KNOWN_GOOD still has $REMAINING_STACKS stack(s), leaving $PARAMETER_NAME alone"
+          fi
 
     outputs:
       sweeper-hit: ${{ steps.select-stack.outputs.SWEEPER_HIT }}
