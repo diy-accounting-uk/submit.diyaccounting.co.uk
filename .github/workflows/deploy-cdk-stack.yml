@@ -316,6 +316,29 @@ jobs:
             echo "skipStaticStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # A stack's AwsCustomResource provider Lambda can write its last log lines after
+      # CloudFormation has deleted the provider's log group, which recreates the group outside
+      # any stack; the next create of the same stack name then fails early validation with
+      # "already exists". Remove such a group in either region when no stack of that name stands.
+      - name: Remove a provider log group left behind by a previous ${{ needs.params.outputs.stackName }}
+        shell: bash
+        run: |
+          STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-${{ needs.params.outputs.stackName }}"
+          LOG_GROUP="/aws/lambda/${STACK_NAME}-AwsCustomResourceProvider"
+          for REGION in eu-west-2 us-east-1; do
+            STANDING=$(aws cloudformation describe-stacks --region "$REGION" --stack-name "$STACK_NAME" \
+              --query "Stacks[?StackStatus!='DELETE_COMPLETE'] | length(@)" --output text 2>/dev/null || echo 0)
+            if [ "$STANDING" != "0" ]; then
+              continue
+            fi
+            FOUND=$(aws logs describe-log-groups --region "$REGION" --log-group-name-prefix "$LOG_GROUP" \
+              --query "logGroups[?logGroupName=='${LOG_GROUP}'] | length(@)" --output text 2>/dev/null || echo 0)
+            if [ "$FOUND" != "0" ]; then
+              echo "Deleting leftover log group $LOG_GROUP in $REGION (no $STACK_NAME stands there)"
+              aws logs delete-log-group --region "$REGION" --log-group-name "$LOG_GROUP"
+            fi
+          done
+
       - name: Checkout
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.force-stack-deployment == 'true' || steps.static-skip.outputs.skipStaticStackDeployment != 'true' }}
         uses: actions/checkout@v7
