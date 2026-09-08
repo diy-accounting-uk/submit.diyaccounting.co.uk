@@ -16,8 +16,8 @@ PR; the operator merges.
 **Prod runs deployment prod-5c28d63 (the merge of PR #151, run 34236942090, 2026-09-08 14:14
 UTC), which retired prod-c6d0ed3; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
-`destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Drift findings live in
-issue #43, which can close.
+`destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`). Issue #43 (the standing drift findings) is still open and can
+close: its condition, a green scheduled `stack-drift` run, was met on 2026-09-07.
 
 The board runs in six sections, in this order: in flight; ready and unblocking other items;
 ready; blocked on a machine task; blocked on a human task; blocked on a date. Operator items
@@ -36,6 +36,7 @@ pushed to a branch while its deploy runs.
 | B52f (security panels: findings, lifecycle, SBOM, CIS metric filters, WAF, rotation) | security | Sonnet | `agent-ae70b2f1c409d5755` |
 | B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`) | page | Sonnet | `agent-acfb9c2c058707764` |
 | B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
+| B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
 
 ## Ready, unblocking others
 
@@ -74,6 +75,13 @@ pushed to a branch while its deploy runs.
 
 ## Ready
 
+- [ ] **B56. The two CodeQL alerts left open on main.** Alerts 58 and 59
+  (`js/server-side-unvalidated-url-redirection`) sit on the simulator billing mocks'
+  redirects in `app/functions/non-lambda-mocks/mockBilling.js` and `app/bin/simulator-server.js`
+  even after `resolveAllowedReturnTo`: CodeQL wants the redirect target chosen from the
+  allow-list, not derived from the request value. Return the matching allow-list entry itself
+  (or the bundles page) rather than the caller's string. The other thirty-six open alerts were
+  dismissed with reasons on 2026-09-08. **Source**: S2. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -100,22 +108,12 @@ pushed to a branch while its deploy runs.
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
-- [ ] **O30. Apply the CodeQL dismissals PR #151 lists.** Thirty-five alerts with a reason each
-  in the PR body (pass codes in sessionStorage, infrastructure names in logs, the Companies
-  House MD5), on the alerts page. **Source**: S2. **Owner**: Operator. **Model**: none.
 - [ ] **O29. Install the fraud-header check's launchd agent.** `scripts/co.uk.diyaccounting.submit.fraud-header-check.plist`
   runs `scripts/fraud-header-email-check.js` on the 5th and 12th at 09:00; install and uninstall
   commands are `_developers/SETUP.md` step 9. It publishes through the activity bus, so it needs
   AWS credentials the SSO profiles cannot refresh unattended, the same gap the certbot agent
   has; say whether an access key for this one script is acceptable or the check stays a
   session-time run. **Source**: B22. **Owner**: Operator. **Model**: none.
-- [ ] **S4b. Rotate, or date, the twelve third-party secrets.** `secrets-rotation.toml` lists
-  each secret's console with `last_rotated` blank, because nobody knows the dates; the deploy
-  now stamps `rotated-at` only when a value changes. For each of HMRC, Stripe, Google,
-  Telegram, Companies House and the GitHub issue-bot token: rotate in its console and put the
-  new value on the GitHub environments, or write the known date into the toml. **Source**:
-  S4a. **Owner**: Operator. **Model**: none.
-
 ## Blocked on a machine task
 
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
