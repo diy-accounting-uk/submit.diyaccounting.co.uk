@@ -177,6 +177,27 @@ export function synthesizeFromCloudWatchAlarm(event) {
 }
 
 /**
+ * Synthesize an ActivityEvent detail from an SNS notification, the shape AWS Budgets and Cost
+ * Anomaly Detection both use since neither can target EventBridge directly. The message body is
+ * plain text for a budget alert and a JSON string for an anomaly, so this keeps only the subject
+ * and the message's first line rather than trying to parse either shape.
+ */
+export function synthesizeFromSns(snsRecord) {
+  const subject = snsRecord.Subject || "Cost alert";
+  const message = snsRecord.Message || "";
+  const firstLine = message.split("\n").find((line) => line.trim().length > 0) || message;
+
+  return {
+    actor: "system",
+    flow: "operational",
+    env: process.env.ENVIRONMENT_NAME || "unknown",
+    event: "cost-alert",
+    site: "submit",
+    summary: `${subject}: ${firstLine}`.slice(0, 300),
+  };
+}
+
+/**
  * Resolve the event detail, handling both custom ActivityEvents and raw AWS service events.
  */
 export function resolveEventDetail(event) {
@@ -185,6 +206,9 @@ export function resolveEventDetail(event) {
   }
   if (event.source === "aws.cloudwatch") {
     return synthesizeFromCloudWatchAlarm(event);
+  }
+  if (event.Records?.[0]?.Sns) {
+    return synthesizeFromSns(event.Records[0].Sns);
   }
   return event.detail || {};
 }
