@@ -37,6 +37,7 @@ pushed to a branch while its deploy runs.
 | B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`) | page | Sonnet | `agent-acfb9c2c058707764` |
 | B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
 | B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
+| B56 (the two remaining CodeQL redirect alerts: the return URL is built from the allow-list origin) | on the batch | Haiku | — |
 
 ## Ready, unblocking others
 
@@ -70,13 +71,6 @@ pushed to a branch while its deploy runs.
 
 ## Ready
 
-- [ ] **B56. The two CodeQL alerts left open on main.** Alerts 58 and 59
-  (`js/server-side-unvalidated-url-redirection`) sit on the simulator billing mocks'
-  redirects in `app/functions/non-lambda-mocks/mockBilling.js` and `app/bin/simulator-server.js`
-  even after `resolveAllowedReturnTo`: CodeQL wants the redirect target chosen from the
-  allow-list, not derived from the request value. Return the matching allow-list entry itself
-  (or the bundles page) rather than the caller's string. The other thirty-six open alerts were
-  dismissed with reasons on 2026-09-08. **Source**: S2. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
