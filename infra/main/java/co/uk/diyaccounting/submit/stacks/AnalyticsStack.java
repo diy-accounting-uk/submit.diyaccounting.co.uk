@@ -18,6 +18,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
+import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
@@ -426,6 +427,18 @@ public class AnalyticsStack extends Stack {
         ga4Tables.pagesTable.addResourceDependency(this.glueDatabase);
         ga4Tables.eventsTable.addResourceDependency(this.glueDatabase);
         ga4Tables.bqEventsTable.addResourceDependency(this.glueDatabase);
+
+        var ga4DailyTables = new Ga4DailyTables(
+                this,
+                Ga4DailyTables.Ga4DailyTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        ga4DailyTables.sessionsByHostSourceTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.funnelStepsTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.keyEventsTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.downloadsByProductTable.addResourceDependency(this.glueDatabase);
 
         var workflowRunTables = new WorkflowRunTables(
                 this,

@@ -46,8 +46,9 @@ import software.constructs.Construct;
  * failed Stripe pull put a false zero on the dashboard with only the Lambda errors alarm saying
  * otherwise.
  *
- * <p>Definition: a {@code Parallel} branch runs the three ingestion jobs (Stripe reconciliation,
- * GA4 report pull, GA4 event export pull) at once, since they share no data; then the data
+ * <p>Definition: a {@code Parallel} branch runs the four ingestion jobs (Stripe reconciliation,
+ * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull) at once, since they share no
+ * data; then the data
  * quality run; then the metrics publish; then {@code Succeed}. Every task retries twice on
  * {@code States.TaskFailed} with a 60-second interval and a backoff rate of 2, on top of {@code
  * retryOnServiceExceptions}. There is no {@code Catch}: a failure anywhere ends the execution in
@@ -90,6 +91,8 @@ public class NightlyIngestionWorkflow {
 
         IFunction ga4EventExportPullLambda();
 
+        IFunction ga4DailyPullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
@@ -125,6 +128,8 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-Ga4EventExportPull",
                 "GA4 event export pull",
                 props.ga4EventExportPullLambda()));
+        ingestionParallel.branch(
+                buildTask(scope, prefix + "-Nightly-Ga4DailyPull", "GA4 daily aggregate pull", props.ga4DailyPullLambda()));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());
