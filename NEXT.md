@@ -75,8 +75,9 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   self-employment business through the create-test-user API, run the three against
   test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
   `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
-  simulator. Unblocks B11. Runs against the ci set batch 13's push creates. **Source**: BACKLOG 10; issues #16, #20. **Owner**: Claude Code.
-  **Model**: Sonnet.
+  simulator. Unblocks B11. No ci set stands; one comes from `gh workflow run deploy.yml -f
+  environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
+  #20. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready
 
@@ -106,6 +107,7 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
+
 ## Blocked on a machine task
 
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
@@ -120,7 +122,8 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   interval; Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for
   allocations once experiments exist. Its one line per objective goes on the page. **Source**:
   BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
-  Opus for the models, Sonnet for the notebook. Blocked on B52h and three months of export.
+  Opus for the models, Sonnet for the notebook. Blocked on three months of the raw export,
+  whose first night is 2026-09-09.
 
 ## Blocked on a human task
 
