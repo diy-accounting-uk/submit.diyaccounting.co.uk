@@ -31,8 +31,12 @@ the worktree `.claude/worktrees/b12` (its old directory name). Maven and `npm te
 that tip (2453 tests). The operator's standing instruction of 2026-09-08: no board item enters
 "in flight" from here; only a bug that blocks this PR may be worked. What remains, in order:
 
-1. The push started environment deploy 34261932633, deploy 34261932882, test 34261932155 and
-   CodeQL 34261946972 (first run, 2026-09-08 19:0x UTC); their results go here as they land. A
+1. The first run (2026-09-08 19:0x UTC) failed two ways, both fixed in 52a98d50 and pushed
+   at 19:5x UTC after every run had completed: the environment deploy's AnalyticsStack rolled
+   back on the new AWS Budget's forecast notification (Budgets accepts only `GREATER_THAN`,
+   `LESS_THAN` and `EQUAL_TO`), and the deploy's simulator vatSchemes suite lost a screenshot
+   to a navigation race after the HMRC sign-in click (the step now waits for the next document
+   first; the suite had passed on main's merge deploy). The second run's ids go here. A
    failure gets its fix committed on the batch and pushed once the run has completed, never
    while a `deploy environment` or `deploy` run is in progress. A stale ci set (a resource
    CloudFormation records but AWS lacks) is destroyed from the branch ref before the next
