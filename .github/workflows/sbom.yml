@@ -1,0 +1,165 @@
+name: sbom
+run-name: "SBOM and KEV match for ${{ github.ref_name }}"
+# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  sbom:
+    name: SBOM and KEV match
+    runs-on: ubuntu-24.04
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Generate the npm CycloneDX SBOM
+        run: npm sbom --sbom-format cyclonedx > sbom-npm-cyclonedx.json
+
+      - name: Check for a configured Maven CycloneDX plugin
+        run: |
+          if grep -q 'cyclonedx-maven-plugin' pom.xml; then
+            echo "cyclonedx-maven-plugin is configured in pom.xml, but this workflow only reads it"
+            echo "when present - it does not add the plugin itself."
+          else
+            echo "No cyclonedx-maven-plugin in pom.xml - only the npm SBOM is checked."
+          fi
+
+      - name: Fetch the CISA Known Exploited Vulnerabilities catalogue
+        run: |
+          curl -fsSL --retry 3 \
+            https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json \
+            -o kev-catalogue.json
+
+      - name: Match the SBOM against the KEV catalogue
+        id: kev-match
+        run: |
+          cat > /tmp/kev-match.mjs <<'EOF'
+          import { readFileSync, writeFileSync } from "node:fs";
+
+          const sbom = JSON.parse(readFileSync("sbom-npm-cyclonedx.json", "utf-8"));
+          const kev = JSON.parse(readFileSync("kev-catalogue.json", "utf-8"));
+
+          const components = sbom.components || [];
+          const vulnerabilities = kev.vulnerabilities || [];
+
+          // Best-effort: CISA's catalogue names commercial products (vendor + product), not npm
+          // package identifiers, so this matches on an exact, case-insensitive equality between a
+          // component's bare name (its npm scope stripped) and a KEV entry's product field. That
+          // under-matches rather than over-matches, which is the right side to err on for a check
+          // that fails the build.
+          const kevProductsByName = new Map();
+          for (const entry of vulnerabilities) {
+            const product = (entry.product || "").trim().toLowerCase();
+            if (!product) continue;
+            if (!kevProductsByName.has(product)) kevProductsByName.set(product, []);
+            kevProductsByName.get(product).push(entry);
+          }
+
+          function bareName(name) {
+            const parts = String(name || "").split("/");
+            return parts[parts.length - 1].trim().toLowerCase();
+          }
+
+          const matches = [];
+          for (const component of components) {
+            const entries = kevProductsByName.get(bareName(component.name));
+            if (!entries) continue;
+            for (const entry of entries) {
+              matches.push({
+                component: component.name,
+                version: component.version,
+                cveID: entry.cveID,
+                vendorProject: entry.vendorProject,
+                product: entry.product,
+                dateAdded: entry.dateAdded,
+              });
+            }
+          }
+
+          const row = {
+            run_id: process.env.GITHUB_RUN_ID,
+            sha: process.env.GITHUB_SHA,
+            component_count: components.length,
+            kev_catalogue_count: vulnerabilities.length,
+            match_count: matches.length,
+            matches: JSON.stringify(matches),
+            checked_at: new Date().toISOString(),
+          };
+
+          writeFileSync("kev-match-result.json", JSON.stringify(row));
+          if (matches.length > 0) {
+            console.error(
+              "SBOM component(s) matched CISA's Known Exploited Vulnerabilities catalogue:",
+              JSON.stringify(matches, null, 2),
+            );
+          }
+          writeFileSync("/tmp/kev-match-count", String(matches.length));
+          EOF
+          node /tmp/kev-match.mjs
+          echo "match-count=$(cat /tmp/kev-match-count)" >> "$GITHUB_OUTPUT"
+          echo "row=$(cat kev-match-result.json)" >> "$GITHUB_OUTPUT"
+          echo "key=curated/security/sbom/dt=$(date -u +%F)/${GITHUB_RUN_ID}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Write the SBOM/KEV match row to the lake
+        uses: './.github/actions/dora-row'
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.kev-match.outputs.key }}
+          row: ${{ steps.kev-match.outputs.row }}
+
+      - name: Fail the job when a KEV match exists
+        if: steps.kev-match.outputs.match-count != '0'
+        run: |
+          echo "::error::${{ steps.kev-match.outputs.match-count }} SBOM component(s) matched CISA's Known Exploited Vulnerabilities catalogue"
+          exit 1

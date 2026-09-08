@@ -117,6 +117,15 @@ class SubmitEnvironmentCdkResourceTest {
                         Match.objectLike(Map.of("AllSupported", true, "IncludeGlobalResourceTypes", true)))));
         assertSecurityHubStandardsSwap(securityBaseline);
 
+        // 8b) SecurityLakeStack: the nightly Security Hub, GuardDuty, GitHub alert, lifecycle,
+        // WAF and rotation pull into the analytics lake, one Glue table per source.
+        Template securityLake = Template.fromStack(env.securityLakeStack);
+        securityLake.resourceCountIs("AWS::Glue::Table", 7);
+        securityLake.resourceCountIs("AWS::Lambda::Function", 1);
+        securityLake.resourceCountIs("AWS::Events::Rule", 1);
+        securityLake.resourceCountIs("AWS::CloudWatch::Alarm", 3);
+        securityLake.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
+
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.

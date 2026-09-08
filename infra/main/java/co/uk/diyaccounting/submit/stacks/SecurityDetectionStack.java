@@ -247,9 +247,150 @@ public class SecurityDetectionStack extends Stack {
                         .build();
         saltSecretUnexpectedReadAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
+        // ----------------------------------------------------------------------------------
+        // The fourteen CIS AWS Foundations Benchmark CloudWatch log metric filter controls
+        // (CIS CloudWatch.1 through .14), each a metric filter plus an any-occurrence alarm on
+        // the same CloudTrail log group, following the shape above. The trail already records
+        // global service events, so IAM, and other global-service activity is visible here even
+        // though the trail itself is single-region.
+        // ----------------------------------------------------------------------------------
+        for (CisControl control : CIS_CONTROLS) {
+            String metricName = "Cis" + control.name();
+            MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "MetricFilter")
+                    .logGroup(cloudTrailLogGroup)
+                    .filterPattern(FilterPattern.literal(control.filterPattern()))
+                    .metricNamespace("Submit/Security")
+                    .metricName(metricName)
+                    .metricValue("1")
+                    .defaultValue(0)
+                    .build();
+
+            Alarm cisAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "Alarm")
+                    .alarmName(props.resourceNamePrefix() + "-cis-" + control.slug())
+                    .alarmDescription(control.description())
+                    .metric(Metric.Builder.create()
+                            .namespace("Submit/Security")
+                            .metricName(metricName)
+                            .statistic("Sum")
+                            .period(Duration.minutes(5))
+                            .build())
+                    .threshold(1)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+            cisAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
+        }
+
         infof(
-                "SecurityDetectionStack %s created: DynamoDB customer-table Scan and GetItem-volume alarms, and the"
-                        + " salt secret unexpected-read alarm, wired to the security-findings topic",
+                "SecurityDetectionStack %s created: DynamoDB customer-table Scan and GetItem-volume alarms, the salt"
+                        + " secret unexpected-read alarm, and the fourteen CIS CloudWatch metric filter controls, all"
+                        + " wired to the security-findings topic",
                 this.getNode().getId());
     }
+
+    /** One CIS AWS Foundations Benchmark CloudWatch log metric filter control. */
+    private record CisControl(String name, String slug, String description, String filterPattern) {}
+
+    private static final List<CisControl> CIS_CONTROLS = List.of(
+            new CisControl(
+                    "UnauthorizedApiCalls",
+                    "unauthorized-api-calls",
+                    "CIS CloudWatch.1: an unauthorized API call was made",
+                    "{ ($.errorCode = \"*UnauthorizedAccess*\") || ($.errorCode = \"AccessDenied*\") }"),
+            new CisControl(
+                    "ConsoleSigninWithoutMfa",
+                    "console-signin-without-mfa",
+                    "CIS CloudWatch.2: a console sign-in was made without MFA",
+                    "{ ($.eventName = \"ConsoleLogin\") && ($.additionalEventData.MFAUsed != \"Yes\") }"),
+            new CisControl(
+                    "RootAccountUsage",
+                    "root-account-usage",
+                    "CIS CloudWatch.3: the root account was used",
+                    "{ $.userIdentity.type = \"Root\" && $.userIdentity.invokedBy NOT EXISTS &&"
+                            + " $.eventType != \"AwsServiceEvent\" }"),
+            new CisControl(
+                    "IamPolicyChanges",
+                    "iam-policy-changes",
+                    "CIS CloudWatch.4: an IAM policy was changed",
+                    "{ ($.eventName = DeleteGroupPolicy) || ($.eventName = DeleteRolePolicy) ||"
+                            + " ($.eventName = DeleteUserPolicy) || ($.eventName = PutGroupPolicy) ||"
+                            + " ($.eventName = PutRolePolicy) || ($.eventName = PutUserPolicy) ||"
+                            + " ($.eventName = CreatePolicy) || ($.eventName = DeletePolicy) ||"
+                            + " ($.eventName = CreatePolicyVersion) || ($.eventName = DeletePolicyVersion) ||"
+                            + " ($.eventName = AttachRolePolicy) || ($.eventName = DetachRolePolicy) ||"
+                            + " ($.eventName = AttachUserPolicy) || ($.eventName = DetachUserPolicy) ||"
+                            + " ($.eventName = AttachGroupPolicy) || ($.eventName = DetachGroupPolicy) }"),
+            new CisControl(
+                    "CloudTrailConfigurationChanges",
+                    "cloudtrail-configuration-changes",
+                    "CIS CloudWatch.5: CloudTrail's own configuration was changed",
+                    "{ ($.eventName = CreateTrail) || ($.eventName = UpdateTrail) || ($.eventName = DeleteTrail) ||"
+                            + " ($.eventName = StartLogging) || ($.eventName = StopLogging) }"),
+            new CisControl(
+                    "ConsoleAuthenticationFailures",
+                    "console-authentication-failures",
+                    "CIS CloudWatch.6: a console sign-in authentication attempt failed",
+                    "{ ($.eventName = ConsoleLogin) && ($.errorMessage = \"Failed authentication\") }"),
+            new CisControl(
+                    "CmkDeletion",
+                    "cmk-deletion",
+                    "CIS CloudWatch.7: a customer managed KMS key was disabled or scheduled for deletion",
+                    "{ ($.eventSource = kms.amazonaws.com) && (($.eventName = DisableKey) ||"
+                            + " ($.eventName = ScheduleKeyDeletion)) }"),
+            new CisControl(
+                    "S3BucketPolicyChanges",
+                    "s3-bucket-policy-changes",
+                    "CIS CloudWatch.8: an S3 bucket policy or ACL was changed",
+                    "{ ($.eventSource = s3.amazonaws.com) && (($.eventName = PutBucketAcl) ||"
+                            + " ($.eventName = PutBucketPolicy) || ($.eventName = PutBucketCors) ||"
+                            + " ($.eventName = PutBucketLifecycle) || ($.eventName = PutBucketReplication) ||"
+                            + " ($.eventName = DeleteBucketPolicy) || ($.eventName = DeleteBucketCors) ||"
+                            + " ($.eventName = DeleteBucketLifecycle) || ($.eventName = DeleteBucketReplication)) }"),
+            new CisControl(
+                    "AwsConfigChanges",
+                    "aws-config-changes",
+                    "CIS CloudWatch.9: AWS Config's own configuration was changed",
+                    "{ ($.eventSource = config.amazonaws.com) && (($.eventName = StopConfigurationRecorder) ||"
+                            + " ($.eventName = DeleteDeliveryChannel) || ($.eventName = PutDeliveryChannel) ||"
+                            + " ($.eventName = PutConfigurationRecorder)) }"),
+            new CisControl(
+                    "SecurityGroupChanges",
+                    "security-group-changes",
+                    "CIS CloudWatch.10: a security group was changed",
+                    "{ ($.eventName = AuthorizeSecurityGroupIngress) || ($.eventName = AuthorizeSecurityGroupEgress) ||"
+                            + " ($.eventName = RevokeSecurityGroupIngress) || ($.eventName = RevokeSecurityGroupEgress) ||"
+                            + " ($.eventName = CreateSecurityGroup) || ($.eventName = DeleteSecurityGroup) }"),
+            new CisControl(
+                    "NaclChanges",
+                    "nacl-changes",
+                    "CIS CloudWatch.11: a network ACL was changed",
+                    "{ ($.eventName = CreateNetworkAcl) || ($.eventName = CreateNetworkAclEntry) ||"
+                            + " ($.eventName = DeleteNetworkAcl) || ($.eventName = DeleteNetworkAclEntry) ||"
+                            + " ($.eventName = ReplaceNetworkAclEntry) || ($.eventName = ReplaceNetworkAclAssociation) }"),
+            new CisControl(
+                    "NetworkGatewayChanges",
+                    "network-gateway-changes",
+                    "CIS CloudWatch.12: a network gateway was changed",
+                    "{ ($.eventName = CreateCustomerGateway) || ($.eventName = DeleteCustomerGateway) ||"
+                            + " ($.eventName = AttachInternetGateway) || ($.eventName = CreateInternetGateway) ||"
+                            + " ($.eventName = DeleteInternetGateway) || ($.eventName = DetachInternetGateway) }"),
+            new CisControl(
+                    "RouteTableChanges",
+                    "route-table-changes",
+                    "CIS CloudWatch.13: a route table was changed",
+                    "{ ($.eventName = CreateRoute) || ($.eventName = CreateRouteTable) ||"
+                            + " ($.eventName = ReplaceRoute) || ($.eventName = ReplaceRouteTableAssociation) ||"
+                            + " ($.eventName = DeleteRouteTable) || ($.eventName = DeleteRoute) ||"
+                            + " ($.eventName = DisassociateRouteTable) }"),
+            new CisControl(
+                    "VpcChanges",
+                    "vpc-changes",
+                    "CIS CloudWatch.14: a VPC was changed",
+                    "{ ($.eventName = CreateVpc) || ($.eventName = DeleteVpc) || ($.eventName = ModifyVpcAttribute) ||"
+                            + " ($.eventName = AcceptVpcPeeringConnection) || ($.eventName = CreateVpcPeeringConnection) ||"
+                            + " ($.eventName = DeleteVpcPeeringConnection) || ($.eventName = RejectVpcPeeringConnection) ||"
+                            + " ($.eventName = AttachClassicLinkVpc) || ($.eventName = DetachClassicLinkVpc) ||"
+                            + " ($.eventName = DisableVpcClassicLink) || ($.eventName = EnableVpcClassicLink) }"));
 }
+
