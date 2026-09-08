@@ -39,8 +39,13 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
    first; the suite had passed on main's merge deploy). The second run's environment deploy
    (34273259978), test and CodeQL are green; its deploy (34273260002) failed on HmrcStack and
    the suites after it because the ci set from the first run self-destructed underneath it, so
-   the operator dispatched a fresh deploy, 34277995271 (third run, 20:59 UTC), which is the
-   proof. A
+   the operator dispatched a fresh deploy, 34277995271 (third run, 20:59 UTC). That run failed
+   on EdgeStack: the previous set's AwsCustomResource provider log group in us-east-1 had been
+   recreated by the provider's last log lines after its stack was gone, so the new EdgeStack's
+   create hit "already exists"; every suite then failed or was cancelled on a set the operator
+   called hosed. Fix 34116c67, pushed at 21:4x UTC on the operator's word without waiting for a
+   destroy: `deploy-cdk-stack.yml` deletes a provider log group in either region when no stack
+   of that name stands before deploying. The fourth run's ids go here. A
    failure gets its fix committed on the batch and pushed once the run has completed, never
    while a `deploy environment` or `deploy` run is in progress. A stale ci set (a resource
    CloudFormation records but AWS lacks) is destroyed from the branch ref before the next
@@ -59,9 +64,12 @@ role in each deployment account for the spreadsheets ci behaviour run's test use
 `arn:aws:iam::972912397388:role/prod-env-spreadsheets-behaviour-role`; trust
 `token.actions.githubusercontent.com`, sub `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*`;
 Cognito admin calls on the pool, `DescribeStacks` on the identity stack, the test-user script's
-DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it in a worktree;
-it merges to the batch and goes up with the next push after the running deploy completes. The
-spreadsheets session has the ARNs.
+DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it in a worktree
+(`agent-a87458237abeb2e66`). The operator's instruction of 21:3x UTC: it does not join the
+batch; when it lands, create a branch off `claude/b13-board` (`claude/ops-spreadsheets-role`),
+cherry-pick the commit there, push that branch once and open its PR against `claude/b13-board`,
+so its environment deploy proves the ci role while PR #153 stays as it is. The spreadsheets
+session has the ARNs.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
