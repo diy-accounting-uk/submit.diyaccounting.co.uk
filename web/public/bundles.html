@@ -558,7 +558,7 @@
             });
           }
 
-          const response = await window.fetchWithIdToken("/api/v1/billing/checkout-session", {
+          const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ bundleId, ...(isSynthetic && { synthetic: true }) }),
@@ -1240,7 +1240,7 @@
             (async () => {
               try {
                 const response = await window.fetchWithIdToken(
-                  `/api/v1/billing/checkout-session/${encodeURIComponent(sessionId)}`,
+                  `/api/v1/billing/checkout/${encodeURIComponent(sessionId)}`,
                 );
                 const body = await response.json().catch(() => ({}));
                 if (response.ok && body.amountTotal != null) {

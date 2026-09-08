@@ -17,12 +17,13 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "post", "/api/v1/billing/checkout-session", ingestHandler);
+  registerLambdaRoute(app, "post", "/api/v1/billing/checkout", ingestHandler);
 }
 /* v8 ignore stop */
 
@@ -86,6 +87,7 @@ export async function ingestHandler(event) {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
     const bundleId = body.bundleId || "resident-pro";
     const priceId = resolveStripePriceId(bundleId, isSynthetic);
+    const returnTo = resolveAllowedReturnTo(body.returnTo);
 
     if (!priceId) {
       logger.error({ message: "No Stripe price ID configured", bundleId, isSynthetic });
@@ -109,8 +111,10 @@ export async function ingestHandler(event) {
         metadata: { hashedSub, bundleId },
       },
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}bundles.html?checkout=canceled`,
+      success_url: returnTo
+        ? `${returnTo}?checkout=success&session_id={CHECKOUT_SESSION_ID}`
+        : `${baseUrl}bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: returnTo ? `${returnTo}?checkout=canceled` : `${baseUrl}bundles.html?checkout=canceled`,
     });
 
     logger.info({ message: "Checkout session created", sessionId: session.id, hashedSub, isSynthetic });

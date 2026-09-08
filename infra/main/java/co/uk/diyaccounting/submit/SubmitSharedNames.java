@@ -2048,10 +2048,10 @@ public class SubmitSharedNames {
                 "Records a new browser session for activity monitoring",
                 "sessionBeacon"));
 
-        // Billing Checkout POST Lambda (JWT auth)
+        // Billing Checkout POST Lambda (billing JWT auth: main and books client audiences)
         this.billingCheckoutPostLambdaHttpMethod = HttpMethod.POST;
-        this.billingCheckoutPostLambdaUrlPath = "/api/v1/billing/checkout-session";
-        this.billingCheckoutPostLambdaJwtAuthorizer = true;
+        this.billingCheckoutPostLambdaUrlPath = "/api/v1/billing/checkout";
+        this.billingCheckoutPostLambdaJwtAuthorizer = false;
         this.billingCheckoutPostLambdaCustomAuthorizer = false;
         var billingCheckoutPostLambdaHandlerName = "billingCheckoutPost.ingestHandler";
         var billingCheckoutPostLambdaHandlerDashed =
@@ -2073,7 +2073,7 @@ public class SubmitSharedNames {
 
         // Billing Checkout Session GET Lambda (JWT auth)
         this.billingCheckoutSessionGetLambdaHttpMethod = HttpMethod.GET;
-        this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout-session/{id}";
+        this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout/{id}";
         this.billingCheckoutSessionGetLambdaJwtAuthorizer = true;
         this.billingCheckoutSessionGetLambdaCustomAuthorizer = false;
         var billingCheckoutSessionGetLambdaHandlerName = "billingCheckoutSessionGet.ingestHandler";
@@ -2095,10 +2095,10 @@ public class SubmitSharedNames {
                 "getCheckoutSession",
                 List.of(new ApiParameter("id", "path", true, "The Stripe checkout session id"))));
 
-        // Billing Portal GET Lambda (JWT auth)
+        // Billing Portal GET Lambda (billing JWT auth: main and books client audiences)
         this.billingPortalGetLambdaHttpMethod = HttpMethod.GET;
         this.billingPortalGetLambdaUrlPath = "/api/v1/billing/portal";
-        this.billingPortalGetLambdaJwtAuthorizer = true;
+        this.billingPortalGetLambdaJwtAuthorizer = false;
         this.billingPortalGetLambdaCustomAuthorizer = false;
         var billingPortalGetLambdaHandlerName = "billingPortalGet.ingestHandler";
         var billingPortalGetLambdaHandlerDashed =

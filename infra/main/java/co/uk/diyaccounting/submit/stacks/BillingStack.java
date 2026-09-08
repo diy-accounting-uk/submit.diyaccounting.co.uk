@@ -112,6 +112,41 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String stripePriceIdResidentItsa() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentItsa() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentLtd() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentLtd() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentDiyaGl() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentDiyaGl() {
+            return "";
+        }
+
+        @Value.Default
+        default String billingReturnUrlOrigins() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -181,8 +216,40 @@ public class BillingStack extends Stack {
             billingCheckoutPostLambdaEnv.with(
                     "STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
         }
+        if (props.stripePriceIdResidentItsa() != null
+                && !props.stripePriceIdResidentItsa().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_ITSA", props.stripePriceIdResidentItsa());
+        }
+        if (props.stripeTestPriceIdResidentItsa() != null
+                && !props.stripeTestPriceIdResidentItsa().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_ITSA", props.stripeTestPriceIdResidentItsa());
+        }
+        if (props.stripePriceIdResidentLtd() != null
+                && !props.stripePriceIdResidentLtd().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_LTD", props.stripePriceIdResidentLtd());
+        }
+        if (props.stripeTestPriceIdResidentLtd() != null
+                && !props.stripeTestPriceIdResidentLtd().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_LTD", props.stripeTestPriceIdResidentLtd());
+        }
+        if (props.stripePriceIdResidentDiyaGl() != null
+                && !props.stripePriceIdResidentDiyaGl().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_DIYA_GL", props.stripePriceIdResidentDiyaGl());
+        }
+        if (props.stripeTestPriceIdResidentDiyaGl() != null
+                && !props.stripeTestPriceIdResidentDiyaGl().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL", props.stripeTestPriceIdResidentDiyaGl());
+        }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        }
+        if (props.billingReturnUrlOrigins() != null
+                && !props.billingReturnUrlOrigins().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("BILLING_RETURN_URL_ORIGINS", props.billingReturnUrlOrigins());
         }
         var billingCheckoutPostApiLambda = new ApiLambda(
                 this,
@@ -200,8 +267,9 @@ public class BillingStack extends Stack {
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingCheckoutPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().billingCheckoutPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().billingCheckoutPostLambdaJwtAuthorizer)
+                        .jwtAuthorizer(false)
                         .customAuthorizer(props.sharedNames().billingCheckoutPostLambdaCustomAuthorizer)
+                        .billingJwtAuthorizer(true)
                         .environment(billingCheckoutPostLambdaEnv)
                         .build());
         this.billingCheckoutPostLambdaProps = billingCheckoutPostApiLambda.apiProps;
@@ -334,6 +402,10 @@ public class BillingStack extends Stack {
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingPortalGetLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
         }
+        if (props.billingReturnUrlOrigins() != null
+                && !props.billingReturnUrlOrigins().isBlank()) {
+            billingPortalGetLambdaEnv.with("BILLING_RETURN_URL_ORIGINS", props.billingReturnUrlOrigins());
+        }
         var billingPortalGetApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -350,8 +422,9 @@ public class BillingStack extends Stack {
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingPortalGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().billingPortalGetLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().billingPortalGetLambdaJwtAuthorizer)
+                        .jwtAuthorizer(false)
                         .customAuthorizer(props.sharedNames().billingPortalGetLambdaCustomAuthorizer)
+                        .billingJwtAuthorizer(true)
                         .environment(billingPortalGetLambdaEnv)
                         .build());
         this.billingPortalGetLambdaProps = billingPortalGetApiLambda.apiProps;

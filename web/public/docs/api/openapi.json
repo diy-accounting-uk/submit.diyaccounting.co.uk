@@ -64,13 +64,6 @@
         }
       }
     },
-    "/billing/checkout-session" : {
-      "post" : {
-        "summary" : "Create billing checkout session",
-        "description" : "Creates a Stripe checkout session for subscription",
-        "operationId" : "createCheckoutSession"
-      }
-    },
     "/companies-house/transaction/{transactionId}" : {
       "get" : {
         "summary" : "Get a Companies House transaction",
@@ -694,6 +687,22 @@
         }
       }
     },
+    "/billing/checkout/{id}" : {
+      "get" : {
+        "summary" : "Retrieve a billing checkout session",
+        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
+        "operationId" : "getCheckoutSession",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Stripe checkout session id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
         "summary" : "Poll a micro-entity accounts filing",
@@ -1087,22 +1096,6 @@
         "operationId" : "stripeWebhook"
       }
     },
-    "/billing/checkout-session/{id}" : {
-      "get" : {
-        "summary" : "Retrieve a billing checkout session",
-        "description" : "Retrieves the amount, currency and bundle of a completed Stripe checkout session for the authenticated user",
-        "operationId" : "getCheckoutSession",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Stripe checkout session id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
     "/billing/recover" : {
       "post" : {
         "summary" : "Recover billing subscription",
@@ -1328,6 +1321,13 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/billing/checkout" : {
+      "post" : {
+        "summary" : "Create billing checkout session",
+        "description" : "Creates a Stripe checkout session for subscription",
+        "operationId" : "createCheckoutSession"
       }
     }
   },

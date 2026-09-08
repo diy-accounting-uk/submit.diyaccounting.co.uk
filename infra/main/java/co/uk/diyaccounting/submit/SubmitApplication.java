@@ -86,6 +86,12 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentPro;
         public String stripePriceIdResidentVat;
         public String stripeTestPriceIdResidentVat;
+        public String stripePriceIdResidentItsa;
+        public String stripeTestPriceIdResidentItsa;
+        public String stripePriceIdResidentLtd;
+        public String stripeTestPriceIdResidentLtd;
+        public String stripePriceIdResidentDiyaGl;
+        public String stripeTestPriceIdResidentDiyaGl;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String opsGithubTokenSecretArn;
@@ -165,6 +171,10 @@ public class SubmitApplication {
         var booksAllowedOrigins = "prod".equals(envName)
                 ? "https://spreadsheets.diyaccounting.co.uk"
                 : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
+        // A checkout or portal returnTo is allowed from the DIYA-GL pages' origins (the same
+        // list the books routes use) plus this deployment's own origin, since bundles.html lives
+        // there too.
+        var billingReturnUrlOrigins = booksAllowedOrigins + "," + sharedNames.publicBaseUrl.replaceAll("/$", "");
         var cognitoUserPoolId = cognitoUserPoolArn != null
                 ? cognitoUserPoolArn.split("/")[1]
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
@@ -245,6 +255,30 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
                 appProps.stripeTestPriceIdResidentVat,
                 "(from stripeTestPriceIdResidentVat in cdk.json)");
+        var stripePriceIdResidentItsa = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_ITSA",
+                appProps.stripePriceIdResidentItsa,
+                "(from stripePriceIdResidentItsa in cdk.json)");
+        var stripeTestPriceIdResidentItsa = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_ITSA",
+                appProps.stripeTestPriceIdResidentItsa,
+                "(from stripeTestPriceIdResidentItsa in cdk.json)");
+        var stripePriceIdResidentLtd = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_LTD",
+                appProps.stripePriceIdResidentLtd,
+                "(from stripePriceIdResidentLtd in cdk.json)");
+        var stripeTestPriceIdResidentLtd = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_LTD",
+                appProps.stripeTestPriceIdResidentLtd,
+                "(from stripeTestPriceIdResidentLtd in cdk.json)");
+        var stripePriceIdResidentDiyaGl = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_DIYA_GL",
+                appProps.stripePriceIdResidentDiyaGl,
+                "(from stripePriceIdResidentDiyaGl in cdk.json)");
+        var stripeTestPriceIdResidentDiyaGl = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL",
+                appProps.stripeTestPriceIdResidentDiyaGl,
+                "(from stripeTestPriceIdResidentDiyaGl in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -392,7 +426,18 @@ public class SubmitApplication {
                         .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
+                        .stripePriceIdResidentItsa(stripePriceIdResidentItsa != null ? stripePriceIdResidentItsa : "")
+                        .stripeTestPriceIdResidentItsa(
+                                stripeTestPriceIdResidentItsa != null ? stripeTestPriceIdResidentItsa : "")
+                        .stripePriceIdResidentLtd(stripePriceIdResidentLtd != null ? stripePriceIdResidentLtd : "")
+                        .stripeTestPriceIdResidentLtd(
+                                stripeTestPriceIdResidentLtd != null ? stripeTestPriceIdResidentLtd : "")
+                        .stripePriceIdResidentDiyaGl(
+                                stripePriceIdResidentDiyaGl != null ? stripePriceIdResidentDiyaGl : "")
+                        .stripeTestPriceIdResidentDiyaGl(
+                                stripeTestPriceIdResidentDiyaGl != null ? stripeTestPriceIdResidentDiyaGl : "")
                         .baseUrl(sharedNames.publicBaseUrl)
+                        .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());
 
         // Create the BooksStack
