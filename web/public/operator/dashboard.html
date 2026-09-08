@@ -1,0 +1,310 @@
+<!-- dashboard.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Operator Dashboard - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="../favicon.ico" sizes="any" />
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png" />
+    <link rel="manifest" href="../site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+    <style>
+      .objective {
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        padding: var(--spacing-lg);
+        margin: 0 0 var(--spacing-lg) 0;
+      }
+      .objective h2 {
+        margin: 0 0 0.75em 0;
+        font-size: var(--font-size-lg);
+      }
+      .objective-empty {
+        color: #777;
+        font-style: italic;
+      }
+      table.observations {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      table.observations th,
+      table.observations td {
+        text-align: left;
+        padding: 0.4em 0.6em;
+        border-bottom: 1px solid #eee;
+      }
+      .trend-up {
+        color: #1a7f37;
+      }
+      .trend-down {
+        color: #b3261e;
+      }
+      .trend-flat,
+      .trend-unknown {
+        color: #777;
+      }
+      #experimentsPanel ul {
+        margin: 0;
+        padding-left: 1.2em;
+      }
+      #experimentsPanel li {
+        margin-bottom: 0.6em;
+      }
+      #snapshotMeta {
+        color: #666;
+        font-size: 0.9em;
+        margin: 0 0 var(--spacing-lg) 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Operator Dashboard</h1>
+      <p class="subtitle">The eight objectives, from last night's snapshot</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../">Activities</a>
+        <a href="../bundles.html">Bundles</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <p id="snapshotMeta"></p>
+
+      <div id="objectivesContainer"></div>
+
+      <section id="experimentsPanel" class="objective">
+        <h2>Experiments</h2>
+        <ul id="experimentsList"></ul>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../lib/env-loader.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script>
+      const OBJECTIVE_ORDER = [
+        "uptime",
+        "conversion-to-submission",
+        "conversion-to-paid",
+        "low-running-cost",
+        "security",
+        "retention",
+        "operator-effort",
+        "compliance",
+      ];
+
+      function formatValue(unit, value) {
+        if (value === null || value === undefined) return "—";
+        if (unit === "ratio") return (value * 100).toFixed(1) + "%";
+        if (unit === "gbp") return "£" + value.toFixed(2);
+        return String(Math.round(value * 100) / 100);
+      }
+
+      function formatTrend(trend) {
+        if (trend === null || trend === undefined) return { text: "—", className: "trend-unknown" };
+        const pct = (trend * 100).toFixed(1) + "%";
+        if (trend > 0) return { text: "↑ " + pct, className: "trend-up" };
+        if (trend < 0) return { text: "↓ " + pct.replace("-", ""), className: "trend-down" };
+        return { text: "flat", className: "trend-flat" };
+      }
+
+      function renderObservationRow(observation) {
+        const row = document.createElement("tr");
+        row.className = "observation";
+        row.dataset.observationId = observation.id;
+
+        const label = document.createElement("td");
+        label.textContent = observation.label;
+        row.appendChild(label);
+
+        const last30 = document.createElement("td");
+        last30.textContent = formatValue(observation.unit, observation.last30 && observation.last30.value);
+        row.appendChild(last30);
+
+        const trend30 = formatTrend(observation.last30 && observation.last30.trend);
+        const trend30Cell = document.createElement("td");
+        trend30Cell.textContent = trend30.text;
+        trend30Cell.className = trend30.className;
+        row.appendChild(trend30Cell);
+
+        const last90 = document.createElement("td");
+        last90.textContent = formatValue(observation.unit, observation.last90 && observation.last90.value);
+        row.appendChild(last90);
+
+        const linkCell = document.createElement("td");
+        if (observation.deepLink) {
+          const link = document.createElement("a");
+          link.href = observation.deepLink;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.className = "deep-link";
+          link.textContent = "Open";
+          linkCell.appendChild(link);
+        }
+        row.appendChild(linkCell);
+
+        return row;
+      }
+
+      function renderObjective(objective) {
+        const section = document.createElement("section");
+        section.className = "objective";
+        section.dataset.objectiveId = objective.id;
+
+        const heading = document.createElement("h2");
+        heading.textContent = objective.name;
+        section.appendChild(heading);
+
+        if (!objective.observations || objective.observations.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "objective-empty";
+          empty.textContent = "No observations yet.";
+          section.appendChild(empty);
+          return section;
+        }
+
+        const table = document.createElement("table");
+        table.className = "observations";
+        const thead = document.createElement("thead");
+        thead.innerHTML = "<tr><th>Observation</th><th>Last 30 days</th><th>Trend</th><th>Last 90 days</th><th>Link</th></tr>";
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+        objective.observations.forEach((observation) => tbody.appendChild(renderObservationRow(observation)));
+        table.appendChild(tbody);
+
+        section.appendChild(table);
+        return section;
+      }
+
+      function renderSnapshot(snapshot) {
+        const meta = document.getElementById("snapshotMeta");
+        meta.textContent = "Generated " + snapshot.generatedAt + " for " + snapshot.environment;
+
+        const container = document.getElementById("objectivesContainer");
+        container.innerHTML = "";
+
+        const objectivesById = {};
+        (snapshot.objectives || []).forEach((objective) => {
+          objectivesById[objective.id] = objective;
+        });
+
+        OBJECTIVE_ORDER.forEach((objectiveId) => {
+          const objective = objectivesById[objectiveId] || { id: objectiveId, name: objectiveId, observations: [] };
+          container.appendChild(renderObjective(objective));
+        });
+      }
+
+      function renderExperiments(experiments) {
+        const list = document.getElementById("experimentsList");
+        list.innerHTML = "";
+        (experiments || []).forEach((experiment) => {
+          const item = document.createElement("li");
+          item.className = "experiment";
+          item.dataset.experimentId = experiment.id;
+          const hypothesis = experiment.hypothesis && experiment.hypothesis.length > 0 ? experiment.hypothesis : "(no hypothesis yet)";
+          item.textContent =
+            experiment.id + " — " + experiment.objective + ": " + hypothesis + " (" + experiment.start + " to " + (experiment.end || "open") + ")";
+          list.appendChild(item);
+        });
+      }
+
+      async function fetchJson(path) {
+        const idToken = window.localStorage ? window.localStorage.getItem("cognitoIdToken") : null;
+        const init = idToken ? { headers: { Authorization: "Bearer " + idToken } } : {};
+        const fetcher = window.fetchWithIdToken || window.fetch;
+        const response = await fetcher(path, init);
+        if (!response.ok) {
+          const error = new Error("request-failed");
+          error.status = response.status;
+          throw error;
+        }
+        return response.json();
+      }
+
+      async function fetchToml(path) {
+        const response = await fetch(path);
+        if (!response.ok) throw new Error("request-failed");
+        const text = await response.text();
+        return window.TOML ? window.TOML.parse(text) : JSON.parse(text);
+      }
+
+      function showError(message) {
+        const container = document.getElementById("objectivesContainer");
+        container.innerHTML = "";
+        const notice = document.createElement("p");
+        notice.id = "snapshotError";
+        notice.textContent = message;
+        container.appendChild(notice);
+      }
+
+      async function initPage() {
+        try {
+          const snapshot = await fetchJson("/api/v1/operator/snapshot");
+          renderSnapshot(snapshot);
+        } catch (error) {
+          if (error.status === 403) {
+            showError("Not authorised to view the operator dashboard.");
+          } else if (error.status === 404) {
+            showError("No snapshot has been published yet.");
+          } else {
+            showError("Failed to load the operator snapshot.");
+          }
+        }
+
+        try {
+          const parsed = await fetchToml("/experiments.toml");
+          renderExperiments(parsed.experiments);
+        } catch (error) {
+          // The experiments panel is a secondary feature; a missing or unreadable file leaves
+          // it empty rather than blocking the objectives above.
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", initPage);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+version = "1.0.0"
+
+# One row per experiment against an objective on the operator dashboard
+# (PLAN_ONE_STOP_DASHBOARD.md, "Optimisation and the reinvestment loop"). The dashboard draws
+# each experiment's start and end as a vertical annotation on the metric it watches, and lists
+# open experiments (no end date yet) under their objective.
+#
+# Fields:
+#   id        - stable identifier, kebab-case
+#   objective - one of: uptime, conversion-to-submission, conversion-to-paid,
+#               low-running-cost, security, retention, operator-effort, compliance
+#   hypothesis - what the operator expects to happen and why; left blank until the operator
+#                writes it
+#   lever     - the thing being changed
+#   metric    - the observation id on the dashboard this experiment watches
+#   start     - ISO date the change took effect
+#   end       - ISO date the experiment closed, or omitted while still open
+#   change    - the deployment, catalogue change or configuration that began it
+#   result    - what happened, written once the window has closed
+
+[[experiments]]
+id = "exp-2026-09-uptime-baseline"
+objective = "uptime"
+hypothesis = ""
+lever = "baseline"
+metric = "probe-pass-rate"
+start = "2026-09-01"
+end = "2026-09-30"
+change = "none: the first month of measurement, before any lever is pulled"
+result = ""

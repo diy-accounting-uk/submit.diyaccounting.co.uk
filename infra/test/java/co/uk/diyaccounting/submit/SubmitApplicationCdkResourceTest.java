@@ -88,12 +88,12 @@ class SubmitApplicationCdkResourceTest {
         assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 13 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), interestPost(1), passGet(1),
-        // passPost(1), passAdminPost(1), passGeneratePost(1), passMyPassesGet(1),
-        // bundleCapacityReconcile(1), sessionBeaconPost(1)
+        // 14 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // interestPost(1), passGet(1), passPost(1), passAdminPost(1), passGeneratePost(1),
+        // passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
-        assertStackHealthAlarm(accountStackTemplate, 11, 2, routedPrefixes);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 14);
+        assertStackHealthAlarm(accountStackTemplate, 12, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -244,8 +244,9 @@ class SubmitApplicationCdkResourceTest {
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
         // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
         // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
-        // sharing), for 77 + 4 + 3 + 3 = 87.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 91);
+        // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
+        // plus its automatic HEAD route, since no other route shares that path.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 93);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

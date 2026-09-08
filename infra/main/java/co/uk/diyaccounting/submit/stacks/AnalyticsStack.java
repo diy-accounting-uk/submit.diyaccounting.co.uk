@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
+import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.TableChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.WorkflowRunTables;
@@ -746,6 +747,20 @@ public class AnalyticsStack extends Stack {
                         .idPrefix(prefix)
                         .envName(props.envName())
                         .sharedNames(sharedNames)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .resultsBucket(this.resultsBucket)
+                        .lakeBucket(this.lakeBucket)
+                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .athenaWorkGroupName(sharedNames.athenaWorkGroupName)
+                        .build());
+
+        new OperatorSnapshotPublish(
+                this,
+                OperatorSnapshotPublish.OperatorSnapshotPublishProps.builder()
+                        .idPrefix(prefix)
+                        .envName(props.envName())
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
