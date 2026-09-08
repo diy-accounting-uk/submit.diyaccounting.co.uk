@@ -96,6 +96,26 @@ class SubmitEnvironmentCdkResourceTest {
                 "AWS::CloudTrail::Trail", Match.objectLike(Map.of("IsMultiRegionTrail", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
 
+        // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack
+        // manages the CIS v5.0.0 and AWS Foundational Security Best Practices subscriptions
+        // instead of the Hub auto-enabling CIS v1.2.0 on creation.
+        observability.hasResourceProperties(
+                "AWS::SecurityHub::Hub", Match.objectLike(Map.of("EnableDefaultStandards", false)));
+
+        // 8a) SecurityBaselineStack: the Config recorder, its delivery channel and bucket, and
+        // the standards-swap custom resources (disable CIS v1.2.0, enable CIS v5.0.0, keep AWS
+        // Foundational Security Best Practices).
+        Template securityBaseline = Template.fromStack(env.securityBaselineStack);
+        securityBaseline.resourceCountIs("AWS::Config::ConfigurationRecorder", 1);
+        securityBaseline.resourceCountIs("AWS::Config::DeliveryChannel", 1);
+        securityBaseline.resourceCountIs("AWS::IAM::ServiceLinkedRole", 1);
+        securityBaseline.hasResourceProperties(
+                "AWS::Config::ConfigurationRecorder",
+                Match.objectLike(Map.of(
+                        "RecordingGroup",
+                        Match.objectLike(Map.of("AllSupported", true, "IncludeGlobalResourceTypes", true)))));
+        assertSecurityHubStandardsSwap(securityBaseline);
+
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
@@ -272,6 +292,33 @@ class SubmitEnvironmentCdkResourceTest {
                 .anyMatch(field -> "eventName".equals(field.get("Field"))
                         && List.of("GetRecords").equals(field.get("NotEquals"))));
         assertTrue(dataFields.stream().noneMatch(field -> "readOnly".equals(field.get("Field"))));
+    }
+
+    /**
+     * The CIS v1.2.0 -> v5.0.0 swap runs as three {@code Custom::AWS} resources sharing one
+     * provider: disable the v1.2.0 subscription, enable v5.0.0, and (re-)enable AWS Foundational
+     * Security Best Practices so it stays subscribed either way.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertSecurityHubStandardsSwap(Template template) {
+        var customResources = template.findResources("Custom::AWS");
+        var calls = customResources.values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(properties -> String.valueOf(properties.get("Create")))
+                .toList();
+
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchDisableStandards")
+                        && call.contains("cis-aws-foundations-benchmark/v/1.2.0")),
+                "expected a Custom::AWS resource disabling the CIS v1.2.0 standard");
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
+                        && call.contains("cis-aws-foundations-benchmark/v/5.0.0")),
+                "expected a Custom::AWS resource enabling the CIS v5.0.0 standard");
+        assertTrue(
+                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
+                        && call.contains("aws-foundational-security-best-practices/v/1.0.0")),
+                "expected a Custom::AWS resource keeping AWS Foundational Security Best Practices enabled");
     }
 
     /**

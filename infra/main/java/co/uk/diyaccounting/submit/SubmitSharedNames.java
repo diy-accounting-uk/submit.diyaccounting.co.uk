@@ -132,6 +132,7 @@ public class SubmitSharedNames {
     public String analyticsStackId;
     public String ingestionStackId;
     public String securityDetectionStackId;
+    public String securityBaselineStackId;
 
     // Analytics lake, catalog and query resources
     public String analyticsLakeBucketName;
@@ -747,6 +748,7 @@ public class SubmitSharedNames {
         this.envResourceNamePrefix = "%s-env".formatted(props.envName);
         this.observabilityStackId = "%s-env-ObservabilityStack".formatted(props.envName);
         this.securityDetectionStackId = "%s-env-SecurityDetectionStack".formatted(props.envName);
+        this.securityBaselineStackId = "%s-env-SecurityBaselineStack".formatted(props.envName);
         this.observabilityUE1StackId = "%s-env-ObservabilityUE1Stack".formatted(props.envName);
         this.dataStackId = "%s-env-DataStack".formatted(props.envName);
         this.identityStackId = "%s-env-IdentityStack".formatted(props.envName);
