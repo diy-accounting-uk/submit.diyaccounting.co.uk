@@ -226,15 +226,21 @@ jobs:
         if: ${{ needs.params.outputs['deployment-name'] == '' && github.ref == 'refs/heads/main' }}
         run: |
           PARAMETER_NAME="/submit/prod/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
-          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
       - name: If not main, read back last known good ci deployment from SSM Parameter Store
         if: ${{ needs.params.outputs['deployment-name'] == '' && github.ref != 'refs/heads/main' }}
         run: |
           PARAMETER_NAME="/submit/ci/last-known-good-deployment"
-          aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text | tee /tmp/last_known_good_deployment.txt
-          echo "Last known good deployment: $(cat /tmp/last_known_good_deployment.txt)"
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -n "$LAST_KNOWN_GOOD" ] && [ "$LAST_KNOWN_GOOD" != "None" ]; then
+            echo "$LAST_KNOWN_GOOD" > /tmp/last_known_good_deployment.txt
+          fi
+          echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
       - name: If last-known-good-deployment set use that otherwise use current deployment name
         id: deployment-name
