@@ -230,6 +230,35 @@ export const METRIC_DEFINITIONS = [
     dimension: { name: "Environment", column: "environment" },
     sql: (day) => `SELECT environment, failure_rate FROM v_dora_runs_daily WHERE day = DATE '${day}'`,
   },
+  {
+    metricName: "CostDailyByService",
+    unit: "None",
+    valueColumn: "billed_cost_usd",
+    dimension: { name: "Service", column: "service_name" },
+    sql: (day) =>
+      `SELECT service_name, sum(billed_cost_usd) AS billed_cost_usd FROM v_cost_daily WHERE day = DATE '${day}' GROUP BY service_name`,
+  },
+  {
+    metricName: "CostPerSubmission",
+    unit: "None",
+    valueColumn: "cost_per_completion_usd",
+    dimension: null,
+    sql: (day) => `SELECT cost_per_completion_usd FROM v_cost_per_submission_daily WHERE day = DATE '${day}'`,
+  },
+  {
+    metricName: "CostMonthlyActual",
+    unit: "None",
+    valueColumn: "billed_cost_usd",
+    dimension: null,
+    sql: (day) => `SELECT billed_cost_usd FROM v_cost_vs_target_monthly WHERE month = date_trunc('month', DATE '${day}')`,
+  },
+  {
+    metricName: "CostMonthlyTarget",
+    unit: "None",
+    valueColumn: "target_usd",
+    dimension: null,
+    sql: (day) => `SELECT target_usd FROM v_cost_vs_target_monthly WHERE month = date_trunc('month', DATE '${day}')`,
+  },
 ];
 
 let cachedAthenaClient = null;

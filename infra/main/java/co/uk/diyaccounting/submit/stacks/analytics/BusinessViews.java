@@ -111,7 +111,39 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_dora_runs_daily",
                     "Deploy and destroy runs each day: frequency, lead time and failure rate",
-                    List.of("dora_runs")));
+                    List.of("dora_runs")),
+            new ViewDefinition(
+                    "v_returning_submitters_quarterly",
+                    "Of the customers who submitted in a quarter, how many also submitted the previous one",
+                    List.of("dynamo_receipts")),
+            new ViewDefinition(
+                    "v_subscription_renewals_daily",
+                    "Subscriptions that renewed each day, by bundle",
+                    List.of("dynamo_subscriptions")),
+            new ViewDefinition(
+                    "v_subscription_cancellations_daily",
+                    "Subscriptions cancelled each day, by bundle",
+                    List.of("dynamo_subscriptions")),
+            new ViewDefinition(
+                    "v_operator_interventions_daily",
+                    "Operator interventions each day, by kind: dispatches, issue comments and commits",
+                    List.of("github_workflow_runs", "github_issue_events", "github_commits")),
+            new ViewDefinition(
+                    "v_compliance_status",
+                    "Open compliance findings each day, by area",
+                    List.of("compliance_accessibility", "compliance_fraud_headers")),
+            new ViewDefinition(
+                    "v_cost_daily",
+                    "Billed cost each day from the FOCUS export, by service, deployment and stack",
+                    List.of("cost_focus")),
+            new ViewDefinition(
+                    "v_cost_per_submission_daily",
+                    "The day's cost divided by the day's completed submissions",
+                    List.of("v_cost_daily", "v_submissions_by_activity_daily")),
+            new ViewDefinition(
+                    "v_cost_vs_target_monthly",
+                    "Each month's billed cost against the steady-state target",
+                    List.of("v_cost_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<AwsCustomResource> viewResources = new ArrayList<>();

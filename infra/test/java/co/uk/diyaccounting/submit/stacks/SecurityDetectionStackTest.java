@@ -44,8 +44,10 @@ class SecurityDetectionStackTest {
     void wiresScanAndGetItemVolumeAlarmsWhenCloudTrailEnabled() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
 
-        template.resourceCountIs("AWS::Logs::MetricFilter", 3);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 3);
+        // 3 hand-written detectors (scan, GetItem volume, salt read) plus the fourteen CIS
+        // CloudWatch metric filter controls.
+        template.resourceCountIs("AWS::Logs::MetricFilter", 17);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 17);
 
         // The stack imports ObservabilityStack's topic by ARN rather than creating its own.
         template.resourceCountIs("AWS::SNS::Topic", 0);
@@ -128,6 +130,22 @@ class SecurityDetectionStackTest {
         assertTrue(saltReadFilterScoped, "expected the salt-read metric filter pattern to reference GetSecretValue,"
                 + " the salt secret, the docs-* environment role prefix, and the"
                 + " submit-docs-deployment-role exception");
+
+        // One of the fourteen CIS CloudWatch metric filter controls, as a representative check
+        // that the loop wired both the filter and the alarm through to the shared topic.
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "docs-env-cis-root-account-usage",
+                        "MetricName", "CisRootAccountUsage",
+                        "Namespace", "Submit/Security")));
+        boolean rootUsageFilterScoped = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.contains("userIdentity.type") && filterPattern.contains("Root");
+        });
+        assertTrue(rootUsageFilterScoped, "expected a CIS metric filter pattern matching root account usage");
     }
 
     @Test

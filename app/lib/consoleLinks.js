@@ -41,3 +41,27 @@ export function buildXRayTraceSearchLink({ region, startIso, endIso, filterExpre
   if (!filterExpression) return null;
   return `https://${region}.console.aws.amazon.com/xray/home?region=${region}#/traces?timeRange=${encodeURIComponent(startIso)}~${encodeURIComponent(endIso)}&filter=${encodeURIComponent(filterExpression)}`;
 }
+
+export function buildCloudWatchDashboardLink(region, dashboardName) {
+  return `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#dashboards:name=${encodeURIComponent(dashboardName)}`;
+}
+
+export function buildCloudWatchAlarmsOverviewLink(region) {
+  return `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:`;
+}
+
+/** Links to the Athena workgroup's saved queries, where every named view definition lives
+ * alongside the SQL that answers this observation. Athena's console carries no URL scheme for
+ * one named query by name, only the workgroup's list. */
+export function buildAthenaSavedQueryLink(region, workGroupName) {
+  return `https://${region}.console.aws.amazon.com/athena/home?region=${region}#/query-editor/saved-queries?workgroup=${encodeURIComponent(workGroupName)}`;
+}
+
+export function buildGithubActionsWorkflowLink(repo, workflowFileName) {
+  return `https://github.com/${repo}/actions/workflows/${workflowFileName}`;
+}
+
+export function buildGa4ReportsLink(propertyId) {
+  if (!propertyId) return null;
+  return `https://analytics.google.com/analytics/web/#/p${propertyId}/reports/intelligenthome`;
+}

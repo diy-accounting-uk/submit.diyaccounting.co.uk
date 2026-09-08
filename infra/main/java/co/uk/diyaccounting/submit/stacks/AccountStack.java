@@ -55,6 +55,10 @@ public class AccountStack extends Stack {
     public Function bundleDeleteLambda;
     public ILogGroup bundleDeleteLambdaLogGroup;
 
+    public AbstractApiLambdaProps operatorSnapshotGetLambdaProps;
+    public Function operatorSnapshotGetLambda;
+    public ILogGroup operatorSnapshotGetLambdaLogGroup;
+
     public AbstractApiLambdaProps supportTicketPostLambdaProps;
     public Function supportTicketPostLambda;
     public ILogGroup supportTicketPostLambdaLogGroup;
@@ -478,6 +482,54 @@ public class AccountStack extends Stack {
         infof(
                 "Granted Cognito, DynamoDB, and Secrets Manager salt permissions to %s and its worker",
                 this.bundleDeleteLambda.getFunctionName());
+
+        // Operator Snapshot GET Lambda (main Cognito authoriser; the operator-dashboard
+        // activity's own entitlement check, enforceBundles() against the operator bundle, is
+        // what actually keeps this route closed to everyone else). Reads the nightly snapshot
+        // AnalyticsStack's OperatorSnapshotPublish construct writes; never queries Athena
+        // itself.
+        var analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        var operatorSnapshotGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", props.sharedNames().analyticsLakeBucketName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var operatorSnapshotGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().operatorSnapshotGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().operatorSnapshotGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().operatorSnapshotGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().operatorSnapshotGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().operatorSnapshotGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().operatorSnapshotGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().operatorSnapshotGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().operatorSnapshotGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().operatorSnapshotGetLambdaCustomAuthorizer)
+                        .environment(operatorSnapshotGetLambdaEnv)
+                        .build());
+
+        healthCheckedFunctions.add(operatorSnapshotGetApiLambda);
+        this.operatorSnapshotGetLambdaProps = operatorSnapshotGetApiLambda.apiProps;
+        this.operatorSnapshotGetLambda = operatorSnapshotGetApiLambda.ingestLambda;
+        this.operatorSnapshotGetLambdaLogGroup = operatorSnapshotGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.operatorSnapshotGetLambdaProps);
+
+        bundlesTable.grant(this.operatorSnapshotGetLambda, "dynamodb:Query");
+        this.operatorSnapshotGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(analyticsLakeBucketArn + "/snapshots/" + props.envName() + "/*"))
+                .build());
+        infof(
+                "Created API Lambda %s for the operator snapshot with ingestHandler %s",
+                this.operatorSnapshotGetLambda.getNode().getId(),
+                props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
 
         // Support Ticket POST Lambda - only create if GitHub token secret ARN is provided
         if (props.githubTokenSecretArn() != null

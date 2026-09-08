@@ -117,6 +117,15 @@ class SubmitEnvironmentCdkResourceTest {
                         Match.objectLike(Map.of("AllSupported", true, "IncludeGlobalResourceTypes", true)))));
         assertSecurityHubStandardsSwap(securityBaseline);
 
+        // 8b) SecurityLakeStack: the nightly Security Hub, GuardDuty, GitHub alert, lifecycle,
+        // WAF and rotation pull into the analytics lake, one Glue table per source.
+        Template securityLake = Template.fromStack(env.securityLakeStack);
+        securityLake.resourceCountIs("AWS::Glue::Table", 7);
+        securityLake.resourceCountIs("AWS::Lambda::Function", 1);
+        securityLake.resourceCountIs("AWS::Events::Rule", 1);
+        securityLake.resourceCountIs("AWS::CloudWatch::Alarm", 3);
+        securityLake.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
+
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
@@ -188,11 +197,11 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 3);
+        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 21);
+        analytics.resourceCountIs("AWS::Glue::Table", 27);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 18);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 26);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -231,10 +240,10 @@ class SubmitEnvironmentCdkResourceTest {
         // adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 5);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 6);
         ingestion.resourceCountIs("AWS::Events::Rule", 0);
         ingestion.resourceCountIs("AWS::SQS::Queue", 0);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);

@@ -11,8 +11,9 @@
 // redirects off-site.
 
 /**
- * Resolves a caller-supplied returnTo against BILLING_RETURN_URL_ORIGINS, returning it unchanged
- * when its origin is allowed, or null when it's absent, malformed or not allowed.
+ * Resolves a caller-supplied returnTo against BILLING_RETURN_URL_ORIGINS, reconstructing the URL
+ * from the allowed origin (never the request origin) plus the pathname and search from the request.
+ * Returns null when returnTo is absent, malformed, or its origin is not allowed.
  *
  * @param {string | undefined | null} returnTo
  * @returns {string | null}
@@ -20,17 +21,23 @@
 export function resolveAllowedReturnTo(returnTo) {
   if (!returnTo || typeof returnTo !== "string") return null;
 
-  let origin;
+  let parsed;
   try {
-    origin = new URL(returnTo).origin;
+    parsed = new URL(returnTo);
   } catch {
     return null;
   }
 
+  const requestOrigin = parsed.origin;
   const allowedOrigins = (process.env.BILLING_RETURN_URL_ORIGINS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
 
-  return allowedOrigins.includes(origin) ? returnTo : null;
+  // Find the allowed origin that matches the request's origin
+  const allowedOrigin = allowedOrigins.find((o) => o === requestOrigin);
+  if (!allowedOrigin) return null;
+
+  // Reconstruct from the allowed origin (not the request origin) plus request path/search/hash
+  return new URL(parsed.pathname + parsed.search + parsed.hash, allowedOrigin).toString();
 }

@@ -1005,6 +1005,13 @@
         "operationId" : "submitSupportTicket"
       }
     },
+    "/operator/snapshot" : {
+      "get" : {
+        "summary" : "Get the operator objectives snapshot",
+        "description" : "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
+        "operationId" : "getOperatorSnapshot"
+      }
+    },
     "/bundle/{id}" : {
       "delete" : {
         "summary" : "Delete bundle by id",

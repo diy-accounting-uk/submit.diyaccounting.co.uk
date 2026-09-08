@@ -32,5 +32,7 @@ COPY app/functions app/functions
 COPY app/data app/data
 COPY app/services app/services
 COPY submit.passes.toml submit.passes.toml
+COPY lifecycle.toml lifecycle.toml
+COPY secrets-rotation.toml secrets-rotation.toml
 
 # Lambda will use CMD override from CDK EcrImageCodeProps

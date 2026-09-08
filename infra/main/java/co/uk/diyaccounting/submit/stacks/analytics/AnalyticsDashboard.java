@@ -377,9 +377,7 @@ public class AnalyticsDashboard extends Construct {
                 .height(6)
                 .build()));
 
-        // Running cost has no widgets yet: the FOCUS cost export and cost-per-submission views
-        // land in a later row. The heading holds its place in the objective order.
-        dashboardRows.add(List.of(heading("Running cost")));
+        dashboardRows.addAll(runningCostWidgetRows());
 
         this.dashboard = Dashboard.Builder.create(this, prefix + "-AnalyticsDashboard")
                 .dashboardName(dashboardName)
@@ -391,6 +389,36 @@ public class AnalyticsDashboard extends Construct {
                 "AnalyticsDashboardUrl",
                 "https://" + region + ".console.aws.amazon.com/cloudwatch/home?region=" + region + "#dashboards:name="
                         + dashboardName);
+    }
+
+    /**
+     * The "Running cost" objective row: daily spend by service from the FOCUS export, cost per
+     * submission, and the month's spend against the $64.77 steady-state target, from the metrics
+     * {@code analyticsMetricsPublish.js} publishes off the {@code v_cost_*} views.
+     */
+    private List<List<IWidget>> runningCostWidgetRows() {
+        var rows = new ArrayList<List<IWidget>>();
+        rows.add(List.of(heading("Running cost")));
+        rows.add(List.of(GraphWidget.Builder.create()
+                .title("Daily Cost by Service")
+                .left(List.of(search("CostDailyByService", "Service")))
+                .width(24)
+                .height(6)
+                .build()));
+        rows.add(List.of(
+                SingleValueWidget.Builder.create()
+                        .title("Cost per Submission (USD)")
+                        .metrics(List.of(metric("CostPerSubmission")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Monthly Cost vs $64.77 Target")
+                        .left(List.of(metric("CostMonthlyActual"), metric("CostMonthlyTarget")))
+                        .width(12)
+                        .height(6)
+                        .build()));
+        return rows;
     }
 
     /** A section heading, one per objective, above the widgets that answer it. */

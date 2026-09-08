@@ -168,7 +168,13 @@ async function main() {
     console.log("");
     await updateClient(cognitoClient, userPoolId, clientId, "UserPoolClient (submit app)", action);
     console.log("");
-    await updateClient(cognitoClient, userPoolId, booksClientId, "BooksUserPoolClient (DIYA-GL)", action);
+    if (action === "disable" && environmentName === "ci") {
+      // The spreadsheets ci behaviour case signs in on the DIYA-GL client outside this repo's
+      // test window, so ci's DIYA-GL client keeps native sign-in on; prod toggles both clients.
+      console.log("  BooksUserPoolClient (DIYA-GL) on ci keeps native sign-in enabled");
+    } else {
+      await updateClient(cognitoClient, userPoolId, booksClientId, "BooksUserPoolClient (DIYA-GL)", action);
+    }
 
     console.log("");
     console.log(`=== Native Auth ${action === "enable" ? "Enabled" : "Disabled"} Successfully ===`);

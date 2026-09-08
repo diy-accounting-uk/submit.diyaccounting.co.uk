@@ -109,21 +109,22 @@ class IngestionStackTest {
         Template template = Template.fromStack(ingestionStack);
 
         // Importing the lake bucket by name creates no bucket of its own. The constructor wires
-        // four jobs: Stripe reconciliation, the GA4 Data API report pull, the GA4 BigQuery event
-        // export pull and the GA4 daily aggregate pull; nothing else self-registers yet. Every
-        // job's function name is stable across every redeploy of this env-scoped stack, so their
-        // log groups go through the idempotent AwsCustomResource path, adding one more Lambda
-        // function: the shared create-if-missing/retention singleton provider.
+        // five jobs: Stripe reconciliation, the GA4 Data API report pull, the GA4 BigQuery event
+        // export pull, the GA4 daily aggregate pull and the operator effort pull; nothing else
+        // self-registers yet. Every job's function name is stable across every redeploy of this
+        // env-scoped stack, so their log groups go through the idempotent AwsCustomResource path,
+        // adding one more Lambda function: the shared create-if-missing/retention singleton
+        // provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
 
         // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
-        // state machine and one scheduler schedule replace them. Four job Errors alarms plus
+        // state machine and one scheduler schedule replace them. Five job Errors alarms plus
         // the state machine's ExecutionsFailed alarm; the ExecutionsMissed alarm is prod-only,
-        // so a non-prod envName ("docs") gives five alarms, not six.
+        // so a non-prod envName ("docs") gives six alarms, not seven.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
@@ -246,9 +247,9 @@ class IngestionStackTest {
         template.resourceCountIs("AWS::SQS::Queue", 0);
         template.resourceCountIs("AWS::Events::Rule", 0);
 
-        // Four pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
+        // Five pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
         // this test's own job alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
@@ -276,7 +277,7 @@ class IngestionStackTest {
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
     }
 
     @Test
@@ -290,7 +291,7 @@ class IngestionStackTest {
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
         Template template =
                 Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
     }
 
     @Test

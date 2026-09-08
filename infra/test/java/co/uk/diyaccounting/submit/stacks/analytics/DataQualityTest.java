@@ -59,7 +59,7 @@ class DataQualityTest {
     void createsOneRulesetPerTarget() {
         Template template = synthDataQuality();
 
-        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 3);
+        template.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(
@@ -83,6 +83,22 @@ class DataQualityTest {
                         "docs_env_dora_runs_dq",
                         "TargetTable",
                         Match.objectLike(Map.of("DatabaseName", "docs_env_analytics", "TableName", "dora_runs")))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_compliance_accessibility_dq",
+                        "TargetTable",
+                        Match.objectLike(Map.of(
+                                "DatabaseName", "docs_env_analytics", "TableName", "compliance_accessibility")))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_compliance_fraud_headers_dq",
+                        "TargetTable",
+                        Match.objectLike(Map.of(
+                                "DatabaseName", "docs_env_analytics", "TableName", "compliance_fraud_headers")))));
     }
 
     @Test
@@ -148,7 +164,7 @@ class DataQualityTest {
         Template template = synthDataQuality();
 
         // One errors alarm plus one Glue-published rules-failed alarm per target; no DLQ-depth alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (var resource : alarms.values()) {
@@ -159,8 +175,12 @@ class DataQualityTest {
                     "no alarm in this construct should carry an SNS action: " + properties);
         }
 
-        for (String rulesetName :
-                List.of("docs_env_activity_events_dq", "docs_env_alarm_state_changes_dq", "docs_env_dora_runs_dq")) {
+        for (String rulesetName : List.of(
+                "docs_env_activity_events_dq",
+                "docs_env_alarm_state_changes_dq",
+                "docs_env_dora_runs_dq",
+                "docs_env_compliance_accessibility_dq",
+                "docs_env_compliance_fraud_headers_dq")) {
             template.hasResourceProperties(
                     "AWS::CloudWatch::Alarm",
                     Match.objectLike(Map.of(
@@ -218,7 +238,12 @@ class DataQualityTest {
                                                 List.of("glue:GetPartitions", "glue:BatchCreatePartition")))))))))));
 
         var expectedPrefixes = List.of(
-                "curated/activity-events/*", "curated/alarm-state-changes/*", "curated/dora/*");
+                "curated/activity-events/*",
+                "curated/alarm-state-changes/*",
+                "curated/dora/*",
+                "curated/compliance/accessibility/*",
+                "curated/compliance/fraud-headers/*",
+                "curated/cost/focus/*");
         var expectedCondition = Match.objectLike(Map.of("StringLike", Map.of("s3:prefix", expectedPrefixes)));
         var expectedStatement = Match.objectLike(
                 Map.of("Action", "s3:ListBucket", "Condition", expectedCondition));
@@ -229,7 +254,7 @@ class DataQualityTest {
     }
 
     @Test
-    void runnerLambdaEnvironmentCarriesLakeBucketAndTheThreeTargets() {
+    void runnerLambdaEnvironmentCarriesLakeBucketAndEveryTarget() {
         Template template = synthDataQuality();
 
         template.hasResourceProperties(
@@ -256,7 +281,12 @@ class DataQualityTest {
 
             found = true;
             String json = String.valueOf(variables.get("GLUE_DATA_QUALITY_TARGETS"));
-            for (String tableName : List.of("activity_events", "alarm_state_changes", "dora_runs")) {
+            for (String tableName : List.of(
+                    "activity_events",
+                    "alarm_state_changes",
+                    "dora_runs",
+                    "compliance_accessibility",
+                    "compliance_fraud_headers")) {
                 assertTrue(json.contains(tableName), "expected " + tableName + " in GLUE_DATA_QUALITY_TARGETS: " + json);
             }
         }

@@ -204,6 +204,15 @@ public class SubmitSharedNames {
     public boolean bundleGetLambdaJwtAuthorizer;
     public boolean bundleGetLambdaCustomAuthorizer;
 
+    public String operatorSnapshotGetIngestLambdaHandler;
+    public String operatorSnapshotGetIngestLambdaFunctionName;
+    public String operatorSnapshotGetIngestLambdaArn;
+    public String operatorSnapshotGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod operatorSnapshotGetLambdaHttpMethod;
+    public String operatorSnapshotGetLambdaUrlPath;
+    public boolean operatorSnapshotGetLambdaJwtAuthorizer;
+    public boolean operatorSnapshotGetLambdaCustomAuthorizer;
+
     // TODO: Replace individual attributes with LambdaNames instances
     public LambdaNames bundlePost;
     public String bundlePostIngestLambdaHandler;
@@ -1007,6 +1016,28 @@ public class SubmitSharedNames {
                 "getBundles",
                 List.of(new ApiParameter(
                         "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
+
+        this.operatorSnapshotGetLambdaHttpMethod = HttpMethod.GET;
+        this.operatorSnapshotGetLambdaUrlPath = "/api/v1/operator/snapshot";
+        this.operatorSnapshotGetLambdaJwtAuthorizer = true;
+        this.operatorSnapshotGetLambdaCustomAuthorizer = false;
+        var operatorSnapshotGetLambdaHandlerName = "operatorSnapshotGet.ingestHandler";
+        var operatorSnapshotGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(operatorSnapshotGetLambdaHandlerName);
+        this.operatorSnapshotGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, operatorSnapshotGetLambdaHandlerDashed);
+        this.operatorSnapshotGetIngestLambdaHandler =
+                "%s/analytics/%s".formatted(appLambdaHandlerPrefix, operatorSnapshotGetLambdaHandlerName);
+        this.operatorSnapshotGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, operatorSnapshotGetLambdaHandlerDashed);
+        this.operatorSnapshotGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.operatorSnapshotGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.operatorSnapshotGetLambdaHttpMethod,
+                this.operatorSnapshotGetLambdaUrlPath,
+                "Get the operator objectives snapshot",
+                "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
+                "getOperatorSnapshot"));
 
         var bundlePostProps = LambdaNameProps.builder()
                 .apiHttpMethod(HttpMethod.POST)

@@ -24,6 +24,7 @@ import co.uk.diyaccounting.submit.stacks.ScanDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SecurityBaselineStack;
 import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SimulatorStack;
+import co.uk.diyaccounting.submit.stacks.security.SecurityLakeStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
 import java.nio.file.Paths;
@@ -37,6 +38,7 @@ public class SubmitEnvironment {
     public final ObservabilityUE1Stack observabilityUE1Stack;
     public final SecurityDetectionStack securityDetectionStack;
     public final SecurityBaselineStack securityBaselineStack;
+    public final SecurityLakeStack securityLakeStack;
     public final DataStack dataStack;
     public final BackupStack backupStack;
     public final ActivityStack activityStack;
@@ -88,6 +90,7 @@ public class SubmitEnvironment {
         public String telegramTestChatId;
         public String telegramLiveChatId;
         public String telegramOpsChatId;
+        public String githubTokenSecretArn;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -207,6 +210,12 @@ public class SubmitEnvironment {
                 "GA4_BIGQUERY_LOCATION",
                 appProps.ga4BigQueryLocation,
                 "(from ga4BigQueryLocation in cdk.json)");
+        // Same secret OpsStack's alarm-to-issue Lambda reads, resolved by GitHub Actions from
+        // AWS at deploy time and passed as an env var, matching stripeSecretKeyArn above.
+        var githubTokenSecretArn = envOr(
+                "GITHUB_TOKEN_SECRET_ARN",
+                appProps.githubTokenSecretArn,
+                "(from githubTokenSecretArn in cdk.json)");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -390,6 +399,30 @@ public class SubmitEnvironment {
         this.analyticsStack.addStackDependency(this.activityStack);
         this.analyticsStack.addStackDependency(this.dataStack);
 
+        // Create SecurityLakeStack with the nightly Security Hub, GuardDuty, GitHub alert,
+        // lifecycle, WAF and rotation pull into the analytics lake. Depends on AnalyticsStack for
+        // the lake bucket and the Glue database, and on ObservabilityStack for the
+        // security-findings topic, all three imported by name rather than by object.
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                "%s-env-SecurityLakeStack".formatted(envName), deploymentName, envName);
+        this.securityLakeStack = new SecurityLakeStack(
+                app,
+                "%s-env-SecurityLakeStack".formatted(envName),
+                SecurityLakeStack.SecurityLakeStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .securityServicesEnabled(securityServicesEnabled)
+                        .build());
+        this.securityLakeStack.addStackDependency(this.analyticsStack);
+        this.securityLakeStack.addStackDependency(this.observabilityStack);
+
         // Create ScanDetectionStack with the 404-rate scan detector (issue #9 phase 9.2), which
         // queries the cloudfront_requests table AnalyticsStack catalogues.
         infof(
@@ -439,6 +472,7 @@ public class SubmitEnvironment {
                         .ga4BigQueryProjectId(ga4BigQueryProjectId != null ? ga4BigQueryProjectId : "")
                         .ga4BigQueryDatasetId(ga4BigQueryDatasetId != null ? ga4BigQueryDatasetId : "")
                         .ga4BigQueryLocation(ga4BigQueryLocation != null ? ga4BigQueryLocation : "")
+                        .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

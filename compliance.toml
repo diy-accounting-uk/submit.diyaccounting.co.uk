@@ -1,0 +1,55 @@
+# Standing compliance commitments the one-stop dashboard's compliance panel (v_compliance_status)
+# reads alongside the accessibility and fraud-prevention-header findings from the lake. Each item
+# carries the date that matters for it (date_kind says which: "reviewed", "due" or "expiry") and
+# the person who owns acting on it. Update the date and, where the source says so, the status
+# text when the item moves.
+
+[[items]]
+id = "hmrc-questionnaires"
+name = "HMRC production-approval questionnaires"
+description = "Software developer checklist and WCAG 2.1 AA checklist (_developers/reference/), parked until the ITSA recognition case is made"
+status = "parked"
+date = "2026-09-05"
+date_kind = "reviewed"
+owner = "Operator"
+source = "BACKLOG 11a"
+
+[[items]]
+id = "mtd-terms-of-use"
+name = "MTD terms of use"
+description = "HMRC's software developer terms of use, tracked against _developers/reference/HMRC_MTD_API_Production_Approval_Guide.pdf"
+status = "current"
+date = "2026-09-05"
+date_kind = "reviewed"
+owner = "Operator"
+source = "PLAN_ONE_STOP_DASHBOARD.md row D15"
+
+[[items]]
+id = "companies-house-presenter"
+name = "Companies House XML Gateway presenter and test account"
+description = "Presenter account E0000052288 issued 2026-09-05; test account activation is with Companies House's XML team pending the presenter's contact details"
+status = "activation-pending"
+date = "2026-09-21"
+date_kind = "due"
+owner = "Operator"
+source = "NEXT.md O16 / B34b; BACKLOG 34b"
+
+[[items]]
+id = "ico-registration"
+name = "ICO registration"
+description = "Registration ZB070902"
+status = "current"
+date = "2027-05-23"
+date_kind = "expiry"
+owner = "Operator"
+source = "BACKLOG 27c"
+
+[[items]]
+id = "breach-clock"
+name = "72-hour breach clock"
+description = "The UK GDPR personal-data-breach notification clock: a runbook, not a calendar date, reviewed on the compliance panel's cadence"
+status = "not-started"
+date = "2026-09-05"
+date_kind = "reviewed"
+owner = "Operator"
+source = "PLAN_ONE_STOP_DASHBOARD.md rows D15, D-Data-protection"
