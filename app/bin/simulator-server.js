@@ -12,29 +12,9 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { createApp as createHttpSimulatorApp } from "../http-simulator/server.js";
 import { reset as resetState } from "../http-simulator/state/store.js";
+import { resolveAllowedReturnTo } from "../functions/billing/billingReturnUrl.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Cap requests per IP for the SPA-fallback route below, which reads index.html from disk on
-// every unmatched path. Without a limit, a client can drive unbounded file system reads by
-// requesting many distinct unmatched paths.
-const SPA_FALLBACK_WINDOW_MS = 10_000;
-const SPA_FALLBACK_MAX_REQUESTS = 120;
-const spaFallbackHits = new Map();
-
-function spaFallbackRateLimiter(req, res, next) {
-  const key = req.ip || req.socket?.remoteAddress || "unknown";
-  const now = Date.now();
-  const windowStart = now - SPA_FALLBACK_WINDOW_MS;
-  const hits = (spaFallbackHits.get(key) || []).filter((t) => t > windowStart);
-  if (hits.length >= SPA_FALLBACK_MAX_REQUESTS) {
-    res.setHeader("Retry-After", String(Math.ceil(SPA_FALLBACK_WINDOW_MS / 1000)));
-    return res.status(429).json({ error: "Too many requests" });
-  }
-  hits.push(now);
-  spaFallbackHits.set(key, hits);
-  next();
-}
 
 /**
  * Create the simulator Express app
@@ -373,13 +353,14 @@ export function createSimulatorServer() {
       bundles.set(req.user.sub, userBundles);
     }
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
-    res.redirect(returnTo ? `${returnTo}?checkout=success` : `${baseUrl}bundles.html?checkout=success`);
+    const allowedReturnTo = resolveAllowedReturnTo(returnTo);
+    res.redirect(allowedReturnTo ? `${allowedReturnTo}?checkout=success` : `${baseUrl}bundles.html?checkout=success`);
   });
 
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || `http://localhost:${process.env.PORT || 8080}/`;
     const { returnTo } = req.query;
-    res.json({ data: { portalUrl: returnTo || `${baseUrl}bundles.html` } });
+    res.json({ data: { portalUrl: resolveAllowedReturnTo(returnTo) || `${baseUrl}bundles.html` } });
   });
 
   // In-memory receipts store
@@ -597,9 +578,12 @@ export function createSimulatorServer() {
   // Serve static files
   app.use(express.static(staticPath, { dotfiles: "allow" }));
 
-  // SPA fallback - serve index.html for unmatched routes
-  app.get("*", spaFallbackRateLimiter, (req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
+  // SPA fallback - serve index.html for unmatched routes. Read once at startup and serve the
+  // cached string, so the handler itself performs no file system access per request.
+  const spaFallbackHtml = fs.readFileSync(path.join(staticPath, "index.html"), "utf8");
+  app.get("*", (req, res) => {
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.send(spaFallbackHtml);
   });
 
   return app;
