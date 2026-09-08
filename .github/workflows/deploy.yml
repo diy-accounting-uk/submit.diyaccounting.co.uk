@@ -2649,6 +2649,9 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:

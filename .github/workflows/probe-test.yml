@@ -409,13 +409,9 @@ jobs:
         if: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' }}
         shell: bash
         run: |
+          # This job runs in the Playwright container, which has the AWS SDK but not the CLI.
           STACK_NAME="${{ needs.names.outputs.environment-name }}-env-IdentityStack"
-          BOOKS_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" \
-            --query "Stacks[0].Outputs[?OutputKey=='BooksUserPoolClientId'].OutputValue" --output text 2>/dev/null || echo "")
-          if [ -z "$BOOKS_CLIENT_ID" ] || [ "$BOOKS_CLIENT_ID" = "None" ]; then
-            echo "::error::$STACK_NAME has no BooksUserPoolClientId output"
-            exit 1
-          fi
+          BOOKS_CLIENT_ID=$(node scripts/stack-output.js "$STACK_NAME" BooksUserPoolClientId)
           echo "books-client-id=$BOOKS_CLIENT_ID" | tee -a "$GITHUB_OUTPUT"
 
       - name: Stagger HMRC API calls
@@ -615,6 +611,9 @@ jobs:
       matrix:
         suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Configure AWS role via GitHub OIDC
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v6
