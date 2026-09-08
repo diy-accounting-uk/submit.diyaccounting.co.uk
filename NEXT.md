@@ -77,6 +77,23 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   consults, which knows package identities), and make a match list the pairs in the summary.
   Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
   **Model**: Haiku.
+- [ ] **B30q. The three CIS alarms fire on the deploy itself.** Issues #155, #156 and #157
+  (`prod-env-cis-s3-bucket-policy-changes`, `-iam-policy-changes`, `-unauthorized-api-calls`)
+  opened at 22:28 to 22:32 UTC on 2026-09-08 as main's environment deploy put bucket and IAM
+  policies and one call was refused, all by the deploy's own roles. In
+  `SecurityDetectionStack.java`, exclude the deploy principals from the three metric filters
+  (`$.userIdentity.sessionContext.sessionIssuer.userName` not `github-deploy-role` and not the
+  `cdk-hnb659fds-*` bootstrap roles), so the alarms watch for a person or an unknown
+  principal, and say which of the fourteen filters need the same exclusion. The three issues
+  close as deploy-caused once the tune is on main. Starts on the operator's word. **Source**:
+  issues #155, #156, #157; B52f. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B59. The alarm triage runs three times per issue.** `alarm-triage.yml` triggers on
+  `issues: [opened, labeled]`, and the opener applies two labels, so every alarm issue starts
+  three runs: two cancel or skip each other and one failed on each of #152, #156 and #157.
+  Trigger once (`labeled` with `github.event.label.name == 'alarm'` only, or `opened` alone if
+  the opener labels in the same call) and read the failed run's log for the triage's own
+  fault. Starts on the operator's word. **Source**: the alarm-triage runs of 2026-09-08.
+  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
