@@ -39,7 +39,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
-| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
+| B10.5, B10.6 (ITSA endpoints, facts, client comparison) | landed in `agent-ade3c05057d2d847a`; merges to the batch after the batch build | Sonnet | `agent-ade3c05057d2d847a` |
 | B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
 | B52d and B55 designs | on the batch: `PLAN_ONE_STOP_DASHBOARD.md` "B52d design", `PLAN_DIYA_GL_STORAGE.md` section 10 | Opus | — |
 
@@ -49,8 +49,8 @@ Wave 2, from the same batch:
 |---|---|---|---|
 | B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | `agent-ab24f41486e1a3121` |
 | B52c (submit's part: `visitor_kind` in GA4 and RUM, the linker, the key events as code) | on the batch; the sibling changes are in the spreadsheets inbox | Sonnet | — |
-| B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-b52d` |
-| B53c (the prod sweep considers every standing set) | sweep | Sonnet | `agent-b53c` |
+| B52d (the five lake views, the alarm and DORA writers) | lake | Sonnet | `agent-a19ab3fa8247c3e4d` |
+| B53c (the prod sweep considers every standing set) | sweep | Sonnet | `agent-ae48daceb69d2093e` |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
 B10.4 runs against the batch's ci set after the push.
