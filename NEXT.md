@@ -32,7 +32,7 @@ pushed to a branch while its deploy runs.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B52f (security panels: findings, lifecycle, SBOM, CIS metric filters, WAF, rotation) | security | Sonnet | `agent-ae70b2f1c409d5755` |
+| B52f (security panels: the nightly security lake Lambda, lifecycle check and alarm, `sbom.yml`, the fourteen CIS metric filters, WAF blocks, the rotation record) | on the batch | Sonnet | — |
 | B52g (the operator page, the snapshot Lambda, the `operator` bundle, `experiments.toml`; five of eight objectives fill as their sources land) | on the batch | Sonnet | — |
 | B52h, B52j, B52k (export and index, retention and operator effort, compliance) | analytics | Sonnet | `agent-a7d9918957582319f` |
 | B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
