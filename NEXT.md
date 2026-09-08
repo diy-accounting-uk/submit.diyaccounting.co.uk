@@ -33,9 +33,11 @@ files, 2442 tests). The operator's standing instruction of 2026-09-08: no board 
 "in flight" from here; only a bug that blocks this batch's PR may be worked. The sequence that
 remains, in order, each step recorded here as it lands:
 
-1. Done: every track is merged; the batch tip is cd28dde2.
-2. In the batch worktree, `npm ci`, `./mvnw clean verify` and `npm test` are running; green is
-   the gate for step 3.
+1. Done: every track is merged; the batch tip is e8dd1384 (`npm test` green, 2453 tests; the
+   data-quality test now counts the cost target).
+2. In the batch worktree, `./mvnw clean verify` runs with its log in the session scratchpad
+   (a log under `target/` is wiped by Maven's clean); green is the gate for step 3. The PR body
+   is drafted in the scratchpad as `pr13-body.md`.
 3. Push once (`GIT_SSH_COMMAND="ssh -i ~/.ssh/id_antony_polycode_mbp_2025 -o IdentitiesOnly=yes
    -o BatchMode=yes" git push -u origin claude/b13-board`); the push starts the ci deploy when
    it touches paths in `deploy.yml`'s filter, otherwise `gh workflow run deploy.yml --ref
