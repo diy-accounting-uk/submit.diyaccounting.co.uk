@@ -179,7 +179,11 @@ function httpResponse({ statusCode, headers, data, request, levelledLogger }) {
     }),
   };
   if (request) {
-    levelledLogger({ message: "Responding to request with response", request: request.toString(), response: sanitiseData(response) });
+    levelledLogger({
+      message: "Responding to request with response",
+      request: sanitiseString(request.toString()),
+      response: sanitiseData(response),
+    });
   } else {
     levelledLogger({ message: "Responding with response", response: sanitiseData(response) });
   }
@@ -258,7 +262,7 @@ export function extractRequest(event) {
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
-      logger.info({ message: "Processing request with event", request: request.toString(), event: sanitiseData(event) });
+      logger.info({ message: "Processing request with event", request: sanitiseString(request.toString()), event: sanitiseData(event) });
     } catch (err) {
       logger.warn({ message: "Error building request URL from event", error: err, event: sanitiseData(event) });
       request = "https://unknown-url"; // Fallback URL in case of error
