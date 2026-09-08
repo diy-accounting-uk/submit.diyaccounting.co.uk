@@ -36,7 +36,7 @@ agent per file area; each item's body stays in its section below until it is ver
 | B34.8, B34.9, B54 (catalogue) | merged to the batch at fc21444a; the Stripe test and live runs wait on the operator's "go" | Sonnet | — |
 | B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
-| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
+| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
@@ -90,13 +90,17 @@ operator's "go" per `stripe-catalogue-sync`.
   was a green scheduled `stack-drift` run, which run 34118146012 is; its three findings are
   API read-back normalisation and the promotion aliases, none a redeploy fixes. **Source**:
   BACKLOG 47; issue #43. **Owner**: Claude Code, the operator closes #43. **Model**: Sonnet.
-- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** Both subscribed standards are
-  `INCOMPLETE` with reason `NO_AVAILABLE_CONFIGURATION_RECORDER`, and the one critical finding
-  says so. Add the recorder and delivery channel to the environment CDK (a recurring charge
-  per recorded item; name the figure in the PR), replace CIS 1.2.0 with 5.0, keep the AWS
-  Foundational standard, and triage the fourteen low and one medium findings. **Source**: the
-  prod account, 2026-09-07; `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude
-  Code, the operator's yes on the charge. **Model**: Sonnet. Unblocks B52f.
+- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** On the batch: a new
+  `SecurityBaselineStack` (the recorder, its service-linked role, a delivery bucket with 90-day
+  expiry, CIS 5.0.0 in place of 1.2.0 beside the AWS Foundational standard), and the fix for
+  `SECURITY_SERVICES_ENABLED` resolving false on every deploy, so ci gains its own GuardDuty
+  detector and Security Hub for the first time. The operator's yes before the PR merges: about
+  $15 to $20 a month for Config across both accounts plus ci's GuardDuty. The fourteen low
+  findings (CIS CloudWatch.1 to .14, a metric filter and alarm each, needing global service
+  events on the trail) are B52f's CloudTrail metric filters; the one medium is an ACM renewal
+  notice that DNS validation handles. **Source**: the prod account, 2026-09-07;
+  `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude Code, the operator's yes on
+  the charge. **Model**: Sonnet. Unblocks B52f.
 - [ ] **S4a. A rotation record for secrets.** Every environment deploy rewrites every Secrets
   Manager secret from the GitHub environment, so `LastChangedDate` is the last deploy and
   `LastRotatedDate` is empty for all twelve. Keep the real rotation date per secret in a
