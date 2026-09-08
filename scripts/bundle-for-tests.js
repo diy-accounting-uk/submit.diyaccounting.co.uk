@@ -28,6 +28,7 @@ const moduleFiles = [
   "lib/utils/storage-utils.js",
   "lib/utils/dom-utils.js",
   "lib/utils/correlation-utils.js",
+  "lib/utils/visitor-kind.js",
   // Services layer
   "lib/services/auth-service.js",
   "lib/services/api-client.js",
