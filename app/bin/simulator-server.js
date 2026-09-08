@@ -15,6 +15,27 @@ import { reset as resetState } from "../http-simulator/state/store.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Cap requests per IP for the SPA-fallback route below, which reads index.html from disk on
+// every unmatched path. Without a limit, a client can drive unbounded file system reads by
+// requesting many distinct unmatched paths.
+const SPA_FALLBACK_WINDOW_MS = 10_000;
+const SPA_FALLBACK_MAX_REQUESTS = 120;
+const spaFallbackHits = new Map();
+
+function spaFallbackRateLimiter(req, res, next) {
+  const key = req.ip || req.socket?.remoteAddress || "unknown";
+  const now = Date.now();
+  const windowStart = now - SPA_FALLBACK_WINDOW_MS;
+  const hits = (spaFallbackHits.get(key) || []).filter((t) => t > windowStart);
+  if (hits.length >= SPA_FALLBACK_MAX_REQUESTS) {
+    res.setHeader("Retry-After", String(Math.ceil(SPA_FALLBACK_WINDOW_MS / 1000)));
+    return res.status(429).json({ error: "Too many requests" });
+  }
+  hits.push(now);
+  spaFallbackHits.set(key, hits);
+  next();
+}
+
 /**
  * Create the simulator Express app
  * Combines mock HMRC API, static files, and demo user session
@@ -43,7 +64,7 @@ export function createSimulatorServer() {
       "http://localhost:3000",
       "http://localhost:8080",
     ];
-    if (origin && allowedOrigins.some((o) => origin.startsWith(o.replace(/:\d+$/, "")))) {
+    if (origin && allowedOrigins.includes(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
     }
@@ -573,7 +594,7 @@ export function createSimulatorServer() {
   app.use(express.static(staticPath, { dotfiles: "allow" }));
 
   // SPA fallback - serve index.html for unmatched routes
-  app.get("*", (req, res) => {
+  app.get("*", spaFallbackRateLimiter, (req, res) => {
     res.sendFile(path.join(staticPath, "index.html"));
   });
 
