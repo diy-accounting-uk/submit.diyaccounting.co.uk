@@ -49,7 +49,19 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
 2. When the deploy and the checks are green, PR #153 is the operator's to merge; that deploy's
    ci set serves B10.4, O22 and O27 for an hour.
 3. After the merge: strip every batch-13 item from this file, keep only what remains, and tell
-   the spreadsheets session (inbox `~/.claude/inboxes/spreadsheets.md`) that B50a is on main.
+   the spreadsheets session (inbox `~/.claude/inboxes/spreadsheets.md`) that B50a and B57 are
+   on main.
+
+The operator's addition of 2026-09-08 21:1x UTC, the one exception to the freeze: **B57**, a
+role in each deployment account for the spreadsheets ci behaviour run's test user, as IaC in
+`IdentityStack.java` for ci and prod with fixed names
+(`arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role`,
+`arn:aws:iam::972912397388:role/prod-env-spreadsheets-behaviour-role`; trust
+`token.actions.githubusercontent.com`, sub `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*`;
+Cognito admin calls on the pool, `DescribeStacks` on the identity stack, the test-user script's
+DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it in a worktree;
+it merges to the batch and goes up with the next push after the running deploy completes. The
+spreadsheets session has the ARNs.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
@@ -87,18 +99,6 @@ that tip (2453 tests). The operator's standing instruction of 2026-09-08: no boa
   (HMRC's token endpoint erroring, or a thrown error before the reply), whether the same actor
   authenticated later, and whether they wrote to support; then say whether a fix or a reply is
   owed. The issue closes when the cause is known. **Source**: issue #152. **Owner**: Claude
-  Code. **Model**: Sonnet.
-- [ ] **B57. A role in submit-ci for the spreadsheets ci behaviour run's test user.** The
-  spreadsheets session's ask of 2026-09-08 (its board's operator decision): one IAM role in
-  367191799875 that GitHub OIDC from `repo:diy-accounting-uk/spreadsheets.diyaccounting.co.uk:*`
-  can assume, scoped to what `scripts/ensure-cognito-test-user.js` needs on the ci pool only
-  (`cognito-idp:AdminCreateUser`, `AdminGetUser`, `AdminSetUserPassword`,
-  `AdminSetUserMFAPreference`, `AssociateSoftwareToken`, `VerifySoftwareToken`, `InitiateAuth`),
-  `cloudformation:DescribeStacks` on `ci-env-IdentityStack`, and the script's DynamoDB purge;
-  in `IdentityStack.java` or a small stack beside it, ci only, with the ARN as a stack output.
-  Lane name `spreadsheetsBehaviour` (its own durable user). Reply to the spreadsheets inbox
-  with the ARN once the environment deploy carrying it is green. Starts on the operator's word
-  after PR #153 merges. **Source**: spreadsheets inbox 2026-09-08 17:57 UTC. **Owner**: Claude
   Code. **Model**: Sonnet.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
