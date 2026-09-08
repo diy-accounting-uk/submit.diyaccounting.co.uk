@@ -47,8 +47,8 @@ Wave 2, from the same batch:
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | WT_B55 |
-| B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | WT_B52C |
+| B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | `agent-ab24f41486e1a3121` |
+| B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | `agent-ab747ac3d36def78c` |
 | B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
 
 B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
