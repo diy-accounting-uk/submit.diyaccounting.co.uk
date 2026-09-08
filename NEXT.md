@@ -33,10 +33,9 @@ files, 2442 tests). The operator's standing instruction of 2026-09-08: no board 
 "in flight" from here; only a bug that blocks this batch's PR may be worked. The sequence that
 remains, in order, each step recorded here as it lands:
 
-1. The cost agent (`agent-afe7452b59b922fc9`, Sonnet) finishes B52e and reports; merge its
-   branch into `claude/b13-board` in the batch worktree, resolve conflicts keeping both sides'
-   constructs, remove its worktree and branch.
-2. In the batch worktree: `npm ci`, then `./mvnw clean verify` and `npm test` green.
+1. Done: every track is merged; the batch tip is cd28dde2.
+2. In the batch worktree, `npm ci`, `./mvnw clean verify` and `npm test` are running; green is
+   the gate for step 3.
 3. Push once (`GIT_SSH_COMMAND="ssh -i ~/.ssh/id_antony_polycode_mbp_2025 -o IdentitiesOnly=yes
    -o BatchMode=yes" git push -u origin claude/b13-board`); the push starts the ci deploy when
    it touches paths in `deploy.yml`'s filter, otherwise `gh workflow run deploy.yml --ref
@@ -57,7 +56,7 @@ remains, in order, each step recorded here as it lands:
 | B52h, B52j, B52k (the raw export and `analytics-pull.sh`, the retention and operator-effort views, the compliance lake and `compliance.toml`) | on the batch | Sonnet | — |
 | B50a (ci's DIYA-GL client keeps native sign-in on when the toggle disables it; applied to the ci pool) | on the batch | Haiku | — |
 | B56 (the two remaining CodeQL redirect alerts: the return URL is built from the allow-list origin) | on the batch | Haiku | — |
-| B52e (the cost panel: the FOCUS 1.2 export from the management account, the operator's yes of 2026-09-08; budgets, the anomaly monitor, cost per submission) | cost | Sonnet | `agent-afe7452b59b922fc9` |
+| B52e (the cost panel: `cdk-cost/` deploys the FOCUS 1.2 export in the management account through `root-github-actions-role`, no operator step; the nightly copy, three `v_cost_*` views, four metrics, budgets and the anomaly monitor by SNS to Telegram, the Running cost widgets) | on the batch, wired at cd28dde2 | Sonnet | — |
 
 ## Ready, unblocking others
 
