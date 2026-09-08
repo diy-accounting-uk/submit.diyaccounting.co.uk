@@ -184,14 +184,14 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 9) Analytics stack: one delivery stream into the lake, catalogued once and queryable
         Template analytics = Template.fromStack(env.analyticsStack);
-        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 5);
+        analytics.resourceCountIs("AWS::KinesisFirehose::DeliveryStream", 6);
         analytics.resourceCountIs("AWS::Lambda::EventSourceMapping", 4);
         analytics.resourceCountIs("AWS::Glue::Database", 1);
-        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 1);
+        analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 3);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 14);
+        analytics.resourceCountIs("AWS::Glue::Table", 21);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 13);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 18);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -218,21 +218,22 @@ class SubmitEnvironmentCdkResourceTest {
 
         assertNoUnscopedIamResources(analytics);
 
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 2, 0, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(analytics, 3, 0, envRoutedPrefixes);
 
-        // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull and GA4 BigQuery event
-        // export pull jobs, each with an Errors alarm only, invoked by the NightlyIngestionWorkflow
-        // state machine (one Step Functions state machine, one EventBridge Scheduler schedule,
+        // 10) Ingestion stack: the Stripe reconciliation, GA4 report pull, GA4 BigQuery event
+        // export pull and GA4 daily aggregate pull jobs, each with an Errors alarm only, invoked
+        // by the NightlyIngestionWorkflow state machine (one Step Functions state machine, one
+        // EventBridge Scheduler schedule,
         // one ExecutionsFailed alarm - ExecutionsMissed is prod-only, so not here). Importing the
         // lake bucket by name creates no bucket of its own. Every job's name is stable across
         // redeploys, so their log groups go through the idempotent AwsCustomResource path,
         // adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 4);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 5);
         ingestion.resourceCountIs("AWS::Events::Rule", 0);
         ingestion.resourceCountIs("AWS::SQS::Queue", 0);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 5);
         ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);
