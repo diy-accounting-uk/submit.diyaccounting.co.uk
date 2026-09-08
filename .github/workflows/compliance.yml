@@ -165,6 +165,18 @@ jobs:
       - name: Run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
         run: npm run accessibility:pa11y-${{ needs.names.outputs.environment-name }}
         continue-on-error: true
+      - name: Save pa11y JSON results for the compliance panel
+        run: |
+          mkdir -p web/public/tests/accessibility
+          npx pa11y-ci --config .pa11yci.${{ needs.names.outputs.environment-name }}.json --reporter json \
+            > web/public/tests/accessibility/pa11y-results.json
+        continue-on-error: true
+      - uses: actions/upload-artifact@v7
+        with:
+          name: pa11y-results
+          path: web/public/tests/accessibility/pa11y-results.json
+          retention-days: 7
+          if-no-files-found: ignore
 
   accessibility-axe:
     name: axe-core (WCAG 2.1 AA)
@@ -181,8 +193,17 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
       - name: Run accessibility:axe-${{ needs.names.outputs.environment-name }}
-        run: npm run accessibility:axe-${{ needs.names.outputs.environment-name }}
+        run: |
+          mkdir -p web/public/tests/accessibility
+          npm run accessibility:axe-${{ needs.names.outputs.environment-name }} -- \
+            --save web/public/tests/accessibility/axe-results.json
         continue-on-error: true
+      - uses: actions/upload-artifact@v7
+        with:
+          name: axe-results
+          path: web/public/tests/accessibility/axe-results.json
+          retention-days: 7
+          if-no-files-found: ignore
 
   accessibility-axe-wcag22:
     name: axe-core (WCAG 2.2 AA)
@@ -199,8 +220,17 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
       - name: Run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
-        run: npm run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }}
+        run: |
+          mkdir -p web/public/tests/accessibility
+          npm run accessibility:axe-wcag22-${{ needs.names.outputs.environment-name }} -- \
+            --save web/public/tests/accessibility/axe-wcag22-results.json
         continue-on-error: true
+      - uses: actions/upload-artifact@v7
+        with:
+          name: axe-wcag22-results
+          path: web/public/tests/accessibility/axe-wcag22-results.json
+          retention-days: 7
+          if-no-files-found: ignore
 
   accessibility-lighthouse:
     name: Lighthouse
@@ -292,6 +322,95 @@ jobs:
       - name: Run penetration:zap-${{ needs.names.outputs.environment-name }}
         run: npm run penetration:zap-${{ needs.names.outputs.environment-name }}
         continue-on-error: true
+
+  # Accessibility and fraud-prevention-header findings into the analytics lake, for the
+  # one-stop dashboard's compliance panel (v_compliance_status)
+  compliance-lake:
+    name: Compliance findings into the lake
+    needs: [params, names, accessibility-pa11y, accessibility-axe, accessibility-axe-wcag22]
+    if: always()
+    runs-on: ubuntu-latest
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Download accessibility results
+        uses: actions/download-artifact@v7
+        with:
+          path: web/public/tests/accessibility
+          pattern: '*-results'
+          merge-multiple: true
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Compute the checked-at timestamp and the lake bucket
+        id: config
+        run: |
+          echo "checked-at=$(date -u +%FT%TZ)" | tee -a "$GITHUB_OUTPUT"
+          echo "dt=$(date -u +%F)" | tee -a "$GITHUB_OUTPUT"
+          echo "lake-bucket=${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the accessibility rows
+        id: build-accessibility-rows
+        run: |
+          {
+            echo "rows<<ROWSEOF"
+            node scripts/compliance-accessibility-rows.js "${{ needs.names.outputs.environment-name }}" "${{ steps.config.outputs.checked-at }}"
+            echo "ROWSEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write the accessibility rows to the lake
+        if: steps.build-accessibility-rows.outputs.rows != ''
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: ${{ steps.config.outputs.lake-bucket }}
+          key: "curated/compliance/accessibility/dt=${{ steps.config.outputs.dt }}/${{ github.run_id }}.json"
+          row: ${{ steps.build-accessibility-rows.outputs.rows }}
+
+      - name: Build the fraud-prevention-header rows
+        id: build-fraud-header-rows
+        run: |
+          {
+            echo "rows<<ROWSEOF"
+            node scripts/compliance-fraud-headers-rows.js "${{ steps.config.outputs.checked-at }}"
+            echo "ROWSEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write the fraud-prevention-header rows to the lake
+        if: steps.build-fraud-header-rows.outputs.rows != ''
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: ${{ steps.config.outputs.lake-bucket }}
+          key: "curated/compliance/fraud-headers/dt=${{ steps.config.outputs.dt }}/${{ github.run_id }}.json"
+          row: ${{ steps.build-fraud-header-rows.outputs.rows }}
 
   # Final compliance report (runs after all checks complete)
   compliance-report:

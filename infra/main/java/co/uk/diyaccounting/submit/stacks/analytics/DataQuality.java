@@ -62,6 +62,10 @@ public class DataQuality extends Construct {
     private static final String ALARM_STATE_CHANGES_CURATED_PREFIX = "curated/alarm-state-changes/";
     private static final String DORA_RUNS_TABLE_NAME = "dora_runs";
     private static final String DORA_RUNS_CURATED_PREFIX = "curated/dora/";
+    private static final String COMPLIANCE_ACCESSIBILITY_TABLE_NAME = "compliance_accessibility";
+    private static final String COMPLIANCE_ACCESSIBILITY_CURATED_PREFIX = "curated/compliance/accessibility/";
+    private static final String COMPLIANCE_FRAUD_HEADERS_TABLE_NAME = "compliance_fraud_headers";
+    private static final String COMPLIANCE_FRAUD_HEADERS_CURATED_PREFIX = "curated/compliance/fraud-headers/";
 
     private static final String ACTIVITY_EVENTS_RULESET =
             """
@@ -95,6 +99,22 @@ public class DataQuality extends Construct {
             Rules = [
                 RowCount > 0,
                 IsComplete "finished_at"
+            ]
+            """;
+
+    // Simple emptiness checks, one per compliance source: the compliance panel's own job is to
+    // say whether each source landed at all, not to grade its content.
+    private static final String COMPLIANCE_ACCESSIBILITY_RULESET =
+            """
+            Rules = [
+                RowCount > 0
+            ]
+            """;
+
+    private static final String COMPLIANCE_FRAUD_HEADERS_RULESET =
+            """
+            Rules = [
+                RowCount > 0
             ]
             """;
 
@@ -164,7 +184,15 @@ public class DataQuality extends Construct {
                 new Target(ACTIVITY_EVENTS_TABLE_NAME, ACTIVITY_EVENTS_CURATED_PREFIX, ACTIVITY_EVENTS_RULESET),
                 new Target(
                         ALARM_STATE_CHANGES_TABLE_NAME, ALARM_STATE_CHANGES_CURATED_PREFIX, ALARM_STATE_CHANGES_RULESET),
-                new Target(DORA_RUNS_TABLE_NAME, DORA_RUNS_CURATED_PREFIX, DORA_RUNS_RULESET));
+                new Target(DORA_RUNS_TABLE_NAME, DORA_RUNS_CURATED_PREFIX, DORA_RUNS_RULESET),
+                new Target(
+                        COMPLIANCE_ACCESSIBILITY_TABLE_NAME,
+                        COMPLIANCE_ACCESSIBILITY_CURATED_PREFIX,
+                        COMPLIANCE_ACCESSIBILITY_RULESET),
+                new Target(
+                        COMPLIANCE_FRAUD_HEADERS_TABLE_NAME,
+                        COMPLIANCE_FRAUD_HEADERS_CURATED_PREFIX,
+                        COMPLIANCE_FRAUD_HEADERS_RULESET));
 
         // ============================================================================
         // Rulesets, one per target table

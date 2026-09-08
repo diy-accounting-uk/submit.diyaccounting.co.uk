@@ -46,26 +46,28 @@ import software.constructs.Construct;
  * failed Stripe pull put a false zero on the dashboard with only the Lambda errors alarm saying
  * otherwise.
  *
- * <p>Definition: a {@code Parallel} branch runs the four ingestion jobs (Stripe reconciliation,
- * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull) at once, since they share no
- * data; then the data
- * quality run; then the metrics publish; then {@code Succeed}. Every task retries twice on
- * {@code States.TaskFailed} with a 60-second interval and a backoff rate of 2, on top of {@code
- * retryOnServiceExceptions}. There is no {@code Catch}: a failure anywhere ends the execution in
- * {@code Failed} and stops the metrics publish, which is the entire reason for this phase.
+ * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
+ * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
+ * once, since they share no data; then the data quality run; then the metrics publish; then the
+ * raw export publish; then {@code Succeed}. Every task retries twice on {@code States.TaskFailed}
+ * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
+ * There is no {@code Catch}: a failure anywhere ends the execution in {@code Failed} and stops
+ * the metrics publish and raw export, which is the entire reason for this phase.
  *
  * <p>Each task reads {@code $} directly rather than the previous task's output, so an explicit
  * {@code {"date": "..."}} on the execution input reaches every task unchanged and an empty input
  * lets each job fall back to its own default offset. The {@code Parallel} branch discards its own
- * result (three job outputs that nothing downstream needs) rather than replacing the execution
- * input with them, so the data quality and metrics publish tasks still see the original input.
+ * result (five job outputs that nothing downstream needs) rather than replacing the execution
+ * input with them, so the data quality, metrics publish and raw export tasks still see the
+ * original input.
  *
  * <p>Not a {@link software.constructs.Construct} subclass's sibling by inheritance but a plain
  * class, matching {@link DataQuality} and {@link AnalyticsDashboard}: it takes the parent scope
  * and builds its children against it, exposing the created resources as public fields. Lives in
- * {@code IngestionStack}, the orchestration stack; {@code DataQuality} and {@code
- * AnalyticsDashboard}'s Lambdas live in {@code AnalyticsStack} and are imported here by name,
- * the same import-by-name habit the rest of the repo uses for a resource owned by a sibling stack.
+ * {@code IngestionStack}, the orchestration stack; {@code DataQuality}, {@code
+ * AnalyticsDashboard} and {@code RawExport}'s Lambdas live in {@code AnalyticsStack} and are
+ * imported here by name, the same import-by-name habit the rest of the repo uses for a resource
+ * owned by a sibling stack.
  */
 public class NightlyIngestionWorkflow {
 
@@ -93,11 +95,16 @@ public class NightlyIngestionWorkflow {
 
         IFunction ga4DailyPullLambda();
 
+        IFunction operatorEffortPullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
         /** Imported by name from {@code AnalyticsStack}: {@code AnalyticsDashboard.metricsPublishLambda}. */
         IFunction metricsPublishLambda();
+
+        /** Imported by name from {@code AnalyticsStack}: {@code RawExport.publishLambda}. */
+        IFunction rawExportPublishLambda();
 
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
@@ -130,14 +137,22 @@ public class NightlyIngestionWorkflow {
                 props.ga4EventExportPullLambda()));
         ingestionParallel.branch(
                 buildTask(scope, prefix + "-Nightly-Ga4DailyPull", "GA4 daily aggregate pull", props.ga4DailyPullLambda()));
+        ingestionParallel.branch(buildTask(
+                scope, prefix + "-Nightly-OperatorEffortPull", "operator effort pull", props.operatorEffortPullLambda()));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());
         var metricsPublishTask = buildTask(
                 scope, prefix + "-Nightly-MetricsPublish", "metrics publish", props.metricsPublishLambda());
+        var rawExportTask =
+                buildTask(scope, prefix + "-Nightly-RawExport", "raw export publish", props.rawExportPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
-        var definition = Chain.start(ingestionParallel).next(dataQualityTask).next(metricsPublishTask).next(succeed);
+        var definition = Chain.start(ingestionParallel)
+                .next(dataQualityTask)
+                .next(metricsPublishTask)
+                .next(rawExportTask)
+                .next(succeed);
 
         // ============================================================================
         // State machine
