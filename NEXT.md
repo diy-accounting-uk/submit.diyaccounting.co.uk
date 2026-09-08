@@ -33,19 +33,26 @@ agent per file area; each item's body stays in its section below until it is ver
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
-| B34.8, B34.9, B54 (catalogue) | merged to the batch at fc21444a; the Stripe test and live runs wait on the operator's "go" | Sonnet | — |
-| B47a, B53a, S4a (workflows) | workflows | Sonnet | `agent-afb14a84da1eaeaee` |
+| B34.8, B34.9, B54 (catalogue, Stripe products and price ids, test and live) | on the batch | Sonnet | — |
+| B47a, B53a, S4a (workflows) | merged to the batch at 559fb226 | Sonnet | — |
 | B52a (the two prod dashboards) | dashboards | Sonnet | `agent-ac96c52c3e6f5cc58` |
-| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | security CDK | Sonnet | `agent-a5fa40edd14329921` |
+| S1, S3 (Config recorder, CIS 5.0, multi-region trail) | merged to the batch at bcabde3f; the PR names the charge for the operator's yes | Sonnet | — |
 | S2 (CodeQL fixes) | merged to the batch at the codeql merge; nine fixed, thirty-five dismissals go in the PR body for the operator to apply | Sonnet | — |
 | S5, B50 (runtimes, `lifecycle.toml`, the DIYA-GL client in the toggle) | merged to the batch at 82aeadbb | Haiku | — |
 | B10.5, B10.6 (ITSA endpoints, facts, client comparison) | itsa | Sonnet | `agent-ade3c05057d2d847a` |
 | B22 (fraud-header email check) | merged to the batch at 7ca0d611 | Sonnet | — |
-| B52d and B55 designs into their plan docs | design | Opus | `agent-a09db863e980dd495` |
+| B52d and B55 designs | on the batch: `PLAN_ONE_STOP_DASHBOARD.md` "B52d design", `PLAN_DIYA_GL_STORAGE.md` section 10 | Opus | — |
 
-Wave 2 starts as wave 1's tracks merge: B52d and B55 from the designs, B10.4 against the batch's
-ci set, B52b, B52c (submit's part). The Stripe test and live runs for B34.9 and B54 wait on the
-operator's "go" per `stripe-catalogue-sync`.
+Wave 2, from the same batch:
+
+| Items | Agent | Model | Worktree |
+|---|---|---|---|
+| B55 (checkout and the portal for DIYA-GL tokens, from section 10) | billing | Sonnet | WT_B55 |
+| B52c (submit's part: synthetic tagging, RUM, the key events as code) | visitor | Sonnet | WT_B52C |
+| B52b (GA4 in BigQuery: four scheduled queries as code, applied by `ga4-bigquery-sync.yml` on merge) | on the batch; the queries dry-run clean against the live export | Sonnet | — |
+
+B52d starts when the dashboards track lands (both touch `BusinessViews.java`); B10.4 runs against
+the batch's ci set after the push.
 
 ## Ready, unblocking others
 
@@ -73,26 +80,26 @@ operator's "go" per `stripe-catalogue-sync`.
   branch, sha, run id, duration, lead time, failure, recovery) from the deploy and destroy
   workflows. **Source**: BACKLOG 52; plan rows D1, D6, D8. **Owner**: Claude Code. **Model**:
   Sonnet. Unblocks B52g, B52h, B52j and B52k.
-- [ ] **B47a. Why the Monday 06:00 UTC schedules do not fire.** `compliance.yml` and
-  `stack-drift.yml` both carry `cron: '0 6 * * 1'`; neither ran on 2026-09-07 (checked at 09:00
-  UTC), the second miss after the 2026-08-31 revival, and `codeql.yml`'s Sunday schedule did
-  fire on 2026-09-06. Both were dispatched by hand at 09:0x UTC on 2026-09-07 instead. Find the
-  cause from GitHub's rules for scheduled workflows (the workflow must be on the default
-  branch, schedules are dropped after 60 days without activity, high-load delays, a disabled
-  workflow state visible with `gh workflow view <name>` and the Actions API's `state`), and
-  compare the two files' histories with `codeql.yml`'s; fix what is found (a re-enable through
-  the API, or a change to the files) and record how a future miss is detected (the
-  `keepalive.yml` workflow may already exist for this; read it). Issue #43 closes when the next
-  scheduled `stack-drift` run is green. Feeds `PLAN_ONE_STOP_DASHBOARD.md`'s DORA and
-  drift panels (D8). **Source**: BACKLOG 47; issue #43.
-  **Owner**: Claude Code. **Model**: Sonnet. Unblocks the close of issue #43.
-- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** Both subscribed standards are
-  `INCOMPLETE` with reason `NO_AVAILABLE_CONFIGURATION_RECORDER`, and the one critical finding
-  says so. Add the recorder and delivery channel to the environment CDK (a recurring charge
-  per recorded item; name the figure in the PR), replace CIS 1.2.0 with 5.0, keep the AWS
-  Foundational standard, and triage the fourteen low and one medium findings. **Source**: the
-  prod account, 2026-09-07; `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude
-  Code, the operator's yes on the charge. **Model**: Sonnet. Unblocks B52f.
+- [ ] **B47a. The Monday 06:00 UTC schedules fire late, not never.** `compliance.yml` and
+  `stack-drift.yml` both ran on 2026-09-07 as `schedule` events, green, at 11:39 and 11:44 UTC:
+  GitHub queues the top-of-the-hour slot hardest, and both sat on `0 6 * * 1`. On the batch:
+  the crons move to `6 6 * * 1` and `36 6 * * 1`, and `keepalive.yml` fails when any scheduled
+  workflow's last schedule run is older than its cadence plus a day. Remaining: the Monday
+  2026-09-14 runs prove the new slots. The operator can close issue #43 now: its condition
+  was a green scheduled `stack-drift` run, which run 34118146012 is; its three findings are
+  API read-back normalisation and the promotion aliases, none a redeploy fixes. **Source**:
+  BACKLOG 47; issue #43. **Owner**: Claude Code, the operator closes #43. **Model**: Sonnet.
+- [ ] **S1. AWS Config recorder and Security Hub at CIS 5.0.** On the batch: a new
+  `SecurityBaselineStack` (the recorder, its service-linked role, a delivery bucket with 90-day
+  expiry, CIS 5.0.0 in place of 1.2.0 beside the AWS Foundational standard), and the fix for
+  `SECURITY_SERVICES_ENABLED` resolving false on every deploy, so ci gains its own GuardDuty
+  detector and Security Hub for the first time. The operator's yes before the PR merges: about
+  $15 to $20 a month for Config across both accounts plus ci's GuardDuty. The fourteen low
+  findings (CIS CloudWatch.1 to .14, a metric filter and alarm each, needing global service
+  events on the trail) are B52f's CloudTrail metric filters; the one medium is an ACM renewal
+  notice that DNS validation handles. **Source**: the prod account, 2026-09-07;
+  `PLAN_ONE_STOP_DASHBOARD.md` security section. **Owner**: Claude Code, the operator's yes on
+  the charge. **Model**: Sonnet. Unblocks B52f.
 - [ ] **S4a. A rotation record for secrets.** Every environment deploy rewrites every Secrets
   Manager secret from the GitHub environment, so `LastChangedDate` is the last deploy and
   `LastRotatedDate` is empty for all twelve. Keep the real rotation date per secret in a
