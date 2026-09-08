@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>co.uk.diyaccounting.submit.fraud-header-check</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/local/bin/node</string>
+		<string>scripts/fraud-header-email-check.js</string>
+	</array>
+	<key>WorkingDirectory</key>
+	<string>REPLACE_WITH_REPO_PATH</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>AWS_PROFILE</key>
+		<string>submit-prod</string>
+		<key>ACTIVITY_BUS_NAME</key>
+		<string>prod-activity-bus</string>
+	</dict>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict>
+			<key>Day</key>
+			<integer>5</integer>
+			<key>Hour</key>
+			<integer>9</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+		<dict>
+			<key>Day</key>
+			<integer>12</integer>
+			<key>Hour</key>
+			<integer>9</integer>
+			<key>Minute</key>
+			<integer>0</integer>
+		</dict>
+	</array>
+	<key>StandardOutPath</key>
+	<string>/Users/USERNAME/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/USERNAME/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log</string>
+</dict>
+</plist>
