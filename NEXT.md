@@ -69,13 +69,13 @@ Cognito admin calls on the pool, `DescribeStacks` on the identity stack, the tes
 DynamoDB purge; output `SpreadsheetsBehaviourRoleArn`). A Sonnet agent builds it in a worktree
 (`agent-a87458237abeb2e66`). The operator's instruction of 21:3x UTC: it does not join the
 batch; when it lands, create a branch off `claude/b13-board` (`claude/ops-spreadsheets-role`),
-cherry-pick the commit there, push that branch once and open its PR against `claude/b13-board`,
-so its environment deploy proves the ci role while PR #153 stays as it is. Done: the role is
-PR #154 (`claude/ops-spreadsheets-role`, tip 39c89124, pushed 21:5x UTC, base `claude/b13-board`);
+cherry-pick the commit there, push that branch once and open its PR against main, so the PR
+carries the role plus the whole batch while PR #153 stays as it is. Done: the role is
+PR #154 (`claude/ops-spreadsheets-role`, tip 39c89124, pushed 21:5x UTC, base main: it carries
+the role plus everything on `claude/b13-board`, so merging it lands both);
 its runs: environment deploy 34279820085, deploy 34279821140, test 34279819393. The role leaves out the subject-hash salt read the purge script needs
 (another repository's identity reading the salt would also trip the salt-read alarm), so the
-spreadsheets run skips the purge; the spreadsheets session has the ARNs and that gap. After
-PR #153 merges, PR #154's base moves to main (`gh pr edit 154 --base main`) and it merges next.
+spreadsheets run skips the purge; the spreadsheets session has the ARNs and that gap.
 
 | Items | Agent | Model | Worktree |
 |---|---|---|---|
