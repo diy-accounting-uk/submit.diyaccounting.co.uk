@@ -372,6 +372,14 @@ public class IdentityStack extends Stack {
                 .resources(List.of(this.userPool.getUserPoolArn()))
                 .build());
 
+        // The spreadsheets ci behaviour run toggles native sign-in on the DIYA-GL (books) app
+        // client itself, the same way this repository's own toggle-cognito-native-auth.js does.
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("cognito-idp:DescribeUserPoolClient", "cognito-idp:UpdateUserPoolClient"))
+                .resources(List.of(this.userPool.getUserPoolArn()))
+                .build());
+
         // scripts/ensure-cognito-test-user.js looks up the pool and client ids from this stack's
         // outputs rather than hardcoding them.
         spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
@@ -451,8 +459,10 @@ public class IdentityStack extends Stack {
     private static final List<String> BOOKS_PAGE_NAMES = List.of("bst.html", "se.html", "taxi.html", "ltd.html");
 
     private static List<String> buildBooksUrls(String envName) {
+        // prod also lists the ci-spreadsheets host so the spreadsheets repository's ci
+        // behaviour run can sign in and test its DIYA-GL pages against Submit's prod environment.
         var hosts = "prod".equals(envName)
-                ? List.of("https://spreadsheets.diyaccounting.co.uk")
+                ? List.of("https://spreadsheets.diyaccounting.co.uk", "https://ci-spreadsheets.diyaccounting.co.uk")
                 : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
         var urls = new java.util.ArrayList<String>();
         for (var host : hosts) {

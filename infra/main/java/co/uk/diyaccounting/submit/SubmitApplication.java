@@ -169,7 +169,7 @@ public class SubmitApplication {
         // prod is the one live spreadsheets domain, every other deployment uses the shared ci one
         // plus local dev.
         var booksAllowedOrigins = "prod".equals(envName)
-                ? "https://spreadsheets.diyaccounting.co.uk"
+                ? "https://spreadsheets.diyaccounting.co.uk,https://ci-spreadsheets.diyaccounting.co.uk"
                 : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
         // A checkout or portal returnTo is allowed from the DIYA-GL pages' origins (the same
         // list the books routes use) plus this deployment's own origin, since bundles.html lives

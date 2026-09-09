@@ -4,12 +4,17 @@
 //
 // Toggle native Cognito authentication on/off for the Hosted UI
 //
-// Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name>
+// Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|books|both]
 // Example: node scripts/toggle-cognito-native-auth.js enable ci
+// Example: node scripts/toggle-cognito-native-auth.js enable prod --client books
 //
-// This script adds or removes COGNITO from both UserPoolClient's SupportedIdentityProviders:
+// This script adds or removes COGNITO from one or both UserPoolClient's SupportedIdentityProviders:
 // - UserPoolClient (submit app): native email/password login
 // - BooksUserPoolClient (DIYA-GL pages): native email/password login
+//
+// --client selects which client to change (default: both). The spreadsheets repository's ci
+// behaviour run uses --client books to toggle only the DIYA-GL client, against submit's prod
+// environment, without touching the submit app client's own sign-in state.
 //
 // When COGNITO is present, the Hosted UI shows the native email/password login form.
 // When absent, only federated providers (Google, etc.) are shown.
@@ -27,11 +32,32 @@ import {
   UpdateUserPoolClientCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
-const action = process.argv[2];
-const environmentName = process.argv[3] || "ci";
+const USAGE = "Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|books|both]";
+
+export function parseArgs(argv) {
+  const positional = [];
+  let client = "both";
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--client") {
+      client = argv[i + 1];
+      i++;
+    } else {
+      positional.push(argv[i]);
+    }
+  }
+  return { action: positional[0], environmentName: positional[1] || "ci", client };
+}
+
+const { action, environmentName, client } = parseArgs(process.argv.slice(2));
 
 if (!action || !["enable", "disable"].includes(action)) {
-  console.error("Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name>");
+  console.error(USAGE);
+  process.exit(1);
+}
+
+if (!["app", "books", "both"].includes(client)) {
+  console.error(USAGE);
+  console.error(`Invalid --client value: ${client}`);
   process.exit(1);
 }
 
@@ -114,6 +140,7 @@ async function updateClient(cognitoClient, userPoolId, clientId, clientName, act
 async function main() {
   console.log(`=== ${action === "enable" ? "Enabling" : "Disabling"} Native Auth on Hosted UI ===`);
   console.log(`Environment: ${environmentName}`);
+  console.log(`Client: ${client}`);
   console.log(`AWS Region: ${process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "not set"}`);
   console.log("");
 
@@ -164,16 +191,23 @@ async function main() {
 
   const cognitoClient = new CognitoIdentityProviderClient({});
 
+  const updateApp = client === "app" || client === "both";
+  const updateBooks = client === "books" || client === "both";
+
   try {
     console.log("");
-    await updateClient(cognitoClient, userPoolId, clientId, "UserPoolClient (submit app)", action);
-    console.log("");
-    if (action === "disable" && environmentName === "ci") {
-      // The spreadsheets ci behaviour case signs in on the DIYA-GL client outside this repo's
-      // test window, so ci's DIYA-GL client keeps native sign-in on; prod toggles both clients.
-      console.log("  BooksUserPoolClient (DIYA-GL) on ci keeps native sign-in enabled");
-    } else {
-      await updateClient(cognitoClient, userPoolId, booksClientId, "BooksUserPoolClient (DIYA-GL)", action);
+    if (updateApp) {
+      await updateClient(cognitoClient, userPoolId, clientId, "UserPoolClient (submit app)", action);
+      console.log("");
+    }
+    if (updateBooks) {
+      if (action === "disable" && environmentName === "ci") {
+        // The spreadsheets ci behaviour case signs in on the DIYA-GL client outside this repo's
+        // test window, so ci's DIYA-GL client keeps native sign-in on; prod toggles both clients.
+        console.log("  BooksUserPoolClient (DIYA-GL) on ci keeps native sign-in enabled");
+      } else {
+        await updateClient(cognitoClient, userPoolId, booksClientId, "BooksUserPoolClient (DIYA-GL)", action);
+      }
     }
 
     console.log("");
