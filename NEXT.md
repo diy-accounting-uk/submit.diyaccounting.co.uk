@@ -82,6 +82,13 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
   The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
   **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** Four runs, four
+  failures, across `main`, `claude/workflow-currency` and now `claude/b16-board`, so it fails on
+  every branch and predates this batch. It runs on every push, so it is a red check on every PR
+  that teaches everyone to ignore a red check. Read the run log, fix it or delete the workflow if
+  nothing uses GitHub's Copilot coding agent here; `security-review.yml` assigns an OWASP issue to
+  that agent with its weekly cron commented out, so decide both together. **Source**: runs on
+  `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
   never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
   on the books routes across three hours matched zero records, and
@@ -119,6 +126,19 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B82. The global git config will break signatures the day signing is turned on.**
+  `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
+  rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
+  replays a recorded conflict resolution silently while it happens. `REPORT_IDENTITY_AUDIT.md`
+  ranks SSH commit signing as the prerequisite for every auto-merge policy in
+  `PLAN_REPOSITORY_AUTOMATION.md`, and its check is `verification.verified` on each commit of a
+  PR, so this setting quietly defeats the thing everything else rests on. Settle what the local
+  git config should be before signing is enabled, not after: whether pulls merge or rebase here,
+  whether `rerere` stays on, and what a sub-agent's worktree inherits. Write the answer where a
+  future session reads it rather than leaving it in one machine's global config. **Source**:
+  `REPORT_IDENTITY_AUDIT.md`; `git config --global` reads `pull.rebase=true`,
+  `rerere.enabled=true`, with no `commit.gpgsign` and no `gpg.format` set. **Owner**: Claude Code
+  to propose, Operator to choose. **Model**: Sonnet.
 - [ ] **B77. The public support form files GitHub issues under the operator's name.**
   `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
   it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
