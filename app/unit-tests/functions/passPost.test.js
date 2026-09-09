@@ -45,6 +45,7 @@ vi.mock("@app/functions/account/bundlePost.js", () => ({
 }));
 
 import { ingestHandler } from "@app/functions/account/passPost.js";
+import { initializeEmailHashSecret } from "@app/lib/emailHash.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -59,6 +60,7 @@ describe("passPost", () => {
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
+    initializeEmailHashSecret.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -184,5 +186,14 @@ describe("passPost", () => {
     const detail = JSON.parse(rawDetail);
     expect(detail.event).toBe("pass-redeemed");
     expect(detail.hashedSub).toBe("hashed_test-user-sub");
+  });
+
+  test("throws without redeeming when the email hash secret cannot be fetched", async () => {
+    initializeEmailHashSecret.mockRejectedValue(new Error("access denied"));
+
+    const event = buildEventWithToken(validToken, { code: "test-pass-code" });
+
+    await expect(ingestHandler(event)).rejects.toThrow("access denied");
+    expect(mockRedeemPass).not.toHaveBeenCalled();
   });
 });

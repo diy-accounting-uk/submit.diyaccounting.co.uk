@@ -192,4 +192,45 @@ class SecurityDetectionStackTest {
         assertTrue(rootFilterCorrect,
                 "expected RootAccountUsage filter to omit sessionIssuer guard (Root has no sessionContext)");
     }
+
+    @Test
+    void deployRoleExclusionGuardsTheWholeEventNameChainNotJustItsLastClause() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+        List<String> patterns = metricFilters.values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return (String) properties.get("FilterPattern");
+                })
+                .toList();
+
+        // One distinctive event name per one of the eight controls whose deploy-role exclusion
+        // is appended to the pattern. The event-name chain must be wrapped in its own
+        // parentheses before the guard, so the rendered pattern starts "{ ((": otherwise "&&"
+        // binds only to the chain's last clause and every earlier event name matches
+        // unconditionally.
+        Map<String, String> guardedControlEventNames = Map.of(
+                "UnauthorizedApiCalls", "UnauthorizedAccess",
+                "IamPolicyChanges", "PutRolePolicy",
+                "S3BucketPolicyChanges", "PutBucketPolicy",
+                "SecurityGroupChanges", "AuthorizeSecurityGroupIngress",
+                "NaclChanges", "CreateNetworkAcl",
+                "NetworkGatewayChanges", "CreateCustomerGateway",
+                "RouteTableChanges", "CreateRouteTable",
+                "VpcChanges", "CreateVpc");
+
+        for (var entry : guardedControlEventNames.entrySet()) {
+            String pattern = patterns.stream()
+                    .filter(p -> p.contains(entry.getValue()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no metric filter pattern found for " + entry.getKey()));
+            assertTrue(
+                    pattern.startsWith("{ (("),
+                    entry.getKey() + " pattern must wrap its event-name chain before the guard, was: " + pattern);
+            assertTrue(
+                    pattern.contains("cdk-hnb659fds-*"),
+                    entry.getKey() + " pattern must still carry the deploy-role exclusion, was: " + pattern);
+        }
+    }
 }

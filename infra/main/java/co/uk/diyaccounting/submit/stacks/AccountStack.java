@@ -640,6 +640,9 @@ public class AccountStack extends Stack {
             // Grant permission to publish to the feedback engagement SNS topic
             feedbackTopic.grantPublish(this.interestPostLambda);
 
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(this.interestPostLambda, region, account, props.envName());
+
             // Grant EventBridge PutEvents permission
             this.interestPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
@@ -690,6 +693,8 @@ public class AccountStack extends Stack {
         this.passGetLambdaLogGroup = passGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passGetLambdaProps);
         passesTable.grant(this.passGetLambda, "dynamodb:GetItem");
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(this.passGetLambda, region, account, props.envName());
         this.passGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -777,6 +782,8 @@ public class AccountStack extends Stack {
         this.passAdminPostLambdaLogGroup = passAdminPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.passAdminPostLambdaProps);
         passesTable.grant(this.passAdminPostLambda, "dynamodb:PutItem");
+        // Grant access to user sub hash salt secret in Secrets Manager
+        SubHashSaltHelper.grantSaltAccess(this.passAdminPostLambda, region, account, props.envName());
         this.passAdminPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))

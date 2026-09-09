@@ -252,12 +252,13 @@ public class OpsStack extends Stack {
 
             // Reads a "-stack-health" composite alarm's own AlarmRule so its evidence links
             // can name the child functions behind it instead of widening to a broad prefix.
+            // cloudwatch:DescribeAlarms does not support resource-level permissions, so an
+            // alarm ARN resource here is never matched and the call is denied; it must be "*".
             alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .sid("ReadCompositeAlarmRules")
                     .effect(Effect.ALLOW)
                     .actions(List.of("cloudwatch:DescribeAlarms"))
-                    .resources(
-                            List.of("arn:aws:cloudwatch:*:%s:alarm:%s-*".formatted(this.getAccount(), props.envName())))
+                    .resources(List.of("*"))
                     .build());
 
             cfnOutput(this, "AlarmToGithubIssueLambdaArn", alarmToGithubIssueLambda.getFunctionArn());

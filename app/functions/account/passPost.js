@@ -32,11 +32,7 @@ export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME"]);
 
-  try {
-    await initializeEmailHashSecret();
-  } catch (error) {
-    logger.warn({ message: "Email hash secret not available", error: error.message });
-  }
+  await initializeEmailHashSecret();
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
