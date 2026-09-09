@@ -27,17 +27,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 14 is PR #159 (`claude/b14-board`, last push 2026-09-09 04:5x UTC): B63, B60, B62, B58,
-B59, B61, B30q, B30p and B10.4's proof, all green locally (`npm test` 2461, `./mvnw clean
-verify` 202) and on the branch's ci deploy (34309224550). The ITSA sandbox proof stands: the
-three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (probe runs
-34302356322, 34311301074, 34311302938), one quarterly update accepted. The board of the merge
-reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
-cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
-neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
-is on main. B11's T1 to T6 are on `claude/b15-board`, local and unpushed (57 commits past main); no
-agent runs. The operator's standing instruction (renewed
-2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
+PR #159 (batch 14) merged to main at 5c933c19, 2026-09-09 08:21 UTC. The merge's runs: sbom
+34328646513 green on its first run with the narrowed check; environment deploy 34328646892
+(the proof for B61's two prod-only steps and the CIS filters), deploy 34328646975 (retires
+prod-ebaeb7d), test 34328647370 and CodeQL 34328646609 in progress; the prod line below
+updates when the deploy lands. Issues #152 and #155 to #158 have their fix on main and are
+the operator's to close. B11's T1 to T6 are on `claude/b15-board`, local and unpushed (on
+top of main once it is merged in); no agent runs. The operator's standing instruction
+(renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
 
