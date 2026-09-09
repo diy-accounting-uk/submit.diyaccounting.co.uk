@@ -27,89 +27,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 14 on `claude/b14-board`, on the operator's word of 2026-09-09: B63, B60, B62, B58, B59
-and B30p run as worktree sub-agents now; B61 and B30q follow when the first Maven builds
-finish; B10.4 runs against the batch's ci set once the branch is pushed. Each item's entry
-stays in its section below until its commit is on the batch branch, then leaves. One push
-when the batch is ready, then a PR to main.
+Batch 14 is PR #159 (`claude/b14-board`, pushed 2026-09-09 01:22 UTC): B63, B60, B62, B58, B59,
+B61, B30q and B30p, all green locally (`npm test` 2461, `./mvnw clean verify` 202). The push
+started the branch's ci deploy (34298940529), environment deploy (34298940410), test
+(34298940054) and CodeQL (34298963719); the board of the merge reads main's environment
+deploy for B61's two prod-only steps and the CIS filters. Issue #152's cause is known (two
+customers with a stale HMRC authorisation code, the handler answering 500; neither wrote in
+or returned), so it and #155 to #158 are the operator's to close once the PR is on main.
+B10.4 runs against the batch's ci set once the deploy stands.
 
 ## Ready: Claude Code
 
-- [ ] **B30p. The four HMRC token-exchange 500s of 2026-09-08 06:23 to 06:29 UTC.** Issue #152
-  (`prod-c6e18fd-app-api-5xx`, one datapoint) sits on a set that is gone, with its Lambda log
-  group; what survives is the API access log (`/aws/apigw/prod-env/access`: four `500` on
-  `POST /api/v1/hmrc/token`, request ids DXd9lgMWrPEEMEA=, DXeLThvPLPEEJjg=, DXeffggJLPEEPZw=,
-  DXe2mjJArPEEJ0w=, about two minutes apart, one caller retrying; two more `500` at 09:3x UTC
-  on prod-c6d0ed3, every other token exchange that day `200`) and the lake's activity events.
-  The prod destroy now deletes a retired set's Lambda log groups, which is what removed this
-  alarm's evidence; part of the fix is to keep prod log groups (their retention is already
-  short) or export the window to the lake before deleting. Follow `vat-submission-failure-alarm-user-lookup`'s method: find the actor's hashed
-  subject from the activity events of that window, what `hmrcTokenPost.js` answers 500 for
-  (HMRC's token endpoint erroring, or a thrown error before the reply), whether the same actor
-  authenticated later, and whether they wrote to support; then say whether a fix or a reply is
-  owed. The issue closes when the cause is known. **Source**: issue #152. **Owner**: Claude
-  Code. **Model**: Sonnet.
-- [ ] **B58. The SBOM check's KEV match over-matches.** `sbom.yml`'s first run on main
-  (34284850847) failed with "37 SBOM component(s) matched CISA's Known Exploited
-  Vulnerabilities catalogue": the step compares a package's bare name with a KEV entry's
-  product field, and generic names collide, so the workflow fails every push to main.
-  Narrow the match in `sbom.yml`'s inline script to entries whose `vendorProject` or `product`
-  names an npm package (or drop KEV for the GitHub advisory database `npm audit` already
-  consults, which knows package identities), and make a match list the pairs in the summary;
-  and give the workflow a path filter (its four runs since the merge were all docs-only pushes to main, all failed).
-  Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
-  **Model**: Haiku.
-- [ ] **B61. Prod's environment deploy of the cost panel failed on two prod-only steps.** Main's
-  environment deploy after the merge (34284851371) failed twice and rolled `prod-env-AnalyticsStack`
-  back to its pre-batch state, so none of batch 13's analytics work is live on prod yet (the
-  app deploy succeeded). (a) `cost-CostExportStack` in the management account: the FOCUS
-  bucket policy names the reader roles as principals and S3 answers "Invalid principal in
-  policy" because `prod-env-cost-focus-copy-role` did not exist yet; grant the two account
-  roots as principals with a `Condition` on `aws:PrincipalArn` naming the two role ARNs
-  instead. (b) `prod-env-AnalyticsStack`: `AWS::CE::AnomalySubscription` with an SNS
-  subscriber needs `Frequency: IMMEDIATE` ("Daily or weekly frequencies only support Email");
-  set it in `CostBudgetsAndAnomalyMonitor.java`. Neither runs on ci (the export job is gated
-  to prod, ci has no anomaly monitor), so the proof is the environment deploy of main after
-  the fix. Starts on the operator's word. **Source**: run 34284851371. **Owner**: Claude
-  Code. **Model**: Haiku.
-- [ ] **B30q. The three CIS alarms fire on the deploy itself.** Issues #155, #156 and #157
-  (`prod-env-cis-s3-bucket-policy-changes`, `-iam-policy-changes`, `-unauthorized-api-calls`) and
-  #158 (`-route-table-changes`) opened at 22:28 to 22:42 UTC on 2026-09-08 as main's environment deploy put bucket and IAM
-  policies and one call was refused, all by the deploy's own roles. In
-  `SecurityDetectionStack.java`, exclude the deploy principals from the three metric filters
-  (`$.userIdentity.sessionContext.sessionIssuer.userName` not `github-deploy-role` and not the
-  `cdk-hnb659fds-*` bootstrap roles), so the alarms watch for a person or an unknown
-  principal, and say which of the fourteen filters need the same exclusion. The three issues
-  close as deploy-caused once the tune is on main. Starts on the operator's word. **Source**:
-  issues #155 to #158; B52f. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B60. The alarm triage role cannot read alarms.** Every triage run that executed on
-  2026-09-08 (#152, #156, #157) failed at `scripts/resolve-alarm-evidence.mjs` with
-  `prod-env-alarm-triage-role` "not authorized to perform cloudwatch:DescribeAlarms", before
-  Claude Code on Bedrock ran, so the chain has produced no triage and spent nothing since the
-  role was scoped. Grant the evidence script's reads (`cloudwatch:DescribeAlarms`,
-  `DescribeAlarmHistory`, the Logs Insights start and get calls on the alarm's log groups) to
-  the triage role where it is defined (`grep -rn alarm-triage-role infra/main`), and check
-  whether alarm #157's `AccessDenied` datapoint was this very denial. Starts on the operator's
-  word. **Source**: the alarm-triage runs of 2026-09-08. **Owner**: Claude Code. **Model**:
-  Haiku.
-- [ ] **B59. The alarm triage runs three times per issue.** `alarm-triage.yml` triggers on
-  `issues: [opened, labeled]`, and the opener applies two labels, so every alarm issue starts
-  three runs: two cancel or skip each other and one failed on each of #152, #156 and #157.
-  Trigger once (`labeled` with `github.event.label.name == 'alarm'` only, or `opened` alone if
-  the opener labels in the same call) and read the failed run's log for the triage's own
-  fault. Starts on the operator's word. **Source**: the alarm-triage runs of 2026-09-08.
-  **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B62. Every ci set leaves its BooksStack standing.** `app/functions/infra/selfDestruct.js`
-  deletes the app stacks from a fixed list of `*_STACK_NAME` variables that has no
-  `BOOKS_STACK_NAME`, so the self-destruct leaves `<set>-app-BooksStack` behind (ci-clauddf1b's
-  stands alone since 21:44 UTC on 2026-09-08, ci-claud87a7's since 10:5x) until `destroy-ci.yml`
-  sweeps it, and the sweep spares whichever set is last-known-good. Add the Books stack to the
-  self-destruct's order and environment (where the other names are set in the CDK
-  SelfDestructStack). `ci-claud87a7-app-ApiStack` also sits DELETE_FAILED since 14:37 UTC on its
-  Cognito authorizer ("InternalFailure" from ApiGatewayV2); the sweep's retry step at 02:34 UTC
-  on 2026-09-09 is the first chance to see it go, and if it does not, delete with
-  `--retain-resources` and say so. Starts on the operator's word. **Source**: the board's
-  deployment check, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
@@ -120,22 +48,6 @@ when the batch is ready, then a PR to main.
   simulator. Unblocks B11. No ci set stands; one comes from `gh workflow run deploy.yml -f
   environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
   #20. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B63. Prod's DIYA-GL client and behaviour role for the spreadsheets ci case.** The
-  spreadsheets session's operator decision of 2026-09-09: its ci pages test against Submit's
-  prod, minting their `spreadsheetsBehaviour` user in the prod pool through
-  `prod-env-spreadsheets-behaviour-role`, and toggling native sign-in on the DIYA-GL client
-  for the run the way the deploy does. Four changes, all IaC: (1) in `IdentityStack.java`
-  `buildBooksUrls`, prod's DIYA-GL client adds the five `ci-spreadsheets.diyaccounting.co.uk`
-  callback and logout URLs (books/, bst, ltd, se, taxi) beside the live host's; (2) in
-  `SubmitApplication.java`, prod's `booksAllowedOrigins` (and so the billing return list)
-  adds `https://ci-spreadsheets.diyaccounting.co.uk`; (3) the spreadsheets behaviour role, ci
-  and prod, gains `cognito-idp:DescribeUserPoolClient` and `UpdateUserPoolClient` on the
-  pool; (4) `scripts/toggle-cognito-native-auth.js` takes a client selector (`--client books`)
-  so their run never touches the app client. The proof is the environment deploy of main;
-  one line in `~/.claude/inboxes/spreadsheets.md` as each lands. Starts on the operator's
-  word. **Source**: the spreadsheets inbox, 2026-09-09 00:23 and 00:28 UTC. **Owner**: Claude
-  Code. **Model**: Sonnet.
 
 ## Ready: operator
 
