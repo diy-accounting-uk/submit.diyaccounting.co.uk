@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-// app/system-tests/booksStorage.system.test.js
+// app/system-tests/diyaGlStorage.system.test.js
 //
-// Drives all four books handlers in sequence against an in-memory fake S3 that enforces the same
-// conditional-write semantics (IfMatch/IfNoneMatch -> PreconditionFailed) real S3 does, so the
-// optimistic-concurrency path is exercised end to end rather than through per-call mocks.
+// Drives all four DIYA-GL storage handlers in sequence against an in-memory fake S3 that enforces
+// the same conditional-write semantics (IfMatch/IfNoneMatch -> PreconditionFailed) real S3 does,
+// so the optimistic-concurrency path is exercised end to end rather than through per-call mocks.
 
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import fs from "node:fs";
@@ -30,7 +30,7 @@ class NoSuchKeyError extends Error {
   }
 }
 
-/** A minimal in-memory stand-in for the subset of S3 the books repository uses. */
+/** A minimal in-memory stand-in for the subset of S3 the DIYA-GL repository uses. */
 class FakeBucket {
   constructor() {
     this.objects = new Map(); // Key -> { body: Buffer, etag: string }

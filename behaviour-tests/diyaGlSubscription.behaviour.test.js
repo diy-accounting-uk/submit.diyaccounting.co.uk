@@ -5,7 +5,7 @@
 //
 // The row this proves: a token from the DIYA-GL app client can subscribe through Submit's
 // billing checkout and portal, and the subject that checkout enrols is the same subject
-// booksEntitlement.entitlementFor(sub) reads back for the storage PUT. Runs on ci only —
+// diyaGlEntitlement.entitlementFor(sub) reads back for the storage PUT. Runs on ci only —
 // resident-diya-gl is listed for purchase there until the operator lifts it, and there is no
 // prod variant yet.
 //
