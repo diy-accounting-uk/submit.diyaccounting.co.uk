@@ -5,7 +5,6 @@
 
 import { createLogger } from "../../lib/logger.js";
 import {
-  extractRequest,
   extractUserFromAuthorizerContext,
   http200OkResponse,
   http400BadRequestResponse,
@@ -14,7 +13,7 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { resolveDiyaGlCorsHeaders, diyaGlPreflightResponse } from "../../lib/diyaGlCors.js";
+import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isValidBookId, resolveOwnerPrefix, readMetadata, getVersion } from "../../data/s3DiyaGlRepository.js";
 
@@ -51,88 +50,83 @@ function resolveVersionParam(versionParam, metadata) {
 }
 
 export async function ingestHandler(event) {
-  if (event?.requestContext?.http?.method === "OPTIONS") {
-    return diyaGlPreflightResponse(event.headers);
-  }
-
-  const { request } = extractRequest(event);
-  const corsHeaders = resolveDiyaGlCorsHeaders(event.headers);
-
-  const user = extractUserFromAuthorizerContext(event);
-  if (!user) {
-    return http401UnauthorizedResponse({
-      request,
-      headers: corsHeaders,
-      message: "Authentication required",
-    });
-  }
-
-  const bookId = event.pathParameters?.bookId;
-  if (!isValidBookId(bookId)) {
-    return http400BadRequestResponse({
-      request,
-      headers: corsHeaders,
-      message: "invalid-book-id",
-      error: { code: "invalid-book-id" },
-    });
-  }
-
-  try {
-    await initializeSalt();
-    const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
-    const metadataResult = await readMetadata(ownerPrefix, bookId);
-    if (!metadataResult) {
-      return http404NotFoundResponse({
+  return respondWithDiyaGlCors(event, async ({ request, corsHeaders }) => {
+    const user = extractUserFromAuthorizerContext(event);
+    if (!user) {
+      return http401UnauthorizedResponse({
         request,
         headers: corsHeaders,
-        message: "book-not-found",
-        error: { code: "book-not-found" },
+        message: "Authentication required",
       });
     }
-    const { metadata } = metadataResult;
 
-    const version = resolveVersionParam(event.pathParameters?.version, metadata);
-    if (version === null) {
+    const bookId = event.pathParameters?.bookId;
+    if (!isValidBookId(bookId)) {
       return http400BadRequestResponse({
         request,
         headers: corsHeaders,
-        message: "invalid-request",
-        error: { code: "invalid-request" },
+        message: "invalid-book-id",
+        error: { code: "invalid-book-id" },
       });
     }
 
-    let versionResult;
     try {
-      versionResult = await getVersion(ownerPrefix, bookId, version);
-    } catch (error) {
-      if (error.name === "NoSuchKey") {
+      await initializeSalt();
+      const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
+      const metadataResult = await readMetadata(ownerPrefix, bookId);
+      if (!metadataResult) {
         return http404NotFoundResponse({
           request,
           headers: corsHeaders,
-          message: "version-not-found",
-          error: { code: "version-not-found" },
+          message: "book-not-found",
+          error: { code: "book-not-found" },
         });
       }
-      throw error;
-    }
+      const { metadata } = metadataResult;
 
-    return http200OkResponse({
-      request,
-      headers: { ...corsHeaders, ETag: `"${versionResult.etag}"` },
-      data: {
-        metadata,
-        version,
-        etag: versionResult.etag,
-        zipBase64: versionResult.bytes.toString("base64"),
-      },
-    });
-  } catch (error) {
-    logger.error({ message: "Failed to read book version", error: error.message, stack: error.stack, bookId });
-    return http500ServerErrorResponse({
-      request,
-      headers: corsHeaders,
-      message: "storage-error",
-      error: { code: "storage-error" },
-    });
-  }
+      const version = resolveVersionParam(event.pathParameters?.version, metadata);
+      if (version === null) {
+        return http400BadRequestResponse({
+          request,
+          headers: corsHeaders,
+          message: "invalid-request",
+          error: { code: "invalid-request" },
+        });
+      }
+
+      let versionResult;
+      try {
+        versionResult = await getVersion(ownerPrefix, bookId, version);
+      } catch (error) {
+        if (error.name === "NoSuchKey") {
+          return http404NotFoundResponse({
+            request,
+            headers: corsHeaders,
+            message: "version-not-found",
+            error: { code: "version-not-found" },
+          });
+        }
+        throw error;
+      }
+
+      return http200OkResponse({
+        request,
+        headers: { ...corsHeaders, ETag: `"${versionResult.etag}"` },
+        data: {
+          metadata,
+          version,
+          etag: versionResult.etag,
+          zipBase64: versionResult.bytes.toString("base64"),
+        },
+      });
+    } catch (error) {
+      logger.error({ message: "Failed to read book version", error: error.message, stack: error.stack, bookId });
+      return http500ServerErrorResponse({
+        request,
+        headers: corsHeaders,
+        message: "storage-error",
+        error: { code: "storage-error" },
+      });
+    }
+  });
 }
