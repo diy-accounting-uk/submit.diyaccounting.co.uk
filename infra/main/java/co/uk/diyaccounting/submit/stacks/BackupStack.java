@@ -200,8 +200,8 @@ public class BackupStack extends Stack {
                 .managedPolicies(List.of(
                         ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForBackup"),
                         ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForRestores"),
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForS3Backup"),
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForS3Restore")))
+                        ManagedPolicy.fromAwsManagedPolicyName("AWSBackupServiceRolePolicyForS3Backup"),
+                        ManagedPolicy.fromAwsManagedPolicyName("AWSBackupServiceRolePolicyForS3Restore")))
                 .build();
 
         // ============================================================================
