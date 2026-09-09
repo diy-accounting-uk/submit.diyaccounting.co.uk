@@ -84,9 +84,16 @@ the cost export only (B65); the test run passed on its re-run.
   summary, an `intent-to-finalise` calculation, a final declaration), using
   `mtd-sa-test-support-api/1.0` to create the business and set the ITSA status and its
   vendor-state checkpoints to reset between runs, then correct the simulator scenarios against
-  what HMRC returned. Needs a ci set standing and a `probe-test.yml` dispatch per ITSA suite.
-  Proof: a `204` from the final declaration and the fraud header validator clean on the same
-  header set. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
+  what HMRC returned. The script and the runbook are on `claude/b16-board`; running it needs no
+  ci set, because it drives the HMRC sandbox directly the way the phase 1 spike did. What
+  remains is one run:
+  `ITSA_SANDBOX_TEST_USER_FILE=./hmrc-test-user.json ITSA_SANDBOX_TAX_YEAR=2023-24
+  scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js`, which needs an SSO session for
+  submit-ci, `.env.proxy`, Playwright's browsers and a sandbox test user enrolled in
+  `mtd-income-tax` from `scripts/create-hmrc-test-user.js`. The tax year must be 2024-25 or
+  earlier. Proof: a `204` from the final declaration and the fraud header validator clean on
+  the same header set, allowing the one `gov-client-multi-factor` warning a synthetic sandbox
+  sign-in can never clear. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
   **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
@@ -164,6 +171,15 @@ the cost export only (B65); the test run passed on its re-run.
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 ## Blocked
 
+- [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
+  Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
+  so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
+  `s3://prod-env-analytics-lake-972912397388/exports/prod/2026-09-09/`: 21 CSVs, one per view,
+  and 8 JSONs, one per objective. Then pull one day through the notebook's data path
+  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
+  entries, so a field that never fills is found now rather than in three months. **Source**:
+  BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
+  export exists on 2026-09-10.
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
