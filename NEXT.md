@@ -29,9 +29,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 Nothing. Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is
 on prod as prod-15f3483 since 2026-09-09 18:3x UTC. Of the merge's runs, the environment
-deploy failed at the cost export only (B65) and the test run failed in the Playwright
-install on a transient Ubuntu mirror fault (`gh run rerun 34385268714 --failed`, the
-operator's to run). T7 (the sandbox proof) and T8 to T10 wait on the operator's word. The
+deploy failed at the cost export only (B65); the test run passed on its re-run. T7 (the sandbox proof) and T8 to T10 wait on the operator's word. The
 operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
 flight" without their word.
 
@@ -113,12 +111,41 @@ flight" without their word.
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
   books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
-  are PR #160 (`claude/b15-board`); T7 the sandbox proof (needs the branch's ci set and a
-  probe-test dispatch per ITSA suite), then T8 to T10, wait on the operator's word
+  are PR #160 (`claude/b15-board`); T7 the sandbox proof (needs a ci set and a probe-test
+  dispatch per ITSA suite), then T8 to T10, wait on the operator's word
   (stabilising, 2026-09-09 07:40 UTC), under the plan's stated assumptions until O30 answers
-  otherwise. **Source**: BACKLOG 11;
+  otherwise. ITSA stays behind the environments gate on prod by the operator's decision of
+  2026-09-09. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
   mapping.
+- [ ] **B17b.1. Enable the three VAT read pages on prod.** The operator examined liabilities,
+  payments and penalties on ci on 2026-09-09 and they read right: add `prod` to the three
+  activities' environments in `web/public/submit.catalogue.toml` (they stay on every bundle),
+  PR, the operator merges; the deploy of main is the proof. **Source**: BACKLOG 17b; issue
+  #19. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
+  pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
+  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
+  accounts filing and a fresh one for ITSA (business details through the quarterly update),
+  both against a ci set since neither activity goes to prod, each described on screen and in
+  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
+  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B52x. A short extract from the raw export to prove every field fills.** The nightly
+  raw export's first night is 2026-09-09; as soon as one night exists, pull one day through
+  the notebook's data path (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field
+  with its count of non-empty entries, so a field that never fills is found now rather than
+  in three months. **Source**: BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**:
+  Haiku.
+- [ ] **B70.S1. Licensing: the licence files.** `LICENSE` becomes the canonical PolyForm
+  Internal Use text with the additional grant, copied byte for byte from the spreadsheets
+  repository; `LICENSING.md` maps every top-level directory to the third layer, states the
+  source offer and the copyright line and carries the third-party section; `NOTICE` carries
+  the company line; `package.json` `license` becomes `SEE LICENSE IN LICENSE`. First of the
+  licensing rows; one PR carries the code rows, from `claude/lic-<topic>`. Report the landing
+  in `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S1.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
 ## Ready: operator
 
 - [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
@@ -129,8 +156,6 @@ flight" without their word.
   plus test-support data (assumes yes). The build proceeds on the assumptions; an answer that
   differs changes T2, T5, T6 or T10 before they start. **Source**: `PLAN_ITSA_PHASE_2.md`.
   **Owner**: Operator. **Model**: none.
-- [ ] **O31. Delete the merged origin branch `claude/b14-board`.** PR #159 is on main.
-  **Source**: none. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -139,18 +164,6 @@ flight" without their word.
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
   REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34;
   issue #15. **Owner**: Operator. **Model**: none.
-- [ ] **O27. Examine the three VAT read pages on ci.** Liabilities, payments and penalties are
-  on main, ci only, on every bundle. Open them on a standing ci set, read each against the
-  HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
-  Unblocks B17b. **Source**: BACKLOG 17b; issue #19. **Owner**: Operator. **Model**: none.
-- [ ] **O22. Preview one set of micro-entity accounts on ci.** The accounts filing activity
-  (`file-micro-entity-accounts`, ci only) is on main since PR #148: open it on a standing ci
-  set (any branch push or `gh workflow run deploy.yml -f environment-name=ci` from main makes
-  one), fill the FRS 105 balance sheet with round figures and use Preview, which renders the
-  iXBRL without calling Companies House; then Submit, which goes to the simulator gateway on
-  ci and shows the acknowledgement and poll. Say what reads wrong; the operator's eye on the
-  form and the rendered accounts is the check no test gives. **Source**: BACKLOG 34b; issue
-  #15. **Owner**: Operator. **Model**: none.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
@@ -171,12 +184,6 @@ flight" without their word.
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 ## Blocked
 
-- [ ] **B17b. VAT read-page videos.** After O27: add `prod` to the three activities'
-  environments in `web/public/submit.catalogue.toml`, record liabilities, payments and
-  penalties one video each in the 17a capture pattern (`videos/*.json`, `auth: "user"`,
-  `site-video-capture`), and publish them with `video-publish` beside the others. **Source**:
-  BACKLOG 17b; issue #19. **Owner**: Claude Code. **Model**: Sonnet for the capture, Haiku
-  for the publish. Blocked on O27.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
@@ -206,26 +213,64 @@ flight" without their word.
   `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
   which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
   **Owner**: Operator. **Model**: none.
-- [ ] **B70. The licensing uplift, Submit's share.** `PLAN_LICENSING_UPLIFT_SUBMIT.md` on main
-  (rows S1 to S7, H-LU-9 and LU-15's Submit half, written by the spreadsheets session from
-  its plan of record): the PolyForm Internal Use licence with the accountant grant, the
-  copyright line, SPDX headers and the header gate, the footer wording and the trademark
-  marks, copied from the spreadsheets repository's texts. Report each row's start and landing
-  in `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md`.
-  **Owner**: Claude Code. **Model**: Haiku for the sweep, Sonnet for the licence texts.
-  Blocked on the operator's word (stabilising, 2026-09-09).
-- [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
-  block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
-  effect per unit cost, and the next experiment proposed with its predicted effect and
-  interval; Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for
-  allocations once experiments exist. Its one line per objective goes on the page. **Source**:
-  BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
-  Opus for the models, Sonnet for the notebook. Blocked on three months of the raw export,
-  whose first night is 2026-09-09.
-- [ ] **D2. The Monday crons' first proof.** `compliance.yml` at 06:06 and `stack-drift.yml` at
-  06:36 UTC on 2026-09-14 fire as schedule events; `keepalive.yml`'s staleness step is the
-  standing check. **Source**: B47a. **Owner**: Claude Code. **Model**: Haiku. Blocked on the
-  date.
+- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
+  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
+  **Model**: none. Blocked on B17v.1.
+- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
+  capture runs, upload them unlisted with `video-publish`, then the operator runs
+  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
+  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
+  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+- [ ] **B70.S2. Licensing: the public statement.** `terms.html` (lines 158, 272-275, 431-437)
+  and `accessibility.html:349-353` rewritten so the Service is free to use, source available,
+  under the PolyForm Internal Use License with the grant for accountants, the contribution
+  invitation removed; every page footer gains the licence line and a source link and reads
+  `© 2006-2026 DIY Accounting Limited`; `README.md`, `hmrc-fraud-prevention.md` and
+  `_developers/MARKETING_GUIDANCE.md` say the new words and the README says the repository
+  does not accept contributions; `SECURITY.md` and `TRADEMARKS.md` added from the spreadsheets
+  copies; the HMRC approval documents annotated with the date the licence changed; ™ on the
+  marks. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S2. **Owner**: Claude Code. **Model**:
+  Opus for the terms wording, Sonnet for the rest. Blocked on B70.S1.
+- [ ] **B70.S3. Licensing: the headers.** Every comment-capable file carries
+  `SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0` and the copyright line in
+  its format's comment style; the 28 `-or-later` headers, the battery-pack subtree's MIT
+  files and metric-son's `@license MIT` become the PolyForm identifier; the 88 narrow-set and
+  about 356 wide-set gaps filled; "Ltd" to "Limited"; a unit test twinned from the
+  spreadsheets `app/test/licence-headers.test.js` walks `git ls-files` and fails on a missing,
+  mismatched or old-name header, in `npm test`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md`
+  S3. **Owner**: Claude Code. **Model**: Haiku for the sweep, Sonnet for the test. Blocked on
+  B70.S1.
+- [ ] **B70.S4. Licensing: the OpenAPI document.** `info.license` (name `PolyForm Internal Use
+  License 1.0.0`, url the repository's `LICENSE`), `info.contact` and `termsOfService` in
+  `createInfoSection()` of the OpenAPI generator and its test; the generated `openapi.json`
+  carries them. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S4. **Owner**: Claude Code.
+  **Model**: Sonnet. Blocked on B70.S1.
+- [ ] **B70.S5. Licensing: the image labels.** `org.opencontainers.image.licenses=LicenseRef-PolyForm-Internal-Use-1.0.0`,
+  `vendor`, `title`, `source`, `documentation` and `url` labels on the `Dockerfile`.
+  **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S5. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on B70.S1.
+- [ ] **B70.S6. Licensing: the third-party lines.** In `NOTICE` and `LICENSING.md`: node-qrcode
+  (MIT, its notice restored at the top of `web/public/lib/qrcode.min.js`), the Google "G"
+  logo, the PolicyBee logo, the Lighthouse, Playwright, React and OWASP ZAP reports under
+  `web/public/tests/`, one Crown copyright and OGL v3.0 line for the HMRC form-field
+  standards, the Companies House xsd schemas, the Maven Wrapper, and a runtime dependency
+  table from `package.json` with each package's licence read from `node_modules`.
+  **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S6. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on B70.S1.
+- [ ] **B70.S7. Licensing: the simulator copy.** The deploy workflow runs
+  `scripts/build-simulator.js` before it uploads `web/public-simulator/`, so the stale copy is
+  replaced; verified by the simulator's `accessibility.html` date matching the live one after
+  the next deploy. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S7. **Owner**: Claude Code.
+  **Model**: Sonnet. Blocked on B70.S2.
+- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph (the MTD approval
+  submission and the production-credentials email described the service as AGPL open
+  source). **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator.
+  **Model**: none. Blocked on B70.S2 reaching main.
+- [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
+  and tokens at build, import the tokens, delete the local logo, favicon and token copies;
+  the footer, favicon and title conventions read from the words file. **Source**:
+  `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on the spreadsheets plan's LU-14 and H-LU-7 (the brand package existing).
 
 ## Discipline
 

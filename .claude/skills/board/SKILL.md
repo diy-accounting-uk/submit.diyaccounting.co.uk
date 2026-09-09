@@ -85,7 +85,8 @@ for the one that is live (the apex and the probes point at it). One row per depl
 - prod sets never go on their own: only `destroy-prod.yml` with the deployment name removes
   one. A spare prod set costs $35.28 a month (`_developers/archive/PLAN_COST_OPTIMISATION.md`). `Goes when` for a
   spare prod set is "on destroy-prod", and `Follow-up` names the dispatch:
-  `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run.
+  `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run,
+  printed in full in a fenced block with the `!` prefix.
 - A live set's `Follow-up` is none. A ci set past its self-destruct time that is still
   standing, or a live prod set with a stack in a failed state, is a follow-up: say what.
 - Keep `NEXT.md`'s prod line ("**Prod runs deployment …**") matching the live set; that edit is
@@ -146,6 +147,14 @@ the end) gets a note in `Action`: rename before its next push.
   tier, in the ready or blocked section its blocker dictates (an AWS lookup with no SSO session
   is blocked on `aws sso login --sso-session diyaccounting`). `keep open and watch` needs no
   item. Never close, label or comment on an issue from this skill; the operator closes them.
+- **Show every operator command in full.** Whenever the board hands a command to the
+  operator (a dispatch, a re-run, a deletion, a cancel, anything the permission system or
+  a classifier blocked in the session), print the whole command in a fenced block on its
+  own, prefixed with `!` so it runs as typed in this chat or a terminal:
+  ```
+  ! gh run rerun <run-id> --failed
+  ```
+  Never describe such a command in prose alone or abbreviate it.
 - **Write the statuses back.** The explanatory status lives in `NEXT.md`, not just in
   the rendering: after rendering, update any `NEXT.md` item whose entry no longer
   matches the status you just printed (same facts, prose fitted to the entry), commit
