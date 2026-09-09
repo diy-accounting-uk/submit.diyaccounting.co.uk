@@ -283,10 +283,12 @@ public class SecurityDetectionStack extends Stack {
             // have no sessionIssuer) pass through; only AssumedRole events matching deploy roles
             // are excluded. Only a person or unrecognised principal should fire these alarms.
             if (deployChangedControls.contains(control.name())) {
-                // Patterns end with " }" so insert the exclusion before the closing brace.
-                filterPatternStr = filterPatternStr.substring(0, filterPatternStr.length() - 2)
-                        + cisDeployRoleExclusion
-                        + " }";
+                // Patterns are "{ <event-name chain> }": wrap the chain in its own parentheses
+                // before appending the guard, since "&&" binds tighter than "||" and an
+                // unparenthesized guard would apply to the chain's last clause only, leaving
+                // every other event name matching unconditionally.
+                String eventNameChain = filterPatternStr.substring(2, filterPatternStr.length() - 2);
+                filterPatternStr = "{ (" + eventNameChain + ")" + cisDeployRoleExclusion + " }";
             }
 
             MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "MetricFilter")
