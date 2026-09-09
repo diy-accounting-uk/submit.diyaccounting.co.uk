@@ -18,8 +18,9 @@ UTC), which retired prod-5c28d63; no spare stands.** A main deploy retires the p
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
-The board runs in six sections, in this order: in flight; ready and unblocking other items;
-ready; blocked on a machine task; blocked on a human task; blocked on a date. Operator items
+The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
+blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
+alarm or a pipeline failure counting as tier 1, then the untiered. Operator items
 are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
@@ -30,20 +31,8 @@ Nothing. Batch 13 and the spreadsheets behaviour role merged to main on 2026-09-
 the follow-ups it left are B61, B58, B30q, B60 and B59 below. The operator's standing
 instruction: no board item enters "in flight" without their word.
 
-## Ready, unblocking others
+## Ready: Claude Code
 
-- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
-  Companies House has no create-test-user API, so the operator registers a throwaway account
-  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
-  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
-  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
-  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34;
-  issue #15. **Owner**: Operator. **Model**: none.
-- [ ] **O27. Examine the three VAT read pages on ci.** Liabilities, payments and penalties are
-  on main, ci only, on every bundle. Open them on a standing ci set, read each against the
-  HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
-  Unblocks B17b. **Source**: BACKLOG 17b; issue #19. **Owner**: Operator. **Model**: none.
 - [ ] **B30p. The four HMRC token-exchange 500s of 2026-09-08 06:23 to 06:29 UTC.** Issue #152
   (`prod-c6e18fd-app-api-5xx`, one datapoint) sits on a set that is gone, with its Lambda log
   group; what survives is the API access log (`/aws/apigw/prod-env/access`: four `500` on
@@ -108,19 +97,6 @@ instruction: no board item enters "in flight" without their word.
   the opener labels in the same call) and read the failed run's log for the triage's own
   fault. Starts on the operator's word. **Source**: the alarm-triage runs of 2026-09-08.
   **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
-  and the cumulative period-summary POST are on main behind the environments gate
-  (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
-  `hmrcItsaSelfEmploymentPeriodPost.js`). Create an HMRC sandbox test user with a
-  self-employment business through the create-test-user API, run the three against
-  test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
-  `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
-  simulator. Unblocks B11. No ci set stands; one comes from `gh workflow run deploy.yml -f
-  environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
-  #20. **Owner**: Claude Code. **Model**: Sonnet.
-
-## Ready
-
 - [ ] **B62. Every ci set leaves its BooksStack standing.** `app/functions/infra/selfDestruct.js`
   deletes the app stacks from a fixed list of `*_STACK_NAME` variables that has no
   `BOOKS_STACK_NAME`, so the self-destruct leaves `<set>-app-BooksStack` behind (ci-clauddf1b's
@@ -132,15 +108,31 @@ instruction: no board item enters "in flight" without their word.
   on 2026-09-09 is the first chance to see it go, and if it does not, delete with
   `--retain-resources` and say so. Starts on the operator's word. **Source**: the board's
   deployment check, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **O29. Delete the three merged origin branches.** `claude/b12-board`, `claude/b13-board`
-  and `claude/ops-spreadsheets-role` are on main with nothing unique. **Source**: none.
-  **Owner**: Operator. **Model**: none.
-- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
-  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
-  one with conversion import from GA4 property 523400333's key events, and a reserve floor
-  the loop must not spend below. Name the floor to Claude Code with the account id; the first
-  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D17. **Owner**: Operator. **Model**: none.
+- [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
+  and the cumulative period-summary POST are on main behind the environments gate
+  (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
+  `hmrcItsaSelfEmploymentPeriodPost.js`). Create an HMRC sandbox test user with a
+  self-employment business through the create-test-user API, run the three against
+  test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
+  `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
+  simulator. Unblocks B11. No ci set stands; one comes from `gh workflow run deploy.yml -f
+  environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
+  #20. **Owner**: Claude Code. **Model**: Sonnet.
+
+## Ready: operator
+
+- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
+  Companies House has no create-test-user API, so the operator registers a throwaway account
+  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
+  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
+  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
+  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
+  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34;
+  issue #15. **Owner**: Operator. **Model**: none.
+- [ ] **O27. Examine the three VAT read pages on ci.** Liabilities, payments and penalties are
+  on main, ci only, on every bundle. Open them on a standing ci set, read each against the
+  HMRC figures the sandbox returns, and say what reads wrong or that they can go to prod.
+  Unblocks B17b. **Source**: BACKLOG 17b; issue #19. **Owner**: Operator. **Model**: none.
 - [ ] **O22. Preview one set of micro-entity accounts on ci.** The accounts filing activity
   (`file-micro-entity-accounts`, ci only) is on main since PR #148: open it on a standing ci
   set (any branch push or `gh workflow run deploy.yml -f environment-name=ci` from main makes
@@ -149,38 +141,41 @@ instruction: no board item enters "in flight" without their word.
   ci and shows the acknowledgement and poll. Say what reads wrong; the operator's eye on the
   form and the rendered accounts is the check no test gives. **Source**: BACKLOG 34b; issue
   #15. **Owner**: Operator. **Model**: none.
-- [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
-  first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
-  advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
-  prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
-  to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
-  is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
+- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
+  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
+  one with conversion import from GA4 property 523400333's key events, and a reserve floor
+  the loop must not spend below. Name the floor to Claude Code with the account id; the first
+  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
+  D17. **Owner**: Operator. **Model**: none.
+- [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
+  first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
+  advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
+  prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
+  to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
+  is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
+- [ ] **O29. Delete the three merged origin branches.** `claude/b12-board`, `claude/b13-board`
+  and `claude/ops-spreadsheets-role` are on main with nothing unique. **Source**: none.
+  **Owner**: Operator. **Model**: none.
 
-## Blocked on a machine task
+## Blocked
 
+- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main on
+  2026-09-09 (main is four docs commits past ebaeb7de, so it makes a new set) must retire the
+  set it replaces (prod-ebaeb7d) in the same run; the board of that day reads the
+  destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
+  Haiku. Blocked on the date.
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
   and the final declaration (crystallisation) endpoints, then the recognition application and
   the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
   first, since the annual summary carries the whole year's figures and the books import
   (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
   Code. **Model**: Opus design, then Sonnet. Blocked on B10.4.
-- [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
-  block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
-  effect per unit cost, and the next experiment proposed with its predicted effect and
-  interval; Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for
-  allocations once experiments exist. Its one line per objective goes on the page. **Source**:
-  BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
-  Opus for the models, Sonnet for the notebook. Blocked on three months of the raw export,
-  whose first night is 2026-09-09.
-
-## Blocked on a human task
-
 - [ ] **B17b. VAT read-page videos.** After O27: add `prod` to the three activities'
   environments in `web/public/submit.catalogue.toml`, record liabilities, payments and
   penalties one video each in the 17a capture pattern (`videos/*.json`, `auth: "user"`,
@@ -205,9 +200,6 @@ instruction: no board item enters "in flight" without their word.
   schemas, record what the sandbox returned in the simulator, then add `prod` to the
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
   34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
-
-## Blocked on a date
-
 - [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
   team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
   once they have the presenter's name, contact name, address, email address and telephone
@@ -219,11 +211,14 @@ instruction: no board item enters "in flight" without their word.
   `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
   which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
   **Owner**: Operator. **Model**: none.
-- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main on
-  2026-09-09 (main is four docs commits past ebaeb7de, so it makes a new set) must retire the
-  set it replaces (prod-ebaeb7d) in the same run; the board of that day reads the
-  destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
-  Haiku. Blocked on the date.
+- [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
+  block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
+  effect per unit cost, and the next experiment proposed with its predicted effect and
+  interval; Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for
+  allocations once experiments exist. Its one line per objective goes on the page. **Source**:
+  BACKLOG 52; plan row D16 and the optimisation section. **Owner**: Claude Code. **Model**:
+  Opus for the models, Sonnet for the notebook. Blocked on three months of the raw export,
+  whose first night is 2026-09-09.
 - [ ] **D2. The Monday crons' first proof.** `compliance.yml` at 06:06 and `stack-drift.yml` at
   06:36 UTC on 2026-09-14 fire as schedule events; `keepalive.yml`'s staleness step is the
   standing check. **Source**: B47a. **Owner**: Claude Code. **Model**: Haiku. Blocked on the

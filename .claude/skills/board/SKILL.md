@@ -18,16 +18,19 @@ combined row). Columns:
 
 | # | Item | Tier | State | Status | GH issue |
 
-Rows run in board order: in-flight tasks, ready agent tasks, ready operator tasks,
-blocked operator tasks, blocked agent tasks. Within a group, keep `NEXT.md`'s order.
-Never group rows by backlog number or tier.
+Rows run in board order: in-flight tasks, ready Claude Code tasks, ready operator tasks,
+blocked tasks (either owner). Within a group, rows run by tier, an alarm or a pipeline
+failure counting as tier 1 whether or not a backlog row carries it, then the untiered;
+equal tiers keep `NEXT.md`'s order. Never group rows by backlog number.
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
 - `Item`: a short name, not the row's full prose.
-- `Tier`: the backlog tier (`T1`…`T5`). Only backlog rows have a tier — an item
-  tracked only on `NEXT.md` gets `—`, exactly as an item without a GitHub issue does;
-  `NEXT` is where things are tracked, not a tier.
+- `Tier`: the backlog tier (`T1`…`T5`). An alarm item or a pipeline failure (a failed,
+  cancelled or wrongly firing workflow, deploy, sweep or cron, or a set the sweep left
+  standing) is `T1` whether or not a backlog row carries it. Any other item tracked only
+  on `NEXT.md` gets `—`, exactly as an item without a GitHub issue does; `NEXT` is where
+  things are tracked, not a tier.
 - `State`: exactly one word — `in-flight` (being worked right now), `ready` (nothing
   prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
   prerequisite item, or a decision not yet made). Operator-owned work that could
@@ -125,12 +128,15 @@ the end) gets a note in `Action`: rename before its next push.
 - No commentary beyond the table, the lists, and that closing line, unless something
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
-- **Keep `NEXT.md` in board order.** Its open items sit under five headings in this
-  sequence: `## In flight`, `## Ready: Claude Code`, `## Ready: operator`,
-  `## Blocked: operator`, `## Blocked: Claude Code`. Before rendering, move any item
-  whose owner and state no longer match its heading (an operator item whose blocker
-  landed moves up to `Ready: operator`; a Claude Code item that gained a blocker moves
-  down to `Blocked: Claude Code`). That move is part of the write-back below.
+- **Keep `NEXT.md` in board order.** Its open items sit under four headings in this
+  sequence: `## In flight`, `## Ready: Claude Code`, `## Ready: operator`, `## Blocked`
+  (either owner, each entry naming its blocker). Within a heading, items run by tier
+  exactly as Part 1's rows do: tier 1 first, alarms and pipeline failures counting as
+  tier 1, the untiered last, equal tiers in their existing order. Before rendering, move
+  any item whose owner, state or tier position no longer matches (an operator item whose
+  blocker landed moves up to `Ready: operator`; a Claude Code item that gained a blocker
+  moves down to `Blocked`; a new alarm or pipeline item goes to the top of its section).
+  That move is part of the write-back below.
 - **Every alarm family has a home on `NEXT.md`.** A family whose action is `close as stale`
   or `close as superseded` joins the operator item that lists issues to close (create it if
   missing; keep the list current, adding new numbers and dropping closed ones). A family whose
