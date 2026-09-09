@@ -30,6 +30,11 @@ public class OpenApiGenerator {
     private static final String OPENAPI_VERSION = "3.0.3";
     private static final String API_TITLE = "DIY Accounting Submit API";
     private static final String API_DESCRIPTION = "DIY Accounting Submit API documentation";
+    private static final String LICENSE_NAME = "PolyForm Internal Use License 1.0.0";
+    private static final String LICENSE_URL =
+            "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE";
+    private static final String CONTACT_EMAIL = "admin@diyaccounting.co.uk";
+    private static final String TERMS_OF_SERVICE_URL = "https://submit.diyaccounting.co.uk/terms.html";
 
     public static void main(String[] args) {
         if (args.length != 3) {
@@ -91,6 +96,16 @@ public class OpenApiGenerator {
         info.put("title", API_TITLE);
         info.put("description", API_DESCRIPTION);
         info.put("version", version);
+        info.put("termsOfService", TERMS_OF_SERVICE_URL);
+
+        ObjectNode contact = mapper.createObjectNode();
+        contact.put("email", CONTACT_EMAIL);
+        info.set("contact", contact);
+
+        ObjectNode license = mapper.createObjectNode();
+        license.put("name", LICENSE_NAME);
+        license.put("url", LICENSE_URL);
+        info.set("license", license);
 
         ObjectNode authInfo = mapper.createObjectNode();
         authInfo.put(
