@@ -35,24 +35,22 @@ three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (pr
 reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
 cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
 neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
-is on main. B11's T1 to T5 are on `claude/b15-board` and its T6 runs there now.
+is on main. B11's T1 to T5 are on `claude/b15-board` and its T6 runs there now; when T6 lands, batch 15
+stays unpushed and nothing else starts. The operator's standing instruction (renewed
+2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
 
-- [ ] **B64. The repository's schedules have stopped firing.** No `schedule` event has
-  started a run since 23:01 UTC on 2026-09-08 (a probe test); `destroy-ci.yml`'s 02:34 and
-  04:34 slots, `deploy.yml`'s 04:11, and the 03:51, 04:00 and 04:23 crons all missed on
-  2026-09-09 as of 04:35 UTC, and destroy-ci's last scheduled run was 13:01 the day before, so
-  `ci-claud87a7-app-ApiStack` (DELETE_FAILED since 14:37 UTC on 2026-09-08 on its Cognito
-  authorizer, "InternalFailure" from ApiGatewayV2) and the two orphaned BooksStacks
-  (`ci-claud87a7`, `ci-clauddf1b`) still stand. Read the workflow's schedule runs
-  (`gh run list --event schedule --limit 40`) against GitHub's known delay and the
-  `keepalive.yml` staleness check (last run 2026-09-05), say whether the crons are stale the
-  way B47a's were or GitHub is lagging, and dispatch nothing: the operator runs
-  `gh workflow run destroy-ci.yml` for the leftovers, and if the ApiStack stays
-  DELETE_FAILED after the sweep's retry step, say what `--retain-resources` it needs.
-  **Source**: the board's deployment check, 2026-09-09. **Owner**: Claude Code. **Model**:
-  Haiku.
+- [ ] **B64. The ci sweep fails clearing the last-known-good pointer.** `destroy-ci.yml`'s
+  scheduled run 34324345123 (07:32 UTC on 2026-09-09, the 02:34 slot arriving five hours late;
+  every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
+  failed at "Clear last-known-good pointer if it names a deployment with no stacks left":
+  `aws ssm put-parameter` with an empty value answers `ValidationException`, so the step exits
+  254 before the BooksStack sweep, and `ci-clauddf1b-app-BooksStack` still stands. Make the
+  step delete the parameter (`aws ssm delete-parameter`) or write a sentinel the readers
+  understand (grep `last-known-good-deployment` in `.github/workflows/` and `scripts/` for
+  every reader and make them agree), and let the sweep run on. **Source**: run 34324345123.
+  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The design is
   `PLAN_ITSA_PHASE_2.md` on main: ten tracks, the four endpoint tracks holding the CDK and
   server spine one at a time (T1 the quarterly update's token charge and receipt, then T2 the
@@ -60,8 +58,9 @@ is on main. B11's T1 to T5 are on `claude/b15-board` and its T6 runs there now.
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
   books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T5
-  are on batch 15 (`claude/b15-board`, on top of batch 14) and T6 runs now; T7 follows it,
-  under the plan's stated assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
+  are on batch 15 (`claude/b15-board`, on top of batch 14) and T6 runs now; T7 and the rest
+  wait on the operator's word (stabilising, 2026-09-09 07:40 UTC), under the plan's stated
+  assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
   mapping.
 ## Ready: operator
@@ -112,15 +111,12 @@ is on main. B11's T1 to T5 are on `claude/b15-board` and its T6 runs there now.
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
-- [ ] **O29. Delete the three merged origin branches.** `claude/b12-board`, `claude/b13-board`
-  and `claude/ops-spreadsheets-role` are on main with nothing unique. **Source**: none.
-  **Owner**: Operator. **Model**: none.
-
 ## Blocked
 
 - [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main
-  did not fire on 2026-09-09 (nothing on any of this repository's crons has fired since
-  23:01 UTC on 2026-09-08, B64), so the proof waits for the next scheduled deploy that runs:
+  did not fire on 2026-09-09 (this repository's crons run hours late since 2026-09-08:
+  the 02:34 ci sweep arrived at 07:32), so the proof waits for the next scheduled deploy that
+  runs:
   it must retire the set it replaces (prod-ebaeb7d) in the same run, and the board of that
   day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
   Haiku. Blocked on the schedule firing.
