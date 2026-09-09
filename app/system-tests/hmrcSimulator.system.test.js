@@ -432,6 +432,574 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Self-Employment Annual", () => {
+    const validBody = () => ({
+      adjustments: { includedNonTaxableProfits: 200 },
+      allowances: { annualInvestmentAllowance: 500 },
+    });
+
+    it("should retrieve the default annual submission", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        headers: { "Accept": "application/vnd.hmrc.5.0+json", "Authorization": "Bearer test-token" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.adjustments).toBeDefined();
+      expect(data.allowances).toBeDefined();
+    });
+
+    it("should respect Gov-Test-Scenario header for TRADING_ALLOWANCE on retrieve", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        headers: { "Gov-Test-Scenario": "TRADING_ALLOWANCE" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.allowances.tradingIncomeAllowance).toBeDefined();
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND on retrieve", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should return 400 for an invalid NINO on retrieve", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/invalid-nino/XAIS12345678910/annual/2023-24`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should create and amend an annual submission for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.5.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(204);
+    });
+
+    it("should return 400 for an invalid businessId on create/amend", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/not-a-business-id/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_BUSINESS_ID");
+    });
+
+    it("should return 400 for an entirely empty body on create/amend", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should return 400 when both allowance forms are supplied", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowances: { tradingIncomeAllowance: 200, annualInvestmentAllowance: 500 } }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_BOTH_ALLOWANCES_SUPPLIED");
+    });
+
+    it("should respect Gov-Test-Scenario header for ALLOWANCE_NOT_SUPPORTED", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "ALLOWANCE_NOT_SUPPORTED" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_ALLOWANCE_NOT_SUPPORTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND on create/amend", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "NOT_FOUND" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+  });
+
+  describe("ITSA Crystallisation Obligations", () => {
+    it("should return one open obligation by default, with dates derived from the requested tax year", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24`, {
+        headers: { "Accept": "application/vnd.hmrc.3.0+json", "Authorization": "Bearer test-token" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data.obligations)).toBe(true);
+      expect(data.obligations).toHaveLength(1);
+      expect(data.obligations[0].status).toBe("open");
+      expect(data.obligations[0].periodStartDate).toBe("2023-04-06");
+      expect(data.obligations[0].periodEndDate).toBe("2024-04-05");
+      expect(data.obligations[0].dueDate).toBe("2025-01-31");
+    });
+
+    it("should derive different dates for a different requested tax year, never a fixed one", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2022-23`);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations[0].periodStartDate).toBe("2022-04-06");
+      expect(data.obligations[0].dueDate).toBe("2024-01-31");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/invalid-nino/crystallisation`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for MULTIPLE", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24`, {
+        headers: { "Gov-Test-Scenario": "MULTIPLE" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations.length).toBeGreaterThan(1);
+    });
+
+    it("should respect Gov-Test-Scenario header for INSOLVENT_TRADER", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation`, {
+        headers: { "Gov-Test-Scenario": "INSOLVENT_TRADER" },
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INSOLVENT_TRADER");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should filter by status query parameter", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24&status=fulfilled`, {
+        headers: { "Gov-Test-Scenario": "MULTIPLE" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations.every((detail) => detail.status === "fulfilled")).toBe(true);
+    });
+  });
+
+  describe("ITSA Status", () => {
+    it("should return the itsaStatuses for a valid NINO and tax year", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Accept": "application/vnd.hmrc.2.0+json", "Authorization": "Bearer test-token" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data.itsaStatuses)).toBe(true);
+      expect(data.itsaStatuses).toHaveLength(1);
+      expect(data.itsaStatuses[0].taxYear).toBe("2023-24");
+      expect(Array.isArray(data.itsaStatuses[0].itsaStatusDetails)).toBe(true);
+    });
+
+    it("should include the following tax year when futureYears=true", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24?futureYears=true`);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.itsaStatuses).toHaveLength(2);
+      expect(data.itsaStatuses[1].taxYear).toBe("2024-25");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/invalid-nino/2023-24`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid taxYear", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_TAX_YEAR");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_ENROLLED", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "NOT_ENROLLED" },
+      });
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.code).toBe("CLIENT_NOT_MTD_ENROLLED");
+    });
+
+    it("should return the default set for STATEFUL, since the simulator has no per-user state", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "STATEFUL" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.itsaStatuses[0].taxYear).toBe("2023-24");
+    });
+  });
+
+  describe("ITSA BSAS", () => {
+    const validTriggerBody = () => ({
+      accountingPeriod: { startDate: "2023-04-06", endDate: "2024-04-05" },
+      typeOfBusiness: "self-employment",
+      businessId: "XAIS12345678910",
+    });
+
+    it("should trigger a summary for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/trigger`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.7.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(typeof data.calculationId).toBe("string");
+    });
+
+    it("should return 400 for an invalid NINO on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/invalid-nino/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an incomplete trigger body", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ typeOfBusiness: "self-employment" }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for OBLIGATIONS_NOT_MET on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "OBLIGATIONS_NOT_MET" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_OBLIGATIONS_NOT_MET");
+    });
+
+    it("should respect Gov-Test-Scenario header for REQUEST_CANNOT_BE_FULFILLED on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "REQUEST_CANNOT_BE_FULFILLED" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(422);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_REQUEST_CANNOT_BE_FULFILLED");
+    });
+
+    it("should answer not-found with no Gov-Test-Scenario header on retrieve, matching HMRC's own default", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+        { headers: { "Accept": "application/vnd.hmrc.7.0+json", "Authorization": "Bearer test-token" } },
+      );
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should retrieve a profit summary for SELF_EMPLOYMENT_PROFIT", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+        { headers: { "Gov-Test-Scenario": "SELF_EMPLOYMENT_PROFIT" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.adjustableSummaryCalculation.netProfit).toBeDefined();
+    });
+
+    it("should retrieve a loss summary for SELF_EMPLOYMENT_LOSS", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+        { headers: { "Gov-Test-Scenario": "SELF_EMPLOYMENT_LOSS" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.adjustableSummaryCalculation.netLoss).toBeDefined();
+    });
+
+    it("should reflect the request's nino, calculationId and taxYear for a DYNAMIC_ scenario", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/12345678/2022-23`,
+        { headers: { "Gov-Test-Scenario": "DYNAMIC_SELF_EMPLOYMENT_PROFIT" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.metadata.calculationId).toBe("12345678");
+      expect(data.metadata.taxYear).toBe("2022-23");
+      expect(data.metadata.nino).toBe("AB123456C");
+    });
+
+    it("should return 400 for an invalid calculationId on retrieve", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/not-a-calculation-id/2023-24`,
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_ID");
+    });
+
+    it("should submit adjustments for a valid request", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.hmrc.7.0+json",
+            "Authorization": "Bearer test-token",
+          },
+          body: JSON.stringify({ income: { turnover: 1000 } }),
+        },
+      );
+      expect(response.status).toBe(200);
+    });
+
+    it("should accept zeroAdjustments on its own", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ zeroAdjustments: true }),
+        },
+      );
+      expect(response.status).toBe(200);
+    });
+
+    it("should return 400 when zeroAdjustments is supplied together with figures", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ zeroAdjustments: true, income: { turnover: 1000 } }),
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_BOTH_ADJUSTMENTS_SUPPLIED");
+    });
+
+    it("should return 400 for an entirely empty adjust body", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for ALREADY_ADJUSTED", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "ALREADY_ADJUSTED" },
+          body: JSON.stringify({ income: { turnover: 1000 } }),
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_ALREADY_ADJUSTED");
+    });
+  });
+
+  describe("ITSA Calculations", () => {
+    const validTriggerBody = () => ({});
+
+    it("should trigger a calculation for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/in-year`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.8.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(202);
+      const data = await response.json();
+      expect(typeof data.calculationId).toBe("string");
+    });
+
+    it("should return 400 for an invalid NINO on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/invalid-nino/self-assessment/2023-24/trigger/in-year`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid calculationType on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/not-a-type`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_TYPE");
+    });
+
+    it("should respect Gov-Test-Scenario header for RECENT_SUBMISSIONS_EXIST on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/intent-to-finalise`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "RECENT_SUBMISSIONS_EXIST" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_RECENT_SUBMISSIONS_EXIST");
+    });
+
+    it("should retrieve a default success example with no Gov-Test-Scenario header", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Accept": "application/vnd.hmrc.8.0+json", "Authorization": "Bearer test-token" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.calculation.taxCalculation.totalIncomeTaxAndNicsDue).toBeDefined();
+    });
+
+    it("should return not-found for NOT_FOUND", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "NOT_FOUND" } },
+      );
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should return messages with no calculation for ERROR_MESSAGES_EXIST", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "ERROR_MESSAGES_EXIST" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.calculation).toBeUndefined();
+      expect(data.messages.errors.length).toBeGreaterThan(0);
+    });
+
+    it("should retrieve the UK_SE_SAVINGS_EXAMPLE calculation", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "UK_SE_SAVINGS_EXAMPLE" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.metadata.calculationType).toBe("in-year");
+    });
+
+    it("should return 400 for an invalid calculationId on retrieve", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/not-a-calculation-id`,
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_ID");
+    });
+
+    it("should submit a final declaration for a valid request", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/final-declaration`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.hmrc.8.0+json",
+            "Authorization": "Bearer test-token",
+          },
+        },
+      );
+      expect(response.status).toBe(204);
+    });
+
+    it("should respect Gov-Test-Scenario header for FINAL_DECLARATION_RECEIVED", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/final-declaration`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "FINAL_DECLARATION_RECEIVED" },
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_FINAL_DECLARATION_RECEIVED");
+    });
+
+    it("should return 400 for an invalid calculationType on final declaration", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/not-a-type`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_TYPE");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions

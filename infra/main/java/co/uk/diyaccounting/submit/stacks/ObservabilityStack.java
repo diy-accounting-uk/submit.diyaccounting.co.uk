@@ -655,6 +655,26 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // ITSA submission failure alarm, the same shape as HmrcSubmissionFailureAlarm above but
+        // watching the Submit/Business metrics hmrcItsaSelfEmploymentPeriodPost.js and
+        // hmrcItsaSelfEmploymentPeriodPut.js emit, so the existing alarm-to-issue triage covers
+        // ITSA quarterly updates with no new mechanism.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-ItsaSubmissionFailureAlarm")
+                .alarmName(props.resourceNamePrefix() + "-itsa-submission-failure")
+                .alarmDescription("HMRC ITSA submission failed for a customer >= 1 time in 15 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("ItsaSubmissionFailure")
+                        .dimensionsMap(Map.of("Actor", "customer"))
+                        .statistic("Sum")
+                        .period(Duration.minutes(15))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
         // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
         // against this same environment-wide behaviour-test metric, each opening its own GitHub

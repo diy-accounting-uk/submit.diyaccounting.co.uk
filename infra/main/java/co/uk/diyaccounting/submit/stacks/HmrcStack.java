@@ -87,6 +87,46 @@ public class HmrcStack extends Stack {
     public Function hmrcItsaSelfEmploymentPeriodPutLambda;
     public ILogGroup hmrcItsaSelfEmploymentPeriodPutLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcItsaSelfEmploymentAnnualGetLambdaProps;
+    public Function hmrcItsaSelfEmploymentAnnualGetLambda;
+    public ILogGroup hmrcItsaSelfEmploymentAnnualGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaSelfEmploymentAnnualPutLambdaProps;
+    public Function hmrcItsaSelfEmploymentAnnualPutLambda;
+    public ILogGroup hmrcItsaSelfEmploymentAnnualPutLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaCrystallisationObligationsGetLambdaProps;
+    public Function hmrcItsaCrystallisationObligationsGetLambda;
+    public ILogGroup hmrcItsaCrystallisationObligationsGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaStatusGetLambdaProps;
+    public Function hmrcItsaStatusGetLambda;
+    public ILogGroup hmrcItsaStatusGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaBsasTriggerPostLambdaProps;
+    public Function hmrcItsaBsasTriggerPostLambda;
+    public ILogGroup hmrcItsaBsasTriggerPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaBsasSelfEmploymentGetLambdaProps;
+    public Function hmrcItsaBsasSelfEmploymentGetLambda;
+    public ILogGroup hmrcItsaBsasSelfEmploymentGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps;
+    public Function hmrcItsaBsasSelfEmploymentAdjustPostLambda;
+    public ILogGroup hmrcItsaBsasSelfEmploymentAdjustPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaCalculationTriggerPostLambdaProps;
+    public Function hmrcItsaCalculationTriggerPostLambda;
+    public ILogGroup hmrcItsaCalculationTriggerPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaCalculationGetLambdaProps;
+    public Function hmrcItsaCalculationGetLambda;
+    public ILogGroup hmrcItsaCalculationGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaFinalDeclarationPostLambdaProps;
+    public Function hmrcItsaFinalDeclarationPostLambda;
+    public ILogGroup hmrcItsaFinalDeclarationPostLambdaLogGroup;
+
     public AbstractApiLambdaProps receiptGetLambdaProps;
     public Function receiptGetLambda;
     public ILogGroup receiptGetLambdaLogGroup;
@@ -207,6 +247,66 @@ public class HmrcStack extends Stack {
                 this,
                 "ImportedHmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Self-Employment Annual GET (retrieve) async request table
+        ITable hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Self-Employment Annual PUT (create and amend) async request table
+        ITable hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA final declaration (crystallisation) obligations async request table
+        ITable hmrcItsaCrystallisationObligationsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaCrystallisationObligationsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA status async request table
+        ITable hmrcItsaStatusGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaStatusGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA BSAS trigger async request table
+        ITable hmrcItsaBsasTriggerPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaBsasTriggerPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaBsasTriggerPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA BSAS self-employment retrieve async request table
+        ITable hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaBsasSelfEmploymentGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA BSAS self-employment adjust async request table
+        ITable hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA calculation trigger async request table
+        ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaCalculationTriggerPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA calculation retrieve async request table
+        ITable hmrcItsaCalculationGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaCalculationGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA final declaration async request table
+        ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaFinalDeclarationPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
 
         // Lookup existing DynamoDB HMRC VAT Obligation GET async request table
         ITable hmrcVatObligationGetAsyncRequestsTable = Table.fromTableName(
@@ -965,6 +1065,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
                 .with(
                         "HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.getTableName())
@@ -1017,8 +1118,9 @@ public class HmrcStack extends Stack {
         // Grant the ITSA self-employment period Lambda and its worker permission to access DynamoDB Bundles Table
         List.of(this.hmrcItsaSelfEmploymentPeriodPostLambda, hmrcItsaSelfEmploymentPeriodPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
@@ -1196,6 +1298,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
                 .with(
                         "HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.getTableName())
@@ -1248,8 +1351,9 @@ public class HmrcStack extends Stack {
         // Grant the ITSA self-employment period amendment Lambda and its worker permission to access DynamoDB Bundles Table
         List.of(this.hmrcItsaSelfEmploymentPeriodPutLambda, hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
@@ -1265,6 +1369,784 @@ public class HmrcStack extends Stack {
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaSelfEmploymentPeriodPutLambda.getFunctionName());
+
+        // ITSA Self-Employment Annual GET (retrieve)
+        var itsaSelfEmploymentAnnualGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaCustomAuthorizer)
+                        .environment(itsaSelfEmploymentAnnualGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaSelfEmploymentAnnualGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaProps = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaSelfEmploymentAnnualGetLambda = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaLogGroup = hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentAnnualGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA self-employment annual submission retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaSelfEmploymentAnnualGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler);
+
+        // Grant the ITSA self-employment annual submission retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaSelfEmploymentAnnualGetLambda, hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaSelfEmploymentAnnualGetLambda.getFunctionName());
+
+        // ITSA Self-Employment Annual PUT (create and amend)
+        var itsaSelfEmploymentAnnualPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaCustomAuthorizer)
+                        .environment(itsaSelfEmploymentAnnualPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaSelfEmploymentAnnualPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaProps = hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaSelfEmploymentAnnualPutLambda = hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaLogGroup = hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaSelfEmploymentAnnualPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA self-employment annual submission with ingestHandler %s and worker %s",
+                this.hmrcItsaSelfEmploymentAnnualPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler);
+
+        // Grant the ITSA self-employment annual submission Lambda and its worker permission to access DynamoDB Bundles Table.
+        // No token consumption here (the annual submission is free), so Query is enough - unlike
+        // the quarterly update Lambdas, which also need UpdateItem to consume a token.
+        List.of(this.hmrcItsaSelfEmploymentAnnualPutLambda, hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaSelfEmploymentAnnualPutLambda.getFunctionName());
+
+        // ITSA final declaration (crystallisation) obligations
+        var itsaCrystallisationObligationsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_CRYSTALLISATION_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaCrystallisationObligationsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaCrystallisationObligationsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer)
+                        .environment(itsaCrystallisationObligationsGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaCrystallisationObligationsGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaCrystallisationObligationsGetLambdaProps = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaCrystallisationObligationsGetLambda = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaCrystallisationObligationsGetLambdaLogGroup = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaCrystallisationObligationsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA crystallisation obligations with ingestHandler %s and worker %s",
+                this.hmrcItsaCrystallisationObligationsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler);
+
+        // Grant the ITSA crystallisation obligations Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaCrystallisationObligationsGetLambda, hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaCrystallisationObligationsGetLambda.getFunctionName());
+
+        // ITSA status
+        var itsaStatusGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("HMRC_ITSA_STATUS_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcItsaStatusGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaStatusGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaStatusGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaStatusGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaStatusGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaStatusGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaStatusGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaStatusGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaStatusGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaStatusGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaStatusGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaStatusGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaStatusGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaStatusGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaStatusGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaStatusGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaStatusGetLambdaCustomAuthorizer)
+                        .environment(itsaStatusGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaStatusGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaStatusGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaStatusGetLambdaProps = hmrcItsaStatusGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaStatusGetLambda = hmrcItsaStatusGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaStatusGetLambdaLogGroup = hmrcItsaStatusGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaStatusGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA status with ingestHandler %s and worker %s",
+                this.hmrcItsaStatusGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaStatusGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaStatusGetWorkerLambdaHandler);
+
+        // Grant the ITSA status Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaStatusGetLambda, hmrcItsaStatusGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
+            bundlesTable.grant(fn, "dynamodb:Query");
+            hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+            hmrcItsaStatusGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+            // Grant access to user sub hash salt secret in Secrets Manager
+            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+            // Grant EventBridge PutEvents permission
+            fn.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
+        });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaStatusGetLambda.getFunctionName());
+
+        // ITSA business source adjustable summary trigger
+        var itsaBsasTriggerPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaBsasTriggerPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaBsasTriggerPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBsasTriggerPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaBsasTriggerPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaBsasTriggerPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaBsasTriggerPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBsasTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaBsasTriggerPostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBsasTriggerPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaBsasTriggerPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaBsasTriggerPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaBsasTriggerPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaBsasTriggerPostLambdaCustomAuthorizer)
+                        .environment(itsaBsasTriggerPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaBsasTriggerPostLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaBsasTriggerPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaBsasTriggerPostLambdaProps = hmrcItsaBsasTriggerPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaBsasTriggerPostLambda = hmrcItsaBsasTriggerPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaBsasTriggerPostLambdaLogGroup = hmrcItsaBsasTriggerPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaBsasTriggerPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA BSAS trigger with ingestHandler %s and worker %s",
+                this.hmrcItsaBsasTriggerPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaBsasTriggerPostWorkerLambdaHandler);
+
+        // Grant the ITSA BSAS trigger Lambda and its worker permission to access DynamoDB Bundles Table.
+        // No token consumption and no receipt here - the trigger is a computation, not a filing.
+        List.of(this.hmrcItsaBsasTriggerPostLambda, hmrcItsaBsasTriggerPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaBsasTriggerPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaBsasTriggerPostLambda.getFunctionName());
+
+        // ITSA business source adjustable summary (self-employment) retrieve
+        var itsaBsasSelfEmploymentGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_BSAS_SELF_EMPLOYMENT_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaCustomAuthorizer)
+                        .environment(itsaBsasSelfEmploymentGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaBsasSelfEmploymentGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaBsasSelfEmploymentGetLambdaProps = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaBsasSelfEmploymentGetLambda = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaBsasSelfEmploymentGetLambdaLogGroup = hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaBsasSelfEmploymentGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA BSAS self-employment retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaBsasSelfEmploymentGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler);
+
+        // Grant the ITSA BSAS self-employment retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaBsasSelfEmploymentGetLambda, hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaBsasSelfEmploymentGetLambda.getFunctionName());
+
+        // ITSA business source adjustable summary (self-employment) adjust
+        var itsaBsasSelfEmploymentAdjustPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_BSAS_SELF_EMPLOYMENT_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBsasSelfEmploymentAdjustPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBsasSelfEmploymentAdjustPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer)
+                        .environment(itsaBsasSelfEmploymentAdjustPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaBsasSelfEmploymentAdjustPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambda = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaLogGroup = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA BSAS self-employment adjustment with ingestHandler %s and worker %s",
+                this.hmrcItsaBsasSelfEmploymentAdjustPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler);
+
+        // Grant the ITSA BSAS self-employment adjustment Lambda and its worker permission to access DynamoDB Bundles Table.
+        // No token consumption and no receipt here - the plan's receipts table lists none for this call.
+        List.of(this.hmrcItsaBsasSelfEmploymentAdjustPostLambda, hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaBsasSelfEmploymentAdjustPostLambda.getFunctionName());
+
+        // ITSA tax calculation trigger
+        var itsaCalculationTriggerPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_CALCULATION_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaCalculationTriggerPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaCalculationTriggerPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaCalculationTriggerPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaCalculationTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaCustomAuthorizer)
+                        .environment(itsaCalculationTriggerPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaCalculationTriggerPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaCalculationTriggerPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaCalculationTriggerPostLambdaProps = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaCalculationTriggerPostLambda = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaCalculationTriggerPostLambdaLogGroup = hmrcItsaCalculationTriggerPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaCalculationTriggerPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA calculation trigger with ingestHandler %s and worker %s",
+                this.hmrcItsaCalculationTriggerPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaHandler);
+
+        // Grant the ITSA calculation trigger Lambda and its worker permission to access DynamoDB Bundles Table.
+        // No token consumption and no receipt here - the trigger is a computation, not a filing.
+        List.of(this.hmrcItsaCalculationTriggerPostLambda, hmrcItsaCalculationTriggerPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaCalculationTriggerPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaCalculationTriggerPostLambda.getFunctionName());
+
+        // ITSA tax calculation retrieve
+        var itsaCalculationGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_CALCULATION_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaCalculationGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaCalculationGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaCalculationGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaCalculationGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaCalculationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaCalculationGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaCalculationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaCalculationGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaCalculationGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaCalculationGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaCalculationGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaCalculationGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaCalculationGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaCalculationGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaCalculationGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaCalculationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaCalculationGetLambdaCustomAuthorizer)
+                        .environment(itsaCalculationGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaCalculationGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaCalculationGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaCalculationGetLambdaProps = hmrcItsaCalculationGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaCalculationGetLambda = hmrcItsaCalculationGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaCalculationGetLambdaLogGroup = hmrcItsaCalculationGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaCalculationGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA calculation retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaCalculationGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaCalculationGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaCalculationGetWorkerLambdaHandler);
+
+        // Grant the ITSA calculation retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(this.hmrcItsaCalculationGetLambda, hmrcItsaCalculationGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaCalculationGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaCalculationGetLambda.getFunctionName());
+
+        // ITSA final declaration
+        var itsaFinalDeclarationPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_FINAL_DECLARATION_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaFinalDeclarationPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaFinalDeclarationPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaFinalDeclarationPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaFinalDeclarationPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaCustomAuthorizer)
+                        .environment(itsaFinalDeclarationPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaFinalDeclarationPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaFinalDeclarationPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaFinalDeclarationPostLambdaProps = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaFinalDeclarationPostLambda = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaFinalDeclarationPostLambdaLogGroup = hmrcItsaFinalDeclarationPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaFinalDeclarationPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA final declaration with ingestHandler %s and worker %s",
+                this.hmrcItsaFinalDeclarationPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaHandler);
+
+        // Grant the ITSA final declaration Lambda and its worker permission to access DynamoDB Bundles Table.
+        // Charges one token per the plan's Tokens table, so this needs UpdateItem on the bundles
+        // table (like the quarterly update Lambdas) plus a receipt write, unlike the trigger and
+        // retrieve Lambdas above.
+        List.of(this.hmrcItsaFinalDeclarationPostLambda, hmrcItsaFinalDeclarationPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaFinalDeclarationPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaFinalDeclarationPostLambda.getFunctionName());
 
         // myReceipts Lambda
         var myReceiptsLambdaEnv = new PopulatedMap<String, String>()
@@ -1350,6 +2232,16 @@ public class HmrcStack extends Stack {
                         hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin,
                         hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin,
                         hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin,
+                        hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin,
+                        hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin,
+                        hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin,
+                        hmrcItsaStatusGetLambdaUrlOrigin,
+                        hmrcItsaBsasTriggerPostLambdaUrlOrigin,
+                        hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin,
+                        hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin,
+                        hmrcItsaCalculationTriggerPostLambdaUrlOrigin,
+                        hmrcItsaCalculationGetLambdaUrlOrigin,
+                        hmrcItsaFinalDeclarationPostLambdaUrlOrigin,
                         myReceiptsLambdaUrlOrigin));
 
         cfnOutput(this, "ExchangeHmrcTokenLambdaArn", this.hmrcTokenPostLambda.getFunctionArn());

@@ -64,190 +64,6 @@
         }
       }
     },
-    "/companies-house/transaction/{transactionId}" : {
-      "get" : {
-        "summary" : "Get a Companies House transaction",
-        "description" : "Retrieves a Companies House filing transaction and its filing status",
-        "operationId" : "getCompaniesHouseTransaction",
-        "parameters" : [ {
-          "name" : "transactionId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Companies House transaction id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      },
-      "put" : {
-        "summary" : "Close a Companies House transaction",
-        "description" : "Closes a Companies House filing transaction, submitting the filing",
-        "operationId" : "closeCompaniesHouseTransaction",
-        "parameters" : [ {
-          "name" : "transactionId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Companies House transaction id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/books/{bookId}" : {
-      "put" : {
-        "summary" : "Store a book version",
-        "description" : "Writes the next version of a book with optimistic concurrency via If-Match",
-        "operationId" : "putBook",
-        "parameters" : [ {
-          "name" : "bookId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The book's id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      },
-      "delete" : {
-        "summary" : "Delete a book",
-        "description" : "Deletes a book and every stored version for the authenticated books user",
-        "operationId" : "deleteBook",
-        "parameters" : [ {
-          "name" : "bookId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The book's id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/hmrc/vat/return" : {
-      "post" : {
-        "summary" : "Submit VAT return to HMRC",
-        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
-        "operationId" : "submitVatReturn",
-        "parameters" : [ {
-          "name" : "Gov-Test-Scenario",
-          "in" : "header",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "vatNumber" : {
-                    "type" : "string",
-                    "example" : "983238295"
-                  },
-                  "periodKey" : {
-                    "type" : "string",
-                    "example" : "24A1"
-                  },
-                  "vatDue" : {
-                    "type" : "number",
-                    "format" : "float",
-                    "example" : 2400.0
-                  },
-                  "accessToken" : {
-                    "type" : "string",
-                    "example" : "HMRC_ACCESS_TOKEN"
-                  }
-                }
-              },
-              "example" : {
-                "vatNumber" : "983238295",
-                "periodKey" : "24A1",
-                "vatDue" : 2400.0,
-                "accessToken" : "HMRC_ACCESS_TOKEN"
-              }
-            }
-          }
-        },
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "HmrcAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "VAT return submitted successfully"
-          }
-        }
-      },
-      "get" : {
-        "summary" : "Get submitted VAT returns from HMRC",
-        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
-        "operationId" : "getVatReturns",
-        "parameters" : [ {
-          "name" : "periodKey",
-          "in" : "path",
-          "required" : true,
-          "description" : "The VAT period key to retrieve",
-          "schema" : {
-            "type" : "string",
-            "example" : "24A1"
-          }
-        }, {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "983238295",
-            "pattern" : "^\\d{9}$"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "responses" : {
-          "200" : {
-            "description" : "VAT return submitted successfully"
-          }
-        }
-      }
-    },
-    "/interest" : {
-      "post" : {
-        "summary" : "Register feedback engagement",
-        "description" : "Publishes the authenticated user's email to an SNS topic for feedback engagement",
-        "operationId" : "registerInterest"
-      }
-    },
     "/pass" : {
       "get" : {
         "summary" : "Validate a pass code",
@@ -267,152 +83,6 @@
         "summary" : "Redeem a pass code",
         "description" : "Redeems a pass code and grants the associated bundle to the authenticated user",
         "operationId" : "redeemPass"
-      }
-    },
-    "/companies-house/accounts/preview" : {
-      "post" : {
-        "summary" : "Preview a micro-entity accounts filing",
-        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
-        "operationId" : "previewCompaniesHouseAccounts"
-      }
-    },
-    "/hmrc/vat/obligation" : {
-      "get" : {
-        "summary" : "Get VAT obligations from HMRC",
-        "description" : "Retrieves VAT obligations from HMRC for the authenticated user",
-        "operationId" : "getVatObligations",
-        "parameters" : [ {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "983238295",
-            "pattern" : "^\\d{9}$"
-          }
-        }, {
-          "name" : "from",
-          "in" : "query",
-          "required" : false,
-          "description" : "From date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-01-01"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : false,
-          "description" : "To date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31"
-          }
-        }, {
-          "name" : "status",
-          "in" : "query",
-          "required" : false,
-          "description" : "Obligation status: O (Open) or F (Fulfilled)",
-          "schema" : {
-            "type" : "string",
-            "enum" : "O,F",
-            "example" : "O"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
-    "/companies-house/transaction/{transactionId}/registered-email-address" : {
-      "post" : {
-        "summary" : "File a registered email address change",
-        "description" : "Adds a registered email address change resource to an open transaction",
-        "operationId" : "postCompaniesHouseRegisteredEmailAddress",
-        "parameters" : [ {
-          "name" : "transactionId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The Companies House transaction id",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "registeredEmailAddress",
-          "in" : "body",
-          "required" : true,
-          "description" : "The new registered email address",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "acceptAppropriateEmailAddressStatement",
-          "in" : "body",
-          "required" : true,
-          "description" : "Must be true - confirms the section 88A(2) Companies Act 2006 statement",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/hmrc/receipt" : {
-      "get" : {
-        "summary" : "Retrieve stored receipts",
-        "description" : "Retrieves previously stored receipts for the authenticated user",
-        "operationId" : "getReceipts",
-        "parameters" : [ {
-          "name" : "name",
-          "in" : "query",
-          "required" : false,
-          "description" : "Receipt file name including .json",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31-123456789012.json"
-          }
-        }, {
-          "name" : "key",
-          "in" : "query",
-          "required" : false,
-          "description" : "Full DynamoDB Item key",
-          "schema" : {
-            "type" : "string",
-            "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Receipts retrieved successfully"
-          }
-        }
       }
     },
     "/hmrc/itsa/self-employment/period" : {
@@ -657,6 +327,1100 @@
         }
       }
     },
+    "/hmrc/itsa/bsas/self-employment" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA self-employment business source adjustable summary",
+        "description" : "Retrieves the income, expenses, additions and resulting net profit or loss for a triggered summary",
+        "operationId" : "getItsaBsasSelfEmployment",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/bsas/self-employment/adjust" : {
+      "post" : {
+        "summary" : "Adjust an ITSA self-employment business source adjustable summary",
+        "description" : "Submits income, expenses and additions adjustments, or states there are none, for a triggered summary",
+        "operationId" : "adjustItsaBsasSelfEmployment",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "income",
+          "in" : "body",
+          "required" : false,
+          "description" : "Income adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "expenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Expenses adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "additions",
+          "in" : "body",
+          "required" : false,
+          "description" : "Additions adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "zeroAdjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "True to state that nothing changes",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/books" : {
+      "get" : {
+        "summary" : "List the caller's books",
+        "description" : "Lists every stored book's metadata for the authenticated books user",
+        "operationId" : "listBooks"
+      }
+    },
+    "/companies-house/accounts" : {
+      "post" : {
+        "summary" : "Submit a micro-entity accounts filing",
+        "description" : "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseAccounts"
+      }
+    },
+    "/pass/admin" : {
+      "post" : {
+        "summary" : "Generate a new pass",
+        "description" : "Generates a new pass code for a specified bundle type (admin only)",
+        "operationId" : "generatePass"
+      }
+    },
+    "/hmrc/itsa/calculation" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA tax calculation",
+        "description" : "Retrieves a previously triggered self assessment tax calculation by its calculation id",
+        "operationId" : "getItsaCalculation",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The calculation id from a triggered calculation",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/accounts/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a micro-entity accounts filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
+        "operationId" : "getCompaniesHouseAccounts",
+        "parameters" : [ {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/session/beacon" : {
+      "post" : {
+        "summary" : "Session beacon",
+        "description" : "Records a new browser session for activity monitoring",
+        "operationId" : "sessionBeacon"
+      }
+    },
+    "/support/ticket" : {
+      "post" : {
+        "summary" : "Submit a support ticket",
+        "description" : "Creates a GitHub issue for the authenticated user's support request",
+        "operationId" : "submitSupportTicket"
+      }
+    },
+    "/operator/snapshot" : {
+      "get" : {
+        "summary" : "Get the operator objectives snapshot",
+        "description" : "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
+        "operationId" : "getOperatorSnapshot"
+      }
+    },
+    "/bundle/{id}" : {
+      "delete" : {
+        "summary" : "Delete bundle by id",
+        "description" : "Deletes a bundle for the authenticated user using a path parameter",
+        "operationId" : "deleteBundleById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "description" : "The bundle id (or name) to delete",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "Account" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Bundle deleted successfully"
+          },
+          "202" : {
+            "description" : "Request accepted for processing (async)"
+          }
+        }
+      }
+    },
+    "/companies-house/token" : {
+      "post" : {
+        "summary" : "Exchange Companies House authorization code for access token",
+        "description" : "Exchanges a Companies House OAuth authorisation code for an access token",
+        "operationId" : "exchangeCompaniesHouseToken"
+      }
+    },
+    "/hmrc/vat/payment" : {
+      "get" : {
+        "summary" : "Get VAT payments from HMRC",
+        "description" : "Retrieves VAT payments from HMRC for the authenticated user",
+        "operationId" : "getVatPayments",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/business/details" : {
+      "get" : {
+        "summary" : "Get ITSA business details from HMRC",
+        "description" : "Retrieves the authenticated user's self-employment and property business list from HMRC, including the businessId every other ITSA endpoint needs",
+        "operationId" : "getItsaBusinessDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/bsas/trigger" : {
+      "post" : {
+        "summary" : "Trigger an ITSA business source adjustable summary",
+        "description" : "Triggers a self-employment adjustable summary calculation for an accounting period",
+        "operationId" : "triggerItsaBsas",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountingPeriodStartDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "The accounting period's start date",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accountingPeriodEndDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "The accounting period's end date",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/obligations/crystallisation" : {
+      "get" : {
+        "summary" : "Retrieve ITSA final declaration obligations",
+        "description" : "Retrieves the obligations that say when the final declaration (crystallisation) is due",
+        "operationId" : "getItsaCrystallisationObligations",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : false,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "description" : "Filter by obligation status: open or fulfilled",
+          "schema" : {
+            "type" : "string",
+            "enum" : "O,F",
+            "example" : "O"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/company/{companyNumber}" : {
+      "get" : {
+        "summary" : "Get a Companies House company profile",
+        "description" : "Retrieves the Companies House profile for a company number",
+        "operationId" : "getCompanyProfile",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/cognito/token" : {
+      "post" : {
+        "summary" : "Exchange Cognito authorization code for access token",
+        "description" : "Exchanges an authorization code for a Cognito access token",
+        "operationId" : "exchangeCognitoToken",
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "code" : {
+                    "type" : "string",
+                    "example" : "abc123"
+                  }
+                }
+              },
+              "example" : {
+                "code" : "abc123"
+              }
+            }
+          }
+        },
+        "tags" : [ "Authentication" ],
+        "responses" : {
+          "200" : {
+            "description" : "Token exchanged successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/transaction" : {
+      "post" : {
+        "summary" : "Open a Companies House transaction",
+        "description" : "Opens a Companies House filing transaction against a company number",
+        "operationId" : "openCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "body",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "description",
+          "in" : "body",
+          "required" : true,
+          "description" : "A description of the filing, at most 200 characters",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "reference",
+          "in" : "body",
+          "required" : false,
+          "description" : "An optional caller-supplied reference",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/search" : {
+      "get" : {
+        "summary" : "Search Companies House",
+        "description" : "Searches Companies House for a company by name or number",
+        "operationId" : "searchCompanies",
+        "parameters" : [ {
+          "name" : "q",
+          "in" : "query",
+          "required" : true,
+          "description" : "Company name or number search term",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "itemsPerPage",
+          "in" : "query",
+          "required" : false,
+          "description" : "Results per page (1-50, default 20)",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startIndex",
+          "in" : "query",
+          "required" : false,
+          "description" : "Zero-based offset into the result set",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/hmrc/itsa/calculation/trigger" : {
+      "post" : {
+        "summary" : "Trigger an ITSA tax calculation",
+        "description" : "Triggers a self assessment tax calculation for a tax year and waits for HMRC to finish it",
+        "operationId" : "triggerItsaCalculation",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationType",
+          "in" : "body",
+          "required" : true,
+          "description" : "One of in-year, intent-to-finalise, intent-to-amend",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/billing/checkout" : {
+      "post" : {
+        "summary" : "Create billing checkout session",
+        "description" : "Creates a Stripe checkout session for subscription",
+        "operationId" : "createCheckoutSession"
+      }
+    },
+    "/hmrc/itsa/status" : {
+      "get" : {
+        "summary" : "Retrieve ITSA status",
+        "description" : "Retrieves whether the customer is mandated, voluntary, annual or exempt for a tax year",
+        "operationId" : "getItsaStatus",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "futureYears",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, also returns the following tax year's status",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/transaction/{transactionId}" : {
+      "get" : {
+        "summary" : "Get a Companies House transaction",
+        "description" : "Retrieves a Companies House filing transaction and its filing status",
+        "operationId" : "getCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "put" : {
+        "summary" : "Close a Companies House transaction",
+        "description" : "Closes a Companies House filing transaction, submitting the filing",
+        "operationId" : "closeCompaniesHouseTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/books/{bookId}" : {
+      "put" : {
+        "summary" : "Store a book version",
+        "description" : "Writes the next version of a book with optimistic concurrency via If-Match",
+        "operationId" : "putBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Delete a book",
+        "description" : "Deletes a book and every stored version for the authenticated books user",
+        "operationId" : "deleteBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/hmrc/vat/return" : {
+      "post" : {
+        "summary" : "Submit VAT return to HMRC",
+        "description" : "Submits a VAT return to HMRC on behalf of the authenticated user",
+        "operationId" : "submitVatReturn",
+        "parameters" : [ {
+          "name" : "Gov-Test-Scenario",
+          "in" : "header",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "required" : true,
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "vatNumber" : {
+                    "type" : "string",
+                    "example" : "983238295"
+                  },
+                  "periodKey" : {
+                    "type" : "string",
+                    "example" : "24A1"
+                  },
+                  "vatDue" : {
+                    "type" : "number",
+                    "format" : "float",
+                    "example" : 2400.0
+                  },
+                  "accessToken" : {
+                    "type" : "string",
+                    "example" : "HMRC_ACCESS_TOKEN"
+                  }
+                }
+              },
+              "example" : {
+                "vatNumber" : "983238295",
+                "periodKey" : "24A1",
+                "vatDue" : 2400.0,
+                "accessToken" : "HMRC_ACCESS_TOKEN"
+              }
+            }
+          }
+        },
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "HmrcAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Get submitted VAT returns from HMRC",
+        "description" : "Retrieves previously submitted VAT returns from HMRC for the authenticated user",
+        "operationId" : "getVatReturns",
+        "parameters" : [ {
+          "name" : "periodKey",
+          "in" : "path",
+          "required" : true,
+          "description" : "The VAT period key to retrieve",
+          "schema" : {
+            "type" : "string",
+            "example" : "24A1"
+          }
+        }, {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "responses" : {
+          "200" : {
+            "description" : "VAT return submitted successfully"
+          }
+        }
+      }
+    },
+    "/interest" : {
+      "post" : {
+        "summary" : "Register feedback engagement",
+        "description" : "Publishes the authenticated user's email to an SNS topic for feedback engagement",
+        "operationId" : "registerInterest"
+      }
+    },
+    "/companies-house/accounts/preview" : {
+      "post" : {
+        "summary" : "Preview a micro-entity accounts filing",
+        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+        "operationId" : "previewCompaniesHouseAccounts"
+      }
+    },
+    "/hmrc/vat/obligation" : {
+      "get" : {
+        "summary" : "Get VAT obligations from HMRC",
+        "description" : "Retrieves VAT obligations from HMRC for the authenticated user",
+        "operationId" : "getVatObligations",
+        "parameters" : [ {
+          "name" : "vrn",
+          "in" : "query",
+          "required" : true,
+          "description" : "VAT registration number (9 digits)",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "from",
+          "in" : "query",
+          "required" : false,
+          "description" : "From date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-01-01"
+          }
+        }, {
+          "name" : "to",
+          "in" : "query",
+          "required" : false,
+          "description" : "To date in YYYY-MM-DD format",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "description" : "Obligation status: O (Open) or F (Fulfilled)",
+          "schema" : {
+            "type" : "string",
+            "enum" : "O,F",
+            "example" : "O"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/companies-house/transaction/{transactionId}/registered-email-address" : {
+      "post" : {
+        "summary" : "File a registered email address change",
+        "description" : "Adds a registered email address change resource to an open transaction",
+        "operationId" : "postCompaniesHouseRegisteredEmailAddress",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Companies House transaction id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "registeredEmailAddress",
+          "in" : "body",
+          "required" : true,
+          "description" : "The new registered email address",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "acceptAppropriateEmailAddressStatement",
+          "in" : "body",
+          "required" : true,
+          "description" : "Must be true - confirms the section 88A(2) Companies Act 2006 statement",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/hmrc/receipt" : {
+      "get" : {
+        "summary" : "Retrieve stored receipts",
+        "description" : "Retrieves previously stored receipts for the authenticated user",
+        "operationId" : "getReceipts",
+        "parameters" : [ {
+          "name" : "name",
+          "in" : "query",
+          "required" : false,
+          "description" : "Receipt file name including .json",
+          "schema" : {
+            "type" : "string",
+            "example" : "2025-03-31-123456789012.json"
+          }
+        }, {
+          "name" : "key",
+          "in" : "query",
+          "required" : false,
+          "description" : "Full DynamoDB Item key",
+          "schema" : {
+            "type" : "string",
+            "example" : "receipts/00000000-0000-0000-0000-000000000000/2025-03-31-123456789012.json"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Receipts retrieved successfully"
+          }
+        }
+      }
+    },
     "/bundle" : {
       "get" : {
         "summary" : "Get user bundles",
@@ -769,27 +1533,6 @@
         }
       }
     },
-    "/books" : {
-      "get" : {
-        "summary" : "List the caller's books",
-        "description" : "Lists every stored book's metadata for the authenticated books user",
-        "operationId" : "listBooks"
-      }
-    },
-    "/companies-house/accounts" : {
-      "post" : {
-        "summary" : "Submit a micro-entity accounts filing",
-        "description" : "Generates the FRS 105 micro-entity iXBRL and submits it through the Companies House XML Gateway",
-        "operationId" : "postCompaniesHouseAccounts"
-      }
-    },
-    "/pass/admin" : {
-      "post" : {
-        "summary" : "Generate a new pass",
-        "description" : "Generates a new pass code for a specified bundle type (admin only)",
-        "operationId" : "generatePass"
-      }
-    },
     "/companies-house/company/{companyNumber}/registered-office-address" : {
       "get" : {
         "summary" : "Get a company's registered office address",
@@ -832,6 +1575,80 @@
         }
       }
     },
+    "/hmrc/itsa/final-declaration" : {
+      "post" : {
+        "summary" : "Submit an ITSA final declaration",
+        "description" : "Confirms a tax calculation and files the final declaration for a tax year",
+        "operationId" : "submitItsaFinalDeclaration",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The calculation id being confirmed",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationType",
+          "in" : "body",
+          "required" : true,
+          "description" : "One of final-declaration, confirm-amendment",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "totalIncomeTaxAndNicsDue",
+          "in" : "body",
+          "required" : true,
+          "description" : "The figure shown to the customer and confirmed, stored on the receipt",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/billing/checkout/{id}" : {
       "get" : {
         "summary" : "Retrieve a billing checkout session",
@@ -842,22 +1659,6 @@
           "in" : "path",
           "required" : true,
           "description" : "The Stripe checkout session id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/companies-house/accounts/{submissionNumber}" : {
-      "get" : {
-        "summary" : "Poll a micro-entity accounts filing",
-        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
-        "operationId" : "getCompaniesHouseAccounts",
-        "parameters" : [ {
-          "name" : "submissionNumber",
-          "in" : "path",
-          "required" : true,
-          "description" : "The 6-character submission number",
           "schema" : {
             "type" : "string"
           }
@@ -991,62 +1792,6 @@
         }
       }
     },
-    "/session/beacon" : {
-      "post" : {
-        "summary" : "Session beacon",
-        "description" : "Records a new browser session for activity monitoring",
-        "operationId" : "sessionBeacon"
-      }
-    },
-    "/support/ticket" : {
-      "post" : {
-        "summary" : "Submit a support ticket",
-        "description" : "Creates a GitHub issue for the authenticated user's support request",
-        "operationId" : "submitSupportTicket"
-      }
-    },
-    "/operator/snapshot" : {
-      "get" : {
-        "summary" : "Get the operator objectives snapshot",
-        "description" : "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
-        "operationId" : "getOperatorSnapshot"
-      }
-    },
-    "/bundle/{id}" : {
-      "delete" : {
-        "summary" : "Delete bundle by id",
-        "description" : "Deletes a bundle for the authenticated user using a path parameter",
-        "operationId" : "deleteBundleById",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "description" : "The bundle id (or name) to delete",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "Account" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Bundle deleted successfully"
-          },
-          "202" : {
-            "description" : "Request accepted for processing (async)"
-          }
-        }
-      }
-    },
-    "/companies-house/token" : {
-      "post" : {
-        "summary" : "Exchange Companies House authorization code for access token",
-        "description" : "Exchanges a Companies House OAuth authorisation code for an access token",
-        "operationId" : "exchangeCompaniesHouseToken"
-      }
-    },
     "/hmrc/vat/penalty" : {
       "get" : {
         "summary" : "Get VAT penalties from HMRC",
@@ -1091,115 +1836,11 @@
         }
       }
     },
-    "/hmrc/vat/payment" : {
-      "get" : {
-        "summary" : "Get VAT payments from HMRC",
-        "description" : "Retrieves VAT payments from HMRC for the authenticated user",
-        "operationId" : "getVatPayments",
-        "parameters" : [ {
-          "name" : "vrn",
-          "in" : "query",
-          "required" : true,
-          "description" : "VAT registration number (9 digits)",
-          "schema" : {
-            "type" : "string",
-            "example" : "983238295",
-            "pattern" : "^\\d{9}$"
-          }
-        }, {
-          "name" : "from",
-          "in" : "query",
-          "required" : false,
-          "description" : "From date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-01-01"
-          }
-        }, {
-          "name" : "to",
-          "in" : "query",
-          "required" : false,
-          "description" : "To date in YYYY-MM-DD format",
-          "schema" : {
-            "type" : "string",
-            "example" : "2025-03-31"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
-      }
-    },
     "/pass/generate" : {
       "post" : {
         "summary" : "Generate a pass using tokens",
         "description" : "Generates a new pass code using the authenticated user's token balance",
         "operationId" : "generatePassWithTokens"
-      }
-    },
-    "/hmrc/itsa/business/details" : {
-      "get" : {
-        "summary" : "Get ITSA business details from HMRC",
-        "description" : "Retrieves the authenticated user's self-employment and property business list from HMRC, including the businessId every other ITSA endpoint needs",
-        "operationId" : "getItsaBusinessDetails",
-        "parameters" : [ {
-          "name" : "nino",
-          "in" : "query",
-          "required" : true,
-          "description" : "National Insurance number",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "Gov-Test-Scenario",
-          "in" : "query",
-          "required" : false,
-          "description" : "HMRC sandbox test scenario",
-          "schema" : {
-            "type" : "string",
-            "example" : "QUARTERLY_ONE_MET"
-          }
-        }, {
-          "name" : "runFraudPreventionHeaderValidation",
-          "in" : "query",
-          "required" : false,
-          "description" : "When true, validates HMRC Fraud Prevention Headers",
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "tags" : [ "HMRC" ],
-        "security" : [ {
-          "CognitoAuth" : [ ]
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Request completed successfully"
-          }
-        }
       }
     },
     "/companies-house/transaction/{transactionId}/registered-office-address" : {
@@ -1290,20 +1931,142 @@
         } ]
       }
     },
-    "/companies-house/company/{companyNumber}" : {
+    "/hmrc/itsa/self-employment/annual" : {
       "get" : {
-        "summary" : "Get a Companies House company profile",
-        "description" : "Retrieves the Companies House profile for a company number",
-        "operationId" : "getCompanyProfile",
+        "summary" : "Retrieve an ITSA self-employment annual submission",
+        "description" : "Retrieves the adjustments, allowances and non-financials submitted for a tax year",
+        "operationId" : "getItsaSelfEmploymentAnnual",
         "parameters" : [ {
-          "name" : "companyNumber",
-          "in" : "path",
+          "name" : "nino",
+          "in" : "query",
           "required" : true,
-          "description" : "The 8-character company number",
+          "description" : "National Insurance number",
           "schema" : {
             "type" : "string"
           }
-        } ]
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Create or amend an ITSA self-employment annual submission",
+        "description" : "Submits the adjustments, allowances and non-financials for a tax year in one call",
+        "operationId" : "putItsaSelfEmploymentAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "adjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "allowances",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual allowances",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "nonFinancials",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual non-financials",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/billing/webhook" : {
@@ -1336,38 +2099,6 @@
         } ]
       }
     },
-    "/cognito/token" : {
-      "post" : {
-        "summary" : "Exchange Cognito authorization code for access token",
-        "description" : "Exchanges an authorization code for a Cognito access token",
-        "operationId" : "exchangeCognitoToken",
-        "requestBody" : {
-          "required" : true,
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "type" : "object",
-                "properties" : {
-                  "code" : {
-                    "type" : "string",
-                    "example" : "abc123"
-                  }
-                }
-              },
-              "example" : {
-                "code" : "abc123"
-              }
-            }
-          }
-        },
-        "tags" : [ "Authentication" ],
-        "responses" : {
-          "200" : {
-            "description" : "Token exchanged successfully"
-          }
-        }
-      }
-    },
     "/books/{bookId}/versions/{version}" : {
       "get" : {
         "summary" : "Read a book version",
@@ -1386,70 +2117,6 @@
           "in" : "path",
           "required" : true,
           "description" : "\"latest\" or a positive version number",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/companies-house/transaction" : {
-      "post" : {
-        "summary" : "Open a Companies House transaction",
-        "description" : "Opens a Companies House filing transaction against a company number",
-        "operationId" : "openCompaniesHouseTransaction",
-        "parameters" : [ {
-          "name" : "companyNumber",
-          "in" : "body",
-          "required" : true,
-          "description" : "The 8-character company number",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "description",
-          "in" : "body",
-          "required" : true,
-          "description" : "A description of the filing, at most 200 characters",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "reference",
-          "in" : "body",
-          "required" : false,
-          "description" : "An optional caller-supplied reference",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/companies-house/search" : {
-      "get" : {
-        "summary" : "Search Companies House",
-        "description" : "Searches Companies House for a company by name or number",
-        "operationId" : "searchCompanies",
-        "parameters" : [ {
-          "name" : "q",
-          "in" : "query",
-          "required" : true,
-          "description" : "Company name or number search term",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "itemsPerPage",
-          "in" : "query",
-          "required" : false,
-          "description" : "Results per page (1-50, default 20)",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "startIndex",
-          "in" : "query",
-          "required" : false,
-          "description" : "Zero-based offset into the result set",
           "schema" : {
             "type" : "string"
           }
@@ -1538,13 +2205,6 @@
             "description" : "Request completed successfully"
           }
         }
-      }
-    },
-    "/billing/checkout" : {
-      "post" : {
-        "summary" : "Create billing checkout session",
-        "description" : "Creates a Stripe checkout session for subscription",
-        "operationId" : "createCheckoutSession"
       }
     }
   },

@@ -79,8 +79,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
-        assertStackHealthAlarm(hmrcStackTemplate, 14, 12, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
+        assertStackHealthAlarm(hmrcStackTemplate, 24, 22, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -245,8 +245,16 @@ class SubmitApplicationCdkResourceTest {
         // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
         // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
         // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
-        // plus its automatic HEAD route, since no other route shares that path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 93);
+        // plus its automatic HEAD route, since no other route shares that path. GET and PUT
+        // /api/v1/hmrc/itsa/self-employment/annual add their own two routes plus one shared
+        // auto-HEAD route for the path, bringing the total to 96. GET
+        // /api/v1/hmrc/itsa/obligations/crystallisation and GET /api/v1/hmrc/itsa/status each add
+        // their own route plus their own automatic HEAD route, since neither path is shared with
+        // another method, for 96 + 2 + 2 = 100. POST /api/v1/hmrc/itsa/bsas/trigger, GET
+        // /api/v1/hmrc/itsa/bsas/self-employment and POST
+        // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
+        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 112);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
