@@ -28,17 +28,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 15 is PR #160 (`claude/b15-board`, pushed 2026-09-09 13:10 UTC): ITSA phase 2's T1 to
-T6, green on the merged batch (`npm test` 2677, `./mvnw clean verify` 202); the branch's
-environment deploy 34355416698, test 34355416467 and CodeQL 34355450948 were green, and the
-deploy 34355417183 failed: `ci-claud7ba2-app-HmrcStack` rolled back on its composite
-`StackHealthAlarm`, whose `AlarmRule` is 13,789 characters against CloudWatch's 10,240 limit
-with 46 Lambdas fanned in, so the ApiStack and every behaviour probe failed behind it. The
-fix is on the branch (982d5e7f, 2026-09-09 14:2x UTC, on the operator's word: `Lambda.java`
-builds group composites under one parent when the rule would pass 9,000 characters) and its
-ci deploy is the proof. T7 (the sandbox proof) and T8 to T10 wait on the operator's word. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
-day failed at the cost export (B65). No agent runs. The operator's standing instruction
-(renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
+Batch 15 is PR #160 (`claude/b15-board`, last push 2026-09-09 16:47 UTC): ITSA phase 2's T1
+to T6 plus the health alarm's group composites, green on the merged batch (`npm test` 2677,
+`./mvnw clean verify` 202) and on the branch's second ci deploy 34378922928 (every stack up,
+every behaviour probe passed; environment deploy 34378922544, test 34378922156, CodeQL
+34378926108 green). The PR is the operator's to merge. T7 (the sandbox proof from a ci set)
+and T8 to T10 wait on the operator's word. Batch 14 is on prod as prod-4600d25; its two
+environment deploys of the day failed at the cost export (B65). No agent runs. The operator's
+standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in flight"
+without their word.
 
 ## Ready: Claude Code
 
