@@ -11,7 +11,7 @@
 const errorScenarios = {
   OVERLAPPING_PERIOD: {
     status: 400,
-    body: { code: "RULE_OVERLAPPING_PERIOD", message: "Period summary overlaps with an existing period summary" },
+    body: { code: "RULE_OVERLAPPING_PERIOD", message: "Period summary overlaps with any of the existing period summaries" },
   },
   MISALIGNED_PERIOD: {
     status: 400,
