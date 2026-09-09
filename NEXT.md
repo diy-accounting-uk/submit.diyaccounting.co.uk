@@ -27,12 +27,26 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Nothing. Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is
-on prod as prod-15f3483 since 2026-09-09 18:29 UTC. Of the merge's runs, the environment
-deploy failed at the cost export only (B65); the test run passed on its re-run. T7 to T10 are
-B11.T7, B11.T9 and B11.T10 below, and T8 is the spreadsheets repository's own row. The
-operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
-flight" without their word.
+**Batch 16 on `claude/b16-board`.** Wave A, six worktree sub-agents off `main` at 0aa5e4ac,
+each owning a disjoint set of files:
+
+| Workstream | Items | Model | Owns |
+|---|---|---|---|
+| CDK prod fixes | B30s, B67, B68, B66, B65 | Sonnet | `infra/main/**` five stacks, `passPost.js` |
+| Workflows | B64, B25 | Sonnet | `.github/workflows/**`, `scripts/**` |
+| DIYA-GL design | B71.S3a | Opus | `PLAN_DIYA_GL_NAMING.md` |
+| Catalogue and prose | B17b.1, B71.S1 | Haiku | `submit.catalogue.toml`, four plan docs |
+| Licensing files | B70.S1 | Sonnet | `LICENSE`, `LICENSING.md`, `NOTICE`, `package.json` |
+| ITSA sandbox | B11.T7 (the script and runbook) | Sonnet | `scripts/itsa-sandbox-year.js`, `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` |
+
+Agents commit in their worktrees and never push. The coordinator merges each verified commit
+into `claude/b16-board`, pushes the batch once, and raises the PR when the branch is testing
+and deploying. B70.S3 (the header sweep) touches every tracked file, so it lands after every
+other code row in this batch, never beside one.
+
+Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is on prod as
+prod-15f3483 since 2026-09-09 18:29 UTC. Of the merge's runs, the environment deploy failed at
+the cost export only (B65); the test run passed on its re-run.
 
 ## Ready: Claude Code
 
