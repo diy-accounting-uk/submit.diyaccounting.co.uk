@@ -96,6 +96,38 @@ the cost export only (B65); the test run passed on its re-run.
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
+  `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
+  `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
+  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
+  headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
+  S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
+  through one deploy of main. It also carries the four `app/functions/books/` modules and
+  their unit tests, whose basenames are the deployed Lambda names. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
+  `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
+  to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
+  S3a sets so the spreadsheets side switches before the old name goes. **Source**:
+  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. The
+  spreadsheets side switches after ours, so nothing gates this.
+- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
+  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
+  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
+  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. Both
+  prefixes are served from this row's first deploy and the spreadsheets side switches after,
+  so nothing gates this.
+- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
+  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
+  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
+  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
+  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
+  first and stop if either holds an object, in which case S3a's copy sequence applies.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+
+## Ready: operator
+
 - [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
   questions": whether an annual submission costs a token (the plan assumes not, so a year is
   five tokens), whether the site displays the calculation or signposts HMRC (assumes
@@ -203,33 +235,6 @@ the cost export only (B65); the test run passed on its re-run.
   the footer, favicon and title conventions read from the words file. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on the spreadsheets plan's LU-14 and H-LU-7 (the brand package existing).
-
-- [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
-  `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
-  `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
-  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
-  headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
-  S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
-  through one deploy of main. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
-  Code. **Model**: Sonnet.
-- [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
-  `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
-  to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
-  S3a sets so the spreadsheets side switches before the old name goes. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. The
-  spreadsheets side switches after ours, so nothing gates this.
-- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
-  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
-  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
-  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on B71.S3a and the spreadsheets plan's NM-5.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** If S3a decides the bucket is renamed:
-  `{prefix}-books-{account}` to `{prefix}-diya-gl-{account}` in `DataStack.java`,
-  `SubmitSharedNames.java` and `BackupStack.java`, with the data copied, the backup plan and
-  retention rules following, and the old bucket emptied and deleted after a verified copy.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on B71.S3a.
 
 ## Discipline
 
