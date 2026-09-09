@@ -17,8 +17,8 @@ import software.constructs.Construct;
  * Glue tables over the security dashboard's sources, one JSON-lines file per source per day at
  * {@code curated/security/<source>/dt=<date>/data.json}: Security Hub findings, GuardDuty
  * findings, GitHub alert counts, the lifecycle calendar, WAF blocks per rule and the secret
- * rotation record, all written by {@code securityLakeNightly.js}, plus the SBOM/KEV match
- * {@code .github/workflows/sbom.yml} writes on every push to main with dependencies.
+ * rotation record, all written by {@code securityLakeNightly.js}, plus the SBOM build row
+ * {@code .github/workflows/sbom.yml} writes on every push to main that changes a dependency.
  *
  * <p>Modelled line for line on {@code WorkflowRunTables}: one {@code dt} partition-projection
  * column (type {@code date}, format {@code yyyy-MM-dd}), so a new day's object is queryable the
