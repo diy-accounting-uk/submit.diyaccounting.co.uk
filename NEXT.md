@@ -76,10 +76,10 @@ flight" without their word.
   network failure), not for a validation 400 the page shows the customer; keep the
   `vat-return-failed` activity event for the funnel. #164 closes as understood.
   **Source**: issue #164. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B66. The nightly S3 backup of the prod books bucket fails.** `verify-backups.yml`'s
+- [ ] **B66. The nightly S3 backup of the prod DIYA-GL book bucket fails.** `verify-backups.yml`'s
   scheduled runs failed on 2026-09-08 (34218296772) and 2026-09-09 (34343588837): the AWS
   Backup job for `arn:aws:s3:::prod-env-books-972912397388` at 02:00 UTC fails both nights
-  with "AWS Backup does not have permission to describe resource", so the DIYA-GL books
+  with "AWS Backup does not have permission to describe resource", so the DIYA-GL book
   bucket, new since batch 12, has no backup. Grant the backup role the S3 backup permissions
   (`AWSBackupServiceRolePolicyForS3Backup` and its restore twin, or the equivalent statements)
   where `BackupStack.java` builds it, and check the bucket's own policy does not deny the
@@ -111,7 +111,7 @@ flight" without their word.
   annual submission, T3 the final-declaration obligation and ITSA status, T4 the adjustable
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
-  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
+  DIYA-GL-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
   are PR #160 (`claude/b15-board`); T7 the sandbox proof (needs a ci set and a probe-test
   dispatch per ITSA suite), then T8 to T10, wait on the operator's word
   (stabilising, 2026-09-09 07:40 UTC), under the plan's stated assumptions until O30 answers
@@ -141,7 +141,7 @@ flight" without their word.
 - [ ] **B25. Backups outside the account: the proven restore.** Issue #11's remainder. The
   vault `submit-cross-account-vault` in submit-backup (914216784828) holds 120 recovery
   points and every prod DynamoDB table's nightly backup copies into it (five tables, copy
-  jobs COMPLETED each night; the S3 books bucket joins once B66 lands), but nothing has ever
+  jobs COMPLETED each night; the DIYA-GL book bucket joins once B66 lands), but nothing has ever
   been restored from it, and the issue's goal is a restore proven by standing a prod replica
   up in ci, salt included. Build `restore-drill.yml` (dispatch, ci only): assume the ci role,
   take the vault's latest recovery point of each prod table, restore each into ci as a
@@ -159,6 +159,35 @@ flight" without their word.
   licensing rows; one PR carries the code rows, from `claude/lic-<topic>`. Report the landing
   in `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S1.
   **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B71.S1. DIYA-GL naming: the prose.** `PLAN_DIYA_GL_NAMING.md`'s Submit class 1 table:
+  "books" as a product, page, client or import becomes "DIYA-GL" (the import, the routes,
+  the client, the page, the origins) in `PLAN_ITSA_PHASE_2.md`, `PLAN_DIYA_GL_STORAGE.md`,
+  `PLAN_SUBMISSION_MCP.md`, `PLAN_ONE_STOP_DASHBOARD.md` and the comment in
+  `app/functions/billing/billingReturnUrl.js`; "a book" as the data noun stays. Docs-only
+  where it is docs; the comment rides with B71.S2. Report the landing in
+  `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S1. **Owner**:
+  Claude Code. **Model**: Haiku.
+- [ ] **B71.S2. DIYA-GL naming: the same-repository code identifiers.** The class 3 table:
+  `s3BooksRepository.js` to `s3DiyaGlRepository.js`, `app/functions/books/` to
+  `app/functions/diyaGl/` with matching filenames, `booksCors.js`, `booksEntitlement.js`, the
+  system, unit and behaviour tests, the `test:booksBehaviour*` npm scripts and the Playwright
+  project, every importer and CI reference in the same PR; no alias, no re-export. Route
+  paths and env names stay (class 4). **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S2. **Owner**:
+  Claude Code. **Model**: Sonnet.
+- [ ] **B71.S3a. DIYA-GL naming: the deployed identifiers' design.** The class 4 table has 16
+  identifiers that live in deployed resources or that the spreadsheets repository consumes
+  (`BooksStack`, the CFN outputs, `BOOKS_ALLOWED_ORIGINS`, the Cognito client name, the SSM
+  parameter, the `cdk.json` key, the bucket name, `BOOKS_STACK_NAME`,
+  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
+  response-headers policy, the `--client books` flag, the `/api/v1/books` routes). Write the
+  order and the compatibility windows into `PLAN_DIYA_GL_NAMING.md`: which renames are a
+  stack replacement (a new stack name deletes and recreates every resource in it), which need
+  both names served for one release (the routes, the client, the SSM parameter), and whether
+  the S3 bucket is renamed at all (a bucket rename is a new bucket, a data copy, the backup
+  plan and the retention rules moving with it). Splits into B71.S3b to S3e. In step with the
+  spreadsheets plan's NM-5. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
+  Code. **Model**: Opus.
 
 ## Ready: operator
 
@@ -285,6 +314,33 @@ flight" without their word.
   the footer, favicon and title conventions read from the words file. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on the spreadsheets plan's LU-14 and H-LU-7 (the brand package existing).
+
+- [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
+  `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
+  `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
+  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
+  headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
+  S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
+  through one deploy of main. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
+  Code. **Model**: Sonnet. Blocked on B71.S3a.
+- [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
+  `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
+  to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
+  S3a sets so the spreadsheets side switches before the old name goes. **Source**:
+  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  B71.S3a and the spreadsheets plan's NM-5.
+- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
+  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
+  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
+  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on B71.S3a and the spreadsheets plan's NM-5.
+- [ ] **B71.S3e. DIYA-GL naming: the bucket.** If S3a decides the bucket is renamed:
+  `{prefix}-books-{account}` to `{prefix}-diya-gl-{account}` in `DataStack.java`,
+  `SubmitSharedNames.java` and `BackupStack.java`, with the data copied, the backup plan and
+  retention rules following, and the old bucket emptied and deleted after a verified copy.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on B71.S3a.
 
 ## Discipline
 
