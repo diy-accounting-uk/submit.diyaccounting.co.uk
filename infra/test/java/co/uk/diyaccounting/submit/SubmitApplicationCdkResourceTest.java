@@ -79,8 +79,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 30);
-        assertStackHealthAlarm(hmrcStackTemplate, 16, 14, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 34);
+        assertStackHealthAlarm(hmrcStackTemplate, 18, 16, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -247,8 +247,11 @@ class SubmitApplicationCdkResourceTest {
         // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
         // plus its automatic HEAD route, since no other route shares that path. GET and PUT
         // /api/v1/hmrc/itsa/self-employment/annual add their own two routes plus one shared
-        // auto-HEAD route for the path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 96);
+        // auto-HEAD route for the path, bringing the total to 96. GET
+        // /api/v1/hmrc/itsa/obligations/crystallisation and GET /api/v1/hmrc/itsa/status each add
+        // their own route plus their own automatic HEAD route, since neither path is shared with
+        // another method, for 96 + 2 + 2 = 100.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 100);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

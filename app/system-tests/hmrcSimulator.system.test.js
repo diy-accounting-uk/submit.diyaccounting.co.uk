@@ -542,6 +542,136 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Crystallisation Obligations", () => {
+    it("should return one open obligation by default, with dates derived from the requested tax year", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24`, {
+        headers: { "Accept": "application/vnd.hmrc.3.0+json", "Authorization": "Bearer test-token" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data.obligations)).toBe(true);
+      expect(data.obligations).toHaveLength(1);
+      expect(data.obligations[0].status).toBe("open");
+      expect(data.obligations[0].periodStartDate).toBe("2023-04-06");
+      expect(data.obligations[0].periodEndDate).toBe("2024-04-05");
+      expect(data.obligations[0].dueDate).toBe("2025-01-31");
+    });
+
+    it("should derive different dates for a different requested tax year, never a fixed one", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2022-23`);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations[0].periodStartDate).toBe("2022-04-06");
+      expect(data.obligations[0].dueDate).toBe("2024-01-31");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/invalid-nino/crystallisation`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for MULTIPLE", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24`, {
+        headers: { "Gov-Test-Scenario": "MULTIPLE" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations.length).toBeGreaterThan(1);
+    });
+
+    it("should respect Gov-Test-Scenario header for INSOLVENT_TRADER", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation`, {
+        headers: { "Gov-Test-Scenario": "INSOLVENT_TRADER" },
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INSOLVENT_TRADER");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should filter by status query parameter", async () => {
+      const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24&status=fulfilled`, {
+        headers: { "Gov-Test-Scenario": "MULTIPLE" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.obligations.every((detail) => detail.status === "fulfilled")).toBe(true);
+    });
+  });
+
+  describe("ITSA Status", () => {
+    it("should return the itsaStatuses for a valid NINO and tax year", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Accept": "application/vnd.hmrc.2.0+json", "Authorization": "Bearer test-token" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data.itsaStatuses)).toBe(true);
+      expect(data.itsaStatuses).toHaveLength(1);
+      expect(data.itsaStatuses[0].taxYear).toBe("2023-24");
+      expect(Array.isArray(data.itsaStatuses[0].itsaStatusDetails)).toBe(true);
+    });
+
+    it("should include the following tax year when futureYears=true", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24?futureYears=true`);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.itsaStatuses).toHaveLength(2);
+      expect(data.itsaStatuses[1].taxYear).toBe("2024-25");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/invalid-nino/2023-24`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid taxYear", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023`);
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_TAX_YEAR");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_ENROLLED", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "NOT_ENROLLED" },
+      });
+      expect(response.status).toBe(403);
+      const data = await response.json();
+      expect(data.code).toBe("CLIENT_NOT_MTD_ENROLLED");
+    });
+
+    it("should return the default set for STATEFUL, since the simulator has no per-user state", async () => {
+      const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
+        headers: { "Gov-Test-Scenario": "STATEFUL" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.itsaStatuses[0].taxYear).toBe("2023-24");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions

@@ -1,0 +1,707 @@
+openapi: 3.0.3
+info:
+  title: Self Assessment Individual Details (MTD)
+  description: "The following endpoints are stateful in the Sandbox:\n* Retrieve ITSA\
+    \ Status\n\n# Send fraud prevention data\nHMRC monitors transactions to help protect\
+    \ your customers' confidential data from criminals and fraudsters. \n\n<div class=\"\
+    govuk-warning-text warning-icon-fix\">\n  <span class=\"govuk-warning-text__icon\
+    \ warning-icon-ui-fix\" aria-hidden=\"true\">!</span>\n  <strong class=\"govuk-warning-text__text\"\
+    >\n    <span class=\"govuk-warning-text__assistive\">Warning</span>\n    You are\
+    \ required by law to submit header data for this API. This includes all associated\
+    \ APIs and endpoints.\n  </strong>\n</div>\n\n[Check the data you need to send](/guides/fraud-prevention/).\
+    \ You can also use the [Test API](/api-documentation/docs/api/service/txm-fph-validator-api/1.0)\
+    \ during initial development and as part of your quality assurance checks.\n\n\
+    # Changelog\nYou can find the changelog in the [income-tax-mtd-changelog](https://github.com/hmrc/income-tax-mtd-changelog/#readme)\
+    \ GitHub wiki.\n\n\n# Support\n\n* Direct reports of bugs or errors in Production\
+    \ or Sandbox code, or queries about HMRC business functionality (such as how a\
+    \ specific field is used by HMRC or why it is needed) to the [Software Development\
+    \ Support Team (SDST)](https://developer.service.hmrc.gov.uk/developer/support).\n\
+    * Send queries or feedback related to the design of the APIs (including recommended\
+    \ changes) using the [income-tax-mtd-changelog](https://github.com/hmrc/income-tax-mtd-changelog/issues)\
+    \ GitHub page.\n* <a href=\"/contact/report-technical-problem?newTab=true&service=api-documentation-frontend\"\
+    \ target=\"_blank\">Is this page not working properly? (opens in new tab)</a>\n"
+  version: "2.0"
+servers:
+- url: https://test-api.service.hmrc.gov.uk
+  description: Sandbox
+- url: https://api.service.hmrc.gov.uk
+  description: Production
+paths:
+  /individuals/person/itsa-status/{nino}/{taxYear}:
+    get:
+      summary: Retrieve ITSA Status
+      description: |
+        This endpoint enables you to retrieve an ITSA status for an HMRC customer for a specified tax year, and optionally future years after that tax year. A National Insurance number and tax year must be provided. An ITSA status is always available for each tax year from the year the customer signed up for MTD to the current year. Availability of status after the current year varies, depending on factors such as the customer's annual return submissions.
+
+        ### Test data
+        Scenario simulations using Gov-Test-Scenario headers is only available in the sandbox environment.
+
+        | Header Value (Gov-Test-Scenario)        | Scenario                                                                                         |
+        |-----------------------------------------|--------------------------------------------------------------------------------------------------|
+        | N/A - DEFAULT                           | Simulates success response.                                                                      |
+        | NOT_FOUND                               | Simulates the scenario where no data is found.                                                   |
+        | NOT_ENROLLED                            | Simulates the scenario where a Client is not MTD Enrolled                                        |
+        | STATEFUL                                | Performs a stateful retrieve.                                                                    |
+      parameters:
+      - name: nino
+        in: path
+        description: |
+          National Insurance number, in the format `AA999999A`
+        required: true
+        schema:
+          type: string
+          example: TC663795B
+      - name: taxYear
+        in: path
+        description: |
+          The tax year to retrieve data for. The start year and end year must not span two tax years. No gaps are allowed, for example, 2023-25 is not valid. There is no minimum tax year.
+        required: true
+        schema:
+          type: string
+          example: 2023-24
+      - name: futureYears
+        in: query
+        description: "The status of future tax years. When set to true, the API will\
+          \ return the future tax years from the specified tax years if present. The\
+          \ default is false"
+        required: false
+        schema:
+          type: boolean
+          example: false
+      - name: history
+        in: query
+        description: "The history status of the specified tax year. When set to true,\
+          \ the API will return history of the specified tax year (and future years\
+          \ if the futureYear flag is set to true). The default is false"
+        required: false
+        schema:
+          type: boolean
+          example: false
+      - name: Accept
+        in: header
+        description: |
+          Specifies the response format and the version of the API to be used.
+        required: true
+        schema:
+          type: string
+          enum:
+          - application/vnd.hmrc.2.0+json
+      - name: Authorization
+        in: header
+        description: |
+          An OAuth 2.0 Bearer Token with the *read:self-assessment* scope.
+        required: true
+        schema:
+          type: string
+          example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+      - name: Gov-Test-Scenario
+        in: header
+        description: |
+          Only in sandbox environment. See Test Data table for all header values.
+        required: false
+        schema:
+          type: string
+          example: "-"
+      responses:
+        "200":
+          description: Success
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 GMT"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 GMT"
+            Link:
+              description: |
+                URL of the documentation for the API.
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api
+          content:
+            application/json:
+              schema:
+                title: Retrieve ITSA Status Request
+                type: object
+                properties:
+                  itsaStatuses:
+                    type: array
+                    description: An array of ITSA statuses for the requested National
+                      Insurance number and tax year(s).
+                    items:
+                      type: object
+                      properties:
+                        taxYear:
+                          pattern: "^2[0-9]{3}-[0-9]{2}$"
+                          type: string
+                          description: "The tax year the data applies to. The start\
+                            \ year and end year must not span two tax years. No gaps\
+                            \ are allowed, for example, 2023-25 is not valid. There\
+                            \ is no minimum tax year."
+                          example: 2023-24
+                        itsaStatusDetails:
+                          type: array
+                          description: An array of ITSA status details for a specific
+                            National Insurance number and tax year.
+                          items:
+                            type: object
+                            properties:
+                              submittedOn:
+                                type: string
+                                description: "The date the ITSA status was submitted,\
+                                  \ in the format YYYY-MM-DDThh:mm:ss.SSSZ."
+                                format: date-time
+                                example: 2021-03-23T16:02:34.039Z
+                              status:
+                                type: string
+                                description: The ITSA Status for the Tax Year.
+                                enum:
+                                - No Status
+                                - MTD Mandated
+                                - MTD Voluntary
+                                - Annual
+                                - Digitally Exempt
+                                - Dormant
+                                - MTD Exempt
+                              statusReason:
+                                type: string
+                                description: The reason for the ITSA Status.
+                                enum:
+                                - Sign up - return available
+                                - Sign up - no return available
+                                - ITSA final declaration
+                                - ITSA Q4 declaration
+                                - CESA SA return
+                                - Complex
+                                - Ceased income source
+                                - Reinstated income source
+                                - Rollover
+                                - Income Source Latency Changes
+                                - MTD ITSA Opt-Out
+                                - MTD ITSA Opt-In
+                                - Digitally Exempt
+                                - Capacitor
+                                - Residence and remittance
+                                - Ministers of religion
+                                - Lloyds underwriters
+                                - Blind persons allowance
+                                - Married couples allowance
+                                - Return not considered
+                              businessIncome2YearsPrior:
+                                multipleOf: 0.01
+                                maximum: 99999999999.99
+                                minimum: 0
+                                type: number
+                                description: "The business income for 2 years prior,\
+                                  \ based on Self Assessment returns or MTD ITSA declarations\
+                                  \ 2 years before the requested tax year."
+                                example: 99999999999.99
+                description: Retrieve ITSA Status Request
+              examples:
+                example-response:
+                  description: Example response given any tax year
+                  value:
+                    $ref: ./examples/retrieveItsaStatus/def1/response.json
+        "400":
+          description: Bad request
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 GMT"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 GMT"
+            Link:
+              description: |
+                URL of the documentation for the API.
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api
+          content:
+            application/json:
+              schema:
+                required:
+                - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                FORMAT_NINO:
+                  description: The format of the supplied NINO field is not valid.
+                  value:
+                    code: FORMAT_NINO
+                    message: The NINO format is invalid
+                FORMAT_TAX_YEAR:
+                  description: The format of the supplied tax year field is not valid.
+                  value:
+                    code: FORMAT_TAX_YEAR
+                    message: The taxYear format is invalid
+                FORMAT_FUTURE_YEARS:
+                  description: futureYears must be true or false.
+                  value:
+                    code: FORMAT_FUTURE_YEARS
+                    message: The provided futureYears value should be true or false
+                FORMAT_HISTORY:
+                  description: history must be true or false.
+                  value:
+                    code: FORMAT_HISTORY
+                    message: The provided history value should be true or false
+                RULE_TAX_YEAR_RANGE_INVALID:
+                  description: Tax year range invalid. A tax year range of one year
+                    is required.
+                  value:
+                    code: RULE_TAX_YEAR_RANGE_INVALID
+                    message: A tax year range of one year is required
+        "403":
+          description: Forbidden
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 GMT"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 GMT"
+            Link:
+              description: |
+                URL of the documentation for the API.
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api
+          content:
+            application/json:
+              schema:
+                required:
+                - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                CLIENT_OR_AGENT_NOT_AUTHORISED:
+                  description: "The client or agent is not authorised. This is because:\
+                    \ the client is not subscribed to MTD, \nthe agent is not subscribed\
+                    \ to Agent Services, or the client has not authorised the agent\
+                    \ to act on their behalf.\n"
+                  value:
+                    code: CLIENT_OR_AGENT_NOT_AUTHORISED
+                    message: The client or agent is not authorised
+                CLIENT_NOT_MTD_ENROLLED:
+                  description: The client does not have an active MTD enrolment.
+                  value:
+                    code: CLIENT_NOT_MTD_ENROLLED
+                    message: The client does not have an active MTD enrolment.
+        "404":
+          description: Not Found
+          headers:
+            X-CorrelationId:
+              description: |
+                Unique ID for operation tracking
+                String, 36 characters.
+              required: true
+              schema:
+                type: string
+                example: c75f40a6-a3df-4429-a697-471eeec46435
+            Deprecation:
+              description: |
+                The deprecation date/time for this endpoint.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 01 Jan 2023 23:59:59 GMT"
+            Sunset:
+              description: |
+                The earliest date/time this endpoint will become unavailable after deprecation.
+              required: false
+              schema:
+                type: string
+                example: "Sun, 02 Jul 2023 23:59:59 GMT"
+            Link:
+              description: |
+                URL of the documentation for the API.
+              required: false
+              schema:
+                type: string
+                example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api
+          content:
+            application/json:
+              schema:
+                required:
+                - code
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: The error code
+                  message:
+                    type: string
+                    description: The error message
+                description: Error Response
+              examples:
+                MATCHING_RESOURCE_NOT_FOUND:
+                  description: The supplied income source could not be found.
+                  value:
+                    code: MATCHING_RESOURCE_NOT_FOUND
+                    message: Matching resource not found
+      security:
+      - User-Restricted:
+        - read:self-assessment
+components:
+  schemas:
+    response:
+      title: Retrieve ITSA Status Request
+      type: object
+      properties:
+        itsaStatuses:
+          type: array
+          description: An array of ITSA statuses for the requested National Insurance
+            number and tax year(s).
+          items:
+            type: object
+            properties:
+              taxYear:
+                pattern: "^2[0-9]{3}-[0-9]{2}$"
+                type: string
+                description: "The tax year the data applies to. The start year and\
+                  \ end year must not span two tax years. No gaps are allowed, for\
+                  \ example, 2023-25 is not valid. There is no minimum tax year."
+                example: 2023-24
+              itsaStatusDetails:
+                type: array
+                description: An array of ITSA status details for a specific National
+                  Insurance number and tax year.
+                items:
+                  type: object
+                  properties:
+                    submittedOn:
+                      type: string
+                      description: "The date the ITSA status was submitted, in the\
+                        \ format YYYY-MM-DDThh:mm:ss.SSSZ."
+                      format: date-time
+                      example: 2021-03-23T16:02:34.039Z
+                    status:
+                      type: string
+                      description: The ITSA Status for the Tax Year.
+                      enum:
+                      - No Status
+                      - MTD Mandated
+                      - MTD Voluntary
+                      - Annual
+                      - Digitally Exempt
+                      - Dormant
+                      - MTD Exempt
+                    statusReason:
+                      type: string
+                      description: The reason for the ITSA Status.
+                      enum:
+                      - Sign up - return available
+                      - Sign up - no return available
+                      - ITSA final declaration
+                      - ITSA Q4 declaration
+                      - CESA SA return
+                      - Complex
+                      - Ceased income source
+                      - Reinstated income source
+                      - Rollover
+                      - Income Source Latency Changes
+                      - MTD ITSA Opt-Out
+                      - MTD ITSA Opt-In
+                      - Digitally Exempt
+                      - Capacitor
+                      - Residence and remittance
+                      - Ministers of religion
+                      - Lloyds underwriters
+                      - Blind persons allowance
+                      - Married couples allowance
+                      - Return not considered
+                    businessIncome2YearsPrior:
+                      multipleOf: 0.01
+                      maximum: 99999999999.99
+                      minimum: 0
+                      type: number
+                      description: "The business income for 2 years prior, based on\
+                        \ Self Assessment returns or MTD ITSA declarations 2 years\
+                        \ before the requested tax year."
+                      example: 99999999999.99
+      description: Retrieve ITSA Status Request
+    error-response:
+      required:
+      - code
+      type: object
+      properties:
+        code:
+          type: string
+          description: The error code
+        message:
+          type: string
+          description: The error message
+      description: Error Response
+    taxYear:
+      pattern: "^2[0-9]{3}-[0-9]{2}$"
+      type: string
+      description: "The tax year the data applies to. The start year and end year\
+        \ must not span two tax years. No gaps are allowed, for example, 2023-25 is\
+        \ not valid. There is no minimum tax year."
+      example: 2023-24
+    submittedOn:
+      type: string
+      description: "The date the ITSA status was submitted, in the format YYYY-MM-DDThh:mm:ss.SSSZ."
+      format: date-time
+      example: 2021-03-23T16:02:34.039Z
+    status:
+      type: string
+      description: The ITSA Status for the Tax Year.
+      enum:
+      - No Status
+      - MTD Mandated
+      - MTD Voluntary
+      - Annual
+      - Digitally Exempt
+      - Dormant
+      - MTD Exempt
+    statusReason:
+      type: string
+      description: The reason for the ITSA Status.
+      enum:
+      - Sign up - return available
+      - Sign up - no return available
+      - ITSA final declaration
+      - ITSA Q4 declaration
+      - CESA SA return
+      - Complex
+      - Ceased income source
+      - Reinstated income source
+      - Rollover
+      - Income Source Latency Changes
+      - MTD ITSA Opt-Out
+      - MTD ITSA Opt-In
+      - Digitally Exempt
+      - Capacitor
+      - Residence and remittance
+      - Ministers of religion
+      - Lloyds underwriters
+      - Blind persons allowance
+      - Married couples allowance
+      - Return not considered
+    businessIncome2YearsPrior:
+      multipleOf: 0.01
+      maximum: 99999999999.99
+      minimum: 0
+      type: number
+      description: "The business income for 2 years prior, based on Self Assessment\
+        \ returns or MTD ITSA declarations 2 years before the requested tax year."
+      example: 99999999999.99
+  parameters:
+    nino:
+      name: nino
+      in: path
+      description: |
+        National Insurance number, in the format `AA999999A`
+      required: true
+      schema:
+        type: string
+        example: TC663795B
+    taxYear:
+      name: taxYear
+      in: path
+      description: |
+        The tax year to retrieve data for. The start year and end year must not span two tax years. No gaps are allowed, for example, 2023-25 is not valid. There is no minimum tax year.
+      required: true
+      schema:
+        type: string
+        example: 2023-24
+    futureYears:
+      name: futureYears
+      in: query
+      description: "The status of future tax years. When set to true, the API will\
+        \ return the future tax years from the specified tax years if present. The\
+        \ default is false"
+      required: false
+      schema:
+        type: boolean
+        example: false
+    history:
+      name: history
+      in: query
+      description: "The history status of the specified tax year. When set to true,\
+        \ the API will return history of the specified tax year (and future years\
+        \ if the futureYear flag is set to true). The default is false"
+      required: false
+      schema:
+        type: boolean
+        example: false
+    acceptHeader:
+      name: Accept
+      in: header
+      description: |
+        Specifies the response format and the version of the API to be used.
+      required: true
+      schema:
+        type: string
+        enum:
+        - application/vnd.hmrc.2.0+json
+    authorizationReadScopeHeader:
+      name: Authorization
+      in: header
+      description: |
+        An OAuth 2.0 Bearer Token with the *read:self-assessment* scope.
+      required: true
+      schema:
+        type: string
+        example: Bearer bb7fed3fe10dd235a2ccda3d50fb
+    testScenarioHeader:
+      name: Gov-Test-Scenario
+      in: header
+      description: |
+        Only in sandbox environment. See Test Data table for all header values.
+      required: false
+      schema:
+        type: string
+        example: "-"
+  examples:
+    formatNino:
+      description: The format of the supplied NINO field is not valid.
+      value:
+        code: FORMAT_NINO
+        message: The NINO format is invalid
+    formatTaxYear:
+      description: The format of the supplied tax year field is not valid.
+      value:
+        code: FORMAT_TAX_YEAR
+        message: The taxYear format is invalid
+    formatFutureYears:
+      description: futureYears must be true or false.
+      value:
+        code: FORMAT_FUTURE_YEARS
+        message: The provided futureYears value should be true or false
+    formatHistory:
+      description: history must be true or false.
+      value:
+        code: FORMAT_HISTORY
+        message: The provided history value should be true or false
+    ruleTaxYearRangeInvalid:
+      description: Tax year range invalid. A tax year range of one year is required.
+      value:
+        code: RULE_TAX_YEAR_RANGE_INVALID
+        message: A tax year range of one year is required
+    clientOrAgentNotAuthorised:
+      description: "The client or agent is not authorised. This is because: the client\
+        \ is not subscribed to MTD, \nthe agent is not subscribed to Agent Services,\
+        \ or the client has not authorised the agent to act on their behalf.\n"
+      value:
+        code: CLIENT_OR_AGENT_NOT_AUTHORISED
+        message: The client or agent is not authorised
+    clientNotMtdEnrolled:
+      description: The client does not have an active MTD enrolment.
+      value:
+        code: CLIENT_NOT_MTD_ENROLLED
+        message: The client does not have an active MTD enrolment.
+    notFound:
+      description: The supplied income source could not be found.
+      value:
+        code: MATCHING_RESOURCE_NOT_FOUND
+        message: Matching resource not found
+  headers:
+    correlationId:
+      description: |
+        Unique ID for operation tracking
+        String, 36 characters.
+      required: true
+      schema:
+        type: string
+        example: c75f40a6-a3df-4429-a697-471eeec46435
+    deprecationHeader:
+      description: |
+        The deprecation date/time for this endpoint.
+      required: false
+      schema:
+        type: string
+        example: "Sun, 01 Jan 2023 23:59:59 GMT"
+    sunsetHeader:
+      description: |
+        The earliest date/time this endpoint will become unavailable after deprecation.
+      required: false
+      schema:
+        type: string
+        example: "Sun, 02 Jul 2023 23:59:59 GMT"
+    linkHeader:
+      description: |
+        URL of the documentation for the API.
+      required: false
+      schema:
+        type: string
+        example: https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-assessment-individual-details-api
+  securitySchemes:
+    User-Restricted:
+      type: oauth2
+      description: "HMRC supports OAuth 2.0 for authenticating [User-restricted](https://developer.service.hmrc.gov.uk/api-documentation/docs/authorisation/user-restricted-endpoints)\
+        \ API requests"
+      flows:
+        authorizationCode:
+          authorizationUrl: https://api.service.hmrc.gov.uk/oauth/authorize
+          tokenUrl: https://api.service.hmrc.gov.uk/oauth/token
+          refreshUrl: https://api.service.hmrc.gov.uk/oauth/refresh
+          scopes:
+            write:self-assessment: Grant write access
+            read:self-assessment: Grant read access
