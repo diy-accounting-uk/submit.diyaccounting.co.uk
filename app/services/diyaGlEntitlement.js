@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-// app/services/booksEntitlement.js
+// app/services/diyaGlEntitlement.js
 //
-// Gates the books PUT route on an active subscription. A stub until the billing row wires up the
-// DIYA-GL bundle: BOOKS_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every caller
-// passes.
+// Gates the DIYA-GL PUT route on an active subscription. A stub until the billing row wires up
+// the DIYA-GL bundle: BOOKS_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every
+// caller passes.
 
 import { createLogger } from "../lib/logger.js";
 import { initializeSalt } from "./subHasher.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 
-const logger = createLogger({ source: "app/services/booksEntitlement.js" });
+const logger = createLogger({ source: "app/services/diyaGlEntitlement.js" });
 
-const DEFAULT_BOOKS_BUNDLE_ID = "resident-diya-gl";
+const DEFAULT_DIYA_GL_BUNDLE_ID = "resident-diya-gl";
 
 /**
  * @param {string} sub - the raw Cognito sub
@@ -28,12 +28,12 @@ export async function entitlementFor(sub) {
   }
 
   await initializeSalt();
-  const booksBundleId = process.env.BOOKS_BUNDLE_ID || DEFAULT_BOOKS_BUNDLE_ID;
+  const diyaGlBundleId = process.env.BOOKS_BUNDLE_ID || DEFAULT_DIYA_GL_BUNDLE_ID;
   const bundles = await getUserBundles(sub);
-  const matchingBundle = bundles.find((bundle) => bundle.bundleId === booksBundleId);
+  const matchingBundle = bundles.find((bundle) => bundle.bundleId === diyaGlBundleId);
 
   if (!matchingBundle) {
-    logger.info({ message: "No matching DIYA-GL bundle", bundleId: booksBundleId });
+    logger.info({ message: "No matching DIYA-GL bundle", bundleId: diyaGlBundleId });
     return { allowed: false, reason: "no-subscription", bundleId: null, expiry: null, checkedAt };
   }
 

@@ -12,9 +12,9 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { resolveBooksCorsHeaders, booksPreflightResponse } from "../../lib/booksCors.js";
+import { resolveDiyaGlCorsHeaders, diyaGlPreflightResponse } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { resolveOwnerPrefix, listBooks } from "../../data/s3BooksRepository.js";
+import { resolveOwnerPrefix, listBooks } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/books/booksListGet.js" });
 
@@ -33,11 +33,11 @@ export function apiEndpoint(app) {
 
 export async function ingestHandler(event) {
   if (event?.requestContext?.http?.method === "OPTIONS") {
-    return booksPreflightResponse(event.headers);
+    return diyaGlPreflightResponse(event.headers);
   }
 
   const { request } = extractRequest(event);
-  const corsHeaders = resolveBooksCorsHeaders(event.headers);
+  const corsHeaders = resolveDiyaGlCorsHeaders(event.headers);
 
   const user = extractUserFromAuthorizerContext(event);
   if (!user) {
