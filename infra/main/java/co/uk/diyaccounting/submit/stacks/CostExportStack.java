@@ -19,6 +19,7 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.bcmdataexports.CfnExport;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -126,11 +127,9 @@ public class CostExportStack extends Stack {
                     .map(arn -> arn.split(":")[4])
                     .distinct()
                     .toList();
-            List<software.amazon.awscdk.services.iam.IPrincipal> accountPrincipals =
-                    accountIds.stream()
-                            .map(accountId -> (software.amazon.awscdk.services.iam.IPrincipal)
-                                    new AccountPrincipal(accountId))
-                            .toList();
+            List<IPrincipal> accountPrincipals = accountIds.stream()
+                    .map(accountId -> (IPrincipal) new AccountPrincipal(accountId))
+                    .toList();
 
             this.bucket.addToResourcePolicy(PolicyStatement.Builder.create()
                     .sid("AllowDeploymentAccountsToReadTheExport")
