@@ -93,6 +93,8 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName;
+    public String hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName;
+    public String hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName;
     public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
@@ -433,6 +435,36 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath;
     public boolean hmrcItsaSelfEmploymentPeriodPutLambdaJwtAuthorizer;
     public boolean hmrcItsaSelfEmploymentPeriodPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler;
+    public String hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn;
+    public String hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler;
+    public String hmrcItsaSelfEmploymentAnnualGetWorkerLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn;
+    public String hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentAnnualGetLambdaQueueName;
+    public String hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaSelfEmploymentAnnualGetLambdaHttpMethod;
+    public String hmrcItsaSelfEmploymentAnnualGetLambdaUrlPath;
+    public boolean hmrcItsaSelfEmploymentAnnualGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaSelfEmploymentAnnualGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler;
+    public String hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn;
+    public String hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler;
+    public String hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName;
+    public String hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn;
+    public String hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaSelfEmploymentAnnualPutLambdaQueueName;
+    public String hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaSelfEmploymentAnnualPutLambdaHttpMethod;
+    public String hmrcItsaSelfEmploymentAnnualPutLambdaUrlPath;
+    public boolean hmrcItsaSelfEmploymentAnnualPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaSelfEmploymentAnnualPutLambdaCustomAuthorizer;
 
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
@@ -914,6 +946,10 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-self-employment-period-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-period-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-self-employment-annual-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-self-employment-annual-put-async-requests".formatted(this.envResourceNamePrefix);
         this.companiesHouseAccountsAsyncRequestsTableName =
                 "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
@@ -1718,6 +1754,105 @@ public class SubmitSharedNames {
                         new ApiParameter("periodIncome", "body", false, "Income for the period"),
                         new ApiParameter("periodExpenses", "body", false, "Expenses for the period"),
                         new ApiParameter("periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaUrlPath = "/api/v1/hmrc/itsa/self-employment/annual";
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaCustomAuthorizer = true;
+        var hmrcItsaSelfEmploymentAnnualGetLambdaHandlerName = "hmrcItsaSelfEmploymentAnnualGet.ingestHandler";
+        var hmrcItsaSelfEmploymentAnnualGetLambdaWorkerHandlerName = "hmrcItsaSelfEmploymentAnnualGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentPeriodPost uses.
+        var hmrcItsaSelfEmploymentAnnualGetLambdaHandlerDashed = "hmrc-itsa-se-annual-get";
+        this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaSelfEmploymentAnnualGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentAnnualGetLambdaHandlerName);
+        this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentAnnualGetLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentAnnualGetLambdaWorkerHandlerName);
+        this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn);
+        this.hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaSelfEmploymentAnnualGetLambdaHttpMethod,
+                this.hmrcItsaSelfEmploymentAnnualGetLambdaUrlPath,
+                "Retrieve an ITSA self-employment annual submission",
+                "Retrieves the adjustments, allowances and non-financials submitted for a tax year",
+                "getItsaSelfEmploymentAnnual",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaUrlPath = "/api/v1/hmrc/itsa/self-employment/annual";
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaCustomAuthorizer = true;
+        var hmrcItsaSelfEmploymentAnnualPutLambdaHandlerName = "hmrcItsaSelfEmploymentAnnualPut.ingestHandler";
+        var hmrcItsaSelfEmploymentAnnualPutLambdaWorkerHandlerName = "hmrcItsaSelfEmploymentAnnualPut.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentPeriodPost uses.
+        var hmrcItsaSelfEmploymentAnnualPutLambdaHandlerDashed = "hmrc-itsa-se-annual-put";
+        this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaSelfEmploymentAnnualPutLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentAnnualPutLambdaHandlerName);
+        this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentAnnualPutLambdaHandlerDashed);
+        this.hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaSelfEmploymentAnnualPutLambdaWorkerHandlerName);
+        this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn);
+        this.hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName);
+        this.hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaSelfEmploymentAnnualPutLambdaHttpMethod,
+                this.hmrcItsaSelfEmploymentAnnualPutLambdaUrlPath,
+                "Create or amend an ITSA self-employment annual submission",
+                "Submits the adjustments, allowances and non-financials for a tax year in one call",
+                "putItsaSelfEmploymentAnnual",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("adjustments", "body", false, "Annual adjustments"),
+                        new ApiParameter("allowances", "body", false, "Annual allowances"),
+                        new ApiParameter("nonFinancials", "body", false, "Annual non-financials"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
