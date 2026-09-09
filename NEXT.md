@@ -27,17 +27,30 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-PR #159 (batch 14) merged to main at 5c933c19, 2026-09-09 08:21 UTC. The merge's runs: sbom
-34328646513 green on its first run with the narrowed check; environment deploy 34328646892
-(the proof for B61's two prod-only steps and the CIS filters), deploy 34328646975 (retires
-prod-ebaeb7d), test 34328647370 and CodeQL 34328646609 in progress; the prod line below
-updates when the deploy lands. Issues #152 and #155 to #158 have their fix on main and are
-the operator's to close. B11's T1 to T6 are on `claude/b15-board`, local and unpushed (on
-top of main once it is merged in); no agent runs. The operator's standing instruction
-(renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
+PR #159 (batch 14) merged to main at 5c933c19, 2026-09-09 08:21 UTC. The merge's environment
+deploy 34328646892 put `prod-env-AnalyticsStack` (B61's anomaly frequency, the cost panel),
+`prod-env-SecurityDetectionStack` (B30q's CIS filters) and `prod-env-IdentityStack` (B63's
+role grants and callback URLs) on prod, and failed at the cost export (B65 below), so the
+FOCUS export is still not created; a scheduled environment deploy 34328862271 of the same
+main is running behind it. The operator cancelled the merge's deploy 34328646975, so prod's
+app stacks are still prod-ebaeb7d (pre-batch 14: the token-exchange 500 fix, B63's books
+origins and the ITSA proof's simulator changes are on main, not on prod) until a deploy of
+main runs on the operator's word. sbom 34328646513, test 34328647370 and CodeQL 34328646609
+were green. Issues #152 and #155 to #158 have their fix on main and are the operator's to
+close. B11's T1 to T6 are on `claude/b15-board`, local and unpushed, on top of main; no agent
+runs. The operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item
+enters "in flight" without their word.
 
 ## Ready: Claude Code
 
+- [ ] **B65. The FOCUS cost export rejects `SELECT *`.** Main's environment deploy
+  34328646892 got past the bucket policy (B61's fix held) and failed creating
+  `AWS::BCMDataExports::Export` `FocusExport` in `cost-CostExportStack`: the Data Exports API
+  answers `ValidationException: SELECT * is not supported`, so the stack rolled back and the
+  cost panel has no export. In `CostExportStack.java`, give the export's query statement an
+  explicit column list (the FOCUS 1.0 columns the panel's Athena table in
+  `CostFocusIngestion.java` reads; keep the two in step) and prove it with the environment
+  deploy of main. **Source**: run 34328646892. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B64. The ci sweep fails clearing the last-known-good pointer.** `destroy-ci.yml`'s
   scheduled run 34324345123 (07:32 UTC on 2026-09-09, the 02:34 slot arriving five hours late;
   every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
