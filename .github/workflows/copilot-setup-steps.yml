@@ -27,27 +27,5 @@ jobs:
       contents: read
     steps:
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          role-chaining: false
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          role-chaining: true
-          aws-region: eu-west-2
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
       - name: Install uv
         uses: astral-sh/setup-uv@v10.0.1
