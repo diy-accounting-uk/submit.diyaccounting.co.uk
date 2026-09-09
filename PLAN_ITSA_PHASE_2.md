@@ -658,14 +658,69 @@ and a customer who corrects an allowance twice should not pay twice. See D1.
 
 The `resident-itsa` bundle grants 100 tokens a month, so nine in a year sits well inside the
 allowance. The number still shows before the customer spends it. The dashboard's business
-picker names what a year costs for the businesses HMRC listed, and `usage.html` carries the
-same figures beside the running total it already shows (D6).
+picker names what a year costs for the businesses HMRC listed, `usage.html` carries the same
+figures beside the running total it already shows (D6), and every page that writes says what
+that write costs (D8).
 
 Every write charges through `consumeTokenForActivity` on the initial request, before the HMRC
 call, on one submission for one business. Two rules keep that honest. No handler ever batches
 two businesses into one request, so one charge is always one business's submission. And the
 async worker never charges: the ingest Lambda charges once and the worker replays the payload,
 so a retry cannot spend a second token.
+
+### What a submission costs, before the customer sends
+
+One component, on every page that writes. `web/public/widgets/submission-cost.js` sits beside
+the other widgets and each page includes it once, directly above its submit control, in
+document order rather than positioned there. Ten pages use it: the four period pages that
+write, the two annual submission pages, the two adjustment pages and the final declaration
+page, across both income types and both quarterly models. None of them holds a copy of the
+logic.
+
+**What it reads.** The activity's `tokenCost` and `metered` flag come from the catalogue the
+page already loads for its entitlement check. The remaining allowance comes from
+`GET /api/v1/bundle`, which answers `tokensRemaining` for the account and for each bundle,
+fetched through `window.requestCache` so several widgets on one page share one call. The reset
+date comes from that same response's `tokenResetAt`. No date and no balance is calculated here.
+
+**Three states, and it never blocks a submission.**
+
+| State | What the customer reads |
+|---|---|
+| Cost and balance both known | "This submission costs 1 token. You have 87 left." |
+| Cost known, balance not | "This submission costs 1 token." No number, no guess. |
+| The write is free | "This submission is free. It does not use a token." |
+
+The second state covers a slow, failed or not-yet-signed-in balance read. The submit button
+stays enabled. The server is the authority: `consumeTokenForActivity` runs before the HMRC call
+and answers `403` with `reason: "tokens_exhausted"` when the allowance is gone. The line
+informs, and never becomes a second gate that a network hiccup can close.
+
+**It shows nothing stale.** The number belongs to the page load that fetched it. After a
+successful write the page invalidates `/api/v1/bundle` in the request cache, the way
+`auth-status.js` already does after a bundle change, and the widget re-reads so the figure
+matches the charge just made. If that re-read fails the widget clears the number and drops to
+the second state. An old figure is never left on screen looking current.
+
+**When the next write would exceed the allowance.** This is the case worth getting right,
+because telling the customer at the end of a form is telling them too late.
+
+With a balance of zero, or less than the write costs, the line says so and says what to do:
+"You have no tokens left. Your allowance refreshes on 6 October 2026, or you can add a bundle,"
+with the date read from `tokenResetAt` and a link to `bundles.html`. The submit button is
+disabled and the reason sits next to it in text, not in a colour or a tooltip. Everything the
+customer typed stays on the form, so they can add a bundle in another tab and come back to it.
+
+When the balance read failed and the allowance turns out to be exhausted, the server's `403`
+carries the customer to the same sentence in the same place. One message, whichever path found
+the problem.
+
+**The free writes say they are free.** The annual submission costs nothing (D1) and the
+adjustable summary trigger, retrieve and adjust cost nothing either. A page that stays silent
+about cost on a free write teaches the customer nothing about which steps spend their
+allowance. Saying "this one is free" tells them something, so those pages carry the line too.
+The final declaration costs a token and says so, beside the calculation id it is about to
+confirm.
 
 ## The data
 
@@ -855,7 +910,7 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 ## The build sequence
 
-Nineteen tracks. Each is one sub-agent's work. The nine endpoint tracks share a spine of files
+Twenty tracks. Each is one sub-agent's work. The nine endpoint tracks share a spine of files
 every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
 the previous merge. That is the pattern `PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
@@ -1154,6 +1209,9 @@ The design work in this track is the labels. The property period summary and the
 adjustable summary name the same money differently, so each page uses the field names of the
 endpoint it calls and never borrows the other's.
 
+Every page here that writes includes `submission-cost.js` above its submit control (T20, D8).
+That is one script tag and one container per page; the widget holds the logic.
+
 Proves: `npm run test:browser`; `npm run test:itsaUkPropertyPeriodBehaviour-simulator` and
 `npm run test:itsaUkPropertyAnnualSubmissionBehaviour-simulator`.
 
@@ -1245,9 +1303,30 @@ against them. In a dated year every page behaves as it does today.
 The labels are the design work in this track. A cumulative figure under a per-quarter label is
 a wrong number on screen, and no test catches a wrong word.
 
+The cost line stays where T20 put it on each page, above the submit control, and says the same
+thing in both models. A cumulative resend costs a token like any other write (D8).
+
 Proves: `npm run test:browser` with a dated year and a cumulative year over the same pages;
 `npm run test:itsaSelfEmploymentPeriodBehaviour-simulator` and the property twin, each run
 against both models.
+
+### T20. The submission cost line (Sonnet)
+
+Owns `web/public/widgets/submission-cost.js`, its browser tests, and the include on the four
+writing pages that already exist: `selfEmploymentPeriod.html`,
+`selfEmploymentPeriodAmend.html`, `annualSubmission.html` and `finalDeclaration.html`.
+
+It earns its own track. Ten pages across four page tracks use it, so parking it inside any one
+of them would make the other three wait. It touches no handler, no spine and no HMRC call, and
+it is small enough to land early.
+
+Runs alongside T16 and merges before T14, so every page T14 and T19 create includes it as it is
+written. Those tracks add one script tag each and no logic.
+
+Proves: browser tests over all three states, including a failed balance read leaving the submit
+button enabled with no number on screen; a test that a zero balance disables the button, names
+the reset date from `tokenResetAt` and keeps the typed form intact; a test that a successful
+write refreshes the figure rather than leaving the pre-write one.
 
 ### Order
 
@@ -1255,16 +1334,18 @@ T1, then T2, T3, T4, T5 in that order for the spine, then T6. Those six have lan
 
 The rest run in this order:
 
-T16, first, because everything after it uses the tax year model.
+T16 and T20 first, alongside each other. T16 because everything after it uses the tax year
+model, T20 because four page tracks include the widget it builds.
 Then the endpoint tracks take the spine in turn: T17, T11, T18, T12, T13.
 Then the pages: T14, T19, T15.
 Then T7, the sandbox proof, which needs every endpoint and every page in place.
 T8 runs alongside from the start, in the other repository. T9 after T8 and T19. T10 after T7.
 
-Three ordering rules behind that. T18 grows the handlers T11 creates, so it follows T11. T13
+Four ordering rules behind that. T18 grows the handlers T11 creates, so it follows T11. T13
 changes `hmrcItsaBsasTriggerPost.js`, which T4 owns, so it runs once no other track holds that
 file. T19 and T15 both touch the ITSA page set, and T19 grows pages T14 creates, so the page
-tracks run T14, then T19, then T15.
+tracks run T14, then T19, then T15. T20 merges before T14 so the property pages carry the cost
+line from the moment they are written.
 
 ## Verification
 
@@ -1296,6 +1377,12 @@ tracks run T14, then T19, then T15.
   A user with no tokens gets `403` with `reason: "tokens_exhausted"` and no HMRC call happens.
 - A customer with two businesses spends nine tokens over a year, and the dashboard said nine
   before they spent the first one.
+- Every page that writes states what the write costs above its submit control, and the two
+  annual submission pages state that theirs is free.
+- A failed balance read leaves the submit button enabled and shows no number. A submission still
+  goes through, and an exhausted allowance is still refused by the server's `403`.
+- A zero balance disables the submit button, names the reset date from `tokenResetAt`, and
+  leaves everything the customer typed on the form.
 - An async worker retry of a quarterly update spends no second token.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
   disabled, so it sits in the document order rather than being positioned there.
@@ -1356,25 +1443,21 @@ the 2026-27 tax year, so a mandated customer's first real filing lands on the cu
 endpoints. A product that files only sandbox-era years is not a product. This adds tracks T16
 to T19.
 
+**D8. Every write costs a token, and the page says so before the customer sends.** One rule
+covers the dated and the cumulative model, and nothing has to remember which obligation a write
+met. A cumulative year invites more sends than a dated one, so a customer who reports monthly
+and corrects twice can spend fifteen tokens on one business rather than four. That is a
+possible and acceptable outcome, not a fault: they sent fifteen submissions to HMRC and each
+one cost what a submission costs. `resident-itsa` grants 100 tokens a month, so a heavy
+cumulative year stays well inside the allowance. The condition is that the customer sees the
+cost and their remaining allowance before they press the button, on every page that writes.
+This adds track T20.
+
 **D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
 enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
 test support API, and its vendor-state checkpoints reset the user between runs.
 
 ## Open for the operator
-
-**What a cumulative resend costs.** A cumulative year invites more sends than a dated one. A
-dated year has four submissions and a correction is a separate amend call. A cumulative year
-has one endpoint that a customer may hit whenever they have more to report, and every hit is a
-write, so under D6 every hit costs a token. A customer who reports monthly and corrects twice
-could spend fifteen tokens on one business rather than four.
-
-Recommendation: charge every write, and have the update page say what the send costs and what
-the allowance has left, before the customer presses the button. The `resident-itsa` bundle
-grants 100 tokens a month, so even a heavy cumulative year sits well inside it, and charging
-per write keeps one rule for both models with no new state to track. The alternative, charging
-the first successful write against each open obligation and nothing after, matches the "a
-correction should not cost twice" instinct behind D1, but it needs us to remember which
-obligation each write met.
 
 **Whether Individual Losses and Individuals Tax Liability Adjustments block approval.** D3
 applies for both stages together, and those two APIs have no build. T10's checklist answers
