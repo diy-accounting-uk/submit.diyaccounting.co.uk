@@ -97,6 +97,9 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName;
     public String hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName;
     public String hmrcItsaStatusGetAsyncRequestsTableName;
+    public String hmrcItsaBsasTriggerPostAsyncRequestsTableName;
+    public String hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName;
     public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
@@ -497,6 +500,51 @@ public class SubmitSharedNames {
     public String hmrcItsaStatusGetLambdaUrlPath;
     public boolean hmrcItsaStatusGetLambdaJwtAuthorizer;
     public boolean hmrcItsaStatusGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaBsasTriggerPostIngestLambdaHandler;
+    public String hmrcItsaBsasTriggerPostIngestLambdaFunctionName;
+    public String hmrcItsaBsasTriggerPostIngestLambdaArn;
+    public String hmrcItsaBsasTriggerPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasTriggerPostWorkerLambdaHandler;
+    public String hmrcItsaBsasTriggerPostWorkerLambdaFunctionName;
+    public String hmrcItsaBsasTriggerPostWorkerLambdaArn;
+    public String hmrcItsaBsasTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasTriggerPostLambdaQueueName;
+    public String hmrcItsaBsasTriggerPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaBsasTriggerPostLambdaHttpMethod;
+    public String hmrcItsaBsasTriggerPostLambdaUrlPath;
+    public boolean hmrcItsaBsasTriggerPostLambdaJwtAuthorizer;
+    public boolean hmrcItsaBsasTriggerPostLambdaCustomAuthorizer;
+
+    public String hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler;
+    public String hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName;
+    public String hmrcItsaBsasSelfEmploymentGetIngestLambdaArn;
+    public String hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler;
+    public String hmrcItsaBsasSelfEmploymentGetWorkerLambdaFunctionName;
+    public String hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn;
+    public String hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasSelfEmploymentGetLambdaQueueName;
+    public String hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaBsasSelfEmploymentGetLambdaHttpMethod;
+    public String hmrcItsaBsasSelfEmploymentGetLambdaUrlPath;
+    public boolean hmrcItsaBsasSelfEmploymentGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaBsasSelfEmploymentGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostLambdaQueueName;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaBsasSelfEmploymentAdjustPostLambdaHttpMethod;
+    public String hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath;
+    public boolean hmrcItsaBsasSelfEmploymentAdjustPostLambdaJwtAuthorizer;
+    public boolean hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer;
 
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
@@ -986,6 +1034,12 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-crystallisation-obligations-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaStatusGetAsyncRequestsTableName =
                 "%s-hmrc-itsa-status-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaBsasTriggerPostAsyncRequestsTableName =
+                "%s-hmrc-itsa-bsas-trigger-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-bsas-self-employment-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName =
+                "%s-hmrc-itsa-bsas-self-employment-adjust-post-async-requests".formatted(this.envResourceNamePrefix);
         this.companiesHouseAccountsAsyncRequestsTableName =
                 "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
@@ -1983,6 +2037,153 @@ public class SubmitSharedNames {
                         new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
                         new ApiParameter("futureYears", "query", false, "When true, also returns the following tax year's status"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaBsasTriggerPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaBsasTriggerPostLambdaUrlPath = "/api/v1/hmrc/itsa/bsas/trigger";
+        this.hmrcItsaBsasTriggerPostLambdaJwtAuthorizer = false;
+        this.hmrcItsaBsasTriggerPostLambdaCustomAuthorizer = true;
+        var hmrcItsaBsasTriggerPostLambdaHandlerName = "hmrcItsaBsasTriggerPost.ingestHandler";
+        var hmrcItsaBsasTriggerPostLambdaWorkerHandlerName = "hmrcItsaBsasTriggerPost.workerHandler";
+        var hmrcItsaBsasTriggerPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaBsasTriggerPostLambdaHandlerName);
+        this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaBsasTriggerPostLambdaHandlerDashed);
+        this.hmrcItsaBsasTriggerPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasTriggerPostLambdaHandlerName);
+        this.hmrcItsaBsasTriggerPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasTriggerPostLambdaHandlerDashed);
+        this.hmrcItsaBsasTriggerPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasTriggerPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName);
+        this.hmrcItsaBsasTriggerPostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasTriggerPostLambdaWorkerHandlerName);
+        this.hmrcItsaBsasTriggerPostWorkerLambdaArn = "%s-worker".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn);
+        this.hmrcItsaBsasTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaBsasTriggerPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasTriggerPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName);
+        this.hmrcItsaBsasTriggerPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaBsasTriggerPostLambdaHttpMethod,
+                this.hmrcItsaBsasTriggerPostLambdaUrlPath,
+                "Trigger an ITSA business source adjustable summary",
+                "Triggers a self-employment adjustable summary calculation for an accounting period",
+                "triggerItsaBsas",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("accountingPeriodStartDate", "body", true, "The accounting period's start date"),
+                        new ApiParameter("accountingPeriodEndDate", "body", true, "The accounting period's end date"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaBsasSelfEmploymentGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaBsasSelfEmploymentGetLambdaUrlPath = "/api/v1/hmrc/itsa/bsas/self-employment";
+        this.hmrcItsaBsasSelfEmploymentGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaBsasSelfEmploymentGetLambdaCustomAuthorizer = true;
+        var hmrcItsaBsasSelfEmploymentGetLambdaHandlerName = "hmrcItsaBsasSelfEmploymentGet.ingestHandler";
+        var hmrcItsaBsasSelfEmploymentGetLambdaWorkerHandlerName = "hmrcItsaBsasSelfEmploymentGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentAnnualGet uses.
+        var hmrcItsaBsasSelfEmploymentGetLambdaHandlerDashed = "hmrc-itsa-bsas-se-get";
+        this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaBsasSelfEmploymentGetLambdaHandlerDashed);
+        this.hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasSelfEmploymentGetLambdaHandlerName);
+        this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasSelfEmploymentGetLambdaHandlerDashed);
+        this.hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName);
+        this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasSelfEmploymentGetLambdaWorkerHandlerName);
+        this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn);
+        this.hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasSelfEmploymentGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName);
+        this.hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaBsasSelfEmploymentGetLambdaHttpMethod,
+                this.hmrcItsaBsasSelfEmploymentGetLambdaUrlPath,
+                "Retrieve an ITSA self-employment business source adjustable summary",
+                "Retrieves the income, expenses, additions and resulting net profit or loss for a triggered summary",
+                "getItsaBsasSelfEmployment",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("calculationId", "query", true, "The calculation id from a triggered summary"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath = "/api/v1/hmrc/itsa/bsas/self-employment/adjust";
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaJwtAuthorizer = false;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer = true;
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerName = "hmrcItsaBsasSelfEmploymentAdjustPost.ingestHandler";
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaWorkerHandlerName = "hmrcItsaBsasSelfEmploymentAdjustPost.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentAnnualGet uses.
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerDashed = "hmrc-itsa-bsas-se-adjust-post";
+        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerDashed);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerDashed);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaBsasSelfEmploymentAdjustPostLambdaWorkerHandlerName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName);
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaHttpMethod,
+                this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath,
+                "Adjust an ITSA self-employment business source adjustable summary",
+                "Submits income, expenses and additions adjustments, or states there are none, for a triggered summary",
+                "adjustItsaBsasSelfEmployment",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("calculationId", "body", true, "The calculation id from a triggered summary"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("income", "body", false, "Income adjustments"),
+                        new ApiParameter("expenses", "body", false, "Expenses adjustments"),
+                        new ApiParameter("additions", "body", false, "Additions adjustments"),
+                        new ApiParameter("zeroAdjustments", "body", false, "True to state that nothing changes"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

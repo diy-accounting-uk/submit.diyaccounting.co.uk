@@ -85,8 +85,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 59);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 26);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 65);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 29);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
