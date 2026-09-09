@@ -47,7 +47,7 @@ class SecurityLakeStackTest {
         Template template = Template.fromStack(synthSecurityLakeStack(true));
 
         // One Glue table per source: Security Hub, GuardDuty, GitHub alerts, lifecycle, WAF,
-        // rotation, and the SBOM/KEV match sbom.yml writes.
+        // rotation, and the SBOM builds sbom.yml records.
         template.resourceCountIs("AWS::Glue::Table", 7);
         template.resourceCountIs("AWS::Lambda::Function", 1);
         template.resourceCountIs("AWS::Events::Rule", 1);
@@ -89,7 +89,7 @@ class SecurityLakeStackTest {
                 "lifecycle",
                 "waf_blocks",
                 "secret_rotation",
-                "sbom_kev_matches")));
+                "sbom_builds")));
 
         // Every Glue table uses dt partition projection, one JSON object per line.
         for (var resource : tables.values()) {

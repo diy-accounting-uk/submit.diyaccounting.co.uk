@@ -155,4 +155,41 @@ class SecurityDetectionStackTest {
         template.resourceCountIs("AWS::Logs::MetricFilter", 0);
         template.resourceCountIs("AWS::CloudWatch::Alarm", 0);
     }
+
+    @Test
+    void deployCisFiltersExcludeDeployRolesWithTypeGuard() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+
+        // S3BucketPolicyChanges filter must include type check and deploy role exclusions.
+        boolean s3FilterCorrect = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.contains("PutBucketPolicy")
+                    && filterPattern.contains("$.userIdentity.type != \"AssumedRole\"")
+                    && filterPattern.contains("cdk-hnb659fds-*")
+                    && filterPattern.contains("submit-docs-deployment-role")
+                    && filterPattern.contains("submit-docs-github-actions-role");
+        });
+        assertTrue(s3FilterCorrect,
+                "expected S3BucketPolicyChanges filter to include type guard and deploy role exclusions, pattern: "
+                        + metricFilters.values().stream()
+                                .map(r -> (String) ((Map<String, Object>) r.get("Properties")).get("FilterPattern"))
+                                .filter(p -> p.contains("PutBucketPolicy"))
+                                .findFirst()
+                                .orElse("NOT FOUND"));
+
+        // RootAccountUsage filter must not include sessionIssuer checks (guards accounts without
+        // sessionContext).
+        boolean rootFilterCorrect = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.contains("userIdentity.type") && filterPattern.contains("Root")
+                    && !filterPattern.contains("sessionIssuer");
+        });
+        assertTrue(rootFilterCorrect,
+                "expected RootAccountUsage filter to omit sessionIssuer guard (Root has no sessionContext)");
+    }
 }

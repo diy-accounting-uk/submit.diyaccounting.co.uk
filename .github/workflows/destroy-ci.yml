@@ -775,7 +775,7 @@ jobs:
             fi
             LOG_GROUPS=$(aws logs describe-log-groups --region "$REGION" \
               --log-group-name-prefix "/aws/lambda/${DEPLOYMENT}-" \
-              --query "logGroups[].logGroupName" --output text | tr '\t' '\n')
+              --query "logGroups[?!retentionInDays].logGroupName" --output text | tr '\t' '\n')
             for LOG_GROUP in $LOG_GROUPS; do
               [ -z "$LOG_GROUP" ] || [ "$LOG_GROUP" = "None" ] && continue
               echo "Deleting log group ${LOG_GROUP} in ${REGION}"

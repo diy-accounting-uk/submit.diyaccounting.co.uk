@@ -127,7 +127,7 @@ class IdentityStackTest {
     }
 
     @Test
-    void prodBooksClientCallbackAndLogoutUrlsCoverOnlyTheProdHost() {
+    void prodBooksClientCallbackAndLogoutUrlsCoverTheProdAndCiSpreadsheetsHosts() {
         IdentityStack stack = synthIdentityStack("prod");
         Template template = Template.fromStack(stack);
 
@@ -136,7 +136,12 @@ class IdentityStackTest {
                 "https://spreadsheets.diyaccounting.co.uk/books/bst.html",
                 "https://spreadsheets.diyaccounting.co.uk/books/se.html",
                 "https://spreadsheets.diyaccounting.co.uk/books/taxi.html",
-                "https://spreadsheets.diyaccounting.co.uk/books/ltd.html");
+                "https://spreadsheets.diyaccounting.co.uk/books/ltd.html",
+                "https://ci-spreadsheets.diyaccounting.co.uk/books/",
+                "https://ci-spreadsheets.diyaccounting.co.uk/books/bst.html",
+                "https://ci-spreadsheets.diyaccounting.co.uk/books/se.html",
+                "https://ci-spreadsheets.diyaccounting.co.uk/books/taxi.html",
+                "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html");
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPoolClient",
@@ -211,6 +216,8 @@ class IdentityStackTest {
                 "cognito-idp:AssociateSoftwareToken",
                 "cognito-idp:VerifySoftwareToken",
                 "cognito-idp:InitiateAuth",
+                "cognito-idp:DescribeUserPoolClient",
+                "cognito-idp:UpdateUserPoolClient",
                 "cloudformation:DescribeStacks",
                 "dynamodb:Query",
                 "dynamodb:DeleteItem",

@@ -64,6 +64,16 @@ export function http500ServerErrorResponse({ request, headers, message, error })
   });
 }
 
+export function http502BadGatewayResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 502,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.error.bind(logger),
+  });
+}
+
 export function http403ForbiddenResponse({ request, headers, message, error }) {
   return httpResponse({
     statusCode: 403,
@@ -473,23 +483,88 @@ export async function performTokenExchange(providerUrl, body, auditForUserSub) {
   return { accessToken, response: response, responseBody };
 }
 
-export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined) {
-  const { accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub);
+// OAuth error codes that mean the caller's credentials or client registration were rejected,
+// as opposed to the caller's authorisation code/grant being expired, reused or malformed.
+const OAUTH_UNAUTHORIZED_ERROR_CODES = new Set(["invalid_client", "unauthorized_client"]);
 
-  if (!response.ok) {
+export function safeHostname(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "upstream-token-endpoint";
+  }
+}
+
+/**
+ * Map an already-received non-2xx token-exchange reply to the response we send the caller.
+ * Shared by every token-exchange endpoint (HMRC, Companies House, Cognito) so their status
+ * mapping cannot drift apart: a 5xx becomes 502 naming the upstream host; a 4xx becomes 401
+ * for invalid_client/unauthorized_client, 400 otherwise, carrying the provider's own OAuth
+ * error and error_description so the page can tell the customer to reconnect. Neither case
+ * pages the 5xx alarm for a rejection that is the caller's problem, not ours.
+ *
+ * @param {Object} params
+ * @param {URL|string} params.request
+ * @param {string} params.upstreamHost - Hostname of the provider that answered
+ * @param {number} params.responseStatus - The provider's HTTP status
+ * @param {Object} params.responseBody - The provider's parsed response body
+ * @param {Object} [params.headers]
+ */
+export function buildUpstreamRejectionResponse({ request, upstreamHost, responseStatus, responseBody, headers }) {
+  if (responseStatus >= 500) {
     logger.error({
-      message: "Token exchange failed",
-      responseCode: response.status,
+      message: "Upstream token endpoint returned a server error",
+      responseCode: responseStatus,
       responseBody,
     });
-    return http500ServerErrorResponse({
+    return http502BadGatewayResponse({
       request,
-      message: "Token exchange failed",
-      error: {
-        responseCode: response.status,
-        responseBody,
-      },
+      headers,
+      message: "Upstream token endpoint returned a server error",
+      error: { upstream: upstreamHost, responseCode: responseStatus },
     });
+  }
+
+  // A 4xx here is the upstream provider rejecting the caller's authorisation code or
+  // consent, not a failure of ours. Answer with the same status class and the provider's
+  // own OAuth error so the page can tell the customer to reconnect, and keep this off
+  // the 5xx alarm.
+  logger.warn({
+    message: "Upstream token endpoint rejected the token exchange",
+    responseCode: responseStatus,
+    responseBody,
+  });
+  const oauthErrorCode = responseBody?.error;
+  const errorFields = {
+    error: oauthErrorCode,
+    error_description: responseBody?.error_description,
+    responseCode: responseStatus,
+  };
+  return OAUTH_UNAUTHORIZED_ERROR_CODES.has(oauthErrorCode)
+    ? http401UnauthorizedResponse({ request, headers, message: "Upstream token endpoint rejected the token exchange", error: errorFields })
+    : http400BadRequestResponse({ request, headers, message: "Upstream token endpoint rejected the token exchange", error: errorFields });
+}
+
+export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined) {
+  const upstreamHost = safeHostname(url);
+  let accessToken, response, responseBody;
+  try {
+    ({ accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub));
+  } catch (error) {
+    logger.error({
+      message: "Token exchange request to upstream provider failed",
+      error: error.message,
+      stack: error.stack,
+    });
+    return http502BadGatewayResponse({
+      request,
+      message: "Unable to reach the upstream token endpoint",
+      error: { upstream: upstreamHost },
+    });
+  }
+
+  if (!response.ok) {
+    return buildUpstreamRejectionResponse({ request, upstreamHost, responseStatus: response.status, responseBody });
   }
 
   const idToken = responseBody.id_token;
