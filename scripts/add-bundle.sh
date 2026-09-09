@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Add a bundle to DynamoDB for a user (identified by hashed sub)
 # Usage: ./add-bundle.sh <hashed-sub> <bundle-id> [environment]
 

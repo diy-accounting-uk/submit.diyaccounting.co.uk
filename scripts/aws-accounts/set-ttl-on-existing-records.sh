@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Set TTL on all existing records in a DynamoDB table
 # Usage: ./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile submit-prod --table prod-env-hmrc-api-requests --ttl-days 1 [--dry-run]
 #

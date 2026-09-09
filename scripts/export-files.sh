@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
 
 echo '.github/workflows/deploy.yml' > repository-contents.txt
 echo '.github/workflows/deploy-environment.yml' >> repository-contents.txt
