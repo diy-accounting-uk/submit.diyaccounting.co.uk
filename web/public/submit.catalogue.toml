@@ -315,7 +315,7 @@ tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat/liability.*"]
 hmrcScopesRequired = ["read:vat"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "vat-payments"
@@ -326,7 +326,7 @@ tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat/payment.*"]
 hmrcScopesRequired = ["read:vat"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "vat-penalties"
@@ -337,7 +337,7 @@ tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat/penalty.*"]
 hmrcScopesRequired = ["read:vat"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "view-vat-return"
