@@ -361,7 +361,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "AGPL-3.0",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@aws-sdk/client-athena": "^3.1045.0",
     "@aws-sdk/client-cloudformation": "^3.1045.0",

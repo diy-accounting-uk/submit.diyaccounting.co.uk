@@ -1,20 +1,71 @@
-GNU AFFERO GENERAL PUBLIC LICENSE
-Version 3, 19 November 2007
+# PolyForm Internal Use License 1.0.0
 
-Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+<https://polyformproject.org/licenses/internal-use/1.0.0>
 
-Everyone is permitted to copy and distribute verbatim copies of this license document, but changing it is not allowed.
+## Acceptance
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+## Copyright License
 
-You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose.  However, you may only make changes or new works based on the software according to [Changes and New Works License](#changes-and-new-works-license), and you may not distribute the software.
 
-ADDITIONAL TERMS UNDER AGPL-3.0
+## Changes and New Works License
 
-The AGPL-3.0 license includes all terms of GPL-3.0 with one critical addition:
+The licensor grants you an additional copyright license to make changes and new works based on the software for any permitted purpose.
 
-If you modify this Program and run it on a server so that users can interact with it remotely through a computer network, you must also make the modified source code available to those users under the terms of this license.
+## Patent License
 
-For the complete legal text of the GNU Affero General Public License version 3, see: https://www.gnu.org/licenses/agpl-3.0.txt
+The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
+
+## Fair Use
+
+You may have "fair use" rights for the software under the law. These terms do not limit them.
+
+## Internal Business Use
+
+Use of the software for the internal business operations of you and your company is use for a permitted purpose.
+
+## No Other Rights
+
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
+
+## Patent Defense
+
+If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+## Violations
+
+The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
+
+**You** refers to the individual or entity agreeing to these terms.
+
+**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the software under these terms.
+
+**Use** means anything you do with the software requiring one of your licenses.
+
+---
+
+## Additional Grant
+
+Beyond the permitted purposes above, an accountant or bookkeeper may use the
+software, including the spreadsheets and the hosted product, to prepare
+accounts for their own clients.
+
+---
+
+Copyright (C) 2006-2026 DIY Accounting Limited
+
+SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+
+Source: https://github.com/diy-accounting-uk/spreadsheets.diyaccounting.co.uk
