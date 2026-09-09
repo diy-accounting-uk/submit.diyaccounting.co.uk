@@ -26,20 +26,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 13 and the spreadsheets behaviour role are on main: PR #154 (`claude/ops-spreadsheets-role`,
-the role plus everything on `claude/b13-board`) merged at ebaeb7de on 2026-09-08 22:14 UTC; PR
-#153 is closed as superseded. The role branch's own ci runs were green (environment deploy
-34279820085, deploy 34279821140, test 34279819393), so the ci role
-`arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role` exists. The merge started
-main's environment deploy 34284851371 (which creates the prod role and the cost export),
-deploy 34284851786 (green: prod-ebaeb7d, prod-5c28d63 retired), test 34284850878 and CodeQL
-34284850917 (green). The environment deploy failed on two prod-only steps (B61 below), so
-prod's AnalyticsStack is still pre-batch and the prod role and cost export are not yet
-created. `sbom.yml`'s first run (34284850847) failed on its own match rule: B58 below. The operator's standing instruction: no board item
-enters "in flight" without their word.
-
-Origin branches to delete once the operator is done with them: `claude/b12-board`,
-`claude/b13-board`, `claude/ops-spreadsheets-role` (all merged).
+Nothing. Batch 13 and the spreadsheets behaviour role merged to main on 2026-09-08 (PR #154);
+the follow-ups it left are B61, B58, B30q, B60 and B59 below. The operator's standing
+instruction: no board item enters "in flight" without their word.
 
 ## Ready, unblocking others
 
@@ -76,7 +65,7 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   Narrow the match in `sbom.yml`'s inline script to entries whose `vendorProject` or `product`
   names an npm package (or drop KEV for the GitHub advisory database `npm audit` already
   consults, which knows package identities), and make a match list the pairs in the summary;
-  and give the workflow a path filter (it ran on three docs-only pushes to main last night).
+  and give the workflow a path filter (its four runs since the merge were all docs-only pushes to main, all failed).
   Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
   **Model**: Haiku.
 - [ ] **B61. Prod's environment deploy of the cost panel failed on two prod-only steps.** Main's
@@ -132,6 +121,20 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
 
 ## Ready
 
+- [ ] **B62. Every ci set leaves its BooksStack standing.** `app/functions/infra/selfDestruct.js`
+  deletes the app stacks from a fixed list of `*_STACK_NAME` variables that has no
+  `BOOKS_STACK_NAME`, so the self-destruct leaves `<set>-app-BooksStack` behind (ci-clauddf1b's
+  stands alone since 21:44 UTC on 2026-09-08, ci-claud87a7's since 10:5x) until `destroy-ci.yml`
+  sweeps it, and the sweep spares whichever set is last-known-good. Add the Books stack to the
+  self-destruct's order and environment (where the other names are set in the CDK
+  SelfDestructStack). `ci-claud87a7-app-ApiStack` also sits DELETE_FAILED since 14:37 UTC on its
+  Cognito authorizer ("InternalFailure" from ApiGatewayV2); the sweep's retry step at 02:34 UTC
+  on 2026-09-09 is the first chance to see it go, and if it does not, delete with
+  `--retain-resources` and say so. Starts on the operator's word. **Source**: the board's
+  deployment check, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **O29. Delete the three merged origin branches.** `claude/b12-board`, `claude/b13-board`
+  and `claude/ops-spreadsheets-role` are on main with nothing unique. **Source**: none.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -217,8 +220,9 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
   **Owner**: Operator. **Model**: none.
 - [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main on
-  2026-09-09 must retire the set it replaces (prod-5c28d63) in the same run; the board of that
-  day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
+  2026-09-09 (main is four docs commits past ebaeb7de, so it makes a new set) must retire the
+  set it replaces (prod-ebaeb7d) in the same run; the board of that day reads the
+  destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
   Haiku. Blocked on the date.
 - [ ] **D2. The Monday crons' first proof.** `compliance.yml` at 06:06 and `stack-drift.yml` at
   06:36 UTC on 2026-09-14 fire as schedule events; `keepalive.yml`'s staleness step is the
