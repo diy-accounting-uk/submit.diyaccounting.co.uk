@@ -467,7 +467,7 @@ test("Click through: View ITSA Obligations from HMRC", async ({ page }, testInfo
     console.log("[DynamoDB Assertions]: ITSA Obligations GET request results summary:");
     console.log(`  HTTP 200 OK: ${http200OkResults}`);
     console.log(`  HTTP 404 Not Found: ${http404NotFoundResults}`);
-    // 4 = the initial retrieval and the OPEN and FULFILLED named spec scenarios that return
+    // 3 = the initial retrieval and the OPEN and FULFILLED named spec scenarios that return
     // obligations data. NOT_FOUND and NO_OBLIGATIONS_FOUND return a 404 instead. The two
     // forced-500 scenarios never reach hmrcHttpGet, so they never appear in this table at all.
     expect(http200OkResults).toBe(3);

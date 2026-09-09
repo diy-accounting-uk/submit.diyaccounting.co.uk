@@ -22,6 +22,14 @@ export async function initItsaBusinessDetails(page, screenshotPath = defaultScre
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-business-details.png` });
+    // The activity button opens the ITSA dashboard (the first .html path listed for the
+    // self-employed activity - see catalog-service.js), which links out to each ITSA page.
+    await loggedClick(page, "a:has-text('Go to Business Details')", "Going to Business Details from the dashboard", {
+      screenshotPath,
+    });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-business-details.png` });
     await expect(page.locator("#itsaBusinessDetailsForm")).toBeVisible();
   });
 }
@@ -161,10 +169,9 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
   });
 }
 
-// Obligations does not yet have its own home-page activity button - the "Self Assessment
-// (HMRC)" button always opens businessDetails.html, the first .html path listed for the
-// self-employed activity (see catalog-service.js). Until a dashboard links the two, this
-// step navigates to the page directly, the way behaviour-bundle-steps.js does for usage.html.
+// Obligations does not have its own home-page activity button - the "Self Assessment (HMRC)"
+// button opens the ITSA dashboard, which links to this page. This step navigates directly,
+// the way behaviour-bundle-steps.js does for usage.html.
 export async function initItsaObligations(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to the ITSA Obligations page and sees the obligations form", async () => {
     const origin = new URL(page.url()).origin;
@@ -317,7 +324,8 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
 }
 
 // Self-Employment Period, like Obligations, has no home-page activity button of its own -
-// navigate to it directly, the way behaviour-bundle-steps.js does for usage.html.
+// only the dashboard links to it - so navigate to it directly, the way
+// behaviour-bundle-steps.js does for usage.html.
 export async function initItsaSelfEmploymentPeriod(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to the File a Quarterly Update page and sees the period form", async () => {
     const origin = new URL(page.url()).origin;
