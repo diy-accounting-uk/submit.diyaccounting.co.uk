@@ -766,16 +766,11 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ReadAlarmState")
+                .sid("DescribeAlarms")
                 .actions(List.of(
                         "cloudwatch:DescribeAlarms",
-                        "cloudwatch:DescribeAlarmHistory",
-                        "cloudwatch:GetMetricData",
-                        "cloudwatch:GetMetricStatistics",
-                        "cloudwatch:ListMetrics"))
-                .resources(List.of(
-                        cloudwatchAlarmArnPrefix + props.envName() + "-*",
-                        cloudwatchAlarmArnPrefix + "check-" + props.envName() + "-*"))
+                        "cloudwatch:DescribeAlarmHistory"))
+                .resources(List.of("*"))
                 .build());
 
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()

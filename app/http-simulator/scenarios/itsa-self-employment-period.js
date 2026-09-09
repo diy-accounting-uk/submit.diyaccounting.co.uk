@@ -11,7 +11,7 @@
 const errorScenarios = {
   OVERLAPPING_PERIOD: {
     status: 400,
-    body: { code: "RULE_OVERLAPPING_PERIOD", message: "Period summary overlaps with an existing period summary" },
+    body: { code: "RULE_OVERLAPPING_PERIOD", message: "Period summary overlaps with any of the existing period summaries" },
   },
   MISALIGNED_PERIOD: {
     status: 400,
@@ -38,7 +38,7 @@ const errorScenarios = {
   },
   NOT_FOUND: {
     status: 404,
-    body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "The supplied income source could not be found" },
+    body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" },
   },
   BOTH_EXPENSES_SUPPLIED: {
     status: 400,

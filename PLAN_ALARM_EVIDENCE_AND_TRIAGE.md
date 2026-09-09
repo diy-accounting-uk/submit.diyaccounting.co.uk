@@ -532,8 +532,7 @@ needs a populated `source` list. That action has no resource-level form.
 opening a new one when the family already has an open issue, so a repeat alarm never re-triggers
 triage. That is the whole repeat-suppression mechanism; nothing else is needed.
 
-`issues: labeled` with `github.event.label.name == 'triage'` lets the operator re-run one issue by
-hand.
+The operator can re-run triage on one issue using `gh workflow run alarm-triage.yml -f issue-number=<n>`.
 
 The alarm Lambda is not changed by this part.
 
@@ -1119,8 +1118,8 @@ Must pass: `npm test`, and `actionlint` over the new workflow if it is available
 
 Verification once A and B are deployed to ci: set a ci alarm to ALARM by hand with
 `cloudwatch set-alarm-state` (operator approval needed, it writes to AWS), confirm one issue opens
-with both links, then add the `triage` label and confirm exactly one triage comment lands and the
-run cost appears against the ci budget.
+with both links, then re-run triage with `gh workflow run alarm-triage.yml -f issue-number=<n>` and
+confirm exactly one triage comment lands and the run cost appears against the ci budget.
 
 ### Operator-owned steps
 
@@ -1130,12 +1129,10 @@ run cost appears against the ci budget.
    profiles `eu.anthropic.claude-sonnet-4-5-20250929-v1:0` and
    `eu.anthropic.claude-haiku-4-5-20251001-v1:0` are `ACTIVE` in eu-west-2 in both. Nothing to
    enable.
-2. **The `triage` label.** It does not exist. `gh label create triage --description "Re-run alarm
-   triage on this issue"`.
-3. **`SUBMIT_ALARM_TRIAGE_ROLE_ARN`.** Add it as a GitHub Actions variable on the `ci` and `prod`
+2. **`SUBMIT_ALARM_TRIAGE_ROLE_ARN`.** Add it as a GitHub Actions variable on the `ci` and `prod`
    environments after Track B's first deploy, alongside the existing `SUBMIT_*` variables.
-4. **The set-alarm-state verification.** Writes to AWS, so it needs an explicit yes.
-5. **No guardrails and no budgets exist in either account today** (`bedrock list-guardrails` and
+3. **The set-alarm-state verification.** Writes to AWS, so it needs an explicit yes.
+4. **No guardrails and no budgets exist in either account today** (`bedrock list-guardrails` and
    `budgets describe-budgets` both return empty), so Track B creates the first of each. Nothing to
    clean up first.
 

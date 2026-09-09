@@ -30,7 +30,7 @@ function defaultPeriodSummary(periodId) {
 const errorScenarios = {
   NOT_FOUND: {
     status: 404,
-    body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "The supplied income source could not be found" },
+    body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" },
   },
   TAX_YEAR_NOT_SUPPORTED: {
     status: 400,

@@ -1,5 +1,5 @@
 name: alarm-triage
-run-name: "alarm triage for #${{ github.event.issue.number }}"
+run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.number }}"
 # SPDX-FileCopyrightText: 2026 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -14,7 +14,13 @@ run-name: "alarm triage for #${{ github.event.issue.number }}"
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: the alarm issue to triage again
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -34,9 +40,7 @@ env:
 
 jobs:
   triage:
-    if: >-
-      contains(github.event.issue.labels.*.name, 'alarm') &&
-      (github.event.action == 'opened' || github.event.label.name == 'triage')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'alarm')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -47,8 +51,9 @@ jobs:
         run: |
           set -euo pipefail
           SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          # Every issue event starts a run, including the ones this guard or the role check
-          # stops, so only runs whose run-triage job actually executed count against the day.
+          # Both opened and workflow_dispatch events start a run, including the ones this guard or
+          # the role check stops, so only runs whose run-triage job actually executed count against
+          # the day.
           COUNT=0
           for RUN_ID in $(gh api \
             "repos/${{ github.repository }}/actions/workflows/alarm-triage.yml/runs?created=%3E${SINCE}&per_page=100" \
@@ -72,8 +77,11 @@ jobs:
         id: alarm
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          if [ -z "$ISSUE_BODY" ]; then ISSUE_BODY=$(gh issue view "$ISSUE_NUMBER" --json body -q .body); fi
           ALARM_NAME=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Alarm:\*\* //p' | head -1)
           TIMESTAMP=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Timestamp:\*\* //p' | head -1)
           REGION=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Region:\*\* //p' | head -1)
@@ -113,7 +121,7 @@ jobs:
       ALARM_REGION: ${{ needs.triage.outputs.region }}
       ALARM_WINDOW: ${{ needs.triage.outputs.window }}
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
-      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
     steps:
       # The triage role is created by the environment's CDK deploy and its ARN is set on the
       # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
