@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Copyright (C) 2025-2026 DIY Accounting Ltd
 
-// app/lib/booksCors.js
+// app/lib/diyaGlCors.js
 //
-// The books routes sit behind their own JWT authoriser and their own allow-listed origins
-// (BOOKS_ALLOWED_ORIGINS), separate from the API-wide CloudFront CORS policy, so every books
+// The DIYA-GL routes sit behind their own JWT authoriser and their own allow-listed origins
+// (BOOKS_ALLOWED_ORIGINS), separate from the API-wide CloudFront CORS policy, so every DIYA-GL
 // handler resolves and answers CORS the same way.
 
 import { getHeader } from "./httpResponseHelper.js";
@@ -13,14 +13,14 @@ const ALLOWED_METHODS = "GET, PUT, DELETE, OPTIONS";
 const ALLOWED_HEADERS = "authorization, content-type, if-match, x-request-id, x-correlationid";
 
 /**
- * Resolves the CORS response headers for a books request: the caller's Origin echoed back only
+ * Resolves the CORS response headers for a DIYA-GL request: the caller's Origin echoed back only
  * when it's in the comma-separated BOOKS_ALLOWED_ORIGINS list, with Vary: Origin so caches don't
  * serve one origin's response to another. No match means no CORS header at all.
  *
  * @param {object} headers - the incoming request's headers (event.headers)
  * @returns {object}
  */
-export function resolveBooksCorsHeaders(headers) {
+export function resolveDiyaGlCorsHeaders(headers) {
   const origin = getHeader(headers, "origin");
   const allowedOrigins = (process.env.BOOKS_ALLOWED_ORIGINS || "")
     .split(",")
@@ -35,13 +35,13 @@ export function resolveBooksCorsHeaders(headers) {
 }
 
 /**
- * Builds the 204 response to an unauthenticated OPTIONS preflight for a books route.
+ * Builds the 204 response to an unauthenticated OPTIONS preflight for a DIYA-GL route.
  *
  * @param {object} headers - the incoming request's headers (event.headers)
  * @returns {{statusCode: number, headers: object, body: string}}
  */
-export function booksPreflightResponse(headers) {
-  const corsHeaders = resolveBooksCorsHeaders(headers);
+export function diyaGlPreflightResponse(headers) {
+  const corsHeaders = resolveDiyaGlCorsHeaders(headers);
   return {
     statusCode: 204,
     headers: {

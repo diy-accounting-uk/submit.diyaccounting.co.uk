@@ -8,7 +8,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
 }));
 
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
-const { entitlementFor } = await import("../../services/booksEntitlement.js");
+const { entitlementFor } = await import("../../services/diyaGlEntitlement.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
 function restoreEnv(key, value) {
@@ -19,7 +19,7 @@ function restoreEnv(key, value) {
   }
 }
 
-describe("booksEntitlement", () => {
+describe("diyaGlEntitlement", () => {
   const originalEnabled = process.env.BOOKS_ENTITLEMENT_ENFORCED;
   const originalBundleId = process.env.BOOKS_BUNDLE_ID;
   const originalNodeEnv = process.env.NODE_ENV;
