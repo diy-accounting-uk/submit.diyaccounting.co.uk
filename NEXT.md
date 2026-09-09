@@ -189,6 +189,9 @@ the cost export only (B65); the test run passed on its re-run.
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
+  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
+  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
+  omission, never a zero, for a field the book does not carry.
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1.
