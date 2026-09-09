@@ -25,6 +25,9 @@ const COPYRIGHT = "Copyright (C) 2006-2026 DIY Accounting Limited";
 // test-report output, and Crown-copyright or third-party material that
 // NOTICE and LICENSING.md cover instead of claiming under our own licence.
 const EXCLUDED_PATH_PREFIXES = [
+  // A slash command with no front matter takes its description from its first
+  // line, so a header there renames the command in every listing.
+  ".claude/commands/",
   "web/public-simulator/",
   "web/public/tests/",
   "web/public/docs/api/",
