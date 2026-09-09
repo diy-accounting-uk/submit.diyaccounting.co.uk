@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 CREATE OR REPLACE VIEW v_dora_runs_daily AS
 SELECT date(from_iso8601_timestamp(finished_at)) AS day,
        workflow,

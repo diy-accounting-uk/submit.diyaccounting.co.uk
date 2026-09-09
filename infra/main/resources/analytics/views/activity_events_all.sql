@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Every WP-6 query reads this view, never the two base tables directly, so the day-one
 -- query keeps working across the JSON era and the Parquet era with no change on cutover.
 CREATE OR REPLACE VIEW activity_events_all AS

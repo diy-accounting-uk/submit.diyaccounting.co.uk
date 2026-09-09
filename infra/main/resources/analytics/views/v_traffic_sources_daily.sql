@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- ga4ReportPull.js reformats GA4's "YYYYMMDD" date dimension to "YYYY-MM-DD" before it ever
 -- reaches the lake (formatGa4Date), so this column already parses as an ISO date, unlike the
 -- raw GA4 API response.

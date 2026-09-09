@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- The compliance objective's headline: open findings each day, by area.
 --
 -- compliance_accessibility carries one row per page per tool per WCAG standard; violations

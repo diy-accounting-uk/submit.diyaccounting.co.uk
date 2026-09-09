@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- What did each completion (VAT return, ITSA period, Companies House filing, ...) cost that day?
 --
 -- The day's total FOCUS cost divided by the day's completions from v_submissions_by_activity_daily,

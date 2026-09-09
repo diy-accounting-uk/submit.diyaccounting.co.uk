@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Sessions for one day of the GA4 export, by hostname and by the session's last-click source
 -- and medium. The property is shared by three hostnames (submit, spreadsheets, the gateway),
 -- so hostname is a dimension here rather than a filter. session_traffic_source_last_click is

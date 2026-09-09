@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Of the customers active on a day, how many reach a submission within 7 days?
 --
 -- The cohort used to require a fresh 'login' or 'new-session' event, but a returning

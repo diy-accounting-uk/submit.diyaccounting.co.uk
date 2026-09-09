@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Downloads for one day of the GA4 export, by product. A download is GA4's enhanced-measurement
 -- "file_download" event on a zip link; its "file_name" parameter is the URL path of the zip,
 -- e.g. /zips/GB%20Accounts%20Taxi%20Driver%202027-04-05%20(Apr27)%20Excel%202007.zip, so the

@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How many HMRC authentications, bundle grants and bundle deletions happened each day?
 --
 -- The operations dashboard used to count these as Lambda invocations of the live deployment: a

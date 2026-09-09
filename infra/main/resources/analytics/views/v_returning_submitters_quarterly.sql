@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Of the customers who submitted in a quarter, how many also submitted the previous quarter?
 --
 -- Reads dynamo_receipts rather than activity_events_all: a receipt's change record carries a

@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Of the sessions GA4 saw each day, how many reached each funnel step?
 --
 -- A session key is user_pseudo_id joined to ga_session_id, because ga_session_id alone repeats
