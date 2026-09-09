@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -78,8 +78,6 @@ public class CloudFrontAccessLogs {
             "sc_content_len",
             "sc_range_start",
             "sc_range_end");
-
-
 
     public final CfnTable table;
 
@@ -221,7 +219,8 @@ public class CloudFrontAccessLogs {
     private static List<CfnTable.ColumnProperty> buildColumns() {
         var columns = new ArrayList<CfnTable.ColumnProperty>();
         for (String name : FIELD_ORDER) {
-            columns.add(CfnTable.ColumnProperty.builder().name(name).type("string").build());
+            columns.add(
+                    CfnTable.ColumnProperty.builder().name(name).type("string").build());
         }
         return columns;
     }

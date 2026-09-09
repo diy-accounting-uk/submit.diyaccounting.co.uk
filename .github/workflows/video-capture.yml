@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: video-capture
 run-name: "record ${{ inputs.script }} video"
-# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Records a scene script (videos/*.json) against a running deployment with
 # scripts/site-video-capture.js and uploads the mp4, vtt, transcript and stills as artifacts.

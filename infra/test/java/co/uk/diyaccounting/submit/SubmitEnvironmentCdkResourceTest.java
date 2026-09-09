@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit;
@@ -326,16 +326,19 @@ class SubmitEnvironmentCdkResourceTest {
                 .toList();
 
         assertTrue(
-                calls.stream().anyMatch(call -> call.contains("batchDisableStandards")
-                        && call.contains("cis-aws-foundations-benchmark/v/1.2.0")),
+                calls.stream()
+                        .anyMatch(call -> call.contains("batchDisableStandards")
+                                && call.contains("cis-aws-foundations-benchmark/v/1.2.0")),
                 "expected a Custom::AWS resource disabling the CIS v1.2.0 standard");
         assertTrue(
-                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
-                        && call.contains("cis-aws-foundations-benchmark/v/5.0.0")),
+                calls.stream()
+                        .anyMatch(call -> call.contains("batchEnableStandards")
+                                && call.contains("cis-aws-foundations-benchmark/v/5.0.0")),
                 "expected a Custom::AWS resource enabling the CIS v5.0.0 standard");
         assertTrue(
-                calls.stream().anyMatch(call -> call.contains("batchEnableStandards")
-                        && call.contains("aws-foundational-security-best-practices/v/1.0.0")),
+                calls.stream()
+                        .anyMatch(call -> call.contains("batchEnableStandards")
+                                && call.contains("aws-foundational-security-best-practices/v/1.0.0")),
                 "expected a Custom::AWS resource keeping AWS Foundational Security Best Practices enabled");
     }
 
@@ -350,7 +353,8 @@ class SubmitEnvironmentCdkResourceTest {
     private static void assertOperationsDashboardScopedToLiveDeployment(Template observability) {
         Map<String, Map<String, Object>> dashboards = observability.findResources("AWS::CloudWatch::Dashboard");
         assertEquals(1, dashboards.size());
-        var properties = (Map<String, Object>) dashboards.values().iterator().next().get("Properties");
+        var properties =
+                (Map<String, Object>) dashboards.values().iterator().next().get("Properties");
         var dashboardBody = String.valueOf(properties.get("DashboardBody"));
 
         // StringParameter.valueForStringParameter renders as a Ref to an
@@ -393,9 +397,8 @@ class SubmitEnvironmentCdkResourceTest {
         assertEquals("Deny", denyStatement.get("Effect"));
         assertTrue(((List<String>) denyStatement.get("Action")).contains("dynamodb:*"));
         assertTrue(
-                statements.stream()
-                        .filter(s -> "Allow".equals(s.get("Effect")))
-                        .noneMatch(s -> actionsOf(s).stream().anyMatch(a -> a.startsWith("dynamodb:"))),
+                statements.stream().filter(s -> "Allow".equals(s.get("Effect"))).noneMatch(s -> actionsOf(s).stream()
+                        .anyMatch(a -> a.startsWith("dynamodb:"))),
                 "no Allow statement on the triage role may grant a dynamodb action");
 
         Map<String, Object> invokeModelStatement = statements.stream()
@@ -404,8 +407,9 @@ class SubmitEnvironmentCdkResourceTest {
                 .orElseThrow();
         List<Object> invokeModelResources = (List<Object>) invokeModelStatement.get("Resource");
         assertEquals(4, invokeModelResources.size());
-        List<String> resolvedInvokeModelResources =
-                invokeModelResources.stream().map(SubmitEnvironmentCdkResourceTest::resolveAccountToken).toList();
+        List<String> resolvedInvokeModelResources = invokeModelResources.stream()
+                .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
+                .toList();
         assertTrue(resolvedInvokeModelResources.containsAll(List.of(
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
@@ -443,8 +447,7 @@ class SubmitEnvironmentCdkResourceTest {
         observability.hasResourceProperties(
                 "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-id")));
         observability.hasResourceProperties(
-                "AWS::SSM::Parameter",
-                Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-version")));
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-version")));
     }
 
     /**
@@ -454,7 +457,8 @@ class SubmitEnvironmentCdkResourceTest {
      */
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> findPolicyStatementsContainingSid(Template template, String sid) {
-        for (Map<String, Object> policy : template.findResources("AWS::IAM::Policy").values()) {
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
             Map<String, Object> properties = (Map<String, Object>) policy.get("Properties");
             Map<String, Object> document = (Map<String, Object>) properties.get("PolicyDocument");
             List<Map<String, Object>> statements = (List<Map<String, Object>>) document.get("Statement");

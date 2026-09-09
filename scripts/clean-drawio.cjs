@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // Post-process cfn-diagram draw.io output to make labels human-readable.
 // Usage: node scripts/clean-drawio.cjs <input.drawio> [output.drawio]
 const fs = require("fs");

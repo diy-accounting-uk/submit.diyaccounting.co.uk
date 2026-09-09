@@ -3,6 +3,9 @@ name: site-video-capture
 description: Record a video of the real site for a human audience from a scene script. Invoke when asked to make, update or re-record a product demo or training video.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # site-video-capture — record a scene script into a video
 
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the

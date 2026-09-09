@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/functions/account/passGet.js
 
@@ -8,7 +8,6 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, http400BadRequestResponse, http500ServerErrorResponse } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { checkPass } from "../../services/passService.js";
-import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 
 const logger = createLogger({ source: "app/functions/account/passGet.js" });
 
@@ -20,12 +19,6 @@ export function apiEndpoint(app) {
 
 export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
-
-  try {
-    await initializeEmailHashSecret();
-  } catch (error) {
-    logger.warn({ message: "Email hash secret not available", error: error.message });
-  }
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };

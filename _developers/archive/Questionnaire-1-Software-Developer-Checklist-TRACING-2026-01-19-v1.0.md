@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Questionnaire 1: Software Developer Checklist - Evidence Tracing
 
 **Organisation**: DIY Accounting Limited

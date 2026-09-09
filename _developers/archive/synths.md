@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 Pattern 3 and Pattern 1 can both be automated by an LLM agent with repo access. Below is a change plan that such an agent (Junie) can execute against branch rollrest of antonycc/submit.diyaccounting.co.uk. The plan assumes CDK in ./infra (Java), Playwright tests in ./behaviour-tests, and GitHub Actions deploy pipeline in .github/workflows/deploy.yml.
 
 Section A covers Pattern 3 (Playwright runs in CI and feeds CloudWatch metrics and alarms).

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -47,16 +47,12 @@ class NightlyIngestionWorkflowTest {
 
         var stripeReconcileLambda = testLambda(stack, "StripeReconcileLambda", "docs-env-stripe-reconcile");
         var ga4ReportPullLambda = testLambda(stack, "Ga4ReportPullLambda", "docs-env-ga4-report-pull");
-        var ga4EventExportPullLambda =
-                testLambda(stack, "Ga4EventExportPullLambda", "docs-env-ga4-event-export-pull");
+        var ga4EventExportPullLambda = testLambda(stack, "Ga4EventExportPullLambda", "docs-env-ga4-event-export-pull");
         var ga4DailyPullLambda = testLambda(stack, "Ga4DailyPullLambda", "docs-env-ga4-daily-pull");
-        var operatorEffortPullLambda =
-                testLambda(stack, "OperatorEffortPullLambda", "docs-env-operator-effort-pull");
+        var operatorEffortPullLambda = testLambda(stack, "OperatorEffortPullLambda", "docs-env-operator-effort-pull");
         var dataQualityRunLambda = testLambda(stack, "DataQualityRunLambda", "docs-env-data-quality-run");
-        var metricsPublishLambda =
-                testLambda(stack, "MetricsPublishLambda", "docs-env-analytics-metrics-publish");
-        var rawExportPublishLambda =
-                testLambda(stack, "RawExportPublishLambda", "docs-env-raw-export-publish");
+        var metricsPublishLambda = testLambda(stack, "MetricsPublishLambda", "docs-env-analytics-metrics-publish");
+        var rawExportPublishLambda = testLambda(stack, "RawExportPublishLambda", "docs-env-raw-export-publish");
 
         new NightlyIngestionWorkflow(
                 stack,
@@ -94,7 +90,8 @@ class NightlyIngestionWorkflowTest {
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
         template.hasResourceProperties(
                 "AWS::StepFunctions::StateMachine",
-                Match.objectLike(Map.of("StateMachineName", "docs-env-analytics-nightly", "StateMachineType", "STANDARD")));
+                Match.objectLike(
+                        Map.of("StateMachineName", "docs-env-analytics-nightly", "StateMachineType", "STANDARD")));
     }
 
     @Test
@@ -131,9 +128,11 @@ class NightlyIngestionWorkflowTest {
         assertTrue(stripeIndex > parallelIndex, "Stripe task should be nested inside the parallel branch");
         assertTrue(ga4ReportIndex > parallelIndex, "GA4 report pull task should be nested inside the parallel branch");
         assertTrue(
-                ga4EventIndex > parallelIndex, "GA4 event export pull task should be nested inside the parallel branch");
+                ga4EventIndex > parallelIndex,
+                "GA4 event export pull task should be nested inside the parallel branch");
         assertTrue(
-                ga4DailyIndex > parallelIndex, "GA4 daily aggregate pull task should be nested inside the parallel branch");
+                ga4DailyIndex > parallelIndex,
+                "GA4 daily aggregate pull task should be nested inside the parallel branch");
         assertTrue(
                 operatorEffortIndex > parallelIndex,
                 "operator effort pull task should be nested inside the parallel branch");
@@ -188,13 +187,11 @@ class NightlyIngestionWorkflowTest {
     void scheduleRunsDailyInProdAndWeeklyElsewhere() {
         Template ciTemplate = synthWorkflow("docs");
         ciTemplate.hasResourceProperties(
-                "AWS::Scheduler::Schedule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 ? * MON *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 ? * MON *)")));
 
         Template prodTemplate = synthWorkflow("prod");
         prodTemplate.hasResourceProperties(
-                "AWS::Scheduler::Schedule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 * * ? *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 * * ? *)")));
     }
 
     @Test
@@ -234,9 +231,7 @@ class NightlyIngestionWorkflowTest {
                 ciTemplate
                         .findResources(
                                 "AWS::CloudWatch::Alarm",
-                                Map.of(
-                                        "Properties",
-                                        Map.of("AlarmName", "docs-env-analytics-nightly-missed")))
+                                Map.of("Properties", Map.of("AlarmName", "docs-env-analytics-nightly-missed")))
                         .size(),
                 "ci's weekly cadence would false-positive the missed-execution alarm, so it is skipped");
 

@@ -2,6 +2,9 @@
 name: Entitlement Specialist
 description: Manages complex bundle, entitlement, and subscription logic for user access.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Entitlement & Subscription Specialist
 
 Purpose: Manage the complex logic of user bundles, entitlements, and subscriptions. This agent ensures that users have the correct access to HMRC activities based on their subscription tier and bundle allocations.

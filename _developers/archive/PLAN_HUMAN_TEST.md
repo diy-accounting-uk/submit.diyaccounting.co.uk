@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 Here a few competing objectives that I think we can solve but let's talk though the options. Here are the things I would like to have. 1. An experience in the 'proxy' and 'ci' that
 allows me to have a 'prod' like testable deployed app with, for example, a live like HMRC endopoint that only differs from prod because the nominally 'live' secret is actually the
 sandbox secret, cognito auth (but the ci instance with a cognito native account instead of Google), a test Stripe account, real Telegram groups but the ci named ones. 2. A way to test

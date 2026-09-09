@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -280,7 +280,8 @@ public class IdentityStack extends Stack {
         // on this pool's hosted UI (same Google IdP, no native Cognito login), then redirects back
         // to the spreadsheets host - so this client needs no USER_PASSWORD_AUTH/USER_SRP_AUTH flow,
         // only the authorization-code grant the hosted UI redirect uses.
-        this.booksUserPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-BooksUserPoolClient")
+        this.booksUserPoolClient = UserPoolClient.Builder.create(
+                        this, props.resourceNamePrefix() + "-BooksUserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-books-client")
                 .generateSecret(false)
@@ -340,8 +341,8 @@ public class IdentityStack extends Stack {
         // runs on itself. The role name is fixed so the spreadsheets workflow can reference the
         // ARN without reading a CloudFormation output from this repository's stacks.
         var spreadsheetsBehaviourRoleName = props.envName() + "-env-spreadsheets-behaviour-role";
-        var githubOidcProviderArn = "arn:aws:iam::" + props.getEnv().getAccount()
-                + ":oidc-provider/token.actions.githubusercontent.com";
+        var githubOidcProviderArn =
+                "arn:aws:iam::" + props.getEnv().getAccount() + ":oidc-provider/token.actions.githubusercontent.com";
         var spreadsheetsBehaviourRole = Role.Builder.create(
                         this, props.resourceNamePrefix() + "-SpreadsheetsBehaviourRole")
                 .roleName(spreadsheetsBehaviourRoleName)
@@ -387,9 +388,7 @@ public class IdentityStack extends Stack {
                 .actions(List.of("cloudformation:DescribeStacks"))
                 .resources(List.of(String.format(
                         "arn:aws:cloudformation:%s:%s:stack/%s/*",
-                        props.getEnv().getRegion(),
-                        props.getEnv().getAccount(),
-                        props.sharedNames().identityStackId)))
+                        props.getEnv().getRegion(), props.getEnv().getAccount(), props.sharedNames().identityStackId)))
                 .build());
 
         // scripts/delete-user-data.js purges the eight tables it queries by hashedSub: a Query on
@@ -453,10 +452,14 @@ public class IdentityStack extends Stack {
         return urls;
     }
 
-    // The four DIYA-GL pages, one per spreadsheets product, all served under /books/ on the
-    // spreadsheets site. Cognito requires an exact match per callback/logout URL, so both the
-    // /books/ landing path and each page are listed.
+    // The four DIYA-GL pages, one per spreadsheets product, served under /books/ and /diya-gl/
+    // on the spreadsheets site. Cognito requires an exact match per callback/logout URL, so
+    // every landing path and page is listed. The spreadsheets site redirects /books/ to
+    // /diya-gl/, and a redirect only completes if Cognito already holds the destination, so
+    // both prefixes stay registered until their old pages stop being linked.
     private static final List<String> BOOKS_PAGE_NAMES = List.of("bst.html", "se.html", "taxi.html", "ltd.html");
+
+    private static final List<String> DIYA_GL_PATH_PREFIXES = List.of("/books/", "/diya-gl/");
 
     private static List<String> buildBooksUrls(String envName) {
         // prod also lists the ci-spreadsheets host so the spreadsheets repository's ci
@@ -466,9 +469,11 @@ public class IdentityStack extends Stack {
                 : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
         var urls = new java.util.ArrayList<String>();
         for (var host : hosts) {
-            urls.add(host + "/books/");
-            for (var page : BOOKS_PAGE_NAMES) {
-                urls.add(host + "/books/" + page);
+            for (var prefix : DIYA_GL_PATH_PREFIXES) {
+                urls.add(host + prefix);
+                for (var page : BOOKS_PAGE_NAMES) {
+                    urls.add(host + prefix + page);
+                }
             }
         }
         return urls;

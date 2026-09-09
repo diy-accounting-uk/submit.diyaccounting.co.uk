@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.utils;
@@ -34,7 +34,6 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Architecture;
 import software.amazon.awscdk.services.lambda.Code;
-import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.Runtime;
 import software.amazon.awscdk.services.logs.ILogGroup;
@@ -42,6 +41,7 @@ import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -117,8 +117,8 @@ public class KindCdk {
         }
         return Role.Builder.create(stack, AWS_CUSTOM_RESOURCE_PROVIDER_ROLE_ID)
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-                .managedPolicies(List.of(
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .managedPolicies(
+                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
                 .build();
     }
 
@@ -203,8 +203,8 @@ public class KindCdk {
         }
         return Role.Builder.create(stack, ENSURE_PITR_PROVIDER_ROLE_ID)
                 .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
-                .managedPolicies(List.of(
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .managedPolicies(
+                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
                 .build();
     }
 
@@ -266,7 +266,11 @@ public class KindCdk {
                 .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.onEvent")
-                .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
+                .code(Code.fromAsset(
+                        ensurePitrAssetDir,
+                        AssetOptions.builder()
+                                .exclude(List.of("*", "!ensurePitr.mjs"))
+                                .build()))
                 .timeout(Duration.seconds(30))
                 .role(role)
                 .logGroup(onEventLogGroup)
@@ -282,7 +286,11 @@ public class KindCdk {
                 .runtime(Runtime.NODEJS_24_X)
                 .architecture(Architecture.ARM_64)
                 .handler("ensurePitr.isComplete")
-                .code(Code.fromAsset(ensurePitrAssetDir, AssetOptions.builder().exclude(List.of("*", "!ensurePitr.mjs")).build()))
+                .code(Code.fromAsset(
+                        ensurePitrAssetDir,
+                        AssetOptions.builder()
+                                .exclude(List.of("*", "!ensurePitr.mjs"))
+                                .build()))
                 .timeout(Duration.seconds(30))
                 .role(role)
                 .logGroup(isCompleteLogGroup)

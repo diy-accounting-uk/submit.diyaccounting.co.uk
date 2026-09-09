@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How long does a new account take to file its first return?
 --
 -- Neither the login nor the vat-return-submitted activity event carries a hashed sub today

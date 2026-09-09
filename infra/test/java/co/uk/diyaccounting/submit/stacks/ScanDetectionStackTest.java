@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -80,8 +80,8 @@ class ScanDetectionStackTest {
         Template template = Template.fromStack(synthScanDetectionStack());
         template.hasResourceProperties(
                 "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "Name", "docs-env-scan-detect-404-schedule", "ScheduleExpression", "rate(5 minutes)")));
+                Match.objectLike(
+                        Map.of("Name", "docs-env-scan-detect-404-schedule", "ScheduleExpression", "rate(5 minutes)")));
     }
 
     @Test
@@ -117,8 +117,8 @@ class ScanDetectionStackTest {
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
                         "Environment",
-                        Match.objectLike(
-                                Map.of("Variables", Match.objectLike(Map.of("SCAN_DETECTION_404_PER_MINUTE", "37")))))));
+                        Match.objectLike(Map.of(
+                                "Variables", Match.objectLike(Map.of("SCAN_DETECTION_404_PER_MINUTE", "37")))))));
     }
 
     @Test

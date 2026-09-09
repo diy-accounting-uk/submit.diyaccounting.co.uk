@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: the diya-gl book storage API
 
 The spreadsheets site's DIYA-GL pages hold a year of accounts in a 15 KB zip and recalculate it in the
@@ -30,7 +33,7 @@ Decided here, so the builder decides nothing:
 | D7 | The bucket lives in the env-level `DataStack`; the Lambdas in a new app-level `BooksStack`. | Books outlive a deployment, as receipts and bundles do. Handlers are rebuilt per deployment. |
 | D8 | The user prefix is the hashed sub, not the raw Cognito sub. | Every other user-scoped store in this repo keys on `hashSub()`. Keeps the raw sub out of S3 keys and access logs. |
 | D9 | Bodies are JSON with the zip base64-encoded, not raw binary. | No binary media types to configure; matches every other route in the repo. A 15 KB zip is 20 KB of base64. |
-| D10 | The books routes get their own JWT authoriser, scoped to the books client id. | A books token must not reach the VAT or Companies House routes. |
+| D10 | The DIYA-GL routes get their own JWT authoriser, scoped to the DIYA-GL client id. | A DIYA-GL token must not reach the VAT or Companies House routes. |
 | D11 | Preflight is an unauthenticated `OPTIONS` route per books path, answered by the same handler. | Leaves the other routes' behaviour untouched, unlike API-wide CORS. |
 | D12 | An unentitled put returns 403 with `code: "subscription-required"`. | `http403ForbiddenResponse` already exists and intermediaries treat 403 predictably. 402 was the alternative. |
 | D13 | Reads and deletes stay open to any signed-in user; only the put is gated. | A lapsed subscriber must still be able to get their books out. |
@@ -90,7 +93,7 @@ Quotas: a decoded zip over 2 MB is 413 `book-too-large`; a 21st book is 403 `boo
 
 ## 3. The four routes
 
-All four sit on the existing HTTP API under `/api/v1/books`, behind the books JWT authoriser
+All four sit on the existing HTTP API under `/api/v1/books`, behind the DIYA-GL JWT authoriser
 (section 5.3). The caller sends `Authorization: Bearer <idToken>`, as every other page here does.
 The authoriser's audience is the DIYA-GL app client id, so only that client's tokens are accepted; the
 handler reads `sub` from `event.requestContext.authorizer.jwt.claims` via
@@ -236,7 +239,7 @@ verify`. `SubmitApplication` constructs `BooksStack` after `BillingStack`, adds
 `envOr("COGNITO_BOOKS_CLIENT_ID", appProps.booksUserPoolClientId, …)`.
 
 ### 5.4 EdgeStack — CloudFront
-The books page calls `https://submit.diyaccounting.co.uk/api/v1/books/…` (ci:
+The DIYA-GL page calls `https://submit.diyaccounting.co.uk/api/v1/books/…` (ci:
 `https://ci-submit.diyaccounting.co.uk/…`), reaching the API through CloudFront's `/api/v1/*`
 behaviour. That behaviour's response headers policy sets `Access-Control-Allow-Origin: *`, allows
 only GET, HEAD and OPTIONS, exposes nothing and sets `originOverride(true)`, so it would stamp over
@@ -367,7 +370,7 @@ Each step is one commit with its own acceptance check.
 | 9 ✅ | CloudFront | `EdgeStack.java`; no standalone `EdgeStackTest.java` exists, so its test is a new assertion in `infra/test/.../SubmitApplicationCdkResourceTest.java`, which already synths `submitApplication.edgeStack` | synth shows an `/api/v1/books/*` behaviour with a policy carrying no CORS override |
 | 10 ✅ | The system test | `app/system-tests/booksStorage.system.test.js` | `npm test` green |
 | 11 ✅ | The workflows | `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | the yaml lints and `deploy-api` waits on `deploy-books` |
-| 12 ✅ | The behaviour probe | `behaviour-tests/books.behaviour.test.js`, `playwright.config.js`, `package.json` | written, lists cleanly under Playwright; untested against ci until H9 deploys — no books page exists yet, so it drives the API from the existing spreadsheets site's origin instead |
+| 12 ✅ | The behaviour probe | `behaviour-tests/books.behaviour.test.js`, `playwright.config.js`, `package.json` | written, lists cleanly under Playwright; untested against ci until H9 deploys — no DIYA-GL page exists yet, so it drives the API from the existing spreadsheets site's origin instead |
 
 ## 9. Open questions for the operator
 

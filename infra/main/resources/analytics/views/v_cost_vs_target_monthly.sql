@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How does each month's spend compare against the $64.77 steady-state target
 -- (_developers/archive/PLAN_COST_OPTIMISATION.md)?
 CREATE OR REPLACE VIEW v_cost_vs_target_monthly AS

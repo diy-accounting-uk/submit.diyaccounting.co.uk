@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Prune to Improve Focus Prompt
 
 Analyze the current repository and identify areas where code, features, or processes can be pruned to improve focus and maintainability.

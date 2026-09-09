@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # scripts/aws-assume-user-provisioning-role.sh
 # Usage: . ./scripts/aws-assume-user-provisioning-role.sh
 unset AWS_ACCESS_KEY_ID

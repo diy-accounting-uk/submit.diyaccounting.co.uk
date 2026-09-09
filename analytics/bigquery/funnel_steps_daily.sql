@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Distinct GA4 sessions reaching each login-to-submission funnel step, for one day of the GA4
 -- export. The step names match infra/main/resources/analytics/views/v_ga4_funnel_daily.sql,
 -- which counts the same steps from the lake's own copy of this export, so the two stay

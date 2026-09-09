@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Key events for one day of the GA4 export, by hostname. The four events are read from what
 -- each site sends: a "purchase" on submit.diyaccounting.co.uk is a subscription, a "purchase"
 -- on spreadsheets.diyaccounting.co.uk is a donation, "file_download" (GA4's enhanced

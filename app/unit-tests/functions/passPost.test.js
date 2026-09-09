@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -9,11 +9,6 @@ import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilder
 const mockRedeemPass = vi.fn();
 vi.mock("@app/services/passService.js", () => ({
   redeemPass: (...args) => mockRedeemPass(...args),
-}));
-
-// Mock emailHash
-vi.mock("@app/lib/emailHash.js", () => ({
-  initializeEmailHashSecret: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock subHasher

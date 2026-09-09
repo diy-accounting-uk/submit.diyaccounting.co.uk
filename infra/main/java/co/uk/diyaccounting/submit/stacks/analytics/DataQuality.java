@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -193,7 +193,9 @@ public class DataQuality extends Construct {
         this.targets = List.of(
                 new Target(ACTIVITY_EVENTS_TABLE_NAME, ACTIVITY_EVENTS_CURATED_PREFIX, ACTIVITY_EVENTS_RULESET),
                 new Target(
-                        ALARM_STATE_CHANGES_TABLE_NAME, ALARM_STATE_CHANGES_CURATED_PREFIX, ALARM_STATE_CHANGES_RULESET),
+                        ALARM_STATE_CHANGES_TABLE_NAME,
+                        ALARM_STATE_CHANGES_CURATED_PREFIX,
+                        ALARM_STATE_CHANGES_RULESET),
                 new Target(DORA_RUNS_TABLE_NAME, DORA_RUNS_CURATED_PREFIX, DORA_RUNS_RULESET),
                 new Target(
                         COMPLIANCE_ACCESSIBILITY_TABLE_NAME,
@@ -225,7 +227,8 @@ public class DataQuality extends Construct {
                             .tableName(target.tableName())
                             .build())
                     .build();
-            props.glueDatabaseDependency().ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
+            props.glueDatabaseDependency()
+                    .ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
             Optional.ofNullable(props.targetTableDependencies().get(target.tableName()))
                     .ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
             this.rulesets.add(ruleset);

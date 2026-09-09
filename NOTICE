@@ -1,0 +1,24 @@
+DIY Accounting Submit
+Copyright (C) 2006-2026 DIY Accounting Limited
+
+This repository is licensed under the PolyForm Internal Use License 1.0.0 with an
+additional grant. See LICENSE and LICENSING.md.
+
+Source: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk
+
+This repository includes third-party material. See LICENSING.md for the full list and
+each item's file location; summarised here:
+
+- node-qrcode (web/public/lib/qrcode.min.js), MIT, Copyright (c) 2012 Ryan Day.
+- The Google "G" logo, used under Google's brand guidelines for a sign-in button. Not
+  licensed onward.
+- The PolicyBee logo, used under a partner arrangement. Not licensed onward.
+- Lighthouse (Apache-2.0), Playwright (Apache-2.0, including the React-based UI its HTML
+  reporter embeds, MIT) and OWASP ZAP reports under web/public/tests/, generated
+  third-party tool output.
+- Crown copyright material in web/public/docs/hmrc-form-field-standards/ and
+  fixtures/companies-house-xmlgw/, used under the Open Government Licence v3.0.
+- The Apache Maven Wrapper (mvnw, mvnw.cmd, .mvn/wrapper/maven-wrapper.properties),
+  Apache License 2.0, copyright the Apache Software Foundation.
+- The runtime dependencies named in package.json, each under its own package's licence.
+  See LICENSING.md for the full table.

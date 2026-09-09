@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Pre Token Generation Lambda trigger for Cognito User Pool.
 // Injects custom:mfa_method claim into ID tokens when the user has TOTP MFA configured.

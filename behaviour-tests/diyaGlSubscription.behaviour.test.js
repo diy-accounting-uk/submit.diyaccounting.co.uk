@@ -1,11 +1,11 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // behaviour-tests/diyaGlSubscription.behaviour.test.js
 //
 // The row this proves: a token from the DIYA-GL app client can subscribe through Submit's
 // billing checkout and portal, and the subject that checkout enrols is the same subject
-// booksEntitlement.entitlementFor(sub) reads back for the storage PUT. Runs on ci only —
+// diyaGlEntitlement.entitlementFor(sub) reads back for the storage PUT. Runs on ci only —
 // resident-diya-gl is listed for purchase there until the operator lifts it, and there is no
 // prod variant yet.
 //

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -95,8 +95,10 @@ class SelfDestructStackTest {
         Template template = Template.fromStack(selfDestructStack);
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "WriteAlarmSilence");
-        Map<String, Object> statement =
-                statements.stream().filter(s -> "WriteAlarmSilence".equals(s.get("Sid"))).findFirst().orElseThrow();
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "WriteAlarmSilence".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
 
         assertEquals(
                 List.of("ssm:PutParameter", "ssm:GetParameter"),

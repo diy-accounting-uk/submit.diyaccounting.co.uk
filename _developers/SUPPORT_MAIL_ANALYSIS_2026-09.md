@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Support mail analysis — 2026-09
 
 Answers backlog rows 21a and 23a. Sources: the Google Workspace mail mirror

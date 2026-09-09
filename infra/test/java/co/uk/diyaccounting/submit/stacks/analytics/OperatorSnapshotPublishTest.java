@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -120,12 +120,15 @@ class OperatorSnapshotPublishTest {
             @SuppressWarnings("unchecked")
             var statements = (java.util.List<Map<String, Object>>) document.get("Statement");
             for (Map<String, Object> statement : statements) {
-                if ("s3:PutObject".equals(statement.get("Action")) && resourceEndsWithSnapshotsGlob(statement.get("Resource"))) {
+                if ("s3:PutObject".equals(statement.get("Action"))
+                        && resourceEndsWithSnapshotsGlob(statement.get("Resource"))) {
                     found.add(statement.get("Resource"));
                 }
             }
         }
-        assertTrue(found.size() == 1, "expected exactly one s3:PutObject statement scoped to /snapshots/*, found: " + found);
+        assertTrue(
+                found.size() == 1,
+                "expected exactly one s3:PutObject statement scoped to /snapshots/*, found: " + found);
     }
 
     /**

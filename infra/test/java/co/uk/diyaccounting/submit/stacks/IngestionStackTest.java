@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -133,8 +133,7 @@ class IngestionStackTest {
         template.hasResourceProperties(
                 "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-ga4-report-pull")));
         template.hasResourceProperties(
-                "AWS::Lambda::Function",
-                Match.objectLike(Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
+                "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
     }
 
     @Test
@@ -395,8 +394,8 @@ class IngestionStackTest {
 
     @Test
     void ga4BigQueryConfigEnvVarsAreOmittedWhenBlankAndPresentWhenConfigured() {
-        Template blank = Template.fromStack(
-                synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
+        Template blank =
+                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
         var blankFunctions = blank.findResources(
                 "AWS::Lambda::Function",
                 Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
@@ -407,14 +406,7 @@ class IngestionStackTest {
         assertFalse(blankEnv.containsKey("GA4_BIGQUERY_LOCATION"));
 
         Template configured = Template.fromStack(synthIngestionStack(
-                "docs",
-                null,
-                null,
-                "999000111",
-                null,
-                "diyaccounting-ga4",
-                "analytics_523400333",
-                "europe-west2"));
+                "docs", null, null, "999000111", null, "diyaccounting-ga4", "analytics_523400333", "europe-west2"));
         configured.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
@@ -463,15 +455,20 @@ class IngestionStackTest {
         // and the ga4DailyPull job's.
         configured.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "secretsmanager:GetSecretValue",
-                                        "Resource",
-                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))),
+                Match.objectLike(
+                        Map.of(
+                                "PolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "secretsmanager:GetSecretValue",
+                                                                                "Resource",
+                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))),
                 3);
     }
 

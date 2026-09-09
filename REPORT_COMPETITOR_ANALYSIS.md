@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Competitor Analysis
 
 UK market for MTD VAT filing and accounting spreadsheets, surveyed 2026-08-25.

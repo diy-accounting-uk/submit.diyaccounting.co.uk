@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -79,7 +79,8 @@ public class SecurityDetectionStack extends Stack {
         this(scope, id, null, props);
     }
 
-    public SecurityDetectionStack(Construct scope, String id, StackProps stackProps, SecurityDetectionStackProps props) {
+    public SecurityDetectionStack(
+            Construct scope, String id, StackProps stackProps, SecurityDetectionStackProps props) {
         super(scope, id, stackProps);
 
         boolean cloudTrailEnabled = Boolean.parseBoolean(props.cloudTrailEnabled());
@@ -94,15 +95,15 @@ public class SecurityDetectionStack extends Stack {
         // ObservabilityStack's cloudTrailLogGroupName exactly: "%s%s-cloud-trail".
         String cloudTrailLogGroupName =
                 "%s%s-cloud-trail".formatted(props.cloudTrailLogGroupPrefix(), props.resourceNamePrefix());
-        ILogGroup cloudTrailLogGroup =
-                LogGroup.fromLogGroupName(this, props.resourceNamePrefix() + "-DetectionCloudTrailGroup", cloudTrailLogGroupName);
+        ILogGroup cloudTrailLogGroup = LogGroup.fromLogGroupName(
+                this, props.resourceNamePrefix() + "-DetectionCloudTrailGroup", cloudTrailLogGroupName);
 
         // Import the security-findings SNS topic ObservabilityStack creates. Naming must match
         // ObservabilityStack's securityFindingsTopic topicName exactly: "%s-security-findings".
         String securityFindingsTopicArn = "arn:aws:sns:%s:%s:%s-security-findings"
                 .formatted(this.getRegion(), this.getAccount(), props.resourceNamePrefix());
-        ITopic securityFindingsTopic =
-                Topic.fromTopicArn(this, props.resourceNamePrefix() + "-DetectionSecurityFindingsTopic", securityFindingsTopicArn);
+        ITopic securityFindingsTopic = Topic.fromTopicArn(
+                this, props.resourceNamePrefix() + "-DetectionSecurityFindingsTopic", securityFindingsTopicArn);
 
         // Customer data tables in scope for data-theft detection (PLAN_ISSUE_10 acceptance
         // criterion 1): receipts, bundles, passes, subscriptions, hmrc-api-requests. Excludes
@@ -141,10 +142,9 @@ public class SecurityDetectionStack extends Stack {
 
         Alarm dynamoDbScanAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-DynamoDbScanAlarm")
                 .alarmName(props.resourceNamePrefix() + "-dynamodb-customer-table-scan")
-                .alarmDescription(
-                        "A Scan operation ran against a customer data table (receipts, bundles, passes, "
-                                + "subscriptions, or hmrc-api-requests). App code never calls Scan on these "
-                                + "tables, so this is a strong signal of bulk data access outside normal use.")
+                .alarmDescription("A Scan operation ran against a customer data table (receipts, bundles, passes, "
+                        + "subscriptions, or hmrc-api-requests). App code never calls Scan on these "
+                        + "tables, so this is a strong signal of bulk data access outside normal use.")
                 .metric(Metric.Builder.create()
                         .namespace("Submit/Security")
                         .metricName(scanMetricName)
@@ -174,24 +174,23 @@ public class SecurityDetectionStack extends Stack {
                 .defaultValue(0)
                 .build();
 
-        Alarm dynamoDbGetItemVolumeAlarm =
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-DynamoDbGetItemVolumeAlarm")
-                        .alarmName(props.resourceNamePrefix() + "-dynamodb-customer-table-getitem-volume")
-                        .alarmDescription(
-                                "More than 1000 GetItem calls against a customer data table in 5 minutes, "
-                                        + "consistent with bulk read access to receipts, bundles, passes, "
-                                        + "subscriptions, or hmrc-api-requests.")
-                        .metric(Metric.Builder.create()
-                                .namespace("Submit/Security")
-                                .metricName(getItemMetricName)
-                                .statistic("Sum")
-                                .period(Duration.minutes(5))
-                                .build())
-                        .threshold(1000)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .build();
+        Alarm dynamoDbGetItemVolumeAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-DynamoDbGetItemVolumeAlarm")
+                .alarmName(props.resourceNamePrefix() + "-dynamodb-customer-table-getitem-volume")
+                .alarmDescription("More than 1000 GetItem calls against a customer data table in 5 minutes, "
+                        + "consistent with bulk read access to receipts, bundles, passes, "
+                        + "subscriptions, or hmrc-api-requests.")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Security")
+                        .metricName(getItemMetricName)
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1000)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
         dynamoDbGetItemVolumeAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
         // ----------------------------------------------------------------------------------
@@ -228,24 +227,23 @@ public class SecurityDetectionStack extends Stack {
                 .defaultValue(0)
                 .build();
 
-        Alarm saltSecretUnexpectedReadAlarm =
-                Alarm.Builder.create(this, props.resourceNamePrefix() + "-SaltSecretUnexpectedReadAlarm")
-                        .alarmName(props.resourceNamePrefix() + "-salt-secret-unexpected-read")
-                        .alarmDescription(
-                                "GetSecretValue on the user-sub-hash-salt secret by a principal whose role name"
-                                        + " does not start with this environment's name. Expected during salt"
-                                        + " backup and rotation (runbook section 6.6); otherwise investigate.")
-                        .metric(Metric.Builder.create()
-                                .namespace("Submit/Security")
-                                .metricName(saltReadMetricName)
-                                .statistic("Sum")
-                                .period(Duration.minutes(5))
-                                .build())
-                        .threshold(1)
-                        .evaluationPeriods(1)
-                        .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                        .treatMissingData(TreatMissingData.NOT_BREACHING)
-                        .build();
+        Alarm saltSecretUnexpectedReadAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-SaltSecretUnexpectedReadAlarm")
+                .alarmName(props.resourceNamePrefix() + "-salt-secret-unexpected-read")
+                .alarmDescription("GetSecretValue on the user-sub-hash-salt secret by a principal whose role name"
+                        + " does not start with this environment's name. Expected during salt"
+                        + " backup and rotation (runbook section 6.6); otherwise investigate.")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Security")
+                        .metricName(saltReadMetricName)
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
         saltSecretUnexpectedReadAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
         // ----------------------------------------------------------------------------------
@@ -257,12 +255,11 @@ public class SecurityDetectionStack extends Stack {
         // ----------------------------------------------------------------------------------
         String cisDeploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
         String cisGithubActionsRoleName = "submit-%s-github-actions-role".formatted(props.envName());
-        String cisDeployRoleExclusion =
-                (" && (($.userIdentity.type != \"AssumedRole\") || "
+        String cisDeployRoleExclusion = (" && (($.userIdentity.type != \"AssumedRole\") || "
                         + "(($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-*\") "
                         + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
                         + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")))")
-                        .formatted(cisDeploymentRoleName, cisGithubActionsRoleName);
+                .formatted(cisDeploymentRoleName, cisGithubActionsRoleName);
 
         Set<String> deployChangedControls = Set.of(
                 "UnauthorizedApiCalls",
@@ -283,10 +280,12 @@ public class SecurityDetectionStack extends Stack {
             // have no sessionIssuer) pass through; only AssumedRole events matching deploy roles
             // are excluded. Only a person or unrecognised principal should fire these alarms.
             if (deployChangedControls.contains(control.name())) {
-                // Patterns end with " }" so insert the exclusion before the closing brace.
-                filterPatternStr = filterPatternStr.substring(0, filterPatternStr.length() - 2)
-                        + cisDeployRoleExclusion
-                        + " }";
+                // Patterns are "{ <event-name chain> }": wrap the chain in its own parentheses
+                // before appending the guard, since "&&" binds tighter than "||" and an
+                // unparenthesized guard would apply to the chain's last clause only, leaving
+                // every other event name matching unconditionally.
+                String eventNameChain = filterPatternStr.substring(2, filterPatternStr.length() - 2);
+                filterPatternStr = "{ (" + eventNameChain + ")" + cisDeployRoleExclusion + " }";
             }
 
             MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "MetricFilter")
@@ -426,4 +425,3 @@ public class SecurityDetectionStack extends Stack {
                             + " ($.eventName = AttachClassicLinkVpc) || ($.eventName = DetachClassicLinkVpc) ||"
                             + " ($.eventName = DisableVpcClassicLink) || ($.eventName = EnableVpcClassicLink) }"));
 }
-

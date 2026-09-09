@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
-// behaviour-tests/books.behaviour.test.js
+// behaviour-tests/diyaGlStorage.behaviour.test.js
 //
 // Drives the DIYA-GL storage API's four routes as the spreadsheets site's DIYA-GL pages will: sign in
 // through Submit's hosted UI, read the id token it leaves in localStorage, then navigate to a page
 // on the spreadsheets origin and call the API from there with fetch, so the browser enforces the
 // same CORS the deployed API answers with. Before LP-15 lands the DIYA-GL app client, this runs
-// against the existing client id, which the books authoriser does not yet accept in production -
+// against the existing client id, which the DIYA-GL authoriser does not yet accept in production -
 // this probe is written and exercised locally but not run against ci in this change.
 
 import { test } from "./helpers/playwrightTestWithout.js";
@@ -31,7 +31,7 @@ dotenvConfigIfNotBlank({ path: ".env" });
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../fixtures/books/diya-gl-example.zip")).toString("base64");
 
-const screenshotPath = "target/behaviour-test-results/screenshots/books-behaviour-test";
+const screenshotPath = "target/behaviour-test-results/screenshots/diya-gl-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -56,7 +56,7 @@ let dynamoControl;
 test.setTimeout(300_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "booksBehaviour" });
+  testInfo.annotations.push({ type: "test-id", description: "diyaGlBehaviour" });
 });
 
 test.beforeAll(async () => {

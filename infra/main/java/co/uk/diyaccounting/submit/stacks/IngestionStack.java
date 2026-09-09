@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -378,8 +378,7 @@ public class IngestionStack extends Stack {
                 && !props.ga4BigQueryDatasetId().isBlank()) {
             ga4EventExportPullEnv.with("GA4_BIGQUERY_DATASET_ID", props.ga4BigQueryDatasetId());
         }
-        if (props.ga4BigQueryLocation() != null
-                && !props.ga4BigQueryLocation().isBlank()) {
+        if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4EventExportPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
         if (props.ga4ServiceAccountArn() != null
@@ -398,26 +397,22 @@ public class IngestionStack extends Stack {
         // Same exposure as the other two jobs above: env-scoped, stable function name - use the
         // idempotent create-if-missing path, not a plain LogGroup.
         var ga4EventExportPullLogGroup = ensureLogGroupWithDependency(
-                this,
-                prefix + "-Ga4EventExportPullLogGroup",
-                "/aws/lambda/" + ga4EventExportPullFunctionName);
+                this, prefix + "-Ga4EventExportPullLogGroup", "/aws/lambda/" + ga4EventExportPullFunctionName);
 
-        var ga4EventExportPullLambda =
-                DockerImageFunction.Builder.create(this, prefix + "-Ga4EventExportPullFn")
-                        .functionName(ga4EventExportPullFunctionName)
-                        .code(DockerImageCode.fromEcr(
-                                ga4EventExportPullRepository,
-                                EcrImageCodeProps.builder()
-                                        .tagOrDigest(props.baseImageTag())
-                                        .cmd(List.of(
-                                                "app/functions/analytics/ga4EventExportPull.handler"))
-                                        .build()))
-                        .timeout(Duration.minutes(5))
-                        .memorySize(1024)
-                        .architecture(Architecture.ARM_64)
-                        .environment(ga4EventExportPullEnv)
-                        .logGroup(ga4EventExportPullLogGroup.logGroup())
-                        .build();
+        var ga4EventExportPullLambda = DockerImageFunction.Builder.create(this, prefix + "-Ga4EventExportPullFn")
+                .functionName(ga4EventExportPullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        ga4EventExportPullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/ga4EventExportPull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(5))
+                .memorySize(1024)
+                .architecture(Architecture.ARM_64)
+                .environment(ga4EventExportPullEnv)
+                .logGroup(ga4EventExportPullLogGroup.logGroup())
+                .build();
         ga4EventExportPullLambda.getNode().addDependency(ga4EventExportPullLogGroup.ensureResource());
 
         // Own prefix only, not the whole lake: the job never touches another entity's data.
@@ -431,9 +426,10 @@ public class IngestionStack extends Stack {
         // service account for both the Data API and the BigQuery export.
         if (props.ga4ServiceAccountArn() != null
                 && !props.ga4ServiceAccountArn().isBlank()) {
-            var ga4EventExportSecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
-                    ? props.ga4ServiceAccountArn()
-                    : props.ga4ServiceAccountArn() + "-*";
+            var ga4EventExportSecretArnWithWildcard =
+                    props.ga4ServiceAccountArn().endsWith("*")
+                            ? props.ga4ServiceAccountArn()
+                            : props.ga4ServiceAccountArn() + "-*";
             ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
@@ -460,8 +456,7 @@ public class IngestionStack extends Stack {
                 && !props.ga4BigQueryProjectId().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
         }
-        if (props.ga4BigQueryLocation() != null
-                && !props.ga4BigQueryLocation().isBlank()) {
+        if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
         if (props.ga4ServiceAccountArn() != null
@@ -608,8 +603,8 @@ public class IngestionStack extends Stack {
                 Function.fromFunctionName(this, prefix + "-DataQualityRun-Import", prefix + "-data-quality-run");
         var metricsPublishLambda = Function.fromFunctionName(
                 this, prefix + "-AnalyticsMetricsPublish-Import", prefix + "-analytics-metrics-publish");
-        var rawExportPublishLambda = Function.fromFunctionName(
-                this, prefix + "-RawExportPublish-Import", prefix + "-raw-export-publish");
+        var rawExportPublishLambda =
+                Function.fromFunctionName(this, prefix + "-RawExportPublish-Import", prefix + "-raw-export-publish");
 
         new NightlyIngestionWorkflow(
                 this,

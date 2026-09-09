@@ -33,7 +33,8 @@ still class 1.
 | spreadsheets | ~563 (43 docs/comments/page-copy + ~520 test titles across 46 files) | ~15 references, ~40 served files under `public/books/` | 2 core modules, 1 build script + npm script, 46 test filenames, 4 DOM ids, 2 further modules, 1 format-string special case | 3 identifiers referenced from this side (deduped into the shared table below) | ~1100+, not enumerated |
 | submit | ~36 | — (none found; submit has no public static site) | 13 files/directories, ~20 identifiers | ~15 identifiers, 27 files (deduped into the shared table below) | ~60-70, not enumerated |
 
-Class 4 is one shared list: 16 identifiers once both sides are merged. See below.
+Class 4 is one shared list. The sweep found 16 identifiers; reading the deployed code and the live
+accounts for the class 4 design found four more, so 20. See below.
 
 ## Spreadsheets — class 1, prose (docs, comments, page copy)
 
@@ -114,20 +115,24 @@ Every one of these needs its importers and CI references updated in the same cha
 |---|---|---|---|
 | `BooksStack` (CDK stack class, `BooksStackTest.java`) | `infra/main` and `infra/test` Java; the literal stack name `${DEPLOYMENT}-app-BooksStack` in `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | named in prose, `PLAN_DIYA_GL_LAUNCH.md` ("BooksStack already checks...") | `DiyaGlStack` |
 | `BOOKS_ALLOWED_ORIGINS` | `BooksStack.java`, `EdgeStack.java` comment, `booksCors.js`, 4 test files | none by name; the value gates spreadsheets' own calls | `DIYA_GL_ALLOWED_ORIGINS` |
-| `BooksApiBaseUrl` (CFN output) | `BooksStack.java` | none by name | `DiyaGlApiBaseUrl` |
-| `BooksUserPoolClientId` (CFN output) | `BooksStack` outputs, `IdentityStack.java` | named exactly in a comment, `web/spreadsheets.diyaccounting.co.uk/public/books/cloud-config.js:9` | `DiyaGlUserPoolClientId` |
+| `BooksApiBaseUrl` (CFN output) | `BooksStack.java`, asserted in `BooksStackTest.java` | none by name | `DiyaGlApiBaseUrl`. No machine reads this output. |
+| `BooksUserPoolClientId` (CFN output) | `IdentityStack.java:331` only, not `BooksStack`. Read by `scripts/toggle-cognito-native-auth.js:176` and by `probe-test.yml:414` through `scripts/stack-output.js` | named exactly in a comment, `web/spreadsheets.diyaccounting.co.uk/public/books/cloud-config.js:9` | `DiyaGlUserPoolClientId` |
 | Cognito client name `-books-client` / `{env}-env-books-client` | `IdentityStack.java`, `.github/actions/lookup-resources/action.yml` | toggled from this side per `NEXT.md`'s LP-24 row | `-diya-gl-client` |
 | `--client books` flag | `scripts/toggle-cognito-native-auth.js` | `NEXT.md` LP-24 documents calling the script this way | `--client diya-gl` |
-| SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | `IdentityStack.java`, `SubmitApplication.java` | none by name | `/submit/{env}/spreadsheets-diya-gl-app-client-id` |
+| SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | written by `IdentityStack.java:301`, asserted in `IdentityStackTest.java:165`, named in a `SubmitApplication.java:474` error message and in `SubmitApplicationCdkResourceTest.java:432` | named in `PLAN_DIYA_GL_CLOUD_PAGE.md` prose. No workflow or script in either repository reads it. | `/submit/{env}/spreadsheets-diya-gl-app-client-id` |
 | `cdk.json` key `booksUserPoolClientId` | `cdk-application/cdk.json` | none by name | `diyaGlUserPoolClientId` |
-| `booksBucketName` / `booksBucketArn`, S3 bucket `{prefix}-books-{account}` | `DataStack.java`, `SubmitSharedNames.java`, `BackupStack.java`, its test | none by name | `diyaGlBucketName` / `diyaGlBucketArn`, bucket `{prefix}-diya-gl-{account}` |
+| `booksBucketName` / `booksBucketArn`, S3 bucket `{env}-env-books-{account}`, CFN output `BooksBucketName` | the bucket is built in `DataStack.java:646` (an env stack, not `BooksStack`); the name in `SubmitSharedNames.java:1105`; the backup selection ARN in `BackupStack.java:306`; `BooksStack.java` builds its IAM patterns from the name | none by name | `diyaGlBucketName` / `diyaGlBucketArn`, bucket `{env}-env-diya-gl-{account}`, output `DiyaGlBucketName` |
 | `booksStackId` field | `SubmitSharedNames.java` | none by name | `diyaGlStackId` |
 | `BOOKS_STACK_NAME` (Lambda env var) | `SelfDestructStack.java`, `selfDestruct.js`, its test | none by name | `DIYA_GL_STACK_NAME` |
 | `COGNITO_BOOKS_CLIENT_ID` (workflow env var) | `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `deploy-cdk-stack.yml`, `probe-test.yml`, `SubmitApplicationCdkResourceTest.java` | none by name | `COGNITO_DIYA_GL_CLIENT_ID` |
 | GH Action output `cognito-books-client-id` / `BOOKS_CLIENT_NAME` | `.github/actions/lookup-resources/action.yml` | none by name | `cognito-diya-gl-client-id` / `DIYA_GL_CLIENT_NAME` |
 | Workflow job `deploy-books` | `deploy.yml` | none by name | `deploy-diya-gl` |
 | Response headers policy `{prefix}-books-whp` | `EdgeStack.java` | none by name | `{prefix}-diya-gl-whp` |
-| API routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | `EdgeStack.java`, `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml`, `app/functions/books/*`, `s3BooksRepository.js` | `public/books/cloud.js` hardcodes calls to all four paths at lines 805, 842, 881, 974 | `/api/v1/diya-gl` paths, confirmed shared interface both sides |
+| API routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | the path strings in `SubmitSharedNames.java` (3086, 3108, 3134, 3155), not `SubmitApplication.java`; the CloudFront behaviour `/api/v1/books/*` in `EdgeStack.java:922`; the Express registrations in `app/functions/books/*.js`; the licensing pattern `^/api/v1/books.*` in `web/public/submit.catalogue.toml:411`; `web/public/docs/api/openapi.json`, which `OpenApiGenerator.java` writes from `SubmitSharedNames` | `public/books/cloud.js` hardcodes calls to all four paths at lines 805, 842, 881, 974 | `/api/v1/diya-gl` paths, confirmed shared interface both sides. `s3BooksRepository.js`'s `users/{hash}/books/{bookId}/` is an S3 key prefix, not a route: that is the data noun and it stays. |
+| Lambda function names `{deployment}-app-books-{list-get,version-get,put,delete}` and their handler paths `app/functions/books/books*.ingestHandler` | derived in `SubmitSharedNames.java` (3089-3096, 3111-3119, 3137-3144, 3158-3167) by `ResourceNameUtils.convertCamelCaseToDashSeparated`, so the module basename is the function name | none by name | `{deployment}-app-diya-gl-{list-get,version-get,put,delete}`, handlers `app/functions/diyaGl/diyaGl*.ingestHandler` |
+| Cognito callback and logout URLs `https://{host}/books/`, `/books/{bst,se,taxi,ltd}.html` | `IdentityStack.java:459-472` (`BOOKS_PAGE_NAMES`, `buildBooksUrls`) | the pages themselves, `web/spreadsheets.diyaccounting.co.uk/public/books/**` | follows whatever path NM-3 moves the pages to; Cognito matches each URL exactly, so both sets are listed across the move |
+| Lambda env vars `BOOKS_BUCKET_NAME`, `BOOKS_MAX_BYTES`, `BOOKS_MAX_PER_USER`, `BOOKS_VERSIONS_KEPT`, `BOOKS_ENTITLEMENT_ENFORCED`, `BOOKS_BUNDLE_ID` | set in `BooksStack.java` (112-114, 196-205), read in `s3BooksRepository.js`, `booksPut.js`, `booksEntitlement.js`, `booksCors.js` and their tests | none | the `DIYA_GL_` forms |
+| Composite alarm `{deployment}-app-books-stack-health` | the `"books"` short name passed to `Lambda.stackHealthAlarm` in `BooksStack.java:294` | none | `{deployment}-app-diya-gl-stack-health` |
 
 ## Decision: the format stamp
 
@@ -136,6 +141,226 @@ Decided by the operator on 2026-09-09: the DIYA-GL file format stamp `"diya-gl-b
 accepts both the new stamp and the two old ones, so every file saved so far still opens; the
 generated provenance data and the checked-in `examples/parity/*/report.json` follow at the next
 generate run. This lands in NM-4 (spreadsheets); nothing in Submit reads the stamp.
+
+## Class 4 design: order, windows and the bucket
+
+Read from the code and from the live accounts on 2026-09-09. Four facts settle almost everything.
+
+**App stacks are per deployment set, not per environment.** `.github/actions/get-names` builds a
+deployment name of `prod-<sha7>` or `ci-<branch><hash>`, and `SubmitSharedNames` builds every app
+resource name from it. Prod today runs `prod-15f3483-app-BooksStack`, the four Lambdas
+`prod-15f3483-app-books-{list-get,version-get,put,delete}` and the headers policy
+`prod-15f3483-app-books-whp`. A deploy of a new commit builds a complete new set beside the live
+one, proves it, cuts traffic over and retires the old set. So renaming anything held in an app
+stack never replaces a live resource. The next set is simply built with the new names. There is no
+window, no migration and nothing to copy.
+
+**`BooksStack` holds no state.** `list-stack-resources` on `prod-15f3483-app-BooksStack` returns 37
+resources: four Lambda functions, four roles, four policies, four aliases, four versions, four log
+groups, four metric filters, eight alarms, one composite alarm and the CDK metadata. No bucket, no
+table, no parameter, no queue. Replacing it costs that set's four log groups, and the rotation
+already pays that cost on every deploy. The S3 bucket is in `DataStack`; the Cognito client and the
+SSM parameter are in `IdentityStack`; the API routes and the JWT authoriser are in `ApiStack`; the
+CloudFront behaviour and the headers policy are in `EdgeStack`.
+
+**Env stacks do update in place.** `{env}-env-IdentityStack`, `{env}-env-DataStack` and
+`{env}-env-BackupStack` are one per environment. Every identifier that needs care lives in one of
+those three, plus the route paths, which are an interface the spreadsheets pages call.
+
+**The prod bucket is empty.** `list-object-versions` on `prod-env-books-972912397388` returns no
+versions and no delete markers. `ci-env-books-367191799875` holds only behaviour-run test objects.
+
+### The classes of change
+
+- **set** — an app-stack identifier. The next deployment set is built with the new name. No window.
+- **in-place** — an env-stack property that updates without replacing its resource, or an
+  identifier no other repository or deployed resource reads.
+- **dual** — both names live at once for a stated window, then the old one goes.
+- **replace** — the resource is deleted and recreated. Only the S3 bucket is in this class.
+
+### Every identifier, its class and its row
+
+| Identifier | New name | Who else consumes it | Class | Row |
+|---|---|---|---|---|
+| `BooksStack`, `booksStackId`, `BooksStackTest.java` | `DiyaGlStack`, `diyaGlStackId`, `DiyaGlStackTest.java` | nobody | set | S3b |
+| Lambda names `{deployment}-app-books-*` and handlers `app/functions/books/books*.ingestHandler` | `-diya-gl-*`, `app/functions/diyaGl/diyaGl*.ingestHandler` | nobody | set | S3b |
+| `BOOKS_ALLOWED_ORIGINS` | `DIYA_GL_ALLOWED_ORIGINS` | nobody; the value is a list of spreadsheets origins and does not change | set | S3b |
+| `BOOKS_BUCKET_NAME`, `BOOKS_MAX_BYTES`, `BOOKS_MAX_PER_USER`, `BOOKS_VERSIONS_KEPT`, `BOOKS_ENTITLEMENT_ENFORCED`, `BOOKS_BUNDLE_ID` | the `DIYA_GL_` forms | nobody | set | S3b |
+| `BOOKS_STACK_NAME` | `DIYA_GL_STACK_NAME` | `selfDestruct.js`, in the same image as the stack that sets it | set | S3b |
+| CFN outputs `BooksApiBaseUrl`, `Books{ListGet,VersionGet,Put,Delete}LambdaArn` | the `DiyaGl` forms | nobody | set | S3b |
+| Response headers policy `{deployment}-app-books-whp` | `-diya-gl-whp` | nobody | set | S3b |
+| Composite alarm `{deployment}-app-books-stack-health` | `-diya-gl-stack-health` | nobody | set | S3b |
+| `cdk.json` key `booksUserPoolClientId` | `diyaGlUserPoolClientId` | nobody | in-place | S3b |
+| `COGNITO_BOOKS_CLIENT_ID` | `COGNITO_DIYA_GL_CLIENT_ID` | five workflows in this repository, all changed in the same commit | in-place | S3b |
+| lookup-resources output `cognito-books-client-id`, shell var `BOOKS_CLIENT_NAME` | `cognito-diya-gl-client-id`, `DIYA_GL_CLIENT_NAME` | four workflows in this repository | in-place | S3b |
+| Workflow job `deploy-books` | `deploy-diya-gl` | `deploy-api`'s `needs:`, same file | in-place | S3b |
+| Literal `${DEPLOYMENT}-app-BooksStack` in `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | `-app-DiyaGlStack` | the sets already deployed under the old name | dual | S3b adds, S3e removes |
+| Cognito client display name `{env}-env-books-client` | `{env}-env-diya-gl-client` | `lookup-resources/action.yml` finds the client by this exact name | in-place | S3c |
+| CFN output `BooksUserPoolClientId` | `DiyaGlUserPoolClientId` | `toggle-cognito-native-auth.js`, `probe-test.yml` via `stack-output.js` | dual | S3c adds, S3d removes |
+| SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | `spreadsheets-diya-gl-app-client-id` | no workflow or script in either repository | in-place | S3c |
+| `--client books` flag | `--client diya-gl` | the spreadsheets ci run, once their LP-24 lands | dual | S3c adds, S3d removes |
+| Routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | the `diya-gl` forms | `cloud.js` on the spreadsheets site, including copies held by installed service workers | dual | S3d |
+| Cognito callback and logout URLs under `/books/` on the spreadsheets hosts | whatever path their NM-3 moves the pages to | the pages themselves | dual | S3d |
+| S3 bucket `{env}-env-books-{account}`, `booksBucketName`, `booksBucketArn`, output `BooksBucketName` | `{env}-env-diya-gl-{account}` and the `diyaGl` forms | `BackupStack`'s selection ARN | replace | S3e |
+
+The S3 key prefix `users/{hash}/books/{bookId}/` in `s3BooksRepository.js`, and the matching IAM
+patterns `arn:aws:s3:::{bucket}/users/*/books/*`, are the data noun. They stay.
+
+### The order, and why this one
+
+**S3b, then S3c, then S3d, then S3e.**
+
+S3b first because nothing outside this repository can see any of it. Every identifier in it is
+either an app-stack name that the next deployment set simply carries, or a workflow-internal name
+changed in the same commit as its only reader. It lands on a ci set, is proved there, and reaches
+prod through one deploy of main. Doing it first also shrinks S3c and S3d down to only the parts
+that need another party.
+
+S3c second because it is the env-stack half of the client story, and every name it introduces has
+to exist in a deployed stack before anything reads it. It is one `deploy-environment` run per
+environment. It is deliberately before S3d so the spreadsheets side makes a single change and a
+single deploy covering both the flag and the paths, rather than two.
+
+S3d third because it is the only row whose old names are held by software this repository does not
+deploy. It closes the two windows S3c opened as well.
+
+S3e last because it is the one row that touches stored data, and the only row that can legitimately
+stop. If a re-check finds objects in the prod bucket, S3e stops and the copy sequence below runs
+instead, and nothing else waits on it. S3e also drops the `BooksStack` line from the destroy and
+drift workflows, once no deployment set carries a stack of that name.
+
+### The dual windows
+
+Each window is named by the deploy that closes it, not by a duration.
+
+**The `BooksStack` literal in `destroy-ci.yml`, `destroy-prod.yml` and `stack-drift.yml`.** Both
+names are listed. Both helpers already skip a stack that does not exist (`delete_stack_in_region`
+resolves `DOES_NOT_EXIST` and returns; `detect_drift` prints `SKIPPED (stack not found)`), so the
+extra line costs one describe call. Our side switches first, in S3b's own commit. The old line goes
+in S3e, and what proves it unused is
+`aws cloudformation list-stacks --query "StackSummaries[?ends_with(StackName,'-app-BooksStack')]"`
+returning nothing in ci and in prod.
+
+**The CFN output `BooksUserPoolClientId`.** `IdentityStack` emits both keys from S3c. The stack side
+switches first: S3c's env deploy has to complete before `toggle-cognito-native-auth.js` and
+`probe-test.yml` move to the new key, or a run between the two reads a key its stack does not have.
+The old key goes in S3d. What proves it unused is that no file in this repository names
+`BooksUserPoolClientId`, which is a grep, since both readers are ours.
+
+**The `--client books` flag.** `toggle-cognito-native-auth.js` accepts `books` and `diya-gl` as the
+same value from S3c. The spreadsheets ci run switches to `--client diya-gl`. The `books` spelling
+goes in S3d. What proves it unused is that the spreadsheets workflow file names `diya-gl`. Their
+LP-24 row, which adds the only call site, is in flight and has not landed: if it lands after S3c it
+should be written as `--client diya-gl` from the start and this window never opens.
+
+**The API routes.** All four paths are served under both prefixes from S3d's first deploy. Our side
+switches first, and must reach prod before the spreadsheets side changes `cloud.js`. The old paths
+cannot go in the same release: their DIYA-GL pages are a PWA, and `sw.js` precaches `cloud.js`
+against a build stamp, so a browser that has not picked up the new service worker keeps calling
+`/api/v1/books` after their deploy. What proves the old paths unused is the API access log group
+`/aws/apigw/{env}-env/access`, which records `routeKey` on every request and lives at environment
+level, so it survives set rotation. The old paths go once a Logs Insights query over the prod group
+returns zero rows for a full seven days after the spreadsheets deploy:
+
+```
+fields @timestamp, routeKey
+| filter routeKey like /\/api\/v1\/books/
+| stats count() by routeKey
+```
+
+That removal is a follow-on deploy of S3d, not a new row.
+
+**The Cognito callback and logout URLs.** Cognito matches each URL exactly, so both the `/books/`
+set and the new set are listed in `buildBooksUrls` while the spreadsheets pages move. Their side
+switches last here, because a URL has to be registered before a page can redirect to it. The old
+set goes once their pages no longer live under `/books/` and their redirects are in place. This is
+the one window driven by their NM-3 rather than by anything else in this table.
+
+### The mechanism for serving both route paths
+
+`ApiStack.createRouteForLambda` builds one route per `AbstractApiLambdaProps` entry and keys its
+construct ids off method plus path, so a second entry for the same function with a different
+`urlPath` produces a second route on the same integration with no id collision. S3d serves both
+prefixes by giving the DIYA-GL stack's `lambdaFunctionProps` eight entries instead of four for the
+window, the extra four differing only in `urlPath`. `EdgeStack` gains a second CloudFront behaviour
+`/api/v1/diya-gl/*` on the same policies. `submit.catalogue.toml`'s licensing pattern becomes
+`^/api/v1/(books|diya-gl).*` for the window. `openapi.json` is generated by `OpenApiGenerator` from
+`SubmitSharedNames`, so it follows on the next `mvnw` run and is never hand-edited.
+
+### The bucket: renamed
+
+The bucket is renamed to `{env}-env-diya-gl-{account}`, in S3e, with no data copy.
+
+`bucketName` is a replacement property on `AWS::S3::Bucket`, so `DataStack`'s update creates the new
+bucket and deletes the old one, and the old one's objects go with it because `DataStack.java:646`
+sets `removalPolicy(DESTROY)` and `autoDeleteObjects(true)`. That is safe here because prod holds
+nothing: `aws --profile submit-prod s3api list-object-versions --bucket prod-env-books-972912397388`
+returns an empty result, no current versions and no delete markers. The paid DIYA-GL storage tier
+has no stored data yet. The ci bucket holds only objects that behaviour runs create and delete.
+
+Everything else follows the CDK code in the same commit: the lifecycle rules
+(`abort-incomplete-uploads`, `expire-noncurrent-versions` at 30 days), versioning, SSL enforcement
+and the public-access block are properties of the new bucket, and `BackupStack.java:306` builds its
+backup selection ARN from `sharedNames.booksBucketName`, so the AWS Backup selection follows the
+rename with no separate step. The DIYA-GL stack builds its four IAM patterns from the same name.
+
+S3e's sequence:
+
+1. Re-run `list-object-versions` against the prod bucket. If it returns anything at all, stop the
+   row and report, and run the copy sequence below instead.
+2. Rename `booksBucketName` in `SubmitSharedNames.java`, the construct id and output in
+   `DataStack.java`, the ARN variable in `BackupStack.java`, and the props and IAM patterns in the
+   DIYA-GL stack, with their tests.
+3. Deploy the environment stacks to ci. Run the renamed DIYA-GL behaviour project against ci and
+   confirm a save, a list, a version read and a delete against the new bucket.
+4. Confirm the ci backup selection lists the new bucket ARN:
+   `aws --profile submit-ci backup get-backup-selection`.
+5. Deploy to prod and repeat the backup-selection check there.
+6. Delete the `${DEPLOYMENT}-app-BooksStack` lines from `destroy-ci.yml`, `destroy-prod.yml` and
+   `stack-drift.yml` once no set of that name remains.
+
+If step 1 finds objects, the row instead becomes: add the new bucket to `DataStack` beside the old
+one; `aws s3 sync` the old bucket to the new; add the new bucket ARN to the backup selection beside
+the old one; point the DIYA-GL Lambdas at the new bucket and deploy a set; verify a list and a
+version read return the copied objects; take one on-demand backup of the new bucket and confirm the
+recovery point; then remove the old bucket from `DataStack`, which empties and deletes it.
+
+### What the spreadsheets repository has to do, and when
+
+Three cut-over points. Each waits for a deploy of ours, not for a merge.
+
+1. **After S3c reaches prod**: if their LP-24 step exists by then, change
+   `toggle-cognito-native-auth.js ... --client books` to `--client diya-gl`. If LP-24 has not landed
+   yet, write it as `--client diya-gl` from the start and there is nothing to change later.
+2. **After S3d reaches prod**: change the four `apiFetch` calls in
+   `web/spreadsheets.diyaccounting.co.uk/public/books/cloud.js` (lines 805, 842, 881, 974) from
+   `/books...` to `/diya-gl...`, and deploy. Not before: the new paths do not answer until our
+   deploy completes. Their deploy starts the seven-day clock on our old paths.
+3. **Around their own NM-3**, whenever they run it: tell us the new page paths before they deploy
+   them, so `IdentityStack.buildBooksUrls` can register both sets of callback and logout URLs first.
+   Cognito rejects a redirect to a URL it does not hold, so their pages cannot move ahead of our env
+   deploy.
+
+Two things they do not need to do. The Cognito client id does not change: S3c keeps the CDK
+construct id `{env}-env-BooksUserPoolClient` and changes only the client's display name, which is a
+no-interruption property, so prod stays `1c8hjrjp5g5ipm8o47t6qkks4r` and the hardcoded value in
+`cloud-config.js` keeps working. Renaming that construct id would replace the client, mint a new id,
+break every live session and need a coordinated release on both sides for no functional gain; it
+stays as it is until someone wants to pay that, and a CloudFormation resource import is the path if
+they do. And `BOOKS_ALLOWED_ORIGINS` becoming `DIYA_GL_ALLOWED_ORIGINS` changes only our variable
+name: the origins it lists are unchanged, and an origin carries no path, so their page moves do not
+touch it.
+
+### Where the row boundary sits between NM-S2 and S3b
+
+`SubmitSharedNames` derives each Lambda's function name from its handler's module basename through
+`ResourceNameUtils.convertCamelCaseToDashSeparated`, so `booksListGet.ingestHandler` becomes
+`{deployment}-app-books-list-get`. Renaming the four modules under `app/functions/books/` therefore
+renames four deployed Lambdas and forces edits to `SubmitSharedNames.java` and the DIYA-GL stack.
+So NM-S2 leaves `app/functions/books/` and its four unit tests alone, and S3b moves them with the
+infra that names them. NM-S2 keeps `s3BooksRepository.js`, `booksCors.js`, `booksEntitlement.js`,
+the system and behaviour tests, the npm scripts and the Playwright project, none of which any infra
+file names.
 
 ## Rows
 
@@ -156,8 +381,8 @@ then Sonnet to carry out that design.
 | Id | Class | Model | Precursors | Files |
 |---|---|---|---|---|
 | NM-S1 | 1, prose | Haiku | none | `PLAN_ITSA_PHASE_2.md`, `PLAN_DIYA_GL_STORAGE.md`, `PLAN_SUBMISSION_MCP.md`, `PLAN_ONE_STOP_DASHBOARD.md`, `NEXT.md`, `email.txt`, `app/functions/billing/billingReturnUrl.js` |
-| NM-S2 | 3, same-repo code | Sonnet | none | `app/data/s3BooksRepository.js`, `app/functions/books/`, `app/lib/booksCors.js`, `app/services/booksEntitlement.js`, `app/system-tests/booksStorage.system.test.js`, the unit tests, `behaviour-tests/books.behaviour.test.js`, `package.json`, `playwright.config.js` |
-| NM-S3 | 4, cross-repo | Opus (design), then Sonnet | NM-5 | `BooksStack.java`, `EdgeStack.java`, `IdentityStack.java`, `DataStack.java`, `BackupStack.java`, `SelfDestructStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `cdk.json`, the workflow YAMLs, `lookup-resources/action.yml`, `openapi.json`, `submit.catalogue.toml`, against the shared class-4 table above |
+| NM-S2 | 3, same-repo code | Sonnet | none | `app/data/s3BooksRepository.js`, `app/lib/booksCors.js`, `app/services/booksEntitlement.js`, `app/system-tests/booksStorage.system.test.js`, the unit tests for those, `behaviour-tests/books.behaviour.test.js`, `package.json`, `playwright.config.js`. Not `app/functions/books/`: its module basenames are the deployed Lambda names, so those four modules and their unit tests move in S3b |
+| NM-S3 | 4, cross-repo | Sonnet, per the class 4 design above | NM-5 | splits into S3b to S3e. S3b: `BooksStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `SelfDestructStack.java`, `EdgeStack.java`'s headers policy, `cdk-application/cdk.json`, the workflow YAMLs, `lookup-resources/action.yml`, `app/functions/books/`. S3c: `IdentityStack.java`, `scripts/toggle-cognito-native-auth.js`, `probe-test.yml`. S3d: the route paths in `SubmitSharedNames.java`, `EdgeStack.java`, `app/functions/diyaGl/*`, `submit.catalogue.toml`, `openapi.json`, plus `IdentityStack.buildBooksUrls`. S3e: `DataStack.java`, `BackupStack.java`, `SubmitSharedNames.java` |
 
 The Submit rows (NM-S1 to NM-S3) are blocked on busy: the Submit repository takes no board item
 into flight until the operator lifts the pause.

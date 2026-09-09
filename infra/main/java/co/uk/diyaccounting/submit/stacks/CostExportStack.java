@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
+import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -22,8 +23,8 @@ import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.StorageClass;
@@ -123,10 +124,8 @@ public class CostExportStack extends Stack {
 
         if (!props.readerRoleArns().isEmpty()) {
             List<String> roleArns = props.readerRoleArns();
-            List<String> accountIds = roleArns.stream()
-                    .map(arn -> arn.split(":")[4])
-                    .distinct()
-                    .toList();
+            List<String> accountIds =
+                    roleArns.stream().map(arn -> arn.split(":")[4]).distinct().toList();
             List<IPrincipal> accountPrincipals = accountIds.stream()
                     .map(accountId -> (IPrincipal) new AccountPrincipal(accountId))
                     .toList();
@@ -158,14 +157,18 @@ public class CostExportStack extends Stack {
         // INCLUDE_RESOURCES/split-cost-allocation options as CUR 2.0 has). DAILY matches the
         // nightly copy job's own cadence: an hourly grain would only be re-aggregated to a day
         // downstream anyway.
+        //
+        // The Data Exports API rejects "SELECT *", so the column list is explicit. It is the
+        // same list, in the same order, CostFocusIngestion.FOCUS_1_2_COLUMNS gives the Glue
+        // table reading this export's output — the two must change together.
         this.export = CfnExport.Builder.create(this, "FocusExport")
                 .export(CfnExport.ExportProperty.builder()
                         .name(props.exportName())
                         .description("FOCUS 1.2 cost and usage export for the whole organisation")
                         .dataQuery(CfnExport.DataQueryProperty.builder()
-                                .queryStatement("SELECT * FROM " + FOCUS_TABLE_NAME)
-                                .tableConfigurations(
-                                        Map.of(FOCUS_TABLE_NAME, Map.of("TIME_GRANULARITY", "DAILY")))
+                                .queryStatement("SELECT " + String.join(", ", CostFocusIngestion.FOCUS_1_2_COLUMNS)
+                                        + " FROM " + FOCUS_TABLE_NAME)
+                                .tableConfigurations(Map.of(FOCUS_TABLE_NAME, Map.of("TIME_GRANULARITY", "DAILY")))
                                 .build())
                         .destinationConfigurations(CfnExport.DestinationConfigurationsProperty.builder()
                                 .s3Destination(CfnExport.S3DestinationProperty.builder()

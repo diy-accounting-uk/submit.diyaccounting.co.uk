@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # HMRC MTD VAT Approval Plan
 
 **Document Purpose**: Steps to take DIY Accounting Submit from current state to HMRC production approval.

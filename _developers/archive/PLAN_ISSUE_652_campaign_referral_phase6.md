@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Issue #652 — Phase 6: Campaign Passes & Referral System (Backend + Frontend)
 
 > Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/652 (assigned to @antonycc)

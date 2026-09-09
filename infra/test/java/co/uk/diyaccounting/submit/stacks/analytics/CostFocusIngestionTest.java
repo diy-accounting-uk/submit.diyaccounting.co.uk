@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -80,8 +80,7 @@ class CostFocusIngestionTest {
 
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
         template.hasResourceProperties(
-                "AWS::Scheduler::Schedule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(45 2 * * ? *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(45 2 * * ? *)")));
     }
 
     @Test

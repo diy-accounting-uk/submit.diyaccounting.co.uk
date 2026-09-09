@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -79,7 +79,8 @@ class SecurityDetectionStackTest {
             var properties = (Map<String, Object>) alarm.get("Properties");
             @SuppressWarnings("unchecked")
             var alarmActions = (List<Object>) properties.get("AlarmActions");
-            assertTrue(alarmActions != null && alarmActions.size() == 1, "expected exactly one SNS action: " + properties);
+            assertTrue(
+                    alarmActions != null && alarmActions.size() == 1, "expected exactly one SNS action: " + properties);
         }
 
         // Both metric filters read the same CloudTrail log group ObservabilityStack writes to.
@@ -89,17 +90,18 @@ class SecurityDetectionStackTest {
         // The Scan filter pattern is scoped to the five customer data tables, not every DynamoDB
         // table in the account.
         var metricFilters = template.findResources("AWS::Logs::MetricFilter");
-        boolean scanFilterScopedToCustomerTables = metricFilters.values().stream().anyMatch(resource -> {
-            @SuppressWarnings("unchecked")
-            var properties = (Map<String, Object>) resource.get("Properties");
-            var filterPattern = (String) properties.get("FilterPattern");
-            return filterPattern.contains("\"Scan\"")
-                    && filterPattern.contains("docs-env-receipts")
-                    && filterPattern.contains("docs-env-bundles")
-                    && filterPattern.contains("docs-env-passes")
-                    && filterPattern.contains("docs-env-subscriptions")
-                    && filterPattern.contains("docs-env-hmrc-api-requests");
-        });
+        boolean scanFilterScopedToCustomerTables = metricFilters.values().stream()
+                .anyMatch(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    var filterPattern = (String) properties.get("FilterPattern");
+                    return filterPattern.contains("\"Scan\"")
+                            && filterPattern.contains("docs-env-receipts")
+                            && filterPattern.contains("docs-env-bundles")
+                            && filterPattern.contains("docs-env-passes")
+                            && filterPattern.contains("docs-env-subscriptions")
+                            && filterPattern.contains("docs-env-hmrc-api-requests");
+                });
         assertTrue(
                 scanFilterScopedToCustomerTables,
                 "expected the Scan metric filter pattern to name all five customer data tables");
@@ -127,9 +129,11 @@ class SecurityDetectionStackTest {
                     && filterPattern.contains("docs-*")
                     && filterPattern.contains("submit-docs-deployment-role");
         });
-        assertTrue(saltReadFilterScoped, "expected the salt-read metric filter pattern to reference GetSecretValue,"
-                + " the salt secret, the docs-* environment role prefix, and the"
-                + " submit-docs-deployment-role exception");
+        assertTrue(
+                saltReadFilterScoped,
+                "expected the salt-read metric filter pattern to reference GetSecretValue,"
+                        + " the salt secret, the docs-* environment role prefix, and the"
+                        + " submit-docs-deployment-role exception");
 
         // One of the fourteen CIS CloudWatch metric filter controls, as a representative check
         // that the loop wired both the filter and the alarm through to the shared topic.
@@ -172,7 +176,8 @@ class SecurityDetectionStackTest {
                     && filterPattern.contains("submit-docs-deployment-role")
                     && filterPattern.contains("submit-docs-github-actions-role");
         });
-        assertTrue(s3FilterCorrect,
+        assertTrue(
+                s3FilterCorrect,
                 "expected S3BucketPolicyChanges filter to include type guard and deploy role exclusions, pattern: "
                         + metricFilters.values().stream()
                                 .map(r -> (String) ((Map<String, Object>) r.get("Properties")).get("FilterPattern"))
@@ -186,10 +191,53 @@ class SecurityDetectionStackTest {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) resource.get("Properties");
             var filterPattern = (String) properties.get("FilterPattern");
-            return filterPattern.contains("userIdentity.type") && filterPattern.contains("Root")
+            return filterPattern.contains("userIdentity.type")
+                    && filterPattern.contains("Root")
                     && !filterPattern.contains("sessionIssuer");
         });
-        assertTrue(rootFilterCorrect,
+        assertTrue(
+                rootFilterCorrect,
                 "expected RootAccountUsage filter to omit sessionIssuer guard (Root has no sessionContext)");
+    }
+
+    @Test
+    void deployRoleExclusionGuardsTheWholeEventNameChainNotJustItsLastClause() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+        List<String> patterns = metricFilters.values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return (String) properties.get("FilterPattern");
+                })
+                .toList();
+
+        // One distinctive event name per one of the eight controls whose deploy-role exclusion
+        // is appended to the pattern. The event-name chain must be wrapped in its own
+        // parentheses before the guard, so the rendered pattern starts "{ ((": otherwise "&&"
+        // binds only to the chain's last clause and every earlier event name matches
+        // unconditionally.
+        Map<String, String> guardedControlEventNames = Map.of(
+                "UnauthorizedApiCalls", "UnauthorizedAccess",
+                "IamPolicyChanges", "PutRolePolicy",
+                "S3BucketPolicyChanges", "PutBucketPolicy",
+                "SecurityGroupChanges", "AuthorizeSecurityGroupIngress",
+                "NaclChanges", "CreateNetworkAcl",
+                "NetworkGatewayChanges", "CreateCustomerGateway",
+                "RouteTableChanges", "CreateRouteTable",
+                "VpcChanges", "CreateVpc");
+
+        for (var entry : guardedControlEventNames.entrySet()) {
+            String pattern = patterns.stream()
+                    .filter(p -> p.contains(entry.getValue()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no metric filter pattern found for " + entry.getKey()));
+            assertTrue(
+                    pattern.startsWith("{ (("),
+                    entry.getKey() + " pattern must wrap its event-name chain before the guard, was: " + pattern);
+            assertTrue(
+                    pattern.contains("cdk-hnb659fds-*"),
+                    entry.getKey() + " pattern must still carry the deploy-role exclusion, was: " + pattern);
+        }
     }
 }

@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: create-hmrc-test-user
 run-name: "Create HMRC Sandbox test user"
-# SPDX-FileCopyrightText: 2025-2026 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Creates an HMRC Sandbox test user with MTD-VAT access.
 # The credentials can be used for manual testing against the HMRC Sandbox environment.

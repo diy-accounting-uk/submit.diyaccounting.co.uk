@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # AWS Account & GitHub Repository Separation Plan
 
 **Version**: 2.0 | **Date**: February 2026 | **Status**: In progress

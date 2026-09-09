@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 #
 # Battery Pack CLI wrapper
 # Usage: ./scripts/battery-pack.sh <command> [args]

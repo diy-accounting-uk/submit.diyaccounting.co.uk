@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Privacy Duties for Operating DIY Accounting Submit
 
 This document outlines the specific privacy and data protection duties required when operating this system, as mandated by UK GDPR and HMRC MTD requirements.

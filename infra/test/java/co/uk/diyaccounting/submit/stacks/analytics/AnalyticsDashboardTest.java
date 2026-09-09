@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -161,8 +161,10 @@ class AnalyticsDashboardTest {
         int probePassRateIndex = dashboardBody.indexOf("ProbePassRate");
         int completionsIndex = dashboardBody.indexOf("CompletionsByActivity");
         assertTrue(probePassRateIndex > uptimeIndex, "expected the availability SLI under Uptime");
-        assertTrue(probePassRateIndex < submissionIndex, "expected the availability SLI before Conversion to submission");
-        assertTrue(completionsIndex > submissionIndex, "expected completions by activity under Conversion to submission");
+        assertTrue(
+                probePassRateIndex < submissionIndex, "expected the availability SLI before Conversion to submission");
+        assertTrue(
+                completionsIndex > submissionIndex, "expected completions by activity under Conversion to submission");
         assertTrue(completionsIndex < paidIndex, "expected completions by activity before Conversion to paid");
 
         // B52e: the running cost widgets sit under their own heading, after Conversion to paid.

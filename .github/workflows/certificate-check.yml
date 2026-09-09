@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: certificate-check
 run-name: "certificate check of ${{ github.ref_name }}"
-# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Fails when any ACM certificate in the account has a domain whose validation is not
 # SUCCESS, or expires within 30 days. A deleted DNS validation record otherwise stays

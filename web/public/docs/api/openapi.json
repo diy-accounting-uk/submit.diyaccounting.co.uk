@@ -4,6 +4,14 @@
     "title" : "DIY Accounting Submit API",
     "description" : "DIY Accounting Submit API documentation",
     "version" : "1.0.0",
+    "termsOfService" : "https://submit.diyaccounting.co.uk/terms.html",
+    "contact" : {
+      "email" : "admin@diyaccounting.co.uk"
+    },
+    "license" : {
+      "name" : "PolyForm Internal Use License 1.0.0",
+      "url" : "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE"
+    },
     "x-authentication-guide" : {
       "description" : "This API is protected by Amazon Cognito. To use the API:\n\n1. **Via Website**: If you are logged into the DIY Accounting Submit website, you can access the Swagger UI directly and API calls will use your existing session cookies.\n\n2. **External Access**: \n   - First complete the Cognito hosted UI OAuth flow to get an authorization code\n   - Exchange that code for an access token by calling `/api/v1/cognito/token`\n   - Include the token in the `Authorization: Bearer <token>` header\n\n3. **For HMRC Integration**: Some endpoints require HMRC authorization tokens obtained via `/api/v1/hmrc/token`\n\n**Note**: All endpoints require proper CORS headers and are accessible from the same domain as the main application."
     }

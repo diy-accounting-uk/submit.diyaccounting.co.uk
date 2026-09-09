@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -8,7 +8,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
 }));
 
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
-const { entitlementFor } = await import("../../services/booksEntitlement.js");
+const { entitlementFor } = await import("../../services/diyaGlEntitlement.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
 function restoreEnv(key, value) {
@@ -19,7 +19,7 @@ function restoreEnv(key, value) {
   }
 }
 
-describe("booksEntitlement", () => {
+describe("diyaGlEntitlement", () => {
   const originalEnabled = process.env.BOOKS_ENTITLEMENT_ENFORCED;
   const originalBundleId = process.env.BOOKS_BUNDLE_ID;
   const originalNodeEnv = process.env.NODE_ENV;

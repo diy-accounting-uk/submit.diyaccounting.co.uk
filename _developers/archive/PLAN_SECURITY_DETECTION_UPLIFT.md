@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 > Archived 2026-09-07. Phases 0 to 3 were delivered in January 2026 (SecurityDetectionStack, ScanDetectionStack; issues #9 and #10 closed 2026-09-05). Phase 4's remaining ideas carry on as the security panels of `PLAN_ONE_STOP_DASHBOARD.md`.
 
 # Security Detection & Breach Response Uplift Plan

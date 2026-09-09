@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How many VAT returns went to HMRC each day, split by outcome?
 CREATE OR REPLACE VIEW v_submissions_daily AS
 SELECT date(event_ts) AS day,

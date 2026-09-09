@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -928,15 +928,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaBusinessDetailsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBusinessDetailsGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaBusinessDetailsGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaBusinessDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBusinessDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBusinessDetailsGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaBusinessDetailsGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -949,7 +950,8 @@ public class HmrcStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        itsaBusinessDetailsGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaBusinessDetailsGetLambdaUrlOrigin.queue.getQueueUrl());
+        itsaBusinessDetailsGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaBusinessDetailsGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcItsaBusinessDetailsGetLambdaProps = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaBusinessDetailsGetLambda = hmrcItsaBusinessDetailsGetLambdaUrlOrigin.ingestLambda;
@@ -1078,18 +1080,21 @@ public class HmrcStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1116,12 +1121,15 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaHandler);
 
         // Grant the ITSA self-employment period Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcItsaSelfEmploymentPeriodPostLambda, hmrcItsaSelfEmploymentPeriodPostLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaSelfEmploymentPeriodPostLambda,
+                        hmrcItsaSelfEmploymentPeriodPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1156,18 +1164,21 @@ public class HmrcStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaFunctionName)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1194,11 +1205,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaHandler);
 
         // Grant the ITSA self-employment periods list Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcItsaSelfEmploymentPeriodsGetLambda, hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaSelfEmploymentPeriodsGetLambda,
+                        hmrcItsaSelfEmploymentPeriodsGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1236,15 +1250,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1270,12 +1285,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaHandler,
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodGetWorkerLambdaHandler);
 
-        // Grant the ITSA self-employment period retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        // Grant the ITSA self-employment period retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
         List.of(this.hmrcItsaSelfEmploymentPeriodGetLambda, hmrcItsaSelfEmploymentPeriodGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1314,15 +1331,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1348,13 +1366,15 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler,
                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler);
 
-        // Grant the ITSA self-employment period amendment Lambda and its worker permission to access DynamoDB Bundles Table
+        // Grant the ITSA self-employment period amendment Lambda and its worker permission to access DynamoDB Bundles
+        // Table
         List.of(this.hmrcItsaSelfEmploymentPeriodPutLambda, hmrcItsaSelfEmploymentPeriodPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1392,15 +1412,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1426,12 +1447,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler,
                 props.sharedNames().hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler);
 
-        // Grant the ITSA self-employment annual submission retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        // Grant the ITSA self-employment annual submission retrieval Lambda and its worker permission to access
+        // DynamoDB Bundles Table
         List.of(this.hmrcItsaSelfEmploymentAnnualGetLambda, hmrcItsaSelfEmploymentAnnualGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1470,15 +1493,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1504,7 +1528,8 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler,
                 props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler);
 
-        // Grant the ITSA self-employment annual submission Lambda and its worker permission to access DynamoDB Bundles Table.
+        // Grant the ITSA self-employment annual submission Lambda and its worker permission to access DynamoDB Bundles
+        // Table.
         // No token consumption here (the annual submission is free), so Query is enough - unlike
         // the quarterly update Lambdas, which also need UpdateItem to consume a token.
         List.of(this.hmrcItsaSelfEmploymentAnnualPutLambda, hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.workerLambda)
@@ -1512,7 +1537,8 @@ public class HmrcStack extends Stack {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1547,12 +1573,14 @@ public class HmrcStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaCrystallisationObligationsGetIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1567,7 +1595,8 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer)
                         .environment(itsaCrystallisationObligationsGetLambdaEnv)
                         .build());
 
@@ -1575,9 +1604,12 @@ public class HmrcStack extends Stack {
         itsaCrystallisationObligationsGetLambdaEnv.put(
                 "SQS_QUEUE_URL", hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.queue.getQueueUrl());
 
-        this.hmrcItsaCrystallisationObligationsGetLambdaProps = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.apiProps;
-        this.hmrcItsaCrystallisationObligationsGetLambda = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaCrystallisationObligationsGetLambdaLogGroup = hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.logGroup;
+        this.hmrcItsaCrystallisationObligationsGetLambdaProps =
+                hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaCrystallisationObligationsGetLambda =
+                hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaCrystallisationObligationsGetLambdaLogGroup =
+                hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaCrystallisationObligationsGetLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA crystallisation obligations with ingestHandler %s and worker %s",
@@ -1586,11 +1618,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler);
 
         // Grant the ITSA crystallisation obligations Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcItsaCrystallisationObligationsGetLambda, hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaCrystallisationObligationsGetLambda,
+                        hmrcItsaCrystallisationObligationsGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1613,7 +1648,9 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
-                .with("HMRC_ITSA_STATUS_GET_ASYNC_REQUESTS_TABLE_NAME", hmrcItsaStatusGetAsyncRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_STATUS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaStatusGetAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var hmrcItsaStatusGetLambdaUrlOrigin = new AsyncApiLambda(
@@ -1660,21 +1697,22 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaStatusGetWorkerLambdaHandler);
 
         // Grant the ITSA status Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcItsaStatusGetLambda, hmrcItsaStatusGetLambdaUrlOrigin.workerLambda).forEach(fn -> {
-            bundlesTable.grant(fn, "dynamodb:Query");
-            hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-            hmrcItsaStatusGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        List.of(this.hmrcItsaStatusGetLambda, hmrcItsaStatusGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaStatusGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
-            // Grant access to user sub hash salt secret in Secrets Manager
-            SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
-            // Grant EventBridge PutEvents permission
-            fn.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("events:PutEvents"))
-                    .resources(List.of(activityBusArn))
-                    .build());
-        });
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaStatusGetLambda.getFunctionName());
@@ -1778,15 +1816,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1812,12 +1851,14 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler,
                 props.sharedNames().hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler);
 
-        // Grant the ITSA BSAS self-employment retrieval Lambda and its worker permission to access DynamoDB Bundles Table
+        // Grant the ITSA BSAS self-employment retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
         List.of(this.hmrcItsaBsasSelfEmploymentGetLambda, hmrcItsaBsasSelfEmploymentGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1852,12 +1893,14 @@ public class HmrcStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaBsasSelfEmploymentAdjustPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1872,7 +1915,8 @@ public class HmrcStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer)
                         .environment(itsaBsasSelfEmploymentAdjustPostLambdaEnv)
                         .build());
 
@@ -1880,9 +1924,12 @@ public class HmrcStack extends Stack {
         itsaBsasSelfEmploymentAdjustPostLambdaEnv.put(
                 "SQS_QUEUE_URL", hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.queue.getQueueUrl());
 
-        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.apiProps;
-        this.hmrcItsaBsasSelfEmploymentAdjustPostLambda = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaLogGroup = hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.logGroup;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps =
+                hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambda =
+                hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaLogGroup =
+                hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA BSAS self-employment adjustment with ingestHandler %s and worker %s",
@@ -1890,13 +1937,17 @@ public class HmrcStack extends Stack {
                 props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler,
                 props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler);
 
-        // Grant the ITSA BSAS self-employment adjustment Lambda and its worker permission to access DynamoDB Bundles Table.
+        // Grant the ITSA BSAS self-employment adjustment Lambda and its worker permission to access DynamoDB Bundles
+        // Table.
         // No token consumption and no receipt here - the plan's receipts table lists none for this call.
-        List.of(this.hmrcItsaBsasSelfEmploymentAdjustPostLambda, hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaBsasSelfEmploymentAdjustPostLambda,
+                        hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1934,15 +1985,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaCalculationTriggerPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaCalculationTriggerPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaCalculationTriggerPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaCalculationTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaCalculationTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaCalculationTriggerPostLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaCalculationTriggerPostLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1974,7 +2026,8 @@ public class HmrcStack extends Stack {
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaCalculationTriggerPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaCalculationTriggerPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -2089,15 +2142,16 @@ public class HmrcStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaFinalDeclarationPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaFinalDeclarationPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaFinalDeclarationPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaFinalDeclarationPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaFinalDeclarationPostLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaFinalDeclarationPostLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))

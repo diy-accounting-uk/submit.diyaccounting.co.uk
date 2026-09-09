@@ -3,6 +3,9 @@ name: vat-submission-failure-alarm-user-lookup
 description: From a prod-env-hmrc-submission-failure alarm (or its [ALARM] issue), find the customer behind the failed VAT submission, what HMRC answered, and whether they wrote to support, without scanning a customer table or posting personal data anywhere public. Invoke when the operator asks who a submission-failure alarm was, what we know about that customer, or whether they need a reply.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # vat-submission-failure-alarm-user-lookup
 
 Everything here is read-only AWS through the `submit-prod` SSO profile

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.security;
@@ -129,7 +129,8 @@ public class SecurityLakeStack extends Stack {
         // Imports: the analytics lake bucket, the Glue database (by name only - see class doc)
         // and the security-findings SNS topic ObservabilityStack creates
         // ============================================================================
-        IBucket lakeBucket = Bucket.fromBucketName(this, prefix + "-SecurityLakeBucketRef", sharedNames.analyticsLakeBucketName);
+        IBucket lakeBucket =
+                Bucket.fromBucketName(this, prefix + "-SecurityLakeBucketRef", sharedNames.analyticsLakeBucketName);
 
         String securityFindingsTopicArn =
                 "arn:aws:sns:%s:%s:%s-security-findings".formatted(this.getRegion(), this.getAccount(), prefix);
@@ -156,7 +157,8 @@ public class SecurityLakeStack extends Stack {
         // scripts/put-secret-with-rotation-tag.sh); referencing it by name rather than ARN avoids
         // the random ARN suffix Secrets Manager appends, so no wildcard match is needed for
         // GetSecretValue's SecretId parameter.
-        String opsGithubTokenSecretId = "%s/%s%s".formatted(props.envName(), SECRETS_PATH_PREFIX, "github/issue_bot_token");
+        String opsGithubTokenSecretId =
+                "%s/%s%s".formatted(props.envName(), SECRETS_PATH_PREFIX, "github/issue_bot_token");
 
         var environment = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
@@ -173,8 +175,8 @@ public class SecurityLakeStack extends Stack {
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
                         .ingestFunctionName(functionName)
                         .ingestHandler("app/functions/security/securityLakeNightly.handler")
-                        .ingestLambdaArn(
-                                "arn:aws:lambda:%s:%s:function:%s".formatted(this.getRegion(), this.getAccount(), functionName))
+                        .ingestLambdaArn("arn:aws:lambda:%s:%s:function:%s"
+                                .formatted(this.getRegion(), this.getAccount(), functionName))
                         .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:%s:%s:function:%s:%s"
                                 .formatted(
                                         this.getRegion(),
@@ -225,8 +227,8 @@ public class SecurityLakeStack extends Stack {
         nightlyLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("logs:DescribeLogGroups"))
-                .resources(List.of(
-                        "arn:aws:logs:us-east-1:%s:log-group:aws-waf-logs-%s-*".formatted(this.getAccount(), props.envName())))
+                .resources(List.of("arn:aws:logs:us-east-1:%s:log-group:aws-waf-logs-%s-*"
+                        .formatted(this.getAccount(), props.envName())))
                 .build());
         nightlyLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -248,7 +250,8 @@ public class SecurityLakeStack extends Stack {
                 .effect(Effect.ALLOW)
                 .actions(List.of("cloudwatch:PutMetricData"))
                 .resources(List.of("*"))
-                .conditions(java.util.Map.of("StringEquals", java.util.Map.of("cloudwatch:namespace", "Submit/Security")))
+                .conditions(
+                        java.util.Map.of("StringEquals", java.util.Map.of("cloudwatch:namespace", "Submit/Security")))
                 .build());
 
         // ============================================================================

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: rename the HMRC routing mode to synthetic
 
 The HMRC routing mode `hmrcAccount` takes the values `synthetic` and `live`. The value `sandbox`

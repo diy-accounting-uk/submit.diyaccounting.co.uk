@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
  *
  * Post a generated micro-entity accounts iXBRL file to Companies House's public XBRL validator
  * and print the result. Reaches the network, so this runs on demand only, never as part of the

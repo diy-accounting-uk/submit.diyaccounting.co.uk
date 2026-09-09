@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // playwright.config.js
 import { defineConfig } from "@playwright/test";
 
@@ -249,9 +252,9 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
-      name: "booksBehaviour",
+      name: "diyaGlBehaviour",
       testDir: "behaviour-tests",
-      testMatch: ["**/books.behaviour.test.js"],
+      testMatch: ["**/diyaGlStorage.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
       timeout: 300_000,

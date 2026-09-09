@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: API Gateway Custom Domain + Domain Convention Alignment + Fraud Prevention Fix
 
 **Status: COMPLETE** — All items deployed to CI and prod as of 8 February 2026.

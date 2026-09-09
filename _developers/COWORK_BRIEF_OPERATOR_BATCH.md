@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Archived Cowork briefs
 
 Three closed briefs moved here from the workspace root on 2026-09-04. The live operator brief is `../../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root. Nothing below is outstanding; do not re-run any of it.

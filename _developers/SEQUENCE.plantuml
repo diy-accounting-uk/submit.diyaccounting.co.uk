@@ -1,4 +1,7 @@
 @startuml
+' SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+' Copyright (C) 2006-2026 DIY Accounting Limited
+
 actor User
 participant Browser
 participant "Web App" as App

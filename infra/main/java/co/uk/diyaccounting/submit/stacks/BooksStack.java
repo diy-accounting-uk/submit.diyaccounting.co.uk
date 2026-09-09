@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -158,7 +158,9 @@ public class BooksStack extends Stack {
                 .resources(List.of(booksMetadataArnPattern))
                 .build());
         SubHashSaltHelper.grantSaltAccess(this.booksListGetLambda, region, account, props.envName());
-        infof("Created Books List GET Lambda %s", this.booksListGetLambda.getNode().getId());
+        infof(
+                "Created Books List GET Lambda %s",
+                this.booksListGetLambda.getNode().getId());
 
         // ============================================================================
         // Books Version GET Lambda (books JWT auth)
@@ -195,7 +197,9 @@ public class BooksStack extends Stack {
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         SubHashSaltHelper.grantSaltAccess(this.booksVersionGetLambda, region, account, props.envName());
-        infof("Created Books Version GET Lambda %s", this.booksVersionGetLambda.getNode().getId());
+        infof(
+                "Created Books Version GET Lambda %s",
+                this.booksVersionGetLambda.getNode().getId());
 
         // ============================================================================
         // Books PUT Lambda (books JWT auth)

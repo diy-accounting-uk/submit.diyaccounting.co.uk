@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Do GA4, Stripe and our own activity events agree on how many purchases happened each day?
 --
 -- The three counts are not meant to match exactly: GA4 misses consented-out visitors, Stripe

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -77,15 +77,18 @@ class OperatorEffortTablesTest {
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "Name",
-                                "github_workflow_runs",
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/operator/workflow-runs/")))))));
+                Match.objectLike(
+                        Map.of(
+                                "TableInput",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Name",
+                                                "github_workflow_runs",
+                                                "StorageDescriptor",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "Location",
+                                                                "s3://docs-env-analytics-lake-111111111111/curated/operator/workflow-runs/")))))));
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
@@ -114,9 +117,10 @@ class OperatorEffortTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "event", "Type", "string"),
-                                                Map.of("Name", "actor", "Type", "string"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "event", "Type", "string"),
+                                                        Map.of("Name", "actor", "Type", "string"))))))))));
     }
 
     @Test
@@ -134,11 +138,12 @@ class OperatorEffortTablesTest {
                                 Match.objectLike(Map.of(
                                         "Columns",
                                         Match.arrayWith(
-                                                List.of(Map.of(
-                                                        "Name",
-                                                        "has_claude_coauthor",
-                                                        "Type",
-                                                        "boolean"))))))))));
+                                                List.of(
+                                                        Map.of(
+                                                                "Name",
+                                                                "has_claude_coauthor",
+                                                                "Type",
+                                                                "boolean"))))))))));
     }
 
     @Test

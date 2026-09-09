@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -245,8 +245,7 @@ class DataQualityTest {
                 "curated/compliance/fraud-headers/*",
                 "curated/cost/focus/*");
         var expectedCondition = Match.objectLike(Map.of("StringLike", Map.of("s3:prefix", expectedPrefixes)));
-        var expectedStatement = Match.objectLike(
-                Map.of("Action", "s3:ListBucket", "Condition", expectedCondition));
+        var expectedStatement = Match.objectLike(Map.of("Action", "s3:ListBucket", "Condition", expectedCondition));
         var expectedDocument = Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(expectedStatement))));
 
         template.hasResourceProperties(
@@ -287,7 +286,8 @@ class DataQualityTest {
                     "dora_runs",
                     "compliance_accessibility",
                     "compliance_fraud_headers")) {
-                assertTrue(json.contains(tableName), "expected " + tableName + " in GLUE_DATA_QUALITY_TARGETS: " + json);
+                assertTrue(
+                        json.contains(tableName), "expected " + tableName + " in GLUE_DATA_QUALITY_TARGETS: " + json);
             }
         }
         assertTrue(found, "Expected one Lambda function with a GLUE_DATA_QUALITY_TARGETS environment variable");

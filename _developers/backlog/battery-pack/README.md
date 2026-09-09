@@ -1,8 +1,11 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Battery Pack 🔋
 
 > Key-gated open source: your code is open, but batteries not included.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Internal Use](https://img.shields.io/badge/License-PolyForm--Internal--Use--1.0.0-blue.svg)](https://polyformproject.org/licenses/internal-use/1.0.0)
 
 ## What Is This?
 

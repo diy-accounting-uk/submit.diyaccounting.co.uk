@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: Fix Gov-Client-Multi-Factor Header Missing from HMRC Requests — COMPLETE
 
 ## User Assertions (non-negotiable)

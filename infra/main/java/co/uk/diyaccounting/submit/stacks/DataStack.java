@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -637,7 +637,10 @@ public class DataStack extends Stack {
                 "stateKey",
                 null);
         ensureTimeToLive(
-                this, props.resourceNamePrefix() + "-SecurityStateTTL", props.sharedNames().securityStateTableName, "ttl");
+                this,
+                props.resourceNamePrefix() + "-SecurityStateTTL",
+                props.sharedNames().securityStateTableName,
+                "ttl");
         infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
 
         // Books bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
@@ -791,9 +794,7 @@ public class DataStack extends Stack {
                 "HmrcItsaStatusGetAsyncRequestsTableName",
                 this.hmrcItsaStatusGetAsyncRequestsTable.getTableName());
         cfnOutput(
-                this,
-                "HmrcItsaStatusGetAsyncRequestsTableArn",
-                this.hmrcItsaStatusGetAsyncRequestsTable.getTableArn());
+                this, "HmrcItsaStatusGetAsyncRequestsTableArn", this.hmrcItsaStatusGetAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaBsasTriggerPostAsyncRequestsTableName",

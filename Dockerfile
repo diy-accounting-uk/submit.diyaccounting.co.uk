@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Optimized Dockerfile for AWS Lambda with ARM64 architecture
 # Uses multi-stage build with cross-compilation:
 #   - Builder stage runs on the build host's native arch (x86_64 on GitHub Actions)
@@ -20,6 +23,13 @@ RUN npm ci --omit=dev --ignore-scripts
 
 # Final stage: ARM64 Lambda base image
 FROM public.ecr.aws/lambda/nodejs:24
+
+LABEL org.opencontainers.image.licenses="LicenseRef-PolyForm-Internal-Use-1.0.0" \
+      org.opencontainers.image.vendor="DIY Accounting Limited" \
+      org.opencontainers.image.title="DIY Accounting Submit" \
+      org.opencontainers.image.source="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" \
+      org.opencontainers.image.documentation="https://submit.diyaccounting.co.uk/docs/api/" \
+      org.opencontainers.image.url="https://submit.diyaccounting.co.uk"
 
 # Copy dependencies from builder (pure JS, architecture-independent)
 COPY --from=builder /build/node_modules ./node_modules

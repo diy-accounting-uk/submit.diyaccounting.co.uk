@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 ## Goals
 
 - **Full API coverage** – implement handlers for creating, listing, retrieving, amending and deleting self‑employment annual and period summaries, plus cumulative summaries:contentReference[oaicite:27]{index=27}:contentReference[oaicite:28]{index=28}.

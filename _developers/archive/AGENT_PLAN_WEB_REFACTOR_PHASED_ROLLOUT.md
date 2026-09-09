@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Phased Rollout Plan: Frontend Refactoring and Cleanup
 
 This document outlines a phased approach to rolling out changes from the `copilot/refactor-js-code-structure` branch which attempted comprehensive refactoring that proved difficult to debug. This plan breaks the work into testable, low-risk phases.

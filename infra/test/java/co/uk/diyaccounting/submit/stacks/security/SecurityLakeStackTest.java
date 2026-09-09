@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.security;
@@ -60,8 +60,7 @@ class SecurityLakeStackTest {
         template.resourceCountIs("AWS::SNS::Topic", 0);
 
         template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(20 3 * * ? *)")));
+                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(20 3 * * ? *)")));
 
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",

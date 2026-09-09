@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How many subscriptions were cancelled each day, by bundle?
 --
 -- Two ways a subscription's change history shows a cancellation: cancel_at_period_end flips

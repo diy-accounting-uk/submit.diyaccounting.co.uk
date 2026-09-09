@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js
 //
 // Steps for the DIYA-GL subscription behaviour case: signing in against the DIYA-GL app client
 // through the Cognito hosted UI directly (no DIYA-GL page exists yet to drive the sign-in from,
-// unlike books.behaviour.test.js's main-client login), and calling the billing checkout, billing
+// unlike diyaGlStorage.behaviour.test.js's main-client login), and calling the billing checkout, billing
 // portal and books routes with the token that flow produces.
 //
 // The checkout, portal and books calls below run as plain Node fetches, not page.evaluate calls
-// from inside the browser. books.behaviour.test.js drives its calls from the browser deliberately,
+// from inside the browser. diyaGlStorage.behaviour.test.js drives its calls from the browser deliberately,
 // to prove CORS on the books routes' own CloudFront behaviour; the billing routes carry no such
 // behaviour, so a cross-origin browser fetch would fail Chrome's CORS preflight on a detail this
 // test isn't checking. Only the interactive hosted-UI sign-in and the real Stripe Checkout page

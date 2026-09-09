@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // web/unit-tests/vatFlow.frontend.test.js
 
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -145,7 +145,8 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
-            template.hasResourceProperties("AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
+            template.hasResourceProperties(
+                    "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
     }
 
@@ -157,8 +158,7 @@ class CompaniesHouseStackTest {
         assertEquals("/api/v1/companies-house/search", stack.companiesHouseSearchGetLambdaProps.urlPath());
         assertEquals(HttpMethod.GET, stack.companiesHouseCompanyGetLambdaProps.httpMethod());
         assertEquals(
-                "/api/v1/companies-house/company/{companyNumber}",
-                stack.companiesHouseCompanyGetLambdaProps.urlPath());
+                "/api/v1/companies-house/company/{companyNumber}", stack.companiesHouseCompanyGetLambdaProps.urlPath());
 
         // Both routes sit behind the JWT authorizer, no custom authorizer: a signed-in user with
         // no purchased bundle still reaches these, matching the design's "default" bundle gate.
@@ -192,8 +192,14 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseRegisteredOfficeAddressPostLambdaProps,
                 stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps,
                 stack.companiesHouseRegisteredEmailAddressPostLambdaProps)) {
-            assertEquals(false, props.jwtAuthorizer(), "filing route " + props.urlPath() + " must not use the JWT authorizer");
-            assertEquals(true, props.customAuthorizer(), "filing route " + props.urlPath() + " must use the custom authorizer");
+            assertEquals(
+                    false,
+                    props.jwtAuthorizer(),
+                    "filing route " + props.urlPath() + " must not use the JWT authorizer");
+            assertEquals(
+                    true,
+                    props.customAuthorizer(),
+                    "filing route " + props.urlPath() + " must use the custom authorizer");
         }
 
         // The registered office address read carries no Companies House user token: it reads the
@@ -324,7 +330,10 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "secretsmanager:GetSecretValue", "Resource", API_KEY_ARN + "-*")))))))),
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        API_KEY_ARN + "-*")))))))),
                 3);
     }
 
@@ -339,7 +348,8 @@ class CompaniesHouseStackTest {
             assertEquals(1, functions.size());
             var env = environmentVariablesOf(functions);
             assertEquals(
-                    "https://api-sandbox.company-information.service.gov.uk", env.get("COMPANIES_HOUSE_FILING_BASE_URI"));
+                    "https://api-sandbox.company-information.service.gov.uk",
+                    env.get("COMPANIES_HOUSE_FILING_BASE_URI"));
             assertFalse(
                     env.containsKey("COMPANIES_HOUSE_API_KEY_ARN"),
                     "A filing Lambda's environment must not carry the API-key ARN - it authenticates with the user's token");
@@ -377,8 +387,7 @@ class CompaniesHouseStackTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(
-                                        List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
+                                Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
                 12);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -386,8 +395,7 @@ class CompaniesHouseStackTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(
-                                        List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
+                                Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
                 13);
     }
 
@@ -515,7 +523,8 @@ class CompaniesHouseStackTest {
 
         assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPreviewPostLambdaProps.httpMethod());
         assertEquals(
-                "/api/v1/companies-house/accounts/preview", stack.companiesHouseAccountsPreviewPostLambdaProps.urlPath());
+                "/api/v1/companies-house/accounts/preview",
+                stack.companiesHouseAccountsPreviewPostLambdaProps.urlPath());
         assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPostLambdaProps.httpMethod());
         assertEquals("/api/v1/companies-house/accounts", stack.companiesHouseAccountsPostLambdaProps.urlPath());
         assertEquals(HttpMethod.GET, stack.companiesHouseAccountsGetLambdaProps.httpMethod());
@@ -529,9 +538,12 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsPreviewPostLambdaProps,
                 stack.companiesHouseAccountsPostLambdaProps,
                 stack.companiesHouseAccountsGetLambdaProps)) {
-            assertEquals(true, props.jwtAuthorizer(), "accounts route " + props.urlPath() + " must use the JWT authorizer");
             assertEquals(
-                    false, props.customAuthorizer(), "accounts route " + props.urlPath() + " must not use the custom authorizer");
+                    true, props.jwtAuthorizer(), "accounts route " + props.urlPath() + " must use the JWT authorizer");
+            assertEquals(
+                    false,
+                    props.customAuthorizer(),
+                    "accounts route " + props.urlPath() + " must not use the custom authorizer");
         }
     }
 
@@ -574,8 +586,7 @@ class CompaniesHouseStackTest {
 
     @Test
     void submitAndPollLambdasReadBothPresenterSecretsAndPreviewCannot() {
-        CompaniesHouseStack stack =
-                synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
+        CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
 
         // The wildcard suffix Secrets Manager requires, granted to exactly the submit and poll

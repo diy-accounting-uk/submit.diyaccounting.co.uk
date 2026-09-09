@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
  *
  * Create an HMRC Sandbox test user for development and testing.
  *
@@ -23,6 +24,7 @@
  */
 
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 
 const ALLOWED_SERVICE_NAMES = ["mtd-vat", "mtd-income-tax"];
 
@@ -158,6 +160,8 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
 }
 
 export async function main() {
+  dotenv.config({ path: ".env.proxy", override: false });
+
   const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID;
   const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET;
 

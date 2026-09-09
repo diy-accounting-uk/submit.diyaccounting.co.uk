@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Targeted Library Opportunities
 
 Survey of the `submit.diyaccounting.co.uk` codebase for places where a small, focused library

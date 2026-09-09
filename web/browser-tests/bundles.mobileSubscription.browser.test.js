@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // web/browser-tests/bundles.mobileSubscription.browser.test.js
 //
 // Covers issue #5: on mobile viewports, a paying subscriber must be able to

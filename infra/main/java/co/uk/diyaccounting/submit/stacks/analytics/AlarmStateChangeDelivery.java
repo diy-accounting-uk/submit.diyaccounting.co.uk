@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -18,7 +18,6 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.events.EventPattern;
-import software.amazon.awscdk.services.events.IEventBus;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.targets.FirehoseDeliveryStream;
 import software.amazon.awscdk.services.glue.CfnTable;
@@ -105,7 +104,8 @@ public class AlarmStateChangeDelivery extends Construct {
         // Glue table
         // ============================================================================
         this.glueTable = buildGlueTable(props, prefix);
-        props.glueDatabaseDependency().ifPresent(dependency -> this.glueTable.getNode().addDependency(dependency));
+        props.glueDatabaseDependency()
+                .ifPresent(dependency -> this.glueTable.getNode().addDependency(dependency));
 
         // ============================================================================
         // Transform Lambda: flattens the EventBridge envelope before Firehose converts to
@@ -178,7 +178,10 @@ public class AlarmStateChangeDelivery extends Construct {
                                 .formatted(stack.getRegion(), stack.getAccount(), props.glueDatabaseName()),
                         "arn:aws:glue:%s:%s:table/%s/%s"
                                 .formatted(
-                                        stack.getRegion(), stack.getAccount(), props.glueDatabaseName(), GLUE_TABLE_NAME)))
+                                        stack.getRegion(),
+                                        stack.getAccount(),
+                                        props.glueDatabaseName(),
+                                        GLUE_TABLE_NAME)))
                 .build());
 
         this.deliveryStream = CfnDeliveryStream.Builder.create(this, prefix + "-AlarmStateChangesStream")
@@ -188,7 +191,8 @@ public class AlarmStateChangeDelivery extends Construct {
                         CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
                                 .bucketArn(lakeBucket.getBucketArn())
                                 .roleArn(firehoseRole.getRoleArn())
-                                .prefix(CURATED_PREFIX + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                .prefix(CURATED_PREFIX
+                                        + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
                                 .errorOutputPrefix("errors/alarm-state-changes/!{firehose:error-output-type}/"
                                         + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
                                 .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
@@ -265,8 +269,8 @@ public class AlarmStateChangeDelivery extends Construct {
         // eventBus() call: a Rule with none targets the account's default bus, the same way
         // OpsStack's AlarmStateChangeRule reads every alarm in the account without naming one.
         // ============================================================================
-        var importedStream =
-                DeliveryStream.fromDeliveryStreamArn(this, "AlarmStateChangesStreamRef", this.deliveryStream.getAttrArn());
+        var importedStream = DeliveryStream.fromDeliveryStreamArn(
+                this, "AlarmStateChangesStreamRef", this.deliveryStream.getAttrArn());
 
         this.rule = Rule.Builder.create(this, "AlarmToLakeRule")
                 .ruleName(prefix + "-alarm-to-lake")

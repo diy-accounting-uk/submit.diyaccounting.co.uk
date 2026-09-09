@@ -3,6 +3,9 @@ name: stripe-catalogue-sync
 description: Sync the Stripe products and prices from the bundle catalogue, in test then live, and land the price ids. Invoke when a bundle's price changes or a new on-subscription bundle needs a Stripe product.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # stripe-catalogue-sync — sync Stripe products and prices from the catalogue
 
 `web/public/submit.catalogue.toml` is the source of truth for what each on-subscription

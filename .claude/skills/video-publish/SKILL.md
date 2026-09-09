@@ -3,6 +3,9 @@ name: video-publish
 description: Publish the recorded product videos to the DIY Accounting Submit YouTube channel: fetch the recordings from their video-capture runs, check them, upload them unlisted with the stored credentials, and flip them public. Invoke when the operator asks to publish, re-publish or check the videos, or when a new recording needs to reach the channel.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # video-publish — from a video-capture run to the YouTube channel
 
 Channel: https://www.youtube.com/@DIYAccountingSubmit. Recordings come from

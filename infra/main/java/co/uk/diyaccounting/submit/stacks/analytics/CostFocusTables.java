@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -71,8 +71,8 @@ public class CostFocusTables {
                 .databaseName(props.databaseName())
                 .tableInput(CfnTable.TableInputProperty.builder()
                         .name(COST_FOCUS_TABLE_NAME)
-                        .description("FOCUS 1.2 cost and usage export, copied in nightly from the "
-                                + "management account")
+                        .description(
+                                "FOCUS 1.2 cost and usage export, copied in nightly from the " + "management account")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(parameters)
                         .partitionKeys(List.of(CfnTable.ColumnProperty.builder()

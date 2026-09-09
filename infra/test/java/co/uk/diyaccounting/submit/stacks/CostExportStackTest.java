@@ -1,10 +1,11 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
 
+import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -65,17 +66,20 @@ class CostExportStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Sid",
-                                                "AllowBcmDataExportsDelivery",
-                                                "Principal",
-                                                Map.of("Service", "bcm-data-exports.amazonaws.com"))),
-                                        Match.objectLike(Map.of(
-                                                "Sid", "AllowDeploymentAccountsToReadTheExport",
-                                                "Action", "s3:GetObject")),
-                                        Match.objectLike(Map.of(
-                                                "Sid", "AllowDeploymentAccountsToListTheExport",
-                                                "Action", "s3:ListBucket")))))))));
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid",
+                                                        "AllowBcmDataExportsDelivery",
+                                                        "Principal",
+                                                        Map.of("Service", "bcm-data-exports.amazonaws.com"))),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid", "AllowDeploymentAccountsToReadTheExport",
+                                                        "Action", "s3:GetObject")),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid", "AllowDeploymentAccountsToListTheExport",
+                                                        "Action", "s3:ListBucket")))))))));
     }
 
     @Test
@@ -92,20 +96,25 @@ class CostExportStackTest {
                                 "diy-focus-1-2",
                                 "DataQuery",
                                 Match.objectLike(Map.of(
-                                        "QueryStatement", "SELECT * FROM FOCUS_1_2_AWS",
-                                        "TableConfigurations", Map.of("FOCUS_1_2_AWS", Map.of("TIME_GRANULARITY", "DAILY")))),
+                                        "QueryStatement",
+                                        "SELECT " + String.join(", ", CostFocusIngestion.FOCUS_1_2_COLUMNS)
+                                                + " FROM FOCUS_1_2_AWS",
+                                        "TableConfigurations",
+                                        Map.of("FOCUS_1_2_AWS", Map.of("TIME_GRANULARITY", "DAILY")))),
                                 "DestinationConfigurations",
                                 Match.objectLike(Map.of(
                                         "S3Destination",
-                                        Match.objectLike(Map.of(
-                                                "S3Bucket",
-                                                "diy-accounting-cost-focus-887764105431",
-                                                "S3Prefix",
-                                                "focus",
-                                                "S3OutputConfigurations",
-                                                Match.objectLike(Map.of(
-                                                        "Format", "PARQUET",
-                                                        "OutputType", "CUSTOM")))))),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "S3Bucket",
+                                                        "diy-accounting-cost-focus-887764105431",
+                                                        "S3Prefix",
+                                                        "focus",
+                                                        "S3OutputConfigurations",
+                                                        Match.objectLike(
+                                                                Map.of(
+                                                                        "Format", "PARQUET",
+                                                                        "OutputType", "CUSTOM")))))),
                                 "RefreshCadence",
                                 Map.of("Frequency", "SYNCHRONOUS"))))));
     }

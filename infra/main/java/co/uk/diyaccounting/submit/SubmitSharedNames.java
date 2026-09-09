@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit;
@@ -1032,8 +1032,8 @@ public class SubmitSharedNames {
         this.activityTelegramForwarderLambdaHandler = "app/functions/ops/activityTelegramForwarder.handler";
         this.activityTelegramForwarderLambdaArn = "arn:aws:lambda:%s:%s:function:%s"
                 .formatted(props.regionName, props.awsAccount, this.activityTelegramForwarderLambdaFunctionName);
-        this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
+        this.activityTelegramForwarderProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.activityTelegramForwarderLambdaArn, this.provisionedConcurrencyAliasName);
 
         this.cognitoBaseUri = "https://%s".formatted(this.cognitoDomainName);
 
@@ -1500,8 +1500,7 @@ public class SubmitSharedNames {
         this.hmrcVatPaymentsGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcVatPaymentsGetIngestLambdaArn);
         this.hmrcVatPaymentsGetWorkerProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcVatPaymentsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
-        this.hmrcVatPaymentsGetLambdaQueueName =
-                "%s-queue".formatted(this.hmrcVatPaymentsGetIngestLambdaFunctionName);
+        this.hmrcVatPaymentsGetLambdaQueueName = "%s-queue".formatted(this.hmrcVatPaymentsGetIngestLambdaFunctionName);
         this.hmrcVatPaymentsGetLambdaDeadLetterQueueName =
                 "%s-dlq".formatted(this.hmrcVatPaymentsGetIngestLambdaFunctionName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -1671,8 +1670,7 @@ public class SubmitSharedNames {
                 "%s-worker".formatted(this.hmrcItsaObligationsGetIngestLambdaFunctionName);
         this.hmrcItsaObligationsGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaObligationsGetLambdaWorkerHandlerName);
-        this.hmrcItsaObligationsGetWorkerLambdaArn =
-                "%s-worker".formatted(this.hmrcItsaObligationsGetIngestLambdaArn);
+        this.hmrcItsaObligationsGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcItsaObligationsGetIngestLambdaArn);
         this.hmrcItsaObligationsGetWorkerProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcItsaObligationsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaObligationsGetLambdaQueueName =
@@ -1689,7 +1687,10 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter(
-                                "typeOfBusiness", "query", false, "One of self-employment, uk-property, foreign-property"),
+                                "typeOfBusiness",
+                                "query",
+                                false,
+                                "One of self-employment, uk-property, foreign-property"),
                         new ApiParameter("businessId", "query", false, "The business id from Business Details"),
                         new ApiParameter("fromDate", "query", false, "Start of the date range, format YYYY-MM-DD"),
                         new ApiParameter("toDate", "query", false, "End of the date range, format YYYY-MM-DD"),
@@ -1720,8 +1721,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodPostLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentPeriodPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaHandler =
@@ -1729,8 +1729,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn);
         this.hmrcItsaSelfEmploymentPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodPostLambdaDeadLetterQueueName =
@@ -1748,7 +1747,8 @@ public class SubmitSharedNames {
                         new ApiParameter("periodEndDate", "body", true, "End of the period, format YYYY-MM-DD"),
                         new ApiParameter("periodIncome", "body", false, "Income for the period"),
                         new ApiParameter("periodExpenses", "body", false, "Expenses for the period"),
-                        new ApiParameter("periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
+                        new ApiParameter(
+                                "periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -1772,8 +1772,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodsGetLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaHandler =
@@ -1781,8 +1780,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn);
         this.hmrcItsaSelfEmploymentPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodsGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodsGetLambdaDeadLetterQueueName =
@@ -1820,8 +1818,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodGetLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentPeriodGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaHandler =
@@ -1829,8 +1826,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn);
         this.hmrcItsaSelfEmploymentPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodGetLambdaDeadLetterQueueName =
@@ -1869,8 +1865,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentPeriodPutLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentPeriodPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaHandler =
@@ -1878,8 +1873,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn);
         this.hmrcItsaSelfEmploymentPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentPeriodPutLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentPeriodPutLambdaDeadLetterQueueName =
@@ -1897,7 +1891,8 @@ public class SubmitSharedNames {
                         new ApiParameter("periodId", "body", true, "The period id from a listed period summary"),
                         new ApiParameter("periodIncome", "body", false, "Income for the period"),
                         new ApiParameter("periodExpenses", "body", false, "Expenses for the period"),
-                        new ApiParameter("periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
+                        new ApiParameter(
+                                "periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -1921,8 +1916,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentAnnualGetLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentAnnualGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaHandler =
@@ -1930,8 +1924,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn);
         this.hmrcItsaSelfEmploymentAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentAnnualGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentAnnualGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentAnnualGetLambdaDeadLetterQueueName =
@@ -1969,8 +1962,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaSelfEmploymentAnnualPutLambdaHandlerDashed);
         this.hmrcItsaSelfEmploymentAnnualPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaHandler =
@@ -1978,8 +1970,7 @@ public class SubmitSharedNames {
         this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn);
         this.hmrcItsaSelfEmploymentAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaSelfEmploymentAnnualPutLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName);
         this.hmrcItsaSelfEmploymentAnnualPutLambdaDeadLetterQueueName =
@@ -2008,16 +1999,18 @@ public class SubmitSharedNames {
         this.hmrcItsaCrystallisationObligationsGetLambdaUrlPath = "/api/v1/hmrc/itsa/obligations/crystallisation";
         this.hmrcItsaCrystallisationObligationsGetLambdaJwtAuthorizer = false;
         this.hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer = true;
-        var hmrcItsaCrystallisationObligationsGetLambdaHandlerName = "hmrcItsaCrystallisationObligationsGet.ingestHandler";
-        var hmrcItsaCrystallisationObligationsGetLambdaWorkerHandlerName = "hmrcItsaCrystallisationObligationsGet.workerHandler";
+        var hmrcItsaCrystallisationObligationsGetLambdaHandlerName =
+                "hmrcItsaCrystallisationObligationsGet.ingestHandler";
+        var hmrcItsaCrystallisationObligationsGetLambdaWorkerHandlerName =
+                "hmrcItsaCrystallisationObligationsGet.workerHandler";
         // AWS Lambda function names cap at 64 characters - "crystallisation" already implies
         // "obligations", so the deployed function name drops the latter, the same shortening
         // hmrcItsaSelfEmploymentAnnualGet uses for "self-employment".
         var hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed = "hmrc-itsa-crystallisation-get";
-        this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName = "%s-%s"
-                .formatted(this.appResourceNamePrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed);
-        this.hmrcItsaCrystallisationObligationsGetIngestLambdaHandler = "%s/hmrc/%s"
-                .formatted(appLambdaHandlerPrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerName);
+        this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed);
+        this.hmrcItsaCrystallisationObligationsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerName);
         this.hmrcItsaCrystallisationObligationsGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed);
         this.hmrcItsaCrystallisationObligationsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -2090,7 +2083,11 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("futureYears", "query", false, "When true, also returns the following tax year's status"),
+                        new ApiParameter(
+                                "futureYears",
+                                "query",
+                                false,
+                                "When true, also returns the following tax year's status"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -2112,15 +2109,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasTriggerPostLambdaHandlerName);
         this.hmrcItsaBsasTriggerPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasTriggerPostLambdaHandlerDashed);
-        this.hmrcItsaBsasTriggerPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasTriggerPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasTriggerPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName);
         this.hmrcItsaBsasTriggerPostWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaBsasTriggerPostLambdaWorkerHandlerName);
-        this.hmrcItsaBsasTriggerPostWorkerLambdaArn = "%s-worker".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn);
-        this.hmrcItsaBsasTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaBsasTriggerPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaBsasTriggerPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaArn);
+        this.hmrcItsaBsasTriggerPostWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaBsasTriggerPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasTriggerPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaBsasTriggerPostIngestLambdaFunctionName);
         this.hmrcItsaBsasTriggerPostLambdaDeadLetterQueueName =
@@ -2134,7 +2132,8 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("nino", "body", true, "National Insurance number"),
                         new ApiParameter("businessId", "body", true, "The business id from Business Details"),
-                        new ApiParameter("accountingPeriodStartDate", "body", true, "The accounting period's start date"),
+                        new ApiParameter(
+                                "accountingPeriodStartDate", "body", true, "The accounting period's start date"),
                         new ApiParameter("accountingPeriodEndDate", "body", true, "The accounting period's end date"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
@@ -2159,8 +2158,7 @@ public class SubmitSharedNames {
         this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasSelfEmploymentGetLambdaHandlerDashed);
         this.hmrcItsaBsasSelfEmploymentGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName);
         this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaHandler =
@@ -2168,8 +2166,7 @@ public class SubmitSharedNames {
         this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaArn);
         this.hmrcItsaBsasSelfEmploymentGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.hmrcItsaBsasSelfEmploymentGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasSelfEmploymentGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName);
         this.hmrcItsaBsasSelfEmploymentGetLambdaDeadLetterQueueName =
@@ -2195,8 +2192,10 @@ public class SubmitSharedNames {
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaUrlPath = "/api/v1/hmrc/itsa/bsas/self-employment/adjust";
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaJwtAuthorizer = false;
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaCustomAuthorizer = true;
-        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerName = "hmrcItsaBsasSelfEmploymentAdjustPost.ingestHandler";
-        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaWorkerHandlerName = "hmrcItsaBsasSelfEmploymentAdjustPost.workerHandler";
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerName =
+                "hmrcItsaBsasSelfEmploymentAdjustPost.ingestHandler";
+        var hmrcItsaBsasSelfEmploymentAdjustPostLambdaWorkerHandlerName =
+                "hmrcItsaBsasSelfEmploymentAdjustPost.workerHandler";
         // AWS Lambda function names cap at 64 characters - the deployed function name drops
         // "self-employment" to "se", the same shortening hmrcItsaSelfEmploymentAnnualGet uses.
         var hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerDashed = "hmrc-itsa-bsas-se-adjust-post";
@@ -2208,8 +2207,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaBsasSelfEmploymentAdjustPostLambdaHandlerDashed);
         this.hmrcItsaBsasSelfEmploymentAdjustPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
                 .formatted(
-                        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn,
-                        this.provisionedConcurrencyAliasName);
+                        this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName);
         this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaHandler = "%s/hmrc/%s"
@@ -2218,8 +2216,7 @@ public class SubmitSharedNames {
                 "%s-worker".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn);
         this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
                 .formatted(
-                        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn,
-                        this.provisionedConcurrencyAliasName);
+                        this.hmrcItsaBsasSelfEmploymentAdjustPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName);
         this.hmrcItsaBsasSelfEmploymentAdjustPostLambdaDeadLetterQueueName =
@@ -2305,16 +2302,15 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaCalculationGetLambdaHandlerName);
         this.hmrcItsaCalculationGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaCalculationGetLambdaHandlerDashed);
-        this.hmrcItsaCalculationGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaCalculationGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaCalculationGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaCalculationGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaCalculationGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaCalculationGetIngestLambdaFunctionName);
         this.hmrcItsaCalculationGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaCalculationGetLambdaWorkerHandlerName);
-        this.hmrcItsaCalculationGetWorkerLambdaArn =
-                "%s-worker".formatted(this.hmrcItsaCalculationGetIngestLambdaArn);
-        this.hmrcItsaCalculationGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaCalculationGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaCalculationGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcItsaCalculationGetIngestLambdaArn);
+        this.hmrcItsaCalculationGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaCalculationGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaCalculationGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaCalculationGetIngestLambdaFunctionName);
         this.hmrcItsaCalculationGetLambdaDeadLetterQueueName =
@@ -2328,7 +2324,8 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("calculationId", "query", true, "The calculation id from a triggered calculation"),
+                        new ApiParameter(
+                                "calculationId", "query", true, "The calculation id from a triggered calculation"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -2433,8 +2430,8 @@ public class SubmitSharedNames {
                 "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseSearchGetLambdaHandlerName);
         this.companiesHouseSearchGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseSearchGetLambdaHandlerDashed);
-        this.companiesHouseSearchGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.companiesHouseSearchGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.companiesHouseSearchGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseSearchGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseSearchGetLambdaHttpMethod,
                 this.companiesHouseSearchGetLambdaUrlPath,
@@ -2459,8 +2456,8 @@ public class SubmitSharedNames {
                 "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseCompanyGetLambdaHandlerName);
         this.companiesHouseCompanyGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseCompanyGetLambdaHandlerDashed);
-        this.companiesHouseCompanyGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.companiesHouseCompanyGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.companiesHouseCompanyGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseCompanyGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseCompanyGetLambdaHttpMethod,
                 this.companiesHouseCompanyGetLambdaUrlPath,
@@ -2482,8 +2479,8 @@ public class SubmitSharedNames {
                 "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTokenPostLambdaHandlerName);
         this.companiesHouseTokenPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTokenPostLambdaHandlerDashed);
-        this.companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.companiesHouseTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.companiesHouseTokenPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseTokenPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseTokenPostLambdaHttpMethod,
                 this.companiesHouseTokenPostLambdaUrlPath,
@@ -2500,8 +2497,8 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionPostLambdaHandlerName);
         this.companiesHouseTransactionPostIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionPostLambdaHandlerDashed);
-        this.companiesHouseTransactionPostIngestLambdaHandler =
-                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionPostLambdaHandlerName);
+        this.companiesHouseTransactionPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseTransactionPostLambdaHandlerName);
         this.companiesHouseTransactionPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionPostLambdaHandlerDashed);
         this.companiesHouseTransactionPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -2514,7 +2511,8 @@ public class SubmitSharedNames {
                 "openCompaniesHouseTransaction",
                 List.of(
                         new ApiParameter("companyNumber", "body", true, "The 8-character company number"),
-                        new ApiParameter("description", "body", true, "A description of the filing, at most 200 characters"),
+                        new ApiParameter(
+                                "description", "body", true, "A description of the filing, at most 200 characters"),
                         new ApiParameter("reference", "body", false, "An optional caller-supplied reference"))));
 
         this.companiesHouseTransactionGetLambdaHttpMethod = HttpMethod.GET;
@@ -2526,8 +2524,8 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionGetLambdaHandlerName);
         this.companiesHouseTransactionGetIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionGetLambdaHandlerDashed);
-        this.companiesHouseTransactionGetIngestLambdaHandler =
-                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionGetLambdaHandlerName);
+        this.companiesHouseTransactionGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseTransactionGetLambdaHandlerName);
         this.companiesHouseTransactionGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionGetLambdaHandlerDashed);
         this.companiesHouseTransactionGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -2549,8 +2547,8 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseTransactionPutLambdaHandlerName);
         this.companiesHouseTransactionPutIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseTransactionPutLambdaHandlerDashed);
-        this.companiesHouseTransactionPutIngestLambdaHandler =
-                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseTransactionPutLambdaHandlerName);
+        this.companiesHouseTransactionPutIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseTransactionPutLambdaHandlerName);
         this.companiesHouseTransactionPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseTransactionPutLambdaHandlerDashed);
         this.companiesHouseTransactionPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -2653,8 +2651,8 @@ public class SubmitSharedNames {
                 .formatted(this.appResourceNamePrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed);
         this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler = "%s/companies-house/%s"
                 .formatted(appLambdaHandlerPrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerName);
-        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn = "%s-%s"
-                .formatted(appLambdaArnPrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed);
+        this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseRegisteredEmailEligibilityGetLambdaHandlerDashed);
         this.companiesHouseRegisteredEmailEligibilityGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
                 .formatted(
                         this.companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn,
@@ -2709,15 +2707,14 @@ public class SubmitSharedNames {
         var companiesHouseAccountsPreviewPostLambdaHandlerName = "companiesHouseAccountsPreviewPost.ingestHandler";
         var companiesHouseAccountsPreviewPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsPreviewPostLambdaHandlerName);
-        this.companiesHouseAccountsPreviewPostIngestLambdaFunctionName = "%s-%s"
-                .formatted(this.appResourceNamePrefix, companiesHouseAccountsPreviewPostLambdaHandlerDashed);
+        this.companiesHouseAccountsPreviewPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseAccountsPreviewPostLambdaHandlerDashed);
         this.companiesHouseAccountsPreviewPostIngestLambdaHandler = "%s/companies-house/%s"
                 .formatted(appLambdaHandlerPrefix, companiesHouseAccountsPreviewPostLambdaHandlerName);
         this.companiesHouseAccountsPreviewPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsPreviewPostLambdaHandlerDashed);
         this.companiesHouseAccountsPreviewPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(
-                        this.companiesHouseAccountsPreviewPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(this.companiesHouseAccountsPreviewPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsPreviewPostLambdaHttpMethod,
                 this.companiesHouseAccountsPreviewPostLambdaUrlPath,
@@ -2734,12 +2731,12 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsPostLambdaHandlerName);
         this.companiesHouseAccountsPostIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseAccountsPostLambdaHandlerDashed);
-        this.companiesHouseAccountsPostIngestLambdaHandler = "%s/companies-house/%s"
-                .formatted(appLambdaHandlerPrefix, companiesHouseAccountsPostLambdaHandlerName);
+        this.companiesHouseAccountsPostIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseAccountsPostLambdaHandlerName);
         this.companiesHouseAccountsPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsPostLambdaHandlerDashed);
-        this.companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.companiesHouseAccountsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.companiesHouseAccountsPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseAccountsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsPostLambdaHttpMethod,
                 this.companiesHouseAccountsPostLambdaUrlPath,
@@ -2756,12 +2753,12 @@ public class SubmitSharedNames {
                 ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseAccountsGetLambdaHandlerName);
         this.companiesHouseAccountsGetIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseAccountsGetLambdaHandlerDashed);
-        this.companiesHouseAccountsGetIngestLambdaHandler = "%s/companies-house/%s"
-                .formatted(appLambdaHandlerPrefix, companiesHouseAccountsGetLambdaHandlerName);
+        this.companiesHouseAccountsGetIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseAccountsGetLambdaHandlerName);
         this.companiesHouseAccountsGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, companiesHouseAccountsGetLambdaHandlerDashed);
-        this.companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.companiesHouseAccountsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.companiesHouseAccountsGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseAccountsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.companiesHouseAccountsGetLambdaHttpMethod,
                 this.companiesHouseAccountsGetLambdaUrlPath,
@@ -3002,8 +2999,8 @@ public class SubmitSharedNames {
                 "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingCheckoutSessionGetLambdaHandlerName);
         this.billingCheckoutSessionGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, billingCheckoutSessionGetLambdaHandlerDashed);
-        this.billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.billingCheckoutSessionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.billingCheckoutSessionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
                 this.billingCheckoutSessionGetLambdaHttpMethod,
                 this.billingCheckoutSessionGetLambdaUrlPath,
@@ -3115,8 +3112,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, booksVersionGetLambdaHandlerDashed);
         this.booksVersionGetIngestLambdaHandler =
                 "%s/books/%s".formatted(appLambdaHandlerPrefix, booksVersionGetLambdaHandlerName);
-        this.booksVersionGetIngestLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, booksVersionGetLambdaHandlerDashed);
+        this.booksVersionGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, booksVersionGetLambdaHandlerDashed);
         this.booksVersionGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.booksVersionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -3181,8 +3177,7 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, alarmToGithubIssueLambdaHandlerDashed);
         this.alarmToGithubIssueLambdaHandler =
                 "%s/ops/%s".formatted(appLambdaHandlerPrefix, alarmToGithubIssueLambdaHandlerName);
-        this.alarmToGithubIssueLambdaArn =
-                "%s-%s".formatted(appLambdaArnPrefix, alarmToGithubIssueLambdaHandlerDashed);
+        this.alarmToGithubIssueLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, alarmToGithubIssueLambdaHandlerDashed);
         this.alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.alarmToGithubIssueLambdaArn, this.provisionedConcurrencyAliasName);
 

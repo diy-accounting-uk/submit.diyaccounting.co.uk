@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/data/s3BooksRepository.js
+// app/data/s3DiyaGlRepository.js
 //
 // S3-backed store for the paid diya-gl book storage tier: one metadata.json sidecar and a
 // sequence of never-overwritten v{n}.zip objects per book, keyed under the caller's hashed sub.
@@ -9,7 +9,7 @@
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getPreviousVersions } from "../services/subHasher.js";
 
-const logger = createLogger({ source: "app/data/s3BooksRepository.js" });
+const logger = createLogger({ source: "app/data/s3DiyaGlRepository.js" });
 
 let __s3Client = null;
 

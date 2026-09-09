@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: The submission MCP
 
 Status: open, drafted 2026-09-07. No code written. Backlog row 51.
@@ -80,8 +83,8 @@ it to Companies House on 2026-09-07 as the source of the test filings.
    surface. Tools, schemas and the library calls are the same code.
 4. **Hosted authentication is OAuth against the existing Cognito user pool.** The hosted MCP
    is an OAuth resource server in the MCP authorization sense; Cognito's hosted UI is the
-   authorization server, with a third app client beside the web and books clients and a JWT
-   authoriser scoped to that client's audience, the pattern D10 set for books. The stdio
+   authorization server, with a third app client beside the web and DIYA-GL clients and a JWT
+   authoriser scoped to that client's audience, the pattern D10 set for DIYA-GL. The stdio
    surfaces get the same token through the device-code grant. This replaces both earlier
    designs: the paste-a-code page and the personal token table are dropped. **Alternative the
    operator may prefer**: keep the personal API token table from the archived design for
@@ -127,7 +130,7 @@ for H7.
 |---|---|---|---|
 | M1 | The package skeleton at `mcp/`: the SDK, stdio transport, `open_book`, `save_book` over the filesystem, `derive_vat_return`, `derive_micro_entity_accounts`; unit tests over the BrickWork Pro Ltd example and the Precision Code Ltd example; the seven derived lines for BrickWork Pro passed through `buildMicroEntityAccounts` and the public validator script | a `file:` dependency on the sibling `diya-gl/` | Claude Code, Opus for the derivation mapping, Sonnet for the rest |
 | M2 | The Submit-facing tools over the deployed REST API with a bearer token from the environment, against the simulator lane first: obligations, VAT submit, receipt, accounts preview, submit and poll | M1 | Claude Code, Sonnet |
-| M3 | The third Cognito app client, its JWT authoriser and the device-code grant; `open_book` and `save_book` over the DIYA cloud routes | M1; the books client pattern in `PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
+| M3 | The third Cognito app client, its JWT authoriser and the device-code grant; `open_book` and `save_book` over the DIYA cloud routes | M1; the DIYA-GL client pattern in `PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
 | M4 | The hosted transport: a Lambda with streamable HTTP behind API Gateway on the existing domain, the resource-server metadata, and the OAuth flow end to end from a chat client | M3 | Claude Code, Opus design then Sonnet |
 | M5 | Distribution: `npm publish` from this repo on a tag, the Docker image on GHCR, `web/public/mcp.html` rewritten as the real instructions | M2; H7 on the spreadsheets board for the dependency | Claude Code, Haiku |
 | M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md O16 and B34.6b | Claude Code, Sonnet |
@@ -136,10 +139,10 @@ for H7.
 ## Verification
 
 - The seven lines `derive_micro_entity_accounts` returns for BrickWork Pro equal the published
-  balance sheet the books page shows for the same example, and the prior-year lines equal its
+  balance sheet the DIYA-GL page shows for the same example, and the prior-year lines equal its
   opening balance sheet.
 - `derive_vat_return` for each of the example's four VAT periods equals the `vat-returns` view
-  on the books page, box by box.
+  on the DIYA-GL page, box by box.
 - A generated set of accounts from derived figures gets `RESULT: valid` from the Companies
   House validator (`npm run validate:accounts-ixbrl` accepts a file path).
 - The behaviour suites `fileMicroEntityAccountsBehaviour` and `submitVatBehaviour` are

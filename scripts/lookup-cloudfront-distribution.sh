@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Print the ID of the live CloudFront distribution serving an origin domain.
 #
 # Usage: scripts/lookup-cloudfront-distribution.sh <origin-domain> [edge-stack-name]

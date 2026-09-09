@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit;
@@ -88,8 +88,8 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "BudgetLimit",
                                 Match.objectLike(Map.of("Amount", 150, "Unit", "USD")))))));
 
-        var dailyBudgetNotification = Match.objectLike(Map.of(
-                "Subscribers", Match.arrayWith(List.of(Match.objectLike(Map.of("SubscriptionType", "SNS"))))));
+        var dailyBudgetNotification = Match.objectLike(
+                Map.of("Subscribers", Match.arrayWith(List.of(Match.objectLike(Map.of("SubscriptionType", "SNS"))))));
         observabilityUE1.hasResourceProperties(
                 "AWS::Budgets::Budget",
                 Match.objectLike(Map.of(
@@ -119,13 +119,11 @@ class SubmitEnvironmentUE1CdkResourceTest {
                         "Definition",
                         Match.objectLike(Map.of(
                                 "IamActionDefinition",
-                                Match.objectLike(
-                                        Map.of("Roles", List.of("test-env-alarm-triage-role"))))))));
+                                Match.objectLike(Map.of("Roles", List.of("test-env-alarm-triage-role"))))))));
 
         // 8) The deny managed policy denies both Bedrock invoke actions, attached to nothing at
         // deploy time - the budget action attaches it once the account crosses the threshold.
-        Map<String, Map<String, Object>> managedPolicies =
-                observabilityUE1.findResources("AWS::IAM::ManagedPolicy");
+        Map<String, Map<String, Object>> managedPolicies = observabilityUE1.findResources("AWS::IAM::ManagedPolicy");
         Map<String, Object> denyPolicy = managedPolicies.values().stream()
                 .filter(resource -> {
                     @SuppressWarnings("unchecked")
@@ -188,8 +186,7 @@ class SubmitEnvironmentUE1CdkResourceTest {
                         "Protocol",
                         "lambda",
                         "TopicArn",
-                        Match.objectLike(Map.of(
-                                "Ref", Match.stringLikeRegexp("BedrockBudgetAlertsTopic"))))));
+                        Match.objectLike(Map.of("Ref", Match.stringLikeRegexp("BedrockBudgetAlertsTopic"))))));
 
         // Permitted to publish onto this environment's own activity bus, cross-region, and no
         // other bus in the account.
@@ -206,8 +203,7 @@ class SubmitEnvironmentUE1CdkResourceTest {
                 Object resourceArn = statement.get("Resource");
                 boolean actsOnPutEvents = "events:PutEvents".equals(action)
                         || (action instanceof List<?> actions && actions.contains("events:PutEvents"));
-                boolean targetsActivityBus = String.valueOf(resourceArn)
-                        .contains("event-bus/test-env-activity-bus");
+                boolean targetsActivityBus = String.valueOf(resourceArn).contains("event-bus/test-env-activity-bus");
                 return actsOnPutEvents && targetsActivityBus;
             });
         });

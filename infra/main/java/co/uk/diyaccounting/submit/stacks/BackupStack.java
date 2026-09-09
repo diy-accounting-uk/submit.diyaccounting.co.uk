@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -190,12 +190,18 @@ public class BackupStack extends Stack {
         // IAM Role for AWS Backup
         // ============================================================================
 
+        // AWSBackupServiceRolePolicyForBackup and ...ForRestores cover the DynamoDB tables in
+        // the selection below; the books S3 bucket also in that selection needs its own pair,
+        // without which AWS Backup answers "does not have permission to describe resource" for
+        // the bucket and the nightly job fails.
         Role backupRole = Role.Builder.create(this, props.resourceNamePrefix() + "-BackupRole")
                 .roleName(props.resourceNamePrefix() + "-backup-role")
                 .assumedBy(new ServicePrincipal("backup.amazonaws.com"))
                 .managedPolicies(List.of(
                         ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForBackup"),
-                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForRestores")))
+                        ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSBackupServiceRolePolicyForRestores"),
+                        ManagedPolicy.fromAwsManagedPolicyName("AWSBackupServiceRolePolicyForS3Backup"),
+                        ManagedPolicy.fromAwsManagedPolicyName("AWSBackupServiceRolePolicyForS3Restore")))
                 .build();
 
         // ============================================================================
@@ -295,8 +301,7 @@ public class BackupStack extends Stack {
         // Backup Selection - Critical Tables
         // ============================================================================
 
-        ITable receiptsTable =
-                importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
+        ITable receiptsTable = importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
         ITable bundlesTable = importTable("ImportedBundlesTable", props.sharedNames().bundlesTableName);
         ITable hmrcApiRequestsTable =
                 importTable("ImportedHmrcApiRequestsTable", props.sharedNames().hmrcApiRequestsTableName);

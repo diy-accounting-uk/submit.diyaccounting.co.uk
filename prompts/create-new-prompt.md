@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Create New Prompt
 
 Analyze the current repository and the existing prompts in the `prompts/` directory to identify gaps or opportunities that are not currently covered by the existing prompt types.

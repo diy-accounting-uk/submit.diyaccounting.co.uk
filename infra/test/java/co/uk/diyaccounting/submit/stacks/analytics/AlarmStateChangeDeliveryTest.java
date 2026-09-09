@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks.analytics;
@@ -119,10 +119,24 @@ class AlarmStateChangeDeliveryTest {
         for (var column : columns) {
             columnNames.add(String.valueOf(column.get("Name")));
         }
-        for (var expectedName :
-                List.of("event_id", "event_ts", "ingest_ts", "alarm_name", "alarm_arn", "family", "deployment_slug",
-                        "state", "previous_state", "reason", "region", "namespace", "metric_name", "period_seconds",
-                        "threshold", "env", "detail_json")) {
+        for (var expectedName : List.of(
+                "event_id",
+                "event_ts",
+                "ingest_ts",
+                "alarm_name",
+                "alarm_arn",
+                "family",
+                "deployment_slug",
+                "state",
+                "previous_state",
+                "reason",
+                "region",
+                "namespace",
+                "metric_name",
+                "period_seconds",
+                "threshold",
+                "env",
+                "detail_json")) {
             assertTrue(columnNames.contains(expectedName), "missing column " + expectedName + " in " + columnNames);
         }
     }

@@ -1,6 +1,6 @@
 /*
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
+ * SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+ * Copyright (C) 2006-2026 DIY Accounting Limited
  */
 
 package co.uk.diyaccounting.submit.stacks;
@@ -16,7 +16,6 @@ import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -131,7 +130,8 @@ public class ScanDetectionStack extends Stack {
         // the function name is stable forever, not per-deployment - use the idempotent
         // create-if-missing path rather than a plain LogGroup, matching every other job Lambda in
         // an env-scoped stack (IngestionStack, AnalyticsDashboard).
-        var logGroup = ensureLogGroupWithDependency(this, prefix + "-ScanDetect404LogGroup", "/aws/lambda/" + functionName);
+        var logGroup =
+                ensureLogGroupWithDependency(this, prefix + "-ScanDetect404LogGroup", "/aws/lambda/" + functionName);
 
         this.scanRate404DetectFunction = DockerImageFunction.Builder.create(this, prefix + "-ScanDetect404Fn")
                 .functionName(functionName)
@@ -259,7 +259,9 @@ public class ScanDetectionStack extends Stack {
         cfnOutput(this, "ScanDetect404FunctionArn", this.scanRate404DetectFunction.getFunctionArn());
         cfnOutput(this, "ScanDetect404ScheduleArn", this.schedule.getRuleArn());
 
-        infof("ScanDetectionStack %s created successfully for %s", this.getNode().getId(), prefix);
+        infof(
+                "ScanDetectionStack %s created successfully for %s",
+                this.getNode().getId(), prefix);
     }
 
     private String lakeBucketArn(String bucketName) {

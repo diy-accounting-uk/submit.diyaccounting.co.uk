@@ -1,0 +1,25 @@
+Hello Ioan,
+
+Thank you. We have the technical interface specifications and we have built against the Gateway and accounts TIS (I did ask about the spec. although building against the Technical interface specifications was assumed and I am relieved to be on course). What we have already is built to the published schemas, handles the worked examples**, and generates a set of accounts that passes your public XBRL validator. We are ready to start test submissions as soon as the test account is active.
+
+The details for the test account:
+
+Presenter name: DIY Accounting Limited (presenter ID E0000052288)
+Contact name: Antony Cartwright
+Address: 37 Sutherland Avenue, Leeds, LS8 1BY
+Email address: antony@diyaccounting.co.uk
+Telephone number: 07801 559561 (you'll get a European dial tone from Tuesday for a week, but I'm still working.)
+
+I am both the presenter and the developer, so I am the contact for everything during testing.
+
+Our test submissions will be micro-entity accounts under FRS 105, sent from our AWS-hosted service. The test data will be drawn from the worked example companies in our own 20 year field tested bookkeeping product, which carries a full year of trading with VAT and CIS, with transactions resembling a real journal for a realistic P&L and Balance Sheet (that balanced) etc. Specifically we use this data set: https://spreadsheets.diyaccounting.co.uk/books/ltd.html?example=ltd-brickwork-pro-vat&view=vat-returns&month=2025-04
+
+Please let me know if you need anything else.
+
+Thanks,
+Antony.
+
+** The worked Accounts.xml example has an Authority element in FormSubmission, but the FormSubmission XSD (v2-11 and the v2-5 the example cites) does not define it, so the example fails the schema. We have followed the example and will adapt to whatever the test service accepts.
+
+Antony Cartwright
+Director, DIY Accounting Limited

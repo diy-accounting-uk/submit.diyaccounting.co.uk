@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
  *
  * Assert two GCP billing housekeeping facts as code: a budget with 50/90/100 percent alerts
  * on the billing account that holds diyaccounting-ga4, and that the auto-created project

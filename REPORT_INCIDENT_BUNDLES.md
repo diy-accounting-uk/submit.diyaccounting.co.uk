@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # REPORT_INCIDENT_BUNDLES
 
 Production `bundleGet` Lambda was denied `dynamodb:UpdateItem` on `prod-env-bundles`, breaking lazy token refresh and kicking authenticated users back to the Bundles page when they tried to start an activity.

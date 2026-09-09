@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Companies House REST filing (registered office and registered email address)
 
 > Backlog item B34.3a. Source issue #15, split tracker in

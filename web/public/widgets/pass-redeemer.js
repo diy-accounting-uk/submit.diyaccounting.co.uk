@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // Pass Redeemer Widget
 // Lets a pass link work when it points straight at an activity page (VAT
 // obligations, VAT submission, pass generation) instead of forcing the user

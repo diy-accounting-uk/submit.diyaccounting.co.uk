@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/functions/books/booksDelete.js
 
 import { createLogger } from "../../lib/logger.js";
 import {
-  extractRequest,
   extractUserFromAuthorizerContext,
   http200OkResponse,
   http400BadRequestResponse,
@@ -14,9 +13,9 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { resolveBooksCorsHeaders, booksPreflightResponse } from "../../lib/booksCors.js";
+import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { isValidBookId, resolveOwnerPrefix, readMetadata, deleteBook } from "../../data/s3BooksRepository.js";
+import { isValidBookId, resolveOwnerPrefix, readMetadata, deleteBook } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/books/booksDelete.js" });
 
@@ -27,59 +26,54 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export async function ingestHandler(event) {
-  if (event?.requestContext?.http?.method === "OPTIONS") {
-    return booksPreflightResponse(event.headers);
-  }
-
-  const { request } = extractRequest(event);
-  const corsHeaders = resolveBooksCorsHeaders(event.headers);
-
-  const user = extractUserFromAuthorizerContext(event);
-  if (!user) {
-    return http401UnauthorizedResponse({
-      request,
-      headers: corsHeaders,
-      message: "Authentication required",
-    });
-  }
-
-  const bookId = event.pathParameters?.bookId;
-  if (!isValidBookId(bookId)) {
-    return http400BadRequestResponse({
-      request,
-      headers: corsHeaders,
-      message: "invalid-book-id",
-      error: { code: "invalid-book-id" },
-    });
-  }
-
-  try {
-    await initializeSalt();
-    const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
-    const existing = await readMetadata(ownerPrefix, bookId);
-    if (!existing) {
-      return http404NotFoundResponse({
+  return respondWithDiyaGlCors(event, async ({ request, corsHeaders }) => {
+    const user = extractUserFromAuthorizerContext(event);
+    if (!user) {
+      return http401UnauthorizedResponse({
         request,
         headers: corsHeaders,
-        message: "book-not-found",
-        error: { code: "book-not-found" },
+        message: "Authentication required",
       });
     }
 
-    const deletedObjects = await deleteBook(ownerPrefix, bookId);
+    const bookId = event.pathParameters?.bookId;
+    if (!isValidBookId(bookId)) {
+      return http400BadRequestResponse({
+        request,
+        headers: corsHeaders,
+        message: "invalid-book-id",
+        error: { code: "invalid-book-id" },
+      });
+    }
 
-    return http200OkResponse({
-      request,
-      headers: corsHeaders,
-      data: { bookId, deletedObjects },
-    });
-  } catch (error) {
-    logger.error({ message: "Failed to delete book", error: error.message, stack: error.stack, bookId });
-    return http500ServerErrorResponse({
-      request,
-      headers: corsHeaders,
-      message: "storage-error",
-      error: { code: "storage-error" },
-    });
-  }
+    try {
+      await initializeSalt();
+      const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
+      const existing = await readMetadata(ownerPrefix, bookId);
+      if (!existing) {
+        return http404NotFoundResponse({
+          request,
+          headers: corsHeaders,
+          message: "book-not-found",
+          error: { code: "book-not-found" },
+        });
+      }
+
+      const deletedObjects = await deleteBook(ownerPrefix, bookId);
+
+      return http200OkResponse({
+        request,
+        headers: corsHeaders,
+        data: { bookId, deletedObjects },
+      });
+    } catch (error) {
+      logger.error({ message: "Failed to delete book", error: error.message, stack: error.stack, bookId });
+      return http500ServerErrorResponse({
+        request,
+        headers: corsHeaders,
+        message: "storage-error",
+        error: { code: "storage-error" },
+      });
+    }
+  });
 }
