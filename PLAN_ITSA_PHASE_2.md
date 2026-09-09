@@ -50,8 +50,8 @@ Missing, and where to get each. HMRC serves a resolved OpenAPI document at
 | Business Details (MTD) | `business-details-api/2.0` | Phase 1 built against the rendered docs; the spec belongs beside the others |
 | MTD Self Assessment Test Support | `mtd-sa-test-support-api/1.0` | Sandbox business creation, ITSA status, and vendor-state checkpoints |
 | Property Business (MTD) | `property-business-api/6.0` | UK property period summaries and the property annual submission |
-| Individual Losses (MTD) | `individual-losses-api/7.0` | A minimum functionality standard with no build in this phase |
-| Individuals Tax Liability Adjustments (MTD) | `individuals-tax-liability-adjustments-api/1.0` | A minimum functionality standard with no build in this phase |
+| Individual Losses (MTD) | `individual-losses-api/7.0` | Brought-forward losses and loss claims, per business per tax year |
+| Individuals Tax Liability Adjustments (MTD) | `individuals-tax-liability-adjustments-api/1.0` | The liability decrease a carry-back claim produces |
 
 One gap the resolved document does not close. HMRC's published OpenAPI for Self Employment
 Business 5.0 carries only `summary` and `security` for the annual submission operations, for
@@ -80,6 +80,24 @@ detail lives at:
   `uk_property_cumulative_summary_retrieve.yaml`,
   `schemas/uk_property_cumulative_summary_create_and_amend/def1/request.json`, and the matching
   trees under `schemas/` and `examples/`).
+
+Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 are the thinnest of all.
+Their resolved documents are three and a half kilobytes each. Every operation carries only its
+`security` block: no summary, no request body, no response, no scenarios. Version 7.0 of
+Individual Losses is also a redesign. Version 6.0 published eleven operations over separate
+brought-forward-loss and loss-claim resources; 7.0 collapses them into one resource per
+business per tax year, so anything written against the 6.0 shape no longer describes the API.
+The detail for both lives at:
+
+- `https://github.com/hmrc/individual-losses-api`, under `resources/public/api/conf/7.0/`
+  (`losses_and_claims_create_amend.yaml`, `losses_and_claims_retrieve.yaml`,
+  `losses_and_claims_delete.yaml`, `schemas/lossesAndClaims/createAmend/request.json`,
+  `examples/lossesAndClaims/createAmend/`).
+- `https://github.com/hmrc/individuals-tax-liability-adjustments-api`, under
+  `resources/public/api/conf/1.0/` (`tax_liability_adjustments_create_or_amend.yaml`,
+  `tax_liability_adjustments_retrieve.yaml`, `tax_liability_adjustments_delete.yaml`,
+  `schemas/tax_liability_adjustments_create_or_amend/def1/request.json`,
+  `examples/tax_liability_adjustments_create_or_amend/def1/`).
 
 Fetch the annual submission detail from there. Every other HMRC repository follows the same
 layout when a published spec turns out to be thin.
@@ -470,22 +488,127 @@ will actually hit. The first means the year is already filed. The second means a
 after the calculation they confirmed, so the page has to trigger a fresh calculation and ask
 again.
 
+### Individual Losses (MTD) 7.0
+
+One resource holds everything for one business in one tax year:
+
+`GET|PUT|DELETE /individuals/losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`
+
+HMRC allows it only after the tax year has ended, so it is a year-end step and never an in-year
+one. The PUT creates and amends together. The create and amend also accepts HMRC's
+`suspendTemporalValidations` header, which the sandbox needs when a test year has not really
+ended.
+
+The body has two objects, both optional, neither empty:
+
+- `losses.broughtForwardLosses`: the amount of earlier losses applied in this tax year.
+- `claims.carryForward`: `currentYearLosses`, `previousYearsLosses`.
+- `claims.carrySideways.currentYearGeneralIncome`: this year's trading loss set against this
+  year's other income.
+- `claims.carryBack`: `previousYearGeneralIncome`, `earlyYearLosses`, `terminalLosses`.
+- `claims.preferenceOrder.applyFirst`: `carry-sideways` or `carry-back`.
+
+**The journeys, and who actually hits them.**
+
+| Journey | Fields | Who hits it |
+|---|---|---|
+| Carry this year's loss forward | `claims.carryForward.currentYearLosses` | Common. The ordinary first-year-of-trading case, and any bad year. A landlord's rental loss goes the same way. |
+| Use a loss brought forward | `losses.broughtForwardLosses`, `claims.carryForward.previousYearsLosses` | Common. The other half of the same journey, a year later. |
+| Set a loss sideways against other income | `claims.carrySideways.currentYearGeneralIncome` | Occasional. Real for a sole trader who also has a job. |
+| Carry a loss back to an earlier year | `claims.carryBack.previousYearGeneralIncome`, `earlyYearLosses` | Occasional, and the one that pulls in the adjustments API. |
+| Terminal loss on ceasing to trade | `claims.carryBack.terminalLosses` | Rare. Once per business, at the end of it. |
+| Choose which claim applies first | `claims.preferenceOrder.applyFirst` | Rare. Only meaningful when a sideways and a carry-back claim exist in the same year. |
+| Delete a year's losses and claims | the DELETE | Rare. A correction path. |
+
+The first two carry the weight. A sole trader who loses money in year one and profits in year
+two hits both, and a product without them leaves that customer stranded at the final
+declaration.
+
+**Carry-back does not apply to property.** The sandbox's `CARRY_BACK_CLAIM` scenario simulates a
+carry-back claim type supplied for a property income source, as a rejection. So the page offers
+carry-back only when the picked business is a sole trade, and a landlord's loss carries forward.
+
+Scenarios. PUT: `NOT_FOUND`, `CARRY_BACK_CLAIM`, `OUTSIDE_AMENDMENT_WINDOW`, `STATEFUL`. GET:
+`TERMINAL_LOSS_CLAIM`, `NOT_FOUND`, `STATEFUL`. DELETE: `NOT_FOUND`,
+`OUTSIDE_AMENDMENT_WINDOW`, `STATEFUL`.
+
+### Individuals Tax Liability Adjustments (MTD) 1.0
+
+`GET|PUT|DELETE /individuals/tax-liability/adjustments/{nino}/{taxYear}`
+
+Per person per tax year, not per business, and again only after the tax year has ended. It
+takes the same `suspendTemporalValidations` header.
+
+The API is narrower than its name. Its whole request body is two objects:
+
+- `carryBackLossesDecrease`: `incomeTax`, `class4`, `capitalGainsTax`. Each is the amount by
+  which a carry-back claim decreases this year's liability, worked out against an earlier tax
+  year's liability and credited against this one.
+- `taxRefundedOrSetOff.amount`: Income Tax refunded or set off by HMRC or Jobcentre Plus during
+  the tax year.
+
+`taxRefundedOrSetOff` sits behind HMRC's own `r22_cl289_docs` release flag and their schema
+marks it test-only until it goes live. The page gains the field when HMRC releases it. Until
+then the endpoint carries `carryBackLossesDecrease` alone.
+
+**The journeys.**
+
+| Journey | Who hits it |
+|---|---|
+| Tell HMRC what a carry-back claim saves, so this year's liability is credited | Occasional, exactly as often as a carry-back claim |
+| Declare Income Tax refunded or set off during the year | Waiting on HMRC's release flag |
+| Delete the year's adjustments | Rare. A correction path. |
+
+So this API serves one live journey, and it is the second half of the carry-back journey rather
+than a general adjustments surface.
+
+Scenarios. PUT: `OUTSIDE_AMENDMENT_WINDOW`, `STATEFUL`. GET: `NOT_FOUND`, `STATEFUL`. DELETE:
+`NOT_FOUND`, `OUTSIDE_AMENDMENT_WINDOW`, `STATEFUL`.
+
+**The two APIs are ordered, and HMRC says so in both directions.** A carry-back loss must reach
+Individual Losses, and its matching decrease must reach the adjustments endpoint, before the
+final declaration. So the year-end runs: annual submission, adjustable summary, losses and
+claims, tax liability adjustments, calculation, final declaration. The losses step comes before
+the calculation because the calculation has to see the claims.
+
+**What we cannot work out, and what the customer does instead.** The three
+`carryBackLossesDecrease` figures are amounts of tax, computed by applying the loss to an
+earlier year's liability. HMRC exposes no endpoint that recomputes an earlier year for us, and
+we do not compute tax (D2). So the customer supplies those three numbers, from their own or
+their accountant's computation.
+
+What the page can do without computing anything: retrieve the earlier year's calculation with
+the endpoint we already have and show its `totalIncomeTaxAndNicsDue` beside the field, so the
+customer has HMRC's own figure for that year in front of them while they enter the decrease. The
+page shows both years and subtracts nothing. An endpoint that recalculates an earlier year with
+a loss applied is the open problem here; if HMRC publishes one, the page fills the figures
+instead of asking for them.
+
 ## The customer journey
 
 The dashboard at `web/public/hmrc/itsa/dashboard.html` lists six numbered steps today. Phase 2
-appends four, and puts a divider between the in-year half and the year-end half.
+appends six, and puts a divider between the in-year half and the year-end half.
 
 | Step | Page | What the customer does |
 |---|---|---|
 | 7 | `annualSubmission.html` | Loads the year's annual submission for a business, enters adjustments and allowances, saves them to HMRC |
 | 8 | `adjustments.html` | Triggers the adjustable summary for the accounting period, reads the net profit HMRC computed, changes a figure if it is wrong |
-| 9 | `taxCalculation.html` | Triggers a calculation and reads what the year owes |
-| 10 | `finalDeclaration.html` | Reads the calculation again, confirms it is complete and correct, files the return |
+| 9 | `lossesAndClaims.html` | For a business that made a loss, says what happens to it: carried forward, set sideways, or carried back |
+| 10 | `taxLiabilityAdjustments.html` | For a carry-back claim, enters what it saves against this year's liability |
+| 11 | `taxCalculation.html` | Triggers a calculation and reads what the year owes |
+| 12 | `finalDeclaration.html` | Reads the calculation again, confirms it is complete and correct, files the return |
+
+Steps 9 and 10 appear only when they apply. A business with no loss skips step 9, and a
+customer with no carry-back claim skips step 10. Neither is hidden: the dashboard says what
+each is for and why it does not apply, so a customer with a loss cannot walk past it.
 
 Order matters and the pages enforce it. The adjustments page refuses to trigger while any
 quarterly obligation for the year is open, because HMRC answers `RULE_OBLIGATIONS_NOT_MET`. The
-final declaration page refuses to submit against a calculation whose
-`metadata.calculationType` is not `intent-to-finalise`.
+losses page comes before the calculation, because the calculation has to see the claims. The
+adjustments endpoint and the carry-back claim behind it must both land before the final
+declaration, which is HMRC's own rule stated in both API guides. The final declaration page
+refuses to submit against a calculation whose `metadata.calculationType` is not
+`intent-to-finalise`.
 
 ### The property pages and the business picker
 
@@ -538,6 +661,12 @@ customer with one business sees one row.
 `inputs.incomeSources.businessIncomeSources`, with the latest period end date HMRC holds for
 each. This page exists to catch a business the customer has that HMRC did not count. The
 customer sees the gap before they tick the declaration, while they can still fix it.
+
+The same list carries the loss position. Against each business the page shows what the losses
+and claims retrieve answered for that business and tax year, and whether the tax liability
+adjustments retrieve holds anything for the year. A business whose calculation shows a loss with
+no claim recorded against it is the second gap this page catches, and a customer who ticks
+without deciding what happens to a loss has given away a claim they could have made.
 
 ### What a cumulative year changes for the customer
 
@@ -606,7 +735,10 @@ render, we do not compute. No total on either page is added up in our code.
    `incomeTax`, `nics` and `totalTaxDeducted`.
 5. `calculation.allowancesAndDeductions`, each entry named and shown.
 6. One row per entry in `calculation.businessProfitAndLoss`, naming the source and its taxable
-   profit.
+   profit. Where that entry carries `totalBroughtForwardIncomeTaxLosses`,
+   `broughtForwardIncomeTaxLossesUsed`, `adjustedIncomeTaxLoss` or
+   `taxableProfitAfterIncomeTaxLossesDeduction`, the row shows them, so a customer can see the
+   loss they claimed being used.
 7. Every entry in `messages`, whenever the array holds anything. Errors first, then warnings,
    then info, each labelled with its level and each naming the figure it refers to. Info and
    warning messages are HMRC telling the customer something about their own return, so they
@@ -642,6 +774,8 @@ used up.
 | Quarterly update, created or amended, self-employment or property | 1 |
 | Annual submission, created or amended | 0 |
 | Adjustable summary trigger, retrieve, adjust | 0 |
+| Losses and claims, created, amended or deleted | 0 |
+| Tax liability adjustments, created, amended or deleted | 0 |
 | Tax calculation trigger and retrieve | 0 |
 | Final declaration | 1 |
 | Every read (business details, obligations, ITSA status, period summaries) | 0 |
@@ -655,9 +789,15 @@ the customer's businesses cost:
 | One rental | 4 | 1, free | 1 | 5 tokens |
 | A sole trade and a rental | 8 | 2, free | 1 | 9 tokens |
 
-A sole trader's year is five tokens: four quarterly updates and one declaration. The annual
-submission is free because it is a working step inside a year end the declaration charges for,
-and a customer who corrects an allowance twice should not pay twice. See D1.
+A sole trader's year is five tokens: four quarterly updates and one declaration. The year-end
+working steps are free because they sit inside a year end the declaration charges for, and a
+customer who corrects an allowance twice should not pay twice. See D1.
+
+Losses and claims and tax liability adjustments follow that rule. Both are year-end steps
+before the declaration, and a customer working out how to use a loss will save the page more
+than once. The adjustments endpoint also sits outside D6's per-business metering, because HMRC
+scopes it to the person and the tax year rather than to a business, so there is nothing per
+business to meter. Neither API needed a change to the token model.
 
 The `resident-itsa` bundle grants 100 tokens a month, so nine in a year sits well inside the
 allowance. The number still shows before the customer spends it. The dashboard's business
@@ -867,15 +1007,9 @@ stages. The guide allows the stages to be approved one at a time, and we apply f
 | End-of-year | Business Details, Self-Employment Business, Property Business, Business Source Adjustable Summary, Individual Losses, Individuals Tax Liability Adjustments, Obligations, Individual Calculations |
 
 Applying for both stages at once means the checklist has to answer for every API in both rows
-before anything is sent. Seven of the nine have a build in this phase. Individual Losses and
-Individuals Tax Liability Adjustments do not.
-
-The checklist answers what is true: the product does not claim those two functions, so it does
-not offer the customer journeys they serve. A customer with a loss to carry forward or a tax
-liability adjustment to make does that in their HMRC account, and the product says so on the
-year-end pages rather than failing quietly. If HMRC's reviewer treats either API as required
-rather than conditional, their answer names the build we add before approval, and that is the
-one thing in this track that only the reviewer can settle.
+before anything is sent. All nine have a build in this phase (D9), Individual Losses and
+Individuals Tax Liability Adjustments included, so the checklist answers each with working
+endpoints and a customer journey behind it.
 
 The steps, in order:
 
@@ -913,7 +1047,7 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 ## The build sequence
 
-Twenty tracks. Each is one sub-agent's work. The nine endpoint tracks share a spine of files
+Twenty-two tracks. Each is one sub-agent's work. The ten endpoint tracks share a spine of files
 every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
 the previous merge. That is the pattern `PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
@@ -1071,12 +1205,26 @@ The script picks the endpoint family the same way the handlers do, by calling
 `resolveItsaSubmissionModel` on the year it was given. It carries no branch of its own and no
 hardcoded year, so run B proves the shared function as well as the endpoints. Run B also needs
 a test ITSA status set through the test support API, because a cumulative year's reporting type
-comes from it. Records each response so the simulator
+comes from it.
+
+Losses and adjustments do not multiply that. Both APIs are year-end only and scoped to a tax
+year, and neither knows anything about the quarterly model, so exercising them once proves them
+for both. Run A carries the whole sequence on the sole trade: a carry-forward claim, a
+brought-forward loss, a carry-back claim, the matching `carryBackLossesDecrease`, then the
+calculation and the declaration. That is the order HMRC's own guides require, so run A proves
+the ordering as well as the endpoints. Run B adds two calls and no sequence: a carry-forward
+claim on the property business, and one carry-back attempt on it that must come back rejected.
+
+Both runs send `suspendTemporalValidations` on the losses and adjustments writes, because HMRC
+allows those endpoints only after a tax year has ended and a sandbox year has not really
+ended. Records each response so the simulator
 scenarios match what HMRC returns, the way the phase 1 simulators were corrected against the
 sandbox.
 
 Proves, on each run: a `204` from the final declaration, both businesses present in the
-calculation's income sources, and the fraud header validator clean on the same header set.
+calculation's income sources, and the fraud header validator clean on the same header set. Run A
+also proves the calculation reflects the loss it claimed, and run B that a property carry-back
+is refused.
 
 ### T8. The derivations in the engine (Opus for the mapping, Sonnet for the wiring)
 
@@ -1108,17 +1256,17 @@ Owns `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass ove
 questionnaires, and the two draft emails.
 
 One application covers both approval stages (D3), so the checklist answers for every API in
-both rows of the stage table in one pass. Seven have a build: Business Details, Obligations,
-Self-Employment Business, Property Business, Business Source Adjustable Summary, Self Assessment
-Individual Details and Individual Calculations. Two do not: Individual Losses and Individuals
-Tax Liability Adjustments. The checklist says so plainly, names what a customer does instead in
-their HMRC account, and points at the year-end page that tells them.
+both rows of the stage table in one pass. All nine have a build behind them (D9): Business
+Details, Obligations, Self-Employment Business, Property Business, Business Source Adjustable
+Summary, Self Assessment Individual Details, Individual Calculations, Individual Losses and
+Individuals Tax Liability Adjustments. Nothing in the checklist rests on a reviewer agreeing
+that a function is optional.
 
 The two draft emails carry the same change. The SDST email asks for approval of the whole
 end-to-end journey rather than the in-year stage alone, names the sandbox application id, and
 lists both income types the journey covers. The software vendor team email describes the
-product as filing quarterly updates and a final declaration for self-employment and UK property
-income.
+product as filing quarterly updates, loss claims and a final declaration for self-employment and
+UK property income.
 
 Waits on T7. The operator sends.
 
@@ -1226,8 +1374,13 @@ Owns `web/public/hmrc/itsa/dashboard.html`, `businessDetails.html`, `obligations
 Adds the business picker above the dashboard's numbered steps, so a picked business travels as
 a `businessId` and `typeOfBusiness` pair and the steps link to the page family that type names.
 Groups the obligations table by business. Renders one `businessProfitAndLoss` row per income
-source on the calculation page. Lists every business in `inputs.incomeSources` on the
-declaration page, with the latest period end date HMRC holds for each.
+source on the calculation page, with the brought-forward and adjusted loss figures that entry
+carries. Lists every business in `inputs.incomeSources` on the declaration page, with the latest
+period end date HMRC holds for each, the loss position the losses retrieve answered for it, and
+whether the year holds any tax liability adjustment.
+
+The dashboard grows from ten numbered steps to twelve, and shows steps 9 and 10 as applicable or
+not rather than hiding them, so a customer with a loss cannot walk past the claim.
 
 Puts the year's token cost beside the picker, counted from the businesses HMRC listed, and the
 same figures on `usage.html` (D6).
@@ -1236,7 +1389,9 @@ Runs after T14, because the dashboard's steps link to pages T14 creates.
 
 Proves: `npm run test:browser`, including a mixed-business fixture where the obligations table
 groups two businesses, the calculation page shows two profit rows, and the picker names nine
-tokens for the year; the two existing ITSA behaviour suites still pass against the simulator.
+tokens for the year; a fixture where a business shows a loss with no claim recorded and the
+declaration page says so above the tick; the two existing ITSA behaviour suites still pass
+against the simulator.
 
 ### T16. The tax year model and the shared validator (Haiku)
 
@@ -1331,6 +1486,69 @@ button enabled with no number on screen; a test that a zero balance disables the
 the reset date from `tokenResetAt` and keeps the typed form intact; a test that a successful
 write refreshes the figure rather than leaving the pre-write one.
 
+### T21. Losses, claims and tax liability adjustments (Sonnet)
+
+Copies from `hmrcItsaSelfEmploymentAnnualGet.js` and `hmrcItsaSelfEmploymentAnnualPut.js`. Both
+APIs are one resource with a GET, a PUT and a DELETE, so all six handlers are the same thin
+shape over a different body.
+
+Owns `app/functions/hmrc/hmrcItsaLossesAndClaimsGet.js`, `hmrcItsaLossesAndClaimsPut.js`,
+`hmrcItsaLossesAndClaimsDelete.js`, `hmrcItsaTaxLiabilityAdjustmentsGet.js`,
+`hmrcItsaTaxLiabilityAdjustmentsPut.js`, `hmrcItsaTaxLiabilityAdjustmentsDelete.js`, their unit
+tests, `app/http-simulator/routes/itsa-losses-and-claims.js`,
+`app/http-simulator/routes/itsa-tax-liability-adjustments.js`, the two matching scenario files,
+and the spine.
+
+The two APIs travel together because HMRC's own guides make them one journey: a carry-back
+claim is not finished until its matching decrease is submitted, and neither can be exercised end
+to end without the other. They are also two `Accept` versions, Individual Losses 7.0 and
+Individuals Tax Liability Adjustments 1.0, so the version argument to `buildHmrcHeaders` earns a
+test on each, the way T3's pair did.
+
+Routes `/api/v1/hmrc/itsa/losses-and-claims` and `/api/v1/hmrc/itsa/tax-liability-adjustments`.
+Exports `buildLossesAndClaimsRequestBody` and `buildTaxLiabilityAdjustmentsRequestBody`, both
+following `buildAnnualSubmissionRequestBody`: drop an empty section, refuse a body that would be
+entirely empty.
+
+Two rules the handlers enforce before the HMRC call. A carry-back claim against a property
+business is refused with our own sentence rather than HMRC's `CARRY_BACK_CLAIM` code. And
+`claims.preferenceOrder` is refused unless both a sideways and a carry-back claim are present,
+because it means nothing on its own.
+
+Both are free writes (D1, D8), so neither charges a token and neither takes the token-charge
+block.
+
+Proves: unit tests over both body builders, the property carry-back refusal, the preference
+order rule, and the `Accept` version each handler sends; unit tests over the DELETE paths; a
+system test against the simulator; `./mvnw clean verify`.
+
+### T22. The losses and adjustments pages (Sonnet)
+
+Copies from `web/public/hmrc/itsa/annualSubmission.html`.
+
+Owns `web/public/hmrc/itsa/lossesAndClaims.html`,
+`web/public/hmrc/itsa/taxLiabilityAdjustments.html`, the two service functions in
+`web/public/lib/services/hmrc-service.js`, the new page paths on the `self-employed` activity in
+`web/public/submit.catalogue.toml`, the browser tests, and
+`behaviour-tests/itsaLossesAndClaims.behaviour.test.js` with its `playwright.config.js`,
+`package.json` and `scripts/bundle-for-tests.js` entries.
+
+`lossesAndClaims.html` takes the picked business and tax year, loads what HMRC already holds,
+and offers carry-forward, sideways and carry-back for a sole trade and carry-forward alone for a
+rental. It says which claim it is about to make in a sentence before the customer saves.
+
+`taxLiabilityAdjustments.html` takes the three `carryBackLossesDecrease` figures. Beside them it
+shows the earlier year's `totalIncomeTaxAndNicsDue`, retrieved with the calculation endpoint the
+product already has, so the customer has HMRC's own figure for that year while they enter the
+decrease. The page subtracts nothing and computes nothing.
+
+Both pages include `submission-cost.js` (T20) and both say the write is free.
+
+Runs after T14, which owns `hmrc-service.js` and the catalogue.
+
+Proves: `npm run test:browser`, including the property carry-back option being absent for a
+rental and present for a sole trade; `npm run test:itsaLossesAndClaimsBehaviour-simulator`.
+
 ### Order
 
 T1, then T2, T3, T4, T5 in that order for the spine, then T6. Those six have landed.
@@ -1339,16 +1557,18 @@ The rest run in this order:
 
 T16 and T20 first, alongside each other. T16 because everything after it uses the tax year
 model, T20 because four page tracks include the widget it builds.
-Then the endpoint tracks take the spine in turn: T17, T11, T18, T12, T13.
-Then the pages: T14, T19, T15.
+Then the endpoint tracks take the spine in turn: T17, T11, T18, T12, T13, T21.
+Then the pages: T14, T19, T22, T15.
 Then T7, the sandbox proof, which needs every endpoint and every page in place.
 T8 runs alongside from the start, in the other repository. T9 after T8 and T19. T10 after T7.
 
 Four ordering rules behind that. T18 grows the handlers T11 creates, so it follows T11. T13
 changes `hmrcItsaBsasTriggerPost.js`, which T4 owns, so it runs once no other track holds that
 file. T19 and T15 both touch the ITSA page set, and T19 grows pages T14 creates, so the page
-tracks run T14, then T19, then T15. T20 merges before T14 so the property pages carry the cost
-line from the moment they are written.
+tracks run T14, then T19, then T22, then T15. T20 merges before T14 so every page carries the
+cost line from the moment it is written. T22 follows T14 because T14 owns `hmrc-service.js` and
+the catalogue, and it precedes T15 because the final declaration page reads the loss position
+T22's service functions fetch.
 
 ## Verification
 
@@ -1386,6 +1606,14 @@ line from the moment they are written.
   goes through, and an exhausted allowance is still refused by the server's `403`.
 - A zero balance disables the submit button, names the reset date from `tokenResetAt`, and
   leaves everything the customer typed on the form.
+- A losses and claims write and a tax liability adjustments write each decrement nothing, and
+  each page says the write is free.
+- A carry-back claim against a property business is refused by our own handler, in our own
+  words, before any HMRC call happens.
+- The declaration page names a business whose calculation shows a loss with no claim recorded
+  against it, above the tick rather than after it.
+- The checklist in `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` answers for all
+  nine APIs in the minimum functionality standards, each with a working endpoint behind it.
 - An async worker retry of a quarterly update spends no second token.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
   disabled, so it sits in the document order rather than being positioned there.
@@ -1446,9 +1674,11 @@ the 2026-27 tax year, so a mandated customer's first real filing lands on the cu
 endpoints. A product that files only sandbox-era years is not a product. This adds tracks T16
 to T19.
 
-**D8. Every write costs a token, and the page says so before the customer sends.** One rule
-covers the dated and the cumulative model, and nothing has to remember which obligation a write
-met. A cumulative year invites more sends than a dated one, so a customer who reports monthly
+**D8. Every quarterly update costs a token however often it is sent, and the page says so
+before the customer sends.** One rule covers the dated and the cumulative model, and nothing has
+to remember which obligation a write met. The year-end working steps stay free, as D1 sets out:
+the annual submission, the adjustable summary, the losses and claims, and the tax liability
+adjustments. The quarterly update and the final declaration are what a token buys. A cumulative year invites more sends than a dated one, so a customer who reports monthly
 and corrects twice can spend fifteen tokens on one business rather than four. That is a
 possible and acceptable outcome, not a fault: they sent fifteen submissions to HMRC and each
 one cost what a submission costs. `resident-itsa` grants 100 tokens a month, so a heavy
@@ -1456,16 +1686,18 @@ cumulative year stays well inside the allowance. The condition is that the custo
 cost and their remaining allowance before they press the button, on every page that writes.
 This adds track T20.
 
+**D9. Individual Losses and Individuals Tax Liability Adjustments are built before the
+application goes in.** Every one of the nine APIs in the minimum functionality standards has a
+build behind it, so the checklist answers for all nine and nothing in T10 is left for a
+reviewer to reject. Two reasons. The first is that it removes the only cost D3 created by
+applying for both approval stages at once. The second stands on its own: a sole trader making a
+loss is the ordinary first-year-of-trading case, and without Individual Losses that customer
+files quarterly updates with us all year, reaches the final declaration, and has to finish in
+their HMRC account. This adds tracks T21 and T22.
+
 **D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
 enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
 test support API, and its vendor-state checkpoints reset the user between runs.
-
-## Open for the operator
-
-**Whether Individual Losses and Individuals Tax Liability Adjustments block approval.** D3
-applies for both stages together, and those two APIs have no build. T10's checklist answers
-that the product does not offer those journeys. HMRC's reviewer may treat either as required.
-Their answer is what decides, and only the operator can ask.
 
 ## Sources
 
@@ -1474,6 +1706,11 @@ Their answer is what decides, and only the operator can ask.
 - `PLAN_SUBMISSION_MCP.md`, `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
+- Individual Losses (MTD) 7.0 and Individuals Tax Liability Adjustments (MTD) 1.0, whose
+  published specs carry no operation detail at all:
+  <https://github.com/hmrc/individual-losses-api> under `resources/public/api/conf/7.0/`, and
+  <https://github.com/hmrc/individuals-tax-liability-adjustments-api> under
+  `resources/public/api/conf/1.0/`.
 - Property Business (MTD) 6.0, and the UK property detail its published spec omits:
   <https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/property-business-api/6.0>
   and <https://github.com/hmrc/property-business-api> under
