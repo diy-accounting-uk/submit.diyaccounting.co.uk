@@ -27,6 +27,7 @@ const COPYRIGHT = "Copyright (C) 2006-2026 DIY Accounting Limited";
 const EXCLUDED_PATH_PREFIXES = [
   "web/public-simulator/",
   "web/public/tests/",
+  "web/public/docs/api/",
   "fixtures/companies-house-xmlgw/",
   "web/public/docs/hmrc-form-field-standards/",
   "node_modules/",
@@ -34,8 +35,7 @@ const EXCLUDED_PATH_PREFIXES = [
 ];
 
 // Individual files: the licence text itself, a vendored third-party file
-// that keeps its own notice, a generated document, lock files, and the
-// Apache Maven Wrapper.
+// that keeps its own notice, lock files, and the Apache Maven Wrapper.
 const EXCLUDED_FILES = new Set([
   "LICENSE",
   "NOTICE",
@@ -45,7 +45,6 @@ const EXCLUDED_FILES = new Set([
   "mvnw",
   "mvnw.cmd",
   "web/public/lib/qrcode.min.js",
-  "web/public/docs/api/openapi.json",
   "_developers/backlog/battery-pack/LICENSE",
 ]);
 
