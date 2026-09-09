@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // Waits until every deploy.yml, deploy-app.yml, destroy-ci.yml and video-capture.yml run on a
 // non-main branch that was created before this run has finished. Runs on plain Node so it works
 // on a runner and inside the Playwright container alike, where gh and jq are absent.

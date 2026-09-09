@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Gate git pushes to main: markdown-only changes may go direct, anything else needs a PR.
 # Runs as a PreToolUse hook; receives the tool call as JSON on stdin.
 set -u

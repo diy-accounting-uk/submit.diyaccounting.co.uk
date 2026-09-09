@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Scheduled ingestion jobs
 
 Design for backlog item 14. It supersedes WP-8 to WP-11 in

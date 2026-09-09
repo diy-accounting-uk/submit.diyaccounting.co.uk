@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Passes and Credits System
 
 > **Purpose**: This document captures all decisions for GitHub Issue #560 - "Generate an invitation to add a bundle (conditions may apply)". It serves as a context save-point for implementation across sessions.

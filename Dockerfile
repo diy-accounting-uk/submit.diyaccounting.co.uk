@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Optimized Dockerfile for AWS Lambda with ARM64 architecture
 # Uses multi-stage build with cross-compilation:
 #   - Builder stage runs on the build host's native arch (x86_64 on GitHub Actions)

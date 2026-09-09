@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
  * MetricSon - Standalone Browser Bundle
  * 
@@ -13,7 +16,7 @@
  *     // ... connect to your data source
  *   </script>
  * 
- * @license MIT
+ * @license SEE LICENSE IN LICENSE
  * @see https://sonification.de/handbook/
  */
 

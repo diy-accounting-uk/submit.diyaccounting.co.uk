@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # DIY Accounting - Gateway & Brand Architecture Plan
 
 **Version**: 1.1 | **Date**: February 2026 | **Status**: Draft

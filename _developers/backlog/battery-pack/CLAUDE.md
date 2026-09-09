@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Claude Code Memory - Key-Gated Open Source (Battery Pack)
 
 ## Quick Reference

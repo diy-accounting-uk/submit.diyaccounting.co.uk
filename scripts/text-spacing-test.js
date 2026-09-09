@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// SPDX-FileCopyrightText: 2025 DIY Accounting Limited
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 /**
  * WCAG 1.4.12 Text Spacing Compliance Test

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Security Review: OWASP Top 10 & Repository-Specific Analysis
 
 Purpose: Perform a comprehensive security review of the codebase, focusing on OWASP Top 10 vulnerabilities and patterns specific to this AWS Lambda + DynamoDB + HMRC OAuth architecture.

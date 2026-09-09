@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 You are triaging one CloudWatch alarm for DIY Accounting Submit, a VAT filing service on AWS
 Lambda, DynamoDB, Cognito and the HMRC Making Tax Digital APIs.
 

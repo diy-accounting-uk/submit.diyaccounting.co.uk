@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Review of `submit.diyaccounting.co.uk` repository (branch `copilot/reduce-code-verbosity-responses`)
 
 ## 1 Overview and repository goals

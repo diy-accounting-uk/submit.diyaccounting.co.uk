@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Increase Consistency Prompt
 
 Analyze the current repository and identify opportunities to increase consistency across code, configuration, documentation, and processes.

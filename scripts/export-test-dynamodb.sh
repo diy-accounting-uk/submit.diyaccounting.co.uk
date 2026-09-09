@@ -1,4 +1,7 @@
 #!/bin/bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 set -euo pipefail
 
 # Export DynamoDB data for test users after behaviour tests complete

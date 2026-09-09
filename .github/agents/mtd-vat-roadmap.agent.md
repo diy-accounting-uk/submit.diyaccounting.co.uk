@@ -2,6 +2,9 @@
 name: MTD VAT Roadmap
 description: Strategic plan to reach HMRC approval and production readiness for VAT submission.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # MTD VAT Roadmap Agent
 
 Purpose: Plan the path to HMRC approval and real customer VAT submissions. This agent identifies gaps in quality, accuracy, and completeness and proposes a structured plan to reach production readiness.

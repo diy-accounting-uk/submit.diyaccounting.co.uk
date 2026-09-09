@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Implementation Plan: Full 9-Box VAT Return & HMRC Compliance
 
 **Date**: 20 January 2026 (Updated)

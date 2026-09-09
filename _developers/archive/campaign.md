@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 Below is a pragmatic pricing and referral structure aligned with the UK VAT SaaS market, HMRC MTD tooling norms, and your stated constraints.
 
 ---

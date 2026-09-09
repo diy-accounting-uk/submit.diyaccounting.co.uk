@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Campaign Passes, Referral System & Commission Plan
 
 > **Source**: Sections 6 & 7 of `_developers/backlog/PLAN_PASSES_V2-PART-2.md`

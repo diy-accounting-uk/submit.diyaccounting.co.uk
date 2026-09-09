@@ -1,6 +1,7 @@
 #!/bin/bash
-# SPDX-License-Identifier: AGPL-3.0-only
-# Copyright (C) 2025-2026 DIY Accounting Ltd
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 #
 # Read-only check that the scan-detection WAF rules did not block real traffic. Run it straight
 # after a behaviour suite: a block during a probe run is a false positive by definition.

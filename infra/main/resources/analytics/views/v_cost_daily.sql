@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How much did each day cost, by AWS service and by the deployment and stack that spent it?
 --
 -- Reads cost_focus directly rather than through billing_period, since charge_period_start

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Generate Pass Activities — Digital & Physical Passes
 
 > **Related**: `_developers/backlog/PLAN_PASSES_V2-PART-2.md` Phase 6 (Campaign system)

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Standing compliance commitments the one-stop dashboard's compliance panel (v_compliance_status)
 # reads alongside the accessibility and fraud-prevention-header findings from the lake. Each item
 # carries the date that matters for it (date_kind says which: "reviewed", "due" or "expiry") and

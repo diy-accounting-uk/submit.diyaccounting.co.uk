@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Companies House accounts filing (FRS 105 micro-entity, XML Gateway)
 
 > Backlog row 34b. The REST filings stay as they are in `PLAN_COMPANIES_HOUSE_REST_FILING.md`; that

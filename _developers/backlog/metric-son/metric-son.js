@@ -1,10 +1,13 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
  * MetricSon - A Parameter-Mapping Sonification Widget for Cloud Metrics
  * 
  * Based on principles from The Sonification Handbook (Hermann, Hunt & Neuhoff, 2011)
  * and inspired by Peep: The Network Auralizer (Gilfix & Couch, USENIX LISA 2000)
  * 
- * @license MIT
+ * @license SEE LICENSE IN LICENSE
  * @see https://sonification.de/handbook/
  */
 

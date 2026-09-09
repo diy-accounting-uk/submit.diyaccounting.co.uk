@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Which HMRC failure classes are we hitting, and how often?
 CREATE OR REPLACE VIEW v_hmrc_failures_by_class AS
 SELECT date(event_ts) AS day,

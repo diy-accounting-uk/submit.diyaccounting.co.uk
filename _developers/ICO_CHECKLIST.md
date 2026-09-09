@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # ICO Data Protection Checklist
 
 Worked through the ICO's small-business self-assessment headings: [assessment for small business

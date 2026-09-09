@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Resident VAT Bundle Rollout Plan
 
 > **Goal**: Launch `resident-vat` as the primary publicly available subscription tier at £0.99/mo

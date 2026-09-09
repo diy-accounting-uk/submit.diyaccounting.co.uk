@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # NEXT — current state & kickoff
 
 Living handover for this repository. Rules and shape: `../NEXT.md` (DONE or OPEN only, nothing

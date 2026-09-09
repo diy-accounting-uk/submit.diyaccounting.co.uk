@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Usage: ./scripts/provision-user.sh
 # Purpose: Provision a test user in the Cognito user pool for DIY submit testing
 # Example (running behaviour tests against the ci environment with a freshly provisioned user):

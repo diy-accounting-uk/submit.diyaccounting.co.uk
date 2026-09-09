@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: Cognito DNS Hostname Fix (Option 3 - Clean Architecture)
 
 ## Executive Summary

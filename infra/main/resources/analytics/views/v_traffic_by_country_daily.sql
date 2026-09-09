@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- Where are sessions coming from, and which convert?
 --
 -- Sessions are anonymous: a new-session event carries no hashed_sub and no id shared with a

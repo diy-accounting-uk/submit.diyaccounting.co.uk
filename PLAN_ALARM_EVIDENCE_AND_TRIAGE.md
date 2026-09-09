@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Alarm evidence links and headless triage
 
 Design for `NEXT.md` items B30h (alarm issues link to the evidence) and B30i (alarm triage:

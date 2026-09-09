@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Payment Integration - Phased Delivery Plan
 
 > **Prerequisite**: `PLAN_PASSES_V2.md` (passes, tokens, bundles, capacity) must be stable before starting.

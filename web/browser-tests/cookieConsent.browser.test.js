@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // web/browser-tests/cookieConsent.browser.test.js
 //
 // Covers B19's code half (cookie consent banner). GA4 loads with

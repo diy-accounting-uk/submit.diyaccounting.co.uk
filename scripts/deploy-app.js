@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 //
 // Lean app deployment: updates Lambda function code (Docker image) and static web assets
 // without running CDK. Bypasses full deploy.yml for rapid iteration.

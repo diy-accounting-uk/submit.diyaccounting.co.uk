@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // web/browser-tests/passRedeemer.browser.test.js
 //
 // Covers issue #6: a pass link pointed straight at an activity page must

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: ITSA phase 2 (annual submission, adjustments, tax calculation, final declaration)
 
 Phase 1 put the self-employment quarterly update on the sandbox: Business Details, Obligations

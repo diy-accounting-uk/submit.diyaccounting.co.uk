@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How many passes were issued and how many redeemed, by pass type?
 --
 -- Issuance comes from the activity event, which carries the pass type. Redemption does not:

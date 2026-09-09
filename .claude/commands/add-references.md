@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Add Citation References to a Knowledge Base Article
 
 Process a single article to add inline citation references backed by authoritative sources.

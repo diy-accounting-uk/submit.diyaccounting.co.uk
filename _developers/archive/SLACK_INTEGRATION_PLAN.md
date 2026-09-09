@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 > Archived 2026-09-07. Superseded: alarms go to GitHub issues through the triage chain in `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`, and the alarms panel of `PLAN_ONE_STOP_DASHBOARD.md` shows them over time. Slack was not chosen.
 
 # Slack Alert Integration with Claude API Summarization

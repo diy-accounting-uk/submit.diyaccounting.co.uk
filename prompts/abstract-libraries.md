@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Abstract and Delegate to Libraries Prompt
 
 Analyze the current repository and identify opportunities to abstract common patterns and delegate functionality to well-established libraries.

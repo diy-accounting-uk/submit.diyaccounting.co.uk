@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # DIY Accounting Submit - GitHub Copilot Code Review Instructions
 
 **Last Updated:** 2026-01-05

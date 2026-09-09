@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How many subscriptions renewed each day, by bundle?
 --
 -- dynamo_subscriptions carries one change record per write to the subscriptions table. A

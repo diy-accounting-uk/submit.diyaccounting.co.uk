@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN_FLAGGED.md — antonycc / xn--intenton-z2a flagging & suspension
 
 > Forensic record of the GitHub flagging incident, captured 2026-05-06 from local Claude Code session transcripts. **No GitHub-side data** has been pulled — this is reconstructed entirely from the user's own record.

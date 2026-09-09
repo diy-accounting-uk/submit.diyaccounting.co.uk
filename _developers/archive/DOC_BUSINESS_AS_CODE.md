@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Business as Code
 
 **Concept**: Define and manage the entire operational cashflow of a business through version-controlled scripts and infrastructure.

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Auto-Select Best Opportunity Prompt
 
 Analyze the current repository and all available prompts in the `./prompts` directory to automatically select the prompt type where there is the greatest opportunity to add value.

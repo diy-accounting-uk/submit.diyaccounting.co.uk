@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/services/microEntityAccountsIxbrl.js
 // Builds a micro-entity's FRS 105 annual accounts as one iXBRL (XHTML + inline XBRL) document,

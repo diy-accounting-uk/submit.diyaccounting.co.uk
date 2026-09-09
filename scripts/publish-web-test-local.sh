@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Usage: ./scripts/publish-web-test-local.sh <sourceReport> <targetTest>
 # e.g. ./scripts/publish-web-test-local.sh target/behaviour-test-results/test-report-submitVatBehaviour.json 'web-test-local'
 sourceReport="${1?Missing sourceReport argument}"

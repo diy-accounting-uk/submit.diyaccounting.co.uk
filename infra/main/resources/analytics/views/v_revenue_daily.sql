@@ -1,3 +1,6 @@
+-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+-- Copyright (C) 2006-2026 DIY Accounting Limited
+
 -- How much money arrived each day, by product, from Stripe?
 --
 -- Reads the charges table directly rather than balance transactions: charges carry bundle_id

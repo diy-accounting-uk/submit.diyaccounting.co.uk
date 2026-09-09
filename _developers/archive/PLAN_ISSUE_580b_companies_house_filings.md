@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Issue #580b — Companies House filings
 
 > Split from #580 on 2026-04-22 (user confirmed Q580.1 direction).
