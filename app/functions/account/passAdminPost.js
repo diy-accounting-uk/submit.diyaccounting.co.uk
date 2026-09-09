@@ -13,7 +13,6 @@ import {
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { createPass } from "../../services/passService.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
@@ -28,13 +27,6 @@ export function apiEndpoint(app) {
 
 export async function ingestHandler(event) {
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME"]);
-
-  // Initialize email hash secret (needed for email-restricted passes)
-  try {
-    await initializeEmailHashSecret();
-  } catch (error) {
-    logger.warn({ message: "Email hash secret not available, email-restricted passes will fail", error: error.message });
-  }
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };

@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { generatePassphrase } from "../lib/passphrase.js";
-import { hashEmail, hashEmailWithEnvSecret } from "../lib/emailHash.js";
+import { hashEmail, hashEmailWithEnvSecret, initializeEmailHashSecret } from "../lib/emailHash.js";
 import { calculateTtl } from "../lib/dateUtils.js";
 import * as passRepository from "../data/dynamoDbPassRepository.js";
 
@@ -129,6 +129,10 @@ export function buildPassRecord({
  * @returns {Promise<Object>} The stored pass record
  */
 export async function createPass(params) {
+  if (params.restrictedToEmail && !params.emailHashSecret) {
+    await initializeEmailHashSecret();
+  }
+
   let pass = buildPassRecord(params);
 
   try {
@@ -160,6 +164,10 @@ export async function checkPass(code, userEmail, emailHashSecret) {
     return { valid: false, reason: "not_found" };
   }
 
+  if (pass.restrictedToEmailHash && !emailHashSecret) {
+    await initializeEmailHashSecret();
+  }
+
   const now = new Date().toISOString();
   return validatePass(pass, now, userEmail, emailHashSecret);
 }
@@ -189,6 +197,7 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
       if (emailHashSecret) {
         emailHash = hashEmail(userEmail, emailHashSecret);
       } else {
+        await initializeEmailHashSecret();
         emailHash = hashEmailWithEnvSecret(userEmail).hash;
       }
 
