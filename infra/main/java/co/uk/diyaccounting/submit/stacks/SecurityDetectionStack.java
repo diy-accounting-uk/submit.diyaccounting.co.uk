@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
+import java.util.Set;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -254,32 +255,37 @@ public class SecurityDetectionStack extends Stack {
         // global service events, so IAM, and other global-service activity is visible here even
         // though the trail itself is single-region.
         // ----------------------------------------------------------------------------------
-        String deploymentRoleNameCis = "submit-%s-deployment-role".formatted(props.envName());
-        String deploymentRoleExclusion =
-                " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")"
-                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-cfn-exec-role-*\")"
-                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-deploy-role-*\")"
-                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-file-publishing-role-*\")"
-                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-lookup-role-*\")"
-                .formatted(deploymentRoleNameCis);
+        String cisDeploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
+        String cisGithubActionsRoleName = "submit-%s-github-actions-role".formatted(props.envName());
+        String cisDeployRoleExclusion =
+                (" && (($.userIdentity.type != \"AssumedRole\") || "
+                        + "(($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-*\") "
+                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
+                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")))")
+                        .formatted(cisDeploymentRoleName, cisGithubActionsRoleName);
+
+        Set<String> deployChangedControls = Set.of(
+                "UnauthorizedApiCalls",
+                "IamPolicyChanges",
+                "S3BucketPolicyChanges",
+                "SecurityGroupChanges",
+                "NaclChanges",
+                "NetworkGatewayChanges",
+                "RouteTableChanges",
+                "VpcChanges");
 
         for (CisControl control : CIS_CONTROLS) {
             String metricName = "Cis" + control.name();
             String filterPatternStr = control.filterPattern();
 
-            // Exclude deploy and CDK bootstrap roles from filters that monitor infrastructure
-            // changes the deployment pipeline itself performs (see PLAN_ISSUE_30, B30q).
-            if (control.name().equals("UnauthorizedApiCalls")
-                    || control.name().equals("IamPolicyChanges")
-                    || control.name().equals("S3BucketPolicyChanges")
-                    || control.name().equals("SecurityGroupChanges")
-                    || control.name().equals("NaclChanges")
-                    || control.name().equals("NetworkGatewayChanges")
-                    || control.name().equals("RouteTableChanges")
-                    || control.name().equals("VpcChanges")) {
+            // Exclude deploy and GitHub Actions roles from filters monitoring infrastructure
+            // changes the deployment pipeline itself performs. Root and IAMUser events (which
+            // have no sessionIssuer) pass through; only AssumedRole events matching deploy roles
+            // are excluded. Only a person or unrecognised principal should fire these alarms.
+            if (deployChangedControls.contains(control.name())) {
                 // Patterns end with " }" so insert the exclusion before the closing brace.
                 filterPatternStr = filterPatternStr.substring(0, filterPatternStr.length() - 2)
-                        + deploymentRoleExclusion
+                        + cisDeployRoleExclusion
                         + " }";
             }
 
