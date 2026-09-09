@@ -480,7 +480,7 @@ jobs:
 
           if [ "${REMAINING_STACKS:-0}" -eq 0 ]; then
             echo "Last-known-good ci deployment $LAST_KNOWN_GOOD has no stacks left, clearing $PARAMETER_NAME"
-            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "" --overwrite
+            aws ssm delete-parameter --name "$PARAMETER_NAME" 2>/dev/null || true
           else
             echo "Last-known-good ci deployment $LAST_KNOWN_GOOD still has $REMAINING_STACKS stack(s), leaving $PARAMETER_NAME alone"
           fi
