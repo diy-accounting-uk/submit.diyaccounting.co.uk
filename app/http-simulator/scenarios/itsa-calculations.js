@@ -58,8 +58,13 @@ function emptyMessages() {
   return { info: [], warnings: [], errors: [] };
 }
 
-/** Build the UK_SE_SAVINGS_EXAMPLE calculation: self-employment income with savings. */
-function ukSeSavingsExample(nino, taxYear, calculationId) {
+/**
+ * Build the UK_SE_SAVINGS_EXAMPLE calculation: self-employment income with savings.
+ * calculationType echoes whatever the trigger call asked for (in-year, intent-to-finalise or
+ * intent-to-amend) - HMRC's real retrieve response carries the type the calculation was
+ * triggered with, and a customer confirming a final declaration needs to see that reflected.
+ */
+function ukSeSavingsExample(nino, taxYear, calculationId, calculationType = "in-year") {
   return {
     metadata: {
       calculationId,
@@ -67,8 +72,8 @@ function ukSeSavingsExample(nino, taxYear, calculationId) {
       requestedBy: "customer",
       calculationReason: "customer-request",
       calculationTimestamp: "2024-06-15T09:30:00.000Z",
-      calculationType: "in-year",
-      intentToSubmitFinalDeclaration: false,
+      calculationType,
+      intentToSubmitFinalDeclaration: calculationType === "intent-to-finalise",
       finalDeclaration: false,
       periodFrom: "2023-04-06",
       periodTo: "2024-04-05",
@@ -87,8 +92,8 @@ function ukSeSavingsExample(nino, taxYear, calculationId) {
 }
 
 /** Build the UK_SE_GIFTAID_EXAMPLE calculation: self-employment income with Gift Aid relief. */
-function ukSeGiftaidExample(nino, taxYear, calculationId) {
-  const example = ukSeSavingsExample(nino, taxYear, calculationId);
+function ukSeGiftaidExample(nino, taxYear, calculationId, calculationType = "in-year") {
+  const example = ukSeSavingsExample(nino, taxYear, calculationId, calculationType);
   example.calculation.allowancesAndDeductions = { personalAllowance: 12570, giftAidRelief: 400 };
   example.calculation.taxCalculation = {
     incomeTax: { totalIncomeTax: 1200 },
@@ -100,8 +105,8 @@ function ukSeGiftaidExample(nino, taxYear, calculationId) {
 }
 
 /** Build the SCOT_SE_DIVIDENDS_EXAMPLE calculation: Scottish self-employment with dividends. */
-function scotSeDividendsExample(nino, taxYear, calculationId) {
-  const example = ukSeSavingsExample(nino, taxYear, calculationId);
+function scotSeDividendsExample(nino, taxYear, calculationId, calculationType = "in-year") {
+  const example = ukSeSavingsExample(nino, taxYear, calculationId, calculationType);
   example.inputs.personalInformation.taxRegime = "scotland";
   example.calculation.allowancesAndDeductions = { personalAllowance: 12570, dividendAllowance: 500 };
   example.calculation.taxCalculation = {
@@ -114,7 +119,7 @@ function scotSeDividendsExample(nino, taxYear, calculationId) {
 }
 
 /** Build the ERROR_MESSAGES_EXIST body: errors exist and no calculation has been generated. */
-function errorMessagesExist(nino, taxYear, calculationId) {
+function errorMessagesExist(nino, taxYear, calculationId, calculationType = "in-year") {
   return {
     metadata: {
       calculationId,
@@ -122,8 +127,8 @@ function errorMessagesExist(nino, taxYear, calculationId) {
       requestedBy: "customer",
       calculationReason: "customer-request",
       calculationTimestamp: "2024-06-15T09:30:00.000Z",
-      calculationType: "in-year",
-      intentToSubmitFinalDeclaration: false,
+      calculationType,
+      intentToSubmitFinalDeclaration: calculationType === "intent-to-finalise",
       finalDeclaration: false,
       periodFrom: "2023-04-06",
       periodTo: "2024-04-05",
@@ -137,8 +142,8 @@ function errorMessagesExist(nino, taxYear, calculationId) {
 }
 
 /** Build a DYNAMIC calculation: the date fields reflect the requested taxYear. */
-function dynamicExample(nino, taxYear, calculationId) {
-  const example = ukSeSavingsExample(nino, taxYear, calculationId);
+function dynamicExample(nino, taxYear, calculationId, calculationType = "in-year") {
+  const example = ukSeSavingsExample(nino, taxYear, calculationId, calculationType);
   const [startYear] = taxYear.split("-");
   example.metadata.periodFrom = `${startYear}-04-06`;
   example.metadata.periodTo = `${Number(startYear) + 1}-04-05`;
@@ -162,22 +167,25 @@ const NOT_FOUND_RESPONSE = {
 /**
  * Get the retrieve-a-calculation response for a Gov-Test-Scenario header. HMRC's own sandbox
  * answers with a success example when no scenario header is sent, matching every other ITSA
- * retrieve endpoint's simulator default.
+ * retrieve endpoint's simulator default. calculationType is the type the matching trigger call
+ * was made with, if the caller has it - it lands in the response's metadata.calculationType the
+ * way HMRC's own retrieve response does.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @param {string} nino
  * @param {string} taxYear
  * @param {string} calculationId
+ * @param {string} [calculationType] - in-year, intent-to-finalise or intent-to-amend
  * @returns {{calculation: object}|{status: number, body: object}}
  */
-export function getCalculationForScenario(scenario, nino, taxYear, calculationId) {
-  if (!scenario) return { calculation: ukSeSavingsExample(nino, taxYear, calculationId) };
+export function getCalculationForScenario(scenario, nino, taxYear, calculationId, calculationType = "in-year") {
+  if (!scenario) return { calculation: ukSeSavingsExample(nino, taxYear, calculationId, calculationType) };
 
   const scenarioUpper = scenario.toUpperCase();
   if (scenarioUpper === "NOT_FOUND") return NOT_FOUND_RESPONSE;
-  if (scenarioUpper === "STATEFUL") return { calculation: ukSeSavingsExample(nino, taxYear, calculationId) };
+  if (scenarioUpper === "STATEFUL") return { calculation: ukSeSavingsExample(nino, taxYear, calculationId, calculationType) };
 
   const builder = retrieveScenarioBuilders[scenarioUpper];
-  if (builder) return { calculation: builder(nino, taxYear, calculationId) };
+  if (builder) return { calculation: builder(nino, taxYear, calculationId, calculationType) };
 
   return NOT_FOUND_RESPONSE;
 }

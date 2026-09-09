@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Year-End Adjustments - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Year-End Adjustments</h1>
+      <p class="subtitle">Trigger the year-end summary, review the figures HMRC calculated, and adjust them if needed</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Trigger form -->
+      <div id="triggerForm" class="form-container">
+        <h2>Trigger the Year-End Summary</h2>
+        <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
+        <form id="itsaBsasTriggerForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+          </div>
+
+          <div class="form-group">
+            <label for="accountingPeriodStartDate">Accounting period start date</label>
+            <input type="date" id="accountingPeriodStartDate" name="accountingPeriodStartDate" required />
+          </div>
+
+          <div class="form-group">
+            <label for="accountingPeriodEndDate">Accounting period end date</label>
+            <input type="date" id="accountingPeriodEndDate" name="accountingPeriodEndDate" required />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for triggering a summary</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (trigger succeeds)</option>
+              <option value="OBLIGATIONS_NOT_MET">Obligations not met</option>
+              <option value="ACCOUNTING_PERIOD_NOT_ENDED">Accounting period not ended</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="triggerBtn" class="btn">Trigger Year-End Summary</button>
+        </form>
+      </div>
+
+      <!-- Summary and adjustment form, shown after a successful trigger and retrieve -->
+      <div id="summaryContainer" class="results-container" style="display: none">
+        <h3>Year-End Summary</h3>
+        <dl id="summaryDetails"></dl>
+
+        <h3>Submit an Adjustment</h3>
+        <p class="hint">Change a figure if HMRC's calculation is wrong, or confirm no change is needed.</p>
+        <div class="form-group">
+          <label for="adjustTurnover">Turnover</label>
+          <input type="number" id="adjustTurnover" name="adjustTurnover" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label for="adjustCostOfGoods">Cost of goods</label>
+          <input type="number" id="adjustCostOfGoods" name="adjustCostOfGoods" step="0.01" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="submitAdjustmentBtn" class="btn">Submit Adjustment</button>
+          <button type="button" id="zeroAdjustmentsBtn" class="secondary-button">Nothing to Adjust</button>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="adjustmentResults" class="results-container" style="display: none">
+        <h3>Adjustment Submitted</h3>
+        <p>HMRC has accepted the adjustment.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Start Again</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script>
+      let triggeredNino = "";
+      let triggeredTaxYear = "";
+      let triggeredCalculationId = "";
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      // The trigger is refused while any quarterly obligation for the business is still open -
+      // HMRC would reject it with RULE_OBLIGATIONS_NOT_MET, so this is checked and explained
+      // before the call is made rather than after HMRC says no.
+      async function checkOpenObligations(nino, businessId, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        const result = await getObligations(nino, accessToken, govClientHeaders, false, null, {
+          typeOfBusiness: "self-employment",
+          businessId,
+          status: "open",
+        });
+        const openObligations = (result?.obligations || []).filter((o) => o.status === "open" || o.status === "O");
+        return openObligations;
+      }
+
+      async function triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await triggerBsas(triggerDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      async function retrieveSummary(nino, calculationId, taxYear, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getBsasSelfEmployment(nino, calculationId, taxYear, accessToken, govClientHeaders, false, null);
+      }
+
+      async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await adjustBsasSelfEmployment(adjustDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      function displaySummary(bsas) {
+        const details = document.getElementById("summaryDetails");
+        const calc = bsas?.adjustableSummaryCalculation || {};
+        const income = calc.income || {};
+        const expenses = calc.expenses || {};
+        details.innerHTML = `
+          <dt>Total income</dt>
+          <dd>${escapeHtml(calc.totalIncome ?? "-")}</dd>
+          <dt>Turnover</dt>
+          <dd>${escapeHtml(income.turnover ?? "-")}</dd>
+          <dt>Total expenses</dt>
+          <dd>${escapeHtml(calc.totalExpenses ?? "-")}</dd>
+          <dt>Cost of goods</dt>
+          <dd>${escapeHtml(expenses.costOfGoods ?? "-")}</dd>
+          <dt>Total additions</dt>
+          <dd>${escapeHtml(calc.totalAdditions ?? "-")}</dd>
+          <dt>Net profit</dt>
+          <dd>${escapeHtml(calc.netProfit ?? calc.netLoss ?? "-")}</dd>
+        `;
+      }
+
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        showLoading();
+        hideStatus();
+        showStatus("Triggering year-end summary...", "info");
+        const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        triggeredNino = triggerDetails.nino;
+        triggeredTaxYear = document.getElementById("taxYear").value.trim();
+        triggeredCalculationId = triggerResult.calculationId;
+
+        showStatus("Retrieving year-end summary...", "info");
+        const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, accessToken);
+        displaySummary(bsas);
+        document.getElementById("triggerForm").style.display = "none";
+        document.getElementById("summaryContainer").style.display = "block";
+        hideStatus();
+      }
+
+      async function handleTriggerFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const businessId = document.getElementById("businessId").value.trim();
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const accountingPeriodStartDate = document.getElementById("accountingPeriodStartDate").value;
+        const accountingPeriodEndDate = document.getElementById("accountingPeriodEndDate").value;
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !businessId || !taxYear || !accountingPeriodStartDate || !accountingPeriodEndDate) {
+          showStatus("Please fill in the National Insurance number, business ID, tax year and accounting period.", "error");
+          return;
+        }
+
+        const triggerDetails = { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate };
+
+        try {
+          const accessTokenForCheck = sessionStorage.getItem("hmrcAccessToken");
+          if (accessTokenForCheck) {
+            const openObligations = await checkOpenObligations(nino, businessId, accessTokenForCheck);
+            const warning = document.getElementById("obligationsWarning");
+            if (openObligations.length > 0) {
+              warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before triggering the year-end summary.`;
+              warning.style.display = "block";
+              return;
+            }
+            warning.style.display = "none";
+          }
+        } catch (error) {
+          console.warn("Could not check obligations before triggering the year-end summary:", error.message);
+        }
+
+        await ensureAuthorizedThen(
+          "pendingBsasTriggerRequest",
+          { triggerDetails, taxYear, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+            } catch (error) {
+              showStatus(`Failed to trigger the year-end summary: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingTrigger = JSON.parse(sessionStorage.getItem("pendingBsasTriggerRequest") || "null");
+          const pendingAdjust = JSON.parse(sessionStorage.getItem("pendingBsasAdjustRequest") || "null");
+
+          if (pendingTrigger) {
+            document.getElementById("taxYear").value = pendingTrigger.taxYear;
+            await runTriggerAndRetrieve(
+              pendingTrigger.triggerDetails,
+              pendingTrigger.testScenario,
+              pendingTrigger.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            sessionStorage.removeItem("pendingBsasTriggerRequest");
+          } else if (pendingAdjust) {
+            showLoading();
+            showStatus("Submitting adjustment...", "info");
+            await submitAdjustment(
+              pendingAdjust.adjustDetails,
+              pendingAdjust.testScenario,
+              pendingAdjust.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            document.getElementById("summaryContainer").style.display = "none";
+            document.getElementById("adjustmentResults").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingBsasAdjustRequest");
+          } else {
+            return;
+          }
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingBsasTriggerRequest");
+          sessionStorage.removeItem("pendingBsasAdjustRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      async function handleAdjustmentSubmit(zeroAdjustments) {
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        const adjustDetails = {
+          nino: triggeredNino,
+          calculationId: triggeredCalculationId,
+          taxYear: triggeredTaxYear,
+          zeroAdjustments,
+        };
+        if (!zeroAdjustments) {
+          const turnover = document.getElementById("adjustTurnover").value;
+          const costOfGoods = document.getElementById("adjustCostOfGoods").value;
+          if (turnover !== "") adjustDetails.income = { turnover: Number(turnover) };
+          if (costOfGoods !== "") adjustDetails.expenses = { costOfGoods: Number(costOfGoods) };
+        }
+
+        await ensureAuthorizedThen(
+          "pendingBsasAdjustRequest",
+          { adjustDetails, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Submitting adjustment...", "info");
+              await submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              document.getElementById("summaryContainer").style.display = "none";
+              document.getElementById("adjustmentResults").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to submit the adjustment: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      document.getElementById("itsaBsasTriggerForm").addEventListener("submit", handleTriggerFormSubmission);
+      document.getElementById("submitAdjustmentBtn").addEventListener("click", () => handleAdjustmentSubmit(false));
+      document.getElementById("zeroAdjustmentsBtn").addEventListener("click", () => handleAdjustmentSubmit(true));
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("adjustmentResults").style.display = "none";
+        document.getElementById("triggerForm").style.display = "block";
+        document.getElementById("itsaBsasTriggerForm").reset();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>

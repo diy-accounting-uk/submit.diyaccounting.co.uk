@@ -13,6 +13,12 @@ import { getCalculationTriggerErrorForScenario, getCalculationForScenario, getFi
 const TRIGGER_CALCULATION_TYPES = ["in-year", "intent-to-finalise", "intent-to-amend"];
 const FINAL_DECLARATION_CALCULATION_TYPES = ["final-declaration", "confirm-amendment"];
 
+// Remembers which calculationType each triggered calculationId was requested with, for this
+// simulator process's lifetime, so the retrieve endpoint can echo it back the way HMRC's own
+// retrieve response does. HMRC's GET carries no calculationType of its own - the type lives
+// only in what the matching trigger call asked for.
+const triggeredCalculationTypes = new Map();
+
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
  * Matches app/lib/hmrcValidation.js#isValidNino without importing across the app/simulator
@@ -58,9 +64,11 @@ export function apiEndpoint(app) {
 
     // Default and STATEFUL: perform a real trigger. The simulator has no per-user mutable
     // state to track prior submissions, so STATEFUL behaves the same as the default.
+    const calculationId = randomUUID();
+    triggeredCalculationTypes.set(calculationId, calculationType);
     res.setHeader("Content-Type", "application/json");
     res.setHeader("x-correlationid", randomUUID());
-    res.status(202).json({ calculationId: randomUUID() });
+    res.status(202).json({ calculationId });
   });
 
   // GET /individuals/calculations/{nino}/self-assessment/{taxYear}/{calculationId}
@@ -80,7 +88,8 @@ export function apiEndpoint(app) {
       return res.status(400).json({ code: "FORMAT_CALCULATION_ID", message: "The provided calculationId is invalid" });
     }
 
-    const result = getCalculationForScenario(govTestScenario, nino, taxYear, calculationId);
+    const calculationType = triggeredCalculationTypes.get(calculationId) || "in-year";
+    const result = getCalculationForScenario(govTestScenario, nino, taxYear, calculationId, calculationType);
     if (result.status) {
       return res.status(result.status).json(result.body);
     }
