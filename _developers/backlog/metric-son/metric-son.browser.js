@@ -13,7 +13,7 @@
  *     // ... connect to your data source
  *   </script>
  * 
- * @license MIT
+ * @license SEE LICENSE IN LICENSE
  * @see https://sonification.de/handbook/
  */
 
