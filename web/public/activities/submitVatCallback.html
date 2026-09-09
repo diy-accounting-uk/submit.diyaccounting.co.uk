@@ -185,7 +185,16 @@
           body,
         });
         if (!response.ok) {
-          const message = `Failed to exchange token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}`;
+          let hmrcErrorDescription = "";
+          try {
+            const errorJson = await response.json();
+            if (errorJson.error_description) {
+              hmrcErrorDescription = ` - ${errorJson.error_description}`;
+            }
+          } catch {
+            // Error body wasn't JSON; fall back to the generic message below.
+          }
+          const message = `Failed to exchange token. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText}${hmrcErrorDescription}`;
           console.error(message);
           throw new Error(message);
         }
