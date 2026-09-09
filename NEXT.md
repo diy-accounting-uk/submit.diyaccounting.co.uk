@@ -28,17 +28,25 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 14 (PR #159, merged 2026-09-09 08:21 UTC) is on prod: the environment deploy put the
-analytics, CIS and identity stacks up, and the scheduled deploy 34331976471 put the app
-stacks up as prod-4600d25 (the token-exchange fix, B63's books origins, the ITSA simulator
-changes). Both environment deploys of the day failed at the cost export (B65 below), so the
-FOCUS export is still not created. Issues #152 and #155 to #158 have their fix on main and on
-prod and are the operator's to close. B11's T1 to T6 are on `claude/b15-board`, local and
-unpushed, on top of main; no agent runs. The operator's standing instruction (renewed
-2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
+Batch 15 is PR #160 (`claude/b15-board`, pushed 2026-09-09 13:10 UTC): ITSA phase 2's T1 to
+T6, green on the merged batch (`npm test` 2677, `./mvnw clean verify` 202); the push started
+the branch's environment deploy 34355416698, deploy 34355417183, test 34355416467 and CodeQL
+34355450948. T7 (the sandbox proof from the branch's ci set) and T8 to T10 wait on the
+operator's word. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
+day failed at the cost export (B65). No agent runs. The operator's standing instruction
+(renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
 
+- [ ] **B66. The nightly S3 backup of the prod books bucket fails.** `verify-backups.yml`'s
+  scheduled runs failed on 2026-09-08 (34218296772) and 2026-09-09 (34343588837): the AWS
+  Backup job for `arn:aws:s3:::prod-env-books-972912397388` at 02:00 UTC fails both nights
+  with "AWS Backup does not have permission to describe resource", so the DIYA-GL books
+  bucket, new since batch 12, has no backup. Grant the backup role the S3 backup permissions
+  (`AWSBackupServiceRolePolicyForS3Backup` and its restore twin, or the equivalent statements)
+  where `BackupStack.java` builds it, and check the bucket's own policy does not deny the
+  service role; the proof is the next night's job and `verify-backups.yml` green.
+  **Source**: runs 34343588837, 34218296772. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B65. The FOCUS cost export rejects `SELECT *`.** Main's environment deploy
   34328646892 got past the bucket policy (B61's fix held) and failed creating
   `AWS::BCMDataExports::Export` `FocusExport` in `cost-CostExportStack`: the Data Exports API
@@ -52,7 +60,8 @@ unpushed, on top of main; no agent runs. The operator's standing instruction (re
   every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
   failed at "Clear last-known-good pointer if it names a deployment with no stacks left":
   `aws ssm put-parameter` with an empty value answers `ValidationException`, so the step exits
-  254 before the BooksStack sweep, and `ci-clauddf1b-app-BooksStack` still stands. Make the
+  254 before the BooksStack sweep (the 13:06 UTC sweep 34355049696 failed the same way), and
+  `ci-clauddf1b-app-BooksStack` still stands. Make the
   step delete the parameter (`aws ssm delete-parameter`) or write a sentinel the readers
   understand (grep `last-known-good-deployment` in `.github/workflows/` and `scripts/` for
   every reader and make them agree), and let the sweep run on. **Source**: run 34324345123.
@@ -64,9 +73,10 @@ unpushed, on top of main; no agent runs. The operator's standing instruction (re
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
   books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
-  are on batch 15 (`claude/b15-board`, local, on top of batch 14, unpushed); T7 the sandbox
-  proof, then T8 to T10, wait on the operator's word (stabilising, 2026-09-09 07:40 UTC),
-  under the plan's stated assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
+  are PR #160 (`claude/b15-board`); T7 the sandbox proof (needs the branch's ci set and a
+  probe-test dispatch per ITSA suite), then T8 to T10, wait on the operator's word
+  (stabilising, 2026-09-09 07:40 UTC), under the plan's stated assumptions until O30 answers
+  otherwise. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
   mapping.
 ## Ready: operator
@@ -79,6 +89,8 @@ unpushed, on top of main; no agent runs. The operator's standing instruction (re
   plus test-support data (assumes yes). The build proceeds on the assumptions; an answer that
   differs changes T2, T5, T6 or T10 before they start. **Source**: `PLAN_ITSA_PHASE_2.md`.
   **Owner**: Operator. **Model**: none.
+- [ ] **O31. Delete the merged origin branch `claude/b14-board`.** PR #159 is on main.
+  **Source**: none. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
