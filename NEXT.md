@@ -47,13 +47,22 @@ since wave A's work is not on `main`:
 | Licensing statement | B70.S2 | Opus | `terms.html`, `accessibility.html`, the footers, `README.md`, `SECURITY.md`, `TRADEMARKS.md` |
 | Licensing metadata | B70.S4, S5, S6 | Sonnet | the OpenAPI generator, `Dockerfile`, `NOTICE`, `LICENSING.md`'s third-party section |
 | DIYA-GL identifiers | B71.S2 | Sonnet | `app/functions/books/`, `s3BooksRepository.js`, `booksCors.js`, `booksEntitlement.js`, their tests and npm scripts |
+| Vault restore grants | B25's remainder | Sonnet | `CrossAccountBackupVaultStack.java` |
 
 Merged into `claude/b16-board` and waiting on the branch's checks: B70.S1 (the `LICENSE` text
 matches the spreadsheets copy byte for byte, `LICENSING.md` maps every top-level directory to
 the PolyForm layer, `NOTICE` carries the company line, `package.json` reads `SEE LICENSE IN
 LICENSE`), B17b.1 (the three VAT activities gain `prod`, with the catalogue test split so the
-self-employed activity's ci-only listing is asserted on its own) and B71.S1 (the DIYA-GL prose
-across the four plan documents). Each comes off this list when the branch's checks pass.
+self-employed activity's ci-only listing is asserted on its own), B71.S1 (the DIYA-GL prose
+across the four plan documents), B70.S4, S5 and S6 (the OpenAPI licence fields with a first
+test for the generator, the OCI image labels, and the third-party lines with a 26-row runtime
+dependency table), and B64 and B25's workflow half (the pointer is deleted rather than written
+empty, in `destroy-prod.yml` as well as `destroy-ci.yml`, and `restore-drill.yml` is written).
+Each comes off this list when the branch's checks pass.
+
+A worktree agent runs `npm run bundle` before any unit, system or browser suite:
+`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and
+without it nine tests fail on a missing file that has nothing to do with the change.
 
 Agents commit in their worktrees and never push. The coordinator merges each verified commit
 into `claude/b16-board`, pushes the batch once, and raises the PR when the branch is testing
@@ -119,18 +128,6 @@ the cost export only (B65); the test run passed on its re-run.
   explicit column list (the FOCUS 1.0 columns the panel's Athena table in
   `CostFocusIngestion.java` reads; keep the two in step) and prove it with the environment
   deploy of main. **Source**: runs 34328646892, 34385269212. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B64. The ci sweep fails clearing the last-known-good pointer.** `destroy-ci.yml`'s
-  scheduled run 34324345123 (07:32 UTC on 2026-09-09, the 02:34 slot arriving five hours late;
-  every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
-  failed at "Clear last-known-good pointer if it names a deployment with no stacks left":
-  `aws ssm put-parameter` with an empty value answers `ValidationException`, so the step exits
-  254 before the BooksStack sweep (the 13:06 UTC sweep 34355049696 failed the same way); the
-  orphaned BooksStack is gone since, and the pointer still names a set that is not there
-  (`ci-claud7ba2` at 19:3x UTC on 2026-09-09). Make the
-  step delete the parameter (`aws ssm delete-parameter`) or write a sentinel the readers
-  understand (grep `last-known-good-deployment` in `.github/workflows/` and `scripts/` for
-  every reader and make them agree), and let the sweep run on. **Source**: run 34324345123.
-  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B11.T7. ITSA phase 2: the sandbox proof.** `PLAN_ITSA_PHASE_2.md` T7, after T1 to T6
   which are on prod in prod-15f3483. Owns `scripts/itsa-sandbox-year.js` and
   `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`: file a whole tax year against the sandbox with
@@ -167,7 +164,13 @@ the cost export only (B65); the test run passed on its re-run.
   counts with the source recovery points, then delete the restored tables; the run's summary
   is the proof and the drill re-runs monthly on a cron off the top of the hour. The vault's
   SSO policy downgrade from `AdministratorAccess` and the eu-west-1 copy (BACKLOG 33's open
-  questions) are decided in the same PR's description, not built. **Source**: issue #11;
+  questions) are decided in the same PR's description, not built. The vault's access policy
+  grants the copy-in roles `backup:CopyIntoBackupVault` and nothing else, so no principal in
+  submit-ci can read or restore from it today (an admin principal there gets
+  `AccessDeniedException` on `ListRecoveryPointsByBackupVault`); the drill cannot go green
+  until `CrossAccountBackupVaultStack.java` grants the ci restore role
+  `ListRecoveryPointsByBackupVault`, `DescribeRecoveryPoint`, `GetRecoveryPointRestoreMetadata`
+  and `StartRestoreJob` on the vault with the matching KMS grant. **Source**: issue #11;
   BACKLOG 33's chain (#2, #25, #33). **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
   was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
