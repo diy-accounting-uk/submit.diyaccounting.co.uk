@@ -34,9 +34,9 @@ environment deploy 34355416698, test 34355416467 and CodeQL 34355450948 were gre
 deploy 34355417183 failed: `ci-claud7ba2-app-HmrcStack` rolled back on its composite
 `StackHealthAlarm`, whose `AlarmRule` is 13,789 characters against CloudWatch's 10,240 limit
 with 46 Lambdas fanned in, so the ApiStack and every behaviour probe failed behind it. The
-fix (split the fan-in into two composites under one parent, in `HmrcStack.java` where
-`Lambda.stackHealthAlarm` builds the rule) is batch 15's remainder and waits on the
-operator's word, as do T7 (the sandbox proof) and T8 to T10. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
+fix is on the branch (982d5e7f, 2026-09-09 14:2x UTC, on the operator's word: `Lambda.java`
+builds group composites under one parent when the rule would pass 9,000 characters) and its
+ci deploy is the proof. T7 (the sandbox proof) and T8 to T10 wait on the operator's word. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
 day failed at the cost export (B65). No agent runs. The operator's standing instruction
 (renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
