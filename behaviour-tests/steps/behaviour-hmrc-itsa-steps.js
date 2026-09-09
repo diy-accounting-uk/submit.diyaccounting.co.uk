@@ -469,3 +469,244 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
     expect(periodId.length).toBeGreaterThan(0);
   });
 }
+
+// Annual Submission, like Obligations and Self-Employment Period, has no home-page activity
+// button of its own - only the dashboard links to it - so navigate to it directly.
+export async function initItsaAnnualSubmission(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Annual Submission page and sees the load form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/annualSubmission.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-annual-submission.png` });
+    await expect(page.locator("#itsaAnnualLoadForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaAnnualLoad(page, annualQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the Annual Submission load form", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = annualQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+    }
+
+    await loggedFocus(page, "#loadBtn", "Load button", { screenshotPath });
+    await expect(page.locator("#loadBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaAnnualLoadForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the Annual Submission load form", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadBtn", "Submitting Annual Submission load form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaAnnualLoadResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Annual Submission edit form", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualEditForm",
+      description: "Annual Submission edit form",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualEditForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaAnnualEdits(page, annualEdits = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters adjustments and allowances", async () => {
+    const { basisAdjustment, allowanceType, tradingIncomeAllowance } = annualEdits || {};
+    if (basisAdjustment !== undefined) {
+      await loggedFill(page, "#basisAdjustment", String(basisAdjustment), "Entering basis period adjustment", { screenshotPath });
+    }
+    if (allowanceType === "trading") {
+      await page.locator("#allowanceTypeTrading").check();
+      if (tradingIncomeAllowance !== undefined) {
+        await loggedFill(page, "#tradingIncomeAllowance", String(tradingIncomeAllowance), "Entering trading income allowance", {
+          screenshotPath,
+        });
+      }
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-annual-edits-filled.png` });
+  });
+}
+
+export async function submitItsaAnnualSaveForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user saves the Annual Submission", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#saveBtn", "Saving the Annual Submission", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaAnnualSaveResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Annual Submission saved", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualSubmissionResults",
+      description: "Annual Submission saved result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualSubmissionResults")).toBeVisible();
+  });
+}
+
+// Tax Calculation has no home-page activity button of its own - only the dashboard links to
+// it - so navigate to it directly.
+export async function initItsaTaxCalculation(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Tax Calculation page and sees the trigger form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/taxCalculation.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-tax-calculation.png` });
+    await expect(page.locator("#itsaCalculationTriggerForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaCalculationTrigger(page, calculationQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the Tax Calculation trigger form", async () => {
+    const { hmrcNino, taxYear, calculationType, testScenario, runFraudPreventionHeaderValidation } = calculationQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    if (calculationType) await loggedSelectOption(page, "#calculationType", String(calculationType), "a calculation type", { screenshotPath });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+    }
+
+    await loggedFocus(page, "#triggerBtn", "Calculate button", { screenshotPath });
+    await expect(page.locator("#triggerBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaCalculationTriggerForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the Tax Calculation trigger form", async () => {
+    // HMRC's own calculation runs asynchronously (a 5 second minimum wait, then retries), so
+    // this click's response takes longer than a plain create/retrieve call.
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#triggerBtn", "Triggering the tax calculation", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaCalculationResults(page, calculationQuery, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the tax calculation result", async () => {
+    if (arguments.length === 2 && typeof calculationQuery === "string") {
+      screenshotPath = calculationQuery;
+      calculationQuery = {};
+    }
+    await waitForSuccessOrError(page, {
+      successSelector: "#calculationResults",
+      description: "Tax calculation result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#calculationResults")).toBeVisible();
+    await expect(page.locator("#calculationDisclaimer")).toBeVisible();
+  });
+}
+
+export async function goToFinalDeclarationFromCalculation(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user continues from the calculation to the Final Declaration page", async () => {
+    await loggedClick(page, "#continueToFinalDeclarationLink", "Continuing to Final Declaration", { screenshotPath });
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+    await expect(page.locator("#itsaFinalDeclarationRetrieveForm")).toBeVisible();
+  });
+}
+
+export async function submitItsaFinalDeclarationRetrieveForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user retrieves the calculation for the Final Declaration", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Retrieving the calculation", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaFinalDeclarationRetrieveResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the calculation and the declaration wording", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#declarationContainer",
+      description: "Final Declaration calculation retrieved",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#declarationContainer")).toBeVisible();
+    await expect(page.locator("#declarationSection")).toBeVisible();
+  });
+}
+
+export async function tickAndSubmitItsaFinalDeclaration(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user ticks the declaration and submits the Final Declaration", async () => {
+    await page.locator("#declarationTick").check();
+    await expect(page.locator("#submitDeclarationBtn")).toBeEnabled();
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-final-declaration-ticked.png` });
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitDeclarationBtn", "Submitting the Final Declaration", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaFinalDeclarationResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Final Declaration filed", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#finalDeclarationResults",
+      description: "Final Declaration filed",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#finalDeclarationResults")).toBeVisible();
+  });
+}

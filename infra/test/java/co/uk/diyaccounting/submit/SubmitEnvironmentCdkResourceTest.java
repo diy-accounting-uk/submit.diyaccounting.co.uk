@@ -85,8 +85,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 51);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 22);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 71);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 32);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -129,9 +129,9 @@ class SubmitEnvironmentCdkResourceTest {
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
-        // Alongside RumLcpP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm and
-        // HmrcSubmissionFailureAlarm, that's 5 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 5);
+        // Alongside RumLcpP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
+        // HmrcSubmissionFailureAlarm and ItsaSubmissionFailureAlarm, that's 6 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 6);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

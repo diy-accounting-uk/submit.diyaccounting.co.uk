@@ -152,6 +152,45 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaSelfEmploymentPeriodPutAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPutAsyncTable, endpoint);
 
+    const hmrcItsaSelfEmploymentAnnualGetAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentAnnualGetAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualGetAsyncTable, endpoint);
+
+    const hmrcItsaSelfEmploymentAnnualPutAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentAnnualPutAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualPutAsyncTable, endpoint);
+
+    const hmrcItsaCrystallisationObligationsGetAsyncTable =
+      process.env.HMRC_ITSA_CRYSTALLISATION_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCrystallisationObligationsGetAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaCrystallisationObligationsGetAsyncTable, endpoint);
+
+    const hmrcItsaStatusGetAsyncTable = process.env.HMRC_ITSA_STATUS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaStatusGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaStatusGetAsyncTable, endpoint);
+
+    const hmrcItsaBsasTriggerPostAsyncTable = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasTriggerPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBsasTriggerPostAsyncTable, endpoint);
+
+    const hmrcItsaBsasSelfEmploymentGetAsyncTable = process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasSelfEmploymentGetAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentGetAsyncTable, endpoint);
+
+    const hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable =
+      process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable, endpoint);
+
+    const hmrcItsaCalculationTriggerPostAsyncTable = process.env.HMRC_ITSA_CALCULATION_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCalculationTriggerPostAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaCalculationTriggerPostAsyncTable, endpoint);
+
+    const hmrcItsaCalculationGetAsyncTable = process.env.HMRC_ITSA_CALCULATION_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCalculationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaCalculationGetAsyncTable, endpoint);
+
+    const hmrcItsaFinalDeclarationPostAsyncTable = process.env.HMRC_ITSA_FINAL_DECLARATION_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaFinalDeclarationPostAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncTable, endpoint);
+
     const companiesHouseAccountsAsyncTable = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncTable) await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncTable, endpoint);
   } else {

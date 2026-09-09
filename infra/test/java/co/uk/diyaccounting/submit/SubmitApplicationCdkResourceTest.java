@@ -79,8 +79,15 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 26);
-        assertStackHealthAlarm(hmrcStackTemplate, 14, 12, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
+        assertStackHealthAlarm(hmrcStackTemplate, 24, 22, routedPrefixes);
+        // The HmrcStack has 46 Lambdas × 2 checks + async checks, totaling ~136 alarms,
+        // which would create a rule exceeding 10240 chars. Verify it uses group composites.
+        int hmrcCompositeCount = hmrcStackTemplate.findResources("AWS::CloudWatch::CompositeAlarm").size();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                hmrcCompositeCount > 1,
+                "HmrcStack should have multiple CompositeAlarms (top-level + groups) due to rule length, but found "
+                        + hmrcCompositeCount);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -245,8 +252,16 @@ class SubmitApplicationCdkResourceTest {
         // the GET on the same path. The four books routes add three more auto-HEAD routes (PUT
         // and DELETE /api/v1/books/{bookId} share one) and three OPTIONS preflight routes (same
         // sharing), for 77 + 4 + 3 + 3 = 87. GET /api/v1/operator/snapshot adds its own route
-        // plus its automatic HEAD route, since no other route shares that path.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 93);
+        // plus its automatic HEAD route, since no other route shares that path. GET and PUT
+        // /api/v1/hmrc/itsa/self-employment/annual add their own two routes plus one shared
+        // auto-HEAD route for the path, bringing the total to 96. GET
+        // /api/v1/hmrc/itsa/obligations/crystallisation and GET /api/v1/hmrc/itsa/status each add
+        // their own route plus their own automatic HEAD route, since neither path is shared with
+        // another method, for 96 + 2 + 2 = 100. POST /api/v1/hmrc/itsa/bsas/trigger, GET
+        // /api/v1/hmrc/itsa/bsas/self-employment and POST
+        // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
+        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 112);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -479,22 +494,33 @@ class SubmitApplicationCdkResourceTest {
     @SuppressWarnings("unchecked")
     static void assertStackHealthAlarm(
             Template template, Integer expectedConstructs, int expectedAsyncPairs, List<String> routedPrefixes) {
-        template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 1);
-
         Map<String, Map<String, Object>> composites = template.findResources("AWS::CloudWatch::CompositeAlarm");
-        Map.Entry<String, Map<String, Object>> composite =
-                composites.entrySet().iterator().next();
-        Map<String, Object> compositeProps =
-                (Map<String, Object>) composite.getValue().get("Properties");
-        String compositeName = String.valueOf(compositeProps.get("AlarmName"));
+
+        // Find the top-level health alarm (ends with HEALTH_ALARM_NAME_SUFFIX, no "-group" in the name)
+        Map.Entry<String, Map<String, Object>> topLevelComposite = null;
+        for (Map.Entry<String, Map<String, Object>> entry : composites.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) entry.getValue().get("Properties");
+            if (props != null) {
+                String name = String.valueOf(props.get("AlarmName"));
+                if (name.endsWith(Lambda.HEALTH_ALARM_NAME_SUFFIX) && !name.contains("-group")) {
+                    topLevelComposite = entry;
+                    break;
+                }
+            }
+        }
+
+        org.junit.jupiter.api.Assertions.assertNotNull(
+                topLevelComposite,
+                "No top-level stack health alarm found (must end with " + Lambda.HEALTH_ALARM_NAME_SUFFIX
+                        + " and not contain '-group')");
+
+        Map<String, Object> topLevelProps =
+                (Map<String, Object>) topLevelComposite.getValue().get("Properties");
+        String topLevelName = String.valueOf(topLevelProps.get("AlarmName"));
         org.junit.jupiter.api.Assertions.assertTrue(
-                compositeName.endsWith(Lambda.HEALTH_ALARM_NAME_SUFFIX),
-                "Composite alarm " + composite.getKey() + " name '" + compositeName + "' does not end with "
-                        + Lambda.HEALTH_ALARM_NAME_SUFFIX);
-        org.junit.jupiter.api.Assertions.assertTrue(
-                startsWithAny(compositeName, routedPrefixes),
-                "Composite alarm '" + compositeName + "' does not start with any routed prefix " + routedPrefixes
-                        + " — it is a silent alarm");
+                startsWithAny(topLevelName, routedPrefixes),
+                "Top-level composite alarm '" + topLevelName + "' does not start with any routed prefix "
+                        + routedPrefixes + " — it is a silent alarm");
 
         var checkAlarmLogicalIds = new ArrayList<String>();
         for (Map.Entry<String, Map<String, Object>> entry :
@@ -520,14 +546,68 @@ class SubmitApplicationCdkResourceTest {
                             + "which " + expectedAsyncPairs + " are async pairs, found " + checkAlarmLogicalIds.size());
         }
 
-        // A function whose stack forgot to fan it in has alarms nobody is watching.
-        var referenced = new ArrayList<String>();
-        collectGetAttTargets(compositeProps.get("AlarmRule"), referenced);
+        // Verify all check alarms are referenced by at least one composite (group or top-level)
+        var allReferenced = new ArrayList<String>();
+        for (Map.Entry<String, Map<String, Object>> composite : composites.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) composite.getValue().get("Properties");
+            if (props != null) {
+                collectGetAttTargets(props.get("AlarmRule"), allReferenced);
+            }
+        }
         var unreferenced = new ArrayList<>(checkAlarmLogicalIds);
-        unreferenced.removeAll(referenced);
+        unreferenced.removeAll(allReferenced);
         org.junit.jupiter.api.Assertions.assertTrue(
                 unreferenced.isEmpty(),
-                "These check- alarms are missing from composite '" + compositeName + "': " + unreferenced);
+                "These check- alarms are missing from all composites: " + unreferenced);
+
+        // Verify each composite alarm's rule length is under 10240 characters
+        for (Map.Entry<String, Map<String, Object>> composite : composites.entrySet()) {
+            Map<String, Object> props = (Map<String, Object>) composite.getValue().get("Properties");
+            if (props == null) continue;
+            Object alarmRule = props.get("AlarmRule");
+            int ruleLength = estimateAlarmRuleLength(alarmRule);
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    ruleLength < 10240,
+                    "Composite alarm " + composite.getKey() + " rule length " + ruleLength
+                            + " exceeds CloudWatch's 10240 character limit");
+        }
+    }
+
+    /**
+     * Estimates the character length of a CloudFormation alarm rule by traversing its Fn::Join and
+     * counting character lengths.
+     */
+    @SuppressWarnings("unchecked")
+    private static int estimateAlarmRuleLength(Object node) {
+        if (node instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) node;
+            Object fnJoin = map.get("Fn::Join");
+            if (fnJoin instanceof List) {
+                List<Object> joinList = (List<Object>) fnJoin;
+                if (joinList.size() >= 2) {
+                    String separator = String.valueOf(joinList.get(0));
+                    Object parts = joinList.get(1);
+                    if (parts instanceof List) {
+                        List<Object> partsList = (List<Object>) parts;
+                        int totalLength = 0;
+                        for (int i = 0; i < partsList.size(); i++) {
+                            Object part = partsList.get(i);
+                            if (part instanceof String) {
+                                totalLength += ((String) part).length();
+                            } else if (part instanceof Map) {
+                                // Estimate Ref and Fn::GetAtt as 60 characters
+                                totalLength += 60;
+                            }
+                            if (i < partsList.size() - 1) {
+                                totalLength += separator.length();
+                            }
+                        }
+                        return totalLength;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     private static boolean startsWithAny(String value, List<String> prefixes) {

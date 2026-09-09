@@ -9,10 +9,12 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import java.util.ArrayList;
 import java.util.List;
+import software.amazon.awscdk.Token;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.AlarmRule;
+import software.amazon.awscdk.services.cloudwatch.AlarmState;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.CompositeAlarm;
 import software.amazon.awscdk.services.cloudwatch.IAlarm;
@@ -49,6 +51,15 @@ public class Lambda {
 
     /** CloudWatch accepts at most this many operands in one composite alarm rule. */
     private static final int ALARM_RULE_MAX_OPERANDS = 100;
+
+    /** CloudWatch accepts alarm rules no longer than this (10240 chars). */
+    private static final int ALARM_RULE_MAX_CHARS = 10240;
+
+    /**
+     * Cap estimated chunk size at this many characters to stay well under the 10240 limit and
+     * account for CloudFormation's Fn::Join rendering overhead.
+     */
+    private static final int ALARM_RULE_CHUNK_TARGET_CHARS = 9000;
 
     public final DockerImageCode dockerImage;
     public final Function ingestLambda;
@@ -198,26 +209,125 @@ public class Lambda {
     }
 
     /**
+     * Holds an alarm with its estimated operand length in the rule.
+     */
+    private static class AlarmInfo {
+        final IAlarm alarm;
+        final int estimatedOperandLength;
+
+        AlarmInfo(IAlarm alarm, String alarmName) {
+            this.alarm = alarm;
+            this.estimatedOperandLength = estimateAlarmOperandLength(alarmName);
+        }
+    }
+
+    /**
      * Fans every check of every Lambda in one stack into a single composite alarm, including the
      * queue, DLQ and worker checks an {@link AsyncApiLambda} adds. The children
      * keep the "check-" prefix and stay outside OpsStack's routing rule; only this composite
      * carries the deployment or environment prefix that rule matches on, so a stack full of broken
      * functions raises one Telegram message and one GitHub issue. The composite's state reason
      * names the check that tripped, which names the function.
+     *
+     * When the fan-in rule would exceed CloudWatch's 10240 character limit, creates intermediate
+     * group composites (`StackHealthAlarmGroup1`, `Group2`, etc.) and has the top-level alarm
+     * reference those groups.
      */
     public static CompositeAlarm stackHealthAlarm(
             final Construct scope, String resourceNamePrefix, String stackShortName, List<Lambda> functions) {
-        var checks = new ArrayList<IAlarmRule>();
+        // Build list of alarms with their estimated lengths
+        var alarmInfos = new ArrayList<AlarmInfo>();
         for (Lambda function : functions) {
-            checks.addAll(function.healthChecks);
+            for (IAlarm alarm : function.healthChecks) {
+                String alarmName = alarm.getAlarmName();
+                alarmInfos.add(new AlarmInfo(alarm, alarmName));
+            }
+        }
+
+        // Calculate estimated total rule length if all alarms were in one composite
+        int totalEstimatedLength = 0;
+        for (int i = 0; i < alarmInfos.size(); i++) {
+            totalEstimatedLength += alarmInfos.get(i).estimatedOperandLength;
+            if (i < alarmInfos.size() - 1) {
+                totalEstimatedLength += 4; // " OR "
+            }
+        }
+
+        if (totalEstimatedLength <= ALARM_RULE_CHUNK_TARGET_CHARS) {
+            // Rule fits in a single composite
+            var checks = new ArrayList<IAlarmRule>();
+            for (AlarmInfo info : alarmInfos) {
+                checks.add(info.alarm);
+            }
+            return CompositeAlarm.Builder.create(scope, "StackHealthAlarm")
+                    .compositeAlarmName(resourceNamePrefix + "-" + stackShortName + HEALTH_ALARM_NAME_SUFFIX)
+                    .alarmRule(anyOf(checks))
+                    .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
+                            + "reported errors or error-like log lines, or one of its async pairs has a stuck queue "
+                            + "or a failing worker. The alarm state reason names the check that tripped.")
+                    .build();
+        }
+
+        // Rule is too long; create group composites and reference them
+        var groupAlarms = new ArrayList<IAlarm>();
+        int groupIndex = 1;
+        for (int start = 0; start < alarmInfos.size(); ) {
+            // Accumulate alarms for this group until we approach the char limit
+            var groupChecks = new ArrayList<IAlarmRule>();
+            int currentGroupLength = 0;
+            while (start < alarmInfos.size()) {
+                AlarmInfo nextInfo = alarmInfos.get(start);
+                int nextCheckLength = nextInfo.estimatedOperandLength;
+                if (!groupChecks.isEmpty()
+                        && currentGroupLength + 4 + nextCheckLength > ALARM_RULE_CHUNK_TARGET_CHARS) {
+                    // Adding this check would exceed the limit, so finish this group
+                    break;
+                }
+                groupChecks.add(nextInfo.alarm);
+                currentGroupLength += (groupChecks.size() == 1 ? 0 : 4) + nextCheckLength; // " OR "
+                start++;
+            }
+
+            // Create a group composite for this chunk
+            String groupId = "StackHealthAlarmGroup" + groupIndex;
+            String groupAlarmName =
+                    resourceNamePrefix + "-" + stackShortName + "-group" + groupIndex + HEALTH_ALARM_NAME_SUFFIX;
+            CompositeAlarm groupAlarm = CompositeAlarm.Builder.create(scope, groupId)
+                    .compositeAlarmName(groupAlarmName)
+                    .alarmRule(anyOf(groupChecks))
+                    .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
+                            + "reported errors or error-like log lines, or one of its async pairs has a stuck queue "
+                            + "or a failing worker. The alarm state reason names the check that tripped.")
+                    .build();
+            groupAlarms.add(groupAlarm);
+            groupIndex++;
+        }
+
+        // Create the top-level alarm that references all group alarms
+        var groupRules = new ArrayList<IAlarmRule>();
+        for (IAlarm groupAlarm : groupAlarms) {
+            groupRules.add(AlarmRule.fromAlarm(groupAlarm, AlarmState.ALARM));
         }
         return CompositeAlarm.Builder.create(scope, "StackHealthAlarm")
                 .compositeAlarmName(resourceNamePrefix + "-" + stackShortName + HEALTH_ALARM_NAME_SUFFIX)
-                .alarmRule(anyOf(checks))
+                .alarmRule(anyOf(groupRules))
                 .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
                         + "reported errors or error-like log lines, or one of its async pairs has a stuck queue "
                         + "or a failing worker. The alarm state reason names the check that tripped.")
                 .build();
+    }
+
+    /**
+     * Estimates the character length of an alarm rule operand: ALARM("arn:..."). The pattern is
+     * ALARM("arn:aws:cloudwatch:REGION:ACCOUNT:alarm:NAME") = 9 + 53 + name.length(), where 9 is
+     * for ALARM("") and 53 is for the ARN prefix arn:aws:cloudwatch:<14-char region>:<12-digit
+     * account>:alarm:. If the name is a CDK token (unresolved), count it as 120 characters.
+     */
+    private static int estimateAlarmOperandLength(String alarmName) {
+        if (Token.isUnresolved(alarmName)) {
+            return 120;
+        }
+        return 9 + 53 + alarmName.length();
     }
 
     private static IAlarmRule anyOf(List<IAlarmRule> rules) {

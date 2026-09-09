@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tax Calculation - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+    <style>
+      .headline-figure {
+        font-size: 2em;
+        font-weight: bold;
+        margin: 0.25em 0 0.75em 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Tax Calculation</h1>
+      <p class="subtitle">See what the tax year owes, based on what you've submitted so far</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Trigger form -->
+      <div id="triggerForm" class="form-container">
+        <h2>Calculate</h2>
+        <form id="itsaCalculationTriggerForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+          </div>
+
+          <div class="form-group">
+            <label for="calculationType">Calculation type</label>
+            <p id="calculationType-hint" class="hint">
+              An in-year calculation is an estimate you can check at any time. Intent to finalise is the calculation you confirm in a
+              final declaration.
+            </p>
+            <select id="calculationType" name="calculationType" required aria-describedby="calculationType-hint">
+              <option value="in-year">In-year estimate</option>
+              <option value="intent-to-finalise">Intent to finalise</option>
+            </select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for the retrieved calculation</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (a UK self-employment example)</option>
+              <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+              <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              <option value="ERROR_MESSAGES_EXIST">Error messages exist</option>
+              <option value="NO_INCOME_SUBMISSIONS_EXIST">No income submissions exist</option>
+              <option value="RECENT_SUBMISSIONS_EXIST">Recent submissions exist</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="triggerBtn" class="btn">Calculate</button>
+        </form>
+      </div>
+
+      <!-- Results Display -->
+      <div id="calculationResults" class="results-container" style="display: none">
+        <div id="calculationDisclaimer" class="status-message warning">
+          This is an estimate based on the information you've submitted so far. HMRC produced this calculation, and it may change if you
+          submit more information.
+        </div>
+
+        <div id="calculationFigures" style="display: none">
+          <h3>Total Income Tax and National Insurance Due</h3>
+          <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
+
+          <dl>
+            <dt>Income tax</dt>
+            <dd id="incomeTaxAmount"></dd>
+            <dt>National Insurance</dt>
+            <dd id="nicsAmount"></dd>
+            <dt>Tax already deducted</dt>
+            <dd id="totalTaxDeductedAmount"></dd>
+          </dl>
+
+          <h3>Allowances and Deductions</h3>
+          <dl id="allowancesAndDeductions"></dl>
+
+          <p id="calculationIdDisplay" class="hint"></p>
+          <div id="continueToFinalDeclaration" class="button-group" style="display: none">
+            <a href="finalDeclaration.html" id="continueToFinalDeclarationLink" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Continue to Final Declaration</a
+            >
+          </div>
+        </div>
+
+        <div id="calculationMessages"></div>
+
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Calculate Again</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script>
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      async function runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await triggerCalculation(calculationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function displayCalculation(calculation, nino, taxYear) {
+        const figures = document.getElementById("calculationFigures");
+        const messagesContainer = document.getElementById("calculationMessages");
+        const calc = calculation?.calculation;
+        const messages = calculation?.messages || { info: [], warnings: [], errors: [] };
+
+        if (calc) {
+          figures.style.display = "block";
+          const taxCalculation = calc.taxCalculation || {};
+          document.getElementById("totalIncomeTaxAndNicsDue").textContent = formatCurrency(taxCalculation.totalIncomeTaxAndNicsDue);
+          document.getElementById("incomeTaxAmount").textContent = formatCurrency(taxCalculation.incomeTax?.totalIncomeTax);
+          document.getElementById("nicsAmount").textContent = formatCurrency(taxCalculation.nics?.totalNic);
+          document.getElementById("totalTaxDeductedAmount").textContent = formatCurrency(taxCalculation.totalTaxDeducted);
+
+          const allowancesList = document.getElementById("allowancesAndDeductions");
+          const allowances = calc.allowancesAndDeductions || {};
+          allowancesList.innerHTML = Object.keys(allowances)
+            .map((key) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(formatCurrency(allowances[key]))}</dd>`)
+            .join("");
+
+          document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
+
+          const continueLink = document.getElementById("continueToFinalDeclaration");
+          if (calculation.metadata?.calculationType === "intent-to-finalise") {
+            const params = new URLSearchParams({ nino, taxYear, calculationId: calculation.metadata.calculationId });
+            document.getElementById("continueToFinalDeclarationLink").href = `finalDeclaration.html?${params}`;
+            continueLink.style.display = "block";
+          } else {
+            continueLink.style.display = "none";
+          }
+        } else {
+          figures.style.display = "none";
+        }
+
+        const allMessages = [
+          ...messages.errors.map((m) => ({ ...m, level: "error" })),
+          ...messages.warnings.map((m) => ({ ...m, level: "warning" })),
+          ...messages.info.map((m) => ({ ...m, level: "info" })),
+        ];
+        messagesContainer.innerHTML = allMessages.length
+          ? `<h3>Messages</h3><ul id="calculationMessagesList">${allMessages
+              .map((m) => `<li class="status-message ${escapeHtml(m.level)}"><strong>${escapeHtml(m.id)}:</strong> ${escapeHtml(m.text)}</li>`)
+              .join("")}</ul>`
+          : "";
+      }
+
+      function formatCurrency(value) {
+        if (value === undefined || value === null) return "-";
+        return `£${Number(value).toFixed(2)}`;
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        showLoading();
+        hideStatus();
+        showStatus("Calculating... this can take a few seconds.", "info");
+        const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear);
+        document.getElementById("triggerForm").style.display = "none";
+        document.getElementById("calculationResults").style.display = "block";
+        hideStatus();
+      }
+
+      async function handleTriggerFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const calculationType = document.getElementById("calculationType").value;
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !taxYear || !calculationType) {
+          showStatus("Please fill in the National Insurance number, tax year and calculation type.", "error");
+          return;
+        }
+
+        const calculationDetails = { nino, taxYear, calculationType };
+
+        await ensureAuthorizedThen(
+          "pendingCalculationTriggerRequest",
+          { calculationDetails, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              await runTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+            } catch (error) {
+              showStatus(`Failed to calculate: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pending = JSON.parse(sessionStorage.getItem("pendingCalculationTriggerRequest") || "null");
+          if (!pending) return;
+
+          document.getElementById("nino").value = pending.calculationDetails.nino;
+          document.getElementById("taxYear").value = pending.calculationDetails.taxYear;
+          document.getElementById("calculationType").value = pending.calculationDetails.calculationType;
+
+          await runTrigger(pending.calculationDetails, pending.testScenario, pending.runFraudPreventionHeaderValidation, accessToken);
+          sessionStorage.removeItem("pendingCalculationTriggerRequest");
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingCalculationTriggerRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      document.getElementById("itsaCalculationTriggerForm").addEventListener("submit", handleTriggerFormSubmission);
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("calculationResults").style.display = "none";
+        document.getElementById("triggerForm").style.display = "block";
+        document.getElementById("itsaCalculationTriggerForm").reset();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>
