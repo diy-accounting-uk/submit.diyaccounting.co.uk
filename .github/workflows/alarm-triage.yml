@@ -14,7 +14,7 @@ run-name: "alarm triage for #${{ github.event.issue.number }}"
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened]
 
 permissions:
   id-token: write
@@ -34,9 +34,7 @@ env:
 
 jobs:
   triage:
-    if: >-
-      contains(github.event.issue.labels.*.name, 'alarm') &&
-      (github.event.action == 'opened' || github.event.label.name == 'triage')
+    if: contains(github.event.issue.labels.*.name, 'alarm')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
