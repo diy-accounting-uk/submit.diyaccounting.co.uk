@@ -18,7 +18,7 @@ import software.constructs.Construct;
  * {@code curated/security/<source>/dt=<date>/data.json}: Security Hub findings, GuardDuty
  * findings, GitHub alert counts, the lifecycle calendar, WAF blocks per rule and the secret
  * rotation record, all written by {@code securityLakeNightly.js}, plus the SBOM/KEV match
- * {@code .github/workflows/sbom.yml} writes on every push to main.
+ * {@code .github/workflows/sbom.yml} writes on every push to main with dependencies.
  *
  * <p>Modelled line for line on {@code WorkflowRunTables}: one {@code dt} partition-projection
  * column (type {@code date}, format {@code yyyy-MM-dd}), so a new day's object is queryable the
@@ -38,7 +38,7 @@ public class SecurityLakeTables {
     public final CfnTable lifecycleTable;
     public final CfnTable wafTable;
     public final CfnTable rotationTable;
-    public final CfnTable sbomKevTable;
+    public final CfnTable sbomBuildsTable;
 
     @Value.Immutable
     public interface SecurityLakeTablesProps {
@@ -162,21 +162,18 @@ public class SecurityLakeTables {
                         "zero_findings", "boolean",
                         "checked_at", "string"));
 
-        this.sbomKevTable = buildTable(
+        this.sbomBuildsTable = buildTable(
                 scope,
                 props,
                 catalogId,
-                "sbom_kev_matches",
+                "sbom_builds",
                 "curated/security/sbom/",
-                "One row per push-to-main build, matching the npm CycloneDX SBOM against CISA's"
-                        + " Known Exploited Vulnerabilities catalogue (.github/workflows/sbom.yml)",
+                "One row per push-to-main build, recording the npm CycloneDX SBOM size (.github/workflows/sbom.yml)",
                 columnsOf(
                         "run_id", "string",
                         "sha", "string",
                         "component_count", "int",
-                        "kev_catalogue_count", "int",
-                        "match_count", "int",
-                        "matches", "string",
+                        "sbom_created_at", "string",
                         "checked_at", "string"));
     }
 
