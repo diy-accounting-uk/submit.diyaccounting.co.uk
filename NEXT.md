@@ -27,14 +27,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 14 is PR #159 (`claude/b14-board`, pushed 2026-09-09 01:22 UTC): B63, B60, B62, B58, B59,
-B61, B30q and B30p, all green locally (`npm test` 2461, `./mvnw clean verify` 202). The push
-started the branch's ci deploy (34298940529), environment deploy (34298940410), test
-(34298940054) and CodeQL (34298963719); the board of the merge reads main's environment
-deploy for B61's two prod-only steps and the CIS filters. Issue #152's cause is known (two
-customers with a stale HMRC authorisation code, the handler answering 500; neither wrote in
-or returned), so it and #155 to #158 are the operator's to close once the PR is on main.
-B10.4 runs against the batch's ci set once the deploy stands.
+Batch 14 is PR #159 (`claude/b14-board`, last push 2026-09-09 04:5x UTC): B63, B60, B62, B58,
+B59, B61, B30q, B30p and B10.4's proof, all green locally (`npm test` 2461, `./mvnw clean
+verify` 202) and on the branch's ci deploy (34309224550). The ITSA sandbox proof stands: the
+three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (probe runs
+34302356322, 34311301074, 34311302938), one quarterly update accepted. The board of the merge
+reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
+cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
+neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
+is on main. B11's Opus design pass runs now; its build tracks start when the design is on main.
 
 ## Ready: Claude Code
 
@@ -52,16 +53,12 @@ B10.4 runs against the batch's ci set once the deploy stands.
   DELETE_FAILED after the sweep's retry step, say what `--retain-resources` it needs.
   **Source**: the board's deployment check, 2026-09-09. **Owner**: Claude Code. **Model**:
   Haiku.
-- [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
-  and the cumulative period-summary POST are on main behind the environments gate
-  (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
-  `hmrcItsaSelfEmploymentPeriodPost.js`). Create an HMRC sandbox test user with a
-  self-employment business through the create-test-user API, run the three against
-  test-api.service.hmrc.gov.uk from a ci set with the `Gov-Test-Scenario` values
-  `_developers/hmrc/ITSA_SPIKE.md` names, and record the accepted update's response in the
-  simulator. Unblocks B11. No ci set stands; one comes from `gh workflow run deploy.yml -f
-  environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
-  #20. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
+  and the final declaration (crystallisation) endpoints, then the recognition application and
+  the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
+  first, since the annual summary carries the whole year's figures and the books import
+  (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
+  Code. **Model**: Opus design, then Sonnet.
 
 ## Ready: operator
 
@@ -115,12 +112,6 @@ B10.4 runs against the batch's ci set once the deploy stands.
   it must retire the set it replaces (prod-ebaeb7d) in the same run, and the board of that
   day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
   Haiku. Blocked on the schedule firing.
-- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
-  and the final declaration (crystallisation) endpoints, then the recognition application and
-  the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
-  first, since the annual summary carries the whole year's figures and the books import
-  (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
-  Code. **Model**: Opus design, then Sonnet. Blocked on B10.4.
 - [ ] **B17b. VAT read-page videos.** After O27: add `prod` to the three activities'
   environments in `web/public/submit.catalogue.toml`, record liabilities, payments and
   penalties one video each in the 17a capture pattern (`videos/*.json`, `auth: "user"`,
