@@ -35,7 +35,7 @@ three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (pr
 reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
 cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
 neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
-is on main. B11's T1 to T3 are on `claude/b15-board` and its T4 runs there now.
+is on main. B11's T1 to T4 are on `claude/b15-board` and its T5 runs there now.
 
 ## Ready: Claude Code
 
@@ -59,8 +59,8 @@ is on main. B11's T1 to T3 are on `claude/b15-board` and its T4 runs there now.
   annual submission, T3 the final-declaration obligation and ITSA status, T4 the adjustable
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
-  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T3
-  are on batch 15 (`claude/b15-board`, on top of batch 14) and T4 runs now; T5 onward start
+  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T4
+  are on batch 15 (`claude/b15-board`, on top of batch 14) and T5 runs now; T6 onward start
   as each lands, under the plan's stated assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
   mapping.
