@@ -38,15 +38,16 @@ B10.4 runs against the batch's ci set once the deploy stands.
 
 ## Ready: Claude Code
 
-- [ ] **B64. The ci sweep's schedule has stopped firing.** `destroy-ci.yml` runs on
-  `34 2,4,6,8,10,12 * * *` UTC, but its last scheduled run was 13:01 UTC on 2026-09-08 (the
-  one before, 07:23; neither on a slot) and the 02:34 slot on 2026-09-09 did not fire, so
+- [ ] **B64. The repository's schedules have stopped firing.** No `schedule` event has
+  started a run since 23:01 UTC on 2026-09-08 (a probe test); `destroy-ci.yml`'s 02:34 and
+  04:34 slots, `deploy.yml`'s 04:11, and the 03:51, 04:00 and 04:23 crons all missed on
+  2026-09-09 as of 04:35 UTC, and destroy-ci's last scheduled run was 13:01 the day before, so
   `ci-claud87a7-app-ApiStack` (DELETE_FAILED since 14:37 UTC on 2026-09-08 on its Cognito
   authorizer, "InternalFailure" from ApiGatewayV2) and the two orphaned BooksStacks
   (`ci-claud87a7`, `ci-clauddf1b`) still stand. Read the workflow's schedule runs
-  (`gh run list --workflow destroy-ci.yml --event schedule`) against GitHub's known delay
-  and the `keepalive.yml` staleness check (last run 2026-09-05), say whether the cron is
-  stale the way B47a's were, and dispatch nothing: the operator runs
+  (`gh run list --event schedule --limit 40`) against GitHub's known delay and the
+  `keepalive.yml` staleness check (last run 2026-09-05), say whether the crons are stale the
+  way B47a's were or GitHub is lagging, and dispatch nothing: the operator runs
   `gh workflow run destroy-ci.yml` for the leftovers, and if the ApiStack stays
   DELETE_FAILED after the sweep's retry step, say what `--retain-resources` it needs.
   **Source**: the board's deployment check, 2026-09-09. **Owner**: Claude Code. **Model**:
@@ -108,11 +109,12 @@ B10.4 runs against the batch's ci set once the deploy stands.
 
 ## Blocked
 
-- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main on
-  2026-09-09 (main is four docs commits past ebaeb7de, so it makes a new set) must retire the
-  set it replaces (prod-ebaeb7d) in the same run; the board of that day reads the
-  destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
-  Haiku. Blocked on the date.
+- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main
+  did not fire on 2026-09-09 (nothing on any of this repository's crons has fired since
+  23:01 UTC on 2026-09-08, B64), so the proof waits for the next scheduled deploy that runs:
+  it must retire the set it replaces (prod-ebaeb7d) in the same run, and the board of that
+  day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
+  Haiku. Blocked on the schedule firing.
 - [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
   and the final declaration (crystallisation) endpoints, then the recognition application and
   the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
