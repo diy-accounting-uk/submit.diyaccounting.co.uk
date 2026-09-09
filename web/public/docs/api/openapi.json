@@ -1290,6 +1290,66 @@
         } ]
       }
     },
+    "/hmrc/itsa/obligations/crystallisation" : {
+      "get" : {
+        "summary" : "Retrieve ITSA final declaration obligations",
+        "description" : "Retrieves the obligations that say when the final declaration (crystallisation) is due",
+        "operationId" : "getItsaCrystallisationObligations",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : false,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "status",
+          "in" : "query",
+          "required" : false,
+          "description" : "Filter by obligation status: open or fulfilled",
+          "schema" : {
+            "type" : "string",
+            "enum" : "O,F",
+            "example" : "O"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/hmrc/itsa/self-employment/annual" : {
       "get" : {
         "summary" : "Retrieve an ITSA self-employment annual submission",
@@ -1683,6 +1743,64 @@
         "summary" : "Create billing checkout session",
         "description" : "Creates a Stripe checkout session for subscription",
         "operationId" : "createCheckoutSession"
+      }
+    },
+    "/hmrc/itsa/status" : {
+      "get" : {
+        "summary" : "Retrieve ITSA status",
+        "description" : "Retrieves whether the customer is mandated, voluntary, annual or exempt for a tax year",
+        "operationId" : "getItsaStatus",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "futureYears",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, also returns the following tax year's status",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     }
   },

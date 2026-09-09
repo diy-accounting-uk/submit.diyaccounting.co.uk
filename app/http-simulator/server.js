@@ -19,6 +19,8 @@ import { apiEndpoint as itsaSelfEmploymentPeriodEndpoint } from "./routes/itsa-s
 import { apiEndpoint as itsaSelfEmploymentPeriodsEndpoint } from "./routes/itsa-self-employment-periods.js";
 import { apiEndpoint as itsaSelfEmploymentPeriodDetailEndpoint } from "./routes/itsa-self-employment-period-detail.js";
 import { apiEndpoint as itsaSelfEmploymentAnnualEndpoint } from "./routes/itsa-self-employment-annual.js";
+import { apiEndpoint as itsaCrystallisationObligationsEndpoint } from "./routes/itsa-crystallisation-obligations.js";
+import { apiEndpoint as itsaStatusEndpoint } from "./routes/itsa-status.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
@@ -76,6 +78,8 @@ export function createApp() {
   itsaSelfEmploymentPeriodsEndpoint(app);
   itsaSelfEmploymentPeriodDetailEndpoint(app);
   itsaSelfEmploymentAnnualEndpoint(app);
+  itsaCrystallisationObligationsEndpoint(app);
+  itsaStatusEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
   companiesHouseEndpoint(app);

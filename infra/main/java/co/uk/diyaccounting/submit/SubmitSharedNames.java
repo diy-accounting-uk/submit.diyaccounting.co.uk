@@ -95,6 +95,8 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName;
+    public String hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName;
+    public String hmrcItsaStatusGetAsyncRequestsTableName;
     public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
@@ -465,6 +467,36 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentAnnualPutLambdaUrlPath;
     public boolean hmrcItsaSelfEmploymentAnnualPutLambdaJwtAuthorizer;
     public boolean hmrcItsaSelfEmploymentAnnualPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaCrystallisationObligationsGetIngestLambdaHandler;
+    public String hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName;
+    public String hmrcItsaCrystallisationObligationsGetIngestLambdaArn;
+    public String hmrcItsaCrystallisationObligationsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler;
+    public String hmrcItsaCrystallisationObligationsGetWorkerLambdaFunctionName;
+    public String hmrcItsaCrystallisationObligationsGetWorkerLambdaArn;
+    public String hmrcItsaCrystallisationObligationsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaCrystallisationObligationsGetLambdaQueueName;
+    public String hmrcItsaCrystallisationObligationsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaCrystallisationObligationsGetLambdaHttpMethod;
+    public String hmrcItsaCrystallisationObligationsGetLambdaUrlPath;
+    public boolean hmrcItsaCrystallisationObligationsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaStatusGetIngestLambdaHandler;
+    public String hmrcItsaStatusGetIngestLambdaFunctionName;
+    public String hmrcItsaStatusGetIngestLambdaArn;
+    public String hmrcItsaStatusGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaStatusGetWorkerLambdaHandler;
+    public String hmrcItsaStatusGetWorkerLambdaFunctionName;
+    public String hmrcItsaStatusGetWorkerLambdaArn;
+    public String hmrcItsaStatusGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaStatusGetLambdaQueueName;
+    public String hmrcItsaStatusGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaStatusGetLambdaHttpMethod;
+    public String hmrcItsaStatusGetLambdaUrlPath;
+    public boolean hmrcItsaStatusGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaStatusGetLambdaCustomAuthorizer;
 
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
@@ -950,6 +982,10 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-self-employment-annual-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-annual-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-crystallisation-obligations-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaStatusGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-status-get-async-requests".formatted(this.envResourceNamePrefix);
         this.companiesHouseAccountsAsyncRequestsTableName =
                 "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
@@ -1853,6 +1889,100 @@ public class SubmitSharedNames {
                         new ApiParameter("adjustments", "body", false, "Annual adjustments"),
                         new ApiParameter("allowances", "body", false, "Annual allowances"),
                         new ApiParameter("nonFinancials", "body", false, "Annual non-financials"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaCrystallisationObligationsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaCrystallisationObligationsGetLambdaUrlPath = "/api/v1/hmrc/itsa/obligations/crystallisation";
+        this.hmrcItsaCrystallisationObligationsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaCrystallisationObligationsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaCrystallisationObligationsGetLambdaHandlerName = "hmrcItsaCrystallisationObligationsGet.ingestHandler";
+        var hmrcItsaCrystallisationObligationsGetLambdaWorkerHandlerName = "hmrcItsaCrystallisationObligationsGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - "crystallisation" already implies
+        // "obligations", so the deployed function name drops the latter, the same shortening
+        // hmrcItsaSelfEmploymentAnnualGet uses for "self-employment".
+        var hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed = "hmrc-itsa-crystallisation-get";
+        this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed);
+        this.hmrcItsaCrystallisationObligationsGetIngestLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerName);
+        this.hmrcItsaCrystallisationObligationsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaCrystallisationObligationsGetLambdaHandlerDashed);
+        this.hmrcItsaCrystallisationObligationsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaCrystallisationObligationsGetIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaCrystallisationObligationsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName);
+        this.hmrcItsaCrystallisationObligationsGetWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaCrystallisationObligationsGetLambdaWorkerHandlerName);
+        this.hmrcItsaCrystallisationObligationsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaCrystallisationObligationsGetIngestLambdaArn);
+        this.hmrcItsaCrystallisationObligationsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaCrystallisationObligationsGetWorkerLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaCrystallisationObligationsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName);
+        this.hmrcItsaCrystallisationObligationsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaCrystallisationObligationsGetLambdaHttpMethod,
+                this.hmrcItsaCrystallisationObligationsGetLambdaUrlPath,
+                "Retrieve ITSA final declaration obligations",
+                "Retrieves the obligations that say when the final declaration (crystallisation) is due",
+                "getItsaCrystallisationObligations",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("taxYear", "query", false, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("status", "query", false, "Filter by obligation status: open or fulfilled"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaStatusGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaStatusGetLambdaUrlPath = "/api/v1/hmrc/itsa/status";
+        this.hmrcItsaStatusGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaStatusGetLambdaCustomAuthorizer = true;
+        var hmrcItsaStatusGetLambdaHandlerName = "hmrcItsaStatusGet.ingestHandler";
+        var hmrcItsaStatusGetLambdaWorkerHandlerName = "hmrcItsaStatusGet.workerHandler";
+        var hmrcItsaStatusGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaStatusGetLambdaHandlerName);
+        this.hmrcItsaStatusGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaStatusGetLambdaHandlerDashed);
+        this.hmrcItsaStatusGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaStatusGetLambdaHandlerName);
+        this.hmrcItsaStatusGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaStatusGetLambdaHandlerDashed);
+        this.hmrcItsaStatusGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaStatusGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaStatusGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaStatusGetIngestLambdaFunctionName);
+        this.hmrcItsaStatusGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaStatusGetLambdaWorkerHandlerName);
+        this.hmrcItsaStatusGetWorkerLambdaArn = "%s-worker".formatted(this.hmrcItsaStatusGetIngestLambdaArn);
+        this.hmrcItsaStatusGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaStatusGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaStatusGetLambdaQueueName = "%s-queue".formatted(this.hmrcItsaStatusGetIngestLambdaFunctionName);
+        this.hmrcItsaStatusGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaStatusGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaStatusGetLambdaHttpMethod,
+                this.hmrcItsaStatusGetLambdaUrlPath,
+                "Retrieve ITSA status",
+                "Retrieves whether the customer is mandated, voluntary, annual or exempt for a tax year",
+                "getItsaStatus",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("futureYears", "query", false, "When true, also returns the following tax year's status"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

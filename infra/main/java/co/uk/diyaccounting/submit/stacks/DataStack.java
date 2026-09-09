@@ -49,6 +49,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable;
+    public ITable hmrcItsaCrystallisationObligationsGetAsyncRequestsTable;
+    public ITable hmrcItsaStatusGetAsyncRequestsTable;
     public ITable companiesHouseAccountsAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
@@ -413,6 +415,38 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA Self-Employment Annual PUT async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName);
 
+        // HMRC ITSA final declaration (crystallisation) obligations async request storage
+        this.hmrcItsaCrystallisationObligationsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCrystallisationObligationsGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCrystallisationObligationsGetAsyncTTL",
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA crystallisation obligations async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName);
+
+        // HMRC ITSA status async request storage
+        this.hmrcItsaStatusGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaStatusGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaStatusGetAsyncTTL",
+                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA status async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName);
+
         // Companies House accounts filing async request storage - the submission-number counter
         // allocateSubmissionNumber() increments also lives here, keyed apart from any real
         // request id.
@@ -642,6 +676,22 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableArn",
                 this.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaCrystallisationObligationsGetAsyncRequestsTableName",
+                this.hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaCrystallisationObligationsGetAsyncRequestsTableArn",
+                this.hmrcItsaCrystallisationObligationsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaStatusGetAsyncRequestsTableName",
+                this.hmrcItsaStatusGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaStatusGetAsyncRequestsTableArn",
+                this.hmrcItsaStatusGetAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "CompaniesHouseAccountsAsyncRequestsTableName",
