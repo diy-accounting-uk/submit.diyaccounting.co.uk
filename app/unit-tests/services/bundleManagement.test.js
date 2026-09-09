@@ -213,13 +213,13 @@ describe("bundleEnforcement.js", () => {
         "email": "test@test.submit.diyaccunting.co.uk",
         "scope": "read write",
       };
-      const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/liability");
+      const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/itsa/business-details");
 
-      getUserBundles.mockResolvedValue([{ bundleId: "day-guest", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-itsa", expiry: new Date().toISOString() }]);
 
       await expect(enforceBundles(event)).rejects.toMatchObject({
         name: "BundleEntitlementError",
-        details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "vat-liabilities" },
+        details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED", activityId: "self-employed" },
       });
     });
 
