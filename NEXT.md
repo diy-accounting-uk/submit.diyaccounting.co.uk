@@ -78,15 +78,25 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
   **Model**: Haiku.
 - [ ] **B30q. The three CIS alarms fire on the deploy itself.** Issues #155, #156 and #157
-  (`prod-env-cis-s3-bucket-policy-changes`, `-iam-policy-changes`, `-unauthorized-api-calls`)
-  opened at 22:28 to 22:32 UTC on 2026-09-08 as main's environment deploy put bucket and IAM
+  (`prod-env-cis-s3-bucket-policy-changes`, `-iam-policy-changes`, `-unauthorized-api-calls`) and
+  #158 (`-route-table-changes`) opened at 22:28 to 22:42 UTC on 2026-09-08 as main's environment deploy put bucket and IAM
   policies and one call was refused, all by the deploy's own roles. In
   `SecurityDetectionStack.java`, exclude the deploy principals from the three metric filters
   (`$.userIdentity.sessionContext.sessionIssuer.userName` not `github-deploy-role` and not the
   `cdk-hnb659fds-*` bootstrap roles), so the alarms watch for a person or an unknown
   principal, and say which of the fourteen filters need the same exclusion. The three issues
   close as deploy-caused once the tune is on main. Starts on the operator's word. **Source**:
-  issues #155, #156, #157; B52f. **Owner**: Claude Code. **Model**: Haiku.
+  issues #155 to #158; B52f. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B60. The alarm triage role cannot read alarms.** Every triage run that executed on
+  2026-09-08 (#152, #156, #157) failed at `scripts/resolve-alarm-evidence.mjs` with
+  `prod-env-alarm-triage-role` "not authorized to perform cloudwatch:DescribeAlarms", before
+  Claude Code on Bedrock ran, so the chain has produced no triage and spent nothing since the
+  role was scoped. Grant the evidence script's reads (`cloudwatch:DescribeAlarms`,
+  `DescribeAlarmHistory`, the Logs Insights start and get calls on the alarm's log groups) to
+  the triage role where it is defined (`grep -rn alarm-triage-role infra/main`), and check
+  whether alarm #157's `AccessDenied` datapoint was this very denial. Starts on the operator's
+  word. **Source**: the alarm-triage runs of 2026-09-08. **Owner**: Claude Code. **Model**:
+  Haiku.
 - [ ] **B59. The alarm triage runs three times per issue.** `alarm-triage.yml` triggers on
   `issues: [opened, labeled]`, and the opener applies two labels, so every alarm issue starts
   three runs: two cancel or skip each other and one failed on each of #152, #156 and #157.
