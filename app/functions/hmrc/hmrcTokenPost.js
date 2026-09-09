@@ -17,7 +17,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
@@ -109,12 +109,28 @@ export async function ingestHandler(event) {
   if (!userSub) {
     userSub = getHeader(event.headers, "x-user-sub") || null;
   }
-  await publishActivityEvent({
-    event: "hmrc-token-exchanged",
-    summary: "HMRC token exchanged",
-    userSub,
-  });
-  return buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
+
+  const exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
+
+  // Publish after HMRC's reply, not before, so the event records what actually happened.
+  if (exchangeResponse.statusCode === 200) {
+    await publishActivityEvent({
+      event: "hmrc-token-exchanged",
+      summary: "HMRC token exchanged",
+      userSub,
+    });
+  } else {
+    const responseBody = JSON.parse(exchangeResponse.body);
+    await publishActivityFailureEvent({
+      event: "hmrc-token-exchange-failed",
+      summary: "HMRC token exchange failed",
+      failure: responseBody.error || "hmrc-upstream-error",
+      userSub,
+      detail: { hmrcStatus: responseBody.responseCode ?? exchangeResponse.statusCode },
+    });
+  }
+
+  return exchangeResponse;
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
