@@ -13,7 +13,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-15f3483 (the merge of PR #160, run 34385269183, 2026-09-09 18:3x
+**Prod runs deployment prod-15f3483 (the merge of PR #160, run 34385269183, 2026-09-09 18:29
 UTC), which retired prod-4600d25 in its own destroy-previous job; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
@@ -28,7 +28,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 ## In flight
 
 Nothing. Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is
-on prod as prod-15f3483 since 2026-09-09 18:3x UTC. Of the merge's runs, the environment
+on prod as prod-15f3483 since 2026-09-09 18:29 UTC. Of the merge's runs, the environment
 deploy failed at the cost export only (B65); the test run passed on its re-run. T7 (the sandbox proof) and T8 to T10 wait on the operator's word. The
 operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
 flight" without their word.
@@ -61,11 +61,6 @@ flight" without their word.
   salt is a wrong pass. Proof: no `GetSecretValue` denial in CloudTrail after the deploy and
   `POST /api/v1/interest` answering 2xx. Closes #161. **Source**: CloudTrail
   2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
-  was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
-  opened the issue anyway, so the read is used for the issue's detail. Grant `DescribeAlarms`
-  (resource `*`) to that role in `OpsStack.java` beside its other reads. **Source**: CloudTrail
-  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B30r. A customer's 400 counts as a VAT submission failure.** Issue #164
   (`prod-env-hmrc-submission-failure`, 14:38 UTC on 2026-09-09): `hmrc-vat-return-post`
   answered `400` "No matching obligation found for date range" twice (14:37, 14:39) and the
@@ -85,14 +80,14 @@ flight" without their word.
   where `BackupStack.java` builds it, and check the bucket's own policy does not deny the
   service role; the proof is the next night's job and `verify-backups.yml` green.
   **Source**: runs 34343588837, 34218296772. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B65. The FOCUS cost export rejects `SELECT *`.** Main's environment deploy
-  34328646892 got past the bucket policy (B61's fix held) and failed creating
+- [ ] **B65. The FOCUS cost export rejects `SELECT *`.** Main's environment deploys
+  34328646892 and 34385269212 (the merge of PR #160) got past the bucket policy (B61's fix held) and failed creating
   `AWS::BCMDataExports::Export` `FocusExport` in `cost-CostExportStack`: the Data Exports API
   answers `ValidationException: SELECT * is not supported`, so the stack rolled back and the
   cost panel has no export. In `CostExportStack.java`, give the export's query statement an
   explicit column list (the FOCUS 1.0 columns the panel's Athena table in
   `CostFocusIngestion.java` reads; keep the two in step) and prove it with the environment
-  deploy of main. **Source**: run 34328646892. **Owner**: Claude Code. **Model**: Haiku.
+  deploy of main. **Source**: runs 34328646892, 34385269212. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B64. The ci sweep fails clearing the last-known-good pointer.** `destroy-ci.yml`'s
   scheduled run 34324345123 (07:32 UTC on 2026-09-09, the 02:34 slot arriving five hours late;
   every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
@@ -151,6 +146,11 @@ flight" without their word.
   SSO policy downgrade from `AdministratorAccess` and the eu-west-1 copy (BACKLOG 33's open
   questions) are decided in the same PR's description, not built. **Source**: issue #11;
   BACKLOG 33's chain (#2, #25, #33). **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
+  was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
+  opened the issue anyway, so the read is used for the issue's detail. Grant `DescribeAlarms`
+  (resource `*`) to that role in `OpsStack.java` beside its other reads. **Source**: CloudTrail
+  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B70.S1. Licensing: the licence files.** `LICENSE` becomes the canonical PolyForm
   Internal Use text with the additional grant, copied byte for byte from the spreadsheets
   repository; `LICENSING.md` maps every top-level directory to the third layer, states the
