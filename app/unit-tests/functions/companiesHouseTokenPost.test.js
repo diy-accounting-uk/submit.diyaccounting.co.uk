@@ -119,20 +119,85 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     expect(params.get("redirect_uri")).toContain("companies-house/filingCallback.html");
   });
 
-  test("returns 500 when Companies House rejects the token exchange", async () => {
+  test("returns 400 and Companies House's own error when it answers invalid_grant", async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,
       status: 400,
-      json: () => Promise.resolve({ error: "invalid_grant" }),
+      json: () => Promise.resolve({ error: "invalid_grant", error_description: "Invalid or expired authorization code" }),
       headers: fakeHeaders({}),
     });
 
     const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
     const response = await companiesHouseTokenPostHandler(event);
 
-    expect(response.statusCode).toBe(500);
+    expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
-    expect(body.companiesHouseResponseCode).toBe(400);
+    expect(body.error).toBe("invalid_grant");
+    expect(body.error_description).toBe("Invalid or expired authorization code");
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.event).toBe("companies-house-token-exchange-failed");
+    expect(detail.outcome).toBe("failure");
+    expect(detail.failure).toBe("invalid_grant");
+    expect(detail.companiesHouseStatus).toBe(400);
+    expect(JSON.stringify(detail)).not.toContain("Invalid or expired authorization code");
+  });
+
+  test("returns 401 and does not raise the 5xx alarm when Companies House rejects the client credentials", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: "invalid_client", error_description: "invalid client id or secret" }),
+      headers: fakeHeaders({}),
+    });
+
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const response = await companiesHouseTokenPostHandler(event);
+
+    expect(response.statusCode).toBe(401);
+    const body = parseResponseBody(response);
+    expect(body.error).toBe("invalid_client");
+
+    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.event).toBe("companies-house-token-exchange-failed");
+    expect(detail.companiesHouseStatus).toBe(401);
+  });
+
+  test("returns 502 naming Companies House as the upstream when it answers with a server error", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: "server_error" }),
+      headers: fakeHeaders({}),
+    });
+
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const response = await companiesHouseTokenPostHandler(event);
+
+    expect(response.statusCode).toBe(502);
+    const body = parseResponseBody(response);
+    expect(body.upstream).toBeTruthy();
+    expect(body.responseCode).toBe(500);
+
+    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.event).toBe("companies-house-token-exchange-failed");
+    expect(detail.companiesHouseStatus).toBe(500);
+  });
+
+  test("returns 502 when the request to Companies House fails at the network level", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("getaddrinfo ENOTFOUND identity-sandbox.company-information.service.gov.uk"));
+
+    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" } });
+    const response = await companiesHouseTokenPostHandler(event);
+
+    expect(response.statusCode).toBe(502);
+    const body = parseResponseBody(response);
+    expect(body.upstream).toBeTruthy();
+
+    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.event).toBe("companies-house-token-exchange-failed");
+    expect(detail.companiesHouseStatus).toBe(502);
   });
 
   test("publishes the companies-house-token-exchanged event with the hashed sub, never the raw sub", async () => {
