@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # Stripe API - Payment Integration Subset
 # This is a lightweight subset of the full Stripe OpenAPI 3.0 spec containing
 # ONLY the endpoints and schemas relevant to our payment integration.
