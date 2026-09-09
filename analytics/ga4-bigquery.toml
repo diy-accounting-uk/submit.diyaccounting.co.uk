@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 # GA4 in BigQuery, as code.
 #
 # scripts/ga4-bigquery-sync.js reads this file, lists the live ga4_daily dataset and its
