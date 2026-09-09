@@ -413,6 +413,17 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   });
 
   test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+      }
+      if (cmd instanceof lib.UpdateCommand) {
+        return { Attributes: { bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 1 } };
+      }
+      return {};
+    });
+
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
       headers: {
@@ -430,6 +441,16 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   test("returns 200 when processing completes synchronously (large x-wait-time-ms)", async () => {
     const periodSummary = { periodId: "2024-04-06_2024-07-05" };
     mockHmrcSuccess(mockFetch, periodSummary);
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+      }
+      if (cmd instanceof lib.UpdateCommand) {
+        return { Attributes: { bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 1 } };
+      }
+      return {};
+    });
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),

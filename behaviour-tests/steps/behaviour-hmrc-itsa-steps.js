@@ -21,6 +21,14 @@ export async function initItsaBusinessDetails(page, screenshotPath = defaultScre
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-business-details.png` });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02b-business-details-dashboard.png` });
+    // The activity button opens the ITSA dashboard hub, not Business Details directly - follow
+    // its first link, the way a customer works through the dashboard's numbered steps.
+    await loggedClick(page, "a:has-text('Go to Business Details')", "Opening Business Details from the dashboard", {
+      screenshotPath,
+    });
+    await page.waitForLoadState("networkidle");
+    await page.waitForTimeout(500);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-business-details.png` });
     // The activity button opens the ITSA dashboard (the first .html path listed for the
     // self-employed activity - see catalog-service.js), which links out to each ITSA page.

@@ -10,6 +10,7 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -30,9 +31,11 @@ import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidNino } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
+import { emitMetric } from "../../lib/emfMetrics.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js" });
 
@@ -44,6 +47,38 @@ const HMRC_API_VERSION = "5.0";
 
 const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
 const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
+
+const BUSINESS_METRICS_NAMESPACE = "Submit/Business";
+
+function emitSubmissionMetric(metricName, actor) {
+  emitMetric({ namespace: BUSINESS_METRICS_NAMESPACE, metricName, dimensions: { Actor: actor } });
+}
+
+/**
+ * Record a failed ITSA quarterly update amendment: one business metric and one activity event.
+ *
+ * A failed filing is a customer-facing incident, so every meaningful failure path reports
+ * itself the same way the success path does. The event carries the failure category and the
+ * hashed sub only - no NINO, no business id, no HMRC payload.
+ *
+ * @param {Object} params
+ * @param {string} params.failure - Failure category
+ * @param {string} params.summary - Human-readable summary for alerting
+ * @param {string} [params.userSub]
+ * @param {Object} [params.detail] - Additional non-identifying detail fields
+ */
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+  const actor = resolveActorClass();
+  emitSubmissionMetric("ItsaSubmissionFailure", actor);
+  await publishActivityFailureEvent({
+    event: "itsa-self-employment-period-failed",
+    summary,
+    failure,
+    userSub,
+    actor,
+    detail,
+  });
+}
 
 /**
  * Round a money value to 2 decimal places, the way every amount in the Self Employment
@@ -177,6 +212,7 @@ export async function ingestHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_BASE_URI",
+    "RECEIPTS_DYNAMODB_TABLE_NAME",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
     "HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME",
@@ -196,6 +232,7 @@ export async function ingestHandler(event) {
   try {
     ({ userSub, bundleIds } = await enforceBundles(event));
   } catch (error) {
+    await recordSubmissionFailure({ failure: "access-denied", summary: "ITSA quarterly update amendment blocked: no entitlement" });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
@@ -275,6 +312,45 @@ export async function ingestHandler(event) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
   }
 
+  // Token enforcement: consume 1 token for the amended quarterly update (the "value action") -
+  // initial request only. The plan charges the same one token for a create and an amend.
+  if (isInitialRequest) {
+    const activityId = "self-employed";
+    try {
+      const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+      const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
+      const catalog = loadCatalogFromRoot();
+      const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
+      if (!tokenResult.consumed) {
+        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+        await recordSubmissionFailure({
+          failure: "tokens-exhausted",
+          summary: "ITSA quarterly update amendment blocked: submission allowance used up",
+          userSub,
+        });
+        return http403ForbiddenResponse({
+          request,
+          headers: responseHeaders,
+          message: "Token limit reached",
+          error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+        });
+      }
+      logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
+    } catch (error) {
+      logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "ITSA quarterly update amendment failed while checking the submission allowance",
+        userSub,
+      });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Token enforcement failed",
+      });
+    }
+  }
+
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
 
   let result = null;
@@ -317,7 +393,24 @@ export async function ingestHandler(event) {
           statusText: hmrcResponse.statusText,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-        return { periodSummary, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+
+        const resultData = { periodSummary, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+
+        if (!hmrcResponse.ok) {
+          return resultData;
+        }
+
+        // The period is already identified by the taxYear/periodId in the request path, so
+        // the receipt id uses the caller's periodId rather than anything HMRC's 200 body
+        // returns - unlike the POST path, HMRC does not echo periodId back on amend.
+        if (payload.userSub && payload.periodId) {
+          const timestamp = new Date().toISOString();
+          const receiptId = `${timestamp}-${payload.periodId}`;
+          await putReceipt(payload.userSub, receiptId, periodSummary, resolveActorClass());
+          resultData.receiptId = receiptId;
+        }
+
+        return resultData;
       };
 
       result = await asyncApiServices.initiateProcessing({
@@ -348,6 +441,11 @@ export async function ingestHandler(event) {
       result = error.data;
     } else {
       logger.error({ message: "Unexpected error during self-employment period amendment", error: error.message, stack: error.stack });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "ITSA quarterly update amendment failed unexpectedly",
+        userSub,
+      });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -388,6 +486,7 @@ export async function workerHandler(event) {
   validateEnv([
     "HMRC_BASE_URI",
     "HMRC_SANDBOX_BASE_URI",
+    "RECEIPTS_DYNAMODB_TABLE_NAME",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
     "HMRC_ITSA_SELF_EMPLOYMENT_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME",
@@ -471,6 +570,15 @@ export async function workerHandler(event) {
         continue;
       }
 
+      // The period is already identified by the taxYear/periodId in the request path, so the
+      // receipt id uses the caller's periodId rather than anything HMRC's 200 body returns.
+      if (userSub && payload.periodId) {
+        const timestamp = new Date().toISOString();
+        const receiptId = `${timestamp}-${payload.periodId}`;
+        await putReceipt(userSub, receiptId, periodSummary, resolveActorClass());
+        result.receiptId = receiptId;
+      }
+
       await asyncApiServices.complete({
         asyncRequestsTableName,
         requestId,
@@ -494,6 +602,11 @@ export async function workerHandler(event) {
         messageId: record.messageId,
         userSub,
         requestId,
+      });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "ITSA quarterly update amendment failed in the background worker",
+        userSub,
       });
       if (userSub && requestId) {
         await asyncApiServices.error({
@@ -597,8 +710,15 @@ export async function amendSelfEmploymentPeriod(
   }
 
   if (!hmrcResponse.ok) {
+    await recordSubmissionFailure({
+      failure: "hmrc-rejected",
+      summary: "ITSA quarterly update amendment rejected by HMRC",
+      userSub: auditForUserSub,
+      detail: { hmrcStatus: hmrcResponse.status },
+    });
     return { hmrcResponse, hmrcResponseBody, periodSummary: null };
   }
+  emitSubmissionMetric("ItsaSubmissionSuccess", resolveActorClass());
   await publishActivityEvent({
     event: "itsa-self-employment-period-amended",
     summary: "ITSA self-employment period summary amended",
