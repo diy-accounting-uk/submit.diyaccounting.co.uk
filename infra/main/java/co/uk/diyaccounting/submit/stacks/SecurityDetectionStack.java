@@ -254,11 +254,38 @@ public class SecurityDetectionStack extends Stack {
         // global service events, so IAM, and other global-service activity is visible here even
         // though the trail itself is single-region.
         // ----------------------------------------------------------------------------------
+        String deploymentRoleNameCis = "submit-%s-deployment-role".formatted(props.envName());
+        String deploymentRoleExclusion =
+                " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-cfn-exec-role-*\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-deploy-role-*\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-file-publishing-role-*\")"
+                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-lookup-role-*\")"
+                .formatted(deploymentRoleNameCis);
+
         for (CisControl control : CIS_CONTROLS) {
             String metricName = "Cis" + control.name();
+            String filterPatternStr = control.filterPattern();
+
+            // Exclude deploy and CDK bootstrap roles from filters that monitor infrastructure
+            // changes the deployment pipeline itself performs (see PLAN_ISSUE_30, B30q).
+            if (control.name().equals("UnauthorizedApiCalls")
+                    || control.name().equals("IamPolicyChanges")
+                    || control.name().equals("S3BucketPolicyChanges")
+                    || control.name().equals("SecurityGroupChanges")
+                    || control.name().equals("NaclChanges")
+                    || control.name().equals("NetworkGatewayChanges")
+                    || control.name().equals("RouteTableChanges")
+                    || control.name().equals("VpcChanges")) {
+                // Patterns end with " }" so insert the exclusion before the closing brace.
+                filterPatternStr = filterPatternStr.substring(0, filterPatternStr.length() - 2)
+                        + deploymentRoleExclusion
+                        + " }";
+            }
+
             MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "MetricFilter")
                     .logGroup(cloudTrailLogGroup)
-                    .filterPattern(FilterPattern.literal(control.filterPattern()))
+                    .filterPattern(FilterPattern.literal(filterPatternStr))
                     .metricNamespace("Submit/Security")
                     .metricName(metricName)
                     .metricValue("1")
