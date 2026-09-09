@@ -59,8 +59,10 @@ on:
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
       - 'app/functions/ops/activityTelegramForwarder.js'
-      # Simulator source code
-      - 'web/public-simulator/**'
+      # Simulator source code. build-simulator.js reads web/public and writes
+      # web/public-simulator, which is gitignored, so only the source can appear
+      # in a push and only the source belongs in this list.
+      - 'web/public/**'
       # Holding page source
       - 'web/holding/**'
       # Shared utilities and entry point
