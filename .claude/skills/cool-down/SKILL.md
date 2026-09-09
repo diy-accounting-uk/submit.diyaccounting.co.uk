@@ -1,6 +1,6 @@
 ---
 name: cool-down
-description: Slow the flow of new work and settle what is already in flight. Agents commit and stop, PRs and workflows are driven green one branch at a time, and the tracking documents catch up. Invoke when the operator says "cool down", or when a batch is stacking problems faster than it lands them.
+description: Slow the flow of new work and settle what is already in flight, then bring it back up again. Agents commit and stop, PRs and workflows are driven green one branch at a time, and the tracking documents catch up. Holds the revival notes too, so /wake reads from here. Invoke when the operator says "cool down", or when a batch is stacking problems faster than it lands them.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -14,6 +14,10 @@ own words. Turning it on does not stop work; it changes what work is allowed to 
 The failure it exists for: a batch that adds rows faster than it lands them, several agents in
 flight at once, workflows failing while more commits arrive, and a board that no longer says
 what is true. Cool-down is how that settles without losing anything.
+
+This file holds both directions. Each rule below carries a **Waking** note saying how that
+facet comes back. `/wake` is deliberately thin and reads those notes from here, so the way down
+and the way up can never drift apart.
 
 ## Turning it on
 
@@ -44,6 +48,11 @@ up later, for the operator to triage when cool-down lifts. Create the file if it
 Never let a discovery evaporate into the transcript, and never argue it onto the board because
 it feels important. The board is closed; the parking list is open.
 
+**Waking:** hand `PARKED.md` back as a list for the operator to triage. Promote nothing on your
+own judgement, however obvious it looks after a night of settling. Each line the operator picks
+becomes a board row placed in tier order; each line they drop is deleted, not left to rot. When
+the file is empty, remove it.
+
 ### 2. A live customer-facing degradation gets its own branch
 
 When the degradation is live and customer-facing, it does not join the batch. Branch from
@@ -52,6 +61,12 @@ first, before the batch. A one-fix branch off `main` can go to prod without wait
 else to be right, and that is the whole point.
 
 Print the reasoning as well as the branch name. The operator is choosing a merge order.
+
+**Waking:** every hotfix branch is accounted for before anything else starts. Merged means the
+branch and its worktree go in the same breath and its board row is deleted. Still open means it
+keeps its place at the front of the merge order, and the reply says so again rather than
+assuming the operator remembers. A hotfix branch that is neither merged nor open is the first
+thing to explain.
 
 ### 3. Agents finish the item they are on, commit it, and stop
 
@@ -63,11 +78,18 @@ and the coordinator gets exactly one look.
 Dispatch no new agents. When each reports, merge its verified commit as usual, then check
 `git status --short` **inside its worktree**, not just its last commit.
 
+**Waking:** before dispatching anything, walk every worktree that is still on disk and check
+`git status --short` in each. Uncommitted work found there is recovered first, because the next
+dispatch may remove the worktree that holds it. An agent whose worktree is gone is never
+resumed; dispatch a fresh one with a brief built from the board, not from memory of what the old
+one was doing. Only then does new dispatch resume, and it resumes at the batch's normal width,
+not wider to make up lost time.
+
 ### 4. One branch at a time, and prove the fix locally before pushing
 
 Per branch:
 
-1. **Wait for every workflow on it to conclude.** Not the first failure — all of them. A branch
+1. **Wait for every workflow on it to conclude.** Not the first failure, all of them. A branch
    with three failing jobs and one still running is not ready to be fixed.
 2. **Gather every observed issue together.** One triage across all of them. Several failures
    usually share one cause, and finding that is cheaper than fixing three symptoms.
@@ -83,6 +105,12 @@ what stops the loop, not a quota.
 batch is not cool-down's work: record it in `PARKED.md` or, if it is a degradation, as a board
 row under rule 1, and leave it. Check the workflow's own history before deciding which it is.
 
+**Waking:** the local-proof rule does not lift with the mode. It is the habit cool-down exists
+to install, and a warm session pushing an unproven fix is how the next cool-down gets called.
+What does lift is the one-branch-at-a-time serialisation, and only once every branch that was
+open during cool-down is green or closed. A red branch left behind keeps the whole board
+serialised until it is settled.
+
 ### 5. The tracking documents catch up
 
 This is the part that is always skipped and always missed later.
@@ -97,18 +125,55 @@ This is the part that is always skipped and always missed later.
   board do not disagree.
 - Commit the documents on their own, separately from any code fix, so the history reads.
 
+**Waking:** the documents are current, so they are the source for what to dispatch. Read them;
+do not work from memory of what the batch was doing. Where a row and your recollection disagree,
+the row wins, or the row is wrong and fixing it is the first action.
+
+## Resequencing and the board
+
+Both directions keep the board honest as they go, not only at the end.
+
+**Resequence as statuses change.** Whenever a row's state, owner or tier position moves, move
+the row in `NEXT.md` at the same time. An item whose blocker cleared rises to its ready section;
+one that gained a blocker drops to `## Blocked`; a new degradation goes to the top of its
+section as tier 1. The order is the one the `board` skill defines, and a row left in the wrong
+section is a status that lies.
+
+**Run the `board` skill as the last action.** Cooling down ends with a board render, and so does
+waking up. That render is what tells the operator the state settled, or came back, and it writes
+its own statuses back as it always does.
+
+**Every 60 minutes, if neither end has been reached**, stop and render anyway: the four-line
+status report below, then the `board` skill in full. A cool-down that runs for hours without a
+render leaves the operator reading a transcript to find out what is happening, which is the
+thing this skill exists to prevent. Then carry on.
+
 ## The report
 
-End every cool-down turn with the same four lines, so the operator can see the temperature
-without reading the transcript:
+End every cool-down or wake turn with the same four lines, so the operator can see the
+temperature without reading the transcript:
 
 - **Agents**: how many were running, how many have committed and stopped, how many remain.
 - **Branches**: each one, its workflow state, and what it is waiting for.
 - **Board**: rows added and why each was allowed, rows closed, entries parked.
 - **Next**: the single thing that would most reduce what is outstanding.
 
-## Lifting it
+## Waking up
 
 Only the operator lifts cool-down, in their own words. "Carry on" or "resume" is enough; the
-absence of new instructions is not. On lifting, delete the marker from `NEXT.md`, and hand back
-`PARKED.md` as a list to triage rather than silently promoting any of it.
+absence of new instructions is not. Silence is not consent to resume.
+
+The order matters, because each step depends on the one before:
+
+1. Delete the cool-down marker from `NEXT.md`.
+2. Account for every hotfix branch (rule 2's Waking note).
+3. Walk every worktree still on disk for uncommitted work (rule 3's Waking note).
+4. Confirm every branch that was open during cool-down is green or closed, which is what lifts
+   the one-branch serialisation (rule 4's Waking note).
+5. Read the tracking documents and work from them (rule 5's Waking note).
+6. Hand `PARKED.md` back for triage (rule 1's Waking note).
+7. Resequence the board, then run the `board` skill.
+
+Only after all seven does new dispatch resume. If any step cannot be completed, say which and
+why, and stay cool until it is: a half-woken session with a red branch and an unaccounted
+worktree is worse than one still cooling.
