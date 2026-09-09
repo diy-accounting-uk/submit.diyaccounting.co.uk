@@ -496,6 +496,64 @@
         "operationId" : "generatePass"
       }
     },
+    "/hmrc/itsa/calculation" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA tax calculation",
+        "description" : "Retrieves a previously triggered self assessment tax calculation by its calculation id",
+        "operationId" : "getItsaCalculation",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The calculation id from a triggered calculation",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
         "summary" : "Poll a micro-entity accounts filing",
@@ -908,6 +966,64 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/itsa/calculation/trigger" : {
+      "post" : {
+        "summary" : "Trigger an ITSA tax calculation",
+        "description" : "Triggers a self assessment tax calculation for a tax year and waits for HMRC to finish it",
+        "operationId" : "triggerItsaCalculation",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationType",
+          "in" : "body",
+          "required" : true,
+          "description" : "One of in-year, intent-to-finalise, intent-to-amend",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/billing/checkout" : {
@@ -1446,6 +1562,80 @@
           "schema" : {
             "type" : "string",
             "example" : "2025-03-31-123456789012.json"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/final-declaration" : {
+      "post" : {
+        "summary" : "Submit an ITSA final declaration",
+        "description" : "Confirms a tax calculation and files the final declaration for a tax year",
+        "operationId" : "submitItsaFinalDeclaration",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The calculation id being confirmed",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationType",
+          "in" : "body",
+          "required" : true,
+          "description" : "One of final-declaration, confirm-amendment",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "totalIncomeTaxAndNicsDue",
+          "in" : "body",
+          "required" : true,
+          "description" : "The figure shown to the customer and confirmed, stored on the receipt",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "tags" : [ "HMRC" ],
