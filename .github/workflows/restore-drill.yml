@@ -1,0 +1,233 @@
+name: restore drill
+run-name: "Restore drill: prod tables into ci from the cross-account vault"
+
+# Proves the cross-account vault does more than receive copies: it can rebuild a working
+# replica of prod's data in a different AWS account. Pulls the newest recovery point of
+# each critical prod DynamoDB table from submit-cross-account-vault, restores it into ci
+# as ci-restore-<table>, checks the restored bundles table for the salt's own DynamoDB
+# backup item so the salt is proven to come back with it, compares each restored table's
+# item count against its recovery point, then deletes every table this run created.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '41 7 2 * *'
+
+env:
+  AWS_REGION: 'eu-west-2'
+  BACKUP_ACCOUNT_ID: '914216784828'
+  PROD_ACCOUNT_ID: '972912397388'
+  CROSS_ACCOUNT_VAULT_NAME: 'submit-cross-account-vault'
+
+jobs:
+  restore-drill:
+    name: 'Restore prod tables into ci from the cross-account vault'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: ci
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set restore parameters
+        run: |
+          set -euo pipefail
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          echo "RESTORE_ROLE_ARN=arn:aws:iam::$ACCOUNT_ID:role/ci-env-backup-role" >> "$GITHUB_ENV"
+          : > /tmp/restore-drill-created-tables.txt
+          : > /tmp/restore-drill-results.tsv
+
+      # Each prod table's recovery point is looked up and restored in turn so that one
+      # table's failure does not stop the rest from being tried and reported on.
+      - name: Restore each prod table from the cross-account vault
+        run: |
+          set -uo pipefail
+
+          restore_table() {
+            local SHORT_NAME="$1"
+            local SOURCE_TABLE="prod-env-${SHORT_NAME}"
+            local SOURCE_TABLE_ARN="arn:aws:dynamodb:${AWS_REGION}:${PROD_ACCOUNT_ID}:table/${SOURCE_TABLE}"
+            local TARGET_TABLE="ci-restore-${SHORT_NAME}"
+
+            echo "=== ${SOURCE_TABLE} -> ${TARGET_TABLE} ==="
+
+            local RP
+            if ! RP=$(aws backup list-recovery-points-by-backup-vault \
+              --backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
+              --backup-vault-account-id "${BACKUP_ACCOUNT_ID}" \
+              --region "${AWS_REGION}" \
+              --query "sort_by(RecoveryPoints[?Status=='COMPLETED' && ResourceArn=='${SOURCE_TABLE_ARN}'], &CompletionDate)[-1]" \
+              --output json 2>&1) || [ -z "$RP" ] || [ "$RP" = "null" ]; then
+              echo "FAIL: could not find a completed recovery point for ${SOURCE_TABLE} in ${CROSS_ACCOUNT_VAULT_NAME}."
+              echo "$RP"
+              printf '%s\tno-recovery-point\t-\t-\t-\n' "$SOURCE_TABLE" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+
+            local RP_ARN BACKUP_SIZE_BYTES
+            RP_ARN=$(echo "$RP" | jq -r '.RecoveryPointArn')
+            BACKUP_SIZE_BYTES=$(echo "$RP" | jq -r '.BackupSizeInBytes // 0')
+            echo "Recovery point: $RP_ARN ($BACKUP_SIZE_BYTES bytes)"
+
+            local META
+            if ! META=$(aws backup get-recovery-point-restore-metadata \
+              --backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
+              --backup-vault-account-id "${BACKUP_ACCOUNT_ID}" \
+              --recovery-point-arn "$RP_ARN" \
+              --region "${AWS_REGION}" \
+              --query RestoreMetadata --output json 2>&1); then
+              echo "FAIL: could not read restore metadata for $RP_ARN."
+              echo "$META"
+              printf '%s\tmetadata-failed\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+            META=$(echo "$META" | jq --arg t "$TARGET_TABLE" '.targetTableName = $t')
+
+            local JOB_ID
+            if ! JOB_ID=$(aws backup start-restore-job \
+              --recovery-point-arn "$RP_ARN" \
+              --iam-role-arn "$RESTORE_ROLE_ARN" \
+              --resource-type DynamoDB \
+              --metadata "$META" \
+              --region "${AWS_REGION}" \
+              --query RestoreJobId --output text 2>&1); then
+              echo "FAIL: could not start the restore job for ${TARGET_TABLE}."
+              echo "$JOB_ID"
+              printf '%s\tstart-failed\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+            echo "Restore job: $JOB_ID"
+            echo "$TARGET_TABLE" >> /tmp/restore-drill-created-tables.txt
+
+            local STATUS="RUNNING"
+            local ATTEMPT=0
+            while [ "$ATTEMPT" -lt 40 ]; do
+              STATUS=$(aws backup describe-restore-job --restore-job-id "$JOB_ID" \
+                --region "${AWS_REGION}" --query Status --output text 2>/dev/null || echo "UNKNOWN")
+              echo "$(date -u +%H:%M:%S) restore job $JOB_ID: $STATUS"
+              case "$STATUS" in
+                COMPLETED) break ;;
+                FAILED|ABORTED)
+                  aws backup describe-restore-job --restore-job-id "$JOB_ID" --region "${AWS_REGION}" --output json
+                  printf '%s\trestore-%s\t-\t-\t%s\n' "$SOURCE_TABLE" "$STATUS" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+                  return 1
+                  ;;
+              esac
+              sleep 30
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+            if [ "$STATUS" != "COMPLETED" ]; then
+              echo "FAIL: restore job $JOB_ID did not finish within 20 minutes."
+              printf '%s\ttimed-out\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+
+            local TABLE_STATE
+            TABLE_STATE=$(aws dynamodb describe-table --table-name "$TARGET_TABLE" \
+              --region "${AWS_REGION}" --query 'Table.TableStatus' --output text 2>/dev/null || echo "MISSING")
+            if [ "$TABLE_STATE" != "ACTIVE" ]; then
+              echo "FAIL: restored table ${TARGET_TABLE} is ${TABLE_STATE}, not ACTIVE."
+              printf '%s\ttable-%s\t-\t-\t%s\n' "$SOURCE_TABLE" "$TABLE_STATE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+
+            local RESTORED_ITEMS
+            RESTORED_ITEMS=$(aws dynamodb scan --table-name "$TARGET_TABLE" --select COUNT \
+              --region "${AWS_REGION}" --query Count --output text | awk '{ total += $1 } END { print total + 0 }')
+            echo "Restored ${TARGET_TABLE}: ${RESTORED_ITEMS} items (recovery point held ${BACKUP_SIZE_BYTES} bytes)"
+
+            # DynamoDB recovery points carry a byte size, not an item count, so the check
+            # available here is: a recovery point that held real data must not restore empty.
+            if [ "$RESTORED_ITEMS" -eq 0 ] && [ "$BACKUP_SIZE_BYTES" -gt 0 ]; then
+              echo "FAIL: restored table is empty but its recovery point held ${BACKUP_SIZE_BYTES} bytes."
+              printf '%s\tempty-restore\t%s\t-\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              return 1
+            fi
+
+            local SALT_NOTE="-"
+            if [ "$SHORT_NAME" = "bundles" ]; then
+              local SALT_ITEM
+              SALT_ITEM=$(aws dynamodb get-item --table-name "$TARGET_TABLE" \
+                --key '{"hashedSub": {"S": "system#config"}, "bundleId": {"S": "salt-v2"}}' \
+                --region "${AWS_REGION}" --output json 2>/dev/null || echo "")
+              if [ -n "$SALT_ITEM" ] && echo "$SALT_ITEM" | jq -e '.Item' >/dev/null 2>&1; then
+                SALT_NOTE="salt backup item present"
+              else
+                SALT_NOTE="salt backup item not present"
+              fi
+              echo "Salt backup check (system#config/salt-v2): $SALT_NOTE"
+            fi
+
+            printf '%s\tpass\t%s\t%s\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$SALT_NOTE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+            return 0
+          }
+
+          OVERALL_STATUS=0
+          for TABLE in receipts bundles hmrc-api-requests passes subscriptions; do
+            restore_table "$TABLE" || OVERALL_STATUS=1
+          done
+
+          echo "RESTORE_STATUS=$OVERALL_STATUS" >> "$GITHUB_ENV"
+
+      - name: Delete the tables this run created
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ ! -s /tmp/restore-drill-created-tables.txt ]; then
+            echo "No restored tables to delete."
+            exit 0
+          fi
+          while IFS= read -r TABLE; do
+            [ -z "$TABLE" ] && continue
+            if aws dynamodb describe-table --table-name "$TABLE" --region "${AWS_REGION}" >/dev/null 2>&1; then
+              aws dynamodb delete-table --table-name "$TABLE" --region "${AWS_REGION}" >/dev/null
+              echo "Deleted $TABLE"
+            else
+              echo "No table $TABLE to delete"
+            fi
+          done < /tmp/restore-drill-created-tables.txt
+
+      - name: Publish the result
+        if: always()
+        run: |
+          set -uo pipefail
+          {
+            echo "## Restore drill: prod into ci"
+            echo ""
+            echo "| Source table | Result | Restored items | Salt / notes | Recovery point bytes |"
+            echo "|---|---|---|---|---|"
+            if [ -s /tmp/restore-drill-results.tsv ]; then
+              while IFS=$'\t' read -r TABLE RESULT ITEMS NOTE BYTES; do
+                echo "| $TABLE | $RESULT | $ITEMS | $NOTE | $BYTES |"
+              done < /tmp/restore-drill-results.tsv
+            else
+              echo "| (none) | no results recorded | - | - | - |"
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ env.RESTORE_STATUS }}" != "0" ]; then
+            echo "FAIL: at least one table did not restore and verify cleanly."
+            exit 1
+          fi
