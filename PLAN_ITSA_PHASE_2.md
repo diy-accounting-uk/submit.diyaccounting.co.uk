@@ -497,13 +497,29 @@ used up.
 | Final declaration | 1 |
 | Every read (business details, obligations, ITSA status, period summaries) | 0 |
 
+The charge is per submission, and HMRC issues obligations per business, so a year costs what
+the customer's businesses cost:
+
+| Customer | Quarterly updates | Annual submissions | Final declaration | Year |
+|---|---|---|---|---|
+| One sole trade | 4 | 1, free | 1 | 5 tokens |
+| One rental | 4 | 1, free | 1 | 5 tokens |
+| A sole trade and a rental | 8 | 2, free | 1 | 9 tokens |
+
 A sole trader's year is five tokens: four quarterly updates and one declaration. The annual
 submission is free because it is a working step inside a year end the declaration charges for,
 and a customer who corrects an allowance twice should not pay twice. See D1.
 
-A customer with a sole trade and a rental files two sets of quarterly updates and one
-declaration, so their year is nine tokens. The charge follows the obligation the update meets,
-and HMRC issues one set of obligations per business.
+The `resident-itsa` bundle grants 100 tokens a month, so nine in a year sits well inside the
+allowance. The number still shows before the customer spends it. The dashboard's business
+picker names what a year costs for the businesses HMRC listed, and `usage.html` carries the
+same figures beside the running total it already shows (D6).
+
+Every write charges through `consumeTokenForActivity` on the initial request, before the HMRC
+call, on one submission for one business. Two rules keep that honest. No handler ever batches
+two businesses into one request, so one charge is always one business's submission. And the
+async worker never charges: the ingest Lambda charges once and the worker replays the payload,
+so a retry cannot spend a second token.
 
 ## The data
 
@@ -887,7 +903,8 @@ Exports `buildUkPropertyPeriodRequestBody`, shaped like `buildSelfEmploymentPeri
 it drops empty sections, refuses `consolidatedExpenses` beside the itemised expenses, and
 rejects a body that would be entirely empty. The POST charges one token, stores a receipt
 carrying HMRC's `submissionId`, and reports failures on the `ItsaSubmissionFailure` metric T1
-created. So does the PUT, the way the self-employment amend does.
+created. So does the PUT, the way the self-employment amend does. One request carries one
+business, so one charge is one business's submission (D6).
 
 Every date in the request comes from the obligation the customer picked on screen. No period
 key, date range or quarter is computed here or anywhere else.
@@ -966,7 +983,7 @@ Proves: `npm run test:browser`; `npm run test:itsaUkPropertyPeriodBehaviour-simu
 ### T15. The business picker and the mixed-customer year end (Sonnet)
 
 Owns `web/public/hmrc/itsa/dashboard.html`, `businessDetails.html`, `obligations.html`,
-`taxCalculation.html` and `finalDeclaration.html`.
+`taxCalculation.html`, `finalDeclaration.html` and `web/public/usage.html`.
 
 Adds the business picker above the dashboard's numbered steps, so a picked business travels as
 a `businessId` and `typeOfBusiness` pair and the steps link to the page family that type names.
@@ -974,11 +991,14 @@ Groups the obligations table by business. Renders one `businessProfitAndLoss` ro
 source on the calculation page. Lists every business in `inputs.incomeSources` on the
 declaration page, with the latest period end date HMRC holds for each.
 
+Puts the year's token cost beside the picker, counted from the businesses HMRC listed, and the
+same figures on `usage.html` (D6).
+
 Runs after T14, because the dashboard's steps link to pages T14 creates.
 
 Proves: `npm run test:browser`, including a mixed-business fixture where the obligations table
-groups two businesses and the calculation page shows two profit rows; the two existing ITSA
-behaviour suites still pass against the simulator.
+groups two businesses, the calculation page shows two profit rows, and the picker names nine
+tokens for the year; the two existing ITSA behaviour suites still pass against the simulator.
 
 ### Order
 
@@ -1008,6 +1028,9 @@ other track holds that file. T14 and T15 both touch the ITSA page set, so T15 wa
 - Filing a quarterly update and a final declaration each decrement the bundle's tokens by one,
   for both income types. Filing an annual submission decrements nothing, for both income types.
   A user with no tokens gets `403` with `reason: "tokens_exhausted"` and no HMRC call happens.
+- A customer with two businesses spends nine tokens over a year, and the dashboard said nine
+  before they spent the first one.
+- An async worker retry of a quarterly update spends no second token.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
   disabled, so it sits in the document order rather than being positioned there.
 - `finalDeclaration.html` will not submit until the declaration is ticked, and shows the
@@ -1052,6 +1075,13 @@ sent. This changes T10.
 **D4. UK property income is in this phase.** UK property joins self-employment, so a customer
 with both can file a complete return. This is the substantial new work and it adds tracks T11
 to T15. Foreign property is a later surface.
+
+**D6. Metering is per business.** A customer with a sole trade and a rental files two sets of
+quarterly updates, so their year is nine tokens: four for each business plus one final
+declaration. A token is charged per submission to HMRC, and a second business genuinely doubles
+what we do. The alternative, a flat charge per tax year, would price two businesses as one.
+The pricing surface says plainly what a customer with two businesses pays, so nine tokens is
+never a surprise at the year end.
 
 **D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
 enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
