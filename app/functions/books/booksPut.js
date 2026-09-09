@@ -5,7 +5,6 @@
 
 import { createLogger } from "../../lib/logger.js";
 import {
-  extractRequest,
   extractUserFromAuthorizerContext,
   getHeader,
   parseRequestBody,
@@ -20,11 +19,19 @@ import {
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { resolveDiyaGlCorsHeaders, diyaGlPreflightResponse } from "../../lib/diyaGlCors.js";
+import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { entitlementFor } from "../../services/diyaGlEntitlement.js";
 import { listZipMemberNames, isDiyaGlPackage, NotAZipError } from "../../lib/zipMembers.js";
-import { isValidBookId, resolveOwnerPrefix, readMetadata, writeMetadata, putVersion, deleteVersion, listBooks } from "../../data/s3DiyaGlRepository.js";
+import {
+  isValidBookId,
+  resolveOwnerPrefix,
+  readMetadata,
+  writeMetadata,
+  putVersion,
+  deleteVersion,
+  listBooks,
+} from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/books/booksPut.js" });
 
@@ -181,162 +188,157 @@ async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedByte
 }
 
 export async function ingestHandler(event) {
-  if (event?.requestContext?.http?.method === "OPTIONS") {
-    return diyaGlPreflightResponse(event.headers);
-  }
-
-  const { request } = extractRequest(event);
-  const corsHeaders = resolveDiyaGlCorsHeaders(event.headers);
-
-  const user = extractUserFromAuthorizerContext(event);
-  if (!user) {
-    return http401UnauthorizedResponse({
-      request,
-      headers: corsHeaders,
-      message: "Authentication required",
-    });
-  }
-
-  const bookId = event.pathParameters?.bookId;
-  if (!isValidBookId(bookId)) {
-    return http400BadRequestResponse({
-      request,
-      headers: corsHeaders,
-      message: "invalid-book-id",
-      error: { code: "invalid-book-id" },
-    });
-  }
-
-  const body = parseRequestBody(event);
-  const fields = validatePutBody(body);
-  if (!fields) {
-    return http400BadRequestResponse({
-      request,
-      headers: corsHeaders,
-      message: "invalid-request",
-      error: { code: "invalid-request" },
-    });
-  }
-
-  const decodedBytes = Buffer.from(fields.zipBase64, "base64");
-  const maxBytes = Number(process.env.BOOKS_MAX_BYTES || 2097152);
-  if (decodedBytes.length > maxBytes) {
-    return http413PayloadTooLargeResponse({
-      request,
-      headers: corsHeaders,
-      message: "book-too-large",
-      error: { code: "book-too-large" },
-    });
-  }
-
-  try {
-    const memberNames = listZipMemberNames(decodedBytes);
-    if (!isDiyaGlPackage(memberNames)) {
-      return http422UnprocessableEntityResponse({
+  return respondWithDiyaGlCors(event, async ({ request, corsHeaders }) => {
+    const user = extractUserFromAuthorizerContext(event);
+    if (!user) {
+      return http401UnauthorizedResponse({
         request,
         headers: corsHeaders,
-        data: { message: "not-a-diya-gl-package", code: "not-a-diya-gl-package" },
-      });
-    }
-  } catch (error) {
-    if (error instanceof NotAZipError) {
-      return http422UnprocessableEntityResponse({
-        request,
-        headers: corsHeaders,
-        data: { message: "not-a-diya-gl-package", code: "not-a-diya-gl-package" },
-      });
-    }
-    throw error;
-  }
-
-  try {
-    await initializeSalt();
-    const entitlement = await entitlementFor(user.sub);
-    if (!entitlement.allowed) {
-      return http403ForbiddenResponse({
-        request,
-        headers: corsHeaders,
-        message: "subscription-required",
-        error: { code: "subscription-required" },
+        message: "Authentication required",
       });
     }
 
-    const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
-    let existing = await readMetadata(ownerPrefix, bookId);
+    const bookId = event.pathParameters?.bookId;
+    if (!isValidBookId(bookId)) {
+      return http400BadRequestResponse({
+        request,
+        headers: corsHeaders,
+        message: "invalid-book-id",
+        error: { code: "invalid-book-id" },
+      });
+    }
 
-    if (!existing) {
-      const currentBooks = await listBooks(ownerPrefix);
-      const maxPerUser = Number(process.env.BOOKS_MAX_PER_USER || 20);
-      if (currentBooks.length >= maxPerUser) {
+    const body = parseRequestBody(event);
+    const fields = validatePutBody(body);
+    if (!fields) {
+      return http400BadRequestResponse({
+        request,
+        headers: corsHeaders,
+        message: "invalid-request",
+        error: { code: "invalid-request" },
+      });
+    }
+
+    const decodedBytes = Buffer.from(fields.zipBase64, "base64");
+    const maxBytes = Number(process.env.BOOKS_MAX_BYTES || 2097152);
+    if (decodedBytes.length > maxBytes) {
+      return http413PayloadTooLargeResponse({
+        request,
+        headers: corsHeaders,
+        message: "book-too-large",
+        error: { code: "book-too-large" },
+      });
+    }
+
+    try {
+      const memberNames = listZipMemberNames(decodedBytes);
+      if (!isDiyaGlPackage(memberNames)) {
+        return http422UnprocessableEntityResponse({
+          request,
+          headers: corsHeaders,
+          data: { message: "not-a-diya-gl-package", code: "not-a-diya-gl-package" },
+        });
+      }
+    } catch (error) {
+      if (error instanceof NotAZipError) {
+        return http422UnprocessableEntityResponse({
+          request,
+          headers: corsHeaders,
+          data: { message: "not-a-diya-gl-package", code: "not-a-diya-gl-package" },
+        });
+      }
+      throw error;
+    }
+
+    try {
+      await initializeSalt();
+      const entitlement = await entitlementFor(user.sub);
+      if (!entitlement.allowed) {
         return http403ForbiddenResponse({
           request,
           headers: corsHeaders,
-          message: "book-limit-reached",
-          error: { code: "book-limit-reached" },
+          message: "subscription-required",
+          error: { code: "subscription-required" },
         });
       }
-    }
 
-    const ifMatchHeader = getHeader(event.headers, "if-match");
-    if (existing) {
-      if (ifMatchHeader !== existing.metadata.latestETag) {
+      const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
+      let existing = await readMetadata(ownerPrefix, bookId);
+
+      if (!existing) {
+        const currentBooks = await listBooks(ownerPrefix);
+        const maxPerUser = Number(process.env.BOOKS_MAX_PER_USER || 20);
+        if (currentBooks.length >= maxPerUser) {
+          return http403ForbiddenResponse({
+            request,
+            headers: corsHeaders,
+            message: "book-limit-reached",
+            error: { code: "book-limit-reached" },
+          });
+        }
+      }
+
+      const ifMatchHeader = getHeader(event.headers, "if-match");
+      if (existing) {
+        if (ifMatchHeader !== existing.metadata.latestETag) {
+          return http412PreconditionFailedResponse({
+            request,
+            headers: corsHeaders,
+            message: "etag-mismatch",
+            error: {
+              code: "etag-mismatch",
+              latestETag: existing.metadata.latestETag,
+              latestVersion: existing.metadata.latestVersion,
+            },
+          });
+        }
+      } else if (ifMatchHeader) {
         return http412PreconditionFailedResponse({
           request,
           headers: corsHeaders,
           message: "etag-mismatch",
-          error: {
-            code: "etag-mismatch",
-            latestETag: existing.metadata.latestETag,
-            latestVersion: existing.metadata.latestVersion,
-          },
+          error: { code: "etag-mismatch" },
         });
       }
-    } else if (ifMatchHeader) {
-      return http412PreconditionFailedResponse({
-        request,
-        headers: corsHeaders,
-        message: "etag-mismatch",
-        error: { code: "etag-mismatch" },
-      });
-    }
 
-    const versionsKept = Number(process.env.BOOKS_VERSIONS_KEPT || 30);
-    let metadata;
-    try {
-      metadata = await attemptWrite({ ownerPrefix, bookId, existing, fields, decodedBytes, entitlement, versionsKept });
-    } catch (error) {
-      if (!(error instanceof WriteRaceError)) {
-        throw error;
-      }
-      logger.warn({ message: "Write race detected, retrying once", bookId, error: error.message });
-      existing = await readMetadata(ownerPrefix, bookId);
+      const versionsKept = Number(process.env.BOOKS_VERSIONS_KEPT || 30);
+      let metadata;
       try {
         metadata = await attemptWrite({ ownerPrefix, bookId, existing, fields, decodedBytes, entitlement, versionsKept });
-      } catch (retryError) {
-        if (retryError instanceof WriteRaceError) {
-          return http409ConflictResponse({
-            request,
-            headers: corsHeaders,
-            message: "write-conflict",
-            error: { code: "write-conflict" },
-          });
+      } catch (error) {
+        if (!(error instanceof WriteRaceError)) {
+          throw error;
         }
-        throw retryError;
+        logger.warn({ message: "Write race detected, retrying once", bookId, error: error.message });
+        existing = await readMetadata(ownerPrefix, bookId);
+        try {
+          metadata = await attemptWrite({ ownerPrefix, bookId, existing, fields, decodedBytes, entitlement, versionsKept });
+        } catch (retryError) {
+          if (retryError instanceof WriteRaceError) {
+            return http409ConflictResponse({
+              request,
+              headers: corsHeaders,
+              message: "write-conflict",
+              error: { code: "write-conflict" },
+            });
+          }
+          throw retryError;
+        }
       }
-    }
 
-    return http200OkResponse({
-      request,
-      headers: { ...corsHeaders, ETag: `"${metadata.latestETag}"` },
-      data: { metadata },
-    });
-  } catch (error) {
-    logger.error({ message: "Failed to store book", error: error.message, stack: error.stack, bookId });
-    return http500ServerErrorResponse({
-      request,
-      headers: corsHeaders,
-      message: "storage-error",
-      error: { code: "storage-error" },
-    });
-  }
+      return http200OkResponse({
+        request,
+        headers: { ...corsHeaders, ETag: `"${metadata.latestETag}"` },
+        data: { metadata },
+      });
+    } catch (error) {
+      logger.error({ message: "Failed to store book", error: error.message, stack: error.stack, bookId });
+      return http500ServerErrorResponse({
+        request,
+        headers: corsHeaders,
+        message: "storage-error",
+        error: { code: "storage-error" },
+      });
+    }
+  });
 }

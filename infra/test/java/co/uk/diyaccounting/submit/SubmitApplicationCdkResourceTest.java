@@ -335,7 +335,10 @@ class SubmitApplicationCdkResourceTest {
                         Match.objectLike(Map.of("Name", "RateLimitRule")),
                         Match.objectLike(Map.of("Name", "AWSManagedRulesKnownBadInputsRuleSet")),
                         Match.objectLike(Map.of("Name", "AWSManagedRulesCommonRuleSet")),
-                        Match.objectLike(Map.of("Name", "WafManualBlock")))))));
+                        Match.objectLike(Map.of("Name", "WafManualBlock")),
+                        Match.objectLike(Map.of("Name", "OversizedBodyOutsideBookWrite")))))));
+
+        assertOversizedBodyBlockedExceptOnABookWrite(edgeStackTemplate);
 
         edgeStackTemplate.resourceCountIs("AWS::WAFv2::RegexPatternSet", 1);
         edgeStackTemplate.hasResourceProperties(
@@ -430,6 +433,78 @@ class SubmitApplicationCdkResourceTest {
         org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_BOOKS_CLIENT_ID"));
         org.junit.jupiter.api.Assertions.assertTrue(
                 thrown.getMessage().contains("spreadsheets-books-app-client-id"));
+    }
+
+    /**
+     * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
+     * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The
+     * fix counts that managed rule and blocks an oversized body from our own rule instead, on every
+     * request except a PUT to a book route. This pins both halves: dropping either one silently
+     * restores the block, or drops the size protection from routes that still need it.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertOversizedBodyBlockedExceptOnABookWrite(Template template) {
+        var webAcl = (Map<String, Object>) template.findResources("AWS::WAFv2::WebACL").values().stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a web ACL"));
+        var rules = (List<Map<String, Object>>) ((Map<String, Object>) webAcl.get("Properties")).get("Rules");
+
+        // The rule's 8192 is CloudFront's default body inspection size. Raising it through
+        // AssociationConfig would make the two disagree, so the size a request is judged on would
+        // no longer be the size WAF was handed.
+        org.junit.jupiter.api.Assertions.assertFalse(
+                ((Map<String, Object>) webAcl.get("Properties")).containsKey("AssociationConfig"),
+                "expected no raised body inspection limit alongside the 8192 threshold");
+
+        var commonRuleSet = rules.stream()
+                .filter(rule -> "AWSManagedRulesCommonRuleSet".equals(rule.get("Name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected the common rule set"));
+        var managedGroup = (Map<String, Object>)
+                ((Map<String, Object>) commonRuleSet.get("Statement")).get("ManagedRuleGroupStatement");
+        var overrides = (List<Map<String, Object>>) managedGroup.get("RuleActionOverrides");
+        var sizeOverride = overrides.stream()
+                .filter(override -> "SizeRestrictions_BODY".equals(override.get("Name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected SizeRestrictions_BODY to carry an action override"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                ((Map<String, Object>) sizeOverride.get("ActionToUse")).containsKey("Count"),
+                "expected SizeRestrictions_BODY to count rather than block");
+
+        var oversizedBody = rules.stream()
+                .filter(rule -> "OversizedBodyOutsideBookWrite".equals(rule.get("Name")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected the oversized-body rule"));
+        org.junit.jupiter.api.Assertions.assertEquals(5, oversizedBody.get("Priority"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                ((Map<String, Object>) oversizedBody.get("Action")).containsKey("Block"),
+                "expected the oversized-body rule to block");
+
+        var conditions = (List<Map<String, Object>>)
+                ((Map<String, Object>) ((Map<String, Object>) oversizedBody.get("Statement")).get("AndStatement"))
+                        .get("Statements");
+        org.junit.jupiter.api.Assertions.assertEquals(2, conditions.size());
+
+        var sizeConstraint = (Map<String, Object>) conditions.get(0).get("SizeConstraintStatement");
+        org.junit.jupiter.api.Assertions.assertEquals("GT", sizeConstraint.get("ComparisonOperator"));
+        org.junit.jupiter.api.Assertions.assertEquals(8192, ((Number) sizeConstraint.get("Size")).intValue());
+        var body = (Map<String, Object>)
+                ((Map<String, Object>) sizeConstraint.get("FieldToMatch")).get("Body");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "MATCH",
+                body.get("OversizeHandling"),
+                "a body larger than the inspection limit must match, which is what the managed rule caught");
+
+        var exemption = (Map<String, Object>) ((Map<String, Object>) conditions.get(1).get("NotStatement"))
+                .get("Statement");
+        var exemptionParts =
+                (List<Map<String, Object>>) ((Map<String, Object>) exemption.get("AndStatement")).get("Statements");
+        var searchStrings = exemptionParts.stream()
+                .map(part -> (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
+                .toList();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                searchStrings.contains("/api/v1/books") && searchStrings.contains("PUT"),
+                "the exemption must be a PUT to a book route and nothing wider, was " + searchStrings);
     }
 
     /**

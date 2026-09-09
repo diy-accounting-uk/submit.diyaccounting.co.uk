@@ -357,8 +357,19 @@ public class EdgeStack extends Stack {
                                         .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
                                                 .name("AWSManagedRulesCommonRuleSet")
                                                 .vendorName("AWS")
-                                                .ruleActionOverrides(
-                                                        List.of()) // Empty override list to prevent conflicts
+                                                // SizeRestrictions_BODY counts instead of blocking, because it
+                                                // blocks any body CloudFront cannot fully inspect - 8KB - and a
+                                                // DIYA-GL book write carries a zip up to BOOKS_MAX_BYTES (2MB).
+                                                // Every other route keeps the same 8KB block through
+                                                // OversizedBodyOutsideBookWrite below; a book write's real size
+                                                // limit is booksPut.js, the only place that sees the whole body.
+                                                .ruleActionOverrides(List.of(CfnWebACL.RuleActionOverrideProperty.builder()
+                                                        .name("SizeRestrictions_BODY")
+                                                        .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                .count(CfnWebACL.CountActionProperty.builder()
+                                                                        .build())
+                                                                .build())
+                                                        .build()))
                                                 .build())
                                         .build())
                                 .overrideAction(CfnWebACL.OverrideActionProperty.builder()
@@ -402,6 +413,68 @@ public class EdgeStack extends Stack {
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
                                         .metricName("WafManualBlock")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
+                        // Replaces SizeRestrictions_BODY everywhere except a DIYA-GL book write.
+                        // oversizeHandling MATCH means "the body is larger than CloudFront let WAF
+                        // see", which is the same 8KB the managed rule enforced, so no other route
+                        // loses that protection. PUT /api/v1/books/* is the one request shape that
+                        // legitimately carries megabytes, and it is authenticated by the books JWT
+                        // authoriser before booksPut.js checks the decoded size against
+                        // BOOKS_MAX_BYTES.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("OversizedBodyOutsideBookWrite")
+                                .priority(5)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                .statements(List.of(
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .sizeConstraintStatement(
+                                                                        CfnWebACL.SizeConstraintStatementProperty
+                                                                                .builder()
+                                                                                .fieldToMatch(
+                                                                                        CfnWebACL.FieldToMatchProperty
+                                                                                                .builder()
+                                                                                                .body(
+                                                                                                        CfnWebACL.BodyProperty
+                                                                                                                .builder()
+                                                                                                                .oversizeHandling(
+                                                                                                                        "MATCH")
+                                                                                                                .build())
+                                                                                                .build())
+                                                                                .comparisonOperator("GT")
+                                                                                .size(8192L)
+                                                                                .textTransformations(List.of(
+                                                                                        CfnWebACL.TextTransformationProperty
+                                                                                                .builder()
+                                                                                                .priority(0)
+                                                                                                .type("NONE")
+                                                                                                .build()))
+                                                                                .build())
+                                                                .build(),
+                                                        CfnWebACL.StatementProperty.builder()
+                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                        .statement(CfnWebACL.StatementProperty.builder()
+                                                                                .andStatement(
+                                                                                        CfnWebACL.AndStatementProperty
+                                                                                                .builder()
+                                                                                                .statements(List.of(
+                                                                                                        bookRouteUriPrefixStatement(),
+                                                                                                        putMethodStatement()))
+                                                                                                .build())
+                                                                                .build())
+                                                                        .build())
+                                                                .build()))
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("OversizedBodyOutsideBookWrite")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build()))
@@ -1060,6 +1133,44 @@ public class EdgeStack extends Stack {
                 .originRequestPolicy(originRequestPolicy)
                 .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
                 .responseHeadersPolicy(responseHeadersPolicy)
+                .build();
+    }
+
+    /** Matches every DIYA-GL storage route: /api/v1/books, /api/v1/books/{bookId} and its versions. */
+    private static CfnWebACL.StatementProperty bookRouteUriPrefixStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .uriPath(Map.of())
+                                .build())
+                        .positionalConstraint("STARTS_WITH")
+                        .searchString("/api/v1/books")
+                        .textTransformations(List.of(
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(0)
+                                        .type("URL_DECODE")
+                                        .build(),
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(1)
+                                        .type("LOWERCASE")
+                                        .build()))
+                        .build())
+                .build();
+    }
+
+    private static CfnWebACL.StatementProperty putMethodStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .method(Map.of())
+                                .build())
+                        .positionalConstraint("EXACTLY")
+                        .searchString("PUT")
+                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
+                                .priority(0)
+                                .type("NONE")
+                                .build()))
+                        .build())
                 .build();
     }
 
