@@ -132,6 +132,15 @@ the cost export only (B65); the test run passed on its re-run.
 
 ## Ready: operator
 
+- [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
+  first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
+  answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
+  attempting to invoke". On the HMRC Developer Hub, open the sandbox application with client id
+  `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` and subscribe it to Self Assessment Test Support, Obligations,
+  Self Employment Business, Business Source Adjustable Summary and Individual Calculations.
+  Only the Developer Hub account holder can do this; no stored credential in `.env*` or Secrets
+  Manager reaches it. Unblocks B11.T7's run. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
+  run record. **Owner**: Operator. **Model**: none.
 - [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
   questions": whether an annual submission costs a token (the plan assumes not, so a year is
   five tokens), whether the site displays the calculation or signposts HMRC (assumes

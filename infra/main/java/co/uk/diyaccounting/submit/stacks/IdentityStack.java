@@ -453,10 +453,14 @@ public class IdentityStack extends Stack {
         return urls;
     }
 
-    // The four DIYA-GL pages, one per spreadsheets product, all served under /books/ on the
-    // spreadsheets site. Cognito requires an exact match per callback/logout URL, so both the
-    // /books/ landing path and each page are listed.
+    // The four DIYA-GL pages, one per spreadsheets product, served under /books/ and /diya-gl/
+    // on the spreadsheets site. Cognito requires an exact match per callback/logout URL, so
+    // every landing path and page is listed. The spreadsheets site redirects /books/ to
+    // /diya-gl/, and a redirect only completes if Cognito already holds the destination, so
+    // both prefixes stay registered until their old pages stop being linked.
     private static final List<String> BOOKS_PAGE_NAMES = List.of("bst.html", "se.html", "taxi.html", "ltd.html");
+
+    private static final List<String> DIYA_GL_PATH_PREFIXES = List.of("/books/", "/diya-gl/");
 
     private static List<String> buildBooksUrls(String envName) {
         // prod also lists the ci-spreadsheets host so the spreadsheets repository's ci
@@ -466,9 +470,11 @@ public class IdentityStack extends Stack {
                 : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
         var urls = new java.util.ArrayList<String>();
         for (var host : hosts) {
-            urls.add(host + "/books/");
-            for (var page : BOOKS_PAGE_NAMES) {
-                urls.add(host + "/books/" + page);
+            for (var prefix : DIYA_GL_PATH_PREFIXES) {
+                urls.add(host + prefix);
+                for (var page : BOOKS_PAGE_NAMES) {
+                    urls.add(host + prefix + page);
+                }
             }
         }
         return urls;
