@@ -28,18 +28,45 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Batch 15 is PR #160 (`claude/b15-board`, last push 2026-09-09 16:47 UTC): ITSA phase 2's T1
-to T6 plus the health alarm's group composites, green on the merged batch (`npm test` 2677,
-`./mvnw clean verify` 202) and on the branch's second ci deploy 34378922928 (every stack up,
-every behaviour probe passed; environment deploy 34378922544, test 34378922156, CodeQL
-34378926108 green). The PR is the operator's to merge. T7 (the sandbox proof from a ci set)
-and T8 to T10 wait on the operator's word. Batch 14 is on prod as prod-4600d25; its two
-environment deploys of the day failed at the cost export (B65). No agent runs. The operator's
-standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in flight"
-without their word.
+PR #160 (batch 15, ITSA phase 2 T1 to T6 and the health alarm's group composites) merged to
+main at 15f3483c, 2026-09-09 17:49 UTC. The merge's environment deploy 34385269212 and deploy
+34385269183 (which retires prod-4600d25) are running; the board of their landing reads the
+cost export (B65, expected to fail again) and the new prod set. Prod's afternoon opened four
+alarm issues on prod-4600d25 (#161 to #164): three are one cause, B67, and the fourth is a
+customer's 400 that the alarm should not count, B30r. T7 (the sandbox proof) and T8 to T10
+wait on the operator's word. No agent runs. The operator's standing instruction (renewed
+2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
 
+- [ ] **B67. The account stack's Lambdas cannot read the salt secret.** CloudTrail on prod:
+  `interest-post` was denied `secretsmanager:GetSecretValue` on `prod/submit/user-sub-hash-salt`
+  at 14:04 and 14:07 UTC on 2026-09-09 and answered `500` to two `POST /api/v1/interest`
+  (issues #163 `prod-app-api-5xx` and #162 `prod-app-account-stack-health`), and `pass-post`,
+  `pass-admin-post` and `pass-get` have been denied the same read on every prod set since at
+  least prod-c6d0ed3 (they warn "Email hash secret not available" and carry on); every one of
+  these denials also fires `prod-env-cis-unauthorized-api-calls` (#161), which is the filter
+  doing its job. In `AccountStack.java` the salt grant goes to `bundleGet` and the async pairs
+  (lines ~284, ~364, ~471) but not to these four; grant it where the others get it, and make
+  `passPost.js`'s "not available" path throw rather than warn, since a pass hashed without the
+  salt is a wrong pass. Proof: no `GetSecretValue` denial in CloudTrail after the deploy and
+  `POST /api/v1/interest` answering 2xx. Closes #161, #162, #163. **Source**: CloudTrail
+  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
+  was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
+  opened the issue anyway, so the read is used for the issue's detail. Grant `DescribeAlarms`
+  (resource `*`) to that role in `OpsStack.java` beside its other reads. **Source**: CloudTrail
+  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B30r. A customer's 400 counts as a VAT submission failure.** Issue #164
+  (`prod-env-hmrc-submission-failure`, 14:38 UTC on 2026-09-09): `hmrc-vat-return-post`
+  answered `400` "No matching obligation found for date range" twice (14:37, 14:39) and the
+  same customer's return was accepted at 14:40 (202, 202, 200). Nobody wrote in; no reply is
+  owed. The `VatSubmissionFailure` metric counts a period the customer chose wrong as a
+  failure, so the alarm pages on a customer correcting a date. In `hmrcVatReturnPost.js`,
+  emit the failure metric only for what is ours or HMRC's (a thrown error, an HMRC 5xx, a
+  network failure), not for a validation 400 the page shows the customer; keep the
+  `vat-return-failed` activity event for the funnel. #164 closes as understood.
+  **Source**: issue #164. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B66. The nightly S3 backup of the prod books bucket fails.** `verify-backups.yml`'s
   scheduled runs failed on 2026-09-08 (34218296772) and 2026-09-09 (34343588837): the AWS
   Backup job for `arn:aws:s3:::prod-env-books-972912397388` at 02:00 UTC fails both nights
