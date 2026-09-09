@@ -61,22 +61,34 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
 
 ## Ready: Claude Code
 
-- [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
-  repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
-  and `www`. Establish per repository which author and committer identities appear in history,
-  whether anything is signed, which co-author trailer forms are in use, and which token each
-  workflow, Lambda and script writes to GitHub under. Then define the identity classes a reader
-  and a policy can tell apart, at least human user, Claude Code, and GitHub Actions initiation,
-  splitting further only where something downstream would treat the two differently, and
-  recommend what each should present and what proves the claim rather than asserting it. This
-  gates `PLAN_REPOSITORY_AUTOMATION.md`'s auto-merge policies, which all rest on commit
-  authorship being trustworthy: every one of the six repositories currently authors commits as
-  `antonyccartwright@gmail.com` while the working identity is `antony@polycode.co.uk`, and
-  `_developers/archive/PLAN_FLAGGED.md` lists author identity churn among the signals behind the
-  May 2026 suspension. The audit lands as `REPORT_IDENTITY_AUDIT.md`; changing anything is a
-  separate row once the operator picks from its recommendations. `homebrew-diya-gl` is missing
-  from the workspace `CLAUDE.md` repository table. **Source**: operator, 2026-09-09;
-  `PLAN_REPOSITORY_AUTOMATION.md`. **Owner**: Claude Code, then Operator. **Model**: Opus.
+- [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
+  posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
+  form not submitted, and three parse failures. Its configuration reads as a working
+  Claude-on-Bedrock agent that triages an alarm issue and opens a draft PR when its answer holds
+  a diff, and it has never once done that. `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it,
+  so the plan rests on something unproven. The operator is considering **LangGraph** as the
+  orchestrator, because they need to learn it for other work and the learning would pay twice.
+  So this row is a design decision before it is a fix: compare finishing the Bedrock path as
+  built, rebuilding the orchestration on LangGraph, and any third option, on what each costs to
+  run, what it takes to keep working, and whether the marketplace and use-case-form blockers go
+  away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
+  workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
+  **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
+- [ ] **B81. `homebrew-diya-gl` self-commits to `main` every hour.** An hourly cron pushes to
+  `main` in that repository, about 720 runs a month against 17 commits of real content, and the
+  repository has no ruleset at all, so nothing stands between the cron and the default branch.
+  It is also missing from the workspace `CLAUDE.md` repository table, which is why nobody has
+  looked at it. Work out what the cron is for and whether it needs to run at all, cut the
+  schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
+  The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** Four runs, four
+  failures, across `main`, `claude/workflow-currency` and now `claude/b16-board`, so it fails on
+  every branch and predates this batch. It runs on every push, so it is a red check on every PR
+  that teaches everyone to ignore a red check. Read the run log, fix it or delete the workflow if
+  nothing uses GitHub's Copilot coding agent here; `security-review.yml` assigns an OWASP issue to
+  that agent with its weekly cron commented out, so decide both together. **Source**: runs on
+  `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
   never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
   on the books routes across three hours matched zero records, and
@@ -100,16 +112,6 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
   reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
   **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
-  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
-  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
-  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
-  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
-  secret only when a pass carries an email restriction, so the failure surfaces on those passes
-  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
-  the secret material is an AWS write and a decision about the value, so the operator settles it,
-  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
-  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
 - [ ] **B74. A missing bundle costs the deploy 25 minutes.** `generatePassActivityBehaviour`
   waits on `#generatePassBtn` until Playwright's timeout rather than failing when the enabling
   bundle never arrives, so each test takes 5.8 minutes to fail and its retry held run
@@ -124,6 +126,64 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B82. The global git config will break signatures the day signing is turned on.**
+  `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
+  rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
+  replays a recorded conflict resolution silently while it happens. `REPORT_IDENTITY_AUDIT.md`
+  ranks SSH commit signing as the prerequisite for every auto-merge policy in
+  `PLAN_REPOSITORY_AUTOMATION.md`, and its check is `verification.verified` on each commit of a
+  PR, so this setting quietly defeats the thing everything else rests on. Settle what the local
+  git config should be before signing is enabled, not after: whether pulls merge or rebase here,
+  whether `rerere` stays on, and what a sub-agent's worktree inherits. Write the answer where a
+  future session reads it rather than leaving it in one machine's global config. **Source**:
+  `REPORT_IDENTITY_AUDIT.md`; `git config --global` reads `pull.rebase=true`,
+  `rerere.enabled=true`, with no `commit.gpgsign` and no `gpg.format` set. **Owner**: Claude Code
+  to propose, Operator to choose. **Model**: Sonnet.
+- [ ] **B77. The public support form files GitHub issues under the operator's name.**
+  `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
+  it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
+  the operator's identity. That is two problems at once: an unauthenticated write to a public
+  surface, and a provenance failure that breaks the rule a human-raised ticket needs a human to
+  close, because the author field cannot say who wrote it. Give the path its own identity so the
+  issue is not attributed to a person, carry the submitter's own words as quoted content rather
+  than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
+  authentication. Say in the issue body that it came from the public form. **Source**:
+  `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B79. The alarm Lambda's comments carry no disclosure.** 386 of the 426 issue comments
+  attributed to `antonycc` were written by the alarm-to-issue Lambda. `buildIssueBody()` adds a
+  footer saying the pipeline wrote it; `buildCommentBody()` omits it, so every comment reads as
+  the operator's own words. Against the stated goal of being transparent about what is human
+  written, templated or model generated, this is the largest single gap in the repository. Add
+  the footer to `buildCommentBody()` and to every other agent comment path, as one shared helper
+  rather than a per-caller string. A machine identity for the path would fix the disclosure and
+  the attribution together, so land this with B77's identity work if they meet. **Source**:
+  `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B80. Four identities in the history are not ours.** `noreply@anthropic.com` authored 20
+  commits on the spreadsheets `main`, and it resolves to a third-party GitHub account named
+  `claude`; `action@github.com` authored 27 in submit and resolves to `actions-user`, a
+  stranger's account; and two employer addresses, `antony.cartwright@awaze.com` and
+  `antony.cartwright@westfieldhealth.com`, appear across archive, spreadsheets, www and submit.
+  History is not rewritten here, so this is about stopping the flow and recording what is there:
+  find what still writes each address, fix it, and say in `REPORT_IDENTITY_AUDIT.md` what remains
+  in history and why it stays. The spreadsheets commits came from a sub-agent setting the
+  identity inline with nothing to prevent a repeat, so the fix is a guard, not a one-off cleanup.
+  **Source**: `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
+  repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
+  and `www`. Establish per repository which author and committer identities appear in history,
+  whether anything is signed, which co-author trailer forms are in use, and which token each
+  workflow, Lambda and script writes to GitHub under. Then define the identity classes a reader
+  and a policy can tell apart, at least human user, Claude Code, and GitHub Actions initiation,
+  splitting further only where something downstream would treat the two differently, and
+  recommend what each should present and what proves the claim rather than asserting it. This
+  gates `PLAN_REPOSITORY_AUTOMATION.md`'s auto-merge policies, which all rest on commit
+  authorship being trustworthy: every one of the six repositories currently authors commits as
+  `antonyccartwright@gmail.com` while the working identity is `antony@polycode.co.uk`, and
+  `_developers/archive/PLAN_FLAGGED.md` lists author identity churn among the signals behind the
+  May 2026 suspension. The audit lands as `REPORT_IDENTITY_AUDIT.md`; changing anything is a
+  separate row once the operator picks from its recommendations. `homebrew-diya-gl` is missing
+  from the workspace `CLAUDE.md` repository table. **Source**: operator, 2026-09-09;
+  `PLAN_REPOSITORY_AUTOMATION.md`. **Owner**: Claude Code, then Operator. **Model**: Opus.
 - [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
   `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
   `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
@@ -193,6 +253,16 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 ## Blocked
 
+- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
+  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
+  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
+  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
+  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
+  secret only when a pass carries an email restriction, so the failure surfaces on those passes
+  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
+  the secret material is an AWS write and a decision about the value, so the operator settles it,
+  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
+  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
 - [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
   Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
   so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
