@@ -29,7 +29,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 Nothing. Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is
 on prod as prod-15f3483 since 2026-09-09 18:29 UTC. Of the merge's runs, the environment
-deploy failed at the cost export only (B65); the test run passed on its re-run. T7 (the sandbox proof) and T8 to T10 wait on the operator's word. The
+deploy failed at the cost export only (B65); the test run passed on its re-run. T7 to T10 are
+B11.T7, B11.T9 and B11.T10 below, and T8 is the spreadsheets repository's own row. The
 operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
 flight" without their word.
 
@@ -100,20 +101,17 @@ flight" without their word.
   understand (grep `last-known-good-deployment` in `.github/workflows/` and `scripts/` for
   every reader and make them agree), and let the sweep run on. **Source**: run 34324345123.
   **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The design is
-  `PLAN_ITSA_PHASE_2.md` on main: ten tracks, the four endpoint tracks holding the CDK and
-  server spine one at a time (T1 the quarterly update's token charge and receipt, then T2 the
-  annual submission, T3 the final-declaration obligation and ITSA status, T4 the adjustable
-  summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
-  proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
-  DIYA-GL-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
-  are PR #160 (`claude/b15-board`); T7 the sandbox proof (needs a ci set and a probe-test
-  dispatch per ITSA suite), then T8 to T10, wait on the operator's word
-  (stabilising, 2026-09-09 07:40 UTC), under the plan's stated assumptions until O30 answers
-  otherwise. ITSA stays behind the environments gate on prod by the operator's decision of
-  2026-09-09. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
-  mapping.
+- [ ] **B11.T7. ITSA phase 2: the sandbox proof.** `PLAN_ITSA_PHASE_2.md` T7, after T1 to T6
+  which are on prod in prod-15f3483. Owns `scripts/itsa-sandbox-year.js` and
+  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`: file a whole tax year against the sandbox with
+  one test user (four quarterly updates, an annual submission, a triggered and adjusted
+  summary, an `intent-to-finalise` calculation, a final declaration), using
+  `mtd-sa-test-support-api/1.0` to create the business and set the ITSA status and its
+  vendor-state checkpoints to reset between runs, then correct the simulator scenarios against
+  what HMRC returned. Needs a ci set standing and a `probe-test.yml` dispatch per ITSA suite.
+  Proof: a `204` from the final declaration and the fraud header validator clean on the same
+  header set. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B17b.1. Enable the three VAT read pages on prod.** The operator examined liabilities,
   payments and penalties on ci on 2026-09-09 and they read right: add `prod` to the three
   activities' environments in `web/public/submit.catalogue.toml` (they stay on every bundle),
@@ -227,6 +225,17 @@ flight" without their word.
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 ## Blocked
 
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
+  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
+  package, and an import control on `annualSubmission.html` that fills the form from a book.
+  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
+  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
+  and on `PLAN_SUBMISSION_MCP.md` M1.
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. **Source**: BACKLOG 11;
+  `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code, then Operator. **Model**: Haiku.
+  Blocked on B11.T7.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
