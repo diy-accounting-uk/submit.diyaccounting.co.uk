@@ -31,6 +31,11 @@ Both print at the end of the run and are written into the transcript.
   This writes `hmrc-test-user.json` (`userId`, `password`, `nino`) at the repo root. Point
   `ITSA_SANDBOX_TEST_USER_FILE` at it directly, or reuse an existing test user file that has
   the same three fields.
+- The sandbox application (client id ending `v4tV`) subscribed, on the HMRC Developer Hub, to
+  every API this script calls: Self Assessment Test Support, Obligations, Self Employment
+  Business, Business Source Adjustable Summary, and Individual Calculations, alongside the
+  Business Details subscription the phase 1 spike already proved. Only the Developer Hub
+  account holder can add a subscription; a script cannot.
 
 ## The command
 
@@ -117,3 +122,20 @@ Two more choices are this script's own test data, not the plan's:
 - The quarterly income and expense figures are fixed fixtures (`buildQuarterlyTestFigures`),
   turnover and a single `consolidatedExpenses` total rising slightly each quarter. They exist to
   give HMRC valid numbers, not to model a particular trader.
+
+## Run record
+
+The first real run against the sandbox, with a freshly created `mtd-income-tax` test user,
+reached the first live call and stopped there:
+
+```
+DELETE .../individuals/self-assessment-test-support/vendor-state?nino=... -> 403
+{"code":"RESOURCE_FORBIDDEN","message":"The application is not subscribed to the API which it is attempting to invoke"}
+```
+
+The application (client id ending `v4tV`) is not subscribed, on the Developer Hub, to the Self
+Assessment Test Support API. The phase 1 spike only proved Business Details and the fraud
+header validator; every other API this script calls - Self Assessment Test Support, Obligations,
+Self Employment Business, Business Source Adjustable Summary, Individual Calculations - is
+untested against the sandbox and may need the same subscription added. The Developer Hub account
+holder needs to add these subscriptions before a run can get past the first reset call.

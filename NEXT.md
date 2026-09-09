@@ -79,22 +79,19 @@ the cost export only (B65); the test run passed on its re-run.
 
 - [ ] **B11.T7. ITSA phase 2: the sandbox proof.** `PLAN_ITSA_PHASE_2.md` T7, after T1 to T6
   which are on prod in prod-15f3483. Owns `scripts/itsa-sandbox-year.js` and
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`: file a whole tax year against the sandbox with
-  one test user (four quarterly updates, an annual submission, a triggered and adjusted
-  summary, an `intent-to-finalise` calculation, a final declaration), using
-  `mtd-sa-test-support-api/1.0` to create the business and set the ITSA status and its
-  vendor-state checkpoints to reset between runs, then correct the simulator scenarios against
-  what HMRC returned. The script and the runbook are on `claude/b16-board`; running it needs no
-  ci set, because it drives the HMRC sandbox directly the way the phase 1 spike did. What
-  remains is one run:
+  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`. Blocked on the Developer Hub: the sandbox
+  application (client id ending `v4tV`) is not subscribed to the Self Assessment Test Support
+  API, so the first live call (`DELETE vendor-state`) answers `403 RESOURCE_FORBIDDEN`. Only
+  the Developer Hub account holder can add a subscription. Once Self Assessment Test Support,
+  Obligations, Self Employment Business, Business Source Adjustable Summary and Individual
+  Calculations are all subscribed (Business Details already is, per the phase 1 spike), rerun
   `ITSA_SANDBOX_TEST_USER_FILE=./hmrc-test-user.json ITSA_SANDBOX_TAX_YEAR=2023-24
-  scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js`, which needs an SSO session for
-  submit-ci, `.env.proxy`, Playwright's browsers and a sandbox test user enrolled in
-  `mtd-income-tax` from `scripts/create-hmrc-test-user.js`. The tax year must be 2024-25 or
-  earlier. Proof: a `204` from the final declaration and the fraud header validator clean on
-  the same header set, allowing the one `gov-client-multi-factor` warning a synthetic sandbox
-  sign-in can never clear. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
-  **Model**: Sonnet.
+  scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js` and correct the simulator
+  scenarios against what HMRC returns, the way `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run
+  record describes. Proof: a `204` from the final declaration and the fraud header validator
+  clean on the same header set, allowing the one `gov-client-multi-factor` warning a synthetic
+  sandbox sign-in can never clear. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
