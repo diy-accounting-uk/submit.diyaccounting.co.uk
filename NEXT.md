@@ -31,8 +31,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 ## In flight
 
 **Batch 16 on `claude/b16-board`, PR #168.** The branch is deploying. `test` and CodeQL are
-green; `deploy environment` failed at `ci-env-BackupStack` and its fix is committed and waiting
-on the running `deploy`.
+green; `deploy environment` failed at `ci-env-BackupStack`: IAM answered 404 for
+`arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForS3Restore`. Checked against
+IAM: the S3 pair lives at the root path and the DynamoDB pair under `service-role/`, so both S3
+policies moved. The fix is committed and waiting on the running `deploy`.
 
 Merged and locally verified (`npm test` 2701 passed, `./mvnw clean verify` green), off this list
 when the branch's checks pass: B30s, B67, B68, B66, B65 (the five prod defects), B30r, B64 and
