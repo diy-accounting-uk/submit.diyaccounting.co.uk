@@ -385,3 +385,348 @@ the author, because the label is the hint and the author is the proof.
 - A social post or a public reply is labelled when a reader could take it for a person's words. A
   product announcement in the company's voice is the company's voice and needs no label. A reply
   that reads as one person answering another does.
+
+## 5. The ranked inventory
+
+83 capabilities across five domains. Each row: what it does, its axis A tier, its axis B band with
+a reliability rank, its axis C blast radius, what exists today, what it needs, and what gates it.
+`R4` on a row that works fine means nobody counts it yet.
+
+### 5.1 Dev
+
+| Capability | A | B | C | Today | Needs | Gate |
+|---|---|---|---|---|---|---|
+| Test suite on every push (`test.yml`) | A2 | B1 R1 | C1 | Runs on every branch, 11 of 11 | Nothing | None |
+| CodeQL static analysis | A1 | B1 R1 | C0 | Push, PR and weekly, 9 of 9, zero open alerts | Nothing | None |
+| Required status checks before merge | A1 | B1 R1 | C2 | The ruleset carries only "no deletion" and "no force-push" | Add `test` and CodeQL as required checks | None |
+| `Closes #N` closes the issue on merge | A1 | B1 R1 | C0 | Available, unused | A PR template carrying the line | None |
+| Delete branch on merge | A1 | B1 R1 | C0 | Off | One setting | None |
+| Dependabot version updates | A1 | B1 R1 | C0 | Monthly grouped config for three ecosystems; no PR has ever opened | Find out why none open, then let them | None |
+| Dependabot security fixes | A1 | B1 R1 | C0 | Disabled. Two alerts open, one high | One setting | None |
+| Commit signature verification | A1 | B1 R1 | C0 | Off. Every commit reads `verification.reason: "unsigned"` | A signing key on the operator's machine, then a ruleset rule | P2 rests on this |
+| Actions SHA pinning and a narrowed allow-list | A1 | B1 R1 | C1 | `allowed_actions: all`, `sha_pinning_required: false`, on a public repo | Two settings | None |
+| CODEOWNERS review routing | A1 | B1 R1 | C0 | None | One file | None |
+| Auto-merge on owner-authored commits and green checks | A1 gate, A2 check | B1 R2 | C2 | Nothing. The operator merges every PR by hand | The authorship check as a required check, plus P10's shape rules | P2, P10 |
+| Auto-merge on a verified alarm origin | A1 gate, A2 check | B1 R3 | C2 | Nothing | The origin verifier | P3, P4, P10 |
+| Alarm-triage draft PR | A3 | B2 R3 | C0 | Runs; opens a draft when the diff applies cleanly | Nothing to keep going. Widening it needs a remedy allow-list | P3 |
+| Copilot coding agent on a security-review issue | A3 | B2 R4 | C0 | `security-review.yml` exists; its weekly cron is commented out | Switch the cron on and count the outcomes | P1 for the close |
+| Automated code review on a PR | A3 | B2 R4 | C0 | `.github/copilot-instructions.md` exists; nothing runs a review automatically | A `pull_request` trigger | None |
+| Feature delivery end to end | A3 | B2 R3 | C0 to C2 | The `do-next` skill and worktree sub-agents, operator-triggered | An event trigger and a merge gate | P2, P10 |
+| Feature proposal from evidence | A3 | B3 R4 | C0 | Nothing. The optimiser (backlog 52l) is designed, not built | Three months of raw export | None, it only proposes |
+| Plan and board drafting | A3 | B2 R2 | C0 | The `board` skill, operator-triggered | A schedule and a place to post | None |
+| Release notes and tagging (`publish.yml`) | A2 | B1 R4 | C6 | Manual dispatch only | A trigger and a note template | P8 |
+| SBOM generation | A2 | B1 R4 | C0 | Failing 24 of its last 26 runs | Fix it | None |
+
+### 5.2 Ops
+
+| Capability | A | B | C | Today | Needs | Gate |
+|---|---|---|---|---|---|---|
+| Deploy on push (`deploy.yml`) | A2 | B1 R2 | C2 | Runs, 7 of 9 | Nothing | None |
+| Environment deploy | A2 | B1 R3 | C2, C3 | Runs, 4 of 9. The weakest link in the deploy chain | Find the recurring failure | None |
+| Destroy the previous deployment | A2 | B1 R2 | C2, C4 | Runs inside `deploy.yml` | Nothing | None |
+| Scheduled destroy sweep | A2 | B1 R4 | C1, C2 | Every two hours; 0 of its last 2 runs succeeded | Fix it. This is the $46.88/month leak | None |
+| Keepalive and schedule revival | A2 | B1 R4 | C1 | Weekly. Re-enables workflows and checks each schedule fired on cadence | Its first proof on the new Monday slots (backlog 47, 2026-09-14) | None |
+| Stack drift detection | A2 | B1 R4 | C1 | Weekly | Nothing | None |
+| Certificate expiry check | A2 | B1 R4 | C2 | Weekly across ci and prod | Nothing | None |
+| Backup verification | A2 | B1 R4 | C3 | Daily; 0 of its last 1 | Fix it | None |
+| Restore drill, cross-account | A2 | B1 R4 | C1 | Monthly, restores prod tables into ci and deletes them | Nothing | None |
+| Alarm to GitHub issue | A2 | B1 R2 | C6 | Runs on prod only, keyed on alarm family, honours a silence key | Its own identity (phase 1) | None |
+| Alarm to Telegram | A2 | B1 R2 | C0 | Runs for alarms, stack events, budgets and anomalies | Nothing | None |
+| Alarm silencing during a deploy | A2 | B1 R2 | C0 | An SSM key per deployment | Nothing | None |
+| Alarm triage comment | A3 | B2 R3 | C6 | Runs on `issues: [opened]`, budget-guarded, filtered and guardrailed | Nothing | None |
+| Closing a resolved alarm issue | A2 | B1 R4 | C0 | Nothing. A person closed all 50 of the closed ones | The origin verifier, then a close on OK plus a passing check | P1, P3 |
+| Auto-remediation from a fixed remedy list | A3 picks, A2 acts | B2 R4 | C2 | Nothing | A named list of remedies and the alarm families each answers | P3, P10 |
+| Roll origins to last-known-good | A2 | B1 R4 | C2 | `set-origins.yml`, dispatch only | An alarm family that triggers it | P3 |
+| Probe test every four hours | A2 | B1 R2 | C1, C2 | Runs the whole behaviour matrix, 7 of 9 | Nothing | None |
+| Compliance scan (pa11y, axe, Lighthouse, ZAP) | A2 | B1 R4 | C1 | Weekly, writes rows to the analytics lake | Nothing | None |
+| Cost export, nightly ingestion, panels | A2 | B1 R4 | C0 | FOCUS 1.2 export, an 02:45 copy, a Glue table, three views, EMF metrics | A reader. Backlog 43 is the first one | None |
+| Bedrock spend cap with an automatic IAM deny | A1 | B1 R4 | C4 | $150/month with a deny action at 100%, $5/day notify | Nothing. Never tripped | None |
+| Secret rotation | A2 in part | B1 R4 | C3, C4 | Twelve third-party secrets, none dated (backlog 53). The deploy stamps `rotated-at` only when a value changes | Rotation the platform can drive per secret | None |
+| GDPR erasure and export | A2 | B1 R4 | C3 | Three workflows, dispatch only, dry-run default, a `confirm` gate | Nothing. The gate is correct | Human by design |
+| Test user cleanup | A2 | B1 R2 | C1 | Daily, dry-run default | Nothing | None |
+| Incident write-up from an alarm and its fix | A3 | B2 R4 | C0 | Nothing | A template, with the triage comment as input | None |
+
+### 5.3 Support
+
+Inbound volume fell about 97% after 2018 (`_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`), so this
+domain is small in traffic and high in blast radius. Every row touches a customer.
+
+| Capability | A | B | C | Today | Needs | Gate |
+|---|---|---|---|---|---|---|
+| Support issue form | A1 | B1 R2 | C6 | One template, `.github/ISSUE_TEMPLATE/support.md` | Convert it to an issue form, so the fields are structured and `origin:human` lands at creation | None |
+| Triage and label an inbound support issue | A3 | B2 R4 | C6 | Nothing | An `issues: [opened]` path beside alarm-triage | P1 |
+| Identify the customer behind a failure alarm | A3 | B2 R4 | C3 | The `vat-submission-failure-alarm-user-lookup` skill, operator-triggered, read-only, no table scan | Firing from the alarm issue instead of from a person | P7 |
+| Draft a support reply into Gmail | A3 | B3 R4 | C6 | Named in `STRATEGY.md` W4. Nothing built | The mail path, the draft, and somewhere to measure acceptance | P7, P8 |
+| Send a support reply | A3 | B3 R4 | C3, C6 | Nothing | A measured acceptance rate first, then a reply class that qualifies | P7, P8, Q6 |
+| Reply on a public GitHub issue | A3 | B3 R4 | C6 | Nothing | The publication filter, and a decision on whether public replies stay the operator's | P7, P8, Q8 |
+| Reply to a YouTube comment | A3 | B3 R4 | C6 | Nothing. The `youtube.force-ssl` scope already granted for upload also covers reading and replying to comment threads | Code and a policy. No new consent | P7, P8 |
+| Detect a customer-affecting incident from support volume | A3 | B3 R4 | C2 | Nothing | Enough volume to make a signal, which today there is not | None |
+| Donor thank-yous | Human | B3 | C6 | Human, deliberately (`STRATEGY.md` W4) | Nothing | Decision |
+| Closing a support ticket | Human | B3 | C6 | Human | Nothing | P1 |
+
+### 5.4 Revenue
+
+| Capability | A | B | C | Today | Needs | Gate |
+|---|---|---|---|---|---|---|
+| Stripe catalogue sync | A3 to trigger, A2 to act | B1 R4 | C4 | The `stripe-catalogue-sync` skill, operator-triggered, test then live | A push trigger on the catalogue file | P5 |
+| Stripe webhook handling | A2 | B1 R2 | C4 | In the product, per environment | Nothing | None |
+| Subscription cancel | A2 | B1 R4 | C4 | `stripe-cancel-subscription.yml`, dispatch only | Nothing. A cancel should stay deliberate | Human by design |
+| Pass generation | A2 | B1 R2 | C1, C3 | Daily at 09:00 from `submit.passes.toml` | Nothing | None |
+| GA4 property and BigQuery sync | A2 | B1 R4 | C0 | The `ga4-property-sync` skill and `ga4-bigquery-sync.yml` | Nothing | None |
+| Google Cloud and GA4 as code | A2 | B1 R4 | C4 | Nothing. Backlog 49. Every Google change is the operator copying ids between console tabs | A tool choice, then the projects, IAM, budgets, OAuth clients, properties and streams moved into it | P5 |
+| Nightly analytics ingestion and raw export | A2 | B1 R4 | C0 | Runs. The first raw export lands 02:15 UTC on 2026-09-10 | Backlog B52x proves every field fills | None |
+| The optimiser: which lever to pull next | A2 script, B3 method | B3 R4 | C0 | Designed as backlog 52l, not built | Three months of export | None. It proposes only |
+| Reinvestment loop spend decisions | A3 | B3 R4 | C4 | Nothing. Backlog 52m | The Ads account (O23), a reserve floor from the operator, the optimiser | P5, Q5 |
+| Ads campaign management | A3 with the API, A4 through the console | B3 R4 | C4 | No account. Both earlier ones were cancelled | The account, then the API. Use A4 only until the API path is built | P5, Q5 |
+| Video capture from a scene script | A2 | B1 R3 | C1 | `video-capture.yml` against a live deployment: mp4, stills and a transcript, all as artifacts. Dispatch only | An event trigger | None |
+| Video publish to YouTube | A2, then human | B1 R3 | C6 | Works. Three VAT videos public since 2026-09-07. The operator runs the public flip | Nothing. The flip stays human | P8 |
+| Screenshots for a release | A2 | B1 R3 | C0 to C6 | The capture run already produces stills; nothing selects or publishes them | Selection and a destination | P8 |
+| Social post composition | A3 | B3 R4 | C6 | Nothing | An account, a voice, and the publication filter | P7, P8, Q7 |
+| Social post publishing | A2 given the text | B1 R4 | C6 | Nothing. No account exists on any social surface | Accounts and credentials. This is the real gap in the operator's ambition | P8, Q7 |
+| Emails-to-articles content pipeline | A3 | B2 R4 | C6 | Backlog 23. Ten article topics named from the sampled archive; nothing built | The pipeline, and the publication filter over 14 years of customer mail | P7, P8 |
+| Feature proposal from analytics | A3 | B3 R4 | C0 | Nothing | The export, then the optimiser | None |
+| HMRC listing and recognition correspondence | Human | B3 | C5 adjacent | The operator sends every email. A workflow can assemble the checklist and draft both | Nothing | P6 |
+| A pricing change | Human decides, A2 applies | B1 R4 | C4 | The catalogue is the source of truth and the sync applies it | Nothing | P5 |
+
+### 5.5 Governance itself
+
+The domain that makes the other four safe. Almost none of it exists as shared machinery, and
+several rows exist once, inside one workflow, where nothing else can reach them.
+
+| Capability | A | B | C | Today | Needs | Gate |
+|---|---|---|---|---|---|---|
+| Provenance labels applied at creation | A2 | B1 R4 | C0 | The five `origin:*` labels do not exist | The labels, and a workflow that fills the gap when a creator did not set one | None |
+| Origin verification before a close or a merge | A2 | B1 R4 | C2 | Nothing | The alarm-history re-read, and the commit authorship check | P1, P2, P3 |
+| The publication filter as shared infrastructure | A2 | B1 R2 | C6 | Exists inside `alarm-triage.yml` as a script plus a guardrail | Extract it to a composite action every public-writing path calls | P7 |
+| Spend caps as platform actions | A1 | B1 R4 | C4 | Bedrock only | The same shape for Stripe, Ads and total AWS | P5, Q5 |
+| Agent run budgets | A2 | B1 R2 | C4 | `alarm-triage.yml`'s three-per-24-hours guard | Generalise it to every agent path | P5 |
+| Merge shape rules | A2 | B1 R4 | C2 | Nothing | A minimum open-to-merge delay, a non-empty body, a diff-size ceiling, one author email, a merges-per-day cap | P10 |
+| Policy-silence handling | A3 | B2 R4 | C0 | Nothing | The `policy:question` label, and the habit of proposing the missing rule | P9 |
+| The reliability ledger | A2 | B1 R4 | C0 | The data sits in three places. Nobody assembles it | One job that writes workflow, alarm and behaviour-suite rates into the analytics lake | None |
+| Machine-readable policy | A2 | B1 R4 | C0 | Policy is prose, here and in `CLAUDE.md` | A checked form of the gating rules, so a workflow evaluates the same rule a person reads | None |
+| A kill switch across every agent path | A2 | B1 R4 | C0 | Nothing. The operator says "freeze" in a session and it binds that session only | One flag every agent path reads before acting, with the Bedrock deny policy as the backstop | None |
+
+### The hardest cells
+
+Four capabilities sit at or near A4 plus B3 plus C6, the hardest cell in the matrix. Saying so
+plainly matters more than ranking them politely.
+
+1. **Replying to a public comment in the company's voice** (YouTube, GitHub, any social surface).
+   A3 today, A4 on any surface without an API. B3, because there is no right answer to check
+   against. C6, because a reply cannot be unread. This one is closest to working, since the
+   YouTube credential already carries the scope, which makes it the easiest to get wrong first.
+2. **Running paid ad campaigns.** A4 until the Ads API path is built, because the console is where
+   the work happens. B3, because inference from noisy data is the whole point. C4, because it
+   spends money continuously rather than once.
+3. **Composing and posting under the company's name.** A3 or A4 by surface. B3. C6. No account
+   exists anywhere, so nothing here is close, which is the one piece of good news.
+4. **Sending a support reply to a customer.** A3. B3. C6 and C3 together, because the reply is
+   public-shaped and its content is the customer's own data.
+
+All four carry the most governance in the plan: the publication filter on every word, a labelled
+origin, a draft stage that ends only when an acceptance rate justifies it, and a spend cap where
+money is involved. None of them is closed off. Each is a horizon with a named next step, and each
+next step is a measurement rather than a leap.
+
+## 6. The phased build
+
+Ordered by value over risk. Each phase names what it proves before the next starts.
+
+### Phase 0. Switch on what the platform already offers
+
+Every item is A1. Nothing is built and no model is involved.
+
+- Add `test` and CodeQL as required status checks on the existing `main` ruleset, keeping the two
+  rules it already carries.
+- Turn on auto-merge, delete-branch-on-merge, and Dependabot automated security fixes.
+- Set `sha_pinning_required` and narrow `allowed_actions`.
+- Create the five `origin:*` labels and the `policy:question` label.
+- Add a PR template carrying the `Closes #N` line and an origin trailer. The operator already
+  liked the built-in close-on-merge behaviour; this is what makes it happen every time.
+- Add CODEOWNERS naming the operator, so review routing exists before any rule needs it.
+- Turn on commit signing locally and settle on one author email, which P2 and P10 both depend on.
+- Fix the automation that already exists and is not running: `sbom.yml` (2 of 26),
+  `verify-backups.yml` (0 of 1), `destroy-ci.yml` (0 of 2), and `security-review.yml`'s commented
+  cron.
+
+Proves: the platform gates hold and nothing in the existing flow breaks. Exit: a PR merges through
+the required checks, and a Dependabot security PR merges itself.
+
+### Phase 1. Provenance that holds
+
+- The alarm-to-issue pipeline gets its own GitHub identity, so `issue.user` separates a machine
+  issue from a human one. P3's rung 1.
+- Every agent-created issue, comment and PR carries its `origin:*` label and a model-and-run
+  footer.
+- The alarm-origin verifier: re-read `describe-alarm-history` for the alarm name and window the
+  issue body names, and confirm the transition happened. P3's rung 3.
+- The publication filter becomes a composite action every public-writing path calls, instead of
+  one workflow's private step.
+- The reliability ledger starts collecting, because everything from phase 2 on needs real numbers
+  rather than a rank somebody assigned.
+
+Proves: a machine can check an origin and cannot be fooled by text. Exit: the verifier passes on a
+real alarm issue and fails on a hand-typed copy of one.
+
+### Phase 2. Auto-merge, narrow
+
+- The authorship check becomes a required status check: every commit resolves to the owner, every
+  signature verifies, the head is not a fork.
+- P10's shape rules join the same check.
+- Auto-merge turns on only for PRs that pass it, and only where the PR closes nothing or closes an
+  `origin:alarm` issue whose verifier passed.
+- Start with docs-only PRs, since the workspace already permits direct `.md` pushes to `main`, so
+  this adds no new risk. Widen to code once the check has a run history.
+
+Proves: the rule holds under a real batch, and the operator stops merging by hand.
+
+### Phase 3. Ops that close their own loop
+
+- A named list of remedies, each tied to the alarm families it answers: roll origins to
+  last-known-good, re-run a stale schedule, redeploy a stack. Each remedy is A2 code, and the
+  model only chooses from the list, which keeps the whole path at B2.
+- The alarm-triage draft PR becomes a real PR when the change touches a file the remedy list
+  allows and the checks pass.
+- An alarm issue closes on OK plus a passing check, once P1 and P3 both hold for it.
+- `alarm-triage.yml`'s run budget generalises to every agent path.
+
+Proves: an alarm can close without the operator when the remedy is on the list. The measure is the
+share of the 55-issue history that would have closed itself.
+
+### Phase 4. Support
+
+- Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
+- The customer-lookup skill fires from the alarm issue rather than from a person asking.
+- Reply drafting into Gmail, which `STRATEGY.md` W4 already names.
+- Replies stay drafts until the acceptance rate is measured. Then one class of reply, a settled
+  answer matched to a published article, sends on its own.
+
+Proves: the operator reads drafts rather than raw mail, and the acceptance rate says which classes
+can send.
+
+### Phase 5. The outside surfaces
+
+- Wire `video-capture.yml` to a release, and to a deploy of `main` that touched a page a scene
+  script covers. Write a scene script when a feature is built, not afterwards.
+- Select and publish screenshots from the capture run's stills.
+- YouTube publishing stays as it is. The operator presses public.
+- Comment replies start on YouTube, because the credential already exists and the volume is small
+  enough to read every one.
+- Social posting needs accounts first, and none exist. Then a staged post directory the operator
+  empties, in the shape `../PLAN_FINANCE_AUTOMATION.md` chose for its write boundary. Then
+  automatic posting from a template with a named source. Then composed posts, if the acceptance
+  rate earns it.
+
+Proves: nothing reaches the public under the company's name that the operator has not seen, until
+a measurement says it can.
+
+### Phase 6. Propose, deliver, measure
+
+- The optimiser reads three months of raw export and proposes the next experiment with its
+  predicted effect and interval.
+- A proposal becomes a plan doc, a plan doc becomes a batch, a batch becomes a PR. `do-next`
+  already runs those last three steps with the operator merging, and phase 2 removed the merge.
+- The loop closes when a proposal's predicted effect meets the measured one, which is also how the
+  reliability ledger learns to rank a B3 capability.
+
+Proves: the operator supplies direction and policy, and the rest arrives.
+
+### The operator's ambition, ranked
+
+> I'd have it propose features, deliver them, make screenshots and videos and share them on
+> social media and respond to comments.
+
+| Step | A | B | C | How far away |
+|---|---|---|---|---|
+| Propose features | A3 | B3 | C0 | Needs three months of raw export, whose first night is 2026-09-10. The design (52l) is written. Nothing structural is missing |
+| Deliver them | A3 | B2 | C0 to C2 | Already happens. `do-next` and worktree sub-agents build and open the PR. Only the merge gate is missing, which is phase 2 |
+| Screenshots and video | A2 | B1 | C1 to C6 | Closer than it looks. `site-video-capture` records from a scene script, and `video-capture.yml` runs it against a live deployment, producing mp4, stills and a transcript. Missing: an event trigger and a scene script per feature |
+| Share them on social media | A2 to publish, A3 to compose | B1 or B3 | C6 | The real gap. No account on any social surface, no credential, no posting code. YouTube is the only channel that exists |
+| Respond to comments | A3 | B3 | C6 | The YouTube credential already carries `youtube.force-ssl`, which covers reading and replying to comment threads, so no new consent is needed. Missing: the code and the policy. Every other surface needs an account first |
+
+## 7. Open questions
+
+Each names the alternatives and a recommendation. An assumption stands until the operator says
+otherwise.
+
+**Q1. Which identity raises machine issues.** A GitHub App is the strongest: the author is a bot
+with a fixed slug, and an installation token is short-lived and scoped, so it cannot be copied out
+of a secret store and reused. A dedicated machine account is cheaper to set up and weaker, because
+its PAT sits copyable in a GitHub Actions secret and in Secrets Manager. Keeping the operator's own
+PAT is the status quo, and it makes P1 and P3 uncheckable. Assumption: a GitHub App. If the setup
+cost is unwelcome, a machine account plus the alarm-history re-read gets most of the way, because
+the re-read does not depend on the credential at all.
+
+**Q2. Whether "human" in P1 means the operator or any person.** Issue #20 is from `JDMs4`, a real
+outside user, which makes this live rather than theoretical. Treating any person as human means an
+external issue is closed by the operator, which is a handful of closes a year and reads well to
+the person who raised it. Treating only the operator as human would let an agent close an external
+issue, which saves nothing and looks careless. Assumption: any person.
+
+**Q3. Whether to turn on commit signing.** P2 is not a real check without it, because an unsigned
+commit's author field is a string anyone who can push may set. The cost is a key on the operator's
+machine, one author email instead of two, and every agent session's commit path changing at once.
+The alternative is auto-merge that proves only that the pusher held a token, which given P10 is
+worse than no auto-merge. Assumption: turn it on in phase 0, before anything depends on it.
+
+**Q4. How wide auto-merge goes on day one.** Docs-only is the safest start and adds no new risk,
+since `.md` pushes to `main` are already permitted. Docs plus verified alarm fixes is the next
+rung, and it is where the operator's interest lies. Everything green is the end state.
+Assumption: docs-only first, widening when the authorship check has thirty runs behind it.
+
+**Q5. The numbers behind P5.** Bedrock already has $150/month with an automatic deny, and $5/day
+as a warning, which the alarm-triage path has never approached. Ads has no account yet, and O23
+asks the operator for a reserve floor. Total AWS runs against a $64.77/month steady-state target
+the cost panel now tracks. Recommendation: keep the Bedrock numbers, set the Ads daily cap in the
+account itself rather than in our code, and add a total-AWS budget action at 150% of target so a
+runaway loop stops without a person. The operator names the reserve floor.
+
+**Q6. Whether an agent may ever send a customer email unread.** Never sending is the status quo
+and costs the operator every reply. Sending one narrow class, a settled answer matched to a
+published article, once the acceptance rate clears a threshold, is the middle. Sending anything
+the model judges safe is the far end and is not proposed. Recommendation: the middle, with the
+threshold set from the first fifty drafts rather than chosen now. Support volume fell about 97%
+after 2018, so the saving is small and the risk is not, which argues for patience here rather than
+speed.
+
+**Q7. Which social surfaces, and who owns the accounts.** None exist. Each one is a credential, a
+voice, a moderation surface, and a place the company can be wrong in public. Recommendation: one
+surface first, chosen for where the £20k-to-£30k ITSA wave actually reads, with the operator
+holding the account and the agent posting through a token that can be revoked in a click. Which
+surface is the operator's call; the plan does not have the evidence to pick.
+
+**Q8. Whether a labelled agent reply on a public GitHub issue is acceptable at all.** Labelled
+replies scale the operator's reach and are honest about what they are. Keeping public replies
+human keeps the company's voice one voice, which for a five-issues-a-year repository costs almost
+nothing. Recommendation: keep public GitHub replies human for now, and let YouTube comments be
+where the labelled-reply pattern is tested, because the volume is smaller and the surface is
+already ours.
+
+**Q9. What the kill switch is, and who can pull it.** One flag every agent path reads before
+acting, with the Bedrock deny policy as the backstop that works even when the flag is not read.
+The alternative is what exists now: the operator says "freeze" in a session and it binds only that
+session. Recommendation: an SSM parameter every agent path checks, and a `gh workflow run` that
+sets it, so the operator can stop everything from a phone.
+
+**Q10. What happens when policy is silent and the operator is away.** P9 says do the reversible
+half and ask. The open part is whether the question waits for the next session or reaches the
+operator at once. Telegram already carries alarms and budgets, so the channel exists.
+Recommendation: `policy:question` on the issue, and a Telegram message only when the blocked work
+is tier 1. Everything else waits.
+
+## Sources
+
+- `STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
+  43, 47, 49, 52, 52l, 52m and 53, `NEXT.md`.
+- `.github/workflows/` (36 files), `.github/agents/`, `.github/actions/`, `.github/dependabot.yml`,
+  `.github/ISSUE_TEMPLATE/support.md`, `.github/copilot-instructions.md`.
+- `app/functions/ops/alarmToGithubIssue.js`, `activityTelegramForwarder.js` and
+  `bedrockBudgetAlertForward.js`; `scripts/redact-triage-output.mjs`,
+  `scripts/resolve-alarm-evidence.mjs`, `prompts/alarm-triage.md`.
+- `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`, `ObservabilityStack.java`,
+  `ObservabilityUE1Stack.java`, `CostExportStack.java`, and the `analytics/` stacks and views.
+- `.claude/skills/` (eight skills), `_developers/archive/PLAN_FLAGGED.md`,
+  `_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`, `../PLAN_FINANCE_AUTOMATION.md`.
+- Live reads on 2026-09-09: the repository settings, the `main` ruleset, the labels, the
+  environments, the Actions permissions, the Dependabot and code-scanning alerts, the last 100
+  workflow runs, the 55 `[ALARM]` issues, and the commit verification state of `main`.
