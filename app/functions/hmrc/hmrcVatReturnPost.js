@@ -64,21 +64,44 @@ function emitSubmissionMetric(metricName, actor) {
 }
 
 /**
+ * Determine whether an HMRC failure warrants a failure metric.
+ *
+ * A failure metric is emitted for errors on our side or HMRC's side, not for
+ * customer validation errors (like picking the wrong dates).
+ *
+ * @param {number} status - HTTP status code from HMRC
+ * @returns {boolean} true if a failure metric should be emitted
+ */
+function shouldEmitFailureMetric(status) {
+  // 400: customer validation error (e.g., dates don't match any obligation)
+  if (status === 400) {
+    return false;
+  }
+  // 401/403: our token handling issue
+  // 429: our rate limiting
+  // 5xx: HMRC server error
+  return true;
+}
+
+/**
  * Record a failed VAT filing attempt: one business metric and one activity event.
  *
- * A failed filing is a customer-facing incident, so every meaningful failure path
- * reports itself the same way the success path does. The event carries the failure
- * category and the hashed sub only — no VRN, no customer details, no HMRC payloads.
+ * A failed filing is a customer-facing incident. The metric is emitted only for
+ * real errors (ours or HMRC's), not for customer validation failures. The activity
+ * event fires for all failures to track the funnel.
  *
  * @param {Object} params
  * @param {string} params.failure - Failure category
  * @param {string} params.summary - Human-readable summary for alerting
  * @param {string} [params.userSub]
  * @param {Object} [params.detail] - Additional non-identifying detail fields
+ * @param {boolean} [params.emitMetric=true] - Whether to emit the failure metric
  */
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true }) {
   const actor = resolveActorClass();
-  emitSubmissionMetric("VatSubmissionFailure", actor);
+  if (emitMetric) {
+    emitSubmissionMetric("VatSubmissionFailure", actor);
+  }
   await publishActivityFailureEvent({
     event: "vat-return-failed",
     summary,
@@ -951,11 +974,13 @@ export async function submitVat(
       userSub: auditForUserSub,
     });
   } else {
+    const shouldEmitMetric = shouldEmitFailureMetric(hmrcResponse.status);
     await recordSubmissionFailure({
       failure: "hmrc-rejected",
       summary: "VAT return rejected by HMRC",
       userSub: auditForUserSub,
       detail: { hmrcStatus: hmrcResponse.status },
+      emitMetric: shouldEmitMetric,
     });
   }
 

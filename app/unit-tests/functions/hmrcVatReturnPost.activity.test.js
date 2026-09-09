@@ -148,8 +148,8 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
   });
 
-  test("an HMRC rejection emits a failure event and a failure metric", async () => {
-    mockHmrcError(mockFetch, 400, { code: "DUPLICATE_SUBMISSION", message: "Duplicate submission" });
+  test("an HMRC 5xx rejection emits both a failure event and a failure metric", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
 
     await hmrcVatReturnPostHandler(buildSubmissionEvent());
 
@@ -158,7 +158,7 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(rejections[0][0]).toMatchObject({
       event: "vat-return-failed",
       actor: "customer",
-      detail: { hmrcStatus: 400 },
+      detail: { hmrcStatus: 503 },
     });
     expect(metricCalls("VatSubmissionFailure")).toHaveLength(1);
     expect(metricCalls("VatSubmissionSuccess")).toHaveLength(0);
@@ -244,12 +244,44 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(receipts[0].actor).toBe("test-user");
   });
 
-  test("a test run is classified as test-user on both the event and the metric", async () => {
-    mockHmrcError(mockFetch, 400, { code: "DUPLICATE_SUBMISSION", message: "Duplicate submission" });
+  test("a test run is classified as test-user on the event and metric for real errors", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
 
     await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }));
 
     expect(failureEventsWithCategory("hmrc-rejected")[0][0].actor).toBe("test-user");
     expect(metricCalls("VatSubmissionFailure")[0][0].dimensions).toEqual({ Actor: "test-user" });
+  });
+
+  test("a customer-side 400 error emits an activity event but not a failure metric", async () => {
+    mockHmrcError(mockFetch, 400, { code: "INVALID_OBLIGATION", message: "No matching obligation found for date range" });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent());
+
+    const rejections = failureEventsWithCategory("hmrc-rejected");
+    expect(rejections).toHaveLength(1);
+    expect(rejections[0][0]).toMatchObject({
+      event: "vat-return-failed",
+      actor: "customer",
+      detail: { hmrcStatus: 400 },
+    });
+    expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
+    expect(metricCalls("VatSubmissionSuccess")).toHaveLength(0);
+  });
+
+  test("an HMRC 5xx error emits both an activity event and a failure metric", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent());
+
+    const rejections = failureEventsWithCategory("hmrc-rejected");
+    expect(rejections).toHaveLength(1);
+    expect(rejections[0][0]).toMatchObject({
+      event: "vat-return-failed",
+      actor: "customer",
+      detail: { hmrcStatus: 503 },
+    });
+    expect(metricCalls("VatSubmissionFailure")).toHaveLength(1);
+    expect(metricCalls("VatSubmissionSuccess")).toHaveLength(0);
   });
 });
