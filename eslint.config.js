@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 import js from "@eslint/js";
 import google from "eslint-config-google";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";

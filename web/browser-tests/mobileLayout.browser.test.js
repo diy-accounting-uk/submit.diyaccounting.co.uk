@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // web/browser-tests/mobileLayout.browser.test.js
 //
 // Regression guard for issue #8 ("packed" mobile UI). Serves the real

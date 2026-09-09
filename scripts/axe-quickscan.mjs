@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // Ad-hoc axe-core scan (npx axe CLI is broken on this machine — chromedriver/Chrome
 // version mismatch unrelated to the app). Injects axe-core from the CDN allowlist
 // via Playwright instead, against the same 25 pages as text-spacing-test.js.

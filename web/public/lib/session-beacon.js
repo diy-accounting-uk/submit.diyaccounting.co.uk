@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 // session-beacon.js — fire-and-forget session start beacon
 (function () {
   if (typeof sessionStorage === "undefined") return;
