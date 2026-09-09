@@ -80,8 +80,7 @@ class CostFocusIngestionTest {
 
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
         template.hasResourceProperties(
-                "AWS::Scheduler::Schedule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(45 2 * * ? *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(45 2 * * ? *)")));
     }
 
     @Test

@@ -137,13 +137,11 @@ class ApiStackTest {
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
-                        "JwtConfiguration",
-                        Match.objectLike(Map.of("Audience", List.of(USER_POOL_CLIENT_ID))))));
+                        "JwtConfiguration", Match.objectLike(Map.of("Audience", List.of(USER_POOL_CLIENT_ID))))));
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
-                        "JwtConfiguration",
-                        Match.objectLike(Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID))))));
+                        "JwtConfiguration", Match.objectLike(Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID))))));
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
@@ -204,12 +202,12 @@ class ApiStackTest {
         Template template = Template.fromStack(stack);
 
         var optionsRoutes = template.findResources(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}")));
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}")));
         assertEquals(1, optionsRoutes.size(), "PUT and DELETE share one path, so only one OPTIONS route");
 
         @SuppressWarnings("unchecked")
-        var properties = (Map<String, Object>) ((Map<?, ?>) optionsRoutes.values().iterator().next()).get("Properties");
+        var properties = (Map<String, Object>)
+                ((Map<?, ?>) optionsRoutes.values().iterator().next()).get("Properties");
         assertFalse(properties.containsKey("AuthorizerId"), "OPTIONS preflight must not require an authorizer");
     }
 
@@ -217,9 +215,7 @@ class ApiStackTest {
     private static String authorizerLogicalIdForAudience(Template template, String audience) {
         var authorizers = template.findResources(
                 "AWS::ApiGatewayV2::Authorizer",
-                Map.of(
-                        "Properties",
-                        Map.of("JwtConfiguration", Map.of("Audience", List.of(audience)))));
+                Map.of("Properties", Map.of("JwtConfiguration", Map.of("Audience", List.of(audience)))));
         assertEquals(1, authorizers.size(), "expected exactly one authorizer with audience " + audience);
         return authorizers.keySet().iterator().next();
     }

@@ -80,8 +80,7 @@ class Ga4TablesTest {
         var tables = template.findResources("AWS::Glue::Table");
         assertEquals(4, tables.size());
 
-        var expectedReportNames =
-                Map.of("ga4_traffic", "traffic", "ga4_pages", "pages", "ga4_events", "events");
+        var expectedReportNames = Map.of("ga4_traffic", "traffic", "ga4_pages", "pages", "ga4_events", "events");
 
         for (var resource : tables.values()) {
             @SuppressWarnings("unchecked")
@@ -95,8 +94,8 @@ class Ga4TablesTest {
             var location = (String) storageDescriptor.get("Location");
 
             assertEquals(
-                    "s3://docs-env-analytics-lake-111111111111/curated/ga4/report="
-                            + expectedReportNames.get(tableName) + "/",
+                    "s3://docs-env-analytics-lake-111111111111/curated/ga4/report=" + expectedReportNames.get(tableName)
+                            + "/",
                     location);
         }
     }
@@ -132,14 +131,15 @@ class Ga4TablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "sessions", "Type", "bigint"),
-                                                Map.of("Name", "activeUsers", "Type", "bigint"),
-                                                Map.of(
-                                                        "Name",
-                                                        "averageSessionDuration",
-                                                        "Type",
-                                                        "double"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "sessions", "Type", "bigint"),
+                                                        Map.of("Name", "activeUsers", "Type", "bigint"),
+                                                        Map.of(
+                                                                "Name",
+                                                                "averageSessionDuration",
+                                                                "Type",
+                                                                "double"))))))))));
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
@@ -151,10 +151,10 @@ class Ga4TablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "eventCount", "Type", "bigint"),
-                                                Map.of(
-                                                        "Name", "eventValue", "Type", "double"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "eventCount", "Type", "bigint"),
+                                                        Map.of("Name", "eventValue", "Type", "double"))))))))));
     }
 
     @Test
@@ -171,17 +171,13 @@ class Ga4TablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "event_ts", "Type", "string"),
-                                                Map.of("Name", "user_pseudo_id", "Type", "string"),
-                                                Map.of("Name", "ga_session_id", "Type", "bigint"),
-                                                Map.of(
-                                                        "Name",
-                                                        "engagement_time_msec",
-                                                        "Type",
-                                                        "bigint"),
-                                                Map.of(
-                                                        "Name", "event_value", "Type", "double"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "event_ts", "Type", "string"),
+                                                        Map.of("Name", "user_pseudo_id", "Type", "string"),
+                                                        Map.of("Name", "ga_session_id", "Type", "bigint"),
+                                                        Map.of("Name", "engagement_time_msec", "Type", "bigint"),
+                                                        Map.of("Name", "event_value", "Type", "double"))))))))));
     }
 
     @Test
@@ -199,8 +195,7 @@ class Ga4TablesTest {
                                     "StorageDescriptor",
                                     Match.objectLike(Map.of(
                                             "Columns",
-                                            Match.arrayWith(
-                                                    List.of(Map.of("Name", "date", "Type", "string"))))))))));
+                                            Match.arrayWith(List.of(Map.of("Name", "date", "Type", "string"))))))))));
         }
     }
 }

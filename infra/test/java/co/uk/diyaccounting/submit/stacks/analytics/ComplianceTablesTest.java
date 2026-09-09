@@ -77,27 +77,33 @@ class ComplianceTablesTest {
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "Name",
-                                "compliance_accessibility",
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/compliance/accessibility/")))))));
+                Match.objectLike(
+                        Map.of(
+                                "TableInput",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Name",
+                                                "compliance_accessibility",
+                                                "StorageDescriptor",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "Location",
+                                                                "s3://docs-env-analytics-lake-111111111111/curated/compliance/accessibility/")))))));
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "Name",
-                                "compliance_fraud_headers",
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/compliance/fraud-headers/")))))));
+                Match.objectLike(
+                        Map.of(
+                                "TableInput",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Name",
+                                                "compliance_fraud_headers",
+                                                "StorageDescriptor",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "Location",
+                                                                "s3://docs-env-analytics-lake-111111111111/curated/compliance/fraud-headers/")))))));
     }
 
     @Test
@@ -114,10 +120,11 @@ class ComplianceTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "tool", "Type", "string"),
-                                                Map.of("Name", "standard", "Type", "string"),
-                                                Map.of("Name", "violations", "Type", "bigint"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "tool", "Type", "string"),
+                                                        Map.of("Name", "standard", "Type", "string"),
+                                                        Map.of("Name", "violations", "Type", "bigint"))))))))));
     }
 
     @Test
@@ -134,9 +141,10 @@ class ComplianceTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "status", "Type", "string"),
-                                                Map.of("Name", "needs_action", "Type", "boolean"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "status", "Type", "string"),
+                                                        Map.of("Name", "needs_action", "Type", "boolean"))))))))));
     }
 
     @Test

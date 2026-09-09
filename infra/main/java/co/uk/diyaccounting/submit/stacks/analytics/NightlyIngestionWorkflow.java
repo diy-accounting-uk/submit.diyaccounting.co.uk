@@ -126,8 +126,8 @@ public class NightlyIngestionWorkflow {
                 // replaced by an array of ingestion job results nothing downstream needs.
                 .resultPath(JsonPath.DISCARD)
                 .build();
-        ingestionParallel.branch(
-                buildTask(scope, prefix + "-Nightly-StripeReconcile", "Stripe reconciliation", props.stripeReconcileLambda()));
+        ingestionParallel.branch(buildTask(
+                scope, prefix + "-Nightly-StripeReconcile", "Stripe reconciliation", props.stripeReconcileLambda()));
         ingestionParallel.branch(
                 buildTask(scope, prefix + "-Nightly-Ga4ReportPull", "GA4 report pull", props.ga4ReportPullLambda()));
         ingestionParallel.branch(buildTask(
@@ -135,15 +135,18 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-Ga4EventExportPull",
                 "GA4 event export pull",
                 props.ga4EventExportPullLambda()));
-        ingestionParallel.branch(
-                buildTask(scope, prefix + "-Nightly-Ga4DailyPull", "GA4 daily aggregate pull", props.ga4DailyPullLambda()));
         ingestionParallel.branch(buildTask(
-                scope, prefix + "-Nightly-OperatorEffortPull", "operator effort pull", props.operatorEffortPullLambda()));
+                scope, prefix + "-Nightly-Ga4DailyPull", "GA4 daily aggregate pull", props.ga4DailyPullLambda()));
+        ingestionParallel.branch(buildTask(
+                scope,
+                prefix + "-Nightly-OperatorEffortPull",
+                "operator effort pull",
+                props.operatorEffortPullLambda()));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());
-        var metricsPublishTask = buildTask(
-                scope, prefix + "-Nightly-MetricsPublish", "metrics publish", props.metricsPublishLambda());
+        var metricsPublishTask =
+                buildTask(scope, prefix + "-Nightly-MetricsPublish", "metrics publish", props.metricsPublishLambda());
         var rawExportTask =
                 buildTask(scope, prefix + "-Nightly-RawExport", "raw export publish", props.rawExportPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
@@ -214,8 +217,10 @@ public class NightlyIngestionWorkflow {
         this.executionsFailedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsFailedAlarm")
                 .alarmName(props.stateMachineName() + "-failed")
                 .alarmDescription("The nightly analytics ingestion state machine failed at least once in 24 hours")
-                .metric(this.stateMachine.metricFailed(
-                        MetricOptions.builder().period(Duration.hours(24)).statistic("Sum").build()))
+                .metric(this.stateMachine.metricFailed(MetricOptions.builder()
+                        .period(Duration.hours(24))
+                        .statistic("Sum")
+                        .build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
@@ -228,9 +233,12 @@ public class NightlyIngestionWorkflow {
         if (isProd) {
             this.executionsMissedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsMissedAlarm")
                     .alarmName(props.stateMachineName() + "-missed")
-                    .alarmDescription("The nightly analytics ingestion state machine has not started an execution in 26 hours")
-                    .metric(this.stateMachine.metricStarted(
-                            MetricOptions.builder().period(Duration.hours(26)).statistic("Sum").build()))
+                    .alarmDescription(
+                            "The nightly analytics ingestion state machine has not started an execution in 26 hours")
+                    .metric(this.stateMachine.metricStarted(MetricOptions.builder()
+                            .period(Duration.hours(26))
+                            .statistic("Sum")
+                            .build()))
                     .threshold(1)
                     .evaluationPeriods(1)
                     .comparisonOperator(ComparisonOperator.LESS_THAN_THRESHOLD)

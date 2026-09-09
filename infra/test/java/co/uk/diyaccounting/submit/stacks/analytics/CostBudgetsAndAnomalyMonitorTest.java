@@ -85,12 +85,18 @@ class CostBudgetsAndAnomalyMonitorTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Sid", "AllowBudgetsToPublish",
-                                                "Principal", Map.of("Service", "budgets.amazonaws.com"))),
-                                        Match.objectLike(Map.of(
-                                                "Sid", "AllowCostAnomalyDetectionToPublish",
-                                                "Principal", Map.of("Service", "costalerts.amazonaws.com"))))))))));
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid",
+                                                        "AllowBudgetsToPublish",
+                                                        "Principal",
+                                                        Map.of("Service", "budgets.amazonaws.com"))),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid",
+                                                        "AllowCostAnomalyDetectionToPublish",
+                                                        "Principal",
+                                                        Map.of("Service", "costalerts.amazonaws.com"))))))))));
 
         template.hasResourceProperties(
                 "AWS::Lambda::Permission",

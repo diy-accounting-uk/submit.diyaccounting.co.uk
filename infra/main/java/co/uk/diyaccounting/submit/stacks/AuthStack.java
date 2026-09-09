@@ -237,7 +237,8 @@ public class AuthStack extends Stack {
         // PutItem, not UpdateItem: putSessionGeo always replaces the whole item (country,
         // revokedAt, ttl) in one call rather than patching individual attributes.
         securityStateTable.grant(this.customAuthorizerLambda, "dynamodb:GetItem", "dynamodb:PutItem");
-        var userPoolArn = String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, props.cognitoUserPoolId());
+        var userPoolArn =
+                String.format("arn:aws:cognito-idp:%s:%s:userpool/%s", region, account, props.cognitoUserPoolId());
         this.customAuthorizerLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("cognito-idp:AdminUserGlobalSignOut"))

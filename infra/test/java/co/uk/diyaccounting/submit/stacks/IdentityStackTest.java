@@ -76,8 +76,7 @@ class IdentityStackTest {
 
         // Locate the books client by name rather than relying on synthesis order.
         var booksClients = template.findResources(
-                "AWS::Cognito::UserPoolClient",
-                Map.of("Properties", Map.of("AllowedOAuthFlows", List.of("code"))));
+                "AWS::Cognito::UserPoolClient", Map.of("Properties", Map.of("AllowedOAuthFlows", List.of("code"))));
         assertEquals(2, booksClients.size(), "both clients use the authorization code grant");
 
         var booksClient = booksClients.values().stream()
@@ -181,8 +180,7 @@ class IdentityStackTest {
 
         template.hasOutput("BooksUserPoolClientId", Match.anyValue());
         template.hasResourceProperties(
-                "AWS::SSM::Parameter",
-                Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-books-app-client-id")));
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-books-app-client-id")));
     }
 
     @Test
@@ -246,8 +244,9 @@ class IdentityStackTest {
         Set<String> grantedActions = actionsGrantedToRole(template, "ci-env-spreadsheets-behaviour-role");
 
         assertFalse(grantedActions.isEmpty(), "expected the role to have at least one granted action");
-        var unexpected =
-                grantedActions.stream().filter(action -> !allowedActions.contains(action)).toList();
+        var unexpected = grantedActions.stream()
+                .filter(action -> !allowedActions.contains(action))
+                .toList();
         assertTrue(unexpected.isEmpty(), "granted actions outside the approved list: " + unexpected);
     }
 
@@ -267,8 +266,7 @@ class IdentityStackTest {
                 "arn:aws:dynamodb:eu-west-2:111111111111:table/ci-env-hmrc-vat-obligation-get-async-requests");
 
         Set<String> grantedResources = new HashSet<>();
-        for (Map<String, Object> statement :
-                policyStatementsForRole(template, "ci-env-spreadsheets-behaviour-role")) {
+        for (Map<String, Object> statement : policyStatementsForRole(template, "ci-env-spreadsheets-behaviour-role")) {
             var action = statement.get("Action");
             boolean isDynamoDbStatement = action instanceof List<?> actions
                     ? actions.stream().anyMatch(a -> String.valueOf(a).startsWith("dynamodb:"))
@@ -288,8 +286,7 @@ class IdentityStackTest {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> findRoleProperties(Template template, String roleName) {
-        for (Map<String, Object> role :
-                template.findResources("AWS::IAM::Role").values()) {
+        for (Map<String, Object> role : template.findResources("AWS::IAM::Role").values()) {
             var properties = (Map<String, Object>) role.get("Properties");
             if (roleName.equals(properties.get("RoleName"))) {
                 return properties;

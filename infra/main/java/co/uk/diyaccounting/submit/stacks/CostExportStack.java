@@ -23,8 +23,8 @@ import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
-import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BlockPublicAccess;
+import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.s3.StorageClass;
@@ -124,10 +124,8 @@ public class CostExportStack extends Stack {
 
         if (!props.readerRoleArns().isEmpty()) {
             List<String> roleArns = props.readerRoleArns();
-            List<String> accountIds = roleArns.stream()
-                    .map(arn -> arn.split(":")[4])
-                    .distinct()
-                    .toList();
+            List<String> accountIds =
+                    roleArns.stream().map(arn -> arn.split(":")[4]).distinct().toList();
             List<IPrincipal> accountPrincipals = accountIds.stream()
                     .map(accountId -> (IPrincipal) new AccountPrincipal(accountId))
                     .toList();
@@ -170,8 +168,7 @@ public class CostExportStack extends Stack {
                         .dataQuery(CfnExport.DataQueryProperty.builder()
                                 .queryStatement("SELECT " + String.join(", ", CostFocusIngestion.FOCUS_1_2_COLUMNS)
                                         + " FROM " + FOCUS_TABLE_NAME)
-                                .tableConfigurations(
-                                        Map.of(FOCUS_TABLE_NAME, Map.of("TIME_GRANULARITY", "DAILY")))
+                                .tableConfigurations(Map.of(FOCUS_TABLE_NAME, Map.of("TIME_GRANULARITY", "DAILY")))
                                 .build())
                         .destinationConfigurations(CfnExport.DestinationConfigurationsProperty.builder()
                                 .s3Destination(CfnExport.S3DestinationProperty.builder()

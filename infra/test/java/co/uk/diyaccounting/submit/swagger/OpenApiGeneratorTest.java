@@ -21,7 +21,8 @@ class OpenApiGeneratorTest {
         OpenApiGenerator.main(new String[] {"https://submit.diyaccounting.co.uk/", "1.0.0", outputDir.toString()});
 
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode info = mapper.readTree(outputDir.resolve("openapi.json").toFile()).path("info");
+        JsonNode info =
+                mapper.readTree(outputDir.resolve("openapi.json").toFile()).path("info");
 
         JsonNode license = info.path("license");
         assertEquals("PolyForm Internal Use License 1.0.0", license.path("name").asText());
@@ -29,7 +30,10 @@ class OpenApiGeneratorTest {
                 "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE",
                 license.path("url").asText());
 
-        assertEquals("admin@diyaccounting.co.uk", info.path("contact").path("email").asText());
-        assertEquals("https://submit.diyaccounting.co.uk/terms.html", info.path("termsOfService").asText());
+        assertEquals(
+                "admin@diyaccounting.co.uk", info.path("contact").path("email").asText());
+        assertEquals(
+                "https://submit.diyaccounting.co.uk/terms.html",
+                info.path("termsOfService").asText());
     }
 }

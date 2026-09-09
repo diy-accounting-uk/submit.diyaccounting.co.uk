@@ -236,8 +236,7 @@ public class BillingStack extends Stack {
         }
         if (props.stripePriceIdResidentDiyaGl() != null
                 && !props.stripePriceIdResidentDiyaGl().isBlank()) {
-            billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_PRICE_ID_RESIDENT_DIYA_GL", props.stripePriceIdResidentDiyaGl());
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_DIYA_GL", props.stripePriceIdResidentDiyaGl());
         }
         if (props.stripeTestPriceIdResidentDiyaGl() != null
                 && !props.stripeTestPriceIdResidentDiyaGl().isBlank()) {
@@ -318,8 +317,8 @@ public class BillingStack extends Stack {
         // ============================================================================
         // Billing Checkout Session GET Lambda (JWT auth)
         // ============================================================================
-        var billingCheckoutSessionGetLambdaEnv = new PopulatedMap<String, String>()
-                .with("ENVIRONMENT_NAME", props.envName());
+        var billingCheckoutSessionGetLambdaEnv =
+                new PopulatedMap<String, String>().with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             billingCheckoutSessionGetLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -337,8 +336,8 @@ public class BillingStack extends Stack {
                         .ingestFunctionName(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().billingCheckoutSessionGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().billingCheckoutSessionGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().billingCheckoutSessionGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .httpMethod(props.sharedNames().billingCheckoutSessionGetLambdaHttpMethod)
@@ -527,10 +526,7 @@ public class BillingStack extends Stack {
                         billingRecoverPostApiLambda));
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
-        cfnOutput(
-                this,
-                "BillingCheckoutSessionGetLambdaArn",
-                this.billingCheckoutSessionGetLambda.getFunctionArn());
+        cfnOutput(this, "BillingCheckoutSessionGetLambdaArn", this.billingCheckoutSessionGetLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());
         cfnOutput(this, "BillingRecoverPostLambdaArn", this.billingRecoverPostLambda.getFunctionArn());
 

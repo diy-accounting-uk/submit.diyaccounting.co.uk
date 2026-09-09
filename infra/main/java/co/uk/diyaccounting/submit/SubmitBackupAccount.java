@@ -74,8 +74,7 @@ public class SubmitBackupAccount {
                 BackupAccountAccessStack.BackupAccountAccessStackProps.builder()
                         .env(primaryEnv)
                         .githubRepository(githubRepository)
-                        .vaultEncryptionKeyArn(
-                                this.crossAccountBackupVaultStack.vaultEncryptionKey.getKeyArn())
+                        .vaultEncryptionKeyArn(this.crossAccountBackupVaultStack.vaultEncryptionKey.getKeyArn())
                         .build());
         this.backupAccountAccessStack.addDependency(this.crossAccountBackupVaultStack);
 

@@ -248,10 +248,12 @@ public class EdgeStack extends Stack {
         List<String> manualBlockV4 = manualBlockAddresses.stream()
                 .filter(address -> !address.contains(":"))
                 .toList();
-        List<String> manualBlockV6 =
-                manualBlockAddresses.stream().filter(address -> address.contains(":")).toList();
+        List<String> manualBlockV6 = manualBlockAddresses.stream()
+                .filter(address -> address.contains(":"))
+                .toList();
 
-        CfnIPSet wafManualBlockIpv4Set = CfnIPSet.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockIPv4Set")
+        CfnIPSet wafManualBlockIpv4Set = CfnIPSet.Builder.create(
+                        this, props.resourceNamePrefix() + "-WafManualBlockIPv4Set")
                 .name(props.resourceNamePrefix() + "-waf-manual-block-v4")
                 .scope("CLOUDFRONT")
                 .ipAddressVersion("IPV4")
@@ -259,7 +261,8 @@ public class EdgeStack extends Stack {
                 .description("Hand-applied IPv4 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
                 .build();
 
-        CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
+        CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(
+                        this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
                 .name(props.resourceNamePrefix() + "-waf-manual-block-v6")
                 .scope("CLOUDFRONT")
                 .ipAddressVersion("IPV6")
@@ -363,13 +366,14 @@ public class EdgeStack extends Stack {
                                                 // Every other route keeps the same 8KB block through
                                                 // OversizedBodyOutsideBookWrite below; a book write's real size
                                                 // limit is booksPut.js, the only place that sees the whole body.
-                                                .ruleActionOverrides(List.of(CfnWebACL.RuleActionOverrideProperty.builder()
-                                                        .name("SizeRestrictions_BODY")
-                                                        .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                .count(CfnWebACL.CountActionProperty.builder()
+                                                .ruleActionOverrides(
+                                                        List.of(CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                .name("SizeRestrictions_BODY")
+                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                        .count(CfnWebACL.CountActionProperty.builder()
+                                                                                .build())
                                                                         .build())
-                                                                .build())
-                                                        .build()))
+                                                                .build()))
                                                 .build())
                                         .build())
                                 .overrideAction(CfnWebACL.OverrideActionProperty.builder()
@@ -437,7 +441,8 @@ public class EdgeStack extends Stack {
                                                                                         CfnWebACL.FieldToMatchProperty
                                                                                                 .builder()
                                                                                                 .body(
-                                                                                                        CfnWebACL.BodyProperty
+                                                                                                        CfnWebACL
+                                                                                                                .BodyProperty
                                                                                                                 .builder()
                                                                                                                 .oversizeHandling(
                                                                                                                         "MATCH")
@@ -445,25 +450,30 @@ public class EdgeStack extends Stack {
                                                                                                 .build())
                                                                                 .comparisonOperator("GT")
                                                                                 .size(8192L)
-                                                                                .textTransformations(List.of(
-                                                                                        CfnWebACL.TextTransformationProperty
-                                                                                                .builder()
-                                                                                                .priority(0)
-                                                                                                .type("NONE")
-                                                                                                .build()))
+                                                                                .textTransformations(
+                                                                                        List.of(
+                                                                                                CfnWebACL
+                                                                                                        .TextTransformationProperty
+                                                                                                        .builder()
+                                                                                                        .priority(0)
+                                                                                                        .type("NONE")
+                                                                                                        .build()))
                                                                                 .build())
                                                                 .build(),
                                                         CfnWebACL.StatementProperty.builder()
                                                                 .notStatement(CfnWebACL.NotStatementProperty.builder()
-                                                                        .statement(CfnWebACL.StatementProperty.builder()
-                                                                                .andStatement(
-                                                                                        CfnWebACL.AndStatementProperty
-                                                                                                .builder()
-                                                                                                .statements(List.of(
-                                                                                                        bookRouteUriPrefixStatement(),
-                                                                                                        putMethodStatement()))
-                                                                                                .build())
-                                                                                .build())
+                                                                        .statement(
+                                                                                CfnWebACL.StatementProperty.builder()
+                                                                                        .andStatement(
+                                                                                                CfnWebACL
+                                                                                                        .AndStatementProperty
+                                                                                                        .builder()
+                                                                                                        .statements(
+                                                                                                                List.of(
+                                                                                                                        bookRouteUriPrefixStatement(),
+                                                                                                                        putMethodStatement()))
+                                                                                                        .build())
+                                                                                        .build())
                                                                         .build())
                                                                 .build()))
                                                 .build())
@@ -709,8 +719,8 @@ public class EdgeStack extends Stack {
 
         // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
         // us-east-1. Scoped to this environment's own activity bus, not every bus in the account.
-        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
-                + props.sharedNames().activityBusName;
+        String activityBusArn =
+                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
         wafScanDetectLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
@@ -783,7 +793,8 @@ public class EdgeStack extends Stack {
                                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
                                         + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; "
                                         // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
-                                        // beacon lands on a region-specific subdomain (e.g. region1.google-analytics.com),
+                                        // beacon lands on a region-specific subdomain (e.g.
+                                        // region1.google-analytics.com),
                                         // which the literal host doesn't match and CSP then silently drops the pixel.
                                         + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline'; "

@@ -70,17 +70,21 @@ class CostFocusTablesTest {
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/cost/focus/",
-                                        "SerdeInfo",
-                                        Match.objectLike(Map.of(
-                                                "SerializationLibrary",
-                                                "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")))))))));
+                Match.objectLike(
+                        Map.of(
+                                "TableInput",
+                                Match.objectLike(
+                                        Map.of(
+                                                "StorageDescriptor",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "Location",
+                                                                "s3://docs-env-analytics-lake-111111111111/curated/cost/focus/",
+                                                                "SerdeInfo",
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "SerializationLibrary",
+                                                                                "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")))))))));
     }
 
     @Test
@@ -95,10 +99,11 @@ class CostFocusTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "billed_cost", "Type", "double"),
-                                                Map.of("Name", "service_name", "Type", "string"),
-                                                Map.of("Name", "sub_account_id", "Type", "string"),
-                                                Map.of("Name", "tags", "Type", "map<string,string>"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "billed_cost", "Type", "double"),
+                                                        Map.of("Name", "service_name", "Type", "string"),
+                                                        Map.of("Name", "sub_account_id", "Type", "string"),
+                                                        Map.of("Name", "tags", "Type", "map<string,string>"))))))))));
     }
 }

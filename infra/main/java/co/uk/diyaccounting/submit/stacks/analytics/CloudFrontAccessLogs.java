@@ -79,8 +79,6 @@ public class CloudFrontAccessLogs {
             "sc_range_start",
             "sc_range_end");
 
-
-
     public final CfnTable table;
 
     @Value.Immutable
@@ -221,7 +219,8 @@ public class CloudFrontAccessLogs {
     private static List<CfnTable.ColumnProperty> buildColumns() {
         var columns = new ArrayList<CfnTable.ColumnProperty>();
         for (String name : FIELD_ORDER) {
-            columns.add(CfnTable.ColumnProperty.builder().name(name).type("string").build());
+            columns.add(
+                    CfnTable.ColumnProperty.builder().name(name).type("string").build());
         }
         return columns;
     }

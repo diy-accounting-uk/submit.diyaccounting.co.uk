@@ -637,7 +637,10 @@ public class DataStack extends Stack {
                 "stateKey",
                 null);
         ensureTimeToLive(
-                this, props.resourceNamePrefix() + "-SecurityStateTTL", props.sharedNames().securityStateTableName, "ttl");
+                this,
+                props.resourceNamePrefix() + "-SecurityStateTTL",
+                props.sharedNames().securityStateTableName,
+                "ttl");
         infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
 
         // Books bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
@@ -791,9 +794,7 @@ public class DataStack extends Stack {
                 "HmrcItsaStatusGetAsyncRequestsTableName",
                 this.hmrcItsaStatusGetAsyncRequestsTable.getTableName());
         cfnOutput(
-                this,
-                "HmrcItsaStatusGetAsyncRequestsTableArn",
-                this.hmrcItsaStatusGetAsyncRequestsTable.getTableArn());
+                this, "HmrcItsaStatusGetAsyncRequestsTableArn", this.hmrcItsaStatusGetAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaBsasTriggerPostAsyncRequestsTableName",

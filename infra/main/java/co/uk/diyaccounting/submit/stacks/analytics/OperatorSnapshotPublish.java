@@ -199,8 +199,8 @@ public class OperatorSnapshotPublish extends Construct {
                 .ruleName(functionName + "-schedule")
                 .description("Publish the operator objectives snapshot")
                 .schedule(Schedule.cron(cronOptions))
-                .targets(List.of(
-                        LambdaFunction.Builder.create(this.snapshotPublishLambda).build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.snapshotPublishLambda)
+                        .build()))
                 .build();
 
         // ============================================================================

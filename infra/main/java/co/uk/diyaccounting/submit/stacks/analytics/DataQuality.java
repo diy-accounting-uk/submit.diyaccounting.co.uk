@@ -193,7 +193,9 @@ public class DataQuality extends Construct {
         this.targets = List.of(
                 new Target(ACTIVITY_EVENTS_TABLE_NAME, ACTIVITY_EVENTS_CURATED_PREFIX, ACTIVITY_EVENTS_RULESET),
                 new Target(
-                        ALARM_STATE_CHANGES_TABLE_NAME, ALARM_STATE_CHANGES_CURATED_PREFIX, ALARM_STATE_CHANGES_RULESET),
+                        ALARM_STATE_CHANGES_TABLE_NAME,
+                        ALARM_STATE_CHANGES_CURATED_PREFIX,
+                        ALARM_STATE_CHANGES_RULESET),
                 new Target(DORA_RUNS_TABLE_NAME, DORA_RUNS_CURATED_PREFIX, DORA_RUNS_RULESET),
                 new Target(
                         COMPLIANCE_ACCESSIBILITY_TABLE_NAME,
@@ -225,7 +227,8 @@ public class DataQuality extends Construct {
                             .tableName(target.tableName())
                             .build())
                     .build();
-            props.glueDatabaseDependency().ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
+            props.glueDatabaseDependency()
+                    .ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
             Optional.ofNullable(props.targetTableDependencies().get(target.tableName()))
                     .ifPresent(dependency -> ruleset.getNode().addDependency(dependency));
             this.rulesets.add(ruleset);

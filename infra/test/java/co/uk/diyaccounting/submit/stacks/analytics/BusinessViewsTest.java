@@ -144,13 +144,15 @@ class BusinessViewsTest {
                 })
                 .map(Map.Entry::getKey)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("expected a v_purchase_reconciliation_daily Custom::AWS resource"));
+                .orElseThrow(
+                        () -> new AssertionError("expected a v_purchase_reconciliation_daily Custom::AWS resource"));
 
         var funnelLogicalId = customResources.entrySet().stream()
                 .filter(entry -> {
                     @SuppressWarnings("unchecked")
                     var properties = (Map<String, Object>) entry.getValue().get("Properties");
-                    return String.valueOf(properties.get("Create")).contains("CREATE OR REPLACE VIEW v_ga4_funnel_daily AS");
+                    return String.valueOf(properties.get("Create"))
+                            .contains("CREATE OR REPLACE VIEW v_ga4_funnel_daily AS");
                 })
                 .map(Map.Entry::getKey)
                 .findFirst()

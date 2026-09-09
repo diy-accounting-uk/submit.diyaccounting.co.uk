@@ -277,9 +277,7 @@ public class AccountStack extends Stack {
         // state table for every request (issue #10 acceptance criteria 3 and 6).
         securityStateTable.grant(this.bundleGetLambda, "dynamodb:UpdateItem");
 
-        infof(
-                "Granted DynamoDB UpdateItem on Security State Table to %s",
-                this.bundleGetLambda.getFunctionName());
+        infof("Granted DynamoDB UpdateItem on Security State Table to %s", this.bundleGetLambda.getFunctionName());
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.bundleGetLambda, region, account, props.envName());

@@ -195,27 +195,17 @@ public class SubmitEnvironment {
         // matching every other value in this block.
         var ga4PropertyId = envOr("GA4_PROPERTY_ID", appProps.ga4PropertyId, "(from ga4PropertyId in cdk.json)");
         var ga4ServiceAccountArn = envOr(
-                "GA4_SERVICE_ACCOUNT_ARN",
-                appProps.ga4ServiceAccountArn,
-                "(from ga4ServiceAccountArn in cdk.json)");
+                "GA4_SERVICE_ACCOUNT_ARN", appProps.ga4ServiceAccountArn, "(from ga4ServiceAccountArn in cdk.json)");
         var ga4BigQueryProjectId = envOr(
-                "GA4_BIGQUERY_PROJECT_ID",
-                appProps.ga4BigQueryProjectId,
-                "(from ga4BigQueryProjectId in cdk.json)");
+                "GA4_BIGQUERY_PROJECT_ID", appProps.ga4BigQueryProjectId, "(from ga4BigQueryProjectId in cdk.json)");
         var ga4BigQueryDatasetId = envOr(
-                "GA4_BIGQUERY_DATASET_ID",
-                appProps.ga4BigQueryDatasetId,
-                "(from ga4BigQueryDatasetId in cdk.json)");
-        var ga4BigQueryLocation = envOr(
-                "GA4_BIGQUERY_LOCATION",
-                appProps.ga4BigQueryLocation,
-                "(from ga4BigQueryLocation in cdk.json)");
+                "GA4_BIGQUERY_DATASET_ID", appProps.ga4BigQueryDatasetId, "(from ga4BigQueryDatasetId in cdk.json)");
+        var ga4BigQueryLocation =
+                envOr("GA4_BIGQUERY_LOCATION", appProps.ga4BigQueryLocation, "(from ga4BigQueryLocation in cdk.json)");
         // Same secret OpsStack's alarm-to-issue Lambda reads, resolved by GitHub Actions from
         // AWS at deploy time and passed as an env var, matching stripeSecretKeyArn above.
         var githubTokenSecretArn = envOr(
-                "GITHUB_TOKEN_SECRET_ARN",
-                appProps.githubTokenSecretArn,
-                "(from githubTokenSecretArn in cdk.json)");
+                "GITHUB_TOKEN_SECRET_ARN", appProps.githubTokenSecretArn, "(from githubTokenSecretArn in cdk.json)");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()

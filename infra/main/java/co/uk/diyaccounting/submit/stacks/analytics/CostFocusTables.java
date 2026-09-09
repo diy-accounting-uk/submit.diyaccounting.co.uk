@@ -71,8 +71,8 @@ public class CostFocusTables {
                 .databaseName(props.databaseName())
                 .tableInput(CfnTable.TableInputProperty.builder()
                         .name(COST_FOCUS_TABLE_NAME)
-                        .description("FOCUS 1.2 cost and usage export, copied in nightly from the "
-                                + "management account")
+                        .description(
+                                "FOCUS 1.2 cost and usage export, copied in nightly from the " + "management account")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(parameters)
                         .partitionKeys(List.of(CfnTable.ColumnProperty.builder()

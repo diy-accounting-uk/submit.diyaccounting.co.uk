@@ -110,8 +110,8 @@ public class RawExport extends Construct {
         // indefinitely), so this function name is stable forever, not per-deployment - use the
         // idempotent create-if-missing path, not a plain LogGroup, the same as every other
         // function in this stack.
-        var publishLogGroup =
-                ensureLogGroupWithDependency(stack, prefix + "-RawExportPublishLogGroup", "/aws/lambda/" + functionName);
+        var publishLogGroup = ensureLogGroupWithDependency(
+                stack, prefix + "-RawExportPublishLogGroup", "/aws/lambda/" + functionName);
 
         this.publishLambda = DockerImageFunction.Builder.create(this, prefix + "-RawExportPublishFn")
                 .functionName(functionName)

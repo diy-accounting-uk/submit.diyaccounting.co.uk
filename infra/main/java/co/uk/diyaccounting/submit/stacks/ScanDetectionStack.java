@@ -16,7 +16,6 @@ import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
@@ -131,7 +130,8 @@ public class ScanDetectionStack extends Stack {
         // the function name is stable forever, not per-deployment - use the idempotent
         // create-if-missing path rather than a plain LogGroup, matching every other job Lambda in
         // an env-scoped stack (IngestionStack, AnalyticsDashboard).
-        var logGroup = ensureLogGroupWithDependency(this, prefix + "-ScanDetect404LogGroup", "/aws/lambda/" + functionName);
+        var logGroup =
+                ensureLogGroupWithDependency(this, prefix + "-ScanDetect404LogGroup", "/aws/lambda/" + functionName);
 
         this.scanRate404DetectFunction = DockerImageFunction.Builder.create(this, prefix + "-ScanDetect404Fn")
                 .functionName(functionName)
@@ -259,7 +259,9 @@ public class ScanDetectionStack extends Stack {
         cfnOutput(this, "ScanDetect404FunctionArn", this.scanRate404DetectFunction.getFunctionArn());
         cfnOutput(this, "ScanDetect404ScheduleArn", this.schedule.getRuleArn());
 
-        infof("ScanDetectionStack %s created successfully for %s", this.getNode().getId(), prefix);
+        infof(
+                "ScanDetectionStack %s created successfully for %s",
+                this.getNode().getId(), prefix);
     }
 
     private String lakeBucketArn(String bucketName) {

@@ -301,8 +301,7 @@ public class BackupStack extends Stack {
         // Backup Selection - Critical Tables
         // ============================================================================
 
-        ITable receiptsTable =
-                importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
+        ITable receiptsTable = importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
         ITable bundlesTable = importTable("ImportedBundlesTable", props.sharedNames().bundlesTableName);
         ITable hmrcApiRequestsTable =
                 importTable("ImportedHmrcApiRequestsTable", props.sharedNames().hmrcApiRequestsTableName);

@@ -48,8 +48,7 @@ class StripeReconciliationTablesTest {
 
         template.resourceCountIs("AWS::Glue::Table", 3);
 
-        for (String tableName :
-                List.of("stripe_balance_transactions", "stripe_charges", "stripe_subscriptions")) {
+        for (String tableName : List.of("stripe_balance_transactions", "stripe_charges", "stripe_subscriptions")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -91,8 +90,7 @@ class StripeReconciliationTablesTest {
             var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
             var location = (String) storageDescriptor.get("Location");
 
-            assertEquals(
-                    "s3://docs-env-analytics-lake-111111111111/curated/stripe/" + tableName + "/", location);
+            assertEquals("s3://docs-env-analytics-lake-111111111111/curated/stripe/" + tableName + "/", location);
         }
     }
 
@@ -110,10 +108,11 @@ class StripeReconciliationTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "amount", "Type", "bigint"),
-                                                Map.of("Name", "net", "Type", "bigint"),
-                                                Map.of("Name", "fee", "Type", "bigint"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "amount", "Type", "bigint"),
+                                                        Map.of("Name", "net", "Type", "bigint"),
+                                                        Map.of("Name", "fee", "Type", "bigint"))))))))));
     }
 
     @Test
@@ -130,8 +129,7 @@ class StripeReconciliationTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(
-                                                List.of(Map.of("Name", "customer", "Type", "string"))))))))));
+                                        Match.arrayWith(List.of(Map.of("Name", "customer", "Type", "string"))))))))));
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
@@ -143,7 +141,6 @@ class StripeReconciliationTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(
-                                                List.of(Map.of("Name", "customer", "Type", "string"))))))))));
+                                        Match.arrayWith(List.of(Map.of("Name", "customer", "Type", "string"))))))))));
     }
 }

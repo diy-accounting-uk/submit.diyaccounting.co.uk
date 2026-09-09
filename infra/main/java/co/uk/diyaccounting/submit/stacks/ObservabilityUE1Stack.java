@@ -280,8 +280,8 @@ public class ObservabilityUE1Stack extends Stack {
         // us-east-1 (the budget itself is account-wide, but Bedrock spend and the deny action's
         // execution role live where this stack does). Scoped to this environment's own activity
         // bus, not every bus in the account.
-        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
-                + props.sharedNames().activityBusName;
+        String activityBusArn =
+                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
         budgetAlertForwardLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))
@@ -291,10 +291,7 @@ public class ObservabilityUE1Stack extends Stack {
 
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "obs-ue1", List.of(budgetAlertForwardLambda));
 
-        cfnOutput(
-                this,
-                "BedrockBudgetAlertForwardLambdaArn",
-                budgetAlertForwardLambda.ingestLambda.getFunctionArn());
+        cfnOutput(this, "BedrockBudgetAlertForwardLambdaArn", budgetAlertForwardLambda.ingestLambda.getFunctionArn());
         infof(
                 "Subscribed Bedrock budget alert forward Lambda %s to %s",
                 budgetAlertForwardLambda.ingestLambda.getNode().getId(), bedrockBudgetAlertsTopic.getTopicName());

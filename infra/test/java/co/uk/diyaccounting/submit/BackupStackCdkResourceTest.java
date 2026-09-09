@@ -59,24 +59,36 @@ class BackupStackCdkResourceTest {
 
         template.hasResourceProperties(
                 "AWS::Backup::BackupPlan",
-                Match.objectLike(Map.of(
-                        "BackupPlan",
-                        Match.objectLike(Map.of(
-                                "BackupPlanRule",
-                                Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "RuleName",
-                                                "DailyBackup",
-                                                "CopyActions",
-                                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                                        "DestinationBackupVaultArn", CROSS_ACCOUNT_VAULT_ARN)))))),
-                                        Match.objectLike(Map.of(
-                                                "RuleName",
-                                                "MonthlyCompliance",
-                                                "CopyActions",
-                                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                                        "DestinationBackupVaultArn",
-                                                        CROSS_ACCOUNT_VAULT_ARN)))))))))))));
+                Match.objectLike(
+                        Map.of(
+                                "BackupPlan",
+                                Match.objectLike(
+                                        Map.of(
+                                                "BackupPlanRule",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "RuleName",
+                                                                                "DailyBackup",
+                                                                                "CopyActions",
+                                                                                Match.arrayWith(
+                                                                                        List.of(
+                                                                                                Match.objectLike(
+                                                                                                        Map.of(
+                                                                                                                "DestinationBackupVaultArn",
+                                                                                                                CROSS_ACCOUNT_VAULT_ARN)))))),
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "RuleName",
+                                                                                "MonthlyCompliance",
+                                                                                "CopyActions",
+                                                                                Match.arrayWith(
+                                                                                        List.of(
+                                                                                                Match.objectLike(
+                                                                                                        Map.of(
+                                                                                                                "DestinationBackupVaultArn",
+                                                                                                                CROSS_ACCOUNT_VAULT_ARN)))))))))))));
     }
 
     @Test
@@ -90,16 +102,20 @@ class BackupStackCdkResourceTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Sid",
-                                                "CopyRecoveryPointsToBackupAccount",
-                                                "Action",
-                                                List.of("backup:CopyFromBackupVault", "backup:CopyIntoBackupVault"))),
-                                        Match.objectLike(Map.of(
-                                                "Sid",
-                                                "UseBackupAccountKeyForCopies",
-                                                "Resource",
-                                                "arn:aws:kms:eu-west-2:914216784828:key/*"))))))))); 
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid",
+                                                        "CopyRecoveryPointsToBackupAccount",
+                                                        "Action",
+                                                        List.of(
+                                                                "backup:CopyFromBackupVault",
+                                                                "backup:CopyIntoBackupVault"))),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid",
+                                                        "UseBackupAccountKeyForCopies",
+                                                        "Resource",
+                                                        "arn:aws:kms:eu-west-2:914216784828:key/*")))))))));
     }
 
     @Test
@@ -113,12 +129,14 @@ class BackupStackCdkResourceTest {
                         Match.objectLike(Map.of(
                                 "BackupPlanRule",
                                 Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "RuleName", "DailyBackup",
-                                                "CopyActions", Match.absent())),
-                                        Match.objectLike(Map.of(
-                                                "RuleName", "MonthlyCompliance",
-                                                "CopyActions", Match.absent())))))))));
+                                        Match.objectLike(
+                                                Map.of("RuleName", "DailyBackup", "CopyActions", Match.absent())),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "RuleName",
+                                                        "MonthlyCompliance",
+                                                        "CopyActions",
+                                                        Match.absent())))))))));
     }
 
     @Test
@@ -146,7 +164,7 @@ class BackupStackCdkResourceTest {
     }
 
     private static Matcher selectedTable(String tableName) {
-        return Match.objectLike(Map.of(
-                "Fn::Join", Match.arrayWith(List.of(Match.arrayWith(List.of(":table/" + tableName))))));
+        return Match.objectLike(
+                Map.of("Fn::Join", Match.arrayWith(List.of(Match.arrayWith(List.of(":table/" + tableName))))));
     }
 }

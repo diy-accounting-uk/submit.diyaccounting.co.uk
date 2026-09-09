@@ -126,8 +126,7 @@ public class BackupAccountAccessStack extends Stack {
                 .sid("ReadCdkBootstrapVersion")
                 .effect(Effect.ALLOW)
                 .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
-                .resources(List.of(
-                        String.format("arn:aws:ssm:*:%s:parameter/cdk-bootstrap/*", this.getAccount())))
+                .resources(List.of(String.format("arn:aws:ssm:*:%s:parameter/cdk-bootstrap/*", this.getAccount())))
                 .build());
 
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
@@ -200,8 +199,7 @@ public class BackupAccountAccessStack extends Stack {
                 .sid("InspectAndCleanUpRestoredTables")
                 .effect(Effect.ALLOW)
                 .actions(List.of("dynamodb:DeleteTable", "dynamodb:DescribeTable", "dynamodb:Scan"))
-                .resources(List.of(String.format(
-                        "arn:aws:dynamodb:*:%s:table/*-restoretest-*", this.getAccount())))
+                .resources(List.of(String.format("arn:aws:dynamodb:*:%s:table/*-restoretest-*", this.getAccount())))
                 .build());
 
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()

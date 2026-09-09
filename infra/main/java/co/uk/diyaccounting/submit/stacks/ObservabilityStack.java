@@ -216,8 +216,8 @@ public class ObservabilityStack extends Stack {
                     software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
                             .name("Management events")
                             .fieldSelectors(List.of(
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
-                                            .AdvancedFieldSelectorProperty.builder()
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedFieldSelectorProperty
+                                            .builder()
                                             .field("eventCategory")
                                             .equalTo(List.of("Management"))
                                             .build()))
@@ -225,18 +225,18 @@ public class ObservabilityStack extends Stack {
                     software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedEventSelectorProperty.builder()
                             .name("DynamoDB data events excluding GetRecords")
                             .fieldSelectors(List.of(
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
-                                            .AdvancedFieldSelectorProperty.builder()
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedFieldSelectorProperty
+                                            .builder()
                                             .field("eventCategory")
                                             .equalTo(List.of("Data"))
                                             .build(),
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
-                                            .AdvancedFieldSelectorProperty.builder()
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedFieldSelectorProperty
+                                            .builder()
                                             .field("resources.type")
                                             .equalTo(List.of("AWS::DynamoDB::Table"))
                                             .build(),
-                                    software.amazon.awscdk.services.cloudtrail.CfnTrail
-                                            .AdvancedFieldSelectorProperty.builder()
+                                    software.amazon.awscdk.services.cloudtrail.CfnTrail.AdvancedFieldSelectorProperty
+                                            .builder()
                                             .field("eventName")
                                             .notEquals(List.of("GetRecords"))
                                             .build()))
@@ -787,9 +787,7 @@ public class ObservabilityStack extends Stack {
 
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("DescribeAlarms")
-                .actions(List.of(
-                        "cloudwatch:DescribeAlarms",
-                        "cloudwatch:DescribeAlarmHistory"))
+                .actions(List.of("cloudwatch:DescribeAlarms", "cloudwatch:DescribeAlarmHistory"))
                 .resources(List.of("*"))
                 .build());
 
@@ -867,8 +865,8 @@ public class ObservabilityStack extends Stack {
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ReadTriageParameters")
                 .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
-                .resources(List.of("arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*"
-                        .formatted(this.getAccount(), props.envName())))
+                .resources(List.of(
+                        "arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*".formatted(this.getAccount(), props.envName())))
                 .build());
 
         // One explicit Deny so a later widening of an Allow above cannot reach customer data. Athena

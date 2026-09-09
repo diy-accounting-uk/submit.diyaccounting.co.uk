@@ -196,8 +196,10 @@ public class CostFocusIngestion {
         this.errorsAlarm = Alarm.Builder.create(scope, prefix + "-CostFocusCopyErrorsAlarm")
                 .alarmName(functionName + "-errors")
                 .alarmDescription("The nightly FOCUS export copy failed at least once in 24 hours")
-                .metric(this.copyLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(24)).statistic("Sum").build()))
+                .metric(this.copyLambda.metricErrors(MetricOptions.builder()
+                        .period(Duration.hours(24))
+                        .statistic("Sum")
+                        .build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)

@@ -55,9 +55,7 @@ class OpsStackTest {
     @Test
     void alarmStateChangeRuleTargetsOnlyTelegramInCi() {
         OpsStack opsStack = synthOpsStack(
-                "ci",
-                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ops/github_token",
-                null);
+                "ci", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ops/github_token", null);
         Template template = Template.fromStack(opsStack);
 
         var rules = template.findResources(
@@ -74,9 +72,7 @@ class OpsStackTest {
     @Test
     void alarmStateChangeRuleTargetsTelegramAndGithubIssueInProd() {
         OpsStack opsStack = synthOpsStack(
-                "prod",
-                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token",
-                null);
+                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
         Template template = Template.fromStack(opsStack);
 
         var rules = template.findResources(
@@ -105,18 +101,13 @@ class OpsStackTest {
                 "AWS::Events::Rule",
                 Map.of("Properties", Map.of("EventPattern", Map.of("detail-type", List.of("ActivityEvent")))));
         assertEquals(
-                0,
-                busWideRules.size(),
-                "OpsStack must not create its own bus-wide catch-all Telegram forwarder rule");
+                0, busWideRules.size(), "OpsStack must not create its own bus-wide catch-all Telegram forwarder rule");
         var forwarderFunctionNames = template.findResources("AWS::Lambda::Function").values().stream()
                 .map(resource -> (Map<?, ?>) resource.get("Properties"))
                 .map(properties -> String.valueOf(properties.get("FunctionName")))
                 .filter(functionName -> functionName.contains("activity-telegram-forwarder"))
                 .toList();
-        assertEquals(
-                List.of(),
-                forwarderFunctionNames,
-                "OpsStack must not build its own Telegram forwarder Lambda");
+        assertEquals(List.of(), forwarderFunctionNames, "OpsStack must not build its own Telegram forwarder Lambda");
     }
 
     @Test
@@ -140,8 +131,10 @@ class OpsStackTest {
         Template template = Template.fromStack(opsStack);
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadAlarmSilence");
-        Map<String, Object> statement =
-                statements.stream().filter(s -> "ReadAlarmSilence".equals(s.get("Sid"))).findFirst().orElseThrow();
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "ReadAlarmSilence".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
 
         assertEquals("ssm:GetParameter", statement.get("Action"));
         String resource = (String) statement.get("Resource");

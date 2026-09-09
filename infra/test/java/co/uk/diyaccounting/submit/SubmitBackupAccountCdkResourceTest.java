@@ -50,8 +50,7 @@ class SubmitBackupAccountCdkResourceTest {
         template.hasResource("AWS::Backup::BackupVault", Map.of("DeletionPolicy", "Retain"));
         template.hasResource("AWS::KMS::Key", Map.of("DeletionPolicy", "Retain"));
 
-        template.hasResourceProperties(
-                "AWS::KMS::Key", Match.objectLike(Map.of("EnableKeyRotation", true)));
+        template.hasResourceProperties("AWS::KMS::Key", Match.objectLike(Map.of("EnableKeyRotation", true)));
     }
 
     @Test
@@ -67,13 +66,15 @@ class SubmitBackupAccountCdkResourceTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Sid", "AllowCrossAccountCopy",
-                                                "Effect", "Allow",
-                                                "Action", "backup:CopyIntoBackupVault")),
-                                        Match.objectLike(Map.of(
-                                                "Sid", "DenyDeleteFromOutsideBackupAccount",
-                                                "Effect", "Deny")))))))));
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid", "AllowCrossAccountCopy",
+                                                        "Effect", "Allow",
+                                                        "Action", "backup:CopyIntoBackupVault")),
+                                        Match.objectLike(
+                                                Map.of(
+                                                        "Sid", "DenyDeleteFromOutsideBackupAccount",
+                                                        "Effect", "Deny")))))))));
     }
 
     @Test
@@ -87,15 +88,18 @@ class SubmitBackupAccountCdkResourceTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid", "AllowCiRestoreRoleToRestore",
-                                        "Effect", "Allow",
-                                        "Principal", Map.of("AWS", CI_BACKUP_ROLE),
+                                        "Sid",
+                                        "AllowCiRestoreRoleToRestore",
+                                        "Effect",
+                                        "Allow",
+                                        "Principal",
+                                        Map.of("AWS", CI_BACKUP_ROLE),
                                         "Action",
-                                                List.of(
-                                                        "backup:ListRecoveryPointsByBackupVault",
-                                                        "backup:DescribeRecoveryPoint",
-                                                        "backup:GetRecoveryPointRestoreMetadata",
-                                                        "backup:StartRestoreJob"))))))))));
+                                        List.of(
+                                                "backup:ListRecoveryPointsByBackupVault",
+                                                "backup:DescribeRecoveryPoint",
+                                                "backup:GetRecoveryPointRestoreMetadata",
+                                                "backup:StartRestoreJob"))))))))));
 
         template.hasResourceProperties(
                 "AWS::KMS::Key",
@@ -104,15 +108,18 @@ class SubmitBackupAccountCdkResourceTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid", "AllowCiRestoreRoleToDecrypt",
-                                        "Effect", "Allow",
-                                        "Principal", Map.of("AWS", CI_BACKUP_ROLE),
+                                        "Sid",
+                                        "AllowCiRestoreRoleToDecrypt",
+                                        "Effect",
+                                        "Allow",
+                                        "Principal",
+                                        Map.of("AWS", CI_BACKUP_ROLE),
                                         "Action",
-                                                List.of(
-                                                        "kms:Decrypt",
-                                                        "kms:DescribeKey",
-                                                        "kms:GenerateDataKey",
-                                                        "kms:CreateGrant"))))))))));
+                                        List.of(
+                                                "kms:Decrypt",
+                                                "kms:DescribeKey",
+                                                "kms:GenerateDataKey",
+                                                "kms:CreateGrant"))))))))));
     }
 
     private static Template synthAccessStack() {
@@ -138,25 +145,30 @@ class SubmitBackupAccountCdkResourceTest {
 
         template.hasResourceProperties(
                 "AWS::IAM::Role",
-                Match.objectLike(Map.of(
-                        "RoleName",
-                        "backup-github-actions-role",
-                        "AssumeRolePolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "sts:AssumeRoleWithWebIdentity",
-                                        "Condition",
+                Match.objectLike(
+                        Map.of(
+                                "RoleName",
+                                "backup-github-actions-role",
+                                "AssumeRolePolicyDocument",
+                                Match.objectLike(
                                         Map.of(
-                                                "StringEquals",
-                                                        Map.of(
-                                                                "token.actions.githubusercontent.com:aud",
-                                                                "sts.amazonaws.com"),
-                                                "StringLike",
-                                                        Map.of(
-                                                                "token.actions.githubusercontent.com:sub",
-                                                                "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*")))))))))));
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "sts:AssumeRoleWithWebIdentity",
+                                                                                "Condition",
+                                                                                Map.of(
+                                                                                        "StringEquals",
+                                                                                                Map.of(
+                                                                                                        "token.actions.githubusercontent.com:aud",
+                                                                                                        "sts.amazonaws.com"),
+                                                                                        "StringLike",
+                                                                                                Map.of(
+                                                                                                        "token.actions.githubusercontent.com:sub",
+                                                                                                        "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*")))))))))));
     }
 
     @Test
@@ -171,8 +183,8 @@ class SubmitBackupAccountCdkResourceTest {
                         "AssumeRolePolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Principal", Map.of("Service", "backup.amazonaws.com"))))))))));
+                                Match.arrayWith(List.of(Match.objectLike(
+                                        Map.of("Principal", Map.of("Service", "backup.amazonaws.com"))))))))));
     }
 
     @Test

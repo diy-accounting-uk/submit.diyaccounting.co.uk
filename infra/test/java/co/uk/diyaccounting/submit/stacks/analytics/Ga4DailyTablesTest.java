@@ -48,12 +48,11 @@ class Ga4DailyTablesTest {
 
         template.resourceCountIs("AWS::Glue::Table", 4);
 
-        for (String tableName :
-                List.of(
-                        "sessions_by_host_source_daily",
-                        "funnel_steps_daily",
-                        "key_events_daily",
-                        "downloads_by_product_daily")) {
+        for (String tableName : List.of(
+                "sessions_by_host_source_daily",
+                "funnel_steps_daily",
+                "key_events_daily",
+                "downloads_by_product_daily")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -95,8 +94,7 @@ class Ga4DailyTablesTest {
             var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
             var location = (String) storageDescriptor.get("Location");
 
-            assertEquals(
-                    "s3://docs-env-analytics-lake-111111111111/curated/ga4_daily/" + tableName + "/", location);
+            assertEquals("s3://docs-env-analytics-lake-111111111111/curated/ga4_daily/" + tableName + "/", location);
         }
     }
 
@@ -114,11 +112,12 @@ class Ga4DailyTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "hostname", "Type", "string"),
-                                                Map.of("Name", "session_source", "Type", "string"),
-                                                Map.of("Name", "visitor_kind", "Type", "string"),
-                                                Map.of("Name", "sessions", "Type", "bigint"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "hostname", "Type", "string"),
+                                                        Map.of("Name", "session_source", "Type", "string"),
+                                                        Map.of("Name", "visitor_kind", "Type", "string"),
+                                                        Map.of("Name", "sessions", "Type", "bigint"))))))))));
     }
 
     @Test
@@ -135,8 +134,9 @@ class Ga4DailyTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "product", "Type", "string"),
-                                                Map.of("Name", "downloads", "Type", "bigint"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "product", "Type", "string"),
+                                                        Map.of("Name", "downloads", "Type", "bigint"))))))))));
     }
 }

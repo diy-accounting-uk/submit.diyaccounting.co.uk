@@ -83,7 +83,9 @@ class SubmitApplicationCdkResourceTest {
         assertStackHealthAlarm(hmrcStackTemplate, 24, 22, routedPrefixes);
         // The HmrcStack has 46 Lambdas × 2 checks + async checks, totaling ~136 alarms,
         // which would create a rule exceeding 10240 chars. Verify it uses group composites.
-        int hmrcCompositeCount = hmrcStackTemplate.findResources("AWS::CloudWatch::CompositeAlarm").size();
+        int hmrcCompositeCount = hmrcStackTemplate
+                .findResources("AWS::CloudWatch::CompositeAlarm")
+                .size();
         org.junit.jupiter.api.Assertions.assertTrue(
                 hmrcCompositeCount > 1,
                 "HmrcStack should have multiple CompositeAlarms (top-level + groups) due to rule length, but found "
@@ -137,9 +139,8 @@ class SubmitApplicationCdkResourceTest {
         // Capacity reconciliation counts live allocations of a capped bundle through
         // bundleId-expiry-index instead of scanning the bundles table. A re-grant of dynamodb:Scan
         // to this role would slip past the check above only if this assertion also failed.
-        boolean reconcileHasIndexQuery =
-                findRoleGrantedActionOnResourceSuffix(
-                        accountStackTemplate, "bundle-capacity-reconcile", "dynamodb:Query", "/index/bundleId-expiry-index");
+        boolean reconcileHasIndexQuery = findRoleGrantedActionOnResourceSuffix(
+                accountStackTemplate, "bundle-capacity-reconcile", "dynamodb:Query", "/index/bundleId-expiry-index");
         if (!reconcileHasIndexQuery) {
             dumpIamPolicies(accountStackTemplate);
             throw new AssertionFailedError("bundle-capacity-reconcile Lambda role is missing dynamodb:Query on "
@@ -191,8 +192,7 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/companies-house/search"));
         apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/token"));
         apiStackTemplate.hasResourceProperties(
@@ -205,9 +205,7 @@ class SubmitApplicationCdkResourceTest {
                 Map.of("RouteKey", "PUT /api/v1/companies-house/transaction/{transactionId}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
-                Map.of(
-                        "RouteKey",
-                        "GET /api/v1/companies-house/company/{companyNumber}/registered-office-address"));
+                Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/registered-office-address"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of(
@@ -230,20 +228,16 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
         apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/books/{bookId}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/books/{bookId}"));
+        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books"));
         apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
 
@@ -276,8 +270,7 @@ class SubmitApplicationCdkResourceTest {
         opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 2);
         opsStackTemplateForRouting.hasResourceProperties(
                 "AWS::Synthetics::Canary",
-                Match.objectLike(Map.of(
-                        "Schedule", Match.objectLike(Map.of("Expression", "cron(27 * * * ? *)")))));
+                Match.objectLike(Map.of("Schedule", Match.objectLike(Map.of("Expression", "cron(27 * * * ? *)")))));
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
@@ -289,8 +282,7 @@ class SubmitApplicationCdkResourceTest {
         // distribution itself must carry no classic standard-logging configuration.
         edgeStackTemplate.hasResourceProperties(
                 "AWS::CloudFront::Distribution",
-                Match.objectLike(Map.of(
-                        "DistributionConfig", Match.objectLike(Map.of("Logging", Match.absent())))));
+                Match.objectLike(Map.of("DistributionConfig", Match.objectLike(Map.of("Logging", Match.absent())))));
 
         // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
@@ -315,7 +307,8 @@ class SubmitApplicationCdkResourceTest {
                 "AWS::WAFv2::WebACL",
                 Match.objectLike(Map.of(
                         "Rules",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "SensitivePathScan", "Priority", 0)))))));
+                        Match.arrayWith(
+                                List.of(Match.objectLike(Map.of("Name", "SensitivePathScan", "Priority", 0)))))));
         edgeStackTemplate.hasResourceProperties(
                 "AWS::WAFv2::WebACL",
                 Match.objectLike(Map.of(
@@ -330,13 +323,15 @@ class SubmitApplicationCdkResourceTest {
         });
         edgeStackTemplate.hasResourceProperties(
                 "AWS::WAFv2::WebACL",
-                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(
-                        Match.objectLike(Map.of("Name", "SensitivePathScan")),
-                        Match.objectLike(Map.of("Name", "RateLimitRule")),
-                        Match.objectLike(Map.of("Name", "AWSManagedRulesKnownBadInputsRuleSet")),
-                        Match.objectLike(Map.of("Name", "AWSManagedRulesCommonRuleSet")),
-                        Match.objectLike(Map.of("Name", "WafManualBlock")),
-                        Match.objectLike(Map.of("Name", "OversizedBodyOutsideBookWrite")))))));
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(
+                                Match.objectLike(Map.of("Name", "SensitivePathScan")),
+                                Match.objectLike(Map.of("Name", "RateLimitRule")),
+                                Match.objectLike(Map.of("Name", "AWSManagedRulesKnownBadInputsRuleSet")),
+                                Match.objectLike(Map.of("Name", "AWSManagedRulesCommonRuleSet")),
+                                Match.objectLike(Map.of("Name", "WafManualBlock")),
+                                Match.objectLike(Map.of("Name", "OversizedBodyOutsideBookWrite")))))));
 
         assertOversizedBodyBlockedExceptOnABookWrite(edgeStackTemplate);
 
@@ -360,8 +355,8 @@ class SubmitApplicationCdkResourceTest {
                 "AWS::WAFv2::LoggingConfiguration",
                 Match.objectLike(Map.of(
                         "RedactedFields",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "SingleHeader", Match.objectLike(Map.of("Name", "authorization")))))))));
+                        Match.arrayWith(List.of(Match.objectLike(
+                                Map.of("SingleHeader", Match.objectLike(Map.of("Name", "authorization")))))))));
         edgeStackTemplate.resourceCountIs("AWS::Logs::SubscriptionFilter", 1);
 
         // Issue #9 makes this one-line change on issue #10's behalf: its mid-session country
@@ -373,8 +368,8 @@ class SubmitApplicationCdkResourceTest {
                         "OriginRequestPolicyConfig",
                         Match.objectLike(Map.of(
                                 "HeadersConfig",
-                                Match.objectLike(Map.of(
-                                        "Headers", Match.arrayWith(List.of("CloudFront-Viewer-Country")))))))));
+                                Match.objectLike(
+                                        Map.of("Headers", Match.arrayWith(List.of("CloudFront-Viewer-Country")))))))));
 
         // Manual IP block list (issue #9 phase 9.3): two empty IP sets by default, and the alarm
         // that confirms a hand-applied block is doing something.
@@ -431,8 +426,7 @@ class SubmitApplicationCdkResourceTest {
         IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalStateException.class, () -> new SubmitApplication(app, appProps));
         org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_BOOKS_CLIENT_ID"));
-        org.junit.jupiter.api.Assertions.assertTrue(
-                thrown.getMessage().contains("spreadsheets-books-app-client-id"));
+        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("spreadsheets-books-app-client-id"));
     }
 
     /**
@@ -488,15 +482,14 @@ class SubmitApplicationCdkResourceTest {
         var sizeConstraint = (Map<String, Object>) conditions.get(0).get("SizeConstraintStatement");
         org.junit.jupiter.api.Assertions.assertEquals("GT", sizeConstraint.get("ComparisonOperator"));
         org.junit.jupiter.api.Assertions.assertEquals(8192, ((Number) sizeConstraint.get("Size")).intValue());
-        var body = (Map<String, Object>)
-                ((Map<String, Object>) sizeConstraint.get("FieldToMatch")).get("Body");
+        var body = (Map<String, Object>) ((Map<String, Object>) sizeConstraint.get("FieldToMatch")).get("Body");
         org.junit.jupiter.api.Assertions.assertEquals(
                 "MATCH",
                 body.get("OversizeHandling"),
                 "a body larger than the inspection limit must match, which is what the managed rule caught");
 
-        var exemption = (Map<String, Object>) ((Map<String, Object>) conditions.get(1).get("NotStatement"))
-                .get("Statement");
+        var exemption =
+                (Map<String, Object>) ((Map<String, Object>) conditions.get(1).get("NotStatement")).get("Statement");
         var exemptionParts =
                 (List<Map<String, Object>>) ((Map<String, Object>) exemption.get("AndStatement")).get("Statements");
         var searchStrings = exemptionParts.stream()
@@ -516,9 +509,8 @@ class SubmitApplicationCdkResourceTest {
     private static void assertBooksBehaviourHasNoCorsOverride(Template template) {
         var distributions = template.findResources("AWS::CloudFront::Distribution");
         org.junit.jupiter.api.Assertions.assertEquals(1, distributions.size());
-        var distributionConfig =
-                (Map<String, Object>) ((Map<String, Object>) distributions.values().iterator().next())
-                        .get("Properties");
+        var distributionConfig = (Map<String, Object>)
+                ((Map<String, Object>) distributions.values().iterator().next()).get("Properties");
         var config = (Map<String, Object>) distributionConfig.get("DistributionConfig");
         var cacheBehaviors = (List<Map<String, Object>>) config.get("CacheBehaviors");
         var booksBehaviour = cacheBehaviors.stream()
@@ -528,13 +520,15 @@ class SubmitApplicationCdkResourceTest {
 
         var policyRef = (Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId");
         String policyLogicalId = (String) policyRef.get("Ref");
-        var policyResource = template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(policyLogicalId);
+        var policyResource =
+                template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(policyLogicalId);
         org.junit.jupiter.api.Assertions.assertTrue(
                 policyResource != null, "expected to find the books response headers policy resource");
         var policyProperties = (Map<String, Object>) ((Map<String, Object>) policyResource).get("Properties");
         var policyConfig = (Map<String, Object>) policyProperties.get("ResponseHeadersPolicyConfig");
         org.junit.jupiter.api.Assertions.assertFalse(
-                policyConfig.containsKey("CorsConfig"), "expected the books response headers policy to carry no CorsConfig");
+                policyConfig.containsKey("CorsConfig"),
+                "expected the books response headers policy to carry no CorsConfig");
     }
 
     /**
@@ -624,7 +618,8 @@ class SubmitApplicationCdkResourceTest {
         // Verify all check alarms are referenced by at least one composite (group or top-level)
         var allReferenced = new ArrayList<String>();
         for (Map.Entry<String, Map<String, Object>> composite : composites.entrySet()) {
-            Map<String, Object> props = (Map<String, Object>) composite.getValue().get("Properties");
+            Map<String, Object> props =
+                    (Map<String, Object>) composite.getValue().get("Properties");
             if (props != null) {
                 collectGetAttTargets(props.get("AlarmRule"), allReferenced);
             }
@@ -632,12 +627,12 @@ class SubmitApplicationCdkResourceTest {
         var unreferenced = new ArrayList<>(checkAlarmLogicalIds);
         unreferenced.removeAll(allReferenced);
         org.junit.jupiter.api.Assertions.assertTrue(
-                unreferenced.isEmpty(),
-                "These check- alarms are missing from all composites: " + unreferenced);
+                unreferenced.isEmpty(), "These check- alarms are missing from all composites: " + unreferenced);
 
         // Verify each composite alarm's rule length is under 10240 characters
         for (Map.Entry<String, Map<String, Object>> composite : composites.entrySet()) {
-            Map<String, Object> props = (Map<String, Object>) composite.getValue().get("Properties");
+            Map<String, Object> props =
+                    (Map<String, Object>) composite.getValue().get("Properties");
             if (props == null) continue;
             Object alarmRule = props.get("AlarmRule");
             int ruleLength = estimateAlarmRuleLength(alarmRule);

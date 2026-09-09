@@ -60,8 +60,7 @@ class SecurityLakeStackTest {
         template.resourceCountIs("AWS::SNS::Topic", 0);
 
         template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of("ScheduleExpression", "cron(20 3 * * ? *)")));
+                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(20 3 * * ? *)")));
 
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",

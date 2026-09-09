@@ -280,7 +280,8 @@ public class IdentityStack extends Stack {
         // on this pool's hosted UI (same Google IdP, no native Cognito login), then redirects back
         // to the spreadsheets host - so this client needs no USER_PASSWORD_AUTH/USER_SRP_AUTH flow,
         // only the authorization-code grant the hosted UI redirect uses.
-        this.booksUserPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-BooksUserPoolClient")
+        this.booksUserPoolClient = UserPoolClient.Builder.create(
+                        this, props.resourceNamePrefix() + "-BooksUserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-books-client")
                 .generateSecret(false)
@@ -340,8 +341,8 @@ public class IdentityStack extends Stack {
         // runs on itself. The role name is fixed so the spreadsheets workflow can reference the
         // ARN without reading a CloudFormation output from this repository's stacks.
         var spreadsheetsBehaviourRoleName = props.envName() + "-env-spreadsheets-behaviour-role";
-        var githubOidcProviderArn = "arn:aws:iam::" + props.getEnv().getAccount()
-                + ":oidc-provider/token.actions.githubusercontent.com";
+        var githubOidcProviderArn =
+                "arn:aws:iam::" + props.getEnv().getAccount() + ":oidc-provider/token.actions.githubusercontent.com";
         var spreadsheetsBehaviourRole = Role.Builder.create(
                         this, props.resourceNamePrefix() + "-SpreadsheetsBehaviourRole")
                 .roleName(spreadsheetsBehaviourRoleName)
@@ -387,9 +388,7 @@ public class IdentityStack extends Stack {
                 .actions(List.of("cloudformation:DescribeStacks"))
                 .resources(List.of(String.format(
                         "arn:aws:cloudformation:%s:%s:stack/%s/*",
-                        props.getEnv().getRegion(),
-                        props.getEnv().getAccount(),
-                        props.sharedNames().identityStackId)))
+                        props.getEnv().getRegion(), props.getEnv().getAccount(), props.sharedNames().identityStackId)))
                 .build());
 
         // scripts/delete-user-data.js purges the eight tables it queries by hashedSub: a Query on

@@ -84,8 +84,7 @@ class WorkflowRunTablesTest {
                                 "dora_runs",
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/dora/")))))));
+                                        "Location", "s3://docs-env-analytics-lake-111111111111/curated/dora/")))))));
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
@@ -96,8 +95,7 @@ class WorkflowRunTablesTest {
                                 "probe_runs",
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/probe/")))))));
+                                        "Location", "s3://docs-env-analytics-lake-111111111111/curated/probe/")))))));
     }
 
     @Test
@@ -114,18 +112,15 @@ class WorkflowRunTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "workflow", "Type", "string"),
-                                                Map.of("Name", "environment", "Type", "string"),
-                                                Map.of("Name", "branch", "Type", "string"),
-                                                Map.of("Name", "sha", "Type", "string"),
-                                                Map.of("Name", "run_id", "Type", "string"),
-                                                Map.of("Name", "conclusion", "Type", "string"),
-                                                Map.of(
-                                                        "Name",
-                                                        "lead_time_seconds",
-                                                        "Type",
-                                                        "bigint"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "workflow", "Type", "string"),
+                                                        Map.of("Name", "environment", "Type", "string"),
+                                                        Map.of("Name", "branch", "Type", "string"),
+                                                        Map.of("Name", "sha", "Type", "string"),
+                                                        Map.of("Name", "run_id", "Type", "string"),
+                                                        Map.of("Name", "conclusion", "Type", "string"),
+                                                        Map.of("Name", "lead_time_seconds", "Type", "bigint"))))))))));
     }
 
     @Test
@@ -142,11 +137,12 @@ class WorkflowRunTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "environment", "Type", "string"),
-                                                Map.of("Name", "suite", "Type", "string"),
-                                                Map.of("Name", "run_id", "Type", "string"),
-                                                Map.of("Name", "passed", "Type", "boolean"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "environment", "Type", "string"),
+                                                        Map.of("Name", "suite", "Type", "string"),
+                                                        Map.of("Name", "run_id", "Type", "string"),
+                                                        Map.of("Name", "passed", "Type", "boolean"))))))))));
     }
 
     @Test

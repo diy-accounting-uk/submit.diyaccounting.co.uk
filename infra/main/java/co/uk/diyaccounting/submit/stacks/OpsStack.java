@@ -153,7 +153,8 @@ public class OpsStack extends Stack {
                 .actions(List.of("sns:Publish"))
                 .resources(List.of(this.alertTopic.getTopicArn()))
                 .conditions(Map.of(
-                        "StringEquals", Map.of("aws:SourceAccount", Stack.of(this).getAccount())))
+                        "StringEquals",
+                        Map.of("aws:SourceAccount", Stack.of(this).getAccount())))
                 .build());
 
         if (props.alertEmail() != null && !props.alertEmail().isBlank()) {
@@ -195,7 +196,8 @@ public class OpsStack extends Stack {
         // forwarder's own code, env vars, and IAM role stay untouched. Only created
         // when a GitHub token secret is configured.
         IFunction alarmToGithubIssueLambda = null;
-        if (props.opsGithubTokenSecretArn() != null && !props.opsGithubTokenSecretArn().isBlank()) {
+        if (props.opsGithubTokenSecretArn() != null
+                && !props.opsGithubTokenSecretArn().isBlank()) {
             var alarmToGithubIssueEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("OPS_GITHUB_TOKEN_SECRET_ARN", props.opsGithubTokenSecretArn())
@@ -323,7 +325,8 @@ public class OpsStack extends Stack {
         // same rule, and a ci set self-destructs within hours, so an issue opened for it is
         // stale before anyone can act on it.
         var alarmStateChangeTargets = new ArrayList<LambdaFunction>();
-        alarmStateChangeTargets.add(LambdaFunction.Builder.create(telegramForwarderLambda).build());
+        alarmStateChangeTargets.add(
+                LambdaFunction.Builder.create(telegramForwarderLambda).build());
         if (alarmToGithubIssueLambda != null && "prod".equals(props.envName())) {
             alarmStateChangeTargets.add(
                     LambdaFunction.Builder.create(alarmToGithubIssueLambda).build());

@@ -5,8 +5,6 @@
 
 package co.uk.diyaccounting.submit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
@@ -25,8 +23,10 @@ class SubmitCostReportingTest {
     void readsTheReaderRoleArnsFromCdkJsonAndDeploysOneStack() {
         App app = new App(AppProps.builder()
                 .context(Map.of(
-                        "bucketName", "diy-accounting-cost-focus-887764105431",
-                        "exportName", "diy-focus-1-2",
+                        "bucketName",
+                        "diy-accounting-cost-focus-887764105431",
+                        "exportName",
+                        "diy-focus-1-2",
                         "readerRoleArns",
                         "arn:aws:iam::972912397388:role/prod-env-cost-focus-copy-role,"
                                 + "arn:aws:iam::367191799875:role/ci-env-cost-focus-copy-role"))
@@ -43,8 +43,8 @@ class SubmitCostReportingTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(java.util.List.of(Match.objectLike(Map.of(
-                                        "Sid", "AllowDeploymentAccountsToReadTheExport")))))))));
+                                Match.arrayWith(java.util.List.of(Match.objectLike(
+                                        Map.of("Sid", "AllowDeploymentAccountsToReadTheExport")))))))));
     }
 
     @Test

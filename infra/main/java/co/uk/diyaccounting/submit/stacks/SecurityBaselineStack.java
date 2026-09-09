@@ -155,9 +155,7 @@ public class SecurityBaselineStack extends Stack {
                 .resources(List.of(this.configBucket.getBucketArn() + "/AWSLogs/" + this.getAccount() + "/Config/*"))
                 .conditions(Map.of(
                         "StringEquals",
-                        Map.of(
-                                "s3:x-amz-acl", "bucket-owner-full-control",
-                                "AWS:SourceAccount", this.getAccount())))
+                        Map.of("s3:x-amz-acl", "bucket-owner-full-control", "AWS:SourceAccount", this.getAccount())))
                 .build());
 
         // Records every supported resource type, including global ones (IAM, etc), rather than a
@@ -233,8 +231,7 @@ public class SecurityBaselineStack extends Stack {
         var enableCisV5Call = AwsSdkCall.builder()
                 .service("SecurityHub")
                 .action("batchEnableStandards")
-                .parameters(
-                        Map.of("StandardsSubscriptionRequests", List.of(Map.of("StandardsArn", cisV5StandardArn))))
+                .parameters(Map.of("StandardsSubscriptionRequests", List.of(Map.of("StandardsArn", cisV5StandardArn))))
                 .physicalResourceId(PhysicalResourceId.of("cis-5-0-0-standard-enabled"))
                 .ignoreErrorCodesMatching("ResourceConflictException")
                 .build();

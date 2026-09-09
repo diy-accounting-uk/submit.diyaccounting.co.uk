@@ -161,8 +161,12 @@ public class SelfDestructStack extends Stack {
                                                 .sid("WriteAlarmSilence")
                                                 .effect(Effect.ALLOW)
                                                 .actions(List.of("ssm:PutParameter", "ssm:GetParameter"))
-                                                .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/alarm-silence/*"
-                                                        .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                                                .resources(
+                                                        List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/alarm-silence/*"
+                                                                .formatted(
+                                                                        this.getRegion(),
+                                                                        this.getAccount(),
+                                                                        props.envName())))
                                                 .build(),
                                         // Disable actions on this deployment's own alarms and their check-
                                         // prefixed composite children as part of silencing them.
@@ -193,8 +197,7 @@ public class SelfDestructStack extends Stack {
                 selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", props.sharedNames().selfDestructLambdaFunctionName);
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
         putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
-        putIfNotNull(
-                selfDestructLambdaEnv, "COMPANIES_HOUSE_STACK_NAME", props.sharedNames().companiesHouseStackId);
+        putIfNotNull(selfDestructLambdaEnv, "COMPANIES_HOUSE_STACK_NAME", props.sharedNames().companiesHouseStackId);
         putIfNotNull(selfDestructLambdaEnv, "ACCOUNT_STACK_NAME", props.sharedNames().accountStackId);
         putIfNotNull(selfDestructLambdaEnv, "BILLING_STACK_NAME", props.sharedNames().billingStackId);
         putIfNotNull(selfDestructLambdaEnv, "BOOKS_STACK_NAME", props.sharedNames().booksStackId);

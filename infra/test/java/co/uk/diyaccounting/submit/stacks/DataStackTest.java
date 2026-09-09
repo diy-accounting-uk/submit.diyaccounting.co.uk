@@ -180,8 +180,8 @@ class DataStackTest {
         template.resourceCountIs("Custom::EnsurePitr", tableNames.length);
 
         for (String tableName : tableNames) {
-            var resource = template.findResources(
-                    "Custom::EnsurePitr", Map.of("Properties", Map.of("TableName", tableName)));
+            var resource =
+                    template.findResources("Custom::EnsurePitr", Map.of("Properties", Map.of("TableName", tableName)));
             assertEquals(1, resource.size(), "expected exactly one EnsurePitr custom resource for " + tableName);
         }
     }
@@ -231,7 +231,8 @@ class DataStackTest {
         assertTrue(dependsOn != null, "expected the TTL custom resource to declare a DependsOn");
         var dependsOnIds = (java.util.List<?>) dependsOn;
         assertTrue(
-                dependsOnIds.stream().anyMatch(dependencyId -> dependencyId.toString().contains("EnsurePITR")),
+                dependsOnIds.stream()
+                        .anyMatch(dependencyId -> dependencyId.toString().contains("EnsurePITR")),
                 "expected the TTL custom resource's DependsOn to include its table's EnsurePITR resource, got: "
                         + dependsOnIds);
     }
@@ -389,9 +390,8 @@ class DataStackTest {
                         "BucketEncryption",
                         Match.objectLike(Map.of(
                                 "ServerSideEncryptionConfiguration",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "ServerSideEncryptionByDefault",
-                                        Map.of("SSEAlgorithm", "AES256"))))))),
+                                Match.arrayWith(List.of(Match.objectLike(
+                                        Map.of("ServerSideEncryptionByDefault", Map.of("SSEAlgorithm", "AES256"))))))),
                         "PublicAccessBlockConfiguration",
                         Map.of(
                                 "BlockPublicAcls", true,

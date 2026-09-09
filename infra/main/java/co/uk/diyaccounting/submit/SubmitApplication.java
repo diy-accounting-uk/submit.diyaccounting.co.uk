@@ -162,9 +162,7 @@ public class SubmitApplication {
         var cognitoUserPoolClientId =
                 envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from userPoolClientId in cdk.json)");
         var cognitoBooksUserPoolClientId = envOr(
-                "COGNITO_BOOKS_CLIENT_ID",
-                appProps.booksUserPoolClientId,
-                "(from booksUserPoolClientId in cdk.json)");
+                "COGNITO_BOOKS_CLIENT_ID", appProps.booksUserPoolClientId, "(from booksUserPoolClientId in cdk.json)");
         // The books page runs on the spreadsheets site's own origins, not this deployment's;
         // prod is the one live spreadsheets domain, every other deployment uses the shared ci one
         // plus local dev.
@@ -365,7 +363,8 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .companiesHouseBaseUri(companiesHouseBaseUri)
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn != null ? companiesHouseApiKeyArn : "")
-                        .companiesHouseFilingBaseUri(companiesHouseFilingBaseUri != null ? companiesHouseFilingBaseUri : "")
+                        .companiesHouseFilingBaseUri(
+                                companiesHouseFilingBaseUri != null ? companiesHouseFilingBaseUri : "")
                         .companiesHouseIdentityBaseUri(
                                 companiesHouseIdentityBaseUri != null ? companiesHouseIdentityBaseUri : "")
                         .companiesHouseClientId(companiesHouseClientId != null ? companiesHouseClientId : "")

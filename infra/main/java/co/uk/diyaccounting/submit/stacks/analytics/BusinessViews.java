@@ -48,7 +48,8 @@ public class BusinessViews extends Construct {
      * dependency, since two {@code AwsCustomResource}s with no {@code Fn::GetAtt} between them
      * carry no implicit ordering.
      */
-    private record ViewDefinition(String name, String description, List<String> readTables, List<String> dependsOnViews) {
+    private record ViewDefinition(
+            String name, String description, List<String> readTables, List<String> dependsOnViews) {
 
         ViewDefinition(String name, String description, List<String> readTables) {
             this(name, description, readTables, List.of());
@@ -266,9 +267,8 @@ public class BusinessViews extends Construct {
             for (String dependsOnView : view.dependsOnViews()) {
                 var upstream = this.viewResourcesByName.get(dependsOnView);
                 if (upstream == null) {
-                    throw new IllegalStateException(
-                            "%s depends on %s, which must be declared earlier in VIEWS".formatted(
-                                    view.name(), dependsOnView));
+                    throw new IllegalStateException("%s depends on %s, which must be declared earlier in VIEWS"
+                            .formatted(view.name(), dependsOnView));
                 }
                 viewResource.getNode().addDependency(upstream);
             }
