@@ -492,6 +492,454 @@ export async function postSelfEmploymentPeriod(
   return responseJson;
 }
 
+/**
+ * Retrieve an ITSA self-employment annual submission (adjustments, allowances, nonFinancials) from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing adjustments, allowances, nonFinancials
+ */
+export async function getSelfEmploymentAnnual(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/self-employment/annual?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Create or amend an ITSA self-employment annual submission with HMRC.
+ * @param {object} annualDetails - { nino, businessId, taxYear, adjustments, allowances, nonFinancials }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putSelfEmploymentAnnual(
+  annualDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/self-employment/annual";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: annualDetails.nino,
+    businessId: annualDetails.businessId,
+    taxYear: annualDetails.taxYear,
+    runFraudPreventionHeaderValidation,
+    adjustments: annualDetails.adjustments,
+    allowances: annualDetails.allowances,
+    nonFinancials: annualDetails.nonFinancials,
+  });
+
+  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Trigger an ITSA business source adjustable summary (BSAS) for an accounting period.
+ * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing calculationId
+ */
+export async function triggerBsas(
+  triggerDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/bsas/trigger";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: triggerDetails.nino,
+    businessId: triggerDetails.businessId,
+    accountingPeriodStartDate: triggerDetails.accountingPeriodStartDate,
+    accountingPeriodEndDate: triggerDetails.accountingPeriodEndDate,
+    runFraudPreventionHeaderValidation,
+  });
+
+  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to trigger the year-end summary. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve a triggered ITSA business source adjustable summary (BSAS) for self-employment.
+ * @param {string} nino - National Insurance number
+ * @param {string} calculationId - The BSAS calculation ID from the trigger response
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing metadata, inputs and adjustableSummaryCalculation
+ */
+export async function getBsasSelfEmployment(
+  nino,
+  calculationId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, calculationId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/bsas/self-employment?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Submit an adjustment (or zeroAdjustments) to a triggered ITSA business source adjustable summary.
+ * @param {object} adjustDetails - { nino, calculationId, taxYear, income, expenses, additions, zeroAdjustments }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function adjustBsasSelfEmployment(
+  adjustDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/bsas/self-employment/adjust";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: adjustDetails.nino,
+    calculationId: adjustDetails.calculationId,
+    taxYear: adjustDetails.taxYear,
+    runFraudPreventionHeaderValidation,
+    income: adjustDetails.income,
+    expenses: adjustDetails.expenses,
+    additions: adjustDetails.additions,
+    zeroAdjustments: adjustDetails.zeroAdjustments,
+  });
+
+  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Trigger an ITSA tax calculation (in-year estimate or intent-to-finalise) with HMRC. HMRC's
+ * calculation runs asynchronously; the worker behind this endpoint waits and retrieves it, so
+ * this call answers with the finished calculation body.
+ * @param {object} calculationDetails - { nino, taxYear, calculationType }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing metadata, inputs, calculation and messages
+ */
+export async function triggerCalculation(
+  calculationDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/calculation/trigger";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: calculationDetails.nino,
+    taxYear: calculationDetails.taxYear,
+    calculationType: calculationDetails.calculationType,
+    runFraudPreventionHeaderValidation,
+  });
+
+  const response = await authorizedFetch(url, {
+    method: "POST",
+    headers,
+    body,
+    pollPendingMessage: "Calculating...",
+    pollSuccessMessage: "Calculation ready.",
+    pollErrorMessage: "Failed to calculate.",
+  });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to trigger the tax calculation. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve a previously triggered ITSA tax calculation from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} calculationId - The calculation ID from the trigger response
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing metadata, inputs, calculation and messages
+ */
+export async function getCalculation(
+  nino,
+  taxYear,
+  calculationId,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, taxYear, calculationId });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/calculation?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve the tax calculation. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Submit an ITSA final declaration with HMRC, confirming a previously retrieved
+ * intent-to-finalise calculation.
+ * @param {object} declarationDetails - { nino, taxYear, calculationId, calculationType, totalIncomeTaxAndNicsDue }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function postFinalDeclaration(
+  declarationDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/final-declaration";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: declarationDetails.nino,
+    taxYear: declarationDetails.taxYear,
+    calculationId: declarationDetails.calculationId,
+    calculationType: declarationDetails.calculationType,
+    totalIncomeTaxAndNicsDue: declarationDetails.totalIncomeTaxAndNicsDue,
+    runFraudPreventionHeaderValidation,
+  });
+
+  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    // Token allowance used up - tell the customer plainly instead of showing the raw response.
+    if (responseJson?.reason === "tokens_exhausted") {
+      const message =
+        "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
+      console.warn(message);
+      throw new Error(message);
+    }
+    const message = `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.submitVat = submitVat;
@@ -501,4 +949,12 @@ if (typeof window !== "undefined") {
   window.getBusinessDetails = getBusinessDetails;
   window.getObligations = getObligations;
   window.postSelfEmploymentPeriod = postSelfEmploymentPeriod;
+  window.getSelfEmploymentAnnual = getSelfEmploymentAnnual;
+  window.putSelfEmploymentAnnual = putSelfEmploymentAnnual;
+  window.triggerBsas = triggerBsas;
+  window.getBsasSelfEmployment = getBsasSelfEmployment;
+  window.adjustBsasSelfEmployment = adjustBsasSelfEmployment;
+  window.triggerCalculation = triggerCalculation;
+  window.getCalculation = getCalculation;
+  window.postFinalDeclaration = postFinalDeclaration;
 }

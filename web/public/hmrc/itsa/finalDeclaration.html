@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Final Declaration - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+    <style>
+      .headline-figure {
+        font-size: 2em;
+        font-weight: bold;
+        margin: 0.25em 0 0.75em 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Final Declaration</h1>
+      <p class="subtitle">Confirm the calculation and file the return with HMRC</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Retrieve form -->
+      <div id="retrieveForm" class="form-container">
+        <h2>Retrieve the Calculation</h2>
+        <form id="itsaFinalDeclarationRetrieveForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+          </div>
+
+          <div class="form-group">
+            <label for="calculationId">Calculation ID</label>
+            <p id="calculationId-hint" class="hint">From the Tax Calculation page, after triggering an intent to finalise calculation.</p>
+            <input type="text" id="calculationId" name="calculationId" required aria-describedby="calculationId-hint" />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for filing the final declaration</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (declaration succeeds)</option>
+              <option value="RECENT_SUBMISSIONS_EXIST">Recent submissions exist</option>
+              <option value="FINAL_DECLARATION_RECEIVED">Final declaration already received</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="retrieveBtn" class="btn">Retrieve Calculation</button>
+        </form>
+      </div>
+
+      <!-- Declaration form, shown after a successful retrieve -->
+      <div id="declarationContainer" class="results-container" style="display: none">
+        <div id="calculationDisclaimer" class="status-message warning">
+          This is an estimate based on the information you've submitted so far. HMRC produced this calculation, and it may change if you
+          submit more information.
+        </div>
+
+        <h3>Total Income Tax and National Insurance Due</h3>
+        <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
+
+        <dl>
+          <dt>Income tax</dt>
+          <dd id="incomeTaxAmount"></dd>
+          <dt>National Insurance</dt>
+          <dd id="nicsAmount"></dd>
+          <dt>Tax already deducted</dt>
+          <dd id="totalTaxDeductedAmount"></dd>
+        </dl>
+
+        <h3>Allowances and Deductions</h3>
+        <dl id="allowancesAndDeductions"></dl>
+
+        <p id="calculationIdDisplay" class="hint"></p>
+
+        <div id="notReadyForDeclaration" class="status-message error" style="display: none" role="alert"></div>
+
+        <div id="declarationSection">
+          <div class="declaration-box">
+            <input type="checkbox" id="declarationTick" name="declarationTick" />
+            <label for="declarationTick">
+              I confirm this information is correct and complete to the best of my knowledge. I understand I may face financial penalties
+              and prosecution if I give false information.
+            </label>
+          </div>
+          <button type="button" id="submitDeclarationBtn" class="btn" disabled>Submit Final Declaration</button>
+        </div>
+
+        <div id="recentSubmissionsChanged" style="display: none">
+          <div class="status-message error" role="alert">
+            A figure has changed since this calculation. Trigger a fresh calculation before declaring again.
+          </div>
+          <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            >Trigger a Fresh Calculation</a
+          >
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="finalDeclarationResults" class="results-container" style="display: none">
+        <h3>Final Declaration Filed</h3>
+        <p>HMRC has accepted the final declaration. Your Self Assessment return for the year is filed.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Start Again</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2025-2026 DIY Accounting Limited</p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script>
+      let retrievedCalculation = null;
+      let retrievedNino = "";
+      let retrievedTaxYear = "";
+      let retrievedCalculationId = "";
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+
+        // Carry nino/taxYear/calculationId over from the Tax Calculation page's "Continue to
+        // Final Declaration" link, so what the customer confirmed there is what loads here.
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("nino")) document.getElementById("nino").value = params.get("nino").toUpperCase();
+        if (params.get("taxYear")) document.getElementById("taxYear").value = params.get("taxYear");
+        if (params.get("calculationId")) document.getElementById("calculationId").value = params.get("calculationId");
+
+        document.getElementById("declarationTick").addEventListener("change", updateSubmitEnabled);
+      }
+
+      // The submit button stays disabled until the declaration is ticked - what the customer
+      // agreed to on screen and what gets sent to HMRC must be the same thing.
+      function updateSubmitEnabled() {
+        const ticked = document.getElementById("declarationTick").checked;
+        const isFinaliseType = retrievedCalculation?.metadata?.calculationType === "intent-to-finalise";
+        document.getElementById("submitDeclarationBtn").disabled = !(ticked && isFinaliseType);
+      }
+
+      async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getCalculation(nino, taxYear, calculationId, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await postFinalDeclaration(declarationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      function formatCurrency(value) {
+        if (value === undefined || value === null) return "-";
+        return `£${Number(value).toFixed(2)}`;
+      }
+
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function displayCalculation(calculation) {
+        retrievedCalculation = calculation;
+        const calc = calculation?.calculation || {};
+        const taxCalculation = calc.taxCalculation || {};
+        document.getElementById("totalIncomeTaxAndNicsDue").textContent = formatCurrency(taxCalculation.totalIncomeTaxAndNicsDue);
+        document.getElementById("incomeTaxAmount").textContent = formatCurrency(taxCalculation.incomeTax?.totalIncomeTax);
+        document.getElementById("nicsAmount").textContent = formatCurrency(taxCalculation.nics?.totalNic);
+        document.getElementById("totalTaxDeductedAmount").textContent = formatCurrency(taxCalculation.totalTaxDeducted);
+
+        const allowancesList = document.getElementById("allowancesAndDeductions");
+        const allowances = calc.allowancesAndDeductions || {};
+        allowancesList.innerHTML = Object.keys(allowances)
+          .map((key) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(formatCurrency(allowances[key]))}</dd>`)
+          .join("");
+
+        document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
+
+        // The final declaration only ever confirms an intent-to-finalise calculation - anything
+        // else (an in-year estimate, say) is refused here rather than sent to HMRC.
+        const notReady = document.getElementById("notReadyForDeclaration");
+        const declarationSection = document.getElementById("declarationSection");
+        if (calculation.metadata?.calculationType !== "intent-to-finalise") {
+          notReady.textContent = `This calculation is a ${calculation.metadata?.calculationType || "different"} calculation, not an intent to finalise. Trigger an intent to finalise calculation before declaring.`;
+          notReady.style.display = "block";
+          declarationSection.style.display = "none";
+        } else {
+          notReady.style.display = "none";
+          declarationSection.style.display = "block";
+        }
+        updateSubmitEnabled();
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : scope;
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function handleRetrieveFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const calculationId = document.getElementById("calculationId").value.trim();
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !taxYear || !calculationId) {
+          showStatus("Please fill in the National Insurance number, tax year and calculation ID.", "error");
+          return;
+        }
+
+        await ensureAuthorizedThen(
+          "pendingFinalDeclarationRetrieveRequest",
+          { nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation },
+          "read:self-assessment",
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Retrieving calculation...", "info");
+              const calculation = await runRetrieveCalculation(
+                nino,
+                taxYear,
+                calculationId,
+                testScenario,
+                runFraudPreventionHeaderValidation,
+                accessToken,
+              );
+              retrievedCalculation = calculation;
+              retrievedNino = nino;
+              retrievedTaxYear = taxYear;
+              retrievedCalculationId = calculationId;
+              displayCalculation(calculation);
+              document.getElementById("retrieveForm").style.display = "none";
+              document.getElementById("declarationContainer").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to retrieve the calculation: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function handleSubmitDeclaration() {
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+        const totalIncomeTaxAndNicsDue = retrievedCalculation?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
+
+        const declarationDetails = {
+          nino: retrievedNino,
+          taxYear: retrievedTaxYear,
+          calculationId: retrievedCalculationId,
+          calculationType: "final-declaration",
+          totalIncomeTaxAndNicsDue,
+        };
+
+        await ensureAuthorizedThen(
+          "pendingFinalDeclarationSubmitRequest",
+          { declarationDetails, testScenario, runFraudPreventionHeaderValidation },
+          "write:self-assessment",
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Submitting final declaration...", "info");
+              await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              document.getElementById("declarationContainer").style.display = "none";
+              document.getElementById("finalDeclarationResults").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              // A figure changed since the calculation the customer confirmed - the fix is a
+              // fresh calculation, not a retry of this same submission.
+              if (String(error.message || "").includes("RULE_RECENT_SUBMISSIONS_EXIST") || String(error.message || "").includes("More recent submissions exist")) {
+                document.getElementById("recentSubmissionsChanged").style.display = "block";
+                hideStatus();
+              } else {
+                showStatus(`Failed to submit the final declaration: ${error.message}`, "error");
+              }
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRetrieve = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationRetrieveRequest") || "null");
+          const pendingSubmit = JSON.parse(sessionStorage.getItem("pendingFinalDeclarationSubmitRequest") || "null");
+
+          if (pendingRetrieve) {
+            showLoading();
+            showStatus("Retrieving calculation...", "info");
+            const calculation = await runRetrieveCalculation(
+              pendingRetrieve.nino,
+              pendingRetrieve.taxYear,
+              pendingRetrieve.calculationId,
+              pendingRetrieve.testScenario,
+              pendingRetrieve.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            retrievedCalculation = calculation;
+            retrievedNino = pendingRetrieve.nino;
+            retrievedTaxYear = pendingRetrieve.taxYear;
+            retrievedCalculationId = pendingRetrieve.calculationId;
+            displayCalculation(calculation);
+            document.getElementById("retrieveForm").style.display = "none";
+            document.getElementById("declarationContainer").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
+          } else if (pendingSubmit) {
+            showLoading();
+            showStatus("Submitting final declaration...", "info");
+            await runSubmitDeclaration(
+              pendingSubmit.declarationDetails,
+              pendingSubmit.testScenario,
+              pendingSubmit.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            document.getElementById("declarationContainer").style.display = "none";
+            document.getElementById("finalDeclarationResults").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
+          } else {
+            return;
+          }
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
+          sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      document.getElementById("itsaFinalDeclarationRetrieveForm").addEventListener("submit", handleRetrieveFormSubmission);
+      document.getElementById("submitDeclarationBtn").addEventListener("click", handleSubmitDeclaration);
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("finalDeclarationResults").style.display = "none";
+        document.getElementById("retrieveForm").style.display = "block";
+        document.getElementById("itsaFinalDeclarationRetrieveForm").reset();
+        document.getElementById("declarationTick").checked = false;
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>

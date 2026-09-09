@@ -38,6 +38,19 @@
         margin: 0 0 0.75em 0;
         color: #555;
       }
+      .dashboard-divider {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+        margin: var(--spacing-md) 0;
+        color: #777;
+      }
+      .dashboard-divider::before,
+      .dashboard-divider::after {
+        content: "";
+        flex: 1;
+        border-top: 1px solid #ccc;
+      }
     </style>
   </head>
   <body>
@@ -121,6 +134,35 @@
             <p>Correct the income and expenses on a quarterly update already filed with HMRC.</p>
             <a href="selfEmploymentPeriodAmend.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Amend a Period Summary</a
+            >
+          </div>
+
+          <div class="dashboard-divider">Year end</div>
+
+          <div class="dashboard-step">
+            <h2>7. Annual Submission</h2>
+            <p>Load the year's annual submission for a business, enter adjustments and allowances, and save them to HMRC.</p>
+            <a href="annualSubmission.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Annual Submission</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2>8. Year-End Adjustments</h2>
+            <p>Trigger the year-end summary, read the net profit HMRC computed, and change a figure if it is wrong.</p>
+            <a href="adjustments.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to Adjustments</a>
+          </div>
+          <div class="dashboard-step">
+            <h2>9. Tax Calculation</h2>
+            <p>Trigger a calculation and see what the tax year owes.</p>
+            <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Tax Calculation</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2>10. Final Declaration</h2>
+            <p>Read the calculation again, confirm it is complete and correct, and file the return.</p>
+            <a href="finalDeclaration.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Final Declaration</a
             >
           </div>
         </div>
