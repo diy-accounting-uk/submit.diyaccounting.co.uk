@@ -61,6 +61,21 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
 
 ## Ready: Claude Code
 
+- [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
+  never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
+  on the books routes across three hours matched zero records, and
+  `wafv2 get-sampled-requests` on `prod-15f3483-app-waf` shows eight book PUTs blocked in that
+  window, every one by `AWS#AWSManagedRulesCommonRuleSet#SizeRestrictions_BODY`, including the
+  spreadsheets ci case's own request and our probe's `/api/v1/books/book-1`. That rule blocks a
+  body over 8KB, which is all CloudFront hands WAF by default; `BOOKS_MAX_BYTES` is 2MB, so the
+  storage API is built to accept a book 256 times larger than the edge will pass and has never
+  taken a real one on prod. A CloudFront block returns before the origin, so there is no
+  access-log row and no CORS header, and the browser reports `net::ERR_FAILED`. Fix the rule in
+  `EdgeStack.java` without weakening the common rule set on routes that do not need a large
+  body, and pin it with a CDK test. Its twin: every error response on the storage routes must
+  carry the CORS header the preflight already grants, so a 4xx or 5xx reads as its real status
+  rather than as a CORS failure. **Source**: WAF sampled requests, 2026-09-09; the spreadsheets
+  repository's LP-24. **Owner**: Claude Code. **Model**: Opus.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
