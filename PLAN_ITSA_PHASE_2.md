@@ -247,7 +247,7 @@ used up.
 
 A sole trader's year is five tokens: four quarterly updates and one declaration. The annual
 submission is free because it is a working step inside a year end the declaration charges for,
-and a customer who corrects an allowance twice should not pay twice. See Q1 for the alternative.
+and a customer who corrects an allowance twice should not pay twice. See D1.
 
 ## The data
 
@@ -571,34 +571,39 @@ from the start, in the other repository. T9 after T8 and T6. T10 after T7.
 - The fraud header validator answers with no errors for the ITSA write endpoints, called from
   the deployed ci application rather than a local harness.
 
-## Open questions
+## Decisions
 
-**Q1. What an annual submission costs.** The plan charges nothing for it and one token for the
-final declaration, so a year is five tokens. The alternative charges one token for the annual
-submission too, making it six, on the reading that every write HMRC records is a filing. The
-first is easier to explain to a customer and does not penalise a correction. The operator may
-prefer the second if bundles are sized on API calls rather than on obligations.
+The operator answered all five open questions on 2026-09-09. Two of them change the build.
 
-**Q2. Display the calculation, or signpost to HMRC.** HMRC allows either. The plan displays it,
-with the disclaimer, because a customer who has to leave for their HMRC account to see what they
-owe has not been carried to the end of the journey. Signposting is less to build and less to get
-wrong. Assumption: display.
+**D1. An annual submission costs no token.** A sole trader's year is five tokens: one for each
+of the four quarterly updates, one for the final declaration, nothing for the annual submission.
+The annual submission is a working step inside a year end the declaration already charges for,
+and a customer who corrects an allowance twice should not pay twice. The token table above
+stands.
 
-**Q3. Which approval stage to apply for.** The end-of-year stage needs Individual Losses and
-Individuals Tax Liability Adjustments, which have no build in this phase. Applying for the
-in-year stage first gets a production credential sooner on a smaller surface. Applying for both
-at once needs two more APIs built before anything is sent. Assumption: in-year first, with the
-checklist naming the end-of-year stage as following.
+**D2. The site displays the calculation, and displays more than the headline.** We render
+HMRC's figures rather than sending the customer to their HMRC account. The page shows
+`totalIncomeTaxAndNicsDue` as the headline, the `incomeTax`, `nics` and `totalTaxDeducted`
+breakdown and `allowancesAndDeductions` beneath it, and every entry in HMRC's `messages` array,
+info and warnings as well as errors. An `in-year` result is labelled plainly as an estimate and
+kept visibly distinct from an `intent-to-finalise` one. The page shows the calculation's
+timestamp and its `calculationType`. It does not cache: it re-triggers and re-fetches on every
+page load, because a calculation belongs to one `calculationId` and anything submitted after it
+makes it stale. Every figure is HMRC's own, returned by the Individual Calculations API. We
+render, we do not compute. This changes T5 and T6.
 
-**Q4. Property income.** The mandation waves cover landlords as well as sole traders, and
-Property Business (MTD) 6.0 has no build here. It is the largest single piece of the minimum
-functionality standards this phase leaves open. Assumption: self-employment only in this phase,
-with property named as the next surface.
+**D3. Apply for both approval stages together.** One submission covers the in-year and the
+end-of-year stages, as a single end-to-end journey. That means Individual Losses and
+Individuals Tax Liability Adjustments have to be answered in the checklist before anything is
+sent. This changes T10.
 
-**Q5. Whether the sandbox test user carries the year.** The phase 1 test user has both VAT and
-Income Tax enrolments. T7 needs a business, an accounting period and an ITSA status for a
-completed tax year, which the test support API can create. Assumption: the existing user plus
-test-support data, rather than a second test user.
+**D4. UK property income is in this phase.** UK property joins self-employment, so a customer
+with both can file a complete return. This is the substantial new work and it adds tracks T11
+to T14. Foreign property is a later surface.
+
+**D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
+enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
+test support API, and its vendor-state checkpoints reset the user between runs.
 
 ## Sources
 
