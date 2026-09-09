@@ -79,8 +79,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
-        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 40);
-        assertStackHealthAlarm(hmrcStackTemplate, 21, 19, routedPrefixes);
+        hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
+        assertStackHealthAlarm(hmrcStackTemplate, 24, 22, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -254,7 +254,7 @@ class SubmitApplicationCdkResourceTest {
         // /api/v1/hmrc/itsa/bsas/self-employment and POST
         // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
         // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 106);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 112);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

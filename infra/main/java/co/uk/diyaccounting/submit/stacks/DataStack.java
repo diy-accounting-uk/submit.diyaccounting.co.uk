@@ -54,6 +54,9 @@ public class DataStack extends Stack {
     public ITable hmrcItsaBsasTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable;
     public ITable hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable;
+    public ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable;
+    public ITable hmrcItsaCalculationGetAsyncRequestsTable;
+    public ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable;
     public ITable companiesHouseAccountsAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
@@ -498,6 +501,54 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA BSAS self-employment adjust async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName);
 
+        // HMRC ITSA tax calculation trigger async request storage
+        this.hmrcItsaCalculationTriggerPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCalculationTriggerPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCalculationTriggerPostAsyncTTL",
+                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA calculation trigger async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName);
+
+        // HMRC ITSA tax calculation retrieve async request storage
+        this.hmrcItsaCalculationGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCalculationGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaCalculationGetAsyncTTL",
+                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA calculation retrieve async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName);
+
+        // HMRC ITSA final declaration async request storage
+        this.hmrcItsaFinalDeclarationPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaFinalDeclarationPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaFinalDeclarationPostAsyncTTL",
+                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA final declaration async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
+
         // Companies House accounts filing async request storage - the submission-number counter
         // allocateSubmissionNumber() increments also lives here, keyed apart from any real
         // request id.
@@ -767,6 +818,30 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableArn",
                 this.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaCalculationTriggerPostAsyncRequestsTableName",
+                this.hmrcItsaCalculationTriggerPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaCalculationTriggerPostAsyncRequestsTableArn",
+                this.hmrcItsaCalculationTriggerPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaCalculationGetAsyncRequestsTableName",
+                this.hmrcItsaCalculationGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaCalculationGetAsyncRequestsTableArn",
+                this.hmrcItsaCalculationGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaFinalDeclarationPostAsyncRequestsTableName",
+                this.hmrcItsaFinalDeclarationPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaFinalDeclarationPostAsyncRequestsTableArn",
+                this.hmrcItsaFinalDeclarationPostAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "CompaniesHouseAccountsAsyncRequestsTableName",

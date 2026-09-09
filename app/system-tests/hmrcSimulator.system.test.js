@@ -860,6 +860,146 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Calculations", () => {
+    const validTriggerBody = () => ({});
+
+    it("should trigger a calculation for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/in-year`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.8.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(202);
+      const data = await response.json();
+      expect(typeof data.calculationId).toBe("string");
+    });
+
+    it("should return 400 for an invalid NINO on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/invalid-nino/self-assessment/2023-24/trigger/in-year`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 for an invalid calculationType on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/not-a-type`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_TYPE");
+    });
+
+    it("should respect Gov-Test-Scenario header for RECENT_SUBMISSIONS_EXIST on trigger", async () => {
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/trigger/intent-to-finalise`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "RECENT_SUBMISSIONS_EXIST" },
+        body: JSON.stringify(validTriggerBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_RECENT_SUBMISSIONS_EXIST");
+    });
+
+    it("should retrieve a default success example with no Gov-Test-Scenario header", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Accept": "application/vnd.hmrc.8.0+json", "Authorization": "Bearer test-token" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.calculation.taxCalculation.totalIncomeTaxAndNicsDue).toBeDefined();
+    });
+
+    it("should return not-found for NOT_FOUND", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "NOT_FOUND" } },
+      );
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+
+    it("should return messages with no calculation for ERROR_MESSAGES_EXIST", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "ERROR_MESSAGES_EXIST" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.calculation).toBeUndefined();
+      expect(data.messages.errors.length).toBeGreaterThan(0);
+    });
+
+    it("should retrieve the UK_SE_SAVINGS_EXAMPLE calculation", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
+        { headers: { "Gov-Test-Scenario": "UK_SE_SAVINGS_EXAMPLE" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.metadata.calculationType).toBe("in-year");
+    });
+
+    it("should return 400 for an invalid calculationId on retrieve", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/not-a-calculation-id`,
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_ID");
+    });
+
+    it("should submit a final declaration for a valid request", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/final-declaration`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.hmrc.8.0+json",
+            "Authorization": "Bearer test-token",
+          },
+        },
+      );
+      expect(response.status).toBe(204);
+    });
+
+    it("should respect Gov-Test-Scenario header for FINAL_DECLARATION_RECEIVED", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/final-declaration`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "FINAL_DECLARATION_RECEIVED" },
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_FINAL_DECLARATION_RECEIVED");
+    });
+
+    it("should return 400 for an invalid calculationType on final declaration", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/not-a-type`,
+        { method: "POST", headers: { "Content-Type": "application/json" } },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_CALCULATION_TYPE");
+    });
+  });
+
   describe("VAT Returns", () => {
     it("should accept VAT return submission", async () => {
       resetState(); // Clear any previous submissions
