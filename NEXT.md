@@ -119,6 +119,22 @@ instruction: no board item enters "in flight" without their word.
   environment-name=ci` on main, on the operator's word. **Source**: BACKLOG 10; issues #16,
   #20. **Owner**: Claude Code. **Model**: Sonnet.
 
+- [ ] **B63. Prod's DIYA-GL client and behaviour role for the spreadsheets ci case.** The
+  spreadsheets session's operator decision of 2026-09-09: its ci pages test against Submit's
+  prod, minting their `spreadsheetsBehaviour` user in the prod pool through
+  `prod-env-spreadsheets-behaviour-role`, and toggling native sign-in on the DIYA-GL client
+  for the run the way the deploy does. Four changes, all IaC: (1) in `IdentityStack.java`
+  `buildBooksUrls`, prod's DIYA-GL client adds the five `ci-spreadsheets.diyaccounting.co.uk`
+  callback and logout URLs (books/, bst, ltd, se, taxi) beside the live host's; (2) in
+  `SubmitApplication.java`, prod's `booksAllowedOrigins` (and so the billing return list)
+  adds `https://ci-spreadsheets.diyaccounting.co.uk`; (3) the spreadsheets behaviour role, ci
+  and prod, gains `cognito-idp:DescribeUserPoolClient` and `UpdateUserPoolClient` on the
+  pool; (4) `scripts/toggle-cognito-native-auth.js` takes a client selector (`--client books`)
+  so their run never touches the app client. The proof is the environment deploy of main;
+  one line in `~/.claude/inboxes/spreadsheets.md` as each lands. Starts on the operator's
+  word. **Source**: the spreadsheets inbox, 2026-09-09 00:23 and 00:28 UTC. **Owner**: Claude
+  Code. **Model**: Sonnet.
+
 ## Ready: operator
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
