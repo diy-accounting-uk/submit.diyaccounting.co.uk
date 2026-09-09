@@ -777,7 +777,7 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // The books routes answer their own CORS (BOOKS_ALLOWED_ORIGINS, see booksCors.js): the
+        // The DIYA-GL routes answer their own CORS (BOOKS_ALLOWED_ORIGINS, see diyaGlCors.js): the
         // /api/v1/* behaviour's CORS override above would stamp Access-Control-Allow-Origin: *
         // over every response, breaking both the PUT preflight and the client's read of ETag.
         // Same security headers, no corsBehavior, so CloudFront passes the handler's own through.
