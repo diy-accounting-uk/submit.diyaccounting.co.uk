@@ -35,8 +35,8 @@ three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (pr
 reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
 cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
 neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
-is on main. B11's T1 to T5 are on `claude/b15-board` and its T6 runs there now; when T6 lands, batch 15
-stays unpushed and nothing else starts. The operator's standing instruction (renewed
+is on main. B11's T1 to T6 are on `claude/b15-board`, local and unpushed (57 commits past main); no
+agent runs. The operator's standing instruction (renewed
 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
@@ -57,10 +57,10 @@ stays unpushed and nothing else starts. The operator's standing instruction (ren
   annual submission, T3 the final-declaration obligation and ITSA status, T4 the adjustable
   summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
   proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
-  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T5
-  are on batch 15 (`claude/b15-board`, on top of batch 14) and T6 runs now; T7 and the rest
-  wait on the operator's word (stabilising, 2026-09-09 07:40 UTC), under the plan's stated
-  assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
+  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 to T6
+  are on batch 15 (`claude/b15-board`, local, on top of batch 14, unpushed); T7 the sandbox
+  proof, then T8 to T10, wait on the operator's word (stabilising, 2026-09-09 07:40 UTC),
+  under the plan's stated assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
   mapping.
 ## Ready: operator
