@@ -8,6 +8,15 @@
 
 ---
 
+> **Licence note, added 2026-09-09.** This document is the record of what we sent HMRC, so
+> its wording stands. The licence changed on 2026-09-09. The service is free to use and its
+> source is available under the PolyForm Internal Use License 1.0.0, with an additional grant
+> for accountants and bookkeepers. It is no longer AGPL-3.0 and we no longer describe it as
+> open source. Nothing about the `gov-vendor-license-ids` header changes: we still issue no
+> licence keys, so the header still has no data to carry.
+
+---
+
 ```text
   Current State (Updated 24 January 2026)
 
