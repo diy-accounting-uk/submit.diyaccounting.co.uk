@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # ITSA phase 2: the sandbox year
 
 `scripts/itsa-sandbox-year.js` files a whole tax year against the HMRC sandbox with one test

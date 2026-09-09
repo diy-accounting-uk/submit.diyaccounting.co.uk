@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Security detection remainder
 
 Design for backlog item B28, covering what is left of GitHub issues #9 (scan detection) and

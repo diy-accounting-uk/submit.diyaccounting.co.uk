@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: The one-stop dashboard
 
 Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and

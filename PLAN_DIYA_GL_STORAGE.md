@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: the diya-gl book storage API
 
 The spreadsheets site's DIYA-GL pages hold a year of accounts in a 15 KB zip and recalculate it in the

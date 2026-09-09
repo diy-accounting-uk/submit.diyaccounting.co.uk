@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Bundle capacity reconciliation without a table scan
 
 `app/functions/account/bundleCapacityReconcile.js` scans `{env}-env-bundles` every hour. The

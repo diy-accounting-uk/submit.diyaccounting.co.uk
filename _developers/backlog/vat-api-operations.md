@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 ## Goals
 
 - **Support all VAT API operations** – add back‑end handlers for retrieving obligations, viewing submitted returns, retrieving liabilities, payments and penalties:contentReference[oaicite:17]{index=17}.

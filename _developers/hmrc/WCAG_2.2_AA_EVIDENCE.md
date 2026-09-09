@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # WCAG 2.2 AA Evidence — Manual Review of the Six New Criteria
 
 **Date**: 3 September 2026

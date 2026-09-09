@@ -2,6 +2,9 @@
 name: Security Hardener
 description: Strengthens security posture and ensures compliance readiness for production.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Security & Compliance Hardening Agent
 
 Purpose: Analyze and enhance the application’s security posture across AWS Cognito, HMRC OAuth 2.0, AWS Lambda, CloudFront/S3, and DynamoDB.

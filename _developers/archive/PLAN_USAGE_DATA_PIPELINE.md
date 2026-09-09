@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Usage Data Pipeline
 
 Design for backlog items 13a (Firehose spike), 13 (the lake) and 14 (scheduled ingestion).

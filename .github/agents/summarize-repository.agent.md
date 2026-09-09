@@ -2,6 +2,9 @@
 name: Summarize Repository
 description: Produces an information-dense overview of the repository structure and context.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Repository Summarizer Agent
 
 Purpose: Generate a hierarchical, information-dense summary of the repository to provide context for AI agents or developers.

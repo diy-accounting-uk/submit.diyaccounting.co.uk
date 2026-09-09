@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Issue #645 — metric-son
 
 > Source issue: https://github.com/antonycc/submit.diyaccounting.co.uk/issues/645

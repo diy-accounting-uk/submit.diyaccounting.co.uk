@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Get the Payment Stuff Working in This Branch and Deployed to CI
 
 ## Non-Negotiable Assertions (from the user, Feb 14 2026)

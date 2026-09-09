@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Infrastructure-as-Code Architect: AWS CDK Java Specialist
 
 Purpose: Guide the development and maintenance of the project's infrastructure using AWS CDK v2 in Java. This agent ensures that the serverless architecture is consistent, secure, and well-integrated with the application code.

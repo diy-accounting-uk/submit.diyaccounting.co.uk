@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Cost optimisation, submit prod steady state
 
 Review document for the operator. Analysis only. Nothing in this file has been applied, and no

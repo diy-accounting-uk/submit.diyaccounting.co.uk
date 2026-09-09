@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Strategy
 
 Written 2026-08-25 from a full review: repo state, GitHub issues, customer and HMRC email history, live AWS usage and cost data, and a market survey. Evidence lives in [REPORT_COMPETITOR_ANALYSIS.md](REPORT_COMPETITOR_ANALYSIS.md) and [BACKLOG.md](BACKLOG.md).

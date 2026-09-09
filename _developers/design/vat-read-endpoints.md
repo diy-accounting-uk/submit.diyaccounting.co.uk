@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Track B design — VAT liabilities, payments, penalties read endpoints
 
 Source of truth for naming: `NEXT.md` items B32.1/B32.2/B32.3 (issue #19,

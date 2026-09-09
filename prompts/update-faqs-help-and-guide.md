@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Update FAQs, Help, Guide, and About Pages
 
 Use this prompt when the user-facing documentation needs refreshing after feature changes or to improve content quality.

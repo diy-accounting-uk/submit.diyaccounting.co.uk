@@ -3,6 +3,9 @@ name: plain-prose
 description: Holds this repo's writing rules for plain, human prose and the LLM-voice tells to cut. Load it before writing any human-facing text — docs, code comments, reports, runbooks, site copy, or chat replies.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # plain-prose — write plain, human prose; keep the proof out of the shop window
 
 The stock LLM writing voice reads as generic and machine-made. This skill is the standing style

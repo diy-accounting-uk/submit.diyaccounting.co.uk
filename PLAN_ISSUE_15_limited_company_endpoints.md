@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: Issue #15 (pre-migration #580) — Limited company: split tracker
 
 > Source issue: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/15

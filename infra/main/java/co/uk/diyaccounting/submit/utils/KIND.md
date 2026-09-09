@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 Kind.java = tiny, static, null-tolerant helpers that make Java config code read like Node. Defaults are explicit: order-preserving maps, last-writer-wins, no double-brace hacks, and clear escape hatches for strict merges. Uses Java 21 sequenced collections where relevant. ([OpenJDK][1])
 
 # KIND

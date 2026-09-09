@@ -2,6 +2,9 @@
 name: Behavior Test Master
 description: Specialized in Playwright end-to-end testing and user journey verification.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Behavior Test Master: Playwright & E2E Specialist
 
 Purpose: Master the end-to-end behavioral testing of the VAT submission flow. This agent ensures that the user journey is fully tested across different environments, including the complex OAuth interactions with HMRC.

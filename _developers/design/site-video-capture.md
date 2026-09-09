@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Design: `site-video-capture` — recording the real site for people to watch
 
 Design for NEXT.md B17a.1. Covers the scene-script format, the pacing model, the overlay, the

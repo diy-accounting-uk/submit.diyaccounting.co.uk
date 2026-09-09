@@ -3,6 +3,9 @@ name: do-next
 description: Dispatch NEXT.md's open items as worktree-isolated coordinator sub-agents and land each one as it lands. Invoke when the operator says "do next", "work the backlog", "clear NEXT.md", or when a landed batch leaves items still open.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # do-next — work `NEXT.md`'s open items with the coordinator model
 
 This skill turns this repo's `NEXT.md` **Open items** section into a dispatched batch of

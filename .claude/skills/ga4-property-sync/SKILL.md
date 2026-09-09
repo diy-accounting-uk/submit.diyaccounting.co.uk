@@ -3,6 +3,9 @@ name: ga4-property-sync
 description: Sync a per-environment GA4 property, data stream and BigQuery link for submit, and land the measurement id on the matching GitHub Environment. Invoke when a submit environment needs its own GA4 property, or when its hostname or BigQuery link changes.
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # ga4-property-sync — one GA4 property per submit environment
 
 `scripts/ga4-property-sync.js` finds or creates, for one submit environment, the GA4

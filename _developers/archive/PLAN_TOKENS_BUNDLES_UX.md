@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Tokens, Bundles & Passes UX - Phased Delivery Plan
 
 > **Source of truth**: `web/public/submit.catalogue.toml`

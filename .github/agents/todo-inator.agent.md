@@ -2,6 +2,9 @@
 name: TODO-inator
 description: Executes a themed batch of TODO/FIXME items end-to-end with tests and verification.
 ---
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # TODO‑inator: Thematic TODO Completion Engine
 
 Purpose: Scan the repository for TODO/FIXME items, cluster them by related area or theme, and complete a coherent batch end‑to‑end so the code is fully working, tested, and documented.

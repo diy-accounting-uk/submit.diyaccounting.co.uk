@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: HMRC Fraud Prevention Header Fixes
 
 **Status: COMPLETE** — All fixes deployed to CI and prod as of 8 February 2026. Awaiting HMRC re-review.

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 That instinct is sound, and it’s the right level to be thinking at. The key point is this:
 
 **“Incidental purchase” is not a number, it’s a *decision threshold*.**

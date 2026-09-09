@@ -3,6 +3,9 @@ name: board
 description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, tiers 2-5 as one-line lists, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Invoke when the operator asks for the board, the open items, or "what's in flight".
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # board
 
 Render the current open-work board from `NEXT.md` and `BACKLOG.md` (both at the repo

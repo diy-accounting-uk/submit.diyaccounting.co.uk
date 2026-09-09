@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # IAM Identity Center Setup Guide
 
 This guide covers setting up AWS IAM Identity Center (formerly AWS SSO) for centralized access to all DIY Accounting Submit AWS accounts.

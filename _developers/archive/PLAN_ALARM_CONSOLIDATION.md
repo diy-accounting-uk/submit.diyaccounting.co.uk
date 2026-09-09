@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Composite health alarms for Lambda stacks
 
 Design for backlog item B30, cut 3. `REPORT_ALARM_AUDIT.md` holds the audit that produced it.

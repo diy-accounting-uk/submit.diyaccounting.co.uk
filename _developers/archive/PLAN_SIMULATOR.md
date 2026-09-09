@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Simulator Deployment Plan
 
 Host a public, read-only simulator of the DIY Accounting Submit application for demonstration and help documentation purposes.

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # WCAG 2.1 Level AA Checklist (Questionnaire 2)
 
 **PRE-PRODUCTION DRAFT - 20 January 2026 - Version 1.1**

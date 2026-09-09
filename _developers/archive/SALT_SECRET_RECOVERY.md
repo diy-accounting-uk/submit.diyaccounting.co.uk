@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Salt Secret Recovery Guide
 
 This document describes the user sub hash salt secret, its critical importance, and procedures for backup, recovery, and troubleshooting.

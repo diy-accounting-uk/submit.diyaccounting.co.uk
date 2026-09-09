@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Plan: Capture 3 Demo Page Videos
 
 ## Status: superseded 2026-09-04. The simulator-page captures below are replaced by recording the main site with a human-audience Playwright pattern; the work is NEXT.md B17a.1–5.

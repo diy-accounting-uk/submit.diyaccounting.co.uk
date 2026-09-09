@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # PLAN: CI certificate renewal is blocked on a missing DNS validation record
 
 Status: **closed 2026-08-31** (raised 2026-08-30; deadline 2026-09-04)

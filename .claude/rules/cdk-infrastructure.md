@@ -2,6 +2,9 @@
 paths: infra/**/*.java
 ---
 
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # CDK Infrastructure Rules
 
 ## Stack Pattern

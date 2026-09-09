@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Security Review - OWASP Top 10 Assessment
 
 This directory contains the comprehensive security review conducted on 2026-01-26.

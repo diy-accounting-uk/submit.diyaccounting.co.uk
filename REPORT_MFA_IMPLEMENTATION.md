@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # MFA Implementation Summary
 
 **Date**: 2026-02-27 (updated from 2026-02-26, originally 2026-01-06)
