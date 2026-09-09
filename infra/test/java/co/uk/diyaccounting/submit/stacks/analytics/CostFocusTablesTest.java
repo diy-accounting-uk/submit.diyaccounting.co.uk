@@ -5,6 +5,8 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -85,6 +87,34 @@ class CostFocusTablesTest {
                                                                         Map.of(
                                                                                 "SerializationLibrary",
                                                                                 "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe")))))))));
+    }
+
+    @Test
+    void glueColumnNameLowersTheFocusApisPascalCasingToSnakeCase() {
+        assertEquals("billing_account_id", CostFocusTables.glueColumnName("BillingAccountId"));
+        assertEquals("sku_price_id", CostFocusTables.glueColumnName("SkuPriceId"));
+        assertEquals("tags", CostFocusTables.glueColumnName("Tags"));
+        assertEquals("x_discounts", CostFocusTables.glueColumnName("x_Discounts"));
+        assertEquals("x_service_code", CostFocusTables.glueColumnName("x_ServiceCode"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void glueColumnsMatchFocusApiColumnsInNameCountAndOrder() {
+        Template template = synthTemplate();
+
+        var table = template.findResources("AWS::Glue::Table").values().iterator().next();
+        var properties = (Map<String, Object>) table.get("Properties");
+        var tableInput = (Map<String, Object>) properties.get("TableInput");
+        var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
+        var columns = (List<Map<String, Object>>) storageDescriptor.get("Columns");
+
+        var actualNames = columns.stream().map(column -> (String) column.get("Name")).toList();
+        var expectedNames = CostFocusIngestion.FOCUS_1_2_COLUMNS.stream()
+                .map(CostFocusTables::glueColumnName)
+                .toList();
+
+        assertEquals(expectedNames, actualNames);
     }
 
     @Test
