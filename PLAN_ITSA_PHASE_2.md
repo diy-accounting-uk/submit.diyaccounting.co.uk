@@ -46,6 +46,7 @@ Missing, and where to get each. HMRC serves a resolved OpenAPI document at
 | Self Assessment Individual Details (MTD) | `self-assessment-individual-details-api/2.0` | The customer's ITSA status for the tax year |
 | Business Details (MTD) | `business-details-api/2.0` | Phase 1 built against the rendered docs; the spec belongs beside the others |
 | MTD Self Assessment Test Support | `mtd-sa-test-support-api/1.0` | Sandbox business creation, ITSA status, and vendor-state checkpoints |
+| Property Business (MTD) | `property-business-api/6.0` | UK property period summaries and the property annual submission |
 | Individual Losses (MTD) | `individual-losses-api/7.0` | A minimum functionality standard with no build in this phase |
 | Individuals Tax Liability Adjustments (MTD) | `individuals-tax-liability-adjustments-api/1.0` | A minimum functionality standard with no build in this phase |
 
@@ -58,6 +59,19 @@ request schema and the `Gov-Test-Scenario` table live in HMRC's own repository:
   `resources/public/api/conf/5.0/` (`create_and_amend_annual_submission.yaml`,
   `retrieve_annual_submission.yaml`, `schemas/createAmendAnnualSubmission/def3/request.json`,
   `examples/createAmendAnnualSubmission/def3/`).
+
+Property Business 6.0 is thin in the same way, and in more places. Its published OpenAPI
+carries only `summary` and `security` for the UK property annual submission (both the GET and
+the PUT), for retrieve-and-amend-one-period-summary, and for the whole cumulative period
+summary. Only create-a-period-summary and list-period-summaries come through resolved. The
+detail lives at:
+
+- `https://github.com/hmrc/property-business-api`, under `resources/public/api/conf/6.0/`
+  (`uk_property_annual_submission_create_and_amend.yaml`,
+  `uk_property_annual_submission_retrieve.yaml`, `uk_property_period_summary_amend.yaml`,
+  `uk_property_period_summary_retrieve.yaml`,
+  `uk_property_cumulative_summary_create_or_amend.yaml`, and the matching trees under
+  `schemas/` and `examples/`).
 
 Fetch the annual submission detail from there. Every other HMRC repository follows the same
 layout when a published spec turns out to be thin.
@@ -101,6 +115,111 @@ Errors to simulate: `RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED`, `RULE_ALLOWANCE_NO
 `RULE_BOTH_ALLOWANCES_SUPPLIED`, `RULE_TAX_YEAR_NOT_SUPPORTED`, `RULE_OUTSIDE_AMENDMENT_WINDOW`,
 `FORMAT_VALUE`, `FORMAT_BUSINESS_ID`, `MATCHING_RESOURCE_NOT_FOUND`.
 
+### Property Business (MTD) 6.0: UK property
+
+A UK property business runs the same shape of year as a sole trader. Quarterly period
+summaries, then one annual submission of adjustments and allowances, then the same adjustable
+summary, calculation and final declaration the self-employment journey already uses. Only the
+period and annual endpoints are new, and every field name differs.
+
+**Business Details needs nothing new.** `GET /individuals/business/details/{nino}/list` already
+answers every business the customer has, each with its `businessId` and a `typeOfBusiness` of
+`self-employment`, `uk-property` or `foreign-property`. Phase 1's handler passes the list
+through untouched. What grows is what the rest of the journey does with it: every later call is
+typed, so a business the customer picks has to travel as a pair, the `businessId` and the
+`typeOfBusiness`, never the id alone.
+
+**Obligations needs nothing new either.** `hmrcItsaObligationsGet.js` already validates
+`typeOfBusiness` against `self-employment`, `uk-property` and `foreign-property` and already
+passes `businessId` through, and `obligations.html` already offers the three in its filter.
+HMRC answers one entry per business, each carrying its own `obligationDetails`. What grows is
+the results table: it groups by business so a customer with two of them can see which
+obligation belongs to which.
+
+**Period summaries, up to and including 2024-25.**
+
+`POST /individuals/business/property/uk/{nino}/{businessId}/period/{taxYear}` creates one and
+answers `submissionId`. The same path plus `/{submissionId}` retrieves it on a `GET` and amends
+it on a `PUT`. `GET /individuals/business/property/{nino}/{businessId}/period/{taxYear}` lists
+them, on an untyped path that serves UK and foreign property alike.
+
+The body is `fromDate`, `toDate` and one property object holding `income` and `expenses`. For
+2024-25 and earlier that object is `ukFhlProperty`, `ukNonFhlProperty`, or both. Furnished
+holiday lettings ended on 5 April 2025, so from 2025-26 the body carries `ukProperty` alone.
+
+- `income`: `premiumsOfLeaseGrant`, `reversePremiums`, `periodAmount`, `taxDeducted`,
+  `otherIncome`, `rentARoom.rentsReceived`.
+- `expenses`: `premisesRunningCosts`, `repairsAndMaintenance`, `financialCosts`,
+  `professionalFees`, `costOfServices`, `other`, `residentialFinancialCost`, `travelCosts`,
+  `residentialFinancialCostsCarriedForward`, `rentARoom.amountClaimed`. Or
+  `consolidatedExpenses` on its own. The two forms are mutually exclusive, the same rule
+  `buildSelfEmploymentPeriodRequestBody` already implements.
+
+Create scenarios: `NOT_FOUND`, `OVERLAPPING`, `MISALIGNED`, `NOT_CONTIGUOUS`,
+`DUPLICATE_SUBMISSION`, `TYPE_OF_BUSINESS_INCORRECT`, `STATEFUL`. Amend scenarios: `NOT_FOUND`,
+`TYPE_OF_BUSINESS_INCORRECT`, `STATEFUL`. Retrieve scenarios: `UK_PROPERTY`,
+`UK_NON_FHL_FULL_EXPENSES`, `UK_NON_FHL_CONSOLIDATED`, `UK_FHL_FULL_EXPENSES`,
+`UK_FHL_CONSOLIDATED`, `FOREIGN_PROPERTY`, `NOT_FOUND`, `STATEFUL`. The retrieve's default is
+not-found, so every call sends a scenario, the same trap the adjustable summary's retrieve has.
+
+**Period summaries, 2025-26 onwards.**
+
+`GET|PUT /individuals/business/property/uk/{nino}/{businessId}/cumulative/{taxYear}`. One
+running total for the year to date replaces the four dated submissions. The PUT answers `204`.
+The body is `fromDate`, `toDate` and `ukProperty` with the same `income` and `expenses` field
+names as above.
+
+Scenarios worth building: `TAX_YEAR_NOT_SUPPORTED`,
+`START_DATE_NOT_ALIGNED_TO_COMMENCEMENT_DATE`, `END_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE`,
+`MISSING_SUBMISSION_DATES`, `START_AND_END_DATE_NOT_ALLOWED`,
+`EARLY_DATA_SUBMISSION_NOT_ACCEPTED`, `SUBMISSION_END_DATE_CANNOT_MOVE_BACKWARDS`,
+`OUTSIDE_AMENDMENT_WINDOW`, `NOT_FOUND`, `STATEFUL`. `STATEFUL` needs a UK test business made
+through the test support API first.
+
+Self Employment Business 5.0 carries the same split: its dated period summaries stop at 2024-25
+and a cumulative endpoint takes over from 2025-26. Phase 1 built the dated ones, so both income
+types reach the same fork at the same tax year. Which tax years the product serves is open;
+see "Open for the operator".
+
+**The annual submission.**
+
+`GET|PUT /individuals/business/property/uk/{nino}/{businessId}/annual/{taxYear}`. The PUT
+creates and amends in one call. It answers `200`, where the self-employment annual submission
+answers `204`, so the two handlers cannot share a response check.
+
+The body requires `ukProperty`, holding `adjustments`, `allowances`, or both:
+
+- `adjustments`: `balancingCharge`, `privateUseAdjustment`,
+  `businessPremisesRenovationAllowanceBalancingCharges`, `nonResidentLandlord` (boolean),
+  `rentARoom.jointlyLet` (boolean).
+- `allowances`: either `propertyIncomeAllowance` on its own, or the itemised set
+  (`annualInvestmentAllowance`, `businessPremisesRenovationAllowance`, `otherCapitalAllowance`,
+  `costOfReplacingDomesticItems`, `zeroEmissionsCarAllowance`, and the
+  `structuredBuildingAllowance` and `enhancedStructuredBuildingAllowance` arrays, each entry
+  carrying `amount`, `firstYear.qualifyingDate`, `firstYear.qualifyingAmountExpenditure` and a
+  `building` name, number and postcode).
+
+Two rules bite here. `propertyIncomeAllowance` cannot sit beside the itemised allowances
+(`RULE_BOTH_ALLOWANCES_SUPPLIED`), and it cannot sit beside `privateUseAdjustment` either
+(`RULE_PROPERTY_INCOME_ALLOWANCE`). The page enforces both before the call, so the customer
+reads our sentence rather than HMRC's code.
+
+`nonResidentLandlord` and `rentARoom.jointlyLet` are the first booleans any ITSA request body
+in this repository carries. `buildMoneySection` drops a field with no entered value, and `false`
+looks like no value to it. The property body builder needs a boolean-aware pass: `false` is an
+answer and goes in the body, only an unanswered field is dropped.
+
+PUT scenarios: `NOT_FOUND`, `TYPE_OF_BUSINESS_INCORRECT`, `PROPERTY_INCOME_ALLOWANCE`,
+`OUTSIDE_AMENDMENT_WINDOW`, `STATEFUL`. GET scenarios: `UK_PROPERTY`,
+`UK_ALL_OTHER_ALLOWANCES`, `UK_PROPERTY_ALLOWANCE`, `UK_FHL_ALL_OTHER_ALLOWANCES`,
+`UK_FHL_PROPERTY_ALLOWANCE`, `FOREIGN_PROPERTY`, `STATEFUL`, and its default is not-found
+again.
+
+Errors to simulate: `RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED`, `RULE_BOTH_ALLOWANCES_SUPPLIED`,
+`RULE_PROPERTY_INCOME_ALLOWANCE`, `RULE_TYPE_OF_BUSINESS_INCORRECT`, `RULE_BUILDING_NAME_NUMBER`,
+`RULE_TAX_YEAR_NOT_SUPPORTED`, `RULE_OUTSIDE_AMENDMENT_WINDOW`, `FORMAT_VALUE`,
+`FORMAT_BUSINESS_ID`, `FORMAT_DATE`, `FORMAT_STRING`, `MATCHING_RESOURCE_NOT_FOUND`.
+
 ### Obligations (MTD) 3.0: the final declaration obligation
 
 `GET /obligations/details/{nino}/crystallisation?taxYear={taxYear}&status={open|fulfilled}`
@@ -122,7 +241,8 @@ a customer, rather than showing them HMRC's raw code. Scenarios: `NOT_FOUND`, `N
 
 ### Business Source Adjustable Summary (MTD) 7.0
 
-Three operations, in the order the journey uses them.
+Three operations, in the order the journey uses them. Each self-employment operation below has
+a UK property twin; the property additions follow them.
 
 `POST /individuals/self-assessment/adjustable-summary/{nino}/trigger`
 
@@ -151,6 +271,42 @@ changes. A summary can be adjusted once. Scenarios: `TYPE_OF_BUSINESS_INCORRECT`
 The flow needs the trigger and the retrieve. It needs the adjust only when the customer changes
 a figure at the year end, which is what the adjustments page is for.
 
+**The same three operations, for UK property.** The trigger is one endpoint for every income
+type; `typeOfBusiness` in its body chooses. `hmrcItsaBsasTriggerPost.js` fixes that field to
+`self-employment` in a constant today, and it becomes a validated request field. For tax years
+up to 2024-25 HMRC accepts `self-employment`, `uk-property`, `uk-property-fhl`,
+`foreign-property` and `foreign-property-fhl-eea`. From 2025-26 the two FHL values go and three
+remain: `self-employment`, `uk-property`, `foreign-property`.
+
+The retrieve and the adjust are separate endpoints per type:
+
+`GET /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}`
+
+Scenarios: `UK_PROPERTY_PROFIT`, `UK_PROPERTY_LOSS`, `UK_PROPERTY_CONSOLIDATED`,
+`UK_PROPERTY_ALLOWANCE`, `UK_PROPERTY_ZERO_ADJUSTMENTS`, `UK_PROPERTY_STATUS_INVALID`,
+`UK_PROPERTY_STATUS_SUPERSEDED`, the FHL twins for years up to 2024-25, `NOT_UK_PROPERTY`,
+`TAX_YEAR_NOT_SUPPORTED`, `REQUEST_CANNOT_BE_FULFILLED`, their `DYNAMIC_` twins, and
+`STATEFUL`. The default is not-found, exactly as for self-employment.
+
+`POST /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/adjust/{taxYear}`
+
+Body: `{ "ukProperty": { income, expenses } }`, or `{ "ukProperty": { "zeroAdjustments": true } }`.
+Scenarios add `UK_PROPERTY_OVER_CONSOLIDATED_EXPENSES_THRESHOLD` and
+`UK_PROPERTY_INCOME_ALLOWANCE_CLAIMED` to the self-employment set.
+
+The property summary body is not the self-employment one with different labels. Its
+`adjustableSummaryCalculation.income` carries `totalRentsReceived`, `premiumsOfLeaseGrant`,
+`reversePremiums` and `otherPropertyIncome`, and its `deductions` carries `propertyAllowance`,
+`costOfReplacingDomesticItems`, `structuredBuildingAllowance` and the rest. The adjust body
+takes the same four income names.
+
+Those four are not the names the property period summary uses. The period summary calls the
+same money `periodAmount` and `otherIncome`; the adjustable summary calls it
+`totalRentsReceived` and `otherPropertyIncome`. A page that reuses one set of labels across
+both screens will put the right number under the wrong words, so the property adjustments page
+keeps its own labels and its own field list.
+
+
 ### Individual Calculations (MTD) 8.0
 
 `POST /individuals/calculations/{nino}/self-assessment/{taxYear}/trigger/{calculationType}`
@@ -165,12 +321,32 @@ before retrieving. Scenarios: `NO_INCOME_SUBMISSIONS_EXIST`, `FINAL_DECLARATION_
 `GET /individuals/calculations/{nino}/self-assessment/{taxYear}/{calculationId}`
 
 Answers `200` with four top-level objects: `metadata`, `inputs`, `calculation` and `messages`.
-The page reads `metadata.calculationType`, `metadata.finalDeclaration`,
-`calculation.taxCalculation` (`incomeTax`, `nics`, `totalTaxDeducted`,
-`totalIncomeTaxAndNicsDue`), `calculation.endOfYearEstimate` and
-`calculation.allowancesAndDeductions`. A calculation that has not finished answers `404`, so the
-page retries rather than reporting a failure. Scenarios: `NOT_FOUND`, `ERROR_MESSAGES_EXIST`,
-`UK_SE_SAVINGS_EXAMPLE`, `UK_SE_GIFTAID_EXAMPLE`, `SCOT_SE_DIVIDENDS_EXAMPLE`, `DYNAMIC`.
+The page reads `metadata.calculationType`, `metadata.calculationTimestamp`,
+`metadata.finalDeclaration`, `calculation.taxCalculation` (`incomeTax`, `nics`,
+`totalTaxDeducted`, `totalIncomeTaxAndNicsDue`), `calculation.endOfYearEstimate`,
+`calculation.allowancesAndDeductions`, `calculation.businessProfitAndLoss` and
+`inputs.incomeSources.businessIncomeSources`. A calculation that has not finished answers
+`404`, so the page retries rather than reporting a failure. Scenarios: `NOT_FOUND`,
+`ERROR_MESSAGES_EXIST`, `UK_SE_SAVINGS_EXAMPLE`, `UK_SE_GIFTAID_EXAMPLE`,
+`SCOT_SE_DIVIDENDS_EXAMPLE`, `DYNAMIC`.
+
+The handler passes HMRC's body through whole. It picks no fields out and it rewrites none, so a
+field HMRC adds reaches the page without a code change.
+
+One calculation covers the whole return. It is keyed on the NINO and the tax year, never on a
+business, so a customer with a sole trade and a rental property triggers one calculation, not
+two. Two objects say what went into it:
+
+- `calculation.businessProfitAndLoss` is an array with one entry per income source, each
+  carrying `incomeSourceId`, `incomeSourceType` (`self-employment`, `uk-property` or
+  `foreign-property`), `incomeSourceName`, `totalIncome`, `totalExpenses`, `netProfit` or
+  `netLoss`, and `taxableProfit`.
+- `inputs.incomeSources.businessIncomeSources` lists every source HMRC used, with each one's
+  `latestPeriodEndDate` and `latestReceivedDateTime`.
+
+The second is what tells a customer their property figures actually reached the calculation. A
+business missing from that list has nothing filed against it, and the page says so before the
+customer declares rather than after.
 
 `ERROR_MESSAGES_EXIST` is the case worth building carefully: HMRC returns `messages` with
 errors and no calculation, and the customer needs to know which figure to fix.
@@ -205,26 +381,102 @@ quarterly obligation for the year is open, because HMRC answers `RULE_OBLIGATION
 final declaration page refuses to submit against a calculation whose
 `metadata.calculationType` is not `intent-to-finalise`.
 
+### The property pages and the business picker
+
+Every ITSA call after Business Details is typed. The endpoint path, the request body and the
+field names all follow the business's `typeOfBusiness`, and none of them overlap between a sole
+trade and a rental. So the property pages sit beside the self-employment ones rather than
+inside them, and each page holds exactly one request shape.
+
+| Page | What the customer does |
+|---|---|
+| `ukPropertyPeriod.html` | Files a quarterly update for a UK property business |
+| `ukPropertyPeriods.html` | Lists the year's property period summaries |
+| `ukPropertyPeriodView.html` | Reads one property period summary |
+| `ukPropertyPeriodAmend.html` | Corrects one property period summary |
+| `ukPropertyAnnualSubmission.html` | Enters the property adjustments and allowances for the year |
+| `ukPropertyAdjustments.html` | Triggers and reads the property adjustable summary, changes a figure if it is wrong |
+
+The dashboard gains a business picker above the numbered steps. It calls Business Details,
+lists what HMRC returned, and the customer picks one. The picked business travels as a pair,
+the `businessId` and its `typeOfBusiness`, and the numbered steps then link to the page family
+that type names. A customer with one sole trade sees the journey phase 1 and phase 2 already
+built. A customer with a rental as well picks it and walks the same ten steps against the
+property pages.
+
+Nothing in the picker is guessed. The type comes from HMRC's own answer to Business Details,
+never from a customer choice or a stored default.
+
+### What a customer with both income types needs
+
+The four in-year steps and the first two year-end steps run once per business. The last two run
+once for the year, because HMRC calculates and files a whole return, never a business.
+
+**Obligations.** One page, one call, grouped output. HMRC answers one entry per business, each
+carrying its own `obligationDetails`, so the table groups by business and shows the type, the
+business id, the period and the due date on every row. Every date on that page is read from
+what HMRC returned. None is computed, and no period key is ever built by us. Until every open
+quarterly obligation for the year is met, on every business, the adjustable summary trigger
+answers `RULE_OBLIGATIONS_NOT_MET`, so the page states plainly which business still owes an
+update.
+
+**The year-end pages.** The annual submission and the adjustable summary are per business, so
+the customer runs each once for the sole trade and once for the rental. The dashboard tracks
+which businesses are done from what HMRC returns for each. It stores no progress of its own.
+
+**The tax calculation.** One calculation, one page. Under the headline the page renders one row
+per entry in `calculation.businessProfitAndLoss`, naming the source and its taxable profit. A
+customer with one business sees one row.
+
+**The final declaration.** One call for the whole return. The page lists every business in
+`inputs.incomeSources.businessIncomeSources`, with the latest period end date HMRC holds for
+each. This page exists to catch a business the customer has that HMRC did not count. The
+customer sees the gap before they tick the declaration, while they can still fix it.
+
 ### What the customer sees before a final declaration
 
 HMRC's minimum functionality standards let software either signpost the customer to their HMRC
 account or display the estimate itself. We display it, so the standard binds: the estimate must
 carry a disclaimer as to its accuracy, shown with the figure and not behind a link.
 
+Every figure on both pages is HMRC's own, returned by the Individual Calculations API. We
+render, we do not compute. No total on either page is added up in our code.
+
 `taxCalculation.html` shows, in this order:
 
-1. The disclaimer, above the figures. It says the calculation is an estimate based on the
+1. Which kind of calculation this is, from `metadata.calculationType`, in the customer's words
+   above the figures. An `in-year` result reads as an estimate for the year so far. An
+   `intent-to-finalise` result reads as the figures the return will be filed on. The two look
+   different on screen, so a customer cannot mistake one for the other.
+2. The disclaimer, above the figures. It says the calculation is an estimate based on the
    information submitted so far, that HMRC produced it, and that it can change when more
-   information is submitted.
-2. `calculation.taxCalculation.totalIncomeTaxAndNicsDue`, as the headline.
-3. Income tax, National Insurance and tax already deducted, as the three lines under it.
-4. Allowances and deductions applied.
-5. Every entry in `messages`, errors first, each naming the figure it refers to.
+   information is submitted. It shows for every calculation type; an `intent-to-finalise`
+   result is still a calculation of what has been submitted so far.
+3. `calculation.taxCalculation.totalIncomeTaxAndNicsDue`, as the headline.
+4. Income tax, National Insurance and tax already deducted, as the three lines under it, from
+   `incomeTax`, `nics` and `totalTaxDeducted`.
+5. `calculation.allowancesAndDeductions`, each entry named and shown.
+6. One row per entry in `calculation.businessProfitAndLoss`, naming the source and its taxable
+   profit.
+7. Every entry in `messages`, whenever the array holds anything. Errors first, then warnings,
+   then info, each labelled with its level and each naming the figure it refers to. Info and
+   warning messages are HMRC telling the customer something about their own return, so they
+   show; only an empty array shows nothing.
+8. `metadata.calculationTimestamp` and the `calculationId`, so the customer can see when HMRC
+   produced these figures and which calculation they belong to.
+
+**The page does not cache.** It triggers a fresh calculation and fetches the result on every
+page load. A calculation belongs to one `calculationId`, and anything submitted after HMRC ran
+it makes it stale, so a figure held from a previous visit is a figure that may already be
+wrong. The retrieve handler stores nothing between requests and the page keeps nothing in
+`sessionStorage` beyond the sign-in state it already carries. `request-cache.js` stays on the
+page for the bundle and auth widgets that use it; no ITSA calculation call goes through it.
 
 `finalDeclaration.html` shows the same figures, retrieved fresh from the `intent-to-finalise`
-calculation, plus the declaration wording the customer ticks: that the information given is
-correct and complete to the best of their knowledge, and that they understand they may have to
-pay financial penalties and face prosecution if they give false information. The submit button
+calculation on every page load, plus the businesses HMRC counted and the declaration wording
+the customer ticks. That wording says the information given is correct and complete to the best
+of their knowledge, and that they understand they may have to pay financial penalties and face
+prosecution if they give false information. The submit button
 stays disabled until the tick. The page shows the `calculationId` it is about to confirm, so
 what the customer agreed to and what we send are the same thing on screen.
 
@@ -238,7 +490,7 @@ used up.
 
 | Call | Tokens |
 |---|---|
-| Quarterly update, created or amended | 1 |
+| Quarterly update, created or amended, self-employment or property | 1 |
 | Annual submission, created or amended | 0 |
 | Adjustable summary trigger, retrieve, adjust | 0 |
 | Tax calculation trigger and retrieve | 0 |
@@ -249,6 +501,10 @@ A sole trader's year is five tokens: four quarterly updates and one declaration.
 submission is free because it is a working step inside a year end the declaration charges for,
 and a customer who corrects an allowance twice should not pay twice. See D1.
 
+A customer with a sole trade and a rental files two sets of quarterly updates and one
+declaration, so their year is nine tokens. The charge follows the obligation the update meets,
+and HMRC issues one set of obligations per business.
+
 ## The data
 
 **Receipts.** Every ITSA write stores a receipt through `putReceipt` from
@@ -258,12 +514,16 @@ Phase 1 does not store one for the quarterly update. Phase 2 adds it.
 
 | Write | Receipt id | Receipt body |
 |---|---|---|
-| Quarterly update | `{timestamp}-{periodId}` | HMRC's `periodId`, the business id, the period dates, the correlation id |
-| Annual submission | `{timestamp}-{businessId}-{taxYear}` | The business id, the tax year, the adjustments and allowances sent, the correlation id |
+| Quarterly update, self-employment | `{timestamp}-{periodId}` | HMRC's `periodId`, the business id, the period dates, the correlation id |
+| Quarterly update, UK property | `{timestamp}-{submissionId}` | HMRC's `submissionId`, the business id, the period dates, the correlation id |
+| Annual submission | `{timestamp}-{businessId}-{taxYear}` | The business id, the tax year, `typeOfBusiness`, the adjustments and allowances sent, the correlation id |
 | Final declaration | `{timestamp}-{calculationId}` | The calculation id, the tax year, `calculationType`, `totalIncomeTaxAndNicsDue` as confirmed, the correlation id |
 
-The annual submission and the final declaration answer `204` with no body, so the receipt is
-built from what we sent plus HMRC's `X-CorrelationId`. That correlation id is the only thing
+The self-employment annual submission and the final declaration answer `204` with no body, and
+the property annual submission answers `200` with none either, so those receipts are built from
+what we sent plus HMRC's `X-CorrelationId`. The property quarterly update is the one property
+write that answers a body: a `submissionId`, which the receipt carries the way the
+self-employment receipt carries `periodId`. That correlation id is the only thing
 tying our record to HMRC's, which is why it goes in every receipt.
 
 **Async requests.** Each new endpoint gets its own async-requests table, following phase 1
@@ -285,6 +545,14 @@ phase 1 names them:
 `itsa-crystallisation-obligations-queried`, `itsa-status-queried`, `itsa-bsas-triggered`,
 `itsa-bsas-queried`, `itsa-bsas-adjusted`, `itsa-calculation-triggered`,
 `itsa-calculation-queried`, `itsa-final-declaration-submitted`.
+
+The property writes and reads take their own names, so a query can tell the two income types
+apart without reading a payload: `itsa-uk-property-period-filed`,
+`itsa-uk-property-period-amended`, `itsa-uk-property-period-queried`,
+`itsa-uk-property-periods-queried`, `itsa-uk-property-annual-submission-queried`,
+`itsa-uk-property-annual-submission-filed`, `itsa-uk-property-bsas-queried` and
+`itsa-uk-property-bsas-adjusted`. The trigger keeps its single name, `itsa-bsas-triggered`,
+because one endpoint serves both types.
 
 **Failures.** The final declaration reports failures the way the VAT return does:
 `publishActivityFailureEvent` with `event: "itsa-final-declaration-failed"` and a failure
@@ -332,6 +600,22 @@ Two more MCP tools fall out of them once they exist: `derive_itsa_quarterly_upda
 `derive_itsa_annual_submission`, each returning figures for the user to confirm before a submit
 tool files them, following that plan's decision 6.
 
+**What the template can reach.** The spreadsheets side's own T8 design measured it: the shipped
+self-employed template can source 24 of the 55 ITSA field slots. It cannot source the other 31.
+The derivations omit those fields. They never send a zero for a figure the book does not carry,
+because a zero is a claim about the customer's business and an omission is not. That shapes two
+things here. The annual submission request keeps its "drop an empty section" rule, so a
+derivation that fills nothing in `adjustments` leaves `adjustments` out of the body altogether.
+And the year-end pages prefill only the slots the book reaches; the rest stay empty for the
+customer to type, marked as fields the import could not fill rather than left looking answered.
+
+**Property has no source at all.** The shipped self-employed template models a trade, not a
+rental. It carries no rents-received column, no property expense analysis and no property
+capital allowances schedule, so no derivation can produce a property period summary or a
+property annual submission from it today. A property book in the engine is the open problem;
+until one exists, the property pages take typed figures. That is work for the spreadsheets
+repository to scope, and it does not hold up anything in this phase.
+
 Until the derivations land, the phase 2 pages take typed figures, as the phase 1 quarterly
 update page does. Nothing in this phase's build sequence waits on the DIYA-GL import.
 
@@ -341,15 +625,24 @@ This track starts when the build runs against the sandbox and not before, which 
 operator's parked decision. HMRC's how-to-integrate guide sets out what it takes.
 
 HMRC recognises three product shapes. Ours is a **full end-to-end product**, built in two
-stages, and the guide allows the stages to be approved one at a time:
+stages. The guide allows the stages to be approved one at a time, and we apply for both at once
+(D3), as one submission covering the whole journey from a quarterly update to a filed return:
 
 | Stage | APIs HMRC requires |
 |---|---|
-| In-year (quarterly updates) | Business Details, Obligations, Self-Employment Business, Individual Calculations |
-| End-of-year | Business Details, Self-Employment Business, Business Source Adjustable Summary, Individual Losses, Individuals Tax Liability Adjustments, Obligations, Individual Calculations |
+| In-year (quarterly updates) | Business Details, Obligations, Self-Employment Business, Property Business, Individual Calculations |
+| End-of-year | Business Details, Self-Employment Business, Property Business, Business Source Adjustable Summary, Individual Losses, Individuals Tax Liability Adjustments, Obligations, Individual Calculations |
 
-Individual Losses and Individuals Tax Liability Adjustments have no build in this phase. That
-gap decides which stage we apply for first, and it is the open question the checklist forces.
+Applying for both stages at once means the checklist has to answer for every API in both rows
+before anything is sent. Seven of the nine have a build in this phase. Individual Losses and
+Individuals Tax Liability Adjustments do not.
+
+The checklist answers what is true: the product does not claim those two functions, so it does
+not offer the customer journeys they serve. A customer with a loss to carry forward or a tax
+liability adjustment to make does that in their HMRC account, and the product says so on the
+year-end pages rather than failing quietly. If HMRC's reviewer treats either API as required
+rather than conditional, their answer names the build we add before approval, and that is the
+one thing in this track that only the reviewer can settle.
 
 The steps, in order:
 
@@ -387,9 +680,9 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 ## The build sequence
 
-Ten tracks. Each is one sub-agent's work. The four endpoint tracks share a spine of files every
-new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on the
-previous merge. That is the pattern `PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
+Fifteen tracks. Each is one sub-agent's work. The seven endpoint tracks share a spine of files
+every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
+the previous merge. That is the pattern `PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
 
 The shared spine: `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`,
@@ -480,9 +773,16 @@ Routes `/api/v1/hmrc/itsa/calculation/trigger`, `/api/v1/hmrc/itsa/calculation` 
 gets a finished calculation from one request id. The final declaration charges one token, stores
 a receipt, and reports failures on the `ItsaSubmissionFailure` metric T1 created.
 
+`hmrcItsaCalculationGet.js` returns HMRC's body whole. It picks out no fields, so `messages`,
+`metadata.calculationTimestamp`, `metadata.calculationType`,
+`calculation.businessProfitAndLoss` and `inputs.incomeSources` all reach the page. It stores
+nothing between requests, and the async request row is read once and then done, so a second
+page load runs a second trigger and a second retrieve rather than replaying the first (D2).
+
 Proves: unit tests including the retry on the calculation's `404`, the `ERROR_MESSAGES_EXIST`
-body and the `RULE_RECENT_SUBMISSIONS_EXIST` rejection; a system test against the simulator;
-`./mvnw clean verify`.
+body and the `RULE_RECENT_SUBMISSIONS_EXIST` rejection; a unit test pinning that the retrieve's
+response carries `messages`, `metadata.calculationTimestamp` and `businessProfitAndLoss`
+unaltered; a system test against the simulator; `./mvnw clean verify`.
 
 ### T6. The year-end pages (Sonnet)
 
@@ -500,22 +800,36 @@ paths on the `self-employed` activity), the browser tests, the behaviour tests
 The disclaimer and the declaration wording are the design work in this track. Everything else is
 the phase 1 page pattern.
 
+`taxCalculation.html` renders what D2 sets out: the calculation type in the customer's words,
+the disclaimer above the figures, the headline, the three-line breakdown, allowances and
+deductions, a row per entry in `businessProfitAndLoss`, every `messages` entry at all three
+levels, and the timestamp with the calculation id. An `in-year` result reads visibly as an
+estimate and an `intent-to-finalise` one visibly as the figures the return will be filed on.
+The page triggers and fetches on every load and holds no calculation between loads.
+
 Proves: `npm run test:browser`; `npm run test:itsaAnnualSubmissionBehaviour-simulator` and
-`npm run test:itsaFinalDeclarationBehaviour-simulator`.
+`npm run test:itsaFinalDeclarationBehaviour-simulator`; a browser test that an info-only
+`messages` array still renders, and one that a second page load runs a second trigger.
 
 ### T7. The sandbox proof (Sonnet)
 
 Owns `scripts/itsa-sandbox-year.js` and `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`.
 
-Files a whole tax year against the sandbox with one test user: four quarterly updates, an annual
-submission, a triggered and adjusted summary, an `intent-to-finalise` calculation, and a final
-declaration. Uses `mtd-sa-test-support-api/1.0` to create the business and set the ITSA status,
-and its vendor-state checkpoints to reset between runs. Records each response so the simulator
+Files a whole tax year against the sandbox with one test user, for two businesses: four
+quarterly updates and an annual submission for a sole trade, the same four and one for a UK
+property business, a triggered and adjusted summary for each, then one `intent-to-finalise`
+calculation and one final declaration covering both. Uses `mtd-sa-test-support-api/1.0` to
+create both businesses and set the ITSA status, and its vendor-state checkpoints to reset
+between runs.
+
+The property leg is what proves the mixed customer works end to end. The run reads back
+`inputs.incomeSources.businessIncomeSources` from the calculation and checks both businesses
+are in it before it declares. Records each response so the simulator
 scenarios match what HMRC returns, the way the phase 1 simulators were corrected against the
 sandbox.
 
-Proves: a `204` from the final declaration, and the fraud header validator clean on the same
-header set.
+Proves: a `204` from the final declaration, both businesses present in the calculation's income
+sources, and the fraud header validator clean on the same header set.
 
 ### T8. The derivations in the engine (Opus for the mapping, Sonnet for the wiring)
 
@@ -542,12 +856,139 @@ Waits on T8 and on `PLAN_SUBMISSION_MCP.md` M1.
 Owns `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
 questionnaires, and the two draft emails.
 
+One application covers both approval stages (D3), so the checklist answers for every API in
+both rows of the stage table in one pass. Seven have a build: Business Details, Obligations,
+Self-Employment Business, Property Business, Business Source Adjustable Summary, Self Assessment
+Individual Details and Individual Calculations. Two do not: Individual Losses and Individuals
+Tax Liability Adjustments. The checklist says so plainly, names what a customer does instead in
+their HMRC account, and points at the year-end page that tells them.
+
+The two draft emails carry the same change. The SDST email asks for approval of the whole
+end-to-end journey rather than the in-year stage alone, names the sandbox application id, and
+lists both income types the journey covers. The software vendor team email describes the
+product as filing quarterly updates and a final declaration for self-employment and UK property
+income.
+
 Waits on T7. The operator sends.
+
+### T11. The UK property period summary (Sonnet)
+
+Copies from `hmrcItsaSelfEmploymentPeriodPost.js`, `...Put.js`, `...Get.js` and `...sGet.js`.
+The four handlers differ from their self-employment twins only in the path, the body field
+names and the scenario set, all of which this document lists.
+
+Owns `app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js`, `hmrcItsaUkPropertyPeriodPut.js`,
+`hmrcItsaUkPropertyPeriodGet.js`, `hmrcItsaUkPropertyPeriodsGet.js`, their unit tests,
+`app/http-simulator/routes/itsa-uk-property-period.js`,
+`app/http-simulator/scenarios/itsa-uk-property-period.js`, and the spine.
+
+Routes `/api/v1/hmrc/itsa/uk-property/period` and `/api/v1/hmrc/itsa/uk-property/periods`.
+Exports `buildUkPropertyPeriodRequestBody`, shaped like `buildSelfEmploymentPeriodRequestBody`:
+it drops empty sections, refuses `consolidatedExpenses` beside the itemised expenses, and
+rejects a body that would be entirely empty. The POST charges one token, stores a receipt
+carrying HMRC's `submissionId`, and reports failures on the `ItsaSubmissionFailure` metric T1
+created. So does the PUT, the way the self-employment amend does.
+
+Every date in the request comes from the obligation the customer picked on screen. No period
+key, date range or quarter is computed here or anywhere else.
+
+Proves: unit tests over the body builder including the consolidated and itemised forms and the
+`rentARoom` nesting; unit tests over the token charge and the receipt; a system test against
+the simulator; `./mvnw clean verify`.
+
+### T12. The UK property annual submission (Sonnet)
+
+Copies from `hmrcItsaSelfEmploymentAnnualGet.js` and `hmrcItsaSelfEmploymentAnnualPut.js`.
+
+Owns `app/functions/hmrc/hmrcItsaUkPropertyAnnualGet.js`, `hmrcItsaUkPropertyAnnualPut.js`,
+their unit tests, `app/http-simulator/routes/itsa-uk-property-annual.js`,
+`app/http-simulator/scenarios/itsa-uk-property-annual.js`, and the spine.
+
+Route `/api/v1/hmrc/itsa/uk-property/annual`. Exports `buildUkPropertyAnnualRequestBody`, which
+wraps everything in `ukProperty`, refuses `propertyIncomeAllowance` beside the itemised
+allowances, refuses it beside `privateUseAdjustment`, and keeps a `false` for
+`nonResidentLandlord` or `rentARoom.jointlyLet` in the body while still dropping a field the
+customer left unanswered. That boolean rule is the part of this track that goes wrong quietly,
+so it earns its own tests.
+
+The PUT answers `200`, not the `204` the self-employment annual submission answers. It costs no
+token (D1) and stores a receipt.
+
+Proves: unit tests over both allowance forms, both mutual-exclusion rules, a `false` boolean
+surviving into the body and an unanswered boolean staying out, and the structured building
+allowance arrays; a system test against the simulator; `./mvnw clean verify`.
+
+### T13. The property adjustable summary (Sonnet)
+
+Copies from `hmrcItsaBsasSelfEmploymentGet.js` and `hmrcItsaBsasSelfEmploymentAdjustPost.js`.
+
+Owns `app/functions/hmrc/hmrcItsaBsasUkPropertyGet.js`,
+`hmrcItsaBsasUkPropertyAdjustPost.js`, their unit tests, and, alongside those, the change to
+`hmrcItsaBsasTriggerPost.js` that turns its fixed `typeOfBusiness` constant into a validated
+request field. Also `app/http-simulator/routes/itsa-bsas.js` and
+`app/http-simulator/scenarios/itsa-bsas.js`, extended with the uk-property routes and their
+scenarios, and the spine.
+
+Routes `/api/v1/hmrc/itsa/bsas/uk-property` and `/api/v1/hmrc/itsa/bsas/uk-property/adjust`.
+The adjust body wraps `income` and `expenses` in `ukProperty`, or carries
+`{ "ukProperty": { "zeroAdjustments": true } }`. The simulator's retrieve route answers
+not-found without a scenario header, matching HMRC and matching the self-employment route T4
+already built.
+
+Proves: unit tests over the trigger's `typeOfBusiness` validation, the `zeroAdjustments` body,
+the `ALREADY_ADJUSTED` path and the two property-only rejections; a unit test that the trigger
+still sends `self-employment` when a self-employment business is picked; a system test against
+the simulator; `./mvnw clean verify`.
+
+### T14. The property pages (Sonnet)
+
+Copies from the self-employment pages the same step builds: `selfEmploymentPeriod.html` for the
+entry pages, `selfEmploymentPeriodView.html` for the read-only ones, `annualSubmission.html`
+for the annual page and `adjustments.html` for the summary page.
+
+Owns `web/public/hmrc/itsa/ukPropertyPeriod.html`, `ukPropertyPeriods.html`,
+`ukPropertyPeriodView.html`, `ukPropertyPeriodAmend.html`, `ukPropertyAnnualSubmission.html`,
+`ukPropertyAdjustments.html`, the property additions to
+`web/public/lib/services/hmrc-service.js`, `web/public/submit.catalogue.toml` (the new page
+paths on the `self-employed` activity, which keeps its `environments = ["local", "proxy",
+"ci"]` and gains nothing else), the browser tests, the behaviour tests
+`behaviour-tests/itsaUkPropertyPeriod.behaviour.test.js` and
+`behaviour-tests/itsaUkPropertyAnnualSubmission.behaviour.test.js`, `playwright.config.js`,
+`package.json` and `scripts/bundle-for-tests.js`.
+
+The design work in this track is the labels. The property period summary and the property
+adjustable summary name the same money differently, so each page uses the field names of the
+endpoint it calls and never borrows the other's.
+
+Proves: `npm run test:browser`; `npm run test:itsaUkPropertyPeriodBehaviour-simulator` and
+`npm run test:itsaUkPropertyAnnualSubmissionBehaviour-simulator`.
+
+### T15. The business picker and the mixed-customer year end (Sonnet)
+
+Owns `web/public/hmrc/itsa/dashboard.html`, `businessDetails.html`, `obligations.html`,
+`taxCalculation.html` and `finalDeclaration.html`.
+
+Adds the business picker above the dashboard's numbered steps, so a picked business travels as
+a `businessId` and `typeOfBusiness` pair and the steps link to the page family that type names.
+Groups the obligations table by business. Renders one `businessProfitAndLoss` row per income
+source on the calculation page. Lists every business in `inputs.incomeSources` on the
+declaration page, with the latest period end date HMRC holds for each.
+
+Runs after T14, because the dashboard's steps link to pages T14 creates.
+
+Proves: `npm run test:browser`, including a mixed-business fixture where the obligations table
+groups two businesses and the calculation page shows two profit rows; the two existing ITSA
+behaviour suites still pass against the simulator.
 
 ### Order
 
-T1, then T2, T3, T4, T5 in that order for the spine, then T6. T7 after T6. T8 runs alongside
-from the start, in the other repository. T9 after T8 and T6. T10 after T7.
+T1, then T2, T3, T4, T5 in that order for the spine, then T6. Then the property endpoint
+tracks take the spine in turn: T11, T12, T13. Then T14, then T15. T7 after T15, so the sandbox
+year covers both income types in one run. T8 runs alongside from the start, in the other
+repository. T9 after T8 and T6. T10 after T7.
+
+T13 changes `hmrcItsaBsasTriggerPost.js`, which T4 owns, so it runs after T4 has merged and no
+other track holds that file. T14 and T15 both touch the ITSA page set, so T15 waits for T14.
 
 ## Verification
 
@@ -558,16 +999,27 @@ from the start, in the other repository. T9 after T8 and T6. T10 after T7.
 - `npm run test:unit`, `npm run test:system`, `npm run test:browser` and `./mvnw clean verify`
   pass on every track.
 - The behaviour suites file a quarterly update, an annual submission and a final declaration
-  against the simulator, and the same three against ci with the sandbox test user.
+  against the simulator, for a self-employment business and for a UK property business, and the
+  same set against ci with the sandbox test user.
+- No handler, page or test carries a period key, a date range, a quarter boundary or a specific
+  obligation as a literal. Every date a request sends came out of an obligations response.
 - A final declaration filed in the sandbox leaves a receipt carrying the confirming
   `calculationId`, HMRC's correlation id, and a TTL seven years out.
-- Filing a quarterly update and a final declaration each decrement the bundle's tokens by one.
-  Filing an annual submission decrements nothing. A user with no tokens gets `403` with
-  `reason: "tokens_exhausted"` and no HMRC call happens.
+- Filing a quarterly update and a final declaration each decrement the bundle's tokens by one,
+  for both income types. Filing an annual submission decrements nothing, for both income types.
+  A user with no tokens gets `403` with `reason: "tokens_exhausted"` and no HMRC call happens.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
   disabled, so it sits in the document order rather than being positioned there.
 - `finalDeclaration.html` will not submit until the declaration is ticked, and shows the
   `calculationId` it submits.
+- `taxCalculation.html` renders an `in-year` result and an `intent-to-finalise` result so a
+  reader can tell them apart without reading a field name, and renders a `messages` array that
+  holds only info entries.
+- Loading `taxCalculation.html` twice runs two triggers and two retrieves. No calculation
+  survives a page load.
+- A customer with a self-employment business and a UK property business sees both in the
+  obligations table, both as rows under the calculation headline, and both in the income
+  sources the final declaration page lists.
 - The fraud header validator answers with no errors for the ITSA write endpoints, called from
   the deployed ci application rather than a local harness.
 
@@ -599,11 +1051,34 @@ sent. This changes T10.
 
 **D4. UK property income is in this phase.** UK property joins self-employment, so a customer
 with both can file a complete return. This is the substantial new work and it adds tracks T11
-to T14. Foreign property is a later surface.
+to T15. Foreign property is a later surface.
 
 **D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
 enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
 test support API, and its vendor-state checkpoints reset the user between runs.
+
+## Open for the operator
+
+**Which tax years the product files for.** HMRC splits both income types at the same point.
+Self Employment Business 5.0 and Property Business 6.0 accept dated quarterly period summaries
+up to 2024-25, and from 2025-26 a cumulative period summary replaces them: one running total
+for the year to date, on a different path with a different body. Phase 1 built the dated
+endpoints, and T11 as written builds the dated property ones beside them.
+
+Mandation starts on 6 April 2026, which is the 2026-27 tax year, so a mandated customer's first
+real filing lands on the cumulative endpoints. The dated endpoints serve a customer filing a
+2024-25 or earlier year, and the sandbox proof, which runs a completed year.
+
+What the operator settles: whether this phase builds the cumulative endpoints for both income
+types as well, and if so whether that lands here or as its own phase. Until it is settled, both
+income types file identically and neither can serve a 2025-26 or later year. The tracks below
+are written for the dated endpoints, and a cumulative build adds one handler pair per income
+type plus the pages that choose between them by the tax year the customer picked.
+
+**Whether Individual Losses and Individuals Tax Liability Adjustments block approval.** D3
+applies for both stages together, and those two APIs have no build. T10's checklist answers
+that the product does not offer those journeys. HMRC's reviewer may treat either as required.
+Their answer is what decides, and only the operator can ask.
 
 ## Sources
 
@@ -612,12 +1087,16 @@ test support API, and its vendor-state checkpoints reset the user between runs.
 - `PLAN_SUBMISSION_MCP.md`, `PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
+- Property Business (MTD) 6.0, and the UK property detail its published spec omits:
+  <https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/property-business-api/6.0>
+  and <https://github.com/hmrc/property-business-api> under
+  `resources/public/api/conf/6.0/`.
 - Self Employment Business (MTD) 5.0, and the annual submission detail its published spec omits:
   <https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/self-employment-business-api/5.0>
   and <https://github.com/hmrc/self-employment-business-api> under
   `resources/public/api/conf/5.0/`.
-- Individual Calculations (MTD) 8.0, Business Source Adjustable Summary (MTD) 7.0, Obligations
-  (MTD) 3.0, Self Assessment Individual Details (MTD) 2.0, Business Details (MTD) 2.0,
-  Individual Losses (MTD) 7.0, Individuals Tax Liability Adjustments (MTD) 1.0 and MTD Self
-  Assessment Test Support 1.0, all at
+- Individual Calculations (MTD) 8.0, Business Source Adjustable Summary (MTD) 7.0, Property
+  Business (MTD) 6.0, Obligations (MTD) 3.0, Self Assessment Individual Details (MTD) 2.0,
+  Business Details (MTD) 2.0, Individual Losses (MTD) 7.0, Individuals Tax Liability
+  Adjustments (MTD) 1.0 and MTD Self Assessment Test Support 1.0, all at
   `https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/{service}/{version}/oas/resolved`.
