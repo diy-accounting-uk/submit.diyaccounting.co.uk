@@ -42,6 +42,7 @@ vi.mock("@aws-sdk/client-cloudformation", () => {
 });
 
 const logGroupCalls = [];
+let extraLogGroupsUsEast1 = [];
 class MockLogsClient {
   constructor({ region }) {
     this.region = region;
@@ -49,9 +50,16 @@ class MockLogsClient {
   async send(cmd) {
     logGroupCalls.push({ region: this.region, command: cmd.constructor.name, input: cmd.input });
     if (cmd.constructor.name === "DescribeLogGroupsCommand") {
-      return this.region === "us-east-1"
-        ? { logGroups: [{ logGroupName: `${cmd.input.logGroupNamePrefix}EdgeStack-AwsCustomResourceProvider` }] }
-        : { logGroups: [] };
+      if (this.region !== "us-east-1") return { logGroups: [] };
+      return {
+        logGroups: [
+          { logGroupName: `${cmd.input.logGroupNamePrefix}EdgeStack-AwsCustomResourceProvider` },
+          ...extraLogGroupsUsEast1.map(({ suffix, retentionInDays }) => ({
+            logGroupName: `${cmd.input.logGroupNamePrefix}${suffix}`,
+            retentionInDays,
+          })),
+        ],
+      };
     }
     return {};
   }
@@ -159,6 +167,7 @@ describe("functions/infra/selfDestruct", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     logGroupCalls.length = 0;
+    extraLogGroupsUsEast1 = [];
     describedStackNames.length = 0;
     mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
@@ -212,6 +221,18 @@ describe("functions/infra/selfDestruct", () => {
       status: "deleted",
       error: null,
     });
+  });
+
+  it("skips a leftover log group that already carries a retention period", async () => {
+    extraLogGroupsUsEast1 = [{ suffix: "ApiStack-hmrcTokenPost", retentionInDays: 30 }];
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    expect(res.statusCode).toBe(200);
+
+    const deletes = logGroupCalls.filter((c) => c.command === "DeleteLogGroupCommand");
+    expect(deletes.map((c) => c.input.logGroupName)).toEqual(["/aws/lambda/ci-branch-EdgeStack-AwsCustomResourceProvider"]);
+    expect(deletes.some((c) => c.input.logGroupName.includes("ApiStack-hmrcTokenPost"))).toBe(false);
   });
 
   it("deletes stacks in dependency order, with the Companies House stack beside the HMRC stack", async () => {

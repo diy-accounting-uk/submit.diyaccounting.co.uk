@@ -216,7 +216,14 @@ async function deleteLeftoverLogGroups(deploymentName) {
     let nextToken;
     do {
       const page = await logsClient.send(new DescribeLogGroupsCommand({ logGroupNamePrefix, nextToken }));
-      for (const { logGroupName } of page.logGroups ?? []) {
+      for (const { logGroupName, retentionInDays } of page.logGroups ?? []) {
+        // Every log group this repo creates already carries a short retention. This sweep
+        // exists only for CDK's framework provider log groups, which have none - a group
+        // with a retention set belongs to a retired deployment and keeps its evidence.
+        if (retentionInDays) {
+          console.log(`Skipping log group ${logGroupName} in ${region}, retention already set (${retentionInDays} days)`);
+          continue;
+        }
         console.log(`Deleting leftover log group ${logGroupName} in ${region}`);
         await logsClient.send(new DeleteLogGroupCommand({ logGroupName }));
         deleted.push(`${region}:${logGroupName}`);
