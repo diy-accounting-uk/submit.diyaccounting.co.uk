@@ -13,8 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5c28d63 (the merge of PR #151, run 34236942090, 2026-09-08 14:14
-UTC), which retired prod-c6d0ed3; no spare stands.** A main deploy retires the previous set
+**Prod runs deployment prod-ebaeb7d (the merge of PR #154, run 34284851786, 2026-09-08 22:14
+UTC), which retired prod-5c28d63; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
@@ -32,9 +32,10 @@ the role plus everything on `claude/b13-board`) merged at ebaeb7de on 2026-09-08
 34279820085, deploy 34279821140, test 34279819393), so the ci role
 `arn:aws:iam::367191799875:role/ci-env-spreadsheets-behaviour-role` exists. The merge started
 main's environment deploy 34284851371 (which creates the prod role and the cost export),
-deploy 34284851786 (the next prod set, which retires prod-5c28d63), test 34284850878 and
-CodeQL 34284850917 (green); their results and the new prod set go on the prod line above when
-they land. `sbom.yml`'s first run (34284850847) failed on its own match rule: B58 below. The operator's standing instruction: no board item
+deploy 34284851786 (green: prod-ebaeb7d, prod-5c28d63 retired), test 34284850878 and CodeQL
+34284850917 (green). The environment deploy failed on two prod-only steps (B61 below), so
+prod's AnalyticsStack is still pre-batch and the prod role and cost export are not yet
+created. `sbom.yml`'s first run (34284850847) failed on its own match rule: B58 below. The operator's standing instruction: no board item
 enters "in flight" without their word.
 
 Origin branches to delete once the operator is done with them: `claude/b12-board`,
@@ -74,9 +75,23 @@ Origin branches to delete once the operator is done with them: `claude/b12-board
   product field, and generic names collide, so the workflow fails every push to main.
   Narrow the match in `sbom.yml`'s inline script to entries whose `vendorProject` or `product`
   names an npm package (or drop KEV for the GitHub advisory database `npm audit` already
-  consults, which knows package identities), and make a match list the pairs in the summary.
+  consults, which knows package identities), and make a match list the pairs in the summary;
+  and give the workflow a path filter (it ran on three docs-only pushes to main last night).
   Starts on the operator's word. **Source**: B52f, `sbom.yml`. **Owner**: Claude Code.
   **Model**: Haiku.
+- [ ] **B61. Prod's environment deploy of the cost panel failed on two prod-only steps.** Main's
+  environment deploy after the merge (34284851371) failed twice and rolled `prod-env-AnalyticsStack`
+  back to its pre-batch state, so none of batch 13's analytics work is live on prod yet (the
+  app deploy succeeded). (a) `cost-CostExportStack` in the management account: the FOCUS
+  bucket policy names the reader roles as principals and S3 answers "Invalid principal in
+  policy" because `prod-env-cost-focus-copy-role` did not exist yet; grant the two account
+  roots as principals with a `Condition` on `aws:PrincipalArn` naming the two role ARNs
+  instead. (b) `prod-env-AnalyticsStack`: `AWS::CE::AnomalySubscription` with an SNS
+  subscriber needs `Frequency: IMMEDIATE` ("Daily or weekly frequencies only support Email");
+  set it in `CostBudgetsAndAnomalyMonitor.java`. Neither runs on ci (the export job is gated
+  to prod, ci has no anomaly monitor), so the proof is the environment deploy of main after
+  the fix. Starts on the operator's word. **Source**: run 34284851371. **Owner**: Claude
+  Code. **Model**: Haiku.
 - [ ] **B30q. The three CIS alarms fire on the deploy itself.** Issues #155, #156 and #157
   (`prod-env-cis-s3-bucket-policy-changes`, `-iam-policy-changes`, `-unauthorized-api-calls`) and
   #158 (`-route-table-changes`) opened at 22:28 to 22:42 UTC on 2026-09-08 as main's environment deploy put bucket and IAM
