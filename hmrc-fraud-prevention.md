@@ -1,8 +1,9 @@
 # Gov-Vendor-License-IDs
 
-The Submit service is an open-source (AGPL-3.0) web application delivered as a SaaS.
-It does not install licensed software on the client device, nor does it use
-per-device or per-user vendor license keys.
+The Submit service is a web application delivered as a SaaS. Its source is
+available under the PolyForm Internal Use License 1.0.0. It does not install
+licensed software on the client device, and it does not use per-device or
+per-user vendor license keys.
 
 In accordance with HMRC Fraud Prevention guidance, this header is omitted
 because the data does not exist.

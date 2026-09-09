@@ -1,4 +1,4 @@
-# DIY Accounting Submit
+# DIY Accounting Submit™
 
 **HMRC recognised software for Making Tax Digital VAT submissions**
 
@@ -11,7 +11,7 @@ Submit UK VAT returns to HMRC using the official Making Tax Digital (MTD) APIs.
 
 ## What is DIY Accounting Submit?
 
-DIY Accounting Submit is a free, open source web application that enables UK VAT-registered businesses to:
+DIY Accounting Submit is a free web application that enables UK VAT-registered businesses to:
 
 - **View VAT obligations** - See your outstanding and fulfilled VAT periods
 - **Submit VAT returns** - File your VAT return directly to HMRC
@@ -31,7 +31,7 @@ The software connects directly to HMRC's official MTD APIs and implements all re
 | **Secure** | Data encrypted at rest (AES-256) and in transit (TLS 1.2+) |
 | **UK hosted** | AWS eu-west-2 (London) region |
 | **Privacy focused** | User identifiers hashed before storage |
-| **Open source** | Full source code available under AGPL-3.0 |
+| **Source available** | Read the whole source under the PolyForm Internal Use License 1.0.0 |
 | **7-year retention** | Submission receipts stored per HMRC requirements |
 
 ---
@@ -113,16 +113,29 @@ Your HMRC Government Gateway credentials are never stored by this application. A
 
 ---
 
-## License
+## Licence
 
-This software is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+The service is free to use and the source is available. The source is licensed under the
+**PolyForm Internal Use License 1.0.0**, with an additional grant for accountants and bookkeepers.
 
-This means:
-- You can use, modify, and distribute this software freely
-- If you modify and deploy this software as a network service, you must make your source code available
-- Any derivative works must also be licensed under AGPL-3.0
+- Use the hosted service at https://submit.diyaccounting.co.uk.
+- Run your own copy on your own machine, for your own or your company's business.
+- An accountant or bookkeeper may use it to prepare accounts for their own clients.
+- Do not host it for other people, under our name or any other, and do not pass the source on.
 
-See [LICENSE](LICENSE) for the full license text.
+See [LICENSE](LICENSE) for the full text and [LICENSING.md](LICENSING.md) for which licence
+covers which file.
+
+### Contributions
+
+This repository does not accept contributions. Please do not send a pull request.
+
+Found a security problem? [SECURITY.md](SECURITY.md) says how to tell us privately.
+
+### Trade marks
+
+DIY Accounting™, DIY Accounting Submit™ and DIYA-GL™ are trade marks of DIY Accounting Limited.
+The licence gives you no right to use them. See [TRADEMARKS.md](TRADEMARKS.md).
 
 ### Third-Party Attributions
 

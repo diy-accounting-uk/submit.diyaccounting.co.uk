@@ -64,6 +64,20 @@ You **may**:
 
 ---
 
+## Our Own Marks
+
+DIY Accounting™, DIY Accounting Spreadsheets™, DIY Accounting Submit™ and DIYA-GL™ are our
+trade marks. None is registered yet, so write ™ after each one on its first mention in a piece
+of copy. Write ® only after a mark registers.
+
+A mark is an adjective in front of a noun: "a DIY Accounting Submit™ filing", not "a DIY
+Accounting Submit". Keep the spelling and capitalisation exact, and never pluralise a mark.
+
+`TRADEMARKS.md` in the repository root holds the full rules, including what other people may
+and may not do with the marks.
+
+---
+
 ## Advertising Standards (ASA/CAP)
 
 All advertising must comply with the UK Advertising Standards Authority (ASA) Codes and the Committee of Advertising Practice (CAP) Code.
@@ -80,7 +94,7 @@ All advertising must comply with the UK Advertising Standards Authority (ASA) Co
 | Claim | Evidence |
 |-------|----------|
 | "Free VAT submission" | Guest bundle is free |
-| "Open source software" | AGPL-3.0 license |
+| "Free to use, source available" | PolyForm Internal Use License 1.0.0 |
 | "Data encrypted at rest and in transit" | AWS KMS, TLS 1.2+ |
 | "Servers in UK" | AWS eu-west-2 London |
 | "7-year receipt retention" | DynamoDB TTL configuration |
@@ -127,7 +141,7 @@ Per UK GDPR and PECR (Privacy and Electronic Communications Regulations):
 - Share helpful VAT submission tips
 - Link to official HMRC guidance
 - Respond to customer questions
-- Share open source contributions
+- Point people at the published source
 
 ### Prohibited
 
@@ -184,14 +198,14 @@ DIY Accounting Submit - Free MTD VAT Submission Software
 
 DIY Accounting Limited announces [feature/milestone].
 
-DIY Accounting Submit is HMRC recognised software that enables UK
+DIY Accounting Submit™ is HMRC recognised software that enables UK
 businesses to submit VAT returns via Making Tax Digital APIs.
 
 [Details of announcement]
 
 About DIY Accounting Limited:
-DIY Accounting Limited (Company No. 06846849) provides open source
-accounting software for UK small businesses.
+DIY Accounting Limited (Company No. 06846849) provides accounting software
+for UK small businesses, free to use and with the source available.
 
 Contact: admin@diyaccounting.co.uk
 Website: https://submit.diyaccounting.co.uk
