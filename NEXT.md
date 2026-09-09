@@ -61,6 +61,22 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
 
 ## Ready: Claude Code
 
+- [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
+  repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
+  and `www`. Establish per repository which author and committer identities appear in history,
+  whether anything is signed, which co-author trailer forms are in use, and which token each
+  workflow, Lambda and script writes to GitHub under. Then define the identity classes a reader
+  and a policy can tell apart, at least human user, Claude Code, and GitHub Actions initiation,
+  splitting further only where something downstream would treat the two differently, and
+  recommend what each should present and what proves the claim rather than asserting it. This
+  gates `PLAN_REPOSITORY_AUTOMATION.md`'s auto-merge policies, which all rest on commit
+  authorship being trustworthy: every one of the six repositories currently authors commits as
+  `antonyccartwright@gmail.com` while the working identity is `antony@polycode.co.uk`, and
+  `_developers/archive/PLAN_FLAGGED.md` lists author identity churn among the signals behind the
+  May 2026 suspension. The audit lands as `REPORT_IDENTITY_AUDIT.md`; changing anything is a
+  separate row once the operator picks from its recommendations. `homebrew-diya-gl` is missing
+  from the workspace `CLAUDE.md` repository table. **Source**: operator, 2026-09-09;
+  `PLAN_REPOSITORY_AUTOMATION.md`. **Owner**: Claude Code, then Operator. **Model**: Opus.
 - [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
   never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
   on the books routes across three hours matched zero records, and

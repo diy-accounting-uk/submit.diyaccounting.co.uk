@@ -301,16 +301,6 @@ stack, cost per completed submission, and monthly spend against the $64.77 targe
 `restore-drill.yml` monthly, the latter restoring prod tables from the cross-account vault into ci
 and deleting them again.
 
-**agentic-lib is not part of this.** It is `@polycode-public/agentic-lib` 8.2.0, published under
-the operator's own `xn-intenton-z2a` org, described as a thin wrapper over `claude -p` plus
-Bedrock that runs one transformation per trigger and opens a draft PR. None of the five DIY
-Accounting repositories depend on it. The only traces here are a licence comment in
-`scripts/update.sh` and an AWS session name in `_developers/SETUP.md`. The `release-and-init`
-slash command that drives it points at `~/projects/xn--intenton-z2a/`, which no longer exists on
-disk. Its ideas are relevant; its code is not wired in. `xn-intenton-z2a` is also one of the two
-orgs flagged in the May incident P10 describes, which is worth weighing before adopting anything
-from it wholesale.
-
 **Six of the eight skills are already A3 automations with a human trigger.** Turning each into an
 event-triggered one is a small change, and each names the event it would need.
 
