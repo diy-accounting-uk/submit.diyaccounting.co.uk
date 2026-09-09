@@ -13,8 +13,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-ebaeb7d (the merge of PR #154, run 34284851786, 2026-09-08 22:14
-UTC), which retired prod-5c28d63; no spare stands.** A main deploy retires the previous set
+**Prod runs deployment prod-4600d25 (the scheduled deploy of main, run 34331976471,
+2026-09-09 08:57 UTC, the 04:11 cron arriving late), which retired prod-ebaeb7d in its own
+destroy-previous job; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
@@ -27,19 +28,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-PR #159 (batch 14) merged to main at 5c933c19, 2026-09-09 08:21 UTC. The merge's environment
-deploy 34328646892 put `prod-env-AnalyticsStack` (B61's anomaly frequency, the cost panel),
-`prod-env-SecurityDetectionStack` (B30q's CIS filters) and `prod-env-IdentityStack` (B63's
-role grants and callback URLs) on prod, and failed at the cost export (B65 below), so the
-FOCUS export is still not created; a scheduled environment deploy 34328862271 of the same
-main is running behind it. The operator cancelled the merge's deploy 34328646975, so prod's
-app stacks are still prod-ebaeb7d (pre-batch 14: the token-exchange 500 fix, B63's books
-origins and the ITSA proof's simulator changes are on main, not on prod) until a deploy of
-main runs on the operator's word. sbom 34328646513, test 34328647370 and CodeQL 34328646609
-were green. Issues #152 and #155 to #158 have their fix on main and are the operator's to
-close. B11's T1 to T6 are on `claude/b15-board`, local and unpushed, on top of main; no agent
-runs. The operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item
-enters "in flight" without their word.
+Batch 14 (PR #159, merged 2026-09-09 08:21 UTC) is on prod: the environment deploy put the
+analytics, CIS and identity stacks up, and the scheduled deploy 34331976471 put the app
+stacks up as prod-4600d25 (the token-exchange fix, B63's books origins, the ITSA simulator
+changes). Both environment deploys of the day failed at the cost export (B65 below), so the
+FOCUS export is still not created. Issues #152 and #155 to #158 have their fix on main and on
+prod and are the operator's to close. B11's T1 to T6 are on `claude/b15-board`, local and
+unpushed, on top of main; no agent runs. The operator's standing instruction (renewed
+2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
 ## Ready: Claude Code
 
@@ -123,13 +119,6 @@ enters "in flight" without their word.
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 ## Blocked
 
-- [ ] **D1. The prod sweep's first scheduled proof.** The 04:11 UTC scheduled deploy of main
-  did not fire on 2026-09-09 (this repository's crons run hours late since 2026-09-08:
-  the 02:34 ci sweep arrived at 07:32), so the proof waits for the next scheduled deploy that
-  runs:
-  it must retire the set it replaces (prod-ebaeb7d) in the same run, and the board of that
-  day reads the destroy-previous job. **Source**: B53c. **Owner**: Claude Code. **Model**:
-  Haiku. Blocked on the schedule firing.
 - [ ] **B17b. VAT read-page videos.** After O27: add `prod` to the three activities'
   environments in `web/public/submit.catalogue.toml`, record liabilities, payments and
   penalties one video each in the 17a capture pattern (`videos/*.json`, `auth: "user"`,
