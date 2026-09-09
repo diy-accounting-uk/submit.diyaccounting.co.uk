@@ -76,6 +76,22 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   carry the CORS header the preflight already grants, so a 4xx or 5xx reads as its real status
   rather than as a CORS failure. **Source**: WAF sampled requests, 2026-09-09; the spreadsheets
   repository's LP-24. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
+  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
+  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
+  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
+  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
+  secret only when a pass carries an email restriction, so the failure surfaces on those passes
+  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
+  the secret material is an AWS write and a decision about the value, so the operator settles it,
+  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
+  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
+- [ ] **B74. A missing bundle costs the deploy 25 minutes.** `generatePassActivityBehaviour`
+  waits on `#generatePassBtn` until Playwright's timeout rather than failing when the enabling
+  bundle never arrives, so each test takes 5.8 minutes to fail and its retry held run
+  34402276934 open for 25 minutes after every other job had finished. Fail fast on the disabled
+  button with the reason, the way the other suites do. Pre-existing. **Source**: run
+  34402276934. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
