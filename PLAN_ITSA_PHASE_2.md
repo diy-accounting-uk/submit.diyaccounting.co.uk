@@ -61,7 +61,10 @@ request schema and the `Gov-Test-Scenario` table live in HMRC's own repository:
 - `https://github.com/hmrc/self-employment-business-api`, under
   `resources/public/api/conf/5.0/` (`create_and_amend_annual_submission.yaml`,
   `retrieve_annual_submission.yaml`, `schemas/createAmendAnnualSubmission/def3/request.json`,
-  `examples/createAmendAnnualSubmission/def3/`).
+  `examples/createAmendAnnualSubmission/def3/`, and for the cumulative period summary
+  `create_amend_cumulative_period_summary.yaml`, `retrieve_cumulative_period_summary.yaml`,
+  `schemas/createAmendCumulativePeriodSummary/request.json`,
+  `examples/createAmendCumulativePeriodSummary/`).
 
 Property Business 6.0 is thin in the same way, and in more places. Its published OpenAPI
 carries only `summary` and `security` for the UK property annual submission (both the GET and
@@ -73,8 +76,10 @@ detail lives at:
   (`uk_property_annual_submission_create_and_amend.yaml`,
   `uk_property_annual_submission_retrieve.yaml`, `uk_property_period_summary_amend.yaml`,
   `uk_property_period_summary_retrieve.yaml`,
-  `uk_property_cumulative_summary_create_or_amend.yaml`, and the matching trees under
-  `schemas/` and `examples/`).
+  `uk_property_cumulative_summary_create_or_amend.yaml`,
+  `uk_property_cumulative_summary_retrieve.yaml`,
+  `schemas/uk_property_cumulative_summary_create_and_amend/def1/request.json`, and the matching
+  trees under `schemas/` and `examples/`).
 
 Fetch the annual submission detail from there. Every other HMRC repository follows the same
 layout when a published spec turns out to be thin.
@@ -181,8 +186,8 @@ through the test support API first.
 
 Self Employment Business 5.0 carries the same split: its dated period summaries stop at 2024-25
 and a cumulative endpoint takes over from 2025-26. Phase 1 built the dated ones, so both income
-types reach the same fork at the same tax year. Which tax years the product serves is open;
-see "Open for the operator".
+types reach the same fork at the same tax year. This phase builds both models for both types
+(D7); the cumulative endpoints have their own section below.
 
 **The annual submission.**
 
@@ -222,6 +227,104 @@ Errors to simulate: `RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED`, `RULE_BOTH_ALLOWAN
 `RULE_PROPERTY_INCOME_ALLOWANCE`, `RULE_TYPE_OF_BUSINESS_INCORRECT`, `RULE_BUILDING_NAME_NUMBER`,
 `RULE_TAX_YEAR_NOT_SUPPORTED`, `RULE_OUTSIDE_AMENDMENT_WINDOW`, `FORMAT_VALUE`,
 `FORMAT_BUSINESS_ID`, `FORMAT_DATE`, `FORMAT_STRING`, `MATCHING_RESOURCE_NOT_FOUND`.
+
+### The cumulative period summary, 2025-26 onwards
+
+HMRC changes the quarterly model at 2025-26, and changes it the same way for both income types.
+Up to 2024-25 a customer sends four dated period summaries, each holding one quarter's figures.
+From 2025-26 they send a cumulative period summary. That is one running total for the year so
+far, resent each time there is more to report.
+
+- `GET|PUT /individuals/business/self-employment/{nino}/{businessId}/cumulative/{taxYear}`
+- `GET|PUT /individuals/business/property/uk/{nino}/{businessId}/cumulative/{taxYear}`
+
+Both PUTs create and amend in one call and answer `204`. Both refuse a tax year before 2025-26.
+
+**The self-employment body** carries the field names the dated period summary already uses, so
+`buildSelfEmploymentPeriodRequestBody` builds it unchanged:
+
+- `periodDates`: `periodStartDate` and `periodEndDate`. The object is optional; when it is
+  there, both dates are required.
+- `periodIncome`: `turnover`, `other`, `taxTakenOffTradingIncome`.
+- `periodExpenses`: `costOfGoods`, `paymentsToSubcontractors`, `wagesAndStaffCosts`,
+  `carVanTravelExpenses`, `premisesRunningCosts`, `maintenanceCosts`, `adminCosts`,
+  `businessEntertainmentCosts`, `advertisingCosts`, `interestOnBankOtherLoans`,
+  `financeCharges`, `irrecoverableDebts`, `professionalFees`, `depreciation`, `otherExpenses`.
+  Or `consolidatedExpenses` on its own.
+- `periodDisallowableExpenses`: the `...Disallowable` twin of each expense name.
+
+HMRC adds a rule here that the dated endpoint does not have. A cumulative submission must carry
+values for income and expenses even when they are zero. A business with no income so far sends
+`turnover: 0` and `other: 0` rather than leaving them out.
+
+**The UK property body** carries the field names the property period summary already uses,
+wrapped in `ukProperty`:
+
+- `fromDate` and `toDate`, at the top level rather than nested. Both are optional.
+- `ukProperty`, which is required, holding `income` and `expenses` exactly as the property
+  period summary defines them, including `rentARoom` and the `consolidatedExpenses` alternative.
+
+The two APIs name their dates differently, `periodDates.periodStartDate` against `fromDate`,
+and each cumulative body matches its own API's dated body. So each income type keeps one body
+builder across both models.
+
+**The reporting type decides whether dates go in the body at all.** From 2025-26 a business
+reports on standard quarters, calendar quarters, or annually. A quarterly submission carries
+the dates. An annual or latent submission carries none, and HMRC answers
+`RULE_START_AND_END_DATE_NOT_ALLOWED` if it finds them. A quarterly submission with the dates
+missing answers `RULE_MISSING_SUBMISSION_DATES`.
+
+We work none of this out. The obligation the customer picked says it. One obligation spanning
+the tax year is an annual reporting type and the submission carries no dates. A shorter one is
+a quarter and the submission carries that obligation's own start and end dates. No date in any
+request is calculated, and no quarter boundary appears anywhere in this repository.
+
+Scenarios, shared by both PUTs: `TAX_YEAR_NOT_SUPPORTED`,
+`START_DATE_NOT_ALIGNED_TO_COMMENCEMENT_DATE`, `START_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE`,
+`END_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE`, `MISSING_SUBMISSION_DATES`,
+`START_AND_END_DATE_NOT_ALLOWED`, `EARLY_DATA_SUBMISSION_NOT_ACCEPTED`,
+`ADVANCE_SUBMISSION_REQUIRES_PERIOD_END_DATE`, `SUBMISSION_END_DATE_CANNOT_MOVE_BACKWARDS`,
+`OUTSIDE_AMENDMENT_WINDOW`, `NOT_FOUND`, `STATEFUL`. Self-employment adds
+`BOTH_EXPENSES_SUPPLIED`.
+
+Retrieve scenarios: self-employment takes `CONSOLIDATED_EXPENSES`, `NOT_FOUND`,
+`TAX_YEAR_NOT_SUPPORTED` and `STATEFUL`. UK property takes `UK_PROPERTY_FULL_EXPENSES`,
+`UK_PROPERTY_CONSOLIDATED`, `FOREIGN_PROPERTY`, `NOT_FOUND`, `TAX_YEAR_NOT_SUPPORTED` and
+`STATEFUL`.
+
+`STATEFUL` on either needs a test business created through the test support API first, and an
+annual or latent submission also needs a test ITSA status set through the same API.
+
+### Where the tax year decides the endpoint
+
+Every ITSA write already takes `taxYear` as a request parameter in HMRC's `YYYY-YY` form. It
+comes from the obligation the customer picked or the year they chose on screen. It is never
+worked out from today's date, because a customer filing in June may be filing last year's
+figures.
+
+One function turns that year into a choice. `resolveItsaSubmissionModel(taxYear)` goes in
+`app/lib/hmrcValidation.js`, beside `isValidNino` and the rest. It answers `"dated"` for
+2024-25 and earlier and `"cumulative"` for 2025-26 and later, and it throws on anything that is
+not a tax year. Nothing else in the repository compares a tax year to that boundary. Eleven
+ITSA handlers each carry their own `TAX_YEAR_PATTERN` constant today; they take a shared
+`isValidTaxYear` from the same module at the same time, so the format rule lives in one place
+too.
+
+**The handler picks the endpoint, not the page.** There is one route per operation. The page
+sends the tax year, the business and the figures, and never chooses a path. Inside the handler,
+`resolveItsaSubmissionModel` chooses the HMRC URL and which body builder runs. That keeps the
+choice in one function called from one place per operation, and it means a page cannot send a
+customer to the wrong family.
+
+Two consequences follow, and both are real rather than cosmetic:
+
+- The two models answer differently. The dated create is a `POST` answering `200` with a
+  `periodId`, and the cumulative create is a `PUT` answering `204` with nothing. Our own
+  response says which model it used and carries the `periodId` or `submissionId` only when HMRC
+  gave one.
+- In a cumulative year there is no separate amend call and nothing to list. Correcting a figure
+  means sending a corrected running total to the same endpoint, and the year holds one total
+  rather than a set of submissions.
 
 ### Obligations (MTD) 3.0: the final declaration obligation
 
@@ -436,6 +539,49 @@ customer with one business sees one row.
 each. This page exists to catch a business the customer has that HMRC did not count. The
 customer sees the gap before they tick the declaration, while they can still fix it.
 
+### What a cumulative year changes for the customer
+
+The dashboard's numbered steps do not change. Step 3 files an update either way. What changes
+is what the form asks for and what the page can show.
+
+**The figures are totals, not a quarter's.** A page that labels a field "turnover this quarter"
+over a cumulative endpoint shows the wrong number. In a cumulative year every money label reads
+as the total for the year so far, up to the end date of the obligation the customer picked. The
+page names that date in the label, taken from the obligation.
+
+**The page loads what HMRC holds first.** The cumulative retrieve answers the running total
+HMRC currently has. The update page loads it, shows it as the starting point, and the customer
+edits it to the new total. In a dated year a new quarter starts from an empty form, because
+there is nothing yet for that quarter.
+
+**A "this period" figure is a display, never a payload.** Showing the difference between the
+new total and the one HMRC holds helps a customer check their own arithmetic. What we send is
+the total. The difference never reaches a request body.
+
+**Amending.** In a cumulative year, `selfEmploymentPeriodAmend.html` and
+`ukPropertyPeriodAmend.html` load the current total and send a new one. There is no `periodId`
+or `submissionId` to address, so the page asks for no id and shows none.
+
+**Listing.** In a cumulative year, `selfEmploymentPeriods.html` and `ukPropertyPeriods.html`
+show the year's obligations with the one current total against them, from the obligations call
+and the cumulative retrieve. There is no list of submissions to render.
+
+### The obligations page and the reporting type
+
+An obligation detail HMRC returns carries `periodStartDate`, `periodEndDate`, `dueDate`,
+`status` and `receivedDate`. Nothing in it names a reporting type, and nothing names a quarter.
+
+So the page renders the rows it was given and counts nothing. It never labels a row "Q1", never
+assumes four rows, and never assumes a start date. A business reporting annually answers with
+one obligation covering the tax year. A business on calendar quarters answers with four whose
+boundaries differ from the standard ones. Both render as rows.
+
+Whatever the page shows, the dates a submission carries come from the row the customer picked,
+and only from there.
+
+Obligations (MTD) 3.0 has a `CUMULATIVE` scenario that answers cumulative quarterly updates, so
+the simulator serves it and the pages are built against the shape HMRC actually returns.
+
 ### What the customer sees before a final declaration
 
 HMRC's minimum functionality standards let software either signpost the customer to their HMRC
@@ -500,13 +646,29 @@ used up.
 | Final declaration | 1 |
 | Every read (business details, obligations, ITSA status, period summaries) | 0 |
 
+The charge is per submission, and HMRC issues obligations per business, so a year costs what
+the customer's businesses cost:
+
+| Customer | Quarterly updates | Annual submissions | Final declaration | Year |
+|---|---|---|---|---|
+| One sole trade | 4 | 1, free | 1 | 5 tokens |
+| One rental | 4 | 1, free | 1 | 5 tokens |
+| A sole trade and a rental | 8 | 2, free | 1 | 9 tokens |
+
 A sole trader's year is five tokens: four quarterly updates and one declaration. The annual
 submission is free because it is a working step inside a year end the declaration charges for,
 and a customer who corrects an allowance twice should not pay twice. See D1.
 
-A customer with a sole trade and a rental files two sets of quarterly updates and one
-declaration, so their year is nine tokens. The charge follows the obligation the update meets,
-and HMRC issues one set of obligations per business.
+The `resident-itsa` bundle grants 100 tokens a month, so nine in a year sits well inside the
+allowance. The number still shows before the customer spends it. The dashboard's business
+picker names what a year costs for the businesses HMRC listed, and `usage.html` carries the
+same figures beside the running total it already shows (D6).
+
+Every write charges through `consumeTokenForActivity` on the initial request, before the HMRC
+call, on one submission for one business. Two rules keep that honest. No handler ever batches
+two businesses into one request, so one charge is always one business's submission. And the
+async worker never charges: the ingest Lambda charges once and the worker replays the payload,
+so a retry cannot spend a second token.
 
 ## The data
 
@@ -582,10 +744,15 @@ reads. The Ltd product has named derivations on top of its cells
 (`buildPublishedBalanceSheet`, `buildVatReturns`); the self-employed product has none. Phase 2
 needs two named functions in the diya-gl package, beside the Ltd ones:
 
-- `buildSelfEmploymentQuarterlyUpdates(book, lines, taxData)`: for each of HMRC's four standard
-  quarters (6 April to 5 July, 6 July to 5 October, 6 October to 5 January, 6 January to 5
-  April), the `periodIncome`, `periodExpenses` and `periodDisallowableExpenses` objects the
-  period summary endpoint takes.
+- `buildSelfEmploymentQuarterlyUpdates(book, lines, obligations, taxData)`: for each obligation
+  period HMRC returned, the `periodIncome`, `periodExpenses` and `periodDisallowableExpenses`
+  objects the period summary endpoint takes. The periods come from the obligations response, so
+  a business on calendar quarters or reporting annually gets the periods it actually has.
+- `buildSelfEmploymentCumulativeUpdate(book, lines, taxData, upToDate)`: the same three objects,
+  totalled from the start of the tax year to `upToDate`. A cumulative year wants a running
+  total rather than a quarter's figures, and a running total is the same book cut differently,
+  so this is a second form of the existing mapping rather than a second mapping. `upToDate` is
+  the end date of the obligation the customer picked, never a date we calculate.
 - `buildSelfEmploymentAnnualSubmission(book, lines, taxData)`: the `adjustments` and
   `allowances` objects the annual endpoint takes. `annualInvestmentAllowance`,
   `capitalAllowanceMainPool`, `capitalAllowanceSpecialRatePool` and
@@ -606,11 +773,19 @@ tool files them, following that plan's decision 6.
 **What the template can reach.** The spreadsheets side's own T8 design measured it: the shipped
 self-employed template can source 24 of the 55 ITSA field slots. It cannot source the other 31.
 The derivations omit those fields. They never send a zero for a figure the book does not carry,
-because a zero is a claim about the customer's business and an omission is not. That shapes two
+because a zero is a claim about the customer's business and an omission is not.
+
+HMRC's cumulative rule and that omission rule meet without colliding, because they are about
+different fields. HMRC requires a cumulative self-employment submission to carry values for
+income and expenses even when they are zero. A field the book carries whose running total is
+genuinely nil is a zero, and it goes. A field the book cannot source is not a zero, and the
+page asks the customer for it before anything is sent. We never turn "we do not know" into "it
+was nothing". That shapes two
 things here. The annual submission request keeps its "drop an empty section" rule, so a
 derivation that fills nothing in `adjustments` leaves `adjustments` out of the body altogether.
 And the year-end pages prefill only the slots the book reaches; the rest stay empty for the
 customer to type, marked as fields the import could not fill rather than left looking answered.
+The same 31 slots are unreachable in a cumulative year, so the same marking applies there.
 
 **Property has no source at all.** The shipped self-employed template models a trade, not a
 rental. It carries no rents-received column, no property expense analysis and no property
@@ -683,7 +858,7 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 ## The build sequence
 
-Fifteen tracks. Each is one sub-agent's work. The seven endpoint tracks share a spine of files
+Nineteen tracks. Each is one sub-agent's work. The nine endpoint tracks share a spine of files
 every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
 the previous merge. That is the pattern `PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
@@ -827,12 +1002,26 @@ between runs.
 
 The property leg is what proves the mixed customer works end to end. The run reads back
 `inputs.incomeSources.businessIncomeSources` from the calculation and checks both businesses
-are in it before it declares. Records each response so the simulator
+are in it before it declares.
+
+**Two runs, not a matrix.** There are two income types and two quarterly models, and two runs
+cover all four pairings:
+
+| Run | `ITSA_SANDBOX_TAX_YEAR` | Covers |
+|---|---|---|
+| A | a year up to 2024-25 | Both businesses on the dated period summaries |
+| B | a year from 2025-26 | Both businesses on the cumulative period summary |
+
+The script picks the endpoint family the same way the handlers do, by calling
+`resolveItsaSubmissionModel` on the year it was given. It carries no branch of its own and no
+hardcoded year, so run B proves the shared function as well as the endpoints. Run B also needs
+a test ITSA status set through the test support API, because a cumulative year's reporting type
+comes from it. Records each response so the simulator
 scenarios match what HMRC returns, the way the phase 1 simulators were corrected against the
 sandbox.
 
-Proves: a `204` from the final declaration, both businesses present in the calculation's income
-sources, and the fraud header validator clean on the same header set.
+Proves, on each run: a `204` from the final declaration, both businesses present in the
+calculation's income sources, and the fraud header validator clean on the same header set.
 
 ### T8. The derivations in the engine (Opus for the mapping, Sonnet for the wiring)
 
@@ -852,7 +1041,11 @@ every example book.
 Owns the MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
 package, and an import control on `annualSubmission.html` that fills the form from a book.
 
-Waits on T8 and on `PLAN_SUBMISSION_MCP.md` M1.
+`derive_itsa_quarterly_update` answers a period's figures in a dated year and a running total in
+a cumulative one, from the same book, by calling whichever derivation the tax year names. It
+sends an omission for any of the 31 field slots the template cannot source, never a zero.
+
+Waits on T8, on T19 for the cumulative page shape, and on `PLAN_SUBMISSION_MCP.md` M1.
 
 ### T10. The recognition pack (Haiku to assemble, operator to send)
 
@@ -890,7 +1083,8 @@ Exports `buildUkPropertyPeriodRequestBody`, shaped like `buildSelfEmploymentPeri
 it drops empty sections, refuses `consolidatedExpenses` beside the itemised expenses, and
 rejects a body that would be entirely empty. The POST charges one token, stores a receipt
 carrying HMRC's `submissionId`, and reports failures on the `ItsaSubmissionFailure` metric T1
-created. So does the PUT, the way the self-employment amend does.
+created. So does the PUT, the way the self-employment amend does. One request carries one
+business, so one charge is one business's submission (D6).
 
 Every date in the request comes from the obligation the customer picked on screen. No period
 key, date range or quarter is computed here or anywhere else.
@@ -969,7 +1163,7 @@ Proves: `npm run test:browser`; `npm run test:itsaUkPropertyPeriodBehaviour-simu
 ### T15. The business picker and the mixed-customer year end (Sonnet)
 
 Owns `web/public/hmrc/itsa/dashboard.html`, `businessDetails.html`, `obligations.html`,
-`taxCalculation.html` and `finalDeclaration.html`.
+`taxCalculation.html`, `finalDeclaration.html` and `web/public/usage.html`.
 
 Adds the business picker above the dashboard's numbered steps, so a picked business travels as
 a `businessId` and `typeOfBusiness` pair and the steps link to the page family that type names.
@@ -977,21 +1171,103 @@ Groups the obligations table by business. Renders one `businessProfitAndLoss` ro
 source on the calculation page. Lists every business in `inputs.incomeSources` on the
 declaration page, with the latest period end date HMRC holds for each.
 
+Puts the year's token cost beside the picker, counted from the businesses HMRC listed, and the
+same figures on `usage.html` (D6).
+
 Runs after T14, because the dashboard's steps link to pages T14 creates.
 
 Proves: `npm run test:browser`, including a mixed-business fixture where the obligations table
-groups two businesses and the calculation page shows two profit rows; the two existing ITSA
-behaviour suites still pass against the simulator.
+groups two businesses, the calculation page shows two profit rows, and the picker names nine
+tokens for the year; the two existing ITSA behaviour suites still pass against the simulator.
+
+### T16. The tax year model and the shared validator (Haiku)
+
+Owns `app/lib/hmrcValidation.js` and its unit tests, plus the sweep that removes the
+`TAX_YEAR_PATTERN` constant from every ITSA handler that carries one.
+
+Adds `isValidTaxYear(taxYear)` and `resolveItsaSubmissionModel(taxYear)`. The second answers
+`"dated"` for 2024-25 and earlier and `"cumulative"` for 2025-26 and later, and throws on
+anything that is not a tax year in `YYYY-YY` form. It reads no clock and takes no default.
+
+Runs first of the tracks still to come, because T17 and T18 both call it and every handler
+after it uses the shared format check.
+
+Proves: unit tests over the boundary in both directions, including 2024-25, 2025-26 and a
+malformed year; `npm run test:unit` across every ITSA handler the sweep touched;
+`./mvnw clean verify`.
+
+### T17. The self-employment cumulative period summary (Sonnet)
+
+Owns `app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js`,
+`hmrcItsaSelfEmploymentPeriodPut.js`, `hmrcItsaSelfEmploymentPeriodGet.js`,
+`hmrcItsaSelfEmploymentPeriodsGet.js`, their unit tests,
+`app/http-simulator/routes/itsa-self-employment-cumulative.js`,
+`app/http-simulator/scenarios/itsa-self-employment-cumulative.js`, and the spine.
+
+Keeps the routes it has. Inside each handler `resolveItsaSubmissionModel(taxYear)` chooses the
+HMRC path and the response shape. `buildSelfEmploymentPeriodRequestBody` builds both bodies
+unchanged, with one addition: in a cumulative year `periodIncome` and `periodExpenses` carry a
+value for every field the page collected, zeros included, because HMRC requires that. The
+period dates go in the body only when the picked obligation is shorter than the tax year.
+
+The token charge does not move. One request is one business's submission either way, so the
+charge stays where T1 put it (D6).
+
+Proves: unit tests pinning the dated URL for a 2024-25 year and the cumulative URL for a
+2025-26 year on the same handler; a unit test that a zero survives into a cumulative body and
+that an unanswered field does not; unit tests over the missing-dates and dates-not-allowed
+rejections; a system test against the simulator; `./mvnw clean verify`.
+
+### T18. The UK property cumulative period summary (Sonnet)
+
+Owns the four `hmrcItsaUkPropertyPeriod*.js` handlers T11 created, their unit tests,
+`app/http-simulator/routes/itsa-uk-property-cumulative.js`,
+`app/http-simulator/scenarios/itsa-uk-property-cumulative.js`, and the spine. Runs after T11.
+
+The same shape as T17. `buildUkPropertyPeriodRequestBody` gains the cumulative form, which
+wraps `income` and `expenses` in `ukProperty` and carries `fromDate` and `toDate` at the top
+level. HMRC states no required-zeros rule for property, so the property body keeps the rule it
+already has and leaves an unanswered field out.
+
+Proves: unit tests pinning both URLs from the same handler; unit tests over the `ukProperty`
+wrapper, the missing-dates and dates-not-allowed rejections, and the consolidated alternative;
+a system test against the simulator; `./mvnw clean verify`.
+
+### T19. The cumulative pages (Sonnet)
+
+Owns `web/public/hmrc/itsa/selfEmploymentPeriod.html`, `selfEmploymentPeriodAmend.html`,
+`selfEmploymentPeriods.html`, `selfEmploymentPeriodView.html`, and the four `ukProperty`
+twins T14 created. Runs after T14.
+
+Makes each page read the picked obligation and the tax year, then present the right form. In a
+cumulative year the money labels read as totals for the year so far and name the date they run
+to, the page loads what HMRC currently holds before the customer edits it, the amend pages ask
+for no submission id, and the list pages show the year's obligations with the one current total
+against them. In a dated year every page behaves as it does today.
+
+The labels are the design work in this track. A cumulative figure under a per-quarter label is
+a wrong number on screen, and no test catches a wrong word.
+
+Proves: `npm run test:browser` with a dated year and a cumulative year over the same pages;
+`npm run test:itsaSelfEmploymentPeriodBehaviour-simulator` and the property twin, each run
+against both models.
 
 ### Order
 
-T1, then T2, T3, T4, T5 in that order for the spine, then T6. Then the property endpoint
-tracks take the spine in turn: T11, T12, T13. Then T14, then T15. T7 after T15, so the sandbox
-year covers both income types in one run. T8 runs alongside from the start, in the other
-repository. T9 after T8 and T6. T10 after T7.
+T1, then T2, T3, T4, T5 in that order for the spine, then T6. Those six have landed.
 
-T13 changes `hmrcItsaBsasTriggerPost.js`, which T4 owns, so it runs after T4 has merged and no
-other track holds that file. T14 and T15 both touch the ITSA page set, so T15 waits for T14.
+The rest run in this order:
+
+T16, first, because everything after it uses the tax year model.
+Then the endpoint tracks take the spine in turn: T17, T11, T18, T12, T13.
+Then the pages: T14, T19, T15.
+Then T7, the sandbox proof, which needs every endpoint and every page in place.
+T8 runs alongside from the start, in the other repository. T9 after T8 and T19. T10 after T7.
+
+Three ordering rules behind that. T18 grows the handlers T11 creates, so it follows T11. T13
+changes `hmrcItsaBsasTriggerPost.js`, which T4 owns, so it runs once no other track holds that
+file. T19 and T15 both touch the ITSA page set, and T19 grows pages T14 creates, so the page
+tracks run T14, then T19, then T15.
 
 ## Verification
 
@@ -1006,11 +1282,24 @@ other track holds that file. T14 and T15 both touch the ITSA page set, so T15 wa
   same set against ci with the sandbox test user.
 - No handler, page or test carries a period key, a date range, a quarter boundary or a specific
   obligation as a literal. Every date a request sends came out of an obligations response.
+- `resolveItsaSubmissionModel` is the only place in the repository that compares a tax year to
+  the 2025-26 boundary, and no ITSA code reads a clock to decide a tax year.
+- The same handler builds the dated HMRC URL for a 2024-25 tax year and the cumulative one for
+  a 2025-26 tax year, proved by a unit test on each side of the boundary for both income types.
+- A cumulative self-employment body carries a zero for a field the customer entered as nil, and
+  omits a field the customer never answered.
+- The obligations page renders a one-row annual obligation and a four-row quarterly one from
+  the same code, with no row labelled by quarter number.
+- In a cumulative year the update page shows the total HMRC currently holds before the customer
+  edits it, and the amend page asks for no submission id.
 - A final declaration filed in the sandbox leaves a receipt carrying the confirming
   `calculationId`, HMRC's correlation id, and a TTL seven years out.
 - Filing a quarterly update and a final declaration each decrement the bundle's tokens by one,
   for both income types. Filing an annual submission decrements nothing, for both income types.
   A user with no tokens gets `403` with `reason: "tokens_exhausted"` and no HMRC call happens.
+- A customer with two businesses spends nine tokens over a year, and the dashboard said nine
+  before they spent the first one.
+- An async worker retry of a quarterly update spends no second token.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
   disabled, so it sits in the document order rather than being positioned there.
 - `finalDeclaration.html` will not submit until the declaration is ticked, and shows the
@@ -1056,27 +1345,39 @@ sent. This changes T10.
 with both can file a complete return. This is the substantial new work and it adds tracks T11
 to T15. Foreign property is a later surface.
 
+**D6. Metering is per business.** A customer with a sole trade and a rental files two sets of
+quarterly updates, so their year is nine tokens: four for each business plus one final
+declaration. A token is charged per submission to HMRC, and a second business genuinely doubles
+what we do. The alternative, a flat charge per tax year, would price two businesses as one.
+The pricing surface says plainly what a customer with two businesses pays, so nine tokens is
+never a surprise at the year end.
+
+**D7. This phase builds both quarterly models, dated and cumulative.** HMRC splits at 2025-26:
+dated period summaries up to 2024-25, a cumulative period summary from 2025-26, on a different
+path with a different body, for both income types. Mandation starts on 6 April 2026, which is
+the 2026-27 tax year, so a mandated customer's first real filing lands on the cumulative
+endpoints. A product that files only sandbox-era years is not a product. This adds tracks T16
+to T19.
+
 **D5. The sandbox proof reuses the phase 1 test user.** That user has both VAT and Income Tax
 enrolments. The businesses, accounting periods and ITSA status the proof needs come from the
 test support API, and its vendor-state checkpoints reset the user between runs.
 
 ## Open for the operator
 
-**Which tax years the product files for.** HMRC splits both income types at the same point.
-Self Employment Business 5.0 and Property Business 6.0 accept dated quarterly period summaries
-up to 2024-25, and from 2025-26 a cumulative period summary replaces them: one running total
-for the year to date, on a different path with a different body. Phase 1 built the dated
-endpoints, and T11 as written builds the dated property ones beside them.
+**What a cumulative resend costs.** A cumulative year invites more sends than a dated one. A
+dated year has four submissions and a correction is a separate amend call. A cumulative year
+has one endpoint that a customer may hit whenever they have more to report, and every hit is a
+write, so under D6 every hit costs a token. A customer who reports monthly and corrects twice
+could spend fifteen tokens on one business rather than four.
 
-Mandation starts on 6 April 2026, which is the 2026-27 tax year, so a mandated customer's first
-real filing lands on the cumulative endpoints. The dated endpoints serve a customer filing a
-2024-25 or earlier year, and the sandbox proof, which runs a completed year.
-
-What the operator settles: whether this phase builds the cumulative endpoints for both income
-types as well, and if so whether that lands here or as its own phase. Until it is settled, both
-income types file identically and neither can serve a 2025-26 or later year. The tracks below
-are written for the dated endpoints, and a cumulative build adds one handler pair per income
-type plus the pages that choose between them by the tax year the customer picked.
+Recommendation: charge every write, and have the update page say what the send costs and what
+the allowance has left, before the customer presses the button. The `resident-itsa` bundle
+grants 100 tokens a month, so even a heavy cumulative year sits well inside it, and charging
+per write keeps one rule for both models with no new state to track. The alternative, charging
+the first successful write against each open obligation and nothing after, matches the "a
+correction should not cost twice" instinct behind D1, but it needs us to remember which
+obligation each write met.
 
 **Whether Individual Losses and Individuals Tax Liability Adjustments block approval.** D3
 applies for both stages together, and those two APIs have no build. T10's checklist answers
