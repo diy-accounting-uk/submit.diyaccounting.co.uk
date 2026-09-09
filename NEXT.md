@@ -29,16 +29,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 ## In flight
 
 PR #160 (batch 15, ITSA phase 2 T1 to T6 and the health alarm's group composites) merged to
-main at 15f3483c, 2026-09-09 17:49 UTC. The merge's environment deploy 34385269212 and deploy
-34385269183 (which retires prod-4600d25) are running; the board of their landing reads the
-cost export (B65, expected to fail again) and the new prod set. Prod's afternoon opened four
-alarm issues on prod-4600d25 (#161 to #164): three are one cause, B67, and the fourth is a
-customer's 400 that the alarm should not count, B30r. T7 (the sandbox proof) and T8 to T10
-wait on the operator's word. No agent runs. The operator's standing instruction (renewed
-2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
+main at 15f3483c, 2026-09-09 17:49 UTC. The merge's deploy 34385269183 is creating
+prod-15f3483 (seven app stacks up at 18:20 UTC, OpsStack and the retirement of prod-4600d25
+to come); the environment deploy 34385269212 failed at the cost export only (B65); sbom was
+green; the test run 34385268714 failed in `npx playwright install chromium --with-deps` on an
+Ubuntu apt index download ("Some index files failed to download"), a transient mirror fault
+that a re-run of the failed job settles (`gh run rerun 34385268714 --failed`, the operator's
+to run). The deploy opened #165 and #166 through the CIS filters' precedence fault (B30s).
+T7 (the sandbox proof) and T8 to T10 wait on the operator's word. No agent runs. The
+operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
+flight" without their word.
 
 ## Ready: Claude Code
 
+- [ ] **B30s. The CIS filters' deploy exclusion binds to the last event name only.** Issues
+  #165 (`prod-env-cis-iam-policy-changes`, 17:56 UTC) and #166 (`-route-table-changes`, 18:22)
+  opened during main's deploy of 2026-09-09, both from
+  `cdk-hnb659fds-cfn-exec-role-972912397388-eu-west-2`, which the exclusion names. The
+  deployed pattern reads `{ ($.eventName = A) || … || ($.eventName = Z) && ((type guard)) }`:
+  `&&` binds tighter than `||`, so the guard applies to the last event name alone and every
+  other event matches unconditionally. In `SecurityDetectionStack.java`, wrap each control's
+  event-name chain in its own parentheses before appending the guard, add a test that the
+  rendered pattern starts `{ ((` for the eight guarded controls, and prove it with
+  `aws logs test-metric-filter` against a `PutRolePolicy` event by the cfn-exec role (must not
+  match) and one by an IAM user (must match). Closes #165 and #166. **Source**: issues #165,
+  #166. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B67. The account stack's Lambdas cannot read the salt secret.** CloudTrail on prod:
   `interest-post` was denied `secretsmanager:GetSecretValue` on `prod/submit/user-sub-hash-salt`
   at 14:04 and 14:07 UTC on 2026-09-09 and answered `500` to two `POST /api/v1/interest`
