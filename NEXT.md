@@ -39,6 +39,22 @@ each owning a disjoint set of files:
 | Licensing files | B70.S1 | Sonnet | `LICENSE`, `LICENSING.md`, `NOTICE`, `package.json` |
 | ITSA sandbox | B11.T7 (the script and runbook) | Sonnet | `scripts/itsa-sandbox-year.js`, `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` |
 
+Wave B, dispatched as their blockers cleared. Their worktrees merge `claude/b16-board` first,
+since wave A's work is not on `main`:
+
+| Workstream | Items | Model | Owns |
+|---|---|---|---|
+| Licensing statement | B70.S2 | Opus | `terms.html`, `accessibility.html`, the footers, `README.md`, `SECURITY.md`, `TRADEMARKS.md` |
+| Licensing metadata | B70.S4, S5, S6 | Sonnet | the OpenAPI generator, `Dockerfile`, `NOTICE`, `LICENSING.md`'s third-party section |
+| DIYA-GL identifiers | B71.S2 | Sonnet | `app/functions/books/`, `s3BooksRepository.js`, `booksCors.js`, `booksEntitlement.js`, their tests and npm scripts |
+
+Merged into `claude/b16-board` and waiting on the branch's checks: B70.S1 (the `LICENSE` text
+matches the spreadsheets copy byte for byte, `LICENSING.md` maps every top-level directory to
+the PolyForm layer, `NOTICE` carries the company line, `package.json` reads `SEE LICENSE IN
+LICENSE`), B17b.1 (the three VAT activities gain `prod`, with the catalogue test split so the
+self-employed activity's ci-only listing is asserted on its own) and B71.S1 (the DIYA-GL prose
+across the four plan documents). Each comes off this list when the branch's checks pass.
+
 Agents commit in their worktrees and never push. The coordinator merges each verified commit
 into `claude/b16-board`, pushes the batch once, and raises the PR when the branch is testing
 and deploying. B70.S3 (the header sweep) touches every tracked file, so it lands after every
@@ -126,11 +142,6 @@ the cost export only (B65); the test run passed on its re-run.
   Proof: a `204` from the final declaration and the fraud header validator clean on the same
   header set. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
   **Model**: Sonnet.
-- [ ] **B17b.1. Enable the three VAT read pages on prod.** The operator examined liabilities,
-  payments and penalties on ci on 2026-09-09 and they read right: add `prod` to the three
-  activities' environments in `web/public/submit.catalogue.toml` (they stay on every bundle),
-  PR, the operator merges; the deploy of main is the proof. **Source**: BACKLOG 17b; issue
-  #19. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -163,30 +174,6 @@ the cost export only (B65); the test run passed on its re-run.
   opened the issue anyway, so the read is used for the issue's detail. Grant `DescribeAlarms`
   (resource `*`) to that role in `OpsStack.java` beside its other reads. **Source**: CloudTrail
   2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B70.S1. Licensing: the licence files.** `LICENSE` becomes the canonical PolyForm
-  Internal Use text with the additional grant, copied byte for byte from the spreadsheets
-  repository; `LICENSING.md` maps every top-level directory to the third layer, states the
-  source offer and the copyright line and carries the third-party section; `NOTICE` carries
-  the company line; `package.json` `license` becomes `SEE LICENSE IN LICENSE`. First of the
-  licensing rows; one PR carries the code rows, from `claude/lic-<topic>`. Report the landing
-  in `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S1.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B71.S1. DIYA-GL naming: the prose.** `PLAN_DIYA_GL_NAMING.md`'s Submit class 1 table:
-  "books" as a product, page, client or import becomes "DIYA-GL" (the import, the routes,
-  the client, the page, the origins) in `PLAN_ITSA_PHASE_2.md`, `PLAN_DIYA_GL_STORAGE.md`,
-  `PLAN_SUBMISSION_MCP.md`, `PLAN_ONE_STOP_DASHBOARD.md` and the comment in
-  `app/functions/billing/billingReturnUrl.js`; "a book" as the data noun stays. Docs-only
-  where it is docs; the comment rides with B71.S2. Report the landing in
-  `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S1. **Owner**:
-  Claude Code. **Model**: Haiku.
-- [ ] **B71.S2. DIYA-GL naming: the same-repository code identifiers.** The class 3 table:
-  `s3BooksRepository.js` to `s3DiyaGlRepository.js`, `app/functions/books/` to
-  `app/functions/diyaGl/` with matching filenames, `booksCors.js`, `booksEntitlement.js`, the
-  system, unit and behaviour tests, the `test:booksBehaviour*` npm scripts and the Playwright
-  project, every importer and CI reference in the same PR; no alias, no re-export. Route
-  paths and env names stay (class 4). **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S2. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3a. DIYA-GL naming: the deployed identifiers' design.** The class 4 table has 16
   identifiers that live in deployed resources or that the spreadsheets repository consumes
   (`BooksStack`, the CFN outputs, `BOOKS_ALLOWED_ORIGINS`, the Cognito client name, the SSM
@@ -287,16 +274,6 @@ the cost export only (B65); the test run passed on its re-run.
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-- [ ] **B70.S2. Licensing: the public statement.** `terms.html` (lines 158, 272-275, 431-437)
-  and `accessibility.html:349-353` rewritten so the Service is free to use, source available,
-  under the PolyForm Internal Use License with the grant for accountants, the contribution
-  invitation removed; every page footer gains the licence line and a source link and reads
-  `© 2006-2026 DIY Accounting Limited`; `README.md`, `hmrc-fraud-prevention.md` and
-  `_developers/MARKETING_GUIDANCE.md` say the new words and the README says the repository
-  does not accept contributions; `SECURITY.md` and `TRADEMARKS.md` added from the spreadsheets
-  copies; the HMRC approval documents annotated with the date the licence changed; ™ on the
-  marks. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S2. **Owner**: Claude Code. **Model**:
-  Opus for the terms wording, Sonnet for the rest. Blocked on B70.S1.
 - [ ] **B70.S3. Licensing: the headers.** Every comment-capable file carries
   `SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0` and the copyright line in
   its format's comment style; the 28 `-or-later` headers, the battery-pack subtree's MIT
@@ -306,32 +283,15 @@ the cost export only (B65); the test run passed on its re-run.
   mismatched or old-name header, in `npm test`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md`
   S3. **Owner**: Claude Code. **Model**: Haiku for the sweep, Sonnet for the test. Blocked on
   B70.S1.
-- [ ] **B70.S4. Licensing: the OpenAPI document.** `info.license` (name `PolyForm Internal Use
-  License 1.0.0`, url the repository's `LICENSE`), `info.contact` and `termsOfService` in
-  `createInfoSection()` of the OpenAPI generator and its test; the generated `openapi.json`
-  carries them. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S4. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on B70.S1.
-- [ ] **B70.S5. Licensing: the image labels.** `org.opencontainers.image.licenses=LicenseRef-PolyForm-Internal-Use-1.0.0`,
-  `vendor`, `title`, `source`, `documentation` and `url` labels on the `Dockerfile`.
-  **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S5. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on B70.S1.
-- [ ] **B70.S6. Licensing: the third-party lines.** In `NOTICE` and `LICENSING.md`: node-qrcode
-  (MIT, its notice restored at the top of `web/public/lib/qrcode.min.js`), the Google "G"
-  logo, the PolicyBee logo, the Lighthouse, Playwright, React and OWASP ZAP reports under
-  `web/public/tests/`, one Crown copyright and OGL v3.0 line for the HMRC form-field
-  standards, the Companies House xsd schemas, the Maven Wrapper, and a runtime dependency
-  table from `package.json` with each package's licence read from `node_modules`.
-  **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S6. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on B70.S1.
 - [ ] **B70.S7. Licensing: the simulator copy.** The deploy workflow runs
   `scripts/build-simulator.js` before it uploads `web/public-simulator/`, so the stale copy is
   replaced; verified by the simulator's `accessibility.html` date matching the live one after
   the next deploy. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S7. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on B70.S2.
+  **Model**: Sonnet. Blocked on B70.S2, which is in flight.
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph (the MTD approval
   submission and the production-credentials email described the service as AGPL open
   source). **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator.
-  **Model**: none. Blocked on B70.S2 reaching main.
+  **Model**: none. Blocked on B70.S2, which is in flight, reaching main.
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
