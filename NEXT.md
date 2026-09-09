@@ -29,10 +29,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 ## In flight
 
 Batch 15 is PR #160 (`claude/b15-board`, pushed 2026-09-09 13:10 UTC): ITSA phase 2's T1 to
-T6, green on the merged batch (`npm test` 2677, `./mvnw clean verify` 202); the push started
-the branch's environment deploy 34355416698, deploy 34355417183, test 34355416467 and CodeQL
-34355450948. T7 (the sandbox proof from the branch's ci set) and T8 to T10 wait on the
-operator's word. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
+T6, green on the merged batch (`npm test` 2677, `./mvnw clean verify` 202); the branch's
+environment deploy 34355416698, test 34355416467 and CodeQL 34355450948 were green, and the
+deploy 34355417183 failed: `ci-claud7ba2-app-HmrcStack` rolled back on its composite
+`StackHealthAlarm`, whose `AlarmRule` is 13,789 characters against CloudWatch's 10,240 limit
+with 46 Lambdas fanned in, so the ApiStack and every behaviour probe failed behind it. The
+fix (split the fan-in into two composites under one parent, in `HmrcStack.java` where
+`Lambda.stackHealthAlarm` builds the rule) is batch 15's remainder and waits on the
+operator's word, as do T7 (the sandbox proof) and T8 to T10. Batch 14 is on prod as prod-4600d25; its two environment deploys of the
 day failed at the cost export (B65). No agent runs. The operator's standing instruction
 (renewed 2026-09-09 07:40 UTC): no board item enters "in flight" without their word.
 
