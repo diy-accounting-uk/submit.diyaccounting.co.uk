@@ -1,5 +1,5 @@
 name: alarm-triage
-run-name: "alarm triage for #${{ github.event.issue.number }}"
+run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.number }}"
 # SPDX-FileCopyrightText: 2026 DIY Accounting Limited
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -15,6 +15,12 @@ run-name: "alarm triage for #${{ github.event.issue.number }}"
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: the alarm issue to triage again
+        required: true
+        type: string
 
 permissions:
   id-token: write
@@ -34,7 +40,7 @@ env:
 
 jobs:
   triage:
-    if: contains(github.event.issue.labels.*.name, 'alarm')
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'alarm')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -111,7 +117,7 @@ jobs:
       ALARM_REGION: ${{ needs.triage.outputs.region }}
       ALARM_WINDOW: ${{ needs.triage.outputs.window }}
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
-      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
     steps:
       # The triage role is created by the environment's CDK deploy and its ARN is set on the
       # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
