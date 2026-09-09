@@ -76,6 +76,45 @@ class SubmitBackupAccountCdkResourceTest {
                                                 "Effect", "Deny")))))))));
     }
 
+    @Test
+    void ciBackupRoleMayListDescribeAndStartRestoresFromTheVault() {
+        Template template = synthVaultStack();
+
+        template.hasResourceProperties(
+                "AWS::Backup::BackupVault",
+                Match.objectLike(Map.of(
+                        "AccessPolicy",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Sid", "AllowCiRestoreRoleToRestore",
+                                        "Effect", "Allow",
+                                        "Principal", Map.of("AWS", CI_BACKUP_ROLE),
+                                        "Action",
+                                                List.of(
+                                                        "backup:ListRecoveryPointsByBackupVault",
+                                                        "backup:DescribeRecoveryPoint",
+                                                        "backup:GetRecoveryPointRestoreMetadata",
+                                                        "backup:StartRestoreJob"))))))))));
+
+        template.hasResourceProperties(
+                "AWS::KMS::Key",
+                Match.objectLike(Map.of(
+                        "KeyPolicy",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Sid", "AllowCiRestoreRoleToDecrypt",
+                                        "Effect", "Allow",
+                                        "Principal", Map.of("AWS", CI_BACKUP_ROLE),
+                                        "Action",
+                                                List.of(
+                                                        "kms:Decrypt",
+                                                        "kms:DescribeKey",
+                                                        "kms:GenerateDataKey",
+                                                        "kms:CreateGrant"))))))))));
+    }
+
     private static Template synthAccessStack() {
         App app = new App();
         var stack = new BackupAccountAccessStack(

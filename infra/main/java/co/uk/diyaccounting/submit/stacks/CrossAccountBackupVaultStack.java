@@ -67,6 +67,18 @@ public class CrossAccountBackupVaultStack extends Stack {
         List<ArnPrincipal> sourceBackupRoles =
                 props.sourceBackupRoleArns().stream().map(ArnPrincipal::new).toList();
 
+        // The restore drill runs in submit-ci and restores under this role, the only one of the
+        // source backup roles that ever needs to read back out of the vault rather than just copy
+        // into it. Copy-in and restore are different access levels, so this stays its own principal
+        // rather than folding into sourceBackupRoles.
+        String ciRestoreRoleArn = props.sourceBackupRoleArns().stream()
+                .filter(arn -> arn.endsWith(":role/ci-env-backup-role"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "No ci-env-backup-role ARN found in sourceBackupRoleArns; the restore drill "
+                                + "has no role to grant read/restore access on the vault to."));
+        ArnPrincipal ciRestoreRolePrincipal = new ArnPrincipal(ciRestoreRoleArn);
+
         // ============================================================================
         // KMS key encrypting recovery points at rest in this account
         // ============================================================================
@@ -96,6 +108,17 @@ public class CrossAccountBackupVaultStack extends Stack {
                 .resources(List.of("*"))
                 .build());
 
+        // A restore job runs under the ci restore role and reads recovery points still encrypted
+        // under this account's key, so it needs its own decrypt grant on the key, separate from the
+        // encrypt-side grant above that every source backup role gets for copying in.
+        this.vaultEncryptionKey.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowCiRestoreRoleToDecrypt")
+                .effect(Effect.ALLOW)
+                .principals(List.of(ciRestoreRolePrincipal))
+                .actions(List.of("kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey", "kms:CreateGrant"))
+                .resources(List.of("*"))
+                .build());
+
         // ============================================================================
         // Cross-account vault
         // ============================================================================
@@ -107,6 +130,21 @@ public class CrossAccountBackupVaultStack extends Stack {
                                 .effect(Effect.ALLOW)
                                 .principals(List.copyOf(sourceBackupRoles))
                                 .actions(List.of("backup:CopyIntoBackupVault"))
+                                .resources(List.of("*"))
+                                .build(),
+                        // The restore drill in submit-ci looks up and restores prod's recovery
+                        // points from here, so this one role also needs to read the vault's
+                        // catalogue and start a restore, on top of the copy-in every source role
+                        // gets above.
+                        PolicyStatement.Builder.create()
+                                .sid("AllowCiRestoreRoleToRestore")
+                                .effect(Effect.ALLOW)
+                                .principals(List.of(ciRestoreRolePrincipal))
+                                .actions(List.of(
+                                        "backup:ListRecoveryPointsByBackupVault",
+                                        "backup:DescribeRecoveryPoint",
+                                        "backup:GetRecoveryPointRestoreMetadata",
+                                        "backup:StartRestoreJob"))
                                 .resources(List.of("*"))
                                 .build(),
                         // Copy-in is the only thing a deployment account may do here. Even an
