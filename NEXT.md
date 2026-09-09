@@ -27,9 +27,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Nothing. Batch 13 and the spreadsheets behaviour role merged to main on 2026-09-08 (PR #154);
-the follow-ups it left are B61, B58, B30q, B60 and B59 below. The operator's standing
-instruction: no board item enters "in flight" without their word.
+Batch 14 on `claude/b14-board`, on the operator's word of 2026-09-09: B63, B60, B62, B58, B59
+and B30p run as worktree sub-agents now; B61 and B30q follow when the first Maven builds
+finish; B10.4 runs against the batch's ci set once the branch is pushed. Each item's entry
+stays in its section below until its commit is on the batch branch, then leaves. One push
+when the batch is ready, then a PR to main.
 
 ## Ready: Claude Code
 
