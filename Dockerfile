@@ -21,6 +21,13 @@ RUN npm ci --omit=dev --ignore-scripts
 # Final stage: ARM64 Lambda base image
 FROM public.ecr.aws/lambda/nodejs:24
 
+LABEL org.opencontainers.image.licenses="LicenseRef-PolyForm-Internal-Use-1.0.0" \
+      org.opencontainers.image.vendor="DIY Accounting Limited" \
+      org.opencontainers.image.title="DIY Accounting Submit" \
+      org.opencontainers.image.source="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" \
+      org.opencontainers.image.documentation="https://submit.diyaccounting.co.uk/docs/api/" \
+      org.opencontainers.image.url="https://submit.diyaccounting.co.uk"
+
 # Copy dependencies from builder (pure JS, architecture-independent)
 COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./package.json

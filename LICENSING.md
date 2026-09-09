@@ -54,13 +54,15 @@ the licence its directory takes in the table above.
 
 ## Third-party material
 
-- **qrcode** (`web/public/lib/qrcode.min.js`), MIT. The vendored copy carries no header
-  comment. A runtime dependency of the `qrcode` package named in `package.json`.
+- **qrcode** (`web/public/lib/qrcode.min.js`), MIT. The vendored copy carries node-qrcode's
+  own MIT notice at the top of the file. A runtime dependency of the `qrcode` package named
+  in `package.json`.
 - **Google "G" logo** (`web/public/images/g-logo.png`), used on `web/public/auth/login.html`
   under Google's brand guidelines for a sign-in button. Not licensed onward.
 - **PolicyBee logo** (`web/public/images/policybee-logo.png`), used under the partner
   arrangement described on `web/public/policybee.html`. Not licensed onward.
-- **Lighthouse, Playwright and OWASP ZAP reports** under `web/public/tests/`, generated
+- **Lighthouse (Apache-2.0), Playwright (Apache-2.0, including the React-based UI its HTML
+  reporter embeds, MIT) and OWASP ZAP reports** under `web/public/tests/`, generated
   third-party tool output kept for the public test history page.
 - **Companies House XML Gateway schemas** (`fixtures/companies-house-xmlgw/`), Crown
   copyright, used under the
@@ -69,6 +71,40 @@ the licence its directory takes in the table above.
   copyright, used under the Open Government Licence v3.0.
 - **Apache Maven Wrapper** (`mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`),
   Apache License 2.0, copyright the Apache Software Foundation.
+
+## Runtime dependencies
+
+Every package in `package.json`'s `dependencies` block, with the licence its own
+`package.json` declares in `node_modules`:
+
+| Package | Licence |
+| --- | --- |
+| `@aws-sdk/client-athena` | Apache-2.0 |
+| `@aws-sdk/client-cloudformation` | Apache-2.0 |
+| `@aws-sdk/client-cloudwatch` | Apache-2.0 |
+| `@aws-sdk/client-cloudwatch-logs` | Apache-2.0 |
+| `@aws-sdk/client-cognito-identity-provider` | Apache-2.0 |
+| `@aws-sdk/client-eventbridge` | Apache-2.0 |
+| `@aws-sdk/client-firehose` | Apache-2.0 |
+| `@aws-sdk/client-glue` | Apache-2.0 |
+| `@aws-sdk/client-guardduty` | Apache-2.0 |
+| `@aws-sdk/client-s3` | Apache-2.0 |
+| `@aws-sdk/client-secrets-manager` | Apache-2.0 |
+| `@aws-sdk/client-securityhub` | Apache-2.0 |
+| `@aws-sdk/client-sns` | Apache-2.0 |
+| `@aws-sdk/client-sqs` | Apache-2.0 |
+| `@aws-sdk/client-ssm` | Apache-2.0 |
+| `@aws-sdk/util-dynamodb` | Apache-2.0 |
+| `@google-analytics/data` | Apache-2.0 |
+| `@google-cloud/bigquery` | Apache-2.0 |
+| `@iarna/toml` | ISC |
+| `aws-jwt-verify` | Apache-2.0 |
+| `dotenv` | BSD-2-Clause |
+| `google-auth-library` | Apache-2.0 |
+| `pino` | MIT |
+| `qrcode` | MIT |
+| `stripe` | MIT |
+| `uuid` | MIT |
 
 ## SPDX identifiers
 
