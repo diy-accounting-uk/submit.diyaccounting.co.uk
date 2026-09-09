@@ -13,9 +13,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4600d25 (the scheduled deploy of main, run 34331976471,
-2026-09-09 08:57 UTC, the 04:11 cron arriving late), which retired prod-ebaeb7d in its own
-destroy-previous job; no spare stands.** A main deploy retires the previous set
+**Prod runs deployment prod-15f3483 (the merge of PR #160, run 34385269183, 2026-09-09 18:3x
+UTC), which retired prod-4600d25 in its own destroy-previous job; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
@@ -28,23 +27,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-PR #160 (batch 15, ITSA phase 2 T1 to T6 and the health alarm's group composites) merged to
-main at 15f3483c, 2026-09-09 17:49 UTC. The merge's deploy 34385269183 is creating
-prod-15f3483 (seven app stacks up at 18:20 UTC, OpsStack and the retirement of prod-4600d25
-to come); the environment deploy 34385269212 failed at the cost export only (B65); sbom was
-green; the test run 34385268714 failed in `npx playwright install chromium --with-deps` on an
-Ubuntu apt index download ("Some index files failed to download"), a transient mirror fault
-that a re-run of the failed job settles (`gh run rerun 34385268714 --failed`, the operator's
-to run). The deploy opened #165 and #166 through the CIS filters' precedence fault (B30s).
-T7 (the sandbox proof) and T8 to T10 wait on the operator's word. No agent runs. The
+Nothing. Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is
+on prod as prod-15f3483 since 2026-09-09 18:3x UTC. Of the merge's runs, the environment
+deploy failed at the cost export only (B65) and the test run failed in the Playwright
+install on a transient Ubuntu mirror fault (`gh run rerun 34385268714 --failed`, the
+operator's to run). T7 (the sandbox proof) and T8 to T10 wait on the operator's word. The
 operator's standing instruction (renewed 2026-09-09 07:40 UTC): no board item enters "in
 flight" without their word.
 
 ## Ready: Claude Code
 
 - [ ] **B30s. The CIS filters' deploy exclusion binds to the last event name only.** Issues
-  #165 (`prod-env-cis-iam-policy-changes`, 17:56 UTC) and #166 (`-route-table-changes`, 18:22)
-  opened during main's deploy of 2026-09-09, both from
+  #165 (`prod-env-cis-iam-policy-changes`, 17:56 UTC), #166 (`-route-table-changes`, 18:22) and
+  #167 (`-s3-bucket-policy-changes`, 18:46, the retirement of prod-4600d25) opened during
+  main's deploy of 2026-09-09, all from
   `cdk-hnb659fds-cfn-exec-role-972912397388-eu-west-2`, which the exclusion names. The
   deployed pattern reads `{ ($.eventName = A) || … || ($.eventName = Z) && ((type guard)) }`:
   `&&` binds tighter than `||`, so the guard applies to the last event name alone and every
@@ -52,7 +48,7 @@ flight" without their word.
   event-name chain in its own parentheses before appending the guard, add a test that the
   rendered pattern starts `{ ((` for the eight guarded controls, and prove it with
   `aws logs test-metric-filter` against a `PutRolePolicy` event by the cfn-exec role (must not
-  match) and one by an IAM user (must match). Closes #165 and #166. **Source**: issues #165,
+  match) and one by an IAM user (must match). Closes #165, #166 and #167. **Source**: issues #165,
   #166. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B67. The account stack's Lambdas cannot read the salt secret.** CloudTrail on prod:
   `interest-post` was denied `secretsmanager:GetSecretValue` on `prod/submit/user-sub-hash-salt`
@@ -65,7 +61,7 @@ flight" without their word.
   (lines ~284, ~364, ~471) but not to these four; grant it where the others get it, and make
   `passPost.js`'s "not available" path throw rather than warn, since a pass hashed without the
   salt is a wrong pass. Proof: no `GetSecretValue` denial in CloudTrail after the deploy and
-  `POST /api/v1/interest` answering 2xx. Closes #161, #162, #163. **Source**: CloudTrail
+  `POST /api/v1/interest` answering 2xx. Closes #161; #162 and #163 are on the retired prod-4600d25 and close as stale once this is on prod. **Source**: CloudTrail
   2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
   was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
@@ -210,6 +206,14 @@ flight" without their word.
   `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
   which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
   **Owner**: Operator. **Model**: none.
+- [ ] **B70. The licensing uplift, Submit's share.** `PLAN_LICENSING_UPLIFT_SUBMIT.md` on main
+  (rows S1 to S7, H-LU-9 and LU-15's Submit half, written by the spreadsheets session from
+  its plan of record): the PolyForm Internal Use licence with the accountant grant, the
+  copyright line, SPDX headers and the header gate, the footer wording and the trademark
+  marks, copied from the spreadsheets repository's texts. Report each row's start and landing
+  in `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md`.
+  **Owner**: Claude Code. **Model**: Haiku for the sweep, Sonnet for the licence texts.
+  Blocked on the operator's word (stabilising, 2026-09-09).
 - [ ] **B52l. The optimiser.** A notebook over the raw export: per-block correlations, the
   block models (linear cost, log-linear funnels, Hill saturation for spend), levers ranked by
   effect per unit cost, and the next experiment proposed with its predicted effect and
