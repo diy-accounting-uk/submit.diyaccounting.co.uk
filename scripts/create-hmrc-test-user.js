@@ -23,6 +23,7 @@
  */
 
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 
 const ALLOWED_SERVICE_NAMES = ["mtd-vat", "mtd-income-tax"];
 
@@ -158,6 +159,8 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
 }
 
 export async function main() {
+  dotenv.config({ path: ".env.proxy", override: false });
+
   const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID;
   const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET;
 
