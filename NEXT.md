@@ -206,8 +206,14 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
   questionnaires, and the two draft emails for the operator to send. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code, then Operator. **Model**: Haiku.
-  Blocked on B11.T7.
+  `PLAN_ITSA_PHASE_2.md` T10. One application now covers both approval stages, and the operator
+  decided on 2026-09-09 to build Individual Losses and Individuals Tax Liability Adjustments
+  rather than declare the product does not offer those journeys, so the checklist answers for
+  all nine APIs in the minimum functionality standards with a build behind each. Individual
+  Losses earns its build on its own: a sole trader making a loss is the ordinary first year of
+  trading, and without it that customer files with us all year and finishes in their HMRC
+  account. **Owner**: Claude Code, then Operator. **Model**: Haiku.
+  Blocked on B11.T7 and on the two new API tracks.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
