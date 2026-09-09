@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
@@ -53,6 +54,59 @@ import software.constructs.Construct;
  * against it, exposing the created resources as public fields.
  */
 public class CostFocusIngestion {
+
+    /**
+     * The FOCUS 1.2-with-AWS-columns column names, in the same order {@link CostFocusTables}'
+     * Glue table declares them. The Data Exports API rejects {@code SELECT *}, so {@link
+     * co.uk.diyaccounting.submit.stacks.CostExportStack} selects this explicit list by name; both
+     * lists must change together, or the export's Parquet columns drift from the Glue table reading
+     * them.
+     */
+    public static final List<String> FOCUS_1_2_COLUMNS = List.of(
+            "billing_account_id",
+            "billing_account_name",
+            "billing_currency",
+            "billing_period_start",
+            "billing_period_end",
+            "charge_category",
+            "charge_class",
+            "charge_description",
+            "charge_frequency",
+            "charge_period_start",
+            "charge_period_end",
+            "billed_cost",
+            "contracted_cost",
+            "effective_cost",
+            "list_cost",
+            "list_unit_price",
+            "contracted_unit_price",
+            "pricing_quantity",
+            "pricing_unit",
+            "consumed_quantity",
+            "consumed_unit",
+            "commitment_discount_category",
+            "commitment_discount_id",
+            "commitment_discount_status",
+            "commitment_discount_type",
+            "invoice_id",
+            "invoice_issuer_name",
+            "provider_name",
+            "publisher_name",
+            "region_id",
+            "region_name",
+            "resource_id",
+            "resource_name",
+            "resource_type",
+            "service_category",
+            "service_name",
+            "sku_id",
+            "sku_price_id",
+            "sub_account_id",
+            "sub_account_name",
+            "tags",
+            "x_discounts",
+            "x_operation",
+            "x_service_code");
 
     public final Role copyRole;
     public final Function copyLambda;

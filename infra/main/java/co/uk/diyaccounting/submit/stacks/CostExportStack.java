@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 
+import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -158,12 +159,17 @@ public class CostExportStack extends Stack {
         // INCLUDE_RESOURCES/split-cost-allocation options as CUR 2.0 has). DAILY matches the
         // nightly copy job's own cadence: an hourly grain would only be re-aggregated to a day
         // downstream anyway.
+        //
+        // The Data Exports API rejects "SELECT *", so the column list is explicit. It is the
+        // same list, in the same order, CostFocusIngestion.FOCUS_1_2_COLUMNS gives the Glue
+        // table reading this export's output — the two must change together.
         this.export = CfnExport.Builder.create(this, "FocusExport")
                 .export(CfnExport.ExportProperty.builder()
                         .name(props.exportName())
                         .description("FOCUS 1.2 cost and usage export for the whole organisation")
                         .dataQuery(CfnExport.DataQueryProperty.builder()
-                                .queryStatement("SELECT * FROM " + FOCUS_TABLE_NAME)
+                                .queryStatement("SELECT " + String.join(", ", CostFocusIngestion.FOCUS_1_2_COLUMNS)
+                                        + " FROM " + FOCUS_TABLE_NAME)
                                 .tableConfigurations(
                                         Map.of(FOCUS_TABLE_NAME, Map.of("TIME_GRANULARITY", "DAILY")))
                                 .build())
