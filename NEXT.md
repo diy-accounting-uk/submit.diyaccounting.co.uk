@@ -30,71 +30,35 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 16 on `claude/b16-board`.** Wave A, six worktree sub-agents off `main` at 0aa5e4ac,
-each owning a disjoint set of files:
+**Batch 16 on `claude/b16-board`, PR #168.** The branch is deploying. `test` and CodeQL are
+green; `deploy environment` failed at `ci-env-BackupStack` and its fix is committed and waiting
+on the running `deploy`.
+
+Merged and locally verified (`npm test` 2701 passed, `./mvnw clean verify` green), off this list
+when the branch's checks pass: B30s, B67, B68, B66, B65 (the five prod defects), B30r, B64 and
+B25 including the vault's restore grants, B70.S1 to S6 (the licence files, the public statement,
+the headers across 1238 files with a test that walks `git ls-files`, the OpenAPI fields, the
+image labels, the third-party lines), B71.S1, B71.S2 and B71.S3a, B17b.1, and B11.T7's script
+and runbook.
+
+Still running as worktree sub-agents:
 
 | Workstream | Items | Model | Owns |
 |---|---|---|---|
-| CDK prod fixes | B30s, B67, B68, B66, B65 | Sonnet | `infra/main/**` five stacks, `passPost.js` |
-| Workflows | B64, B25 | Sonnet | `.github/workflows/**`, `scripts/**` |
-| DIYA-GL design | B71.S3a | Opus | `PLAN_DIYA_GL_NAMING.md` |
-| Catalogue and prose | B17b.1, B71.S1 | Haiku | `submit.catalogue.toml`, four plan docs |
-| Licensing files | B70.S1 | Sonnet | `LICENSE`, `LICENSING.md`, `NOTICE`, `package.json` |
-| ITSA sandbox | B11.T7 (the script and runbook) | Sonnet | `scripts/itsa-sandbox-year.js`, `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` |
-
-Wave B, dispatched as their blockers cleared. Their worktrees merge `claude/b16-board` first,
-since wave A's work is not on `main`:
-
-| Workstream | Items | Model | Owns |
-|---|---|---|---|
-| Licensing statement | B70.S2 | Opus | `terms.html`, `accessibility.html`, the footers, `README.md`, `SECURITY.md`, `TRADEMARKS.md` |
-| Licensing metadata | B70.S4, S5, S6 | Sonnet | the OpenAPI generator, `Dockerfile`, `NOTICE`, `LICENSING.md`'s third-party section |
-| DIYA-GL identifiers | B71.S2 | Sonnet | `app/functions/books/`, `s3BooksRepository.js`, `booksCors.js`, `booksEntitlement.js`, their tests and npm scripts |
-| Vault restore grants | B25's remainder | Sonnet | `CrossAccountBackupVaultStack.java` |
-| VAT failure metric | B30r | Haiku | `hmrcVatReturnPost.js` and its test |
-| Raw export check | B52x | Haiku | `PLAN_ONE_STOP_DASHBOARD.md` D16 |
-
-Merged into `claude/b16-board` and waiting on the branch's checks: B70.S1 (the `LICENSE` text
-matches the spreadsheets copy byte for byte, `LICENSING.md` maps every top-level directory to
-the PolyForm layer, `NOTICE` carries the company line, `package.json` reads `SEE LICENSE IN
-LICENSE`), B17b.1 (the three VAT activities gain `prod`, with the catalogue test split so the
-self-employed activity's ci-only listing is asserted on its own), B71.S1 (the DIYA-GL prose
-across the four plan documents), B70.S4, S5 and S6 (the OpenAPI licence fields with a first
-test for the generator, the OCI image labels, and the third-party lines with a 26-row runtime
-dependency table), and B64 and B25's workflow half (the pointer is deleted rather than written
-empty, in `destroy-prod.yml` as well as `destroy-ci.yml`, and `restore-drill.yml` is written).
-Each comes off this list when the branch's checks pass.
+| ITSA property design | The five O30 answers, then UK property | Opus | `PLAN_ITSA_PHASE_2.md` |
+| Simulator rebuild | B70.S7 | Sonnet | `deploy.yml`, `scripts/build-simulator.js` |
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and
 without it nine tests fail on a missing file that has nothing to do with the change.
 
-Agents commit in their worktrees and never push. The coordinator merges each verified commit
-into `claude/b16-board`, pushes the batch once, and raises the PR when the branch is testing
-and deploying. B70.S3 (the header sweep) touches every tracked file, so it lands after every
-other code row in this batch, never beside one.
-
-Batch 15 (PR #160, ITSA phase 2 T1 to T6 and the health alarm's group composites) is on prod as
-prod-15f3483 since 2026-09-09 18:29 UTC. Of the merge's runs, the environment deploy failed at
-the cost export only (B65); the test run passed on its re-run.
+Two rules this batch proved. A whole-tree sweep runs alone, and it skips what a tool reads as
+data: generated Swagger output under `web/public/docs/api/`, which `mvnw verify` rewrites, and
+`.claude/commands/`, where a command with no front matter takes its description from its first
+line. B71.S3b to S3e change deployed resource names, so they wait for this batch to prove green.
 
 ## Ready: Claude Code
 
-- [ ] **B11.T7. ITSA phase 2: the sandbox proof.** `PLAN_ITSA_PHASE_2.md` T7, after T1 to T6
-  which are on prod in prod-15f3483. Owns `scripts/itsa-sandbox-year.js` and
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`. Blocked on the Developer Hub: the sandbox
-  application (client id ending `v4tV`) is not subscribed to the Self Assessment Test Support
-  API, so the first live call (`DELETE vendor-state`) answers `403 RESOURCE_FORBIDDEN`. Only
-  the Developer Hub account holder can add a subscription. Once Self Assessment Test Support,
-  Obligations, Self Employment Business, Business Source Adjustable Summary and Individual
-  Calculations are all subscribed (Business Details already is, per the phase 1 spike), rerun
-  `ITSA_SANDBOX_TEST_USER_FILE=./hmrc-test-user.json ITSA_SANDBOX_TAX_YEAR=2023-24
-  scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js` and correct the simulator
-  scenarios against what HMRC returns, the way `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run
-  record describes. Proof: a `204` from the final declaration and the fraud header validator
-  clean on the same header set, allowing the one `gov-client-multi-factor` warning a synthetic
-  sandbox sign-in can never clear. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T7. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -144,14 +108,6 @@ the cost export only (B65); the test run passed on its re-run.
   Only the Developer Hub account holder can do this; no stored credential in `.env*` or Secrets
   Manager reaches it. Unblocks B11.T7's run. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
   run record. **Owner**: Operator. **Model**: none.
-- [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
-  questions": whether an annual submission costs a token (the plan assumes not, so a year is
-  five tokens), whether the site displays the calculation or signposts HMRC (assumes
-  display), which approval stage to apply for first (assumes in-year), whether property income
-  is in this phase (assumes not), and whether the sandbox proof uses the phase 1 test user
-  plus test-support data (assumes yes). The build proceeds on the assumptions; an answer that
-  differs changes T2, T5, T6 or T10 before they start. **Source**: `PLAN_ITSA_PHASE_2.md`.
-  **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -240,20 +196,6 @@ the cost export only (B65); the test run passed on its re-run.
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-- [ ] **B70.S3. Licensing: the headers.** Every comment-capable file carries
-  `SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0` and the copyright line in
-  its format's comment style; the 28 `-or-later` headers, the battery-pack subtree's MIT
-  files and metric-son's `@license MIT` become the PolyForm identifier; the 88 narrow-set and
-  about 356 wide-set gaps filled; "Ltd" to "Limited"; a unit test twinned from the
-  spreadsheets `app/test/licence-headers.test.js` walks `git ls-files` and fails on a missing,
-  mismatched or old-name header, in `npm test`. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md`
-  S3. **Owner**: Claude Code. **Model**: Haiku for the sweep, Sonnet for the test. Blocked on
-  B70.S1.
-- [ ] **B70.S7. Licensing: the simulator copy.** The deploy workflow runs
-  `scripts/build-simulator.js` before it uploads `web/public-simulator/`, so the stale copy is
-  replaced; verified by the simulator's `accessibility.html` date matching the live one after
-  the next deploy. **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` S7. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on B70.S2, which is in flight.
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph (the MTD approval
   submission and the production-credentials email described the service as AGPL open
   source). **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator.
