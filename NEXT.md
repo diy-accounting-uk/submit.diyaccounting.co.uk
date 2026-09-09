@@ -92,6 +92,14 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   carry the CORS header the preflight already grants, so a 4xx or 5xx reads as its real status
   rather than as a CORS failure. **Source**: WAF sampled requests, 2026-09-09; the spreadsheets
   repository's LP-24. **Owner**: Claude Code. **Model**: Opus.
+- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
+  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
+  CORS header on it and the browser reports a CORS block rather than the real status. This is
+  the remainder of B72's second half, which fixed every error the handlers themselves return.
+  Add an authoriser response mapping, or a gateway-response CORS configuration, in
+  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
+  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
