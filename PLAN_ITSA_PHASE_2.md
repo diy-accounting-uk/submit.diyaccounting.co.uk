@@ -21,7 +21,7 @@ own track.
 > **Parked by operator decision 2026-09-05**: build against the test APIs and have something
 > running before making the case; the two emails to HMRC then go out together.
 
-> the annual summary carries the whole year's figures and the books import
+> the annual summary carries the whole year's figures and the DIYA-GL import
 > (`PLAN_SUBMISSION_MCP.md`) is the natural source
 
 > Every new activity here must carry `environments = ["local", "proxy", "ci"]`.
@@ -293,7 +293,7 @@ alarm in `ObservabilityStack.java` beside the `VatSubmissionFailure` one, so the
 alarm-to-issue triage covers ITSA with no new mechanism. The event carries the failure category
 and the hashed sub only. No NINO, no business id, no HMRC payload.
 
-## The books import
+## The DIYA-GL import
 
 The annual submission is the first ITSA call that wants a whole year of figures at once, and a
 customer's books are where those figures already are.
@@ -333,7 +333,7 @@ Two more MCP tools fall out of them once they exist: `derive_itsa_quarterly_upda
 tool files them, following that plan's decision 6.
 
 Until the derivations land, the phase 2 pages take typed figures, as the phase 1 quarterly
-update page does. Nothing in this phase's build sequence waits on the books import.
+update page does. Nothing in this phase's build sequence waits on the DIYA-GL import.
 
 ## The recognition application and the finder listing
 
@@ -530,7 +530,7 @@ field names, because that is the part that goes wrong quietly. Lands as a third 
 Proves: the derived figures equal the self-employed product's own report, cell by cell, for
 every example book.
 
-### T9. The books-to-submission path (Sonnet)
+### T9. The DIYA-GL-to-submission path (Sonnet)
 
 Owns the MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
 package, and an import control on `annualSubmission.html` that fills the form from a book.
