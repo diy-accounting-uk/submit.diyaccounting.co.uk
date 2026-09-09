@@ -9,7 +9,9 @@ import {
   parseRequestBody,
   buildValidationError,
   http200OkResponse,
-  http500ServerErrorResponse,
+  http502BadGatewayResponse,
+  buildUpstreamRejectionResponse,
+  safeHostname,
   extractUserFromAuthorizerContext,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -17,7 +19,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
 import { getIdentityBaseUrl, resolveClientSecret } from "../../services/companiesHouseFilingApi.js";
 
@@ -65,34 +67,6 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
-  logger.info({ message: "Exchanging authorization code for Companies House access token" });
-  let chResponse;
-  try {
-    chResponse = await exchangeCompaniesHouseToken(code);
-  } catch (error) {
-    logger.error({ message: "Companies House token exchange request failed", error: error.message, stack: error.stack });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Companies House token exchange failed",
-      error: { detail: error.message },
-    });
-  }
-
-  if (!chResponse.ok) {
-    logger.error({
-      message: "Companies House token exchange rejected",
-      responseCode: chResponse.status,
-      responseBody: chResponse.data,
-    });
-    return http500ServerErrorResponse({
-      request,
-      headers: { ...responseHeaders },
-      message: "Companies House token exchange failed",
-      error: { companiesHouseResponseCode: chResponse.status, responseBody: chResponse.data },
-    });
-  }
-
   // Associate the Companies House OAuth token exchange audit with the authenticated web user's
   // sub, the same fallback order hmrcTokenPost uses: Authorization header, authorizer context,
   // then the x-user-sub header.
@@ -101,6 +75,53 @@ export async function ingestHandler(event) {
   if (!userSub) {
     userSub = getHeader(event.headers, "x-user-sub") || null;
   }
+
+  const upstreamHost = safeHostname(getIdentityBaseUrl());
+
+  logger.info({ message: "Exchanging authorization code for Companies House access token" });
+  let chResponse;
+  try {
+    chResponse = await exchangeCompaniesHouseToken(code);
+  } catch (error) {
+    logger.error({ message: "Companies House token exchange request failed", error: error.message, stack: error.stack });
+    const unreachable = http502BadGatewayResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Unable to reach the Companies House token endpoint",
+      error: { upstream: upstreamHost },
+    });
+    await publishActivityFailureEvent({
+      event: "companies-house-token-exchange-failed",
+      summary: "Companies House token exchange failed",
+      failure: "companies-house-upstream-error",
+      userSub,
+      detail: { companiesHouseStatus: unreachable.statusCode },
+    });
+    return unreachable;
+  }
+
+  if (!chResponse.ok) {
+    // A 4xx here is Companies House rejecting the caller's authorisation code or consent,
+    // not a failure of ours; a 5xx is Companies House's own outage. Publish the failure
+    // after Companies House's reply, not before, so the event records what actually happened.
+    const rejection = buildUpstreamRejectionResponse({
+      request,
+      upstreamHost,
+      responseStatus: chResponse.status,
+      responseBody: chResponse.data,
+      headers: { ...responseHeaders },
+    });
+    const responseBody = JSON.parse(rejection.body);
+    await publishActivityFailureEvent({
+      event: "companies-house-token-exchange-failed",
+      summary: "Companies House token exchange failed",
+      failure: responseBody.error || "companies-house-upstream-error",
+      userSub,
+      detail: { companiesHouseStatus: responseBody.responseCode ?? rejection.statusCode },
+    });
+    return rejection;
+  }
+
   await publishActivityEvent({
     event: "companies-house-token-exchanged",
     summary: "Companies House token exchanged",

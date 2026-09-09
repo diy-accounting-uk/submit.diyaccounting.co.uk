@@ -156,7 +156,7 @@ public class CostBudgetsAndAnomalyMonitor {
             this.anomalySubscription = CfnAnomalySubscription.Builder.create(
                             scope, prefix + "-CostAnomalySubscription")
                     .subscriptionName(prefix + "-cost-anomaly-subscription")
-                    .frequency("DAILY")
+                    .frequency("IMMEDIATE")
                     .monitorArnList(List.of(this.anomalyMonitor.getAttrMonitorArn()))
                     .subscribers(List.of(CfnAnomalySubscription.SubscriberProperty.builder()
                             .type("SNS")

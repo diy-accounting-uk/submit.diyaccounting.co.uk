@@ -39,7 +39,9 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
-    expect([200, 500]).toContain(tokenResponse.statusCode);
+    // A fake code against the real HMRC sandbox is rejected, never a 500: HMRC's own
+    // reply decides between a 4xx (rejected) and a 502 (HMRC/network unreachable).
+    expect([200, 400, 401, 502]).toContain(tokenResponse.statusCode);
 
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);
@@ -62,7 +64,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
     });
 
     const tokenResponse = await hmrcTokenPostHandler(tokenEvent);
-    expect([200, 500]).toContain(tokenResponse.statusCode);
+    expect([200, 400, 401, 502]).toContain(tokenResponse.statusCode);
 
     if (tokenResponse.statusCode === 200) {
       const tokenBody = parseResponseBody(tokenResponse);

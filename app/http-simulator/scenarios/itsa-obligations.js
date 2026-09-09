@@ -77,7 +77,7 @@ const errorScenarios = {
     status: 404,
     body: {
       code: "MATCHING_RESOURCE_NOT_FOUND",
-      message: "The supplied income source could not be found",
+      message: "Matching resource not found",
     },
   },
   NO_OBLIGATIONS_FOUND: {

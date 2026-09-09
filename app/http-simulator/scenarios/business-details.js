@@ -28,6 +28,7 @@ function defaultBusinesses() {
     {
       typeOfBusiness: "self-employment",
       businessId: generateBusinessId(),
+      tradingType: "Simulated Trading Activity",
       tradingName: "Simulated Trading Co",
     },
   ];
@@ -37,13 +38,19 @@ function defaultBusinesses() {
  * Scenario-specific business lists, per the Business Details v2.0 sandbox documentation.
  */
 const scenarioBusinesses = {
-  PROPERTY: [{ typeOfBusiness: "uk-property", businessId: "XPRO00000000001" }],
-  FOREIGN_PROPERTY: [{ typeOfBusiness: "foreign-property", businessId: "XFPR0000000001" }],
+  PROPERTY: [{ typeOfBusiness: "uk-property", businessId: "XPIS00000000001" }],
+  FOREIGN_PROPERTY: [{ typeOfBusiness: "foreign-property", businessId: "XFIS00000000001" }],
   BUSINESS_AND_PROPERTY: [
-    { typeOfBusiness: "self-employment", businessId: "XBIS00000000001", tradingName: "Simulated Trading Co" },
-    { typeOfBusiness: "uk-property", businessId: "XPRO00000000001" },
+    {
+      typeOfBusiness: "self-employment",
+      businessId: "XBIS00000000001",
+      tradingType: "Simulated Trading Activity",
+      tradingName: "Simulated Trading Co",
+    },
+    { typeOfBusiness: "uk-property", businessId: "XPIS00000000002" },
+    { typeOfBusiness: "foreign-property", businessId: "XFIS00000000002" },
   ],
-  UNSPECIFIED: [{ typeOfBusiness: "self-employment", businessId: "XBIS00000000002" }],
+  UNSPECIFIED: [{ typeOfBusiness: "property-unspecified", businessId: "XAIS00000000001" }],
 };
 
 /**

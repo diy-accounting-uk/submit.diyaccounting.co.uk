@@ -17,8 +17,9 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.bcmdataexports.CfnExport;
-import software.amazon.awscdk.services.iam.ArnPrincipal;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.IPrincipal;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.s3.Bucket;
@@ -121,22 +122,32 @@ public class CostExportStack extends Stack {
                 .build());
 
         if (!props.readerRoleArns().isEmpty()) {
-            List<ArnPrincipal> readerPrincipals =
-                    props.readerRoleArns().stream().map(ArnPrincipal::new).toList();
+            List<String> roleArns = props.readerRoleArns();
+            List<String> accountIds = roleArns.stream()
+                    .map(arn -> arn.split(":")[4])
+                    .distinct()
+                    .toList();
+            List<IPrincipal> accountPrincipals = accountIds.stream()
+                    .map(accountId -> (IPrincipal) new AccountPrincipal(accountId))
+                    .toList();
+
             this.bucket.addToResourcePolicy(PolicyStatement.Builder.create()
                     .sid("AllowDeploymentAccountsToReadTheExport")
                     .effect(Effect.ALLOW)
-                    .principals(List.copyOf(readerPrincipals))
+                    .principals(List.copyOf(accountPrincipals))
                     .actions(List.of("s3:GetObject"))
                     .resources(List.of(this.bucket.getBucketArn() + "/" + EXPORT_S3_PREFIX + "/*"))
+                    .conditions(Map.of("ArnLike", Map.of("aws:PrincipalArn", roleArns)))
                     .build());
             this.bucket.addToResourcePolicy(PolicyStatement.Builder.create()
                     .sid("AllowDeploymentAccountsToListTheExport")
                     .effect(Effect.ALLOW)
-                    .principals(List.copyOf(readerPrincipals))
+                    .principals(List.copyOf(accountPrincipals))
                     .actions(List.of("s3:ListBucket"))
                     .resources(List.of(this.bucket.getBucketArn()))
-                    .conditions(Map.of("StringLike", Map.of("s3:prefix", EXPORT_S3_PREFIX + "/*")))
+                    .conditions(Map.of(
+                            "StringLike", Map.of("s3:prefix", EXPORT_S3_PREFIX + "/*"),
+                            "ArnLike", Map.of("aws:PrincipalArn", roleArns)))
                     .build());
         }
 
