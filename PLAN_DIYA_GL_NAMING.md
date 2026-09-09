@@ -129,6 +129,14 @@ Every one of these needs its importers and CI references updated in the same cha
 | Response headers policy `{prefix}-books-whp` | `EdgeStack.java` | none by name | `{prefix}-diya-gl-whp` |
 | API routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | `EdgeStack.java`, `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml`, `app/functions/books/*`, `s3BooksRepository.js` | `public/books/cloud.js` hardcodes calls to all four paths at lines 805, 842, 881, 974 | `/api/v1/diya-gl` paths, confirmed shared interface both sides |
 
+## Decision: the format stamp
+
+Decided by the operator on 2026-09-09: the DIYA-GL file format stamp `"diya-gl-books"` /
+`"diya-gl-books/1"` becomes `"diya-gl"` / `"diya-gl/1"`. The writer emits the new stamp; the reader
+accepts both the new stamp and the two old ones, so every file saved so far still opens; the
+generated provenance data and the checked-in `examples/parity/*/report.json` follow at the next
+generate run. This lands in NM-4 (spreadsheets); nothing in Submit reads the stamp.
+
 ## Rows
 
 Model tiers: Haiku for class 1 prose sweeps; Sonnet for classes 2 and 3; Opus to design class 4,
