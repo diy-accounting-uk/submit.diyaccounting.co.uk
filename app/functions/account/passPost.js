@@ -16,7 +16,6 @@ import {
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { redeemPass } from "../../services/passService.js";
-import { initializeEmailHashSecret } from "../../lib/emailHash.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
@@ -31,8 +30,6 @@ export function apiEndpoint(app) {
 export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv(["PASSES_DYNAMODB_TABLE_NAME", "BUNDLE_DYNAMODB_TABLE_NAME"]);
-
-  await initializeEmailHashSecret();
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
