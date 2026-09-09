@@ -180,13 +180,6 @@ the cost export only (B65); the test run passed on its re-run.
   where it is docs; the comment rides with B71.S2. Report the landing in
   `~/.claude/inboxes/spreadsheets.md`. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S1. **Owner**:
   Claude Code. **Model**: Haiku.
-- [ ] **B71.S2. DIYA-GL naming: the same-repository code identifiers.** The class 3 table:
-  `s3BooksRepository.js` to `s3DiyaGlRepository.js`, `app/functions/books/` to
-  `app/functions/diyaGl/` with matching filenames, `booksCors.js`, `booksEntitlement.js`, the
-  system, unit and behaviour tests, the `test:booksBehaviour*` npm scripts and the Playwright
-  project, every importer and CI reference in the same PR; no alias, no re-export. Route
-  paths and env names stay (class 4). **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S2. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3a. DIYA-GL naming: the deployed identifiers' design.** The class 4 table has 16
   identifiers that live in deployed resources or that the spreadsheets repository consumes
   (`BooksStack`, the CFN outputs, `BOOKS_ALLOWED_ORIGINS`, the Cognito client name, the SSM
