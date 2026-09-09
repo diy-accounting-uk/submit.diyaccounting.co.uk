@@ -59,7 +59,7 @@ flight" without their word.
   (lines ~284, ~364, ~471) but not to these four; grant it where the others get it, and make
   `passPost.js`'s "not available" path throw rather than warn, since a pass hashed without the
   salt is a wrong pass. Proof: no `GetSecretValue` denial in CloudTrail after the deploy and
-  `POST /api/v1/interest` answering 2xx. Closes #161; #162 and #163 are on the retired prod-4600d25 and close as stale once this is on prod. **Source**: CloudTrail
+  `POST /api/v1/interest` answering 2xx. Closes #161. **Source**: CloudTrail
   2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
   was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
@@ -98,8 +98,9 @@ flight" without their word.
   every cron here has been firing hours late since 2026-09-08) removed `ci-claud87a7` and then
   failed at "Clear last-known-good pointer if it names a deployment with no stacks left":
   `aws ssm put-parameter` with an empty value answers `ValidationException`, so the step exits
-  254 before the BooksStack sweep (the 13:06 UTC sweep 34355049696 failed the same way), and
-  `ci-clauddf1b-app-BooksStack` still stands. Make the
+  254 before the BooksStack sweep (the 13:06 UTC sweep 34355049696 failed the same way); the
+  orphaned BooksStack is gone since, and the pointer still names a set that is not there
+  (`ci-claud7ba2` at 19:3x UTC on 2026-09-09). Make the
   step delete the parameter (`aws ssm delete-parameter`) or write a sentinel the readers
   understand (grep `last-known-good-deployment` in `.github/workflows/` and `scripts/` for
   every reader and make them agree), and let the sweep run on. **Source**: run 34324345123.
