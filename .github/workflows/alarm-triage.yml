@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: alarm-triage
 run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.number }}"
-# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 
 # This workflow carries contents:write and pull-requests:write so it can open a draft PR when
 # the triage agent names a change it is confident in. That surface is acceptable here: the issue

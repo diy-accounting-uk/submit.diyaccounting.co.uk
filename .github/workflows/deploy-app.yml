@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: deploy-app
 run-name: "lean deploy ${{ inputs.deployment-name || '(auto)' }} from ${{ github.ref_name }}"
-# SPDX-FileCopyrightText: 2026 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 #
 # Lean app deployment: updates Lambda function code (Docker image) and static web assets
 # without running CDK. Bypasses full deploy.yml for rapid iteration (~5-8 min vs 15-25 min).

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
  *
  * Files a whole ITSA tax year against the HMRC sandbox with one test user: four quarterly
  * self-employment updates, an annual submission, a triggered and adjusted business source

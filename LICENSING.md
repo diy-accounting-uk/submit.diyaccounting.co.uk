@@ -3,7 +3,6 @@
 
 # Licensing
 
-Copyright (C) 2006-2026 DIY Accounting Limited.
 
 Source: https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk
 

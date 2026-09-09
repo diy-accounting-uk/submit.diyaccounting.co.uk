@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (C) 2025-2026 DIY Accounting Ltd
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Nightly copy of new FOCUS 1.2 export objects from the management account's cost bucket into
 // this account's own analytics lake, at curated/cost/focus/dt=<today>/<basename>. A zip Lambda of

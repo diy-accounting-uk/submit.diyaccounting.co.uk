@@ -1,7 +1,8 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
 /**
- * SPDX-License-Identifier: AGPL-3.0-only
- * Copyright (C) 2025-2026 DIY Accounting Ltd
  *
  * One-off script: fetch the FRS 102 entry point the Companies House accounts TIS points micro-
  * entity filings at, and the schema modules it pulls in, then write out the flat list of element

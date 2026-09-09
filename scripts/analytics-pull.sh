@@ -1,6 +1,7 @@
 #!/bin/bash
-# SPDX-License-Identifier: AGPL-3.0-only
-# Copyright (C) 2025-2026 DIY Accounting Ltd
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 #
 # One-way pull from the analytics lake's nightly raw export into the workspace root, the shape
 # of drive/pull.sh: sync mirrors the remote, so an object removed from the lake (by its

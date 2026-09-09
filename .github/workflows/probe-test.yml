@@ -1,7 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
 name: probe-test
 run-name: "probe test of ${{ github.ref_name }}"
-# SPDX-FileCopyrightText: 2025 DIY Accounting Limited
-# SPDX-License-Identifier: AGPL-3.0-or-later
 #concurrency:
 #  group: probe-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
 #  cancel-in-progress: false
