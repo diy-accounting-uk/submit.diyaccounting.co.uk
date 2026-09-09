@@ -78,7 +78,8 @@ for the one that is live (the apex and the probes point at it). One row per depl
 | Env | Deployment | Stacks | Created (UTC) | Live | Goes when | Follow-up |
 
 - ci sets self-destruct on their own: `SelfDestructStack` fires on the schedule
-  `selfDestructDelayHours` hours after creation (`cdk-application/cdk.json`), and
+  `selfDestructDelayHours` hours after creation (`deploy.yml`'s default is 2; the
+  `cdk.json` value applies only to a local synth), and
   `destroy-ci.yml` sweeps leftovers on its cron (`34 2,4,6,8,10,12 * * *` UTC). `Goes when` is
   creation plus the delay, or the next sweep if that has passed.
 - prod sets never go on their own: only `destroy-prod.yml` with the deployment name removes

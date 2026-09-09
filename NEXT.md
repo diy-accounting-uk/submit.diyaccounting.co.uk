@@ -38,6 +38,19 @@ B10.4 runs against the batch's ci set once the deploy stands.
 
 ## Ready: Claude Code
 
+- [ ] **B64. The ci sweep's schedule has stopped firing.** `destroy-ci.yml` runs on
+  `34 2,4,6,8,10,12 * * *` UTC, but its last scheduled run was 13:01 UTC on 2026-09-08 (the
+  one before, 07:23; neither on a slot) and the 02:34 slot on 2026-09-09 did not fire, so
+  `ci-claud87a7-app-ApiStack` (DELETE_FAILED since 14:37 UTC on 2026-09-08 on its Cognito
+  authorizer, "InternalFailure" from ApiGatewayV2) and the two orphaned BooksStacks
+  (`ci-claud87a7`, `ci-clauddf1b`) still stand. Read the workflow's schedule runs
+  (`gh run list --workflow destroy-ci.yml --event schedule`) against GitHub's known delay
+  and the `keepalive.yml` staleness check (last run 2026-09-05), say whether the cron is
+  stale the way B47a's were, and dispatch nothing: the operator runs
+  `gh workflow run destroy-ci.yml` for the leftovers, and if the ApiStack stays
+  DELETE_FAILED after the sweep's retry step, say what `--retain-resources` it needs.
+  **Source**: the board's deployment check, 2026-09-09. **Owner**: Claude Code. **Model**:
+  Haiku.
 - [ ] **B10.4. ITSA sandbox proof: one quarterly update filed.** Business Details, Obligations
   and the cumulative period-summary POST are on main behind the environments gate
   (`hmrcItsaBusinessDetailsGet.js`, `hmrcItsaObligationsGet.js`,
