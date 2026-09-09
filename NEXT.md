@@ -87,8 +87,16 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   every branch and predates this batch. It runs on every push, so it is a red check on every PR
   that teaches everyone to ignore a red check. Read the run log, fix it or delete the workflow if
   nothing uses GitHub's Copilot coding agent here; `security-review.yml` assigns an OWASP issue to
-  that agent with its weekly cron commented out, so decide both together. **Source**: runs on
-  `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
+  that agent with its weekly cron commented out, so decide both together. The cause was that the
+  `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN` nor `SUBMIT_DEPLOY_ROLE_ARN`,
+  so `role-to-assume` resolved to an empty string; the operator set both to the ci roles on
+  2026-09-09, which should turn the workflow green on its next run. That leaves the `copilot`
+  environment holding the ci deployment role ARN, which an unattended agent inherits if the
+  Copilot coding agent is ever switched on. `REPORT_IDENTITY_AUDIT.md`'s third recommendation, a
+  `diya-agent` GitHub App for unattended model runs, is where that gets a narrower identity. The
+  workflow fires only when its own file changes, so it is red on a push that touches it rather
+  than on every push. **Source**: runs on `claude/b16-board`, 2026-09-09. **Owner**: Claude Code.
+  **Model**: Haiku.
 - [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
   never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
   on the books routes across three hours matched zero records, and
