@@ -35,7 +35,7 @@ three suites passed against test-api.service.hmrc.gov.uk from `ci-claudf739` (pr
 reads main's environment deploy for B61's two prod-only steps and the CIS filters. Issue #152's
 cause is known (two customers with a stale HMRC authorisation code, the handler answering 500;
 neither wrote in or returned), so it and #155 to #158 are the operator's to close once the PR
-is on main. B11's Opus design pass runs now; its build tracks start when the design is on main.
+is on main. B11's design is on main and its T1 runs on `claude/b15-board`.
 
 ## Ready: Claude Code
 
@@ -53,15 +53,27 @@ is on main. B11's Opus design pass runs now; its build tracks start when the des
   DELETE_FAILED after the sweep's retry step, say what `--retain-resources` it needs.
   **Source**: the board's deployment check, 2026-09-09. **Owner**: Claude Code. **Model**:
   Haiku.
-- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The annual submission
-  and the final declaration (crystallisation) endpoints, then the recognition application and
-  the finder listing, which follow BACKLOG 11a's parked questionnaire. An Opus design pass
-  first, since the annual summary carries the whole year's figures and the books import
-  (`PLAN_SUBMISSION_MCP.md`) is the natural source. **Source**: BACKLOG 11. **Owner**: Claude
-  Code. **Model**: Opus design, then Sonnet.
-
+- [ ] **B11. ITSA phase 2: annual summaries and the final declaration.** The design is
+  `PLAN_ITSA_PHASE_2.md` on main: ten tracks, the four endpoint tracks holding the CDK and
+  server spine one at a time (T1 the quarterly update's token charge and receipt, then T2 the
+  annual submission, T3 the final-declaration obligation and ITSA status, T4 the adjustable
+  summary, T5 the calculation and final declaration, T6 the year-end pages, T7 the sandbox
+  proof), with T8 the engine derivations in the spreadsheets repository alongside, T9 the
+  books-to-submission path after T8 and T6, and T10 the recognition pack after T7. T1 runs
+  now on batch 15 (`claude/b15-board`); T2 onward start as each lands, under the plan's
+  stated assumptions until O30 answers otherwise. **Source**: BACKLOG 11;
+  `PLAN_ITSA_PHASE_2.md`. **Owner**: Claude Code. **Model**: Sonnet per track, Opus for T8's
+  mapping.
 ## Ready: operator
 
+- [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
+  questions": whether an annual submission costs a token (the plan assumes not, so a year is
+  five tokens), whether the site displays the calculation or signposts HMRC (assumes
+  display), which approval stage to apply for first (assumes in-year), whether property income
+  is in this phase (assumes not), and whether the sandbox proof uses the phase 1 test user
+  plus test-support data (assumes yes). The build proceeds on the assumptions; an answer that
+  differs changes T2, T5, T6 or T10 before they start. **Source**: `PLAN_ITSA_PHASE_2.md`.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
