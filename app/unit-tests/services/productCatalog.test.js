@@ -126,14 +126,20 @@ describe("productCatalogHelper", () => {
     });
   });
 
-  it("vat-liabilities, vat-payments, vat-penalties and self-employed stay out of prod until examined on ci", () => {
+  it("vat-liabilities, vat-payments and vat-penalties are available on prod", () => {
     const catalog = parseCatalog(tomlText);
-    const gatedActivityIds = ["vat-liabilities", "vat-payments", "vat-penalties", "self-employed"];
-    for (const activityId of gatedActivityIds) {
+    const vatReadActivities = ["vat-liabilities", "vat-payments", "vat-penalties"];
+    for (const activityId of vatReadActivities) {
       const activity = catalog.activities.find((a) => a.id === activityId);
-      expect(activity.environments).toContain("ci");
-      expect(activity.environments).not.toContain("prod");
+      expect(activity.environments).toContain("prod");
     }
+  });
+
+  it("self-employed stays out of prod until examined on ci", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.environments).toContain("ci");
+    expect(activity.environments).not.toContain("prod");
   });
 
   it("company-lookup should be available in prod alongside the register filings", () => {
