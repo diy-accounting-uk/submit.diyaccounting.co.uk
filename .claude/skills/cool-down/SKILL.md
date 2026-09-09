@@ -105,6 +105,15 @@ what stops the loop, not a quota.
 batch is not cool-down's work: record it in `PARKED.md` or, if it is a degradation, as a board
 row under rule 1, and leave it. Check the workflow's own history before deciding which it is.
 
+**A branch is settled only when nothing is committed after its last push.** Run
+`git log --oneline origin/<branch>..<branch>` and expect nothing. The push and the merge are two
+separate moments, and anything committed between them does not ship: the PR merges what was
+pushed, not what exists locally, and it does so silently. In batch 16 four commits were made
+after the push and before the merge, and the PR took 59 of 63. They were docs, so they went
+straight to `main` afterwards and nothing was lost, but the same gap swallows code just as
+quietly. Check every branch for unpushed commits before calling it settled, and again before
+telling the operator a PR is ready to merge.
+
 **Waking:** the local-proof rule does not lift with the mode. It is the habit cool-down exists
 to install, and a warm session pushing an unproven fix is how the next cool-down gets called.
 What does lift is the one-branch-at-a-time serialisation, and only once every branch that was
@@ -154,7 +163,8 @@ End every cool-down or wake turn with the same four lines, so the operator can s
 temperature without reading the transcript:
 
 - **Agents**: how many were running, how many have committed and stopped, how many remain.
-- **Branches**: each one, its workflow state, and what it is waiting for.
+- **Branches**: each one, its workflow state, its count of commits ahead of its remote, and what
+  it is waiting for. A branch ahead of its remote is not settled, however green it looks.
 - **Board**: rows added and why each was allowed, rows closed, entries parked.
 - **Next**: the single thing that would most reduce what is outstanding.
 
@@ -168,8 +178,8 @@ The order matters, because each step depends on the one before:
 1. Delete the cool-down marker from `NEXT.md`.
 2. Account for every hotfix branch (rule 2's Waking note).
 3. Walk every worktree still on disk for uncommitted work (rule 3's Waking note).
-4. Confirm every branch that was open during cool-down is green or closed, which is what lifts
-   the one-branch serialisation (rule 4's Waking note).
+4. Confirm every branch that was open during cool-down is green or closed AND carries no
+   unpushed commits, which is what lifts the one-branch serialisation (rule 4's Waking note).
 5. Read the tracking documents and work from them (rule 5's Waking note).
 6. Hand `PARKED.md` back for triage (rule 1's Waking note).
 7. Resequence the board, then run the `board` skill.
