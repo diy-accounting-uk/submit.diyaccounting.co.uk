@@ -804,8 +804,15 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
-      # CDK custom-resource provider Lambdas create their own log groups outside the stacks, so
-      # they survive stack deletion with no retention.
+      # CDK's own built-in custom-resource provider Lambdas (the framework-generated
+      # AWS679f53f...  and Custom::S3AutoDeleteObjects providers) create their log groups outside
+      # any stack-owned LogGroup construct, with no retention policy, so they leak forever once
+      # their stack is gone unless swept here. Every log group this repo creates itself (app
+      # Lambdas, our own custom-resource providers in KindCdk.java) already carries an explicit
+      # short retention and RemovalPolicy.DESTROY, so it is either gone with its stack already or
+      # will expire on its own — deleting those early only throws away a retired deployment's last
+      # forensic trail sooner than its own retention would have. Only sweep log groups with no
+      # retention set at all.
       - name: Delete leftover Lambda log groups
         if: ${{ !cancelled() }}
         shell: bash
@@ -822,10 +829,10 @@ jobs:
             fi
             LOG_GROUPS=$(aws logs describe-log-groups --region "$REGION" \
               --log-group-name-prefix "/aws/lambda/${DEPLOYMENT}-" \
-              --query "logGroups[].logGroupName" --output text | tr '\t' '\n')
+              --query "logGroups[?!retentionInDays].logGroupName" --output text | tr '\t' '\n')
             for LOG_GROUP in $LOG_GROUPS; do
               [ -z "$LOG_GROUP" ] || [ "$LOG_GROUP" = "None" ] && continue
-              echo "Deleting log group ${LOG_GROUP} in ${REGION}"
+              echo "Deleting log group ${LOG_GROUP} in ${REGION} (no retention policy set)"
               aws logs delete-log-group --region "$REGION" --log-group-name "$LOG_GROUP" \
                 || echo "Failed to delete ${LOG_GROUP} in ${REGION}"
             done
