@@ -137,6 +137,19 @@ flight" without their word.
   with its count of non-empty entries, so a field that never fills is found now rather than
   in three months. **Source**: BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**:
   Haiku.
+- [ ] **B25. Backups outside the account: the proven restore.** Issue #11's remainder. The
+  vault `submit-cross-account-vault` in submit-backup (914216784828) holds 120 recovery
+  points and every prod DynamoDB table's nightly backup copies into it (five tables, copy
+  jobs COMPLETED each night; the S3 books bucket joins once B66 lands), but nothing has ever
+  been restored from it, and the issue's goal is a restore proven by standing a prod replica
+  up in ci, salt included. Build `restore-drill.yml` (dispatch, ci only): assume the ci role,
+  take the vault's latest recovery point of each prod table, restore each into ci as a
+  `ci-restore-<table>` table, restore the salt secret's backup beside it, compare item
+  counts with the source recovery points, then delete the restored tables; the run's summary
+  is the proof and the drill re-runs monthly on a cron off the top of the hour. The vault's
+  SSO policy downgrade from `AdministratorAccess` and the eu-west-1 copy (BACKLOG 33's open
+  questions) are decided in the same PR's description, not built. **Source**: issue #11;
+  BACKLOG 33's chain (#2, #25, #33). **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B70.S1. Licensing: the licence files.** `LICENSE` becomes the canonical PolyForm
   Internal Use text with the additional grant, copied byte for byte from the spreadsheets
   repository; `LICENSING.md` maps every top-level directory to the third layer, states the
