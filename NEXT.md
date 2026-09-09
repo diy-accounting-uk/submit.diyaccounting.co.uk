@@ -48,6 +48,8 @@ since wave A's work is not on `main`:
 | Licensing metadata | B70.S4, S5, S6 | Sonnet | the OpenAPI generator, `Dockerfile`, `NOTICE`, `LICENSING.md`'s third-party section |
 | DIYA-GL identifiers | B71.S2 | Sonnet | `app/functions/books/`, `s3BooksRepository.js`, `booksCors.js`, `booksEntitlement.js`, their tests and npm scripts |
 | Vault restore grants | B25's remainder | Sonnet | `CrossAccountBackupVaultStack.java` |
+| VAT failure metric | B30r | Haiku | `hmrcVatReturnPost.js` and its test |
+| Raw export check | B52x | Haiku | `PLAN_ONE_STOP_DASHBOARD.md` D16 |
 
 Merged into `claude/b16-board` and waiting on the branch's checks: B70.S1 (the `LICENSE` text
 matches the spreadsheets copy byte for byte, `LICENSING.md` maps every top-level directory to
@@ -75,59 +77,6 @@ the cost export only (B65); the test run passed on its re-run.
 
 ## Ready: Claude Code
 
-- [ ] **B30s. The CIS filters' deploy exclusion binds to the last event name only.** Issues
-  #165 (`prod-env-cis-iam-policy-changes`, 17:56 UTC), #166 (`-route-table-changes`, 18:22) and
-  #167 (`-s3-bucket-policy-changes`, 18:46, the retirement of prod-4600d25) opened during
-  main's deploy of 2026-09-09, all from
-  `cdk-hnb659fds-cfn-exec-role-972912397388-eu-west-2`, which the exclusion names. The
-  deployed pattern reads `{ ($.eventName = A) || … || ($.eventName = Z) && ((type guard)) }`:
-  `&&` binds tighter than `||`, so the guard applies to the last event name alone and every
-  other event matches unconditionally. In `SecurityDetectionStack.java`, wrap each control's
-  event-name chain in its own parentheses before appending the guard, add a test that the
-  rendered pattern starts `{ ((` for the eight guarded controls, and prove it with
-  `aws logs test-metric-filter` against a `PutRolePolicy` event by the cfn-exec role (must not
-  match) and one by an IAM user (must match). Closes #165, #166 and #167. **Source**: issues #165,
-  #166. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B67. The account stack's Lambdas cannot read the salt secret.** CloudTrail on prod:
-  `interest-post` was denied `secretsmanager:GetSecretValue` on `prod/submit/user-sub-hash-salt`
-  at 14:04 and 14:07 UTC on 2026-09-09 and answered `500` to two `POST /api/v1/interest`
-  (issues #163 `prod-app-api-5xx` and #162 `prod-app-account-stack-health`), and `pass-post`,
-  `pass-admin-post` and `pass-get` have been denied the same read on every prod set since at
-  least prod-c6d0ed3 (they warn "Email hash secret not available" and carry on); every one of
-  these denials also fires `prod-env-cis-unauthorized-api-calls` (#161), which is the filter
-  doing its job. In `AccountStack.java` the salt grant goes to `bundleGet` and the async pairs
-  (lines ~284, ~364, ~471) but not to these four; grant it where the others get it, and make
-  `passPost.js`'s "not available" path throw rather than warn, since a pass hashed without the
-  salt is a wrong pass. Proof: no `GetSecretValue` denial in CloudTrail after the deploy and
-  `POST /api/v1/interest` answering 2xx. Closes #161. **Source**: CloudTrail
-  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B30r. A customer's 400 counts as a VAT submission failure.** Issue #164
-  (`prod-env-hmrc-submission-failure`, 14:38 UTC on 2026-09-09): `hmrc-vat-return-post`
-  answered `400` "No matching obligation found for date range" twice (14:37, 14:39) and the
-  same customer's return was accepted at 14:40 (202, 202, 200). Nobody wrote in; no reply is
-  owed. The `VatSubmissionFailure` metric counts a period the customer chose wrong as a
-  failure, so the alarm pages on a customer correcting a date. In `hmrcVatReturnPost.js`,
-  emit the failure metric only for what is ours or HMRC's (a thrown error, an HMRC 5xx, a
-  network failure), not for a validation 400 the page shows the customer; keep the
-  `vat-return-failed` activity event for the funnel. #164 closes as understood.
-  **Source**: issue #164. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B66. The nightly S3 backup of the prod DIYA-GL book bucket fails.** `verify-backups.yml`'s
-  scheduled runs failed on 2026-09-08 (34218296772) and 2026-09-09 (34343588837): the AWS
-  Backup job for `arn:aws:s3:::prod-env-books-972912397388` at 02:00 UTC fails both nights
-  with "AWS Backup does not have permission to describe resource", so the DIYA-GL book
-  bucket, new since batch 12, has no backup. Grant the backup role the S3 backup permissions
-  (`AWSBackupServiceRolePolicyForS3Backup` and its restore twin, or the equivalent statements)
-  where `BackupStack.java` builds it, and check the bucket's own policy does not deny the
-  service role; the proof is the next night's job and `verify-backups.yml` green.
-  **Source**: runs 34343588837, 34218296772. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B65. The FOCUS cost export rejects `SELECT *`.** Main's environment deploys
-  34328646892 and 34385269212 (the merge of PR #160) got past the bucket policy (B61's fix held) and failed creating
-  `AWS::BCMDataExports::Export` `FocusExport` in `cost-CostExportStack`: the Data Exports API
-  answers `ValidationException: SELECT * is not supported`, so the stack rolled back and the
-  cost panel has no export. In `CostExportStack.java`, give the export's query statement an
-  explicit column list (the FOCUS 1.0 columns the panel's Athena table in
-  `CostFocusIngestion.java` reads; keep the two in step) and prove it with the environment
-  deploy of main. **Source**: runs 34328646892, 34385269212. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B11.T7. ITSA phase 2: the sandbox proof.** `PLAN_ITSA_PHASE_2.md` T7, after T1 to T6
   which are on prod in prod-15f3483. Owns `scripts/itsa-sandbox-year.js` and
   `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`: file a whole tax year against the sandbox with
@@ -147,52 +96,6 @@ the cost export only (B65); the test run passed on its re-run.
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B52x. A short extract from the raw export to prove every field fills.** The nightly
-  raw export's first night is 2026-09-09; as soon as one night exists, pull one day through
-  the notebook's data path (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field
-  with its count of non-empty entries, so a field that never fills is found now rather than
-  in three months. **Source**: BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**:
-  Haiku.
-- [ ] **B25. Backups outside the account: the proven restore.** Issue #11's remainder. The
-  vault `submit-cross-account-vault` in submit-backup (914216784828) holds 120 recovery
-  points and every prod DynamoDB table's nightly backup copies into it (five tables, copy
-  jobs COMPLETED each night; the DIYA-GL book bucket joins once B66 lands), but nothing has ever
-  been restored from it, and the issue's goal is a restore proven by standing a prod replica
-  up in ci, salt included. Build `restore-drill.yml` (dispatch, ci only): assume the ci role,
-  take the vault's latest recovery point of each prod table, restore each into ci as a
-  `ci-restore-<table>` table, restore the salt secret's backup beside it, compare item
-  counts with the source recovery points, then delete the restored tables; the run's summary
-  is the proof and the drill re-runs monthly on a cron off the top of the hour. The vault's
-  SSO policy downgrade from `AdministratorAccess` and the eu-west-1 copy (BACKLOG 33's open
-  questions) are decided in the same PR's description, not built. The vault's access policy
-  grants the copy-in roles `backup:CopyIntoBackupVault` and nothing else, so no principal in
-  submit-ci can read or restore from it today (an admin principal there gets
-  `AccessDeniedException` on `ListRecoveryPointsByBackupVault`); the drill cannot go green
-  until `CrossAccountBackupVaultStack.java` grants the ci restore role
-  `ListRecoveryPointsByBackupVault`, `DescribeRecoveryPoint`, `GetRecoveryPointRestoreMetadata`
-  and `StartRestoreJob` on the vault with the matching KMS grant. **Source**: issue #11;
-  BACKLOG 33's chain (#2, #25, #33). **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B68. The alarm-to-issue Lambda cannot describe alarms.** CloudTrail: `prod-4600d25-app-alarm-to-github-issue`
-  was denied `cloudwatch:DescribeAlarms` at 14:05:53 UTC on 2026-09-09 while opening #162; it
-  opened the issue anyway, so the read is used for the issue's detail. Grant `DescribeAlarms`
-  (resource `*`) to that role in `OpsStack.java` beside its other reads. **Source**: CloudTrail
-  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B71.S3a. DIYA-GL naming: the deployed identifiers' design.** The class 4 table has 16
-  identifiers that live in deployed resources or that the spreadsheets repository consumes
-  (`BooksStack`, the CFN outputs, `BOOKS_ALLOWED_ORIGINS`, the Cognito client name, the SSM
-  parameter, the `cdk.json` key, the bucket name, `BOOKS_STACK_NAME`,
-  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
-  response-headers policy, the `--client books` flag, the `/api/v1/books` routes). Write the
-  order and the compatibility windows into `PLAN_DIYA_GL_NAMING.md`: which renames are a
-  stack replacement (a new stack name deletes and recreates every resource in it), which need
-  both names served for one release (the routes, the client, the SSM parameter), and whether
-  the S3 bucket is renamed at all (a bucket rename is a new bucket, a data copy, the backup
-  plan and the retention rules moving with it). Splits into B71.S3b to S3e. In step with the
-  spreadsheets plan's NM-5. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
-  Code. **Model**: Opus.
-
-## Ready: operator
-
 - [ ] **O30. Answer the five ITSA phase 2 questions.** `PLAN_ITSA_PHASE_2.md`'s "Open
   questions": whether an annual submission costs a token (the plan assumes not, so a year is
   five tokens), whether the site displays the calculation or signposts HMRC (assumes
@@ -308,13 +211,13 @@ the cost export only (B65); the test run passed on its re-run.
   headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
   S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
   through one deploy of main. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
-  Code. **Model**: Sonnet. Blocked on B71.S3a.
+  Code. **Model**: Sonnet.
 - [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
   `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
   to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
   S3a sets so the spreadsheets side switches before the old name goes. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  B71.S3a and the spreadsheets plan's NM-5.
+  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. The
+  spreadsheets side switches after ours, so nothing gates this.
 - [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
   and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
   `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
