@@ -70,6 +70,8 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java'
       # Analytics Lambda source
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
