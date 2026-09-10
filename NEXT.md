@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85.
+submit half, B85, B30t.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -88,16 +88,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   agent with its weekly cron commented out; decide whether either stays in the same pass.
   **Source**: runs on `main` and `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**:
   Haiku.
-- [ ] **B30t. Two CIS alarms fire on our own deploys.** `prod-env-cis-route-table-changes` (issue
-  #166) counted 32 changes at 18:17 UTC and 841 at 18:48 on 2026-09-09, and
-  `prod-env-cis-s3-bucket-policy-changes` (issue #167) fired at 18:41 and again at 23:52. Both
-  windows are prod deploys: the CDK deployment role making the changes the CIS metric filters
-  count. So every main deploy opens two alarm issues that mean nothing, which is the same
-  false-alarm cost `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` exists to remove. Exclude the
-  deployment role's own identity from both metric filters in `ObservabilityStack.java`, or gate
-  them on a change made outside a CloudFormation stack operation, and keep them firing for a
-  change made by anything else. **Source**: issues #166 and #167. **Owner**: Claude Code.
-  **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
