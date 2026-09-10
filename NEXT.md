@@ -16,12 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b95799e** (the merge of PR #176, run 34474493729), carrying batches 18
-and 19 and with them the DIYA-GL stack rename, so prod's stack is `DiyaGlStack` now. Two spare sets
-stand and both age out on their own: prod-504ec0d, created 09:00 UTC, and prod-c78fb84, created
-11:07 UTC, each retiring at the first scheduled `destroy-prod` run after it passes the eight-hour
-gate. No dispatch is needed unless they are wanted gone sooner
-(`_developers/archive/PLAN_COST_OPTIMISATION.md`).
+**Prod runs deployment prod-7b75b75** (the merge of PR #177, run 34494648968). That run's
+`destroy-previous` retired prod-b95799e cleanly, which is the destroy hardening working on its first
+outing — the earlier attempt was abandoned by a Maven Central 403. Two spares stand at $46.88/month
+each: prod-504ec0d, created 09:00 UTC and past the eight-hour gate, and prod-c78fb84, six stacks from
+the deploy that died at `deploy api`, eligible 19:07. Both go on the next scheduled sweep, or sooner
+by name (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -72,6 +72,15 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
+  `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
+  stacks. A second set, `ci-claud6807`, went up at 16:13, so two ci sets stand at once. The sweep in
+  `destroy-ci.yml` is the backstop and runs at 18:34, but the per-set self-destruct is what should
+  have taken it and did not. Find whether the schedule fired and failed, or never fired: the stack
+  exists, so the rule should be readable with `aws --profile submit-ci events describe-rule` and the
+  Lambda's own log group says whether it ran. A self-destruct that does not fire turns every ci
+  deploy into a set the sweep has to catch, which is how sets accumulate. **Source**: this board's
+  deployment pass, 2026-09-10 16:41 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
@@ -147,7 +156,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
-- [ ] **O35. Close five alarm issues.** #166 and #167, the two CIS alarms that fire on our own
+- [ ] **O35. Close seven alarm issues.** #166 and #167, the two CIS alarms that fire on our own
   prod deploys, which B30t stops. #171 (`raw-export-publish-errors`), #172
   (`analytics-nightly-failed`) and #170 (`cis-unauthorized-api-calls`) are one incident with one
   cause, now fixed on batch 18: the raw export Lambda's role had `s3:PutObject` on `exports/*` and
