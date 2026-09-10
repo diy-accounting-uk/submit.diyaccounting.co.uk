@@ -100,7 +100,16 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1, plu
   arrives while it is between polls. Find it in the poll loop, not in the test's timeout. **Source**:
   run 34511779119, job log. **Owner**: Claude Code. **Model**: Sonnet.
 
-  **In flight** in `.claude/worktrees/b22-receipt-poll` on `worktree-agent-receipt-poll`, off `claude/b22-board`. No PR yet.
+  **Code complete** on `claude/b22-board` (merge 93439d51), worktree removed. 2551 unit tests pass on
+  the merged tree. Waits on CI and on a prod deploy to prove it against the real HMRC sandbox.
+
+  It was not a flaky test. `initiateProcessing` in `app/services/asyncApiServices.js` wrote the
+  `processing` marker fire-and-forget, deliberately, so the request did not wait on DynamoDB. Both
+  that write and the processor's own `completed` write target the same item with no ordering guard,
+  so a rejection fast enough to need no real HMRC work — `VRN_INVALID` is exactly that — could land
+  `completed` first and then have the older `processing` write clobber it, dropping the result
+  attribute. Every later poll then read `processing` and answered 202 until the client gave up. The
+  fix awaits the marker before the processor starts.
 - [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
   `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
   stacks, an hour and a half past its own slot. A second set, `ci-claud6807`, went up at 16:13, so
