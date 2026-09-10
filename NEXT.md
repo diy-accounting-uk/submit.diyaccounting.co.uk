@@ -37,7 +37,16 @@ finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified be
 `npm run lint:workflows` clean across 38 workflows.
 
 On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
-B89, B90, B11.T23, and B87's labels and CODEOWNERS.
+B89, B90, B11.T23, and the concurrency caller collision below.
+
+The batch's first run was fully red and three of the four causes are worth keeping. `test.yml`
+carried B85's `concurrency: test-${{ github.ref }}` with `cancel-in-progress: true`, and
+`deploy.yml` calls that same workflow with `uses:` — a reusable workflow evaluates its concurrency
+in the caller's context, so the delegated call and the standalone push run shared a group and one
+cancelled the other, at 08:23:43 against jobs starting at 08:23:45. `generate-pass.yml` had it too.
+Both group keys now carry `github.workflow`. That is the same caller-and-callee shape B90 designed
+around for `deploy.yml` calling `destroy-prod.yml`, shipped four hours earlier in the same batch by
+a row that did not look for callers.
 
 The integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
 branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
@@ -60,6 +69,19 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B94. The app deploy reads a Cognito client the environment deploy has not created yet.**
+  Batch 18's first run failed at `deploy api` with `COGNITO_DIYA_GL_CLIENT_ID is not set`, and the
+  timestamps say why: `deploy.yml`'s `names` job did its live Cognito lookup at 08:22:40 to 08:23:06,
+  while `deploy-environment.yml`'s `deploy identity` job created the client and wrote the parameter
+  at 08:23:48 to 08:26:22. Two workflows triggered by one push, racing. The lookup found nothing and
+  carried on, because `.github/actions/lookup-resources/action.yml` treats that specific lookup as
+  lenient by design — no retry, empty string on failure — a choice made so a destroy is not aborted
+  by a transient lookup, unlike the `USER_POOL_ID` lookup two lines above it which retries three
+  times with backoff. So this reproduces for any newly created environment-level Cognito client, not
+  just this rename. The instance has cleared, since the client and parameter now exist. Give the
+  lookup the retry its sibling has, or make the app deploy wait on the environment deploy; the
+  action is shared with the destroy workflows, so changing its leniency needs care. **Source**: run
+  34454797197 against run 34454796683, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
   spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
   `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
@@ -104,6 +126,26 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
+- [ ] **O41. Refresh the AWS SSO session.** It expired at about 06:40 UTC and every `aws` call has
+  failed since, which blocks B52x's read of the first raw export and leaves one CI failure
+  undiagnosed: `ci-env-ObservabilityStack` answered `Unable to fetch parameters
+  [/submit/ci/last-known-good-deployment] from parameter store for this account` at changeset
+  creation. That parameter does exist and read fine earlier today, the deployment role in the log is
+  the right one, and nothing in batch 18's diff touches IAM, the account, the region or that
+  parameter's name — so the likeliest reading is a live AWS-side condition rather than a regression,
+  and it cannot be settled without a session. The command:
+
+  ```
+  ! aws sso login --sso-session diyaccounting
+  ```
+
+  Then this settles it:
+
+  ```
+  ! aws --profile submit-ci iam simulate-principal-policy --policy-source-arn arn:aws:iam::367191799875:role/submit-ci-deployment-role --action-names ssm:GetParameters --resource-arns arn:aws:ssm:eu-west-2:367191799875:parameter/submit/ci/last-known-good-deployment
+  ```
+
+  **Source**: run 34454796683. **Owner**: Operator. **Model**: none.
 - [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
   chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
   nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
