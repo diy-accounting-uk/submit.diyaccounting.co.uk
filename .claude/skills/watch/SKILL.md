@@ -34,6 +34,12 @@ One background monitor, polling every 60-90s, emitting one line per newly finish
 - **Poll the API for state, never grep a log for a word.** `status == "completed"` with its
   `conclusion` is the fact; a log line saying "passed" is not.
 - Keep the seen-set bounded, and let a failed `gh` call skip the cycle rather than kill the loop.
+- **An empty result set is not a pass.** A branch that does not exist, a query whose filter matches
+  nothing, and a `jq` asking for a field the `gh --json` list did not request all return nothing,
+  with exit 0, which reads exactly like a clean run. Count the rows before interpreting them: ask
+  for `length`, and report NO DATA rather than green when it is zero or the call failed. Every
+  field a `jq` filter touches must appear in the `--json` list beside it, or it silently yields
+  null for every row.
 
 ## Reading a run
 
@@ -128,7 +134,8 @@ All of these at once, each verified by reading:
 
 1. Every open PR's required checks pass.
 2. main's workflows are green on its latest commit **that runs them**.
-3. No run is queued or in progress on any branch in scope.
+3. No run is queued or in progress on any branch in scope — established by counting rows, not by
+   a filter printing nothing.
 
 Anything less is not done. A green PR whose deploy has not started is not done.
 
