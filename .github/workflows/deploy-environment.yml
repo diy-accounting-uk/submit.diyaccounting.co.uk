@@ -377,6 +377,23 @@ jobs:
           SUBMIT_DEPLOY_ROLE_ARN: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           SUBMIT_ACTIONS_ROLE_ARN: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
 
+      # ObservabilityStack reads this parameter as an AWS::SSM::Parameter::Value<String>
+      # template parameter, which CloudFormation refuses to resolve at all if the parameter is
+      # missing - a hard changeset failure, not a stack-internal default. The destroy sweep
+      # (destroy-ci.yml/destroy-prod.yml) sets it to the sentinel "None" rather than deleting it
+      # once a deployment's last stack is gone, but this guards the case it is missing anyway
+      # (never set yet, or removed by hand) so this environment's own deploy can't be blocked by
+      # it.
+      - name: Create last-known-good-deployment parameter (if not exists)
+        run: |
+          PARAMETER_NAME="/submit/${{ needs.names.outputs.environment-name }}/last-known-good-deployment"
+          if aws ssm get-parameter --name "$PARAMETER_NAME" >/dev/null 2>&1; then
+            echo "$PARAMETER_NAME already exists"
+          else
+            echo "$PARAMETER_NAME is missing, creating it with the sentinel value None"
+            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "None"
+          fi
+
   deploy-observability:
     name: 'deploy observability'
     needs:

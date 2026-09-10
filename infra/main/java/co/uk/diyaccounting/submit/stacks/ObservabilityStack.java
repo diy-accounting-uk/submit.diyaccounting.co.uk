@@ -542,6 +542,17 @@ public class ObservabilityStack extends Stack {
         // prefix matches every retired deployment's functions (CloudWatch keeps their series
         // for fifteen months) plus the cwsyn-* canaries — and drops the canaries as a side
         // effect, since they carry no "-app-" segment.
+        //
+        // CloudFormation resolves this as an AWS::SSM::Parameter::Value<String> template
+        // parameter, so a missing SSM parameter fails the changeset outright rather than
+        // resolving to an empty string; deploy-environment.yml's create-secrets job creates it
+        // with the sentinel "None" first if it is ever missing, and the destroy sweeps
+        // (destroy-ci.yml/destroy-prod.yml) set that same sentinel instead of deleting the
+        // parameter once no deployment is live. "None-app-" as a prefix matches no real function
+        // name, so the widgets below go quietly empty rather than mismatching — but an empty
+        // widget reads the same as a live deployment with no traffic, so the titles below embed
+        // the raw name too: "None" in a widget's title is the visible sign that no deployment is
+        // live, where a blank graph alone would not be.
         String liveDeploymentName = StringParameter.valueForStringParameter(
                 this, "/submit/%s/last-known-good-deployment".formatted(props.envName()));
         String liveDeploymentFunctionPrefix = liveDeploymentName + "-app-";
@@ -597,7 +608,7 @@ public class ObservabilityStack extends Stack {
         // since they are business counts rather than operations.
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
-                        .title("VAT Submissions (live deployment)")
+                        .title("VAT Submissions (deployment: %s)".formatted(liveDeploymentName))
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
                                         "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%shmrc-vat-return-post-ingest.*\" MetricName=\"Invocations\"', 'Sum', 3600)",
@@ -710,7 +721,7 @@ public class ObservabilityStack extends Stack {
         // (about 4,700 series) against CloudWatch's 500-series SEARCH limit and never rendered.
         dashboardRows.add(List.of(
                 GraphWidget.Builder.create()
-                        .title("Lambda Errors (live deployment)")
+                        .title("Lambda Errors (deployment: %s)".formatted(liveDeploymentName))
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
                                         "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Errors\"', 'Sum', 300)",
@@ -722,7 +733,7 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build(),
                 GraphWidget.Builder.create()
-                        .title("Lambda Throttles (live deployment)")
+                        .title("Lambda Throttles (deployment: %s)".formatted(liveDeploymentName))
                         .left(List.of(MathExpression.Builder.create()
                                 .expression(String.format(
                                         "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Throttles\"', 'Sum', 300)",
@@ -736,7 +747,7 @@ public class ObservabilityStack extends Stack {
 
         // Row 7: Lambda p95 duration on the live deployment, same narrowing as row 6.
         dashboardRows.add(List.of(GraphWidget.Builder.create()
-                .title("Lambda p95 Duration (live deployment)")
+                .title("Lambda p95 Duration (deployment: %s)".formatted(liveDeploymentName))
                 .left(List.of(MathExpression.Builder.create()
                         .expression(String.format(
                                 "SEARCH('{AWS/Lambda,FunctionName} FunctionName=~\"^%s.*\" MetricName=\"Duration\"', 'p95', 300)",
