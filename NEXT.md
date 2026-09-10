@@ -31,32 +31,26 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 17 on `claude/b17-board`, PR #169.** The integration branch has its own worktree at
-`.claude/worktrees/b17`; every sub-agent worktree branches from `claude/b17-board`, not from
-`main`, and merges it before starting. Opened with B84 and B83, the two red pipelines. Waves land
-on this one branch and push in batches, because a branch deploy is expensive and slow.
+**Batch 17 on `claude/b17-board`, PR #169.** Pushed at 5649f2fb with twelve items; its checks are
+running. The integration branch has its own worktree at `.claude/worktrees/b17`; every sub-agent
+worktree branches from `claude/b17-board`, not from `main`, and `NEXT.md` deliberately does not
+travel on the batch, because the board is maintained here on `main` under the docs exception and a
+second copy conflicts at merge.
 
-Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
-`claude/b17-board`, each merged into the batch as it lands:
+On the branch and off this list when its checks pass: B84, B83, B30t, B76, B77, B79, B80's submit
+half, B81's report, B82, B85, B88, B11.T20, and the DIYA-GL callback fix.
 
-| Workstream | Item | Model | Worktree | Branch |
-|---|---|---|---|---|
-| Alarm filters | B30t | Sonnet | `.claude/worktrees/w-alarmfilter` | `claude/b17-alarmfilter` |
-| Gateway CORS | B76 | Sonnet | `.claude/worktrees/w-gatewaycors` | `claude/b17-gatewaycors` |
-| Comment disclosure | B79 | Haiku | `.claude/worktrees/w-disclosure` | `claude/b17-disclosure` |
-| Support form | B77 | Sonnet | `.claude/worktrees/w-supportform` | `claude/b17-supportform` |
-| Git config and signing | B82 | Sonnet | `.claude/worktrees/w-gitconfig` | `claude/b17-gitconfig` |
-| Foreign identities | B80 | Sonnet | `.claude/worktrees/w-identities` | `claude/b17-identities` |
-| Alarm triage design | B78 | Opus | `.claude/worktrees/w-triagedesign` | `claude/b17-triagedesign` |
-| Homebrew tap cron | B81 | Sonnet | `.claude/worktrees/w-homebrew` | `claude/b17-homebrew` |
-| Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
+The first deploy of this branch failed at `diyaGlSubscriptionBehaviour-ci`, on the run and the
+retry. Not a regression: the spreadsheets site moved its DIYA-GL pages from `/books/` to
+`/diya-gl/` and left a 301 behind, and our OAuth redirect URI held the old path as a literal
+string, so the test's exact-prefix `waitForURL` never matched. A redirect is transparent to a
+browser and opaque to a prefix matcher, which is the same shape B71.S3d points the other way when
+our API prefix moves. The fix is on the branch.
 
-Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t, B76, B78's comparison, B77, B88, B11.T20.
-
-Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
-the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
-`claude/b17-board` once wave 1's PR is stable.
+Wave 2 branches off `claude/b17-board` once this PR is stable: the DIYA-GL deployed-identifier
+chain (B71.S3b to S3e, serialized in one worktree, since they share `EdgeStack`, `ApiStack`,
+`SubmitApplication` and `cdk.json`) and the ITSA property tracks (B11.T11 to T14) on their shared
+spine.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
