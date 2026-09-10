@@ -20,7 +20,12 @@ outputs:
     value: ${{ inputs.environment-name || steps.compute.outputs.ENVIRONMENT_NAME }}
   deployment-name:
     description: "Computed deployment name"
-    value: ${{ inputs.deployment-name || steps.compute.outputs.DEPLOYMENT_NAME }}
+    # Not inputs.deployment-name || steps.compute.outputs.DEPLOYMENT_NAME: the compute step
+    # already takes inputs.deployment-name as an override (see GET_NAMES_DEPLOYMENT_NAME below)
+    # and then normalises it (lowercase, no trailing dash) before emitting DEPLOYMENT_NAME. A
+    # fallback here would return the caller's raw, unnormalised input whenever one was supplied,
+    # skipping that normalisation entirely.
+    value: ${{ steps.compute.outputs.DEPLOYMENT_NAME }}
   base-domain:
     description: "Base hostname for the deployment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_BASE_DOMAIN }}
