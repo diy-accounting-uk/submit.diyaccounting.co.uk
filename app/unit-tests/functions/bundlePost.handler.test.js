@@ -126,11 +126,6 @@ describe("bundlePost ingestHandler", () => {
   // ============================================================================
 
   test("HEAD request returns 200 OK after bundle enforcement", async () => {
-    // TODO: Handler checks request.method === "HEAD" but extractRequest returns a URL object
-    // which doesn't have a .method property. This needs to be fixed in either:
-    // 1. extractRequest to add method from event.requestContext.http.method, or
-    // 2. Handler to check event.requestContext.http.method directly
-    // For now, HEAD requests will return 401 because they're treated as POST
     const event = buildLambdaEvent({
       method: "HEAD",
       path: "/api/v1/bundle",
