@@ -147,6 +147,12 @@ echo ""
 # ============================================================================
 # Step 1: CDK Bootstrap
 # ============================================================================
+# --cloudformation-execution-policies AdministratorAccess is CDK's own default: it grants
+# cdk-hnb659fds-cfn-exec-role, the role CloudFormation assumes to make every resource change a
+# deploy performs. This stays the standing posture rather than commissioning a scoped policy
+# (see REPORT_DEPLOYMENT_ROLE_AUDIT.md). The compensating control is the cis-iam-policy-changes
+# CloudWatch alarm in SecurityDetectionStack.java, which still fires on this grant because it
+# runs under an operator's own SSO session, not an excluded deploy role.
 echo -e "${CYAN}Step 1: CDK Bootstrap${NC}"
 
 for REGION in "${REGIONS[@]}"; do
@@ -338,15 +344,19 @@ EOF
   echo -e " ${GREEN}OK${NC}"
   echo "  ARN: ${DEPLOY_ROLE_ARN}"
 
-  # Attach AdministratorAccess for CDK deployments
-  # CDK needs broad permissions to create arbitrary resources (Lambda, DDB, CloudFront, etc.)
+  # AdministratorAccess is the standing posture for this role (see
+  # REPORT_DEPLOYMENT_ROLE_AUDIT.md). CDK deploys create IAM roles and call iam:PassRole, so a
+  # policy scoped short of admin here is a privilege-escalation path unless every role the
+  # pipeline creates also carries a permission boundary, which is separate, uncommissioned work.
+  # The compensating control is the cis-iam-policy-changes CloudWatch alarm in
+  # SecurityDetectionStack.java, which fires on this AttachRolePolicy call because it runs under
+  # an operator's own SSO session, not an excluded deploy role.
   aws iam attach-role-policy \
     --profile "${PROFILE}" \
     --role-name "${DEPLOYMENT_ROLE_NAME}" \
     --policy-arn "arn:aws:iam::aws:policy/AdministratorAccess"
 
   echo -e "  ${GREEN}Attached AdministratorAccess${NC}"
-  echo -e "  ${YELLOW}NOTE: Consider creating a scoped-down policy for production${NC}"
 fi
 echo ""
 

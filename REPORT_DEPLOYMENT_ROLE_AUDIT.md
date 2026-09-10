@@ -5,8 +5,8 @@
 
 `submit-ci-deployment-role` holds one policy, the AWS managed
 `arn:aws:iam::aws:policy/AdministratorAccess`, and no inline policies. Every GitHub Actions deploy
-runs as that role. This report asks whether a scoped policy can replace it, and what should watch
-the role given today's alarm setup. It proposes; it does not change anything.
+runs as that role. This report asked whether a scoped policy can replace it, and what should watch
+the role given today's alarm setup. Section 4 records the decisions taken (O43, B30u).
 
 - Audited: 2026-09-10, account `submit-ci` (367191799875)
 - Method: `iam list-attached-role-policies` and `list-role-policies` for the read-only facts below;
@@ -83,54 +83,39 @@ below and in section 3.
 
 `SecurityDetectionStack` runs fourteen CIS AWS Foundations Benchmark CloudWatch alarms. Eight of
 them (`UnauthorizedApiCalls`, `IamPolicyChanges`, `S3BucketPolicyChanges`, `SecurityGroupChanges`,
-`NaclChanges`, `NetworkGatewayChanges`, `RouteTableChanges`, `VpcChanges`) carry a shared
-`cisDeployRoleExclusion` clause that already existed before today: it excludes any `AssumedRole`
-session whose `sessionIssuer.userName` exactly matches `cdk-hnb659fds-*` (CDK's bootstrap roles),
-`submit-<env>-deployment-role`, or `submit-<env>-github-actions-role`. That exclusion, not
-anything from today, is what already keeps the deployment pipeline's routine activity off these
-eight alarms. That pipeline runs with AdministratorAccess, so matching it by name is close to
-matching "any action in the account."
+`NaclChanges`, `NetworkGatewayChanges`, `RouteTableChanges`, `VpcChanges`) carry a deploy-role
+exclusion clause: it excludes any `AssumedRole` session whose `sessionIssuer.userName` exactly
+matches `cdk-hnb659fds-*` (CDK's bootstrap roles), `submit-<env>-deployment-role`, or
+`submit-<env>-github-actions-role`. That exclusion is what keeps the deployment pipeline's routine
+activity off these eight alarms. That pipeline runs with AdministratorAccess, so matching it by
+name is close to matching "any action in the account."
 
-B30t added one thing today: a wildcard, `<env>-*`, to the same shared clause, to stop the
-CDK-generated per-stack helper roles (`ci-env-DataStack-CustomS3AutoDeleteObjects-<random>`, a new
-name every deploy) from tripping `route-table-changes` and `s3-bucket-policy-changes` on ordinary
-deploys. Because the clause is shared across all eight controls, the wildcard widens all eight,
-not just the two it was written for: a helper role matching `<env>-*` is now equally invisible to
-`iam-policy-changes`, `security-group-changes`, and the rest.
+B30t added a wildcard, `<env>-*`, to the same shared clause, to stop CDK-generated per-stack
+helper roles (`ci-env-DataStack-CustomS3AutoDeleteObjects-<random>`, a new name every deploy) from
+tripping `route-table-changes` and `s3-bucket-policy-changes` on ordinary deploys. Because the
+clause was shared across all eight controls, the wildcard silently widened all eight, not just the
+two it was written for. B30u confines the wildcard to `RouteTableChanges` and
+`S3BucketPolicyChanges`, the two controls it actually fixes. The other six
+(`UnauthorizedApiCalls`, `IamPolicyChanges`, `SecurityGroupChanges`, `NaclChanges`,
+`NetworkGatewayChanges`, `VpcChanges`) go back to the three exact deploy-role patterns only.
 
-`cis-iam-policy-changes` still catches the one event that matters most here. The
-`AttachRolePolicy` call in `bootstrap-account.sh` that puts `AdministratorAccess` on the deployment
-role in the first place runs under an operator's own SSO session, which matches none of the
-exclusion patterns. Granting the role more power still fires the alarm. What the exclusion hides
-is a *use* of the power already granted: a route table, security group, VPC, or bucket policy
-change made while assuming one of the excluded roles. It is not the grant.
+`cis-iam-policy-changes` not carrying the wildcard is what makes it a credible compensating
+control for O43 below: it is the alarm that catches the `AttachRolePolicy` call in
+`bootstrap-account.sh` that puts `AdministratorAccess` on the deployment role in the first place.
+That call runs under an operator's own SSO session, which matches none of the exclusion patterns
+(exact or wildcard), so it fires regardless. The exclusion hides a *use* of power already granted:
+a route table, security group, VPC, or bucket policy change made while assuming one of the
+excluded roles. It does not hide the grant itself.
 
-**Recommendation: leave the wildcard as B30t landed it, and treat `cis-iam-policy-changes` as the
-named compensating control for the grant itself**, not just an observed side effect. The
-alternative narrows the wildcard to the exact `CustomS3AutoDeleteObjects`,
-`AwsCustomResourceProvider`, `EnsurePitr*` and similar per-stack role name patterns CDK generates.
-That buys a smaller blind spot in the eight `deployChangedControls`, at the cost of the same
-maintenance burden section 2 just argued against: a new CDK helper Lambda role naming shape breaks
-the alarm again, silently, the way the route-table filter and the original exclusion both did
-today.
+## 4. Decisions taken
 
-**What would change this recommendation**: a way to distinguish "the deployment role acting within
-routine CDK operations" from "the deployment role's credentials used for something a routine
-deploy would never do" without enumerating role names. For example, alarming on the eight controls
-whenever they fire *outside* a window when `deploy.yml` or `deploy-environment.yml` is actually
-running, rather than by principal name. That is a bigger build than this row, not a reason to
-withhold the current recommendation.
-
-## 4. What the operator decides
-
-1. **Keep `AdministratorAccess` on `submit-ci-deployment-role` and `cdk-hnb659fds-cfn-exec-role`,**
-   compensated by `cis-iam-policy-changes` on the grant and the seven other CIS controls on
-   everything else the pipeline's credentials could be used for that isn't excluded. The
-   alternative is commissioning the permission-boundary design in section 2, which is real,
-   separate work with no existing owner. This report recommends keeping AdministratorAccess: the
-   permission-boundary work is not reachable as a quick policy edit, and BACKLOG row 33 already
-   carries the equivalent question for `submit-backup`.
-2. **Leave B30t's `<env>-*` wildcard covering all eight `deployChangedControls`.** The alternative
-   narrows it to the specific CDK-generated role name patterns, which shrinks the blind spot but
-   reintroduces the exact maintenance risk (an unlisted new role name pattern goes unnoticed, not
-   noisy) that B30t itself was written to fix. This report recommends leaving it as landed.
+1. **O43: `AdministratorAccess` stays on `submit-ci-deployment-role` and
+   `cdk-hnb659fds-cfn-exec-role`**, compensated by `cis-iam-policy-changes` on the grant itself and
+   the other CIS controls on everything else the pipeline's credentials could be used for that
+   isn't excluded. The alternative, a permission-boundary design scoping every role the pipeline
+   creates, is real and separate work with no existing owner; BACKLOG row 33 carries the
+   equivalent question for `submit-backup`.
+2. **B30u: the `<env>-*` wildcard is confined to `RouteTableChanges` and `S3BucketPolicyChanges`**,
+   the two controls it was written to fix. The other six `deployChangedControls`, `IamPolicyChanges`
+   included, keep the three exact deploy-role patterns only, so O43's compensating control keeps
+   its full sensitivity.

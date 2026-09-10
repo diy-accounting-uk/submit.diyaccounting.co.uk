@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -201,26 +202,30 @@ class SecurityDetectionStackTest {
     }
 
     @Test
-    void deployRoleExclusionCoversPerStackCdkHelperRolesByEnvironmentPrefix() {
+    void envWildcardExclusionAppliesOnlyToTheTwoControlsProvenNoisyFromCdkHelperRoles() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
         var metricFilters = template.findResources("AWS::Logs::MetricFilter");
 
         // CDK's per-stack helper Lambdas (e.g. the CustomS3AutoDeleteObjects custom resource
         // that empties a bucket before DESTROY) each get their own dynamically named IAM role,
-        // so the deploy-role exclusion can't list them by exact name. It must instead exclude
-        // any role name starting with this environment's own prefix, on every filter the
-        // deploy-role exclusion applies to.
-        List<String> guardedEventNames = List.of(
-                "UnauthorizedAccess",
-                "PutRolePolicy",
-                "PutBucketPolicy",
-                "AuthorizeSecurityGroupIngress",
-                "CreateNetworkAcl",
-                "CreateCustomerGateway",
-                "CreateRouteTable",
-                "CreateVpc");
+        // so the deploy-role exclusion can't list them by exact name. An "<env>-*" wildcard
+        // catches them, confined to the two controls it was actually written for,
+        // RouteTableChanges and S3BucketPolicyChanges, so it cannot silently widen back onto
+        // the other six.
+        Map<String, String> eventNameByControl = Map.of(
+                "UnauthorizedApiCalls", "UnauthorizedAccess",
+                "IamPolicyChanges", "PutRolePolicy",
+                "S3BucketPolicyChanges", "PutBucketPolicy",
+                "SecurityGroupChanges", "AuthorizeSecurityGroupIngress",
+                "NaclChanges", "CreateNetworkAcl",
+                "NetworkGatewayChanges", "CreateCustomerGateway",
+                "RouteTableChanges", "CreateRouteTable",
+                "VpcChanges", "CreateVpc");
+        Set<String> controlsWithEnvWildcard = Set.of("RouteTableChanges", "S3BucketPolicyChanges");
 
-        for (String eventName : guardedEventNames) {
+        for (var entry : eventNameByControl.entrySet()) {
+            String control = entry.getKey();
+            String eventName = entry.getValue();
             String pattern = metricFilters.values().stream()
                     .map(resource -> {
                         @SuppressWarnings("unchecked")
@@ -230,10 +235,24 @@ class SecurityDetectionStackTest {
                     .filter(p -> p.contains(eventName))
                     .findFirst()
                     .orElseThrow(() -> new AssertionError("no metric filter pattern found for " + eventName));
-            assertTrue(
-                    pattern.contains("sessionIssuer.userName != \"docs-*\""),
-                    "pattern for " + eventName + " must exclude roles named with the docs- environment prefix,"
-                            + " was: " + pattern);
+
+            boolean hasEnvWildcard = pattern.contains("sessionIssuer.userName != \"docs-*\"");
+            if (controlsWithEnvWildcard.contains(control)) {
+                assertTrue(
+                        hasEnvWildcard,
+                        control + " must exclude roles named with the docs- environment prefix, was: " + pattern);
+            } else {
+                assertTrue(
+                        !hasEnvWildcard,
+                        control + " must NOT carry the docs- environment-prefix wildcard (only"
+                                + " RouteTableChanges and S3BucketPolicyChanges do), was: " + pattern);
+                // Still guarded by the three exact deploy-role name patterns.
+                assertTrue(
+                        pattern.contains("cdk-hnb659fds-*")
+                                && pattern.contains("submit-docs-deployment-role")
+                                && pattern.contains("submit-docs-github-actions-role"),
+                        control + " must still exclude the three exact deploy-role names, was: " + pattern);
+            }
         }
     }
 
