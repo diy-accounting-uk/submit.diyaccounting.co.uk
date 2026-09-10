@@ -14,6 +14,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
 
@@ -169,7 +170,7 @@ export async function ingestHandler(event) {
   };
 
   const issueTitle = `[Support] ${subject}`;
-  const issueBody = `## Support Request
+  const issueBodyContent = `## Support Request
 
 **Category:** ${category}
 **Submitted:** ${new Date().toISOString()}
@@ -177,11 +178,9 @@ export async function ingestHandler(event) {
 
 ---
 
-${description}
+${description}`;
 
----
-*Submitted via DIY Accounting Submit support form*`;
-
+  const issueBody = appendAutomationDisclosure(issueBodyContent);
   const labels = ["support", categoryLabels[category]];
 
   try {

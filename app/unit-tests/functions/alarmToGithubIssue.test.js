@@ -234,6 +234,7 @@ describe("alarmToGithubIssue", () => {
       expect(body).toContain(linksFixture().logsInsights);
       expect(body).toContain(linksFixture().xray);
       expect(body).not.toContain("**Family:**");
+      expect(body).toContain("Raised automatically by an automated pipeline.");
     });
 
     test("issue body shows the Family line only when the family key differs from the alarm name", () => {
@@ -312,6 +313,7 @@ describe("alarmToGithubIssue", () => {
       expect(body).toContain("Still failing");
       expect(body).toContain(linksFixture().alarmConsole);
       expect(body).toContain("prod-9050bb5-app-cognito-token-post-health");
+      expect(body).toContain("Raised automatically by an automated pipeline.");
     });
   });
 
