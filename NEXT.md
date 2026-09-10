@@ -122,14 +122,14 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's 
   same mechanism, which is new work rather than another key. **Source**: B90's finding,
   2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 
-  **In flight** in `.claude/worktrees/b22-destroy-overlap` on `worktree-agent-destroy-overlap`, off `claude/b22-board`. Dispatched once B102 freed `destroy-prod.yml`.
+  **Code complete** on `claude/b22-board` (merge 788839ae), worktree removed. Waits on CI.
 
-A worktree agent runs `npm run bundle` before any unit, system or browser suite:
-`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
-it nine tests fail on a missing file that has nothing to do with the change.
-
-## Ready: Claude Code
-
+  A standalone `destroy-prod` run now waits for a running prod `deploy.yml`, polling rather than
+  sharing a concurrency group, which is the deadlock B90 hit. `deploy.yml` passes
+  `called-from-deploy: true` on its own `destroy-previous` call and that run skips the wait, so it
+  never waits on its own parent. The destroy defers and the deploy never does: a janitorial sweep
+  must not delay a release. A timed-out wait fails the job, which with B102's gating means nothing
+  destructive runs.
 - [ ] **B101. Every redeploy pushes a ci set's self-destruct two hours further out.** The
   investigation is done and EventBridge is not the culprit. `ci-claudf179` was created 13:03 with a
   destruct at 15:03; a push at 14:15 rewrote it to 16:15, and a push at 14:55 rewrote it again to
@@ -156,6 +156,15 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
   **Source**: this batch's investigation, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
   Sequenced after B92, which holds `deploy.yml`.
+
+  **In flight** in `.claude/worktrees/b22-destruct-clock` on `worktree-agent-destruct-clock`, off `claude/b22-board`. Dispatched once B92 freed `deploy.yml`.
+
+A worktree agent runs `npm run bundle` before any unit, system or browser suite:
+`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
+it nine tests fail on a missing file that has nothing to do with the change.
+
+## Ready: Claude Code
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
