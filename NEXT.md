@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t, B76, B78's comparison.
+submit half, B85, B30t, B76, B78's comparison, B77.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -139,16 +139,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B77. The public support form files GitHub issues under the operator's name.**
-  `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
-  it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
-  the operator's identity. That is two problems at once: an unauthenticated write to a public
-  surface, and a provenance failure that breaks the rule a human-raised ticket needs a human to
-  close, because the author field cannot say who wrote it. Give the path its own identity so the
-  issue is not attributed to a person, carry the submitter's own words as quoted content rather
-  than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
-  authentication. Say in the issue body that it came from the public form. **Source**:
-  `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
   `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
   `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
@@ -242,9 +232,10 @@ it nine tests fail on a missing file that has nothing to do with the change.
   operator's own account and is the single move that fixes the worst disclosure gap; and
   `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
   our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
-  and a private key into Secrets Manager. Neither depends on signing. B77's support-form work is
-  written so the token and identity are configuration, so it switches over without a code change
-  once `diya-ops` exists. While deciding, settle recommendation 12 as well: the byline on articles
+  and a private key into Secrets Manager. Neither depends on signing. B77's support-form work now reads the same
+  `OPS_GITHUB_TOKEN_SECRET_ARN` config point the alarm Lambda uses, so rotating the secret
+  `{env}/submit/github/issue_bot_token` in ci and prod to the app's token moves both public-write
+  paths onto it at once, with no code change and no new secret name. While deciding, settle recommendation 12 as well: the byline on articles
   and support replies, before the emails-to-articles pipeline is built, because that is the largest
   volume of machine-written public prose the company will produce. **Source**:
   `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
