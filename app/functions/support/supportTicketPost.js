@@ -311,7 +311,10 @@ export async function ingestHandler(event) {
       timestamp: new Date().toISOString(),
     }),
   );
-  const labels = ["support", categoryLabels[category]];
+  // origin:machine says the shared support-ticket identity filed this, not the operator. GitHub
+  // creates a label on first use if it doesn't already exist, so this never fails while the
+  // label is still pending creation (see REPORT_IDENTITY_AUDIT.md section 8, recommendation 6).
+  const labels = ["support", categoryLabels[category], "origin:machine"];
 
   try {
     logger.info({ message: "Creating GitHub issue", subject, category, clientIp });
