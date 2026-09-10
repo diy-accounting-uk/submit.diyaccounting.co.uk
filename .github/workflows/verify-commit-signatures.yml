@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: verify-commit-signatures
+run-name: "Commit signature check for PR #${{ github.event.pull_request.number }}"
+
+# Reports whether every commit on a PR carries a verified signature
+# (commit.verification.verified from the GitHub API), which is the only proof
+# that the author field is not a self-asserted string. See REPORT_GIT_CONFIG.md.
+#
+# Informational only for now: no commit in this repository is signed yet, so
+# failing the build here would block every PR. Once commit signing is on and a
+# few weeks of history carry it, change the last step to exit 1 when any commit
+# is unverified and add this job as a required check on the branch ruleset.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: verify-commit-signatures-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify:
+    name: Check commit signatures
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Report verification status of each commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          commits=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/commits" --paginate)
+          total=$(echo "$commits" | jq 'length')
+          unverified=$(echo "$commits" | jq '[.[] | select(.commit.verification.verified == false)] | length')
+
+          echo "$commits" \
+            | jq -r '.[] | [.sha[0:8], .commit.author.name, .commit.verification.verified, .commit.verification.reason] | @tsv' \
+            > commit-verification.tsv
+
+          {
+            echo "### Commit signatures"
+            echo
+            echo "${unverified} of ${total} commits on this PR are not verified."
+            echo
+            echo '```'
+            echo -e "sha\tauthor\tverified\treason"
+            cat commit-verification.tsv
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$unverified" -gt 0 ]; then
+            echo "::notice::${unverified} of ${total} commits on this PR are not signed and verified. Informational only until commit signing is turned on; see REPORT_GIT_CONFIG.md."
+          fi
