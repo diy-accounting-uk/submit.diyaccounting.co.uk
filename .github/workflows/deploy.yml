@@ -2831,5 +2831,8 @@ jobs:
     uses: './.github/workflows/destroy-prod.yml'
     with:
       deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
+      # This run IS the prod deploy destroy-prod.yml's own wait step would otherwise wait for —
+      # see that step's comment in destroy-prod.yml for why waiting here would deadlock.
+      called-from-deploy: true
 
  # TODO: If set-origins passed but web-test failed, look up the last deployment from a parameter store and set-origin back to that deployment

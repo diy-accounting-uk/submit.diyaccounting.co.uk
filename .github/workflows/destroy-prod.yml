@@ -14,9 +14,16 @@ concurrency:
   # this workflow directly (its 'destroy-previous' job) to remove the deployment it just cut
   # over from, so giving the two the same concurrency group would have that call wait on a slot
   # its own parent run is holding — a permanent deadlock. deploy.yml keeps a distinct
-  # 'deploy-prod' name for exactly this reason. A destroy-prod run triggered independently (the
-  # schedule, or a standalone workflow_dispatch) can still overlap with a deploy.yml prod run
-  # that isn't the one that spawned it; nothing in this batch closes that gap.
+  # 'deploy-prod' name for exactly this reason.
+  #
+  # A destroy-prod run triggered independently (the schedule, or a standalone workflow_dispatch)
+  # can still overlap a deploy.yml prod run that isn't the one that spawned it — this group only
+  # serialises destroy-prod runs against each other, not against deploy.yml. The 'destroy' job's
+  # 'Wait for a running prod deploy' step closes that gap by polling instead of a group, for the
+  # same reason wait-for-ci-deploys.mjs exists: a group would have to be shared with deploy.yml's
+  # 'deploy-prod' to serialise against it, which is the exact deadlock above. That step is skipped
+  # when this run IS deploy.yml's own 'destroy-previous' call (called-from-deploy: true) — waiting
+  # there would be waiting on this run's own parent.
   group: destroy-prod
   cancel-in-progress: false
 
@@ -32,6 +39,11 @@ on:
         type: boolean
         description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
+      called-from-deploy:
+        type: boolean
+        description: 'Leave as false for a standalone run. Set only by deploy.yml itself, which passes true from its destroy-previous job.'
+        required: false
+        default: false
   workflow_call:
     inputs:
       deployment-name:
@@ -44,12 +56,23 @@ on:
         description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
         default: false
+      called-from-deploy:
+        type: boolean
+        description: >-
+          True when deploy.yml calls this workflow as its own destroy-previous job. Skips the
+          'destroy' job's wait for a running prod deploy, which would otherwise wait on this
+          run's own parent forever.
+        required: false
+        default: false
   schedule:
     - cron: '04 3,5,7,9,11,13 * * *'
 
 permissions:
   id-token: write
   contents: read
+  # actions:read lets the 'Wait for a running prod deploy' step in the 'destroy' job list
+  # deploy.yml runs via the GitHub API (see .github/actions/wait-for-ci-deploys).
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -88,6 +111,7 @@ jobs:
           TRIMMED_DEPLOYMENT_NAME=$(printf '%s' "$RAW_DEPLOYMENT_NAME" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           echo "deployment-name=$TRIMMED_DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
+          X='${{ inputs.called-from-deploy }}' ; echo "called-from-deploy=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
           # and this run is on a schedule. A reusable workflow call inherits github.event_name from
           # whatever triggered the caller, so deploy.yml's own daily schedule makes event_name
@@ -109,6 +133,7 @@ jobs:
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
+      called-from-deploy: ${{ steps.normalise.outputs.called-from-deploy }}
 
   sweep-for-stacks:
     needs:
@@ -602,6 +627,27 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v7
+
+      # A standalone destroy-prod run (the schedule, or a bare workflow_dispatch) shares no
+      # ordering with a deploy.yml prod run: deploy.yml only reaches this workflow, as its own
+      # destroy-previous job, near the end of a prod deploy — well after the new deployment's
+      # stacks are already built and cut over. Without this, a scheduled sweep could delete a
+      # deployment deploy.yml is still in the middle of building, which the refusal step below
+      # can't catch: it only protects a deployment that is already live or already recorded as
+      # last-known-good, not one still under construction. Placed before AWS role assumption so a
+      # long wait doesn't sit on a half-used STS session.
+      #
+      # Skipped when this run IS that destroy-previous call (called-from-deploy: true): deploy.yml
+      # is the run that would be waited for, so waiting here would wait on this run's own parent,
+      # forever.
+      - name: Wait for a running prod deploy
+        if: ${{ !cancelled() && needs.params.outputs.called-from-deploy != 'true' }}
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+          workflows: 'deploy.yml'
+          match-mode: 'environment'
+          target-environment: 'prod'
 
       - name: Setup Node
         uses: actions/setup-node@v7
