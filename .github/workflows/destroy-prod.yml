@@ -750,6 +750,7 @@ jobs:
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BooksStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-DiyaGlStack" eu-west-2
 
           echo "=== Stack deletion complete ==="
 
@@ -770,7 +771,7 @@ jobs:
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
-          COGNITO_BOOKS_CLIENT_ID: ${{ steps.lookup.outputs.cognito-books-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

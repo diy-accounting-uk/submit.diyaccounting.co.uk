@@ -181,7 +181,7 @@ describe("functions/infra/selfDestruct", () => {
       HMRC_STACK_NAME: "hmrc",
       COMPANIES_HOUSE_STACK_NAME: "companies-house",
       BILLING_STACK_NAME: "billing",
-      BOOKS_STACK_NAME: "books",
+      DIYA_GL_STACK_NAME: "diya-gl",
       ACCOUNT_STACK_NAME: "account",
       SELF_DESTRUCT_STACK_NAME: "self-destruct",
       AWS_REGION: "eu-west-2",
@@ -253,7 +253,7 @@ describe("functions/infra/selfDestruct", () => {
       "hmrc",
       "companies-house",
       "billing",
-      "books",
+      "diya-gl",
       "account",
       "self-destruct",
     ]);
@@ -281,7 +281,7 @@ describe("functions/infra/selfDestruct", () => {
       "hmrc",
       "companies-house",
       "billing",
-      "books",
+      "diya-gl",
       "account",
       "self-destruct",
     ]);

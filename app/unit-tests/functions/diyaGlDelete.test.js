@@ -30,7 +30,7 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand };
 });
 
-const { ingestHandler } = await import("../../functions/books/booksDelete.js");
+const { ingestHandler } = await import("../../functions/diyaGl/diyaGlDelete.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
 
@@ -49,10 +49,10 @@ function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID } = {}) {
   });
 }
 
-describe("booksDelete", () => {
+describe("diyaGlDelete", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
-    process.env.BOOKS_BUCKET_NAME = "test-books-bucket";
+    process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     _setTestSalt("test-salt");
   });
 

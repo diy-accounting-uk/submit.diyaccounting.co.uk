@@ -4,7 +4,7 @@
 // app/lib/diyaGlCors.js
 //
 // The DIYA-GL routes sit behind their own JWT authoriser and their own allow-listed origins
-// (BOOKS_ALLOWED_ORIGINS), separate from the API-wide CloudFront CORS policy, so every DIYA-GL
+// (DIYA_GL_ALLOWED_ORIGINS), separate from the API-wide CloudFront CORS policy, so every DIYA-GL
 // handler resolves and answers CORS the same way.
 
 import { createLogger } from "./logger.js";
@@ -17,7 +17,7 @@ const ALLOWED_HEADERS = "authorization, content-type, if-match, x-request-id, x-
 
 /**
  * Resolves the CORS response headers for a DIYA-GL request: the caller's Origin echoed back only
- * when it's in the comma-separated BOOKS_ALLOWED_ORIGINS list, with Vary: Origin so caches don't
+ * when it's in the comma-separated DIYA_GL_ALLOWED_ORIGINS list, with Vary: Origin so caches don't
  * serve one origin's response to another. No match means no CORS header at all.
  *
  * @param {object} headers - the incoming request's headers (event.headers)
@@ -25,7 +25,7 @@ const ALLOWED_HEADERS = "authorization, content-type, if-match, x-request-id, x-
  */
 export function resolveDiyaGlCorsHeaders(headers) {
   const origin = getHeader(headers, "origin");
-  const allowedOrigins = (process.env.BOOKS_ALLOWED_ORIGINS || "")
+  const allowedOrigins = (process.env.DIYA_GL_ALLOWED_ORIGINS || "")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);

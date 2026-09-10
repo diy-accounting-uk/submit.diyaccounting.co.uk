@@ -362,10 +362,10 @@ public class EdgeStack extends Stack {
                                                 .vendorName("AWS")
                                                 // SizeRestrictions_BODY counts instead of blocking, because it
                                                 // blocks any body CloudFront cannot fully inspect - 8KB - and a
-                                                // DIYA-GL book write carries a zip up to BOOKS_MAX_BYTES (2MB).
+                                                // DIYA-GL book write carries a zip up to DIYA_GL_MAX_BYTES (2MB).
                                                 // Every other route keeps the same 8KB block through
                                                 // OversizedBodyOutsideBookWrite below; a book write's real size
-                                                // limit is booksPut.js, the only place that sees the whole body.
+                                                // limit is diyaGlPut.js, the only place that sees the whole body.
                                                 .ruleActionOverrides(
                                                         List.of(CfnWebACL.RuleActionOverrideProperty.builder()
                                                                 .name("SizeRestrictions_BODY")
@@ -425,8 +425,8 @@ public class EdgeStack extends Stack {
                         // see", which is the same 8KB the managed rule enforced, so no other route
                         // loses that protection. PUT /api/v1/books/* is the one request shape that
                         // legitimately carries megabytes, and it is authenticated by the books JWT
-                        // authoriser before booksPut.js checks the decoded size against
-                        // BOOKS_MAX_BYTES.
+                        // authoriser before diyaGlPut.js checks the decoded size against
+                        // DIYA_GL_MAX_BYTES.
                         CfnWebACL.RuleProperty.builder()
                                 .name("OversizedBodyOutsideBookWrite")
                                 .priority(5)
@@ -861,14 +861,14 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // The DIYA-GL routes answer their own CORS (BOOKS_ALLOWED_ORIGINS, see diyaGlCors.js): the
-        // /api/v1/* behaviour's CORS override above would stamp Access-Control-Allow-Origin: *
+        // The DIYA-GL routes answer their own CORS (DIYA_GL_ALLOWED_ORIGINS, see diyaGlCors.js):
+        // the /api/v1/* behaviour's CORS override above would stamp Access-Control-Allow-Origin: *
         // over every response, breaking both the PUT preflight and the client's read of ETag.
         // Same security headers, no corsBehavior, so CloudFront passes the handler's own through.
-        ResponseHeadersPolicy booksApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
-                        this, props.resourceNamePrefix() + "-BooksWHP")
-                .responseHeadersPolicyName(props.resourceNamePrefix() + "-books-whp")
-                .comment("Security headers for the books API, with no CORS override")
+        ResponseHeadersPolicy diyaGlApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-DiyaGlWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-diya-gl-whp")
+                .comment("Security headers for the DIYA-GL API, with no CORS override")
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
@@ -1002,7 +1002,7 @@ public class EdgeStack extends Stack {
         // More specific than /api/v1/*, so CloudFront prefers this one for the books routes and
         // leaves every other /api/v1/* route on the CORS-overriding policy above unaffected.
         BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), booksApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
 

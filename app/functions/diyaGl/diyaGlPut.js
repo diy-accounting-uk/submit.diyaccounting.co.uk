@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/books/booksPut.js
+// app/functions/diyaGl/diyaGlPut.js
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -33,7 +33,7 @@ import {
   listBooks,
 } from "../../data/s3DiyaGlRepository.js";
 
-const logger = createLogger({ source: "app/functions/books/booksPut.js" });
+const logger = createLogger({ source: "app/functions/diyaGl/diyaGlPut.js" });
 
 const VALID_PRODUCTS = ["bst", "se", "taxi", "ltd"];
 const PROVENANCE_FIELDS = ["formatVersion", "engineVersion", "taxDataHash", "templateHash", "reconciledCommit"];
@@ -220,7 +220,7 @@ export async function ingestHandler(event) {
     }
 
     const decodedBytes = Buffer.from(fields.zipBase64, "base64");
-    const maxBytes = Number(process.env.BOOKS_MAX_BYTES || 2097152);
+    const maxBytes = Number(process.env.DIYA_GL_MAX_BYTES || 2097152);
     if (decodedBytes.length > maxBytes) {
       return http413PayloadTooLargeResponse({
         request,
@@ -267,7 +267,7 @@ export async function ingestHandler(event) {
 
       if (!existing) {
         const currentBooks = await listBooks(ownerPrefix);
-        const maxPerUser = Number(process.env.BOOKS_MAX_PER_USER || 20);
+        const maxPerUser = Number(process.env.DIYA_GL_MAX_PER_USER || 20);
         if (currentBooks.length >= maxPerUser) {
           return http403ForbiddenResponse({
             request,
@@ -301,7 +301,7 @@ export async function ingestHandler(event) {
         });
       }
 
-      const versionsKept = Number(process.env.BOOKS_VERSIONS_KEPT || 30);
+      const versionsKept = Number(process.env.DIYA_GL_VERSIONS_KEPT || 30);
       let metadata;
       try {
         metadata = await attemptWrite({ ownerPrefix, bookId, existing, fields, decodedBytes, entitlement, versionsKept });
