@@ -94,12 +94,6 @@ public class AuthStack extends Stack {
     public AuthStack(Construct scope, String id, StackProps stackProps, AuthStackProps props) {
         super(scope, id, stackProps);
 
-        // Lookup existing DynamoDB Bundles Table
-        ITable bundlesTable = Table.fromTableName(
-                this,
-                "ImportedBundlesTable-%s".formatted(props.deploymentName()),
-                props.sharedNames().bundlesTableName);
-
         // Lookup existing DynamoDB Security State Table (issue #10 mid-session country check)
         ITable securityStateTable = Table.fromTableName(
                 this,
@@ -187,7 +181,6 @@ public class AuthStack extends Stack {
         var customAuthorizerLambdaEnv = new PopulatedMap<String, String>()
                 .with("COGNITO_USER_POOL_ID", props.cognitoUserPoolId())
                 .with("COGNITO_USER_POOL_CLIENT_ID", props.cognitoUserPoolClientId())
-                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
