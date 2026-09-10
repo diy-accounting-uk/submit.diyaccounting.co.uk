@@ -36,6 +36,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `main`, and merges it before starting. Opened with B84 and B83, the two red pipelines. Waves land
 on this one branch and push in batches, because a branch deploy is expensive and slow.
 
+Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
+`claude/b17-board`, each merged into the batch as it lands:
+
+| Workstream | Item | Model | Worktree | Branch |
+|---|---|---|---|---|
+| Alarm filters | B30t | Sonnet | `.claude/worktrees/w-alarmfilter` | `claude/b17-alarmfilter` |
+| Gateway CORS | B76 | Sonnet | `.claude/worktrees/w-gatewaycors` | `claude/b17-gatewaycors` |
+| Comment disclosure | B79 | Haiku | `.claude/worktrees/w-disclosure` | `claude/b17-disclosure` |
+| Support form | B77 | Sonnet | `.claude/worktrees/w-supportform` | `claude/b17-supportform` |
+| Git config and signing | B82 | Sonnet | `.claude/worktrees/w-gitconfig` | `claude/b17-gitconfig` |
+| Foreign identities | B80 | Sonnet | `.claude/worktrees/w-identities` | `claude/b17-identities` |
+| Alarm triage design | B78 | Opus | `.claude/worktrees/w-triagedesign` | `claude/b17-triagedesign` |
+| Homebrew tap cron | B81 | Sonnet | `.claude/worktrees/w-homebrew` | `claude/b17-homebrew` |
+
+Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
+the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
+`claude/b17-board` once wave 1's PR is stable.
+
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
 it nine tests fail on a missing file that has nothing to do with the change.
