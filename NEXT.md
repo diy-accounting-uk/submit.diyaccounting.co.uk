@@ -48,6 +48,9 @@ Wave 2 runs as concurrent worktree sub-agents:
 | The catalogue's free ITSA writes | B11.T23 | Sonnet | `.claude/worktrees/w-catalogue` | `claude/b18-catalogue` |
 | The cost export's bucket policy | B89 | Sonnet | `.claude/worktrees/w-costbucket` | `claude/b18-costbucket` |
 
+Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
+CODEOWNERS.
+
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
 tracks (B11.T11 to T14) wait for S3b to land, because they share `SubmitApplication.java`,
@@ -160,34 +163,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the main API gets the same allow list the storage routes use, or whether the wildcard is the
   intended answer for a public API, and write down which. Found while fixing B76. **Source**:
   B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B87. The identity audit's code recommendations, 5, 6, 7 and 10.**
-  `REPORT_IDENTITY_AUDIT.md` section 8 ranks twelve. Numbers 4 and 9 landed in batch 17, 1 is O37,
-  8 is BACKLOG 53, and 2, 3 and 12 need the operator (O38). These four are code and need nobody's
-  permission: standardise the co-author trailer to one canonical form across all six `CLAUDE.md`
-  files, which is what removes `_developers/archive/PLAN_FLAGGED.md`'s signal 8 and stops fourteen
-  forms becoming twenty; create the five `origin:*` labels and apply them from the creating path;
-  build the alarm-origin verifier, which re-reads `describe-alarm-history` for the name and window
-  an issue body claims and is the strongest proof in the whole design; and add CODEOWNERS and a PR
-  template carrying `Closes #N` and an origin line. The verifier is the one with real value, so it
-  goes first and can ship without the other three. The trailer edit reaches five sibling
-  repositories, so it follows B80b's routing rather than being done from here. **Source**:
-  `REPORT_IDENTITY_AUDIT.md` section 8. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B78b. Finish the Bedrock triage path.** `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md` compares
-  four options and recommends this one: of the four causes in the failure history, the use-case
-  form is filed, prod's Marketplace entitlement now reads authorized, and the twelve-turn cutoff is
-  raised, which leaves one invalid CLI flag — `--permission-mode dontAsk` is not a value
-  claude-code 2.0.30 accepts. The plan's execution steps are in its last section. Two things it
-  found that matter as much as the flag: both `Run triage` and `Filter the output` pipe through
-  `tee`, which merges stderr into the next step's input and hands the pipeline `tee`'s exit code,
-  so `redact-triage-output.mjs`'s non-zero exits are thrown away and its error text gets posted as
-  the triage; and ci's Marketplace entitlement is still `NOT_AVAILABLE`, which is 21 of the 55
-  issues. The measured cost is $0.08 to $0.35 a triage, so $17 to $73 a month at 209 alarm issues a
-  month — `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` section 6.3 assumed $1.05 a run, 3 to 13 times high.
-  The proof is one live prod alarm on a current deployment triaged end to end, not a green badge:
-  prod log groups keep three days and a retired deployment's groups are deleted outright, so a
-  dispatch against an old issue reads an empty window and answers confidently about nothing.
-  B88 fixed the spend guard, so the budget's deny action can see the spend this would create. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
-  **Owner**: Claude Code, Operator to check the first triage. **Model**: Sonnet.
 - [ ] **B11.T23. The catalogue cannot say which ITSA writes are free.** `submit.catalogue.toml`
   carries one flat `self-employed` activity, `tokenCost = 1`, `metered = true`, covering all ten
   ITSA paths including the free ones — the annual submission, the adjustments, and the losses and
@@ -202,12 +177,29 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
+- [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
+  through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
+  label does not fail anything — but until they exist with real descriptions and colours they carry
+  no meaning to a reader. The five commands are in B87's report and the classes are
+  `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
   chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
   nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
   our own prod deploys, and B30t stops them doing it again. All three name deployment
   prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
   **Owner**: Operator. **Model**: none.
+- [ ] **O39. Two attribution rules contradict each other; pick one.**
+  `REPORT_IDENTITY_AUDIT.md` recommendation 5 wants one canonical `Co-Authored-By` trailer in all
+  six `CLAUDE.md` files, because fourteen forms in the history is one of the signals behind the May
+  2026 suspension (`_developers/archive/PLAN_FLAGGED.md`). But the trailer is not set by any
+  `CLAUDE.md` today: it arrives per session from the harness, which names the model that did the
+  work and says it replaces any earlier attribution guidance. Every commit in batches 17 and 18
+  carries `Claude Opus 5 (1M context)` for that reason. So the two rules want different things:
+  one form that never varies, against a form that says which model wrote the code. Decide which
+  matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
+  per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
+  finding. **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
