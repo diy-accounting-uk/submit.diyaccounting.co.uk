@@ -62,82 +62,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 - [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
   spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
-  `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, and executes them.
-  So every merge to main is an immediate release to their runners, with no version, no window and
-  nothing in our tree that says another repository runs this file: no import to grep, no test that
-  fails, no reference a rename would break. It cost them a failed deploy on 2026-09-10, when S3c's
+  `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
+  sites in one workflow, and executes them. So every merge to main is an immediate release to their
+  runners, with nothing in our tree that says so: no import to grep, no test that fails, no
+  reference a rename would break. It cost them a failed deploy on 2026-09-10, when S3c's
   `--client diya-gl` was on our batch branch and their runner was still fetching main's older
-  `app|books|both` validation. S3c had a dual window for that flag precisely because we knew about
-  the caller — but we knew it from a conversation, not from the code, which is the part that does
-  not survive a session. Settle it: pin their fetch to a tag or commit, publish the two scripts
-  properly, or keep the raw fetch and record the contract in both repositories so a change has
-  something to trip over. Pinning puts the upgrade under their control rather than making our merge
-  their deploy, which is the shape to prefer, but it is a decision for both repositories.
-  **Source**: the spreadsheets repository's failed deploy, 2026-09-10. **Owner**: Claude Code to
-  propose, both repositories to agree. **Model**: Sonnet.
-- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
-  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
-  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
-  accounts filing and a fresh one for ITSA (business details through the quarterly update),
-  both against a ci set since neither activity goes to prod, each described on screen and in
-  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
-  Code. **Model**: Sonnet.
-- [ ] **B11.T11 to T14. ITSA phase 2: UK property.** `PLAN_ITSA_PHASE_2.md`'s four property
-  tracks: the period summary's four handlers, the annual submission, the adjustable summary, and
-  the property pages with the business picker. Each copies its self-employment twin and differs
-  only in the path, the body field names and the scenario set, all of which the plan lists. The
-  ten endpoint tracks share a spine of files (`SubmitSharedNames.java`, `SubmitApplication.java`,
-  `DataStack.java`, `HmrcStack.java`, their two tests, `app/bin/server.js`,
-  `app/http-simulator/server.js`, `cdk.json` and the `.env.*` files), so they hold it one at a
-  time, each rebasing on the previous merge. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T14.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T15 to T19. ITSA phase 2: the mixed year and the cumulative period summaries.**
-  `PLAN_ITSA_PHASE_2.md` T15 (the business picker and the mixed-customer year end), T16 (the tax
-  year model and the shared validator, Haiku), T17 and T18 (the self-employment and UK property
-  cumulative period summaries, which is what 2025-26 onwards actually files) and T19 (the
-  cumulative pages). Same shared spine and the same one-at-a-time rule as T11 to T14.
-  **Source**: `PLAN_ITSA_PHASE_2.md` T15 to T19. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T21 and T22. ITSA phase 2: losses, claims and tax liability adjustments.** The
-  Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 endpoints, then their two
-  pages. The operator decided on 2026-09-09 to build these rather than declare the product does
-  not offer those journeys, and B11.T10's recognition pack answers for all nine APIs on the back
-  of them. A sole trader making a loss is the ordinary first year of trading, so Individual
-  Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
-  write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
-  Claude Code. **Model**: Sonnet.
-- [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
-  in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
-  and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
-  16, which is the proof the issue was waiting for. Run the drill against the prod vault, record
-  what it restored and how long it took, and either close #11 on that evidence or say in the issue
-  what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
-  Sonnet.
-- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
-  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
-  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
-  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
-  The spreadsheets NM-5 is blocked on this reaching prod. Watch for the shape their NM-4 hit:
-  growing the closure can make a module reachable from the browser bundle, where work done at
-  module scope runs where it never ran before. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
-  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
-  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
-  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
-  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
-  first and stop if either holds an object, in which case S3a's copy sequence applies.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
-  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
-  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
-  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
-  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
-  to its own legitimate committers. The submit session does not edit sibling repositories, so
-  spreadsheets takes its own copy through its board and the other three need a session or the
-  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
-  **Model**: Haiku per repository.
+  `app|books|both` validation. S3c gave that flag a dual window precisely because we knew about the
+  caller — from a conversation, which is the part that does not survive a session.
+  **Decided 2026-09-10**, their operator having handed the choice here: they pin their fetch to a
+  commit, which is the only option either repository can take alone and puts the upgrade under the
+  side that suffers the breakage. This row is our half. Put a comment at the top of both files
+  saying another repository fetches it from our main and executes it, that changing its arguments or
+  its output shape breaks a consumer with no import to grep, and where to look before touching it.
+  A pin goes stale silently, so the mitigation is a line from us whenever one of these lands on
+  main; that makes our line load-bearing rather than courteous. **Source**: the spreadsheets
+  repository's failed deploy, 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B91. `video-capture.yml` has B90's bug and was outside its file list.** Its concurrency
   group is keyed on the ref, it takes an `environment-name` input that can target prod from any
   branch, and it toggles the same Cognito native-auth flag `deploy.yml` and `deploy-app.yml` touch.
