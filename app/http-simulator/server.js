@@ -19,6 +19,9 @@ import { apiEndpoint as itsaSelfEmploymentPeriodEndpoint } from "./routes/itsa-s
 import { apiEndpoint as itsaSelfEmploymentPeriodsEndpoint } from "./routes/itsa-self-employment-periods.js";
 import { apiEndpoint as itsaSelfEmploymentPeriodDetailEndpoint } from "./routes/itsa-self-employment-period-detail.js";
 import { apiEndpoint as itsaSelfEmploymentAnnualEndpoint } from "./routes/itsa-self-employment-annual.js";
+import { apiEndpoint as itsaUkPropertyPeriodEndpoint } from "./routes/itsa-uk-property-period.js";
+import { apiEndpoint as itsaUkPropertyPeriodDetailEndpoint } from "./routes/itsa-uk-property-period-detail.js";
+import { apiEndpoint as itsaUkPropertyPeriodsEndpoint } from "./routes/itsa-uk-property-periods.js";
 import { apiEndpoint as itsaCrystallisationObligationsEndpoint } from "./routes/itsa-crystallisation-obligations.js";
 import { apiEndpoint as itsaStatusEndpoint } from "./routes/itsa-status.js";
 import { apiEndpoint as itsaBsasEndpoint } from "./routes/itsa-bsas.js";
@@ -80,6 +83,9 @@ export function createApp() {
   itsaSelfEmploymentPeriodsEndpoint(app);
   itsaSelfEmploymentPeriodDetailEndpoint(app);
   itsaSelfEmploymentAnnualEndpoint(app);
+  itsaUkPropertyPeriodEndpoint(app);
+  itsaUkPropertyPeriodDetailEndpoint(app);
+  itsaUkPropertyPeriodsEndpoint(app);
   itsaCrystallisationObligationsEndpoint(app);
   itsaStatusEndpoint(app);
   itsaBsasEndpoint(app);

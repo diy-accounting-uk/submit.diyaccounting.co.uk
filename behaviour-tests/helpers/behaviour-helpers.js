@@ -152,6 +152,18 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaSelfEmploymentPeriodPutAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPutAsyncTable, endpoint);
 
+    const hmrcItsaUkPropertyPeriodPostAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPostAsyncTable, endpoint);
+
+    const hmrcItsaUkPropertyPeriodsGetAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_PERIODS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodsGetAsyncTable, endpoint);
+
+    const hmrcItsaUkPropertyPeriodGetAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodGetAsyncTable, endpoint);
+
+    const hmrcItsaUkPropertyPeriodPutAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodPutAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPutAsyncTable, endpoint);
+
     const hmrcItsaSelfEmploymentAnnualGetAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaSelfEmploymentAnnualGetAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualGetAsyncTable, endpoint);

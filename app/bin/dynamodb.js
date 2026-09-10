@@ -409,6 +409,36 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName =
+      process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_PERIODS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

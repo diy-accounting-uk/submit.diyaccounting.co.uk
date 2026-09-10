@@ -93,6 +93,10 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName;
+    public String hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName;
+    public String hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName;
+    public String hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName;
+    public String hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName;
     public String hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName;
     public String hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName;
@@ -443,6 +447,66 @@ public class SubmitSharedNames {
     public String hmrcItsaSelfEmploymentPeriodPutLambdaUrlPath;
     public boolean hmrcItsaSelfEmploymentPeriodPutLambdaJwtAuthorizer;
     public boolean hmrcItsaSelfEmploymentPeriodPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaUkPropertyPeriodPostIngestLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodPostIngestLambdaArn;
+    public String hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodPostWorkerLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodPostWorkerLambdaArn;
+    public String hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodPostLambdaQueueName;
+    public String hmrcItsaUkPropertyPeriodPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaUkPropertyPeriodPostLambdaHttpMethod;
+    public String hmrcItsaUkPropertyPeriodPostLambdaUrlPath;
+    public boolean hmrcItsaUkPropertyPeriodPostLambdaJwtAuthorizer;
+    public boolean hmrcItsaUkPropertyPeriodPostLambdaCustomAuthorizer;
+
+    public String hmrcItsaUkPropertyPeriodsGetIngestLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodsGetIngestLambdaArn;
+    public String hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodsGetWorkerLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodsGetWorkerLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn;
+    public String hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodsGetLambdaQueueName;
+    public String hmrcItsaUkPropertyPeriodsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaUkPropertyPeriodsGetLambdaHttpMethod;
+    public String hmrcItsaUkPropertyPeriodsGetLambdaUrlPath;
+    public boolean hmrcItsaUkPropertyPeriodsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaUkPropertyPeriodsGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaUkPropertyPeriodGetIngestLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodGetIngestLambdaArn;
+    public String hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodGetWorkerLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodGetWorkerLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodGetWorkerLambdaArn;
+    public String hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodGetLambdaQueueName;
+    public String hmrcItsaUkPropertyPeriodGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaUkPropertyPeriodGetLambdaHttpMethod;
+    public String hmrcItsaUkPropertyPeriodGetLambdaUrlPath;
+    public boolean hmrcItsaUkPropertyPeriodGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaUkPropertyPeriodGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaUkPropertyPeriodPutIngestLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodPutIngestLambdaArn;
+    public String hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodPutWorkerLambdaHandler;
+    public String hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName;
+    public String hmrcItsaUkPropertyPeriodPutWorkerLambdaArn;
+    public String hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaUkPropertyPeriodPutLambdaQueueName;
+    public String hmrcItsaUkPropertyPeriodPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaUkPropertyPeriodPutLambdaHttpMethod;
+    public String hmrcItsaUkPropertyPeriodPutLambdaUrlPath;
+    public boolean hmrcItsaUkPropertyPeriodPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaUkPropertyPeriodPutLambdaCustomAuthorizer;
 
     public String hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler;
     public String hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName;
@@ -1081,6 +1145,14 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-self-employment-period-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-period-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName =
+                "%s-hmrc-itsa-uk-property-period-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-uk-property-periods-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-uk-property-period-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-uk-property-period-put-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName =
                 "%s-hmrc-itsa-self-employment-annual-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName =
@@ -1900,6 +1972,194 @@ public class SubmitSharedNames {
                         new ApiParameter("periodExpenses", "body", false, "Expenses for the period"),
                         new ApiParameter(
                                 "periodDisallowableExpenses", "body", false, "Disallowable expenses for the period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaUkPropertyPeriodPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaUkPropertyPeriodPostLambdaUrlPath = "/api/v1/hmrc/itsa/uk-property/period";
+        this.hmrcItsaUkPropertyPeriodPostLambdaJwtAuthorizer = false;
+        this.hmrcItsaUkPropertyPeriodPostLambdaCustomAuthorizer = true;
+        var hmrcItsaUkPropertyPeriodPostLambdaHandlerName = "hmrcItsaUkPropertyPeriodPost.ingestHandler";
+        var hmrcItsaUkPropertyPeriodPostLambdaWorkerHandlerName = "hmrcItsaUkPropertyPeriodPost.workerHandler";
+        var hmrcItsaUkPropertyPeriodPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaUkPropertyPeriodPostLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaUkPropertyPeriodPostLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPostLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodPostLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodPostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPostLambdaWorkerHandlerName);
+        this.hmrcItsaUkPropertyPeriodPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn);
+        this.hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaUkPropertyPeriodPostLambdaHttpMethod,
+                this.hmrcItsaUkPropertyPeriodPostLambdaUrlPath,
+                "File an ITSA UK property quarterly update",
+                "Creates a UK property period summary with HMRC for the given business, tax year and period",
+                "postItsaUkPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("fromDate", "body", true, "Start of the period, format YYYY-MM-DD"),
+                        new ApiParameter("toDate", "body", true, "End of the period, format YYYY-MM-DD"),
+                        new ApiParameter("ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
+                        new ApiParameter("ukNonFhlProperty", "body", false, "Non-FHL property income and expenses"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaUkPropertyPeriodsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaUkPropertyPeriodsGetLambdaUrlPath = "/api/v1/hmrc/itsa/uk-property/periods";
+        this.hmrcItsaUkPropertyPeriodsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaUkPropertyPeriodsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaUkPropertyPeriodsGetLambdaHandlerName = "hmrcItsaUkPropertyPeriodsGet.ingestHandler";
+        var hmrcItsaUkPropertyPeriodsGetLambdaWorkerHandlerName = "hmrcItsaUkPropertyPeriodsGet.workerHandler";
+        var hmrcItsaUkPropertyPeriodsGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaUkPropertyPeriodsGetLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaUkPropertyPeriodsGetLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodsGetLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodsGetLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodsGetLambdaWorkerHandlerName);
+        this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn);
+        this.hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaUkPropertyPeriodsGetLambdaHttpMethod,
+                this.hmrcItsaUkPropertyPeriodsGetLambdaUrlPath,
+                "List ITSA UK property period summaries",
+                "Lists the period summaries filed for a UK property business in a tax year, on HMRC's untyped list path",
+                "getItsaUkPropertyPeriods",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaUkPropertyPeriodGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaUkPropertyPeriodGetLambdaUrlPath = "/api/v1/hmrc/itsa/uk-property/period";
+        this.hmrcItsaUkPropertyPeriodGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaUkPropertyPeriodGetLambdaCustomAuthorizer = true;
+        var hmrcItsaUkPropertyPeriodGetLambdaHandlerName = "hmrcItsaUkPropertyPeriodGet.ingestHandler";
+        var hmrcItsaUkPropertyPeriodGetLambdaWorkerHandlerName = "hmrcItsaUkPropertyPeriodGet.workerHandler";
+        var hmrcItsaUkPropertyPeriodGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaUkPropertyPeriodGetLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaUkPropertyPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodGetLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodGetLambdaWorkerHandlerName);
+        this.hmrcItsaUkPropertyPeriodGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn);
+        this.hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaUkPropertyPeriodGetLambdaHttpMethod,
+                this.hmrcItsaUkPropertyPeriodGetLambdaUrlPath,
+                "Retrieve an ITSA UK property period summary",
+                "Retrieves one UK property period summary by tax year and submission id",
+                "getItsaUkPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("submissionId", "query", true, "The submission id from a listed period summary"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaUkPropertyPeriodPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaUkPropertyPeriodPutLambdaUrlPath = "/api/v1/hmrc/itsa/uk-property/period";
+        this.hmrcItsaUkPropertyPeriodPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaUkPropertyPeriodPutLambdaCustomAuthorizer = true;
+        var hmrcItsaUkPropertyPeriodPutLambdaHandlerName = "hmrcItsaUkPropertyPeriodPut.ingestHandler";
+        var hmrcItsaUkPropertyPeriodPutLambdaWorkerHandlerName = "hmrcItsaUkPropertyPeriodPut.workerHandler";
+        var hmrcItsaUkPropertyPeriodPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaUkPropertyPeriodPutLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaUkPropertyPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPutLambdaHandlerName);
+        this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodPutWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPutLambdaWorkerHandlerName);
+        this.hmrcItsaUkPropertyPeriodPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn);
+        this.hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaUkPropertyPeriodPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaUkPropertyPeriodPutLambdaHttpMethod,
+                this.hmrcItsaUkPropertyPeriodPutLambdaUrlPath,
+                "Amend an ITSA UK property period summary",
+                "Amends the income and expenses of an existing UK property period summary",
+                "putItsaUkPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("submissionId", "body", true, "The submission id from a listed period summary"),
+                        new ApiParameter("ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
+                        new ApiParameter("ukNonFhlProperty", "body", false, "Non-FHL property income and expenses"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

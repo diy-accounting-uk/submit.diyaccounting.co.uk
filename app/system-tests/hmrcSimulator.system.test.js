@@ -432,6 +432,102 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA UK Property Period", () => {
+    const validBody = () => ({
+      fromDate: "2024-04-06",
+      toDate: "2024-07-05",
+      ukNonFhlProperty: {
+        income: { periodAmount: 1000, otherIncome: 0 },
+        expenses: { repairsAndMaintenance: 100 },
+      },
+    });
+
+    it("should create a period summary for a valid request", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.6.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.submissionId).toBe("2024-04-06_2024-07-05");
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/invalid-nino/XAIS12345678910/period/2024-25`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 when neither ukFhlProperty nor ukNonFhlProperty is present", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromDate: "2024-04-06", toDate: "2024-07-05" }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for OVERLAPPING", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "OVERLAPPING" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_OVERLAPPING_PERIOD");
+    });
+
+    it("should retrieve a period summary when a scenario is given", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25/2024-04-06_2024-07-05`,
+        { headers: { "Gov-Test-Scenario": "UK_PROPERTY" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.ukNonFhlProperty).toBeDefined();
+    });
+
+    it("should default the retrieve to not-found when no scenario is given, matching the adjustable summary's retrieve", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25/2024-04-06_2024-07-05`,
+      );
+      expect(response.status).toBe(404);
+    });
+
+    it("should amend a period summary and answer 204 with no body", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/period/2024-25/2024-04-06_2024-07-05`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ukNonFhlProperty: { income: { periodAmount: 1200 } } }),
+        },
+      );
+      expect(response.status).toBe(204);
+    });
+
+    it("should list period summaries on the untyped property path", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/AB123456C/XAIS12345678910/period/2024-25`);
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(Array.isArray(data.periods)).toBe(true);
+    });
+  });
+
   describe("ITSA Self-Employment Annual", () => {
     const validBody = () => ({
       adjustments: { includedNonTaxableProfits: 200 },
