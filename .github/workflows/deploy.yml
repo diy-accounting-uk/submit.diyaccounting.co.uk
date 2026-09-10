@@ -387,6 +387,10 @@ jobs:
           SELF_DESTRUCT_START_DATETIME=$(date -u -d "$ANCHOR_DATETIME + ${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
           echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
+          # Carried as an output because a reusable workflow's `with:` block cannot read the
+          # `env` context, only github/inputs/matrix/needs/strategy/vars. A step's `run:` can,
+          # so the delay travels out of here alongside the start time it was used to compute.
+          echo "SELF_DESTRUCT_DELAY_HOURS=${{ env.SELF_DESTRUCT_DELAY_HOURS }}" >> $GITHUB_OUTPUT
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -401,6 +405,7 @@ jobs:
       cognito-client-id: ${{ steps.lookup-cognito.outputs.cognito-client-id }}
       cognito-diya-gl-client-id: ${{ steps.lookup-cognito.outputs.cognito-diya-gl-client-id }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
+      self-destruct-delay-hours: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_DELAY_HOURS }}
 
   test:
     name: 'delegate to test workflow'
@@ -1027,7 +1032,7 @@ jobs:
       cdk-application: 'application'
       lookup-cognito: 'true'
       self-destruct-start-datetime: ${{ needs.names.outputs.self-destruct-start-datetime }}
-      self-destruct-delay-hours: ${{ env.SELF_DESTRUCT_DELAY_HOURS }}
+      self-destruct-delay-hours: ${{ needs.names.outputs.self-destruct-delay-hours }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
