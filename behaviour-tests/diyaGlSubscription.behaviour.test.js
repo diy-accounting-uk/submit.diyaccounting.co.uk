@@ -34,7 +34,7 @@ import {
 dotenvConfigIfNotBlank({ path: ".env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../fixtures/books/diya-gl-example.zip")).toString("base64");
+const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../fixtures/diya-gl/diya-gl-example.zip")).toString("base64");
 
 const screenshotPath = "target/behaviour-test-results/screenshots/diya-gl-subscription-behaviour-test";
 
