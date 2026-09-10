@@ -1,0 +1,152 @@
+---
+name: watch
+description: Watch this repository's GitHub CI until everything in scope is green, and fix what goes red. Scope is main plus every open PR's head branch, re-read each cycle. Invoke when the operator says "watch the builds", "keep it green", or hands over a branch to get through CI.
+---
+
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
+# watch
+
+Watch every branch in scope, fix what fails, and stop only when the whole scope is green.
+The loop ends on evidence, never on elapsed time or on a check summary.
+
+## Scope
+
+**main, plus the head branch of every open pull request.** Re-read the list every cycle:
+
+```bash
+{ echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName'; } | sort -u
+```
+
+A PR merging or opening changes the scope, and picking that up is the skill's job, not the
+operator's. When a PR merges, its branch leaves scope and main's runs become the priority.
+
+## The monitor
+
+One background monitor, polling every 60-90s, emitting one line per newly finished run.
+
+- **Report every terminal state**: success, failure, cancelled, timed out, skipped. A monitor
+  that greps only for failure is silent when a run is cancelled, and silence is
+  indistinguishable from still running.
+- **Seed silently.** On the first pass, record what has already finished without emitting it,
+  so the monitor reports changes rather than history.
+- **Poll the API for state, never grep a log for a word.** `status == "completed"` with its
+  `conclusion` is the fact; a log line saying "passed" is not.
+- Keep the seen-set bounded, and let a failed `gh` call skip the cycle rather than kill the loop.
+
+## Reading a run
+
+Never report a run's state from memory, from a previous cycle, or from `gh pr checks`. Open it.
+If something you reported turns out to be stale, say so in the same breath as the correction
+rather than carrying it forward.
+
+**Which jobs failed:**
+```bash
+gh run view <run-id> --json headSha,jobs --jq '{sha:.headSha[0:8],failed:[.jobs[]|select(.conclusion=="failure")|.name]}'
+```
+
+**Which step inside the job failed** — often enough on its own, and far cheaper than a log:
+```bash
+gh run view <run-id> --json jobs \
+  --jq '.jobs[]|select(.conclusion=="failure")|.steps[]|select(.conclusion=="failure")|[.number,.name]|@tsv'
+```
+
+**The actual log.** `gh run view --log-failed` frequently returns nothing useful for a job whose
+failure is buried in a step's output. Fetch the job log directly and strip the ANSI codes:
+```bash
+gh api "repos/<owner>/<repo>/actions/jobs/<job-id>/logs" --allow-escape-sequences \
+  | sed 's/\x1b\[[0-9;]*m//g' | tee /tmp/job.log | grep -iE "error|fail|✘" | tail -20
+```
+Tee before filtering, always: the part you need is often not the part you grepped for.
+
+## Three things that are not failures
+
+Diagnose these before treating a red or a missing run as a defect.
+
+- **A cancelled run is usually a supersession.** With a concurrency group, a newer run
+  cancels or displaces an older one. Check whether a later run exists for the same group
+  before calling it a failure.
+- **A commit can legitimately trigger nothing.** Workflows have `paths:` filters. A docs-only
+  commit that starts no run is correct behaviour, not a stuck queue. Read the filter before
+  concluding a run is missing — and if a change genuinely should have triggered a workflow
+  and did not, the filter is the bug (a test that cannot trigger the run that proves it is
+  worse than a failing test).
+- **A pending run can be dropped.** With `cancel-in-progress: false`, GitHub keeps one run
+  queued per group and cancels the older pending one when a third arrives. Two active branches
+  sharing one environment means the last to push owns the slot, and the other's deploy silently
+  never happens. "No run for this commit" is a distinct state from "run failed".
+- **Unique stacks do not mean no contention.** A workflow that builds per-deployment stacks whose
+  names carry the commit will never collide on the stacks themselves, while the same run writes a
+  last-known-good parameter, sets origins and toggles a shared client. Those are environment-wide.
+  A race there does not announce itself with a CloudFormation refusal; it leaves the wrong value
+  behind. Key a deploy's concurrency on what it actually mutates.
+
+## On failure
+
+**Gather the whole run's failures before fixing anything.** One run's worth, diagnosed together,
+fixed together, pushed once. A workflow costs minutes per cycle; three separate pushes to fix
+three failures from the same run wastes two of them.
+
+Fix on a branch, push, keep watching.
+
+**Name the layer you fixed, not the symptom you saw.** If a case fails at step 7 and the fix
+takes it to step 10, the fix worked and a second layer was behind it. Called "the cloud case
+fix", the next failure reads as a fix that did not work; called "the panel-reopen fix", it reads
+as progress. This matters most for a path that has never executed: everything after the first
+blocking failure is unwritten ground, and walking it one layer per CI cycle is the slow way.
+When a whole tail is unproven, read it against the code in one pass instead.
+
+**Fix the right layer.** If a test asserts something the product genuinely does wrong, fix the
+product. A test taught to work around a defect hides it from every user. Say plainly which you
+chose and why.
+
+**Check what changed underneath you.** A run can fail because something outside the repository
+moved — another repository's `main` that a workflow fetches at run time, a live endpoint a gate
+probes, an upstream action. Fetch the live artifact and look, rather than assuming the repository
+is the only variable.
+
+## Push discipline
+
+**Never push to a branch while any of that branch's deploy runs are in flight.** This repository
+has more than one — check each of them, not just the one you were watching. Gather fixes locally
+and push once after they finish. Confirm they finished by reading the runs, not by assuming
+elapsed time:
+
+```bash
+for w in $(gh workflow list --limit 30 --json name --jq '.[].name' | grep -i deploy); do
+  gh run list --branch <branch> --workflow "$w" --limit 1 --json status,conclusion,headSha
+done
+```
+
+A cancelled deploy mid-change can leave infrastructure part-applied, which costs far more than
+the wait.
+
+## Stop condition
+
+All of these at once, each verified by reading:
+
+1. Every open PR's required checks pass.
+2. main's workflows are green on its latest commit **that runs them**.
+3. No run is queued or in progress on any branch in scope.
+
+Anything less is not done. A green PR whose deploy has not started is not done.
+
+Two honest qualifications on (2), which the naive form gets wrong:
+
+- **Enumerate this repository's actual workflows** rather than assuming a set. `gh workflow list`
+  tells you. Do not report on a workflow that does not exist here, and do not miss one that does.
+- **The latest commit may run nothing** (a docs-only push under a `paths:` filter). Judge against
+  the latest commit that triggers the workflows, and say which commit that is, rather than
+  claiming green on a commit nothing ran against.
+
+If blocked — an expired SSO session, a permission, something only the operator can do — say so in
+one line, name exactly what is needed, show the whole command if there is one, and **keep
+monitoring everything else**. A block on one branch does not stop the loop.
+
+## Reporting
+
+One short status per cycle, and only when something changed state. Do not narrate unchanged runs.
+
+Say the moment something goes red, naming the failing job. Push a notification for a red on main
+or a scope-wide green, not for routine progress.

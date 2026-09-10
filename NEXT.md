@@ -31,26 +31,28 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 17 on `claude/b17-board`, PR #169.** Pushed at 5649f2fb with twelve items; its checks are
-running. The integration branch has its own worktree at `.claude/worktrees/b17`; every sub-agent
-worktree branches from `claude/b17-board`, not from `main`, and `NEXT.md` deliberately does not
-travel on the batch, because the board is maintained here on `main` under the docs exception and a
-second copy conflicts at merge.
+**Batch 18 on `claude/b18-board`, PR #175.** Ten items, pushed once main's prod deploy of batch 17
+finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified before pushing:
+`./mvnw clean verify` green over the combined tree, `npm test` 2770 passing across 225 files,
+`npm run lint:workflows` clean across 38 workflows.
 
-On the branch and off this list when its checks pass: B84, B83, B30t, B76, B77, B79, B80's submit
-half, B81's report, B82, B85, B88, B11.T20, and the DIYA-GL callback fix.
+On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
+B89, B90, B11.T23, and B87's labels and CODEOWNERS.
 
-The first deploy of this branch failed at `diyaGlSubscriptionBehaviour-ci`, on the run and the
-retry. Not a regression: the spreadsheets site moved its DIYA-GL pages from `/books/` to
-`/diya-gl/` and left a 301 behind, and our OAuth redirect URI held the old path as a literal
-string, so the test's exact-prefix `waitForURL` never matched. A redirect is transparent to a
-browser and opaque to a prefix matcher, which is the same shape B71.S3d points the other way when
-our API prefix moves. The fix is on the branch.
+The integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
+branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
+the board is maintained here on `main` under the docs exception and a second copy conflicts at
+merge.
 
-Wave 2 branches off `claude/b17-board` once this PR is stable: the DIYA-GL deployed-identifier
-chain (B71.S3b to S3e, serialized in one worktree, since they share `EdgeStack`, `ApiStack`,
-`SubmitApplication` and `cdk.json`) and the ITSA property tracks (B11.T11 to T14) on their shared
-spine.
+`PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
+previous merge. S3d is next and it is the row a sibling repository's pages hold live: their
+`cloud.js` keeps the literal `/api/v1/books` paths and their service worker precaches them, so a
+redirect reaches a cached client as a changed URL rather than a followed one. It gets its window
+sent explicitly when it is on main, not when it merges to a batch.
+
+The ITSA property tracks (B11.T11 to T14) start when S3d lands, since the naming chain holds the
+shared spine (`SubmitApplication.java`, `DataStack.java`, `HmrcStack.java`, `cdk.json`) one row at
+a time.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -58,167 +60,67 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B84. Every main deploy fails on the cost export.** `deploy environment from main` run
-  34414615591 failed at `cost-CostExportStack`: `AWS::BCMDataExports::Export` answered 400,
-  "the columns in the query provided are not a subset of the table FOCUS_1_2_AWS", and the stack
-  rolled back. `FOCUS_1_2_COLUMNS` was written in Glue's snake_case; the live schema
-  (`aws bcm-data-exports get-table --table-name FOCUS_1_2_AWS`) names all 60 columns in
-  PascalCase, with only the three AWS extension columns keeping a lowercase `x_` prefix. Glue and
-  the Athena views over `cost_focus` want the snake_case spellings, so the fix derives one from
-  the other rather than pairing two lists. The fix is committed on the local branch
-  `claude/cost-focus-columns` at `4c74a0b2` and has never been pushed: push it, open the PR, and
-  read the next environment deploy to confirm the export creates. Until it does, prod has no
-  FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
-  Claude Code. **Model**: Haiku.
-- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
-  that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
-  check. The cause was that the `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN`
-  nor `SUBMIT_DEPLOY_ROLE_ARN`, so `role-to-assume` resolved to an empty string. The job installs
-  uv and nothing else, so it needs no AWS credentials at all: the fix removes both configure steps,
-  and is committed on the local branch `claude/ops-copilot-setup` at `d158cb45`, never pushed.
-  Push it and open the PR. It also leaves the two role ARNs unused on the `copilot` environment,
-  where they would hand an unattended agent the ci deployment role, so ask the operator to clear
-  them once the PR merges. `security-review.yml` assigns an OWASP issue to GitHub's Copilot coding
-  agent with its weekly cron commented out; decide whether either stays in the same pass.
-  **Source**: runs on `main` and `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**:
-  Haiku.
-- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
-  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
-  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
-  accounts filing and a fresh one for ITSA (business details through the quarterly update),
-  both against a ci set since neither activity goes to prod, each described on screen and in
-  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
-  Code. **Model**: Sonnet.
-- [ ] **B11.T11 to T14. ITSA phase 2: UK property.** `PLAN_ITSA_PHASE_2.md`'s four property
-  tracks: the period summary's four handlers, the annual submission, the adjustable summary, and
-  the property pages with the business picker. Each copies its self-employment twin and differs
-  only in the path, the body field names and the scenario set, all of which the plan lists. The
-  ten endpoint tracks share a spine of files (`SubmitSharedNames.java`, `SubmitApplication.java`,
-  `DataStack.java`, `HmrcStack.java`, their two tests, `app/bin/server.js`,
-  `app/http-simulator/server.js`, `cdk.json` and the `.env.*` files), so they hold it one at a
-  time, each rebasing on the previous merge. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T14.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T15 to T19. ITSA phase 2: the mixed year and the cumulative period summaries.**
-  `PLAN_ITSA_PHASE_2.md` T15 (the business picker and the mixed-customer year end), T16 (the tax
-  year model and the shared validator, Haiku), T17 and T18 (the self-employment and UK property
-  cumulative period summaries, which is what 2025-26 onwards actually files) and T19 (the
-  cumulative pages). Same shared spine and the same one-at-a-time rule as T11 to T14.
-  **Source**: `PLAN_ITSA_PHASE_2.md` T15 to T19. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T21 and T22. ITSA phase 2: losses, claims and tax liability adjustments.** The
-  Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 endpoints, then their two
-  pages. The operator decided on 2026-09-09 to build these rather than declare the product does
-  not offer those journeys, and B11.T10's recognition pack answers for all nine APIs on the back
-  of them. A sole trader making a loss is the ordinary first year of trading, so Individual
-  Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
-  write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
-  Claude Code. **Model**: Sonnet.
-- [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
-  in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
-  and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
-  16, which is the proof the issue was waiting for. Run the drill against the prod vault, record
-  what it restored and how long it took, and either close #11 on that evidence or say in the issue
-  what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
-  Sonnet.
-- [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
-  `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
-  `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
-  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
-  headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
-  S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
-  through one deploy of main. It also carries the four `app/functions/books/` modules and
-  their unit tests, whose basenames are the deployed Lambda names. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
-  `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
-  to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
-  S3a sets so the spreadsheets side switches before the old name goes. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. The
-  spreadsheets side switches after ours, so nothing gates this.
-- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
-  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
-  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
-  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
-  The spreadsheets NM-5 is blocked on this reaching prod. Watch for the shape their NM-4 hit:
-  growing the closure can make a module reachable from the browser bundle, where work done at
-  module scope runs where it never ran before. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
-  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
-  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
-  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
-  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
-  first and stop if either holds an object, in which case S3a's copy sequence applies.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
-  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
-  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
-  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
-  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
-  to its own legitimate committers. The submit session does not edit sibling repositories, so
-  spreadsheets takes its own copy through its board and the other three need a session or the
-  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
-  **Model**: Haiku per repository.
-- [ ] **B86. The main API stamps `access-control-allow-origin: *` on every response.**
-  `EdgeStack.java`'s `webResponseHeadersPolicy` sets it with `override(true)` on the whole
-  `/api/v1/*` CloudFront behaviour, so it lands on every response whatever API Gateway or the
-  Lambda underneath returned. That is why the authoriser's 401 was only visible on the DIYA-GL
-  routes: those deliberately opted out of the stamp to keep a strict origin allow list and expose
-  `ETag`. A wildcard is not credential-bearing, and these routes carry a bearer token rather than
-  a cookie, so this is not the same defect B76 fixed. It is still a decision nobody has made on
-  purpose: any origin can read a main-API response from a browser holding a token. Settle whether
-  the main API gets the same allow list the storage routes use, or whether the wildcard is the
-  intended answer for a public API, and write down which. Found while fixing B76. **Source**:
-  B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B87. The identity audit's code recommendations, 5, 6, 7 and 10.**
-  `REPORT_IDENTITY_AUDIT.md` section 8 ranks twelve. Numbers 4 and 9 landed in batch 17, 1 is O37,
-  8 is BACKLOG 53, and 2, 3 and 12 need the operator (O38). These four are code and need nobody's
-  permission: standardise the co-author trailer to one canonical form across all six `CLAUDE.md`
-  files, which is what removes `_developers/archive/PLAN_FLAGGED.md`'s signal 8 and stops fourteen
-  forms becoming twenty; create the five `origin:*` labels and apply them from the creating path;
-  build the alarm-origin verifier, which re-reads `describe-alarm-history` for the name and window
-  an issue body claims and is the strongest proof in the whole design; and add CODEOWNERS and a PR
-  template carrying `Closes #N` and an origin line. The verifier is the one with real value, so it
-  goes first and can ship without the other three. The trailer edit reaches five sibling
-  repositories, so it follows B80b's routing rather than being done from here. **Source**:
-  `REPORT_IDENTITY_AUDIT.md` section 8. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B78b. Finish the Bedrock triage path.** `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md` compares
-  four options and recommends this one: of the four causes in the failure history, the use-case
-  form is filed, prod's Marketplace entitlement now reads authorized, and the twelve-turn cutoff is
-  raised, which leaves one invalid CLI flag — `--permission-mode dontAsk` is not a value
-  claude-code 2.0.30 accepts. The plan's execution steps are in its last section. Two things it
-  found that matter as much as the flag: both `Run triage` and `Filter the output` pipe through
-  `tee`, which merges stderr into the next step's input and hands the pipeline `tee`'s exit code,
-  so `redact-triage-output.mjs`'s non-zero exits are thrown away and its error text gets posted as
-  the triage; and ci's Marketplace entitlement is still `NOT_AVAILABLE`, which is 21 of the 55
-  issues. The measured cost is $0.08 to $0.35 a triage, so $17 to $73 a month at 209 alarm issues a
-  month — `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` section 6.3 assumed $1.05 a run, 3 to 13 times high.
-  The proof is one live prod alarm on a current deployment triaged end to end, not a green badge:
-  prod log groups keep three days and a retired deployment's groups are deleted outright, so a
-  dispatch against an old issue reads an empty window and answers confidently about nothing.
-  B88 fixed the spend guard, so the budget's deny action can see the spend this would create. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
-  **Owner**: Claude Code, Operator to check the first triage. **Model**: Sonnet.
-- [ ] **B11.T23. The catalogue cannot say which ITSA writes are free.** `submit.catalogue.toml`
-  carries one flat `self-employed` activity, `tokenCost = 1`, `metered = true`, covering all ten
-  ITSA paths including the free ones — the annual submission, the adjustments, and the losses and
-  tax liability adjustments that D1 and D8 price at nothing. T20's cost line had to work around it
-  with a `data-metered="false"` attribute on the one page that is free today, which is a fact about
-  pricing living in a page's markup. T14, T19 and T22 each add more pages to that same single
-  activity, so the workaround spreads unless the catalogue learns the distinction first. Give the
-  free ITSA writes their own activity, or give the activity a per-path cost, and delete the
-  attribute. Changing the catalogue also changes what `tokenEnforcement.js` charges, so the server
-  side moves with it. **Source**: B11.T20's build, 2026-09-10; `PLAN_ITSA_PHASE_2.md` D1 and D8.
-  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
+  spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
+  `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
+  sites in one workflow, and executes them. So every merge to main is an immediate release to their
+  runners, with nothing in our tree that says so: no import to grep, no test that fails, no
+  reference a rename would break. It cost them a failed deploy on 2026-09-10, when S3c's
+  `--client diya-gl` was on our batch branch and their runner was still fetching main's older
+  `app|books|both` validation. S3c gave that flag a dual window precisely because we knew about the
+  caller — from a conversation, which is the part that does not survive a session.
+  **Decided 2026-09-10**, their operator having handed the choice here: they pin their fetch to a
+  commit, which is the only option either repository can take alone and puts the upgrade under the
+  side that suffers the breakage. This row is our half. Put a comment at the top of both files
+  saying another repository fetches it from our main and executes it, that changing its arguments or
+  its output shape breaks a consumer with no import to grep, and where to look before touching it.
+  A pin goes stale silently, so the mitigation is a line from us whenever one of these lands on
+  main; that makes our line load-bearing rather than courteous. **Source**: the spreadsheets
+  repository's failed deploy, 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B91. `video-capture.yml` has B90's bug and was outside its file list.** Its concurrency
+  group is keyed on the ref, it takes an `environment-name` input that can target prod from any
+  branch, and it toggles the same Cognito native-auth flag `deploy.yml` and `deploy-app.yml` touch.
+  So a capture run and a deploy can fight over one environment's sign-in configuration, and the
+  loser gets a behaviour failure that looks like a broken test. Key it on what it mutates, the way
+  B90 keyed the other five. **Source**: B90's sweep, 2026-09-10. **Owner**: Claude Code.
+  **Model**: Haiku.
+- [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
+  concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
+  directly as its `destroy-previous` job, so if both resolved to the same group name that call
+  would wait on a slot its own parent run holds — a permanent deadlock. They are on deliberately
+  distinct names as a result, which leaves a `destroy-prod.yml` run started on its own (its
+  schedule, or a dispatch) able to overlap a `deploy.yml` prod run that did not spawn it. The
+  existing `wait-for-ci-deploys` action solves exactly this shape for ci by polling for older
+  unfinished runs rather than using a concurrency group, and its own comment explains why: GitHub
+  keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
+  same mechanism, which is new work rather than another key. **Source**: B90's finding,
+  2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
+- [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
+  through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
+  label does not fail anything — but until they exist with real descriptions and colours they carry
+  no meaning to a reader. The five commands are in B87's report and the classes are
+  `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
   chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
   nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
   our own prod deploys, and B30t stops them doing it again. All three name deployment
   prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
   **Owner**: Operator. **Model**: none.
+- [ ] **O39. Two attribution rules contradict each other; pick one.**
+  `REPORT_IDENTITY_AUDIT.md` recommendation 5 wants one canonical `Co-Authored-By` trailer in all
+  six `CLAUDE.md` files, because fourteen forms in the history is one of the signals behind the May
+  2026 suspension (`_developers/archive/PLAN_FLAGGED.md`). But the trailer is not set by any
+  `CLAUDE.md` today: it arrives per session from the harness, which names the model that did the
+  work and says it replaces any earlier attribution guidance. Every commit in batches 17 and 18
+  carries `Claude Opus 5 (1M context)` for that reason. So the two rules want different things:
+  one form that never varies, against a form that says which model wrote the code. Decide which
+  matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
+  per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
+  finding. **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
