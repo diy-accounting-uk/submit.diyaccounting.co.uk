@@ -168,12 +168,16 @@ public class SecurityLakeTables {
                 catalogId,
                 "sbom_builds",
                 "curated/security/sbom/",
-                "One row per push-to-main build, recording the npm CycloneDX SBOM size (.github/workflows/sbom.yml)",
+                "One row per push-to-main build, recording the npm and Java CycloneDX SBOM sizes (.github/workflows/sbom.yml)",
                 columnsOf(
                         "run_id", "string",
                         "sha", "string",
-                        "component_count", "int",
-                        "sbom_created_at", "string",
+                        "npm_component_count", "int",
+                        "npm_sbom_created_at", "string",
+                        "npm_sbom_key", "string",
+                        "java_component_count", "int",
+                        "java_sbom_created_at", "string",
+                        "java_sbom_key", "string",
                         "checked_at", "string"));
     }
 
