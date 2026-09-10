@@ -176,13 +176,13 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsCarryBothTheNewAndTheLegacyBooksPathForEveryRoute() {
+    void lambdaFunctionPropsCarryBothTheDiyaGlAndTheBooksPathForEveryRoutePermanently() {
         DiyaGlStack stack = synthDiyaGlStack();
 
         assertEquals(
                 8,
                 stack.lambdaFunctionProps.size(),
-                "expected four routes doubled for the /api/v1/books compatibility window");
+                "expected four routes doubled: /api/v1/diya-gl and /api/v1/books are both served permanently");
 
         var urlPaths =
                 stack.lambdaFunctionProps.stream().map(AbstractApiLambdaProps::urlPath).toList();
@@ -193,15 +193,15 @@ class DiyaGlStackTest {
         assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}"));
         assertTrue(urlPaths.contains("/api/v1/books/{bookId}"));
 
-        // Every legacy entry must still resolve to the same underlying Lambda as its new-path
-        // twin, so the window adds routes rather than a second, drifting implementation.
+        // Both entries resolve to the same underlying Lambda, so this is one implementation
+        // published under two permanent routes, not two drifting copies.
         var byFunctionName = stack.lambdaFunctionProps.stream()
                 .collect(java.util.stream.Collectors.groupingBy(AbstractApiLambdaProps::ingestFunctionName));
         for (var entry : byFunctionName.entrySet()) {
             assertEquals(
                     2,
                     entry.getValue().size(),
-                    "expected exactly a new-path and a legacy-path route for " + entry.getKey());
+                    "expected exactly a diya-gl-path and a books-path route for " + entry.getKey());
         }
     }
 

@@ -19,8 +19,8 @@ const logger = createLogger({ source: "app/functions/diyaGl/diyaGlListGet.js" })
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  // Both prefixes serve for the window: the spreadsheets site's cloud.js, including copies held
-  // by installed service workers, keeps calling the old path until its own deploy switches over.
+  // Both prefixes serve permanently: the spreadsheets site's cloud.js, including copies held
+  // by installed service workers, calls the old path and never switches to the new one.
   for (const urlPath of ["/api/v1/diya-gl", "/api/v1/books"]) {
     registerLambdaRoute(app, "get", urlPath, ingestHandler);
     app.options(urlPath, async (httpRequest, httpResponse) => {
