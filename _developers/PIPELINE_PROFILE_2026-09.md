@@ -152,7 +152,7 @@ What is safe: `set-last-known-good-deployment` has `disable-native-auth` in its 
 
 ### Cut 2 — sibling workflow fan-out
 
-`deploy.yml`, `deploy-app.yml`, `destroy-ci.yml` and `video-capture.yml` each keep a per-branch concurrency group, so a re-push of the same branch still supersedes its own older run. Different branches deploying to ci at the same time no longer race each other's shared ci apex, Cognito pool and ECR repo: each of these workflows now waits, at the point it first touches ci, for every other run of the four created before it to finish, via the `wait-for-ci-deploys` composite action. Runs queue in creation order instead of overlapping or dropping an older one. Whether `deploy.yml` and `deploy-environment.yml` still need to serialize against each other is still open.
+`deploy.yml`, `deploy-app.yml`, `destroy-ci.yml` and `video-capture.yml` each keep a per-branch concurrency group, so a re-push of the same branch still supersedes its own older run. Different branches deploying to ci at the same time no longer race each other's shared ci apex, Cognito pool and ECR repo: each of these workflows now waits, at the point it first touches ci, for every other run of the four created before it to finish, via the `wait-for-ci-deploys` composite action. Runs queue in creation order instead of overlapping or dropping an older one. `deploy.yml` also waits on `deploy-environment.yml` for its own resolved environment, via the same action's `environment` match mode, before its `names` job reads anything the environment deploy creates.
 
 ### Cut 3 — deploy-edge → deploy-publish
 

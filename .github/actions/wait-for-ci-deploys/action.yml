@@ -3,21 +3,44 @@
 
 name: 'Wait for ci deploys'
 description: >
-  Waits until every deploy.yml, deploy-app.yml, destroy-ci.yml and video-capture.yml run
-  on a non-main branch that was created before this run has finished, so ci runs queue in
-  creation order instead of overlapping or having an older one dropped by a concurrency group.
+  Waits for other workflow runs that could race this one, polling the GitHub API instead of a
+  concurrency group. Default mode: every deploy.yml, deploy-app.yml, destroy-ci.yml and
+  video-capture.yml run on a non-main branch that was created before this run, so ci runs queue
+  in creation order instead of overlapping or having an older one dropped by a concurrency group.
+  Set match-mode to 'environment' to instead wait for any unfinished run of the named workflow(s)
+  resolved to the same environment as target-environment, regardless of creation order.
 inputs:
   github-token:
     description: 'Token with actions:read, used to list other workflow runs'
     required: true
+  workflows:
+    description: >-
+      Comma-separated workflow filenames to watch. Defaults to the ci branch set
+      (deploy.yml, deploy-app.yml, destroy-ci.yml, video-capture.yml).
+    required: false
+    default: ''
+  match-mode:
+    description: >-
+      'older' (default) waits for older runs of the watched workflows on a non-main branch.
+      'environment' waits for any unfinished run of the watched workflows resolved to
+      target-environment, regardless of which run was created first.
+    required: false
+    default: 'older'
+  target-environment:
+    description: "Environment ('ci' or 'prod') to match against when match-mode is 'environment'."
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
-    - name: Wait for older ci deploy runs to finish
+    - name: Wait for matching runs to finish
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         CURRENT_RUN_ID: ${{ github.run_id }}
+        WAIT_FOR_CI_DEPLOYS_WORKFLOWS: ${{ inputs.workflows }}
+        WAIT_FOR_CI_DEPLOYS_MATCH_MODE: ${{ inputs.match-mode }}
+        WAIT_FOR_CI_DEPLOYS_TARGET_ENVIRONMENT: ${{ inputs.target-environment }}
       # The github.action_path and github.workspace expressions expand to the runner's host
       # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
       # step is the checkout's path wherever the step runs.
