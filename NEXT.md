@@ -42,10 +42,9 @@ Wave 3 runs as concurrent worktree sub-agents:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| Deploy concurrency keyed on the environment | B90 | Sonnet | `.claude/worktrees/w-deployconc` | `claude/b18-deployconc` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f, B71.S3c, B86.
+CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f, B71.S3c, B86, B90.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge. S3c is the row a sibling repository holds live names from — the toggle flag, the
@@ -63,21 +62,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B90. A deploy's concurrency group names the branch, not the environment.** B85 keyed every
-  workflow on `${{ github.ref }}`, which is right for `test` and `codeql`, where two branches' runs
-  are independent, and wrong for a deploy, because every branch deploys the same ci environment.
-  The sibling spreadsheets repository hit it: two branch deploys six seconds apart, different
-  concurrency groups, and CloudFormation answered "Stack ci-spreadsheets-SpreadsheetsStack is in
-  UPDATE_IN_PROGRESS state and can not be updated". All three of ours are keyed the same way and
-  have escaped it only because one batch branch has been running at a time. The group has to name
-  the thing being changed, not the thing changing it. `deploy-environment.yml` is the clear case.
-  `deploy.yml` is subtler: its `{deployment}-app-*` stack names are unique per commit so the stacks
-  do not race, while the same run writes the last-known-good SSM parameter, sets origins and
-  toggles Cognito native auth, which are shared within the environment. The destroy workflows are
-  in scope too, because a destroy racing a deploy is the same bug with worse consequences.
-  `cancel-in-progress` stays `false` everywhere that deploys: queueing strictly reduces
-  cancellation. **Source**: the spreadsheets repository, 2026-09-10. **Owner**: Claude Code.
-  **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -141,6 +125,24 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
+- [ ] **B91. `video-capture.yml` has B90's bug and was outside its file list.** Its concurrency
+  group is keyed on the ref, it takes an `environment-name` input that can target prod from any
+  branch, and it toggles the same Cognito native-auth flag `deploy.yml` and `deploy-app.yml` touch.
+  So a capture run and a deploy can fight over one environment's sign-in configuration, and the
+  loser gets a behaviour failure that looks like a broken test. Key it on what it mutates, the way
+  B90 keyed the other five. **Source**: B90's sweep, 2026-09-10. **Owner**: Claude Code.
+  **Model**: Haiku.
+- [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
+  concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
+  directly as its `destroy-previous` job, so if both resolved to the same group name that call
+  would wait on a slot its own parent run holds — a permanent deadlock. They are on deliberately
+  distinct names as a result, which leaves a `destroy-prod.yml` run started on its own (its
+  schedule, or a dispatch) able to overlap a `deploy.yml` prod run that did not spawn it. The
+  existing `wait-for-ci-deploys` action solves exactly this shape for ci by polling for older
+  unfinished runs rather than using a concurrency group, and its own comment explains why: GitHub
+  keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
+  same mechanism, which is new work rather than another key. **Source**: B90's finding,
+  2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
