@@ -42,11 +42,7 @@ authoriser rejecting a caller on a route that exists. The spreadsheets repositor
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
 
-A worktree agent runs `npm run bundle` before any unit, system or browser suite:
-`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
-it nine tests fail on a missing file that has nothing to do with the change.
-
-## Ready: Claude Code
+Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is these four:
 
 - [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
   run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
@@ -85,6 +81,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `prod-504ec0d`. Neither name has ever had a stack in prod. Both runs passed the refusal, deleted
   nothing and finished green, so the log reads exactly like a destroy that worked. Fix it here:
   after the name is validated, count the stacks it matches and fail when the count is zero.
+
+  **In flight** in `.claude/worktrees/b22-destroy-guards` on `worktree-agent-destroy-guards`, off `claude/b22-board`. No PR yet.
 - [ ] **B103. `postVatReturnBehaviour` turned the prod deploy run red.** Run 34511779119 on main,
   18:01 UTC on 2026-09-10, finished `failure`. One job failed, `delegate to test workflow /
   simulator - postVatReturnBehaviour`; prod deployed, the twelve prod probes passed, the last known
@@ -96,6 +94,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   runs today, so it is a race rather than a break: the receipt page misses a terminal state that
   arrives while it is between polls. Find it in the poll loop, not in the test's timeout. **Source**:
   run 34511779119, job log. **Owner**: Claude Code. **Model**: Sonnet.
+
+  **In flight** in `.claude/worktrees/b22-receipt-poll` on `worktree-agent-receipt-poll`, off `claude/b22-board`. No PR yet.
 - [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
   `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
   stacks, an hour and a half past its own slot. A second set, `ci-claud6807`, went up at 16:13, so
@@ -110,6 +110,24 @@ it nine tests fail on a missing file that has nothing to do with the change.
   every ci deploy standing well past its slot, which is how two sets came to overlap.
   **Source**: this board's deployment pass, 2026-09-10 16:41 and 19:26 UTC. **Owner**: Claude Code.
   **Model**: Sonnet.
+
+  **In flight** in `.claude/worktrees/b22-self-destruct` on `worktree-agent-self-destruct`, off `claude/b22-board`. No PR yet.
+- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
+  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
+  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
+  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
+  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
+  first and stop if either holds an object, in which case S3a's copy sequence applies.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+
+  **In flight** in `.claude/worktrees/b22-bucket-rename` on `worktree-agent-bucket-rename`, off `claude/b22-board`. No PR yet.
+
+A worktree agent runs `npm run bundle` before any unit, system or browser suite:
+`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
+it nine tests fail on a missing file that has nothing to do with the change.
+
+## Ready: Claude Code
+
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
@@ -152,13 +170,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
-  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
-  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
-  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
-  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
-  first and stop if either holds an object, in which case S3a's copy sequence applies.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
   in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
   and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
