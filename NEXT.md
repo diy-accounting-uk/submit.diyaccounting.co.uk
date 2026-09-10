@@ -31,30 +31,28 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 18 on `claude/b18-board`.** Batch 17 merged as PR #169 at 6994c749 and main is deploying
-it now; `copilot-setup-steps` has already passed on main for the first time since 2026-08-24. The
-integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
+**Batch 18 on `claude/b18-board`, PR #175.** Ten items, pushed once main's prod deploy of batch 17
+finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified before pushing:
+`./mvnw clean verify` green over the combined tree, `npm test` 2770 passing across 225 files,
+`npm run lint:workflows` clean across 38 workflows.
+
+On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
+B89, B90, B11.T23, and B87's labels and CODEOWNERS.
+
+The integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
 branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
 the board is maintained here on `main` under the docs exception and a second copy conflicts at
 merge.
 
-Wave 3 runs as concurrent worktree sub-agents:
-
-| Workstream | Item | Model | Worktree | Branch |
-|---|---|---|---|---|
-
-Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f, B71.S3c, B86, B90.
-
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
-previous merge. S3c is the row a sibling repository holds live names from — the toggle flag, the
-SSM parameter and the Cognito client display name — so its dual windows are the substance of it,
-not a detail. B86 runs now rather than after S3d, because both touch `EdgeStack.java` and doing
-the narrow one first is cheaper than resolving them against each other.
+previous merge. S3d is next and it is the row a sibling repository's pages hold live: their
+`cloud.js` keeps the literal `/api/v1/books` paths and their service worker precaches them, so a
+redirect reaches a cached client as a changed URL rather than a followed one. It gets its window
+sent explicitly when it is on main, not when it merges to a batch.
 
-The ITSA property tracks (B11.T11 to T14) start when S3c lands: they share
-`SubmitApplication.java`, `DataStack.java`, `HmrcStack.java` and `cdk.json` with the naming chain,
-and the plan holds that spine one track at a time.
+The ITSA property tracks (B11.T11 to T14) start when S3d lands, since the naming chain holds the
+shared spine (`SubmitApplication.java`, `DataStack.java`, `HmrcStack.java`, `cdk.json`) one row at
+a time.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -62,6 +60,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
+  spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
+  `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, and executes them.
+  So every merge to main is an immediate release to their runners, with no version, no window and
+  nothing in our tree that says another repository runs this file: no import to grep, no test that
+  fails, no reference a rename would break. It cost them a failed deploy on 2026-09-10, when S3c's
+  `--client diya-gl` was on our batch branch and their runner was still fetching main's older
+  `app|books|both` validation. S3c had a dual window for that flag precisely because we knew about
+  the caller — but we knew it from a conversation, not from the code, which is the part that does
+  not survive a session. Settle it: pin their fetch to a tag or commit, publish the two scripts
+  properly, or keep the raw fetch and record the contract in both repositories so a change has
+  something to trip over. Pinning puts the upgrade under their control rather than making our merge
+  their deploy, which is the shape to prefer, but it is a decision for both repositories.
+  **Source**: the spreadsheets repository's failed deploy, 2026-09-10. **Owner**: Claude Code to
+  propose, both repositories to agree. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
