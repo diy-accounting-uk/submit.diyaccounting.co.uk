@@ -49,6 +49,9 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Foreign identities | B80 | Sonnet | `.claude/worktrees/w-identities` | `claude/b17-identities` |
 | Alarm triage design | B78 | Opus | `.claude/worktrees/w-triagedesign` | `claude/b17-triagedesign` |
 | Homebrew tap cron | B81 | Sonnet | `.claude/worktrees/w-homebrew` | `claude/b17-homebrew` |
+| Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
+
+Merged into the batch, off this list when the branch's checks pass: B79.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -71,6 +74,18 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `claude/cost-focus-columns` at `4c74a0b2` and has never been pushed: push it, open the PR, and
   read the next environment deploy to confirm the export creates. Until it does, prod has no
   FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
+  Claude Code. **Model**: Haiku.
+- [ ] **B85. A push does not supersede the runs it replaces.** A push to a batch branch fans out
+  to roughly forty jobs across `test`, `deploy environment` and `deploy`, and the previous push's
+  runs keep going to completion beside the new ones. Some workflows carry a `concurrency` block
+  and the rest do not. Add one to every workflow with a `push` or `pull_request` trigger that
+  lacks it, keyed on `${{ github.ref }}` and not on `head_ref` or `ref_name`: a branch push is
+  `refs/heads/<branch>` and its pull request is `refs/pull/<n>/merge`, so `github.ref` keeps both
+  views alive and each cancels only the run it replaces, where the other two keys collapse them
+  and lose the merge-ref run that gates the PR. A workflow that deploys or destroys real
+  infrastructure does not get `cancel-in-progress`, because a cancelled deploy leaves a stack
+  mid-change. A run already in flight carries no group and has to be cancelled by hand once.
+  **Source**: the spreadsheets repository, which fixed the same shape on 2026-09-10. **Owner**:
   Claude Code. **Model**: Haiku.
 - [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
   that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
@@ -188,15 +203,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
   authentication. Say in the issue body that it came from the public form. **Source**:
   `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B79. The alarm Lambda's comments carry no disclosure.** 386 of the 426 issue comments
-  attributed to `antonycc` were written by the alarm-to-issue Lambda. `buildIssueBody()` adds a
-  footer saying the pipeline wrote it; `buildCommentBody()` omits it, so every comment reads as
-  the operator's own words. Against the stated goal of being transparent about what is human
-  written, templated or model generated, this is the largest single gap in the repository. Add
-  the footer to `buildCommentBody()` and to every other agent comment path, as one shared helper
-  rather than a per-caller string. A machine identity for the path would fix the disclosure and
-  the attribution together, so land this with B77's identity work if they meet. **Source**:
-  `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B80. Four identities in the history are not ours.** `noreply@anthropic.com` authored 20
   commits on the spreadsheets `main`, and it resolves to a third-party GitHub account named
   `claude`; `action@github.com` authored 27 in submit and resolves to `actions-user`, a
