@@ -51,7 +51,17 @@ before you merge, not after.
 
 ## The monitor
 
-One background monitor, polling every 60-90s, emitting one line per newly finished run.
+**Use the `Monitor` tool, with `persistent: true`.** It runs the poll loop detached and turns each
+stdout line into a notification, so the main session stays free to work while CI runs. A foreground
+poll loop is the wrong shape: it occupies the session for as long as the build takes, which is the
+whole thing this skill is meant to avoid. So is a `sleep N; check` background task that has to be
+re-armed by hand every cycle — the monitor re-arms itself and exits on its own when the run is
+terminal.
+
+For a single "tell me when it finishes", `Bash` with `run_in_background: true` and a command that
+exits on the condition is lighter: one notification, no filter to get wrong.
+
+Poll every 60-90s, emitting one line per newly finished run.
 
 - **Report every terminal state**: success, failure, cancelled, timed out, skipped. A monitor
   that greps only for failure is silent when a run is cancelled, and silence is
@@ -61,6 +71,11 @@ One background monitor, polling every 60-90s, emitting one line per newly finish
 - **Poll the API for state, never grep a log for a word.** `status == "completed"` with its
   `conclusion` is the fact; a log line saying "passed" is not.
 - Keep the seen-set bounded, and let a failed `gh` call skip the cycle rather than kill the loop.
+- **Keep the event volume low enough to survive.** Every emitted line is a message, and a monitor
+  that floods gets stopped automatically — on a branch whose PR carries 70-odd checks, emitting one
+  line per check is a firehose. Emit the reds as they land plus a single tally when everything is
+  terminal. That stays selective without going quiet on bad news, which is the trap: a filter
+  tuned to the happy path is silent through a crash, and silence reads exactly like still running.
 - **An empty result set is not a pass.** A branch that does not exist, a query whose filter matches
   nothing, and a `jq` asking for a field the `gh --json` list did not request all return nothing,
   with exit 0, which reads exactly like a clean run. Count the rows before interpreting them: ask
