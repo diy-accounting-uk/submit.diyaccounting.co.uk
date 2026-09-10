@@ -42,7 +42,25 @@ ordering B90 removed), and the destroy hardening for prod and ci, where a failed
 cancelling four AWS-CLI steps that never needed it. Its `deploy environment` is already green,
 which is B98 passing its own first real deploy.
 
-Wave 4 is complete. Its five workstreams and their worktrees:
+Wave 5 is one workstream carrying two operator decisions taken on 2026-09-10, in
+`.claude/worktrees/w-cisscope` on `claude/b20-cisscope`, Sonnet.
+
+B30u: the `{env}-*` exclusion goes on the two controls that were provably noisy on every prod
+deploy, RouteTableChanges and S3BucketPolicyChanges, and the other six go back to the three exact
+patterns they carried before B30t. The wildcard exists for a CDK-generated helper role whose name
+changes every deploy, so it earns its place where the drift causes noise and nowhere else.
+
+O43: `AdministratorAccess` on the deployment role is the standing posture, with
+`cis-iam-policy-changes` named as the compensating control, recorded where the grant is made rather
+than only in the audit. The deployment role does not execute stack changes — CDK assumes
+`cdk-hnb659fds-cfn-exec-role`, bootstrapped with the same policy by CDK's own default — and
+narrowing safely needs permission boundaries on every role the pipeline creates, which is a design
+with no owner.
+
+The two interlock: `IamPolicyChanges` is one of the six losing the wildcard, so B30u is what makes
+the alarm O43 names credible.
+
+Wave 4, complete. Its five workstreams and their worktrees:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
@@ -130,32 +148,9 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
   first and stop if either holds an object, in which case S3a's copy sequence applies.
   **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B30u. B30t's exclusion is wider than the two alarms it was written for.**
-  `REPORT_DEPLOYMENT_ROLE_AUDIT.md` found that the `{env}-*` wildcard B30t added applies to all
-  eight of the `deployChangedControls` CIS alarms, not only the route-table and S3-bucket-policy
-  pair it was built to quieten. That was not a decision anyone took; it is what the shared helper
-  does. The audit recommends leaving it, because narrowing it to exact CDK-generated role-name
-  patterns swaps a wide blind spot for a brittle list, and a name that drifts is the failure that
-  produced B30t in the first place. The alternative worth having is gating these alarms on deploy
-  timing rather than on the principal's name, which is a build rather than an edit. Either settle
-  it as the standing posture in the code with the reason, or take the timing design. **Source**:
-  `REPORT_DEPLOYMENT_ROLE_AUDIT.md`. **Owner**: Claude Code to propose, Operator to choose.
-  **Model**: Sonnet.
 
 ## Ready: operator
 
-- [ ] **O43. Decide the deployment role's standing posture.** `REPORT_DEPLOYMENT_ROLE_AUDIT.md`
-  recommends keeping `AdministratorAccess` and says why: the deployment role does not execute stack
-  changes itself, CDK assumes `cdk-hnb659fds-cfn-exec-role`, and `bootstrap-account.sh` bootstraps
-  that role with `AdministratorAccess` explicitly — CDK's own default, not drift. Thirty days of
-  CloudTrail put the deployment role's direct calls across 13 services and the exec role's resource
-  changes across 28 more, and 16 CDK stacks construct IAM roles, so the pipeline needs `PassRole`
-  regardless. Narrowing it safely needs permission boundaries on every role the pipeline creates,
-  which is a design effort with no owner rather than a policy edit — the same open question
-  BACKLOG 33 asks of `submit-backup`. So the decision is: accept the posture and record it in the
-  code with `cis-iam-policy-changes` named as the compensating control, or commission the
-  permission-boundary work. **Source**: `REPORT_DEPLOYMENT_ROLE_AUDIT.md`. **Owner**: Operator.
-  **Model**: none.
 - [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
   through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
   label does not fail anything — but until they exist with real descriptions and colours they carry
