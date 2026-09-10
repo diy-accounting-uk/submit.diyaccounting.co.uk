@@ -144,6 +144,11 @@ generate run. This lands in NM-4 (spreadsheets); nothing in Submit reads the sta
 
 ## Decision: the API route prefixes
 
+**Landed and live.** S3d shipped in PR #178 and reached prod in deployment prod-f0787f7 on
+2026-09-10. Both prefixes were verified answering on the live apex — `/api/v1/books` and
+`/api/v1/diya-gl` each return 401 to an unauthenticated request, which is the authoriser rejecting
+a caller on a route that exists. S3e, the bucket, is the only naming row left.
+
 Decided by the operator on 2026-09-10: both `/api/v1/books/*` and `/api/v1/diya-gl/*` are served
 permanently. The old prefix is never retired, and the spreadsheets repository's `cloud.js` keeps
 calling `/api/v1/books` — it does not need to change, now or later. The route path is a code

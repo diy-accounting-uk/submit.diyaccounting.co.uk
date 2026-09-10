@@ -16,22 +16,32 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-08)
+## Live status (updated 2026-09-10)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own. Operator-only steps are briefed for Claude Cowork in
 `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 
-- **PRs #151 and #154** merged on 2026-09-08: the DIYA-GL checkout and portal, the three
-  ITSA period endpoints, the one-stop dashboard's lake views, panels and operator page, the
-  cost export, the security baseline, the schedule and sweep fixes, and the spreadsheets
-  behaviour role. Prod's deployment is on `NEXT.md`'s prod line.
+- **COOL-DOWN is on** since 2026-09-10T18:40:40Z. No new rows except a degradation; other
+  discoveries go to `PARKED.md`.
+- **Four batches merged on 2026-09-10**: PR #175 and #176 (the DIYA-GL stack, client and toggle
+  renames, the alarm-origin verifier, the automated-comment disclosure, the support form's rate
+  limit and quoting, the identity guard, the free ITSA year-end activity, the cost export's column
+  casing and bucket region, the Bedrock budget filter, the CIS filter fixes and the raw export's
+  lake grants); PR #177 (the deploy ordering, the destroy hardening for both environments, the
+  DIYA-GL API routes, the deployment role audit); PR #178 (both API route prefixes made permanent,
+  and the environment deploy's paths guard). Prod runs prod-f0787f7.
+- **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
+  The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
+  work is down to the S3 bucket.
 - **Tier 1 is empty**: every refined item is on `NEXT.md` with source, owner and model.
 - **Date-gated**: 30a due 2026-09-13; 47 (the Monday crons' proof) 2026-09-14; O16 chase
   2026-09-21; 43 from 2026-10-02; 48 the week of 2026-11-29.
-- **Tier 2**: 10's six endpoints are on main behind the environments gate, the sandbox proof
-  (B10.4) waits on a ci set; 11a parked by the operator's decision of 2026-09-05; 34 is O21,
-  O17 and B34.7 on `NEXT.md`, with the XML Gateway half as 34b (O16, B34.6b, O22).
+- **Tier 2**: 10's six endpoints are on main behind the environments gate; 11's phase 2 has T1 to
+  T7 and the submission cost line landed, with UK property, the cumulative summaries and the losses
+  tracks ready; 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live
+  on prod and issue #15 is closed, with the XML Gateway half open as 34b; 17b's three VAT read pages
+  are live on prod and issue #19 is closed, leaving the walkthrough videos.
 
 ## Tier 1: do next
 
