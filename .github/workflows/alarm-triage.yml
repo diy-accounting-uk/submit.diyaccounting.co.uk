@@ -214,19 +214,36 @@ jobs:
           DISABLE_ERROR_REPORTING: '1'
           DISABLE_AUTOUPDATER: '1'
         run: |
+          set -o pipefail
           PROMPT=$(envsubst < prompts/alarm-triage.md)
           claude -p "$PROMPT" \
             --max-turns 30 \
             --output-format json \
-            --permission-mode dontAsk \
+            --permission-mode default \
             --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
             2>&1 | tee /tmp/triage.json
+          # pipefail (above) makes $? claude's own exit status, not tee's, but a run that stops
+          # early (max-turns, a denied tool, an entitlement error from Bedrock) can still exit 0
+          # with a JSON result that carries no usable answer. Gate on the content, not just the
+          # exit code, so every failure shape - including the AWS Marketplace entitlement error an
+          # environment without the Anthropic model agreement gets back from Bedrock - fails this
+          # step with the reason on record, instead of falling through to be posted as a comment.
+          jq -e '.subtype == "success" and (.is_error | not) and (.result | length > 0)' /tmp/triage.json \
+            > /dev/null || {
+              echo "triage produced no answer:" | tee -a "$GITHUB_STEP_SUMMARY"
+              head -c 2000 /tmp/triage.json | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 1
+            }
 
       - name: Filter the output
         if: steps.role.outputs.configured == 'true'
         id: filter
         run: |
-          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md
+          set -o pipefail
+          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md || {
+            echo "redaction failed, see the log above" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
           echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Apply the Bedrock guardrail
