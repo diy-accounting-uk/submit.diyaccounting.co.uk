@@ -426,7 +426,8 @@ class SubmitApplicationCdkResourceTest {
         IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalStateException.class, () -> new SubmitApplication(app, appProps));
         org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_DIYA_GL_CLIENT_ID"));
-        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("spreadsheets-books-app-client-id"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
     }
 
     /**
