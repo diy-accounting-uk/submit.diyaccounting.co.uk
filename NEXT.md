@@ -42,7 +42,7 @@ authoriser rejecting a caller on a route that exists. The spreadsheets repositor
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
 
-Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is these four:
+Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is these three:
 
 - [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
   run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
@@ -112,15 +112,7 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is t
   **Model**: Sonnet.
 
   **In flight** in `.claude/worktrees/b22-self-destruct` on `worktree-agent-self-destruct`, off `claude/b22-board`. No PR yet.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
-  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
-  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
-  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
-  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
-  first and stop if either holds an object, in which case S3a's copy sequence applies.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 
-  **In flight** in `.claude/worktrees/b22-bucket-rename` on `worktree-agent-bucket-rename`, off `claude/b22-board`. No PR yet.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -170,6 +162,26 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
+- [ ] **B71.S3e. DIYA-GL naming: copy the bucket, do not rename it.** The row's own precondition
+  fired on 2026-09-10: `list-object-versions` on `prod-env-books-972912397388` returns customer
+  books under one user hash, `metadata.json` and `v1.zip` pairs written through that day, plus 22
+  delete markers. `ci-env-books-367191799875` holds behaviour-run objects. The emptiness this row
+  rested on was checked on 2026-09-09 and is no longer true, and `PLAN_DIYA_GL_NAMING.md` now says
+  so.
+
+  A plain rename would delete the books: `bucketName` is a replacement property, and
+  `DataStack.java:655` sets `removalPolicy(DESTROY)` with `autoDeleteObjects(true)`. So the row is
+  the copy sequence in `PLAN_DIYA_GL_NAMING.md` instead: add `{prefix}-diya-gl-{account}` to
+  `DataStack` beside the old bucket, `aws s3 sync` across, add the new ARN to the backup selection
+  beside the old, point the DIYA-GL Lambdas at the new bucket and deploy a set, verify a list and a
+  version read return the copied objects, take one on-demand backup and confirm the recovery point,
+  then remove the old bucket from `DataStack`.
+
+  The data is in the AWS Backup critical selection already (`BackupStack.java:311`), and the destroy
+  workflows cannot reach it: their sweep matches `prod-*-app-*` and `-del-*` only, and this bucket
+  lives in `prod-env-DataStack`. So this is a bigger row than it was, not an urgent one. **Source**:
+  `PLAN_DIYA_GL_NAMING.md` NM-S3; the re-check of 2026-09-10. **Owner**: Claude Code. **Model**:
+  Sonnet.
 - [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
   in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
   and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
