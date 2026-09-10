@@ -616,6 +616,9 @@ jobs:
         with:
           environment-name: ${{ needs.names.outputs.environment-name }}
           lookup-cognito: 'true'
+          # The DIYA-GL client may already be gone by the time cleanup runs; don't retry or
+          # abort stack deletion over it.
+          lenient-diya-gl-client-lookup: 'true'
 
       - name: Empty origin bucket
         shell: bash
