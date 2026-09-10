@@ -38,21 +38,26 @@ branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on 
 the board is maintained here on `main` under the docs exception and a second copy conflicts at
 merge.
 
-Wave 2 runs as concurrent worktree sub-agents:
+Wave 3 runs as three concurrent worktree sub-agents:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| The alarm-origin verifier | B87 | Sonnet | `.claude/worktrees/w-auditcode` | `claude/b18-auditcode` |
-| The Bedrock triage path | B78b | Sonnet | `.claude/worktrees/w-triagefix` | `claude/b18-triagefix` |
-| The catalogue's free ITSA writes | B11.T23 | Sonnet | `.claude/worktrees/w-catalogue` | `claude/b18-catalogue` |
+| DIYA-GL naming, the client and the toggle | B71.S3c | Sonnet | `.claude/worktrees/w-naming3c` | `claude/b18-naming3c` |
+| The main API's wildcard CORS | B86 | Sonnet | `.claude/worktrees/w-edgecors` | `claude/b18-edgecors` |
+| The DIYA-GL fixture directory | B71.S3f | Haiku | `.claude/worktrees/w-fixture` | `claude/b18-fixture` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
 CODEOWNERS, B11.T23, B89, B71.S3b.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
-previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
-tracks (B11.T11 to T14) wait for S3b to land, because they share `SubmitApplication.java`,
-`DataStack.java`, `HmrcStack.java` and `cdk.json` with it. B86 waits for S3d for the same reason.
+previous merge. S3c is the row a sibling repository holds live names from — the toggle flag, the
+SSM parameter and the Cognito client display name — so its dual windows are the substance of it,
+not a detail. B86 runs now rather than after S3d, because both touch `EdgeStack.java` and doing
+the narrow one first is cheaper than resolving them against each other.
+
+The ITSA property tracks (B11.T11 to T14) start when S3c lands: they share
+`SubmitApplication.java`, `DataStack.java`, `HmrcStack.java` and `cdk.json` with the naming chain,
+and the plan holds that spine one track at a time.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
