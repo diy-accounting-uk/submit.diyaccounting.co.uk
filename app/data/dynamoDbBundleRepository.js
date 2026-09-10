@@ -5,15 +5,10 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
-
-function getTableName() {
-  const tableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
 
 export async function putBundle(userId, bundle) {
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
@@ -22,7 +17,7 @@ export async function putBundle(userId, bundle) {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Storing bundle", hashedSub, userId, bundle });
 
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const now = new Date();
     const item = {
@@ -81,7 +76,7 @@ export async function putBundleByHashedSub(hashedSub, bundle) {
   logger.info({ message: `putBundleByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const now = new Date();
     const item = {
@@ -131,7 +126,7 @@ export async function deleteBundle(userId, bundleId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Deleting bundle", hashedSub, userId, bundleId });
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     logger.info({
       message: "Deleting bundle from DynamoDB",
@@ -217,7 +212,7 @@ export async function resetTokens(userId, bundleId, tokensGranted, nextResetAt) 
 
   try {
     const hashedSub = hashSub(userId);
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     await executeDynamoDbCommand(
       (module) =>
@@ -245,7 +240,7 @@ export async function resetTokensByHashedSub(hashedSub, bundleId, tokensGranted,
   logger.info({ message: `resetTokensByHashedSub [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     await executeDynamoDbCommand(
       (module) =>
@@ -274,7 +269,7 @@ export async function consumeToken(userId, bundleId, count = 1) {
 
   try {
     const hashedSub = hashSub(userId);
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const result = await executeDynamoDbCommand(
       (module) =>
@@ -311,7 +306,7 @@ export async function recordTokenEvent(userId, bundleId, event) {
 
   try {
     const hashedSub = hashSub(userId);
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const tokenEvent = {
       ...event,
@@ -343,7 +338,7 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
   logger.info({ message: `updateBundleSubscriptionFields [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, bundleId });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const expressions = [];
     const values = {};
@@ -381,10 +376,10 @@ export async function updateBundleSubscriptionFields(hashedSub, bundleId, fields
 }
 
 export async function countActiveAllocations(bundleId, nowIso) {
-  logger.info({ message: `countActiveAllocations [table: ${getTableName()}]`, bundleId });
+  logger.info({ message: `countActiveAllocations [table: ${getResourceName("BUNDLE_DYNAMODB_TABLE_NAME")}]`, bundleId });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     let count = 0;
     let lastEvaluatedKey;
@@ -418,7 +413,7 @@ export async function getUserBundles(userId) {
   try {
     const hashedSub = hashSub(userId);
     logger.info({ message: "Retrieving bundles from DynamoDB", userId, hashedSub });
-    const tableName = getTableName();
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
 
     const response = await executeDynamoDbCommand(
       (module) =>
@@ -460,7 +455,7 @@ export async function getUserBundles(userId) {
     return [];
   } catch (error) {
     logger.error({
-      message: `Error retrieving bundles from DynamoDB table ${getTableName()}`,
+      message: `Error retrieving bundles from DynamoDB table ${getResourceName("BUNDLE_DYNAMODB_TABLE_NAME")}`,
       error: error.message,
       userId,
     });

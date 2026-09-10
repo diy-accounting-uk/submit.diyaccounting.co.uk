@@ -7,15 +7,10 @@ import { createLogger, context } from "../lib/logger.js";
 import { hashSub, getSaltVersion } from "../services/subHasher.js";
 import { maskHttpData } from "../lib/dataMasking.js";
 import { v4 as uuidv4 } from "uuid";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { calculateTwentyEightDayTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbHmrcApiRequestRepository.js" });
-
-function getTableName() {
-  const tableName = process.env.HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
 
 /*
 Example data:
@@ -47,7 +42,7 @@ export async function putHmrcApiRequest(userSub, { url, httpRequest, httpRespons
   const id = `hmrcreq-${uuidv4()}`; // Unique ID for this specific call
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME");
 
     const now = new Date();
 

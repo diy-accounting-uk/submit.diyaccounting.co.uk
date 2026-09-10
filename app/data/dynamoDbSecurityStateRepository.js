@@ -11,14 +11,10 @@
 // Every item carries a short TTL; none of it is customer data.
 
 import { createLogger } from "../lib/logger.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { fiveMinuteTtl, calculateOneHourTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSecurityStateRepository.js" });
-
-function getTableName() {
-  return process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME || "";
-}
 
 /**
  * Atomically increments the one-minute request counter for a consumer and returns the
@@ -34,7 +30,7 @@ function getTableName() {
  * @returns {Promise<number>} the updated hit count
  */
 export async function incrementRateCounter({ namespace = "rate", identifier, minute }) {
-  const tableName = getTableName();
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
 
   const { Attributes } = await executeDynamoDbCommand(
     (module) =>
@@ -59,7 +55,7 @@ export async function incrementRateCounter({ namespace = "rate", identifier, min
  * @returns {Promise<{country?: string, revokedAt?: number}|null>} null when no item exists
  */
 export async function getSessionGeo(hashedSub) {
-  const tableName = getTableName();
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
 
   const result = await executeDynamoDbCommand(
     (module) =>
@@ -85,7 +81,7 @@ export async function getSessionGeo(hashedSub) {
  * @param {number} [fields.revokedAt] - epoch seconds; omitted clears any prior revocation
  */
 export async function putSessionGeo(hashedSub, { country, revokedAt }) {
-  const tableName = getTableName();
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
 
   await executeDynamoDbCommand(
     (module) =>

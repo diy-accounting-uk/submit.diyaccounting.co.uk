@@ -8,6 +8,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getPreviousVersions } from "../services/subHasher.js";
+import { getResourceName } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/s3DiyaGlRepository.js" });
 
@@ -24,14 +25,6 @@ const BOOK_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}
  */
 export function isValidBookId(bookId) {
   return typeof bookId === "string" && BOOK_ID_PATTERN.test(bookId);
-}
-
-function getTableName() {
-  const bucketName = process.env.DIYA_GL_BUCKET_NAME;
-  if (!bucketName) {
-    throw new Error("DIYA_GL_BUCKET_NAME environment variable is required");
-  }
-  return bucketName;
 }
 
 async function getS3Client() {
@@ -89,7 +82,7 @@ export async function readMetadata(ownerPrefix, bookId) {
   const { GetObjectCommand } = await import("@aws-sdk/client-s3");
   try {
     const response = await client.send(
-      new GetObjectCommand({ Bucket: getTableName(), Key: metadataKey(ownerPrefix, bookId) }),
+      new GetObjectCommand({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Key: metadataKey(ownerPrefix, bookId) }),
     );
     const body = await response.Body.transformToString("utf8");
     return { metadata: JSON.parse(body), metaETag: normaliseETag(response.ETag) };
@@ -119,7 +112,7 @@ export async function writeMetadata({ ownerPrefix, bookId, metadata, ifMatch, if
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const response = await client.send(
     new PutObjectCommand({
-      Bucket: getTableName(),
+      Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true),
       Key: metadataKey(ownerPrefix, bookId),
       Body: JSON.stringify(metadata),
       ContentType: "application/json",
@@ -146,7 +139,7 @@ export async function putVersion({ ownerPrefix, bookId, version, bytes }) {
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const response = await client.send(
     new PutObjectCommand({
-      Bucket: getTableName(),
+      Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true),
       Key: versionKey(ownerPrefix, bookId, version),
       Body: bytes,
       ContentType: "application/zip",
@@ -169,7 +162,7 @@ export async function getVersion(ownerPrefix, bookId, version) {
   const client = await getS3Client();
   const { GetObjectCommand } = await import("@aws-sdk/client-s3");
   const response = await client.send(
-    new GetObjectCommand({ Bucket: getTableName(), Key: versionKey(ownerPrefix, bookId, version) }),
+    new GetObjectCommand({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Key: versionKey(ownerPrefix, bookId, version) }),
   );
   const bytes = Buffer.from(await response.Body.transformToByteArray());
   return { bytes, etag: normaliseETag(response.ETag) };
@@ -186,7 +179,7 @@ export async function deleteVersion(ownerPrefix, bookId, version) {
   const client = await getS3Client();
   const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
   await client.send(
-    new DeleteObjectCommand({ Bucket: getTableName(), Key: versionKey(ownerPrefix, bookId, version) }),
+    new DeleteObjectCommand({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Key: versionKey(ownerPrefix, bookId, version) }),
   );
 }
 
@@ -203,7 +196,7 @@ export async function listBooks(ownerPrefix) {
   const prefix = `users/${ownerPrefix}/books/`;
 
   const listResponse = await client.send(
-    new ListObjectsV2Command({ Bucket: getTableName(), Prefix: prefix, Delimiter: "/" }),
+    new ListObjectsV2Command({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Prefix: prefix, Delimiter: "/" }),
   );
   const bookIds = (listResponse.CommonPrefixes || [])
     .map((entry) => entry.Prefix)
@@ -214,7 +207,7 @@ export async function listBooks(ownerPrefix) {
   for (const bookId of bookIds) {
     try {
       const response = await client.send(
-        new GetObjectCommand({ Bucket: getTableName(), Key: metadataKey(ownerPrefix, bookId) }),
+        new GetObjectCommand({ Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true), Key: metadataKey(ownerPrefix, bookId) }),
       );
       const body = await response.Body.transformToString("utf8");
       books.push(JSON.parse(body));
@@ -236,7 +229,7 @@ export async function deleteBook(ownerPrefix, bookId) {
   const client = await getS3Client();
   const { ListObjectsV2Command, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
   const prefix = bookPrefix(ownerPrefix, bookId);
-  const bucket = getTableName();
+  const bucket = getResourceName("DIYA_GL_BUCKET_NAME", true);
 
   let deletedCount = 0;
   let continuationToken;
@@ -275,7 +268,7 @@ async function anyBookExists(ownerPrefix) {
   const { ListObjectsV2Command } = await import("@aws-sdk/client-s3");
   const response = await client.send(
     new ListObjectsV2Command({
-      Bucket: getTableName(),
+      Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true),
       Prefix: `users/${ownerPrefix}/books/`,
       Delimiter: "/",
       MaxKeys: 1,

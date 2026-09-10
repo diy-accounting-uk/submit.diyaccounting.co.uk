@@ -5,15 +5,10 @@
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub, hashSubWithVersion, getSaltVersion, getPreviousVersions } from "../services/subHasher.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 import { calculateHmrcTaxRecordTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" });
-
-function getTableName() {
-  const tableName = process.env.RECEIPTS_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
 
 /**
  * Store a receipt in DynamoDB with 7-year retention (2555 days)
@@ -30,7 +25,7 @@ export async function putReceipt(userSub, receiptId, receipt, actor) {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Storing receipt", hashedSub, userSub, receiptId });
 
-    const tableName = getTableName();
+    const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
 
     const now = new Date();
     const item = {
@@ -93,7 +88,7 @@ export async function getReceipt(userSub, receiptId) {
   try {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Retrieving receipt from DynamoDB", userSub, hashedSub, receiptId });
-    const tableName = getTableName();
+    const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
 
     const response = await executeDynamoDbCommand(
       (module) =>
@@ -157,7 +152,7 @@ export async function listUserReceipts(userSub) {
   try {
     const hashedSub = hashSub(userSub);
     logger.info({ message: "Retrieving receipts from DynamoDB", userSub, hashedSub });
-    const tableName = getTableName();
+    const tableName = getResourceName("RECEIPTS_DYNAMODB_TABLE_NAME");
 
     let response = await executeDynamoDbCommand(
       (module) =>
