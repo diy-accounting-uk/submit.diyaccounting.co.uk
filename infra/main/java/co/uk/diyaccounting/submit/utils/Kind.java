@@ -55,7 +55,7 @@ public final class Kind {
             var sourceLabel = alternativeSource == null ? "" : " " + alternativeSource;
             infof(
                     "Using environment variable %s is null or blank using alternative%s, value %s",
-                    environmentVariable, sourceLabel, environmentValue);
+                    environmentVariable, sourceLabel, alternativeValue);
             return alternativeValue;
         }
     }

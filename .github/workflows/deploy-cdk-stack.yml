@@ -49,6 +49,10 @@ on:
         description: 'Self-destruct start datetime'
         required: false
         default: ''
+      self-destruct-delay-hours:
+        description: 'Hours between self-destruct schedule firings'
+        required: false
+        default: ''
       http-api-url:
         description: 'HTTP API URL (manual override, ignored when lookup-api-gateway is true)'
         required: false
@@ -96,6 +100,10 @@ on:
         required: false
         default: '' # ${{ github.sha }}
       self-destruct-start-datetime:
+        type: string
+        required: false
+        default: ''
+      self-destruct-delay-hours:
         type: string
         required: false
         default: ''
@@ -149,6 +157,8 @@ jobs:
         run: ":"
       - name: "inputs.self-destruct-start-datetime=[${{ inputs['self-destruct-start-datetime'] }}]"
         run: ":"
+      - name: "inputs.self-destruct-delay-hours=[${{ inputs['self-destruct-delay-hours'] }}]"
+        run: ":"
       - name: "inputs.lookup-cognito=[${{ inputs['lookup-cognito'] }}]"
         run: ":"
       - name: "inputs.lookup-api-gateway=[${{ inputs['lookup-api-gateway'] }}]"
@@ -169,6 +179,7 @@ jobs:
           echo "cdk-application=${CDK_APP:-application}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.base-image-tag }}' ; echo "base-image-tag=${X:-${{ github.sha }}}" | tee -a "$GITHUB_OUTPUT"
           echo "self-destruct-start-datetime=${{ inputs['self-destruct-start-datetime'] }}" | tee -a "$GITHUB_OUTPUT"
+          echo "self-destruct-delay-hours=${{ inputs['self-destruct-delay-hours'] }}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.lookup-cognito }}' ; echo "lookup-cognito=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.lookup-api-gateway }}' ; echo "lookup-api-gateway=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Manual override for http-api-url (workflow_dispatch only)
@@ -188,6 +199,7 @@ jobs:
       cdk-application: ${{ steps.normalise.outputs.cdk-application }}
       base-image-tag: ${{ steps.normalise.outputs['base-image-tag'] }}
       self-destruct-start-datetime: ${{ steps.normalise.outputs['self-destruct-start-datetime'] }}
+      self-destruct-delay-hours: ${{ steps.normalise.outputs['self-destruct-delay-hours'] }}
       lookup-cognito: ${{ steps.normalise.outputs['lookup-cognito'] }}
       lookup-api-gateway: ${{ steps.normalise.outputs['lookup-api-gateway'] }}
       http-api-url: ${{ steps.normalise.outputs['http-api-url'] }}
@@ -425,6 +437,7 @@ jobs:
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
           BASE_IMAGE_TAG: ${{ needs.params.outputs['base-image-tag'] }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.params.outputs['self-destruct-start-datetime'] }}
+          SELF_DESTRUCT_DELAY_HOURS: ${{ needs.params.outputs['self-destruct-delay-hours'] }}
           HMRC_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/client_secret"
           HMRC_SANDBOX_CLIENT_SECRET_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:${{ needs.names.outputs.environment-name }}/submit/hmrc/sandbox_client_secret"
           # Looked up from API Gateway custom domain, or manual override from http-api-url input

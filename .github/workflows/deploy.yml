@@ -357,6 +357,36 @@ jobs:
         with:
           environment-name: ${{ steps.deployment-config.outputs.environment-name }}
           lookup-cognito: 'true'
+
+      # A push-triggered redeploy re-runs this workflow against a deployment that may already
+      # have a SelfDestructStack with a schedule ticking down. "now + delay hours" here would
+      # overwrite that schedule with a new one, pushing the deployment's teardown out every time
+      # it is redeployed — a branch under active development would then never self-destruct.
+      # CloudFormation's own CreationTime for the stack survives updates (only its
+      # LastUpdatedTime moves), so it is the one fixed point that identifies this deployment's
+      # actual first deploy: read it back and anchor the delay to it instead of to "now". Skipped
+      # for prod, which never deploys a SelfDestructStack (see deploy-application-self-destruct's
+      # `if:` below) and has no such stack to look up.
+      - name: Resolve self-destruct start datetime, anchored to this deployment's own creation
+        id: self-destruct-start
+        if: ${{ steps.deployment-config.outputs.environment-name != 'prod' }}
+        shell: bash
+        run: |
+          STACK_NAME="${{ steps.deployment-config.outputs.deployment-name }}-app-SelfDestructStack"
+          EXISTING_CREATION_TIME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK_NAME" \
+            --query "Stacks[0].CreationTime" \
+            --output text 2>/dev/null || echo "")
+          if [ -n "$EXISTING_CREATION_TIME" ] && [ "$EXISTING_CREATION_TIME" != "None" ]; then
+            echo "Found existing $STACK_NAME created at $EXISTING_CREATION_TIME; anchoring self-destruct to that creation time, not to this redeploy"
+            ANCHOR_DATETIME="$EXISTING_CREATION_TIME"
+          else
+            echo "No existing $STACK_NAME found; this is the deployment's first deploy, anchoring self-destruct to now"
+            ANCHOR_DATETIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+          SELF_DESTRUCT_START_DATETIME=$(date -u -d "$ANCHOR_DATETIME + ${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
+          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -370,6 +400,7 @@ jobs:
       cognito-user-pool-arn: ${{ steps.lookup-cognito.outputs.cognito-user-pool-arn }}
       cognito-client-id: ${{ steps.lookup-cognito.outputs.cognito-client-id }}
       cognito-diya-gl-client-id: ${{ steps.lookup-cognito.outputs.cognito-diya-gl-client-id }}
+      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   test:
     name: 'delegate to test workflow'
@@ -452,17 +483,6 @@ jobs:
             target/submit-environment.jar
           if-no-files-found: error
           retention-days: 1
-
-      - name: Self Destruct Start Datetime (ISO 8601) now plus SELF_DESTRUCT_DELAY_HOURS
-        id: self-destruct-start
-        shell: bash
-        run: |
-          SELF_DESTRUCT_START_DATETIME=$(date -u -d "+${{ env.SELF_DESTRUCT_DELAY_HOURS }} hours" +"%Y-%m-%dT%H:%M:%SZ")
-          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME"
-          echo "SELF_DESTRUCT_START_DATETIME=$SELF_DESTRUCT_START_DATETIME" >> $GITHUB_OUTPUT
-
-    outputs:
-      self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
 
   # NOTE: behaviour-test-submit-vat has been moved to test.yml as behaviour-test-proxy-submit-vat
   # It runs when runProxyBehaviourTests=true is passed to the test workflow
@@ -1006,7 +1026,8 @@ jobs:
       deployment-name: ${{ needs.names.outputs.deployment-name }}
       cdk-application: 'application'
       lookup-cognito: 'true'
-      self-destruct-start-datetime: ${{ needs.mvn-package.outputs.self-destruct-start-datetime }}
+      self-destruct-start-datetime: ${{ needs.names.outputs.self-destruct-start-datetime }}
+      self-destruct-delay-hours: ${{ env.SELF_DESTRUCT_DELAY_HOURS }}
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
