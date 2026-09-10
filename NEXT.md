@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t, B76.
+submit half, B85, B30t, B76, B78's comparison.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -76,6 +76,15 @@ it nine tests fail on a missing file that has nothing to do with the change.
   read the next environment deploy to confirm the export creates. Until it does, prod has no
   FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
   Claude Code. **Model**: Haiku.
+- [ ] **B88. The Bedrock budget's deny action cannot fire.** Both `CfnBudget`s filter on
+  `Service: ["Amazon Bedrock"]` and report `actual=0.0`, while the model spend actually bills under
+  the Marketplace service names — Cost Explorer shows it as "Claude Sonnet 4.5 (Amazon Bedrock
+  Edition)". So the `APPLY_IAM_POLICY` deny on the $150 monthly budget is attached to a number that
+  never moves, and the one guard standing between a runaway agent loop and the bill does nothing.
+  Fix the filter to the service names the spend lands under and prove it against Cost Explorer's
+  own figures rather than the console's summary. Found while pricing B78. **Source**:
+  `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`; Cost Explorer, submit-prod, 2026-09-06. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
   that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
   check. The cause was that the `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN`
@@ -130,19 +139,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
-  posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
-  form not submitted, and three parse failures. Its configuration reads as a working
-  Claude-on-Bedrock agent that triages an alarm issue and opens a draft PR when its answer holds
-  a diff, and it has never once done that. `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it,
-  so the plan rests on something unproven. The operator is considering **LangGraph** as the
-  orchestrator, because they need to learn it for other work and the learning would pay twice.
-  So this row is a design decision before it is a fix: compare finishing the Bedrock path as
-  built, rebuilding the orchestration on LangGraph, and any third option, on what each costs to
-  run, what it takes to keep working, and whether the marketplace and use-case-form blockers go
-  away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
-  workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
-  **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
 - [ ] **B77. The public support form files GitHub issues under the operator's name.**
   `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
   it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
@@ -216,6 +212,22 @@ it nine tests fail on a missing file that has nothing to do with the change.
   goes first and can ship without the other three. The trailer edit reaches five sibling
   repositories, so it follows B80b's routing rather than being done from here. **Source**:
   `REPORT_IDENTITY_AUDIT.md` section 8. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B78b. Finish the Bedrock triage path.** `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md` compares
+  four options and recommends this one: of the four causes in the failure history, the use-case
+  form is filed, prod's Marketplace entitlement now reads authorized, and the twelve-turn cutoff is
+  raised, which leaves one invalid CLI flag — `--permission-mode dontAsk` is not a value
+  claude-code 2.0.30 accepts. The plan's execution steps are in its last section. Two things it
+  found that matter as much as the flag: both `Run triage` and `Filter the output` pipe through
+  `tee`, which merges stderr into the next step's input and hands the pipeline `tee`'s exit code,
+  so `redact-triage-output.mjs`'s non-zero exits are thrown away and its error text gets posted as
+  the triage; and ci's Marketplace entitlement is still `NOT_AVAILABLE`, which is 21 of the 55
+  issues. The measured cost is $0.08 to $0.35 a triage, so $17 to $73 a month at 209 alarm issues a
+  month — `PLAN_ALARM_EVIDENCE_AND_TRIAGE.md` section 6.3 assumed $1.05 a run, 3 to 13 times high.
+  The proof is one live prod alarm on a current deployment triaged end to end, not a green badge:
+  prod log groups keep three days and a retired deployment's groups are deleted outright, so a
+  dispatch against an old issue reads an empty window and answers confidently about nothing.
+  Do B88 first — it is the spend guard for this. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
+  **Owner**: Claude Code, Operator to check the first triage. **Model**: Sonnet.
 
 ## Ready: operator
 
