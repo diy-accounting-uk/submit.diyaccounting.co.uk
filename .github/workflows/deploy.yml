@@ -6,7 +6,7 @@ name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
 
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 # Bump25

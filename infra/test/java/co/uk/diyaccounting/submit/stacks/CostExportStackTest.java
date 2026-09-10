@@ -119,6 +119,76 @@ class CostExportStackTest {
                                 Map.of("Frequency", "SYNCHRONOUS"))))));
     }
 
+    /**
+     * Pins the column names to the exact PascalCase the FOCUS Data Exports table dictionary
+     * gives them (confirmed with {@code aws bcm-data-exports get-table --table-name
+     * FOCUS_1_2_AWS}), independently of {@link CostFocusIngestion#FOCUS_1_2_COLUMNS} itself, so a
+     * regression to Glue's lowercase snake_case convention — the mistake that broke this export
+     * before — fails here rather than at deploy time.
+     */
+    private static final List<String> FOCUS_1_2_COLUMNS_AS_THE_API_SPELLS_THEM = List.of(
+            "BillingAccountId",
+            "BillingAccountName",
+            "BillingCurrency",
+            "BillingPeriodStart",
+            "BillingPeriodEnd",
+            "ChargeCategory",
+            "ChargeClass",
+            "ChargeDescription",
+            "ChargeFrequency",
+            "ChargePeriodStart",
+            "ChargePeriodEnd",
+            "BilledCost",
+            "ContractedCost",
+            "EffectiveCost",
+            "ListCost",
+            "ListUnitPrice",
+            "ContractedUnitPrice",
+            "PricingQuantity",
+            "PricingUnit",
+            "ConsumedQuantity",
+            "ConsumedUnit",
+            "CommitmentDiscountCategory",
+            "CommitmentDiscountId",
+            "CommitmentDiscountStatus",
+            "CommitmentDiscountType",
+            "InvoiceId",
+            "InvoiceIssuerName",
+            "ProviderName",
+            "PublisherName",
+            "RegionId",
+            "RegionName",
+            "ResourceId",
+            "ResourceName",
+            "ResourceType",
+            "ServiceCategory",
+            "ServiceName",
+            "SkuId",
+            "SkuPriceId",
+            "SubAccountId",
+            "SubAccountName",
+            "Tags",
+            "x_Discounts",
+            "x_Operation",
+            "x_ServiceCode");
+
+    @Test
+    void queryStatementUsesTheFocusApisOwnPascalCasingNotGluesSnakeCase() {
+        Template template = synthCostExportStack();
+
+        template.hasResourceProperties(
+                "AWS::BCMDataExports::Export",
+                Match.objectLike(Map.of(
+                        "Export",
+                        Match.objectLike(Map.of(
+                                "DataQuery",
+                                Match.objectLike(Map.of(
+                                        "QueryStatement",
+                                        "SELECT "
+                                                + String.join(", ", FOCUS_1_2_COLUMNS_AS_THE_API_SPELLS_THEM)
+                                                + " FROM FOCUS_1_2_AWS")))))));
+    }
+
     @Test
     void noBucketPolicyWhenNoReaderRolesAreConfigured() {
         App app = new App();

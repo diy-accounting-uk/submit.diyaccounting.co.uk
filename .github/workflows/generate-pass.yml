@@ -119,6 +119,10 @@ on:
 env:
   AWS_REGION: eu-west-2
 
+concurrency:
+  group: generate-pass-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   id-token: write
   contents: read

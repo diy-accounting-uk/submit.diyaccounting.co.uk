@@ -74,6 +74,13 @@ class SubmitEnvironmentUE1CdkResourceTest {
         // sits on a MONTHLY budget at USD 150 (30 days of the operator's USD 5/day figure). A
         // second, DAILY budget at USD 5 carries no action, only a notification to the same topic,
         // so a bad day is still heard about before the monthly enforcement would trip.
+        //
+        // Both filter on BillingEntity: ["AWS Marketplace"], not Service: ["Amazon Bedrock"]. The
+        // models the triage role invokes bill through Marketplace under their own product names,
+        // so a Service filter naming "Amazon Bedrock" never sees that spend and the budget reads
+        // $0.00 forever. Asserting the filter shape here, not just the limit, is what would have
+        // caught that bug before it shipped.
+        var marketplaceCostFilters = Match.objectLike(Map.of("BillingEntity", List.of("AWS Marketplace")));
         observabilityUE1.hasResourceProperties(
                 "AWS::Budgets::Budget",
                 Match.objectLike(Map.of(
@@ -86,7 +93,9 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "TimeUnit",
                                 "MONTHLY",
                                 "BudgetLimit",
-                                Match.objectLike(Map.of("Amount", 150, "Unit", "USD")))))));
+                                Match.objectLike(Map.of("Amount", 150, "Unit", "USD")),
+                                "CostFilters",
+                                marketplaceCostFilters)))));
 
         var dailyBudgetNotification = Match.objectLike(
                 Map.of("Subscribers", Match.arrayWith(List.of(Match.objectLike(Map.of("SubscriptionType", "SNS"))))));
@@ -102,7 +111,9 @@ class SubmitEnvironmentUE1CdkResourceTest {
                                 "TimeUnit",
                                 "DAILY",
                                 "BudgetLimit",
-                                Match.objectLike(Map.of("Amount", 5, "Unit", "USD")))),
+                                Match.objectLike(Map.of("Amount", 5, "Unit", "USD")),
+                                "CostFilters",
+                                marketplaceCostFilters)),
                         "NotificationsWithSubscribers",
                         Match.arrayWith(List.of(dailyBudgetNotification)))));
 

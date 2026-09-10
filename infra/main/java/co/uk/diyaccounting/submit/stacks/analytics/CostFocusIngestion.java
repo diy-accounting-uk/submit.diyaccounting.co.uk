@@ -56,57 +56,67 @@ import software.constructs.Construct;
 public class CostFocusIngestion {
 
     /**
-     * The FOCUS 1.2-with-AWS-columns column names, in the same order {@link CostFocusTables}'
-     * Glue table declares them. The Data Exports API rejects {@code SELECT *}, so {@link
-     * co.uk.diyaccounting.submit.stacks.CostExportStack} selects this explicit list by name; both
-     * lists must change together, or the export's Parquet columns drift from the Glue table reading
-     * them.
+     * The FOCUS 1.2-with-AWS-columns column names, spelled exactly as the Data Exports table
+     * dictionary gives them: PascalCase, except the three AWS extension columns which keep a
+     * lowercase {@code x_} prefix ({@code x_Discounts}, {@code x_Operation}, {@code
+     * x_ServiceCode}). Confirmed against {@code aws bcm-data-exports get-table --table-name
+     * FOCUS_1_2_AWS}, whose {@code Schema} entries use this casing throughout — the API rejects a
+     * query naming columns in any other case, which is why an earlier snake_case version of this
+     * list failed to deploy.
+     *
+     * <p>The Data Exports API also rejects {@code SELECT *}, so {@link
+     * co.uk.diyaccounting.submit.stacks.CostExportStack} selects this explicit list by name.
+     * {@link CostFocusTables} does not keep a second, independently-typed copy of these names: it
+     * derives its lowercase Glue column names from this same list, in the same order, via {@link
+     * CostFocusTables#glueColumnName(String)}. That leaves only one way the query and the Glue
+     * table can drift apart — a column added to one list and not the other — and {@link
+     * CostFocusTables} fails at synth if its column-type list is a different length than this one.
      */
     public static final List<String> FOCUS_1_2_COLUMNS = List.of(
-            "billing_account_id",
-            "billing_account_name",
-            "billing_currency",
-            "billing_period_start",
-            "billing_period_end",
-            "charge_category",
-            "charge_class",
-            "charge_description",
-            "charge_frequency",
-            "charge_period_start",
-            "charge_period_end",
-            "billed_cost",
-            "contracted_cost",
-            "effective_cost",
-            "list_cost",
-            "list_unit_price",
-            "contracted_unit_price",
-            "pricing_quantity",
-            "pricing_unit",
-            "consumed_quantity",
-            "consumed_unit",
-            "commitment_discount_category",
-            "commitment_discount_id",
-            "commitment_discount_status",
-            "commitment_discount_type",
-            "invoice_id",
-            "invoice_issuer_name",
-            "provider_name",
-            "publisher_name",
-            "region_id",
-            "region_name",
-            "resource_id",
-            "resource_name",
-            "resource_type",
-            "service_category",
-            "service_name",
-            "sku_id",
-            "sku_price_id",
-            "sub_account_id",
-            "sub_account_name",
-            "tags",
-            "x_discounts",
-            "x_operation",
-            "x_service_code");
+            "BillingAccountId",
+            "BillingAccountName",
+            "BillingCurrency",
+            "BillingPeriodStart",
+            "BillingPeriodEnd",
+            "ChargeCategory",
+            "ChargeClass",
+            "ChargeDescription",
+            "ChargeFrequency",
+            "ChargePeriodStart",
+            "ChargePeriodEnd",
+            "BilledCost",
+            "ContractedCost",
+            "EffectiveCost",
+            "ListCost",
+            "ListUnitPrice",
+            "ContractedUnitPrice",
+            "PricingQuantity",
+            "PricingUnit",
+            "ConsumedQuantity",
+            "ConsumedUnit",
+            "CommitmentDiscountCategory",
+            "CommitmentDiscountId",
+            "CommitmentDiscountStatus",
+            "CommitmentDiscountType",
+            "InvoiceId",
+            "InvoiceIssuerName",
+            "ProviderName",
+            "PublisherName",
+            "RegionId",
+            "RegionName",
+            "ResourceId",
+            "ResourceName",
+            "ResourceType",
+            "ServiceCategory",
+            "ServiceName",
+            "SkuId",
+            "SkuPriceId",
+            "SubAccountId",
+            "SubAccountName",
+            "Tags",
+            "x_Discounts",
+            "x_Operation",
+            "x_ServiceCode");
 
     public final Role copyRole;
     public final Function copyLambda;

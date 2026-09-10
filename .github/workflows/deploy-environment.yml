@@ -5,7 +5,7 @@
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: deploy-${{ github.ref }}
   cancel-in-progress: false
 
 # bump12

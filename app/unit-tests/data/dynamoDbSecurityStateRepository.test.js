@@ -55,7 +55,7 @@ describe("dynamoDbSecurityStateRepository", () => {
     const { incrementRateCounter } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
     mockSend.mockResolvedValue({ Attributes: { hits: 1 } });
 
-    await incrementRateCounter({ hashedSub: "hashed-abc", minute: 12345 });
+    await incrementRateCounter({ identifier: "hashed-abc", minute: 12345 });
 
     expect(mockSend).toHaveBeenCalledTimes(1);
     const command = mockSend.mock.calls[0][0];
@@ -71,7 +71,7 @@ describe("dynamoDbSecurityStateRepository", () => {
     const { incrementRateCounter } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
     mockSend.mockResolvedValue({ Attributes: { hits: 2 } });
 
-    await incrementRateCounter({ hashedSub: "hashed-abc", minute: 12345 });
+    await incrementRateCounter({ identifier: "hashed-abc", minute: 12345 });
 
     const input = mockSend.mock.calls[0][0].input;
     expect(input.UpdateExpression).toBe("SET #ttl = if_not_exists(#ttl, :ttl) ADD hits :one");
@@ -85,9 +85,29 @@ describe("dynamoDbSecurityStateRepository", () => {
     const { incrementRateCounter } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
     mockSend.mockResolvedValue({ Attributes: { hits: 501 } });
 
-    const hits = await incrementRateCounter({ hashedSub: "hashed-abc", minute: 12345 });
+    const hits = await incrementRateCounter({ identifier: "hashed-abc", minute: 12345 });
 
     expect(hits).toBe(501);
+  });
+
+  test("incrementRateCounter defaults to the rate# namespace", async () => {
+    const { incrementRateCounter } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Attributes: { hits: 1 } });
+
+    await incrementRateCounter({ identifier: "hashed-abc", minute: 12345 });
+
+    const input = mockSend.mock.calls[0][0].input;
+    expect(input.Key).toEqual({ stateKey: "rate#hashed-abc#12345" });
+  });
+
+  test("incrementRateCounter keys the item under a caller-given namespace", async () => {
+    const { incrementRateCounter } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Attributes: { hits: 1 } });
+
+    await incrementRateCounter({ namespace: "supportticket", identifier: "hashed-ip", minute: 12345 });
+
+    const input = mockSend.mock.calls[0][0].input;
+    expect(input.Key).toEqual({ stateKey: "supportticket#hashed-ip#12345" });
   });
 
   test("getSessionGeo keys the item as geo#<hash> and returns the stored item", async () => {

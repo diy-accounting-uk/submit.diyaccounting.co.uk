@@ -133,6 +133,17 @@ public class AccountStack extends Stack {
             return "";
         }
 
+        // The support-ticket path's own machine identity (issue #10-style identity separation:
+        // see REPORT_IDENTITY_AUDIT.md recommendation 2). Same secret OpsStack's alarm-to-issue
+        // Lambda already reads, so once the operator points it at a dedicated GitHub App token,
+        // both public-write paths pick up the new identity together. Falls back to
+        // githubTokenSecretArn() above while it is blank, which is the case today, so this
+        // change does not require a new secret to exist before it deploys.
+        @Value.Default
+        default String opsGithubTokenSecretArn() {
+            return "";
+        }
+
         @Value.Default
         default String githubRepo() {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
@@ -529,14 +540,20 @@ public class AccountStack extends Stack {
                 this.operatorSnapshotGetLambda.getNode().getId(),
                 props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
 
-        // Support Ticket POST Lambda - only create if GitHub token secret ARN is provided
-        if (props.githubTokenSecretArn() != null
-                && !props.githubTokenSecretArn().isEmpty()) {
+        // Support Ticket POST Lambda - only create if a GitHub token secret ARN is provided.
+        // Prefers the dedicated ops identity (see opsGithubTokenSecretArn() above) and falls
+        // back to the generic one while no dedicated secret exists yet.
+        var supportTicketGithubTokenSecretArn = (props.opsGithubTokenSecretArn() != null
+                        && !props.opsGithubTokenSecretArn().isBlank())
+                ? props.opsGithubTokenSecretArn()
+                : props.githubTokenSecretArn();
+        if (supportTicketGithubTokenSecretArn != null && !supportTicketGithubTokenSecretArn.isEmpty()) {
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                    .with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn())
-                    .with("GITHUB_REPO", props.githubRepo());
+                    .with("GITHUB_TOKEN_SECRET_ARN", supportTicketGithubTokenSecretArn)
+                    .with("GITHUB_REPO", props.githubRepo())
+                    .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
             var supportTicketPostApiLambda = new ApiLambda(
                     this,
                     ApiLambdaProps.builder()
@@ -567,14 +584,19 @@ public class AccountStack extends Stack {
             // Grant permission to read the GitHub token secret. Secrets Manager appends a random
             // suffix to the ARN it hands back from create-secret, so the resource policy must
             // match with a wildcard (see OpsStack's identical alarmToGithubIssueLambda grant).
-            var githubTokenSecretArnWithWildcard = props.githubTokenSecretArn().endsWith("*")
-                    ? props.githubTokenSecretArn()
-                    : props.githubTokenSecretArn() + "-*";
+            var githubTokenSecretArnWithWildcard = supportTicketGithubTokenSecretArn.endsWith("*")
+                    ? supportTicketGithubTokenSecretArn
+                    : supportTicketGithubTokenSecretArn + "-*";
             this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
                     .resources(List.of(githubTokenSecretArnWithWildcard))
                     .build());
+
+            // Per-IP rate limiting on this unauthenticated public write (see
+            // app/functions/support/supportTicketPost.js): one UpdateItem per request against
+            // the same security-state table bundleGet.js uses for its own burst counter.
+            securityStateTable.grant(this.supportTicketPostLambda, "dynamodb:UpdateItem");
 
             // Grant EventBridge PutEvents permission
             this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()

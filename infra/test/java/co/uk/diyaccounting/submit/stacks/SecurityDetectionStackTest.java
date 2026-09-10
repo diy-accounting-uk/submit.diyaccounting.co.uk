@@ -201,6 +201,66 @@ class SecurityDetectionStackTest {
     }
 
     @Test
+    void deployRoleExclusionCoversPerStackCdkHelperRolesByEnvironmentPrefix() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+
+        // CDK's per-stack helper Lambdas (e.g. the CustomS3AutoDeleteObjects custom resource
+        // that empties a bucket before DESTROY) each get their own dynamically named IAM role,
+        // so the deploy-role exclusion can't list them by exact name. It must instead exclude
+        // any role name starting with this environment's own prefix, on every filter the
+        // deploy-role exclusion applies to.
+        List<String> guardedEventNames = List.of(
+                "UnauthorizedAccess",
+                "PutRolePolicy",
+                "PutBucketPolicy",
+                "AuthorizeSecurityGroupIngress",
+                "CreateNetworkAcl",
+                "CreateCustomerGateway",
+                "CreateRouteTable",
+                "CreateVpc");
+
+        for (String eventName : guardedEventNames) {
+            String pattern = metricFilters.values().stream()
+                    .map(resource -> {
+                        @SuppressWarnings("unchecked")
+                        var properties = (Map<String, Object>) resource.get("Properties");
+                        return (String) properties.get("FilterPattern");
+                    })
+                    .filter(p -> p.contains(eventName))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no metric filter pattern found for " + eventName));
+            assertTrue(
+                    pattern.contains("sessionIssuer.userName != \"docs-*\""),
+                    "pattern for " + eventName + " must exclude roles named with the docs- environment prefix,"
+                            + " was: " + pattern);
+        }
+    }
+
+    @Test
+    void routeTableChangesFilterIsScopedToEc2ToAvoidApiGatewaysOwnCreateRoute() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+
+        // API Gateway V2 has its own CreateRoute and DeleteRoute operations. Without an
+        // eventSource guard, every API Gateway route a deploy creates or replaces counts as a
+        // CIS route-table change.
+        String pattern = metricFilters.values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return (String) properties.get("FilterPattern");
+                })
+                .filter(p -> p.contains("CreateRouteTable"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no metric filter pattern found for RouteTableChanges"));
+        assertTrue(
+                pattern.contains("$.eventSource = ec2.amazonaws.com"),
+                "expected the RouteTableChanges filter pattern to scope to eventSource ec2.amazonaws.com, was: "
+                        + pattern);
+    }
+
+    @Test
     void deployRoleExclusionGuardsTheWholeEventNameChainNotJustItsLastClause() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
         var metricFilters = template.findResources("AWS::Logs::MetricFilter");

@@ -24,6 +24,8 @@ class ApiStackTest {
 
     private static final String USER_POOL_CLIENT_ID = "main-client-id";
     private static final String BOOKS_USER_POOL_CLIENT_ID = "books-client-id";
+    private static final String BOOKS_ALLOWED_ORIGINS =
+            "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
 
     private static ApiStack synthApiStack() {
         App app = new App();
@@ -120,6 +122,7 @@ class ApiStackTest {
                         .userPoolId("eu-west-2_123456789")
                         .userPoolClientId(USER_POOL_CLIENT_ID)
                         .booksUserPoolClientId(BOOKS_USER_POOL_CLIENT_ID)
+                        .booksAllowedOrigins(BOOKS_ALLOWED_ORIGINS)
                         .customAuthorizerLambdaArn(
                                 "arn:aws:lambda:eu-west-2:111111111111:function:test-custom-authorizer")
                         .buildNumber("test")
@@ -194,6 +197,32 @@ class ApiStackTest {
         assertEquals(
                 billingAuthorizerId,
                 refOf(((Map<?, ?>) checkoutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
+    }
+
+    @Test
+    void theHttpApiCarriesCorsForAnAllowListedOriginSoAnAuthoriserRejection401AlsoGetsIt() {
+        ApiStack stack = synthApiStack();
+        Template template = Template.fromStack(stack);
+
+        // An HTTP API has no REST API-style Gateway Responses, so this CorsConfiguration is the
+        // only way a 401 the JWT authoriser answers itself (before any Lambda runs) can carry
+        // access-control-allow-origin. Matching commit 40fb5c13's allow-list (BOOKS_ALLOWED_ORIGINS)
+        // means only those origins are echoed back — everyone else still gets no header.
+        template.hasResourceProperties(
+                "AWS::ApiGatewayV2::Api",
+                Match.objectLike(Map.of(
+                        "CorsConfiguration",
+                        Match.objectLike(Map.of(
+                                "AllowOrigins",
+                                List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000"),
+                                "AllowMethods",
+                                Match.arrayWith(List.of("GET", "PUT", "DELETE", "OPTIONS")),
+                                "AllowHeaders",
+                                Match.arrayWith(List.of("authorization", "content-type", "if-match")),
+                                "ExposeHeaders",
+                                Match.arrayWith(List.of("ETag")),
+                                "MaxAge",
+                                600)))));
     }
 
     @Test

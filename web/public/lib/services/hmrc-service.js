@@ -926,12 +926,15 @@ export async function postFinalDeclaration(
       }
       throw new Error(message);
     }
-    // Token allowance used up - tell the customer plainly instead of showing the raw response.
+    // Token allowance used up - carry the reason and status so the caller can show the
+    // submission-cost widget's own exhausted-balance sentence instead of a generic one.
     if (responseJson?.reason === "tokens_exhausted") {
-      const message =
-        "No tokens remaining. Your token allowance has been used. Tokens refresh at the start of the next period. Visit the Bundles page for more options.";
-      console.warn(message);
-      throw new Error(message);
+      console.warn("Final declaration blocked: token allowance used up");
+      const error = new Error("Token limit reached");
+      error.status = response.status;
+      error.reason = responseJson.reason;
+      error.tokensRemaining = responseJson.tokensRemaining;
+      throw error;
     }
     const message = `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);

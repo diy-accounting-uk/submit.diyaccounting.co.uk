@@ -398,6 +398,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
+                        .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .build());
 
@@ -498,6 +499,7 @@ public class SubmitApplication {
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
                         .booksUserPoolClientId(cognitoBooksUserPoolClientId)
+                        .booksAllowedOrigins(booksAllowedOrigins)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
                         .regionalCertificateArn(regionalCertificateArn)

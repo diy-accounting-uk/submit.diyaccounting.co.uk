@@ -158,9 +158,11 @@ public class CostExportStack extends Stack {
         // nightly copy job's own cadence: an hourly grain would only be re-aggregated to a day
         // downstream anyway.
         //
-        // The Data Exports API rejects "SELECT *", so the column list is explicit. It is the
-        // same list, in the same order, CostFocusIngestion.FOCUS_1_2_COLUMNS gives the Glue
-        // table reading this export's output — the two must change together.
+        // The Data Exports API rejects "SELECT *", so the column list is explicit, and must use
+        // the FOCUS API's own PascalCase column names (verified against the live table
+        // dictionary) rather than the lowercase snake_case Glue and Athena conventionally use.
+        // CostFocusTables derives its Glue column names from this same list, so the query and
+        // the table it feeds cannot drift apart on spelling.
         this.export = CfnExport.Builder.create(this, "FocusExport")
                 .export(CfnExport.ExportProperty.builder()
                         .name(props.exportName())

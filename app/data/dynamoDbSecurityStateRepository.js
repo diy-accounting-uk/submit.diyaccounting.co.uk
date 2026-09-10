@@ -4,9 +4,10 @@
 // app/data/dynamoDbSecurityStateRepository.js
 //
 // Repository for the {env}-env-security-state table (issue #10 data-theft detection).
-// One table, two item shapes distinguished by stateKey prefix:
-//   rate#{hashedSub}#{minute} - bundle-endpoint burst counters (bundleGet.js)
-//   geo#{hashedSub}           - mid-session country state (customAuthorizer.js)
+// One table, three item shapes distinguished by stateKey prefix:
+//   rate#{hashedSub}#{minute}         - bundle-endpoint burst counters (bundleGet.js)
+//   supportticket#{ipHash}#{minute}   - support-ticket rate limit (supportTicketPost.js)
+//   geo#{hashedSub}                   - mid-session country state (customAuthorizer.js)
 // Every item carries a short TTL; none of it is customer data.
 
 import { createLogger } from "../lib/logger.js";
@@ -26,18 +27,20 @@ function getTableName() {
  * that bumped it.
  *
  * @param {Object} params
- * @param {string} params.hashedSub
+ * @param {string} [params.namespace="rate"] - stateKey prefix, so different callers' counters
+ *   (e.g. an authenticated user's hashed sub vs. an anonymous caller's hashed IP) never collide
+ * @param {string} params.identifier - the hashed value identifying the consumer
  * @param {number|string} params.minute - minute bucket key, e.g. from nowMinute()
  * @returns {Promise<number>} the updated hit count
  */
-export async function incrementRateCounter({ hashedSub, minute }) {
+export async function incrementRateCounter({ namespace = "rate", identifier, minute }) {
   const tableName = getTableName();
 
   const { Attributes } = await executeDynamoDbCommand(
     (module) =>
       new module.UpdateCommand({
         TableName: tableName,
-        Key: { stateKey: `rate#${hashedSub}#${minute}` },
+        Key: { stateKey: `${namespace}#${identifier}#${minute}` },
         UpdateExpression: "SET #ttl = if_not_exists(#ttl, :ttl) ADD hits :one",
         ExpressionAttributeNames: { "#ttl": "ttl" },
         ExpressionAttributeValues: { ":one": 1, ":ttl": fiveMinuteTtl() },
@@ -45,7 +48,7 @@ export async function incrementRateCounter({ hashedSub, minute }) {
       }),
   );
 
-  logger.info({ message: "Rate counter incremented", hashedSub, minute, hits: Attributes?.hits });
+  logger.info({ message: "Rate counter incremented", namespace, identifier, minute, hits: Attributes?.hits });
   return Attributes.hits;
 }
 

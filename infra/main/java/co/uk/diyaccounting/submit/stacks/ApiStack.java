@@ -28,6 +28,8 @@ import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegratio
 import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.apigatewayv2.ApiMapping;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
+import software.amazon.awscdk.services.apigatewayv2.CorsHttpMethod;
+import software.amazon.awscdk.services.apigatewayv2.CorsPreflightOptions;
 import software.amazon.awscdk.services.apigatewayv2.DomainName;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
@@ -99,6 +101,15 @@ public class ApiStack extends Stack {
             return "";
         }
 
+        // The DIYA-GL storage routes' own allow-list (see BooksStack's BOOKS_ALLOWED_ORIGINS):
+        // reused here so a request an authoriser rejects before any Lambda runs still gets an
+        // access-control-allow-origin header for an allow-listed origin, not just a request a
+        // handler answers itself.
+        @Value.Default
+        default String booksAllowedOrigins() {
+            return "";
+        }
+
         String customAuthorizerLambdaArn();
 
         String buildNumber();
@@ -128,11 +139,36 @@ public class ApiStack extends Stack {
         Tags.of(this).add("BackupRequired", "false");
         Tags.of(this).add("MonitoringEnabled", "true");
 
-        // Create HTTP API Gateway v2
+        // Create HTTP API Gateway v2.
+        //
+        // An HTTP API has no per-route CORS and no REST API-style Gateway Responses, so this
+        // corsPreflight block is the only place the JWT authoriser's own 401 (and any other error
+        // API Gateway generates itself, before a Lambda runs) can carry an
+        // access-control-allow-origin header. It reuses the DIYA-GL storage routes' own allow-list
+        // (BOOKS_ALLOWED_ORIGINS, see diyaGlCors.js) rather than a second one, and only origins on
+        // that list are echoed back — everyone else still gets no header. The main submit routes
+        // share this same HttpApi, so the same fix covers their authoriser-rejected responses too;
+        // in practice CloudFront already stamps access-control-allow-origin: * on every response on
+        // that path (see EdgeStack's webResponseHeadersPolicy), so this closes the gap at the API
+        // Gateway layer underneath, not a customer-visible one.
+        List<String> diyaGlAllowedOrigins = java.util.Arrays.stream(
+                        props.booksAllowedOrigins().split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
         this.httpApi = HttpApi.Builder.create(this, props.resourceNamePrefix() + "-HttpApi")
                 .apiName(props.resourceNamePrefix() + "-api")
                 .description(
                         "API Gateway v2 for " + props.resourceNamePrefix() + " (build " + props.buildNumber() + ")")
+                .corsPreflight(CorsPreflightOptions.builder()
+                        .allowOrigins(diyaGlAllowedOrigins)
+                        .allowMethods(List.of(
+                                CorsHttpMethod.GET, CorsHttpMethod.PUT, CorsHttpMethod.DELETE, CorsHttpMethod.OPTIONS))
+                        .allowHeaders(
+                                List.of("authorization", "content-type", "if-match", "x-request-id", "x-correlationid"))
+                        .exposeHeaders(List.of("x-request-id", "x-correlationid", "Location", "Retry-After", "ETag"))
+                        .maxAge(Duration.seconds(600))
+                        .build())
                 .build();
 
         // Create API Gateway custom domain for the deployment domain so API GW accepts

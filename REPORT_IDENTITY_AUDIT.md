@@ -698,3 +698,47 @@ count starts at zero.
 **tidy. `git config --global pull.rebase=true` with `rerere.enabled=true`.** Neither is an identity
 problem. Both mean a conflicted pull silently rewrites local commits, which changes their SHAs and
 would break a signature that had already been made.
+
+---
+
+## 11. Closing the two write paths that were still open
+
+Section 10 above named four identities that are not ours. Two of the four were still being
+written by a live script when this section was added; two never were.
+
+**Fixed in submit.** `publish.yml` committed version bumps and release tags as
+`action@github.com`, which GitHub resolves to `actions-user`, a stranger's account.
+`alarm-triage.yml` committed its draft-PR change as `noreply@anthropic.com`, which resolves to the
+GitHub user `claude`. Both now commit as `github-actions[bot]`, the identity every other workflow
+in this org already uses correctly.
+
+**Nothing left to fix in the other four repositories.** A search of every workflow and script in
+`spreadsheets.diyaccounting.co.uk`, `www.diyaccounting.co.uk`, `root.diyaccounting.co.uk` and
+`diy-accounting-archive` found no script setting `noreply@anthropic.com`, `action@github.com`, or
+either employer address. All of them already commit as `github-actions[bot]`. The spreadsheets
+`noreply@anthropic.com` commits and every employer-address commit came from a person or a
+sub-agent setting the identity outside any script, matching section 1.6's finding.
+
+**The guard.** `.github/workflows/identity-guard.yml` runs on every pull request, reads every
+commit the PR adds, and fails the run if a commit's author email is not on the allow-list in
+`.github/allowed-commit-identities.yml`. The allow-list is a plain file a person edits; the check
+script is `scripts/check-commit-identities.sh`. Verified against real history (passes) and a
+synthetic `noreply@anthropic.com` commit in a scratch repository (fails with an annotated error).
+This guard exists only in submit. Spreadsheets carries the actual precedent, so it needs the same
+two files most; www and archive need them for consistency.
+
+**What stays in history, and why.** Re-run counts, 2026-09-10, from `git log --all
+--author=<address>`:
+
+| Repository | `noreply@anthropic.com` | `action@github.com` | `antony.cartwright@awaze.com` | `antony.cartwright@westfieldhealth.com` |
+|---|---|---|---|---|
+| submit | 0 | 27 | 0 | 20 |
+| spreadsheets | 20 | 0 | 26 | 1 |
+| www | 0 | 0 | 29 | 0 |
+| archive | 0 | 0 | 26 | 1 |
+
+These figures match section 1.3. None of these commits is rewritten. Rewriting would change the
+SHA of every commit that follows each one, force every open branch to rebase, and mass-rewriting a
+public repository's history is itself one of the patterns `PLAN_FLAGGED.md` warns against. Section
+9's migration already treats this as fixed going forward, not backfilled — these four counts are
+what stays on record for each repository.

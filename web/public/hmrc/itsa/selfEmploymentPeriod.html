@@ -157,6 +157,7 @@
               </div>
             </div>
 
+            <div id="submissionCost" class="submission-cost"></div>
             <button type="submit" id="submitBtn" class="btn">File Quarterly Update</button>
           </form>
         </div>
@@ -210,6 +211,7 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
     <script>
       // Global variables
       let searchCriteriaHidden = false;
@@ -340,6 +342,7 @@
         if (!response.ok) {
           const error = new Error(result.message || "Failed to file the quarterly update");
           error.status = response.status;
+          error.reason = result.reason;
           throw error;
         }
         return result;
@@ -370,6 +373,7 @@
           displayResult(result);
           document.getElementById("selfEmploymentPeriodResults").style.display = "block";
           hideStatus();
+          window.dispatchEvent(new CustomEvent("bundle-changed"));
 
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingSelfEmploymentPeriodRequest");
@@ -381,6 +385,9 @@
             sessionStorage.removeItem("hmrcAccessToken");
             sessionStorage.removeItem("hmrcTokenScope");
             showStatus("Access token expired. Please re-authenticate.", "error");
+          } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+            hideStatus();
+            window.SubmissionCost?.refresh();
           } else {
             showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
           }
@@ -466,12 +473,16 @@
             displayResult(result);
             document.getElementById("selfEmploymentPeriodResults").style.display = "block";
             hideStatus();
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
           } catch (error) {
             console.error("Error filing quarterly update:", error);
             if (error.status === 401) {
               sessionStorage.removeItem("hmrcAccessToken");
               sessionStorage.removeItem("hmrcTokenScope");
               showStatus("Access token expired. Please try again.", "error");
+            } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+              hideStatus();
+              window.SubmissionCost?.refresh();
             } else {
               showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
             }

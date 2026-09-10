@@ -55,9 +55,10 @@ vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
 });
 
 // Defer importing the ingestHandlers until after mocks are defined
-import { ingestHandler as bundleGetHandler, nowMinute } from "@app/functions/account/bundleGet.js";
+import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
+import { nowMinute } from "@app/lib/dateUtils.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
