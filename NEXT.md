@@ -37,26 +37,28 @@ deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to pro
 is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
 layers — B84's column casing and B89's `us-east-1` region in the bucket policy condition.
 
-**Batch 20 on `claude/b20-board`** carries one row, and it is a regression this session created.
+**Batch 20 on `claude/b20-board`, PR #177.** Three items landed and pushed: B98 (the deploy
+ordering B90 removed), and the destroy hardening for prod and ci, where a failed CDK build was
+cancelling four AWS-CLI steps that never needed it. Its `deploy environment` is already green,
+which is B98 passing its own first real deploy.
 
-`deploy.yml` used to wait for `deploy-environment.yml`, and it stopped. Before B90 both workflows
-carried the identical concurrency group `deploy-${{ github.ref }}` with `cancel-in-progress: false`,
-so the same string put them in one group and they serialised. Nothing recorded that the ordering
-existed or that anything depended on it. B90 keyed each on what it actually mutates, which was
-right for its own problem — two branches deploying one ci environment at once, which CloudFormation
-refuses outright — and removed the shared name with it. B94, the lookup race that broke a prod
-deploy today, is the consequence: `deploy.yml`'s `names` job reads the DIYA-GL Cognito client while
-`deploy-environment.yml` is still creating it. B94's retry is on main and is worth keeping, but it
-treats the symptom.
-
-The fix has to hold both properties at once, cross-branch protection and app-after-environment
-ordering, and must not put a caller and its callee in one group: `deploy.yml` calls
-`destroy-prod.yml` as its own `destroy-previous` job, and `test.yml` and `generate-pass.yml` were
-fixed today for that same collision on the caller side.
+Wave 4 runs as five concurrent worktree sub-agents, all branched from `claude/b20-board`:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| Deploy ordering | B98 | Sonnet | `.claude/worktrees/w-deployorder` | `claude/b20-deployorder` |
+| DIYA-GL naming, the API routes | B71.S3d | Sonnet | `.claude/worktrees/w-naming3d` | `claude/b20-naming3d` |
+| The destroy job's success condition | B99 | Sonnet | `.claude/worktrees/w-destroycond` | `claude/b20-destroycond` |
+| Video capture concurrency | B91 | Haiku | `.claude/worktrees/w-videoconc` | `claude/b20-videoconc` |
+| The fetched scripts' consumer comment | B93 | Haiku | `.claude/worktrees/w-consumercomment` | `claude/b20-consumercomment` |
+| The deploy role's privilege | B96 | Sonnet | `.claude/worktrees/w-adminrole` | `claude/b20-adminrole` |
+
+S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
+literal strings and their service worker precaches them, so both prefixes serve for the window
+`PLAN_DIYA_GL_NAMING.md` names, and they get the line when it starts and again when it is on main.
+
+Held out of this wave for collisions rather than for priority. B92 touches `destroy-prod.yml`,
+which B99 owns. The ITSA property tracks share `SubmitApplication.java` with S3d. B96 is scoped to a
+document for the same reason, with anything under `infra/` described rather than written.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
