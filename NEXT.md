@@ -67,35 +67,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   them on a change made outside a CloudFormation stack operation, and keep them firing for a
   change made by anything else. **Source**: issues #166 and #167. **Owner**: Claude Code.
   **Model**: Sonnet.
-- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
-  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
-  CORS header on it and the browser reports a CORS block rather than the real status. This is
-  the remainder of B72's second half, which fixed every error the handlers themselves return.
-  Add an authoriser response mapping, or a gateway-response CORS configuration, in
-  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
-  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
-  posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
-  form not submitted, and three parse failures. Its configuration reads as a working
-  Claude-on-Bedrock agent that triages an alarm issue and opens a draft PR when its answer holds
-  a diff, and it has never once done that. `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it,
-  so the plan rests on something unproven. The operator is considering **LangGraph** as the
-  orchestrator, because they need to learn it for other work and the learning would pay twice.
-  So this row is a design decision before it is a fix: compare finishing the Bedrock path as
-  built, rebuilding the orchestration on LangGraph, and any third option, on what each costs to
-  run, what it takes to keep working, and whether the marketplace and use-case-form blockers go
-  away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
-  workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
-  **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
-- [ ] **B81. `homebrew-diya-gl` self-commits to `main` every hour.** An hourly cron pushes to
-  `main` in that repository, about 720 runs a month against 17 commits of real content, and the
-  repository has no ruleset at all, so nothing stands between the cron and the default branch.
-  It is also missing from the workspace `CLAUDE.md` repository table, which is why nobody has
-  looked at it. Work out what the cron is for and whether it needs to run at all, cut the
-  schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
-  The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -131,6 +102,35 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
+- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
+  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
+  CORS header on it and the browser reports a CORS block rather than the real status. This is
+  the remainder of B72's second half, which fixed every error the handlers themselves return.
+  Add an authoriser response mapping, or a gateway-response CORS configuration, in
+  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
+  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
+  posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
+  form not submitted, and three parse failures. Its configuration reads as a working
+  Claude-on-Bedrock agent that triages an alarm issue and opens a draft PR when its answer holds
+  a diff, and it has never once done that. `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it,
+  so the plan rests on something unproven. The operator is considering **LangGraph** as the
+  orchestrator, because they need to learn it for other work and the learning would pay twice.
+  So this row is a design decision before it is a fix: compare finishing the Bedrock path as
+  built, rebuilding the orchestration on LangGraph, and any third option, on what each costs to
+  run, what it takes to keep working, and whether the marketplace and use-case-form blockers go
+  away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
+  workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
+  **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
+- [ ] **B81. `homebrew-diya-gl` self-commits to `main` every hour.** An hourly cron pushes to
+  `main` in that repository, about 720 runs a month against 17 commits of real content, and the
+  repository has no ruleset at all, so nothing stands between the cron and the default branch.
+  It is also missing from the workspace `CLAUDE.md` repository table, which is why nobody has
+  looked at it. Work out what the cron is for and whether it needs to run at all, cut the
+  schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
+  The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B82. The global git config will break signatures the day signing is turned on.**
   `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
   rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
@@ -251,16 +251,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
-- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
-  submission and the production-credentials email described the service as AGPL open source, and
-  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
-  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D17. **Owner**: Operator. **Model**: none.
+- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
+  submission and the production-credentials email described the service as AGPL open source, and
+  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
+  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 - [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
   first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
   advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
@@ -270,25 +270,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Blocked
 
-- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
-  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
-  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
-  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
-  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
-  secret only when a pass carries an email restriction, so the failure surfaces on those passes
-  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
-  the secret material is an AWS write and a decision about the value, so the operator settles it,
-  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
-  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
-- [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
-  Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
-  so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
-  `s3://prod-env-analytics-lake-972912397388/exports/prod/2026-09-09/`: 21 CSVs, one per view,
-  and 8 JSONs, one per objective. Then pull one day through the notebook's data path
-  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
-  entries, so a field that never fills is found now rather than in three months. **Source**:
-  BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
-  export exists at 02:15 UTC on 2026-09-10.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
   call with `403 RESOURCE_FORBIDDEN`. Re-run it after O34, work through whatever the sandbox
@@ -347,6 +328,25 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+- [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
+  Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
+  so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
+  `s3://prod-env-analytics-lake-972912397388/exports/prod/2026-09-09/`: 21 CSVs, one per view,
+  and 8 JSONs, one per objective. Then pull one day through the notebook's data path
+  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
+  entries, so a field that never fills is found now rather than in three months. **Source**:
+  BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
+  export exists at 02:15 UTC on 2026-09-10.
+- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
+  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
+  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
+  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
+  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
+  secret only when a pass carries an email restriction, so the failure surfaces on those passes
+  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
+  the secret material is an AWS write and a decision about the value, so the operator settles it,
+  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
+  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
