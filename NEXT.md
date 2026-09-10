@@ -79,18 +79,40 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `destroy-ci.yml` too, which carries the same guards. **Source**: run 34512145857. **Owner**:
   Claude Code. **Model**: Sonnet.
 
-  It has now fired twice: run 34512761956, dispatched 18:11 UTC, failed at the same step 10. Both
-  spare prod sets are still standing because of it, and no destroy should be dispatched again until
+  It has now fired twice: run 34512761956, dispatched 18:11 UTC, failed at the same step 10. The
+  spare prod set is still standing because of it, and no destroy should be dispatched again until
   this row lands.
+
+  A third fault sits beside those: a destroy against a deployment with no stacks reports success.
+  Runs 34512251765 and 34512721011, 18:06 and 18:10 UTC, were given `prod-b95799e` and
+  `prod-504ec0d`. Neither name has ever had a stack in prod. Both runs passed the refusal, deleted
+  nothing and finished green, so the log reads exactly like a destroy that worked. Fix it here:
+  after the name is validated, count the stacks it matches and fail when the count is zero.
+- [ ] **B103. `postVatReturnBehaviour` turned the prod deploy run red.** Run 34511779119 on main,
+  18:01 UTC on 2026-09-10, finished `failure`. One job failed, `delegate to test workflow /
+  simulator - postVatReturnBehaviour`; prod deployed, the twelve prod probes passed, the last known
+  good moved to prod-f0787f7 and the previous set retired, all after it. The test that failed is
+  "The user sees a submission error message for the HMRC sandbox scenario": HMRC answered
+  `VRN_INVALID`, the server logged the failure and marked the async request completed, and the page
+  polled "Still processing..." for the full 60 seconds without ever rendering the error. The same
+  suite passed on the standalone `test` run of the same commit 30 minutes later, and on five earlier
+  runs today, so it is a race rather than a break: the receipt page misses a terminal state that
+  arrives while it is between polls. Find it in the poll loop, not in the test's timeout. **Source**:
+  run 34511779119, job log. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
   `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
-  stacks. A second set, `ci-claud6807`, went up at 16:13, so two ci sets stand at once. The sweep in
-  `destroy-ci.yml` is the backstop and runs at 18:34, but the per-set self-destruct is what should
-  have taken it and did not. Find whether the schedule fired and failed, or never fired: the stack
-  exists, so the rule should be readable with `aws --profile submit-ci events describe-rule` and the
-  Lambda's own log group says whether it ran. A self-destruct that does not fire turns every ci
-  deploy into a set the sweep has to catch, which is how sets accumulate. **Source**: this board's
-  deployment pass, 2026-09-10 16:41 UTC. **Owner**: Claude Code. **Model**: Sonnet.
+  stacks, an hour and a half past its own slot. A second set, `ci-claud6807`, went up at 16:13, so
+  two ci sets stood at once.
+
+  Both are gone now: at 19:26 UTC ci holds no `-app-` stacks at all. `destroy-ci.yml` did not take
+  them — its cron is `34 2,4,6,8,10,12 * * *` UTC and its last run was 13:04, before either set was
+  created. So the self-destructs did fire, hours late. That is the thing to find: whether the
+  EventBridge schedule itself is late, or the rule fires on time and the Lambda retries. The stacks
+  are deleted, so the rule is gone with them; the Lambda's log group outlives it and carries the
+  invocation times against the creation times above. A self-destruct that runs hours late leaves
+  every ci deploy standing well past its slot, which is how two sets came to overlap.
+  **Source**: this board's deployment pass, 2026-09-10 16:41 and 19:26 UTC. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
@@ -133,6 +155,13 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
+- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
+  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
+  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
+  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
+  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
+  first and stop if either holds an object, in which case S3a's copy sequence applies.
+  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
   in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
   and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
@@ -150,16 +179,48 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
-- [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
-  `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
-  `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
-  `prod-env-books-972912397388` returns nothing and ci holds only behaviour-run objects, and
-  the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
-  first and stop if either holds an object, in which case S3a's copy sequence applies.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
+- [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
+  first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
+  answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
+  attempting to invoke". On the HMRC Developer Hub, open the sandbox application with client id
+  `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` and subscribe it to Self Assessment Test Support, Obligations,
+  Self Employment Business, Business Source Adjustable Summary and Individual Calculations.
+  Only the Developer Hub account holder can do this; no stored credential in `.env*` or Secrets
+  Manager reaches it. Unblocks B11.T7's run. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
+  run record. **Owner**: Operator. **Model**: none.
+- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
+  Companies House has no create-test-user API, so the operator registers a throwaway account
+  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
+  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
+  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
+  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
+  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
+- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
+  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
+  `default` bundle, with the live Companies House filing client. A real filing changes a real
+  company's register, so this is the operator's own company and sign-in. Tell Claude Code how
+  it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
+  **Owner**: Operator. **Model**: none.
+- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
+  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
+  once they have the presenter's name, contact name, address, email address and telephone
+  number, and then issue the test presenter credentials to use in every test submission; the
+  specification they pointed at is the public TIS set the build already follows. Reply with
+  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
+  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
+  the credentials arrive, put them on the GitHub `ci` environment as the secrets
+  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
+  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b.
+  **Owner**: Operator. **Model**: none.
+- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
+  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
+  one with conversion import from GA4 property 523400333's key events, and a reserve floor
+  the loop must not spend below. Name the floor to Claude Code with the account id; the first
+  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
+  D17. **Owner**: Operator. **Model**: none.
 - [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
   through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
   label does not fail anything — but until they exist with real descriptions and colours they carry
@@ -206,45 +267,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   delays schedules — but it still polls a registry that could just tell it. **Source**: B81's
   report. **Owner**: Operator, or Claude Code once the operator says the writes are approved.
   **Model**: none.
-- [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
-  first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
-  answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
-  attempting to invoke". On the HMRC Developer Hub, open the sandbox application with client id
-  `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` and subscribe it to Self Assessment Test Support, Obligations,
-  Self Employment Business, Business Source Adjustable Summary and Individual Calculations.
-  Only the Developer Hub account holder can do this; no stored credential in `.env*` or Secrets
-  Manager reaches it. Unblocks B11.T7's run. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
-  run record. **Owner**: Operator. **Model**: none.
-- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
-  Companies House has no create-test-user API, so the operator registers a throwaway account
-  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
-  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
-  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
-  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
-- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
-  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
-  `default` bundle, with the live Companies House filing client. A real filing changes a real
-  company's register, so this is the operator's own company and sign-in. Tell Claude Code how
-  it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
-  **Owner**: Operator. **Model**: none.
-- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
-  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
-  once they have the presenter's name, contact name, address, email address and telephone
-  number, and then issue the test presenter credentials to use in every test submission; the
-  specification they pointed at is the public TIS set the build already follows. Reply with
-  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
-  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
-  the credentials arrive, put them on the GitHub `ci` environment as the secrets
-  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
-  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b.
-  **Owner**: Operator. **Model**: none.
-- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
-  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
-  one with conversion import from GA4 property 523400333's key events, and a reserve floor
-  the loop must not spend below. Name the floor to Claude Code with the account id; the first
-  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D17. **Owner**: Operator. **Model**: none.
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
@@ -329,14 +351,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
   and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
   runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
-  never got them. The grants are on batch 18. The first real export is the next 02:15 UTC run after
-  that reaches prod. Then pull one day through the notebook's data path
+  never got them. The grants reached prod at 18:14 UTC on 2026-09-10:
+  `prod-env-raw-export-publish`'s role now carries `s3:GetObject` and `s3:ListBucket` on
+  `prod-env-analytics-lake-972912397388`. The first real export is the 02:15 UTC run of 2026-09-11.
+  Then pull one day through the notebook's data path
   (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
   entries, so a field that never fills is found now rather than in three months. Proof the run
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
-  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked until batch 18 reaches
-  prod and one nightly runs.
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the 02:15 UTC
+  nightly of 2026-09-11.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
