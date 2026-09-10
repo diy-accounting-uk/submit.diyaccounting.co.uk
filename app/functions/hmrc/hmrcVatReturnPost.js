@@ -752,7 +752,12 @@ export async function workerHandler(event) {
     let traceparent;
     let correlationId;
     try {
-      const body = JSON.parse(record.body);
+      let body;
+      try {
+        body = JSON.parse(record.body);
+      } catch (parseError) {
+        throw new Error(`Failed to parse SQS message body: ${parseError.message}`);
+      }
       userSub = body.userId;
       requestId = body.requestId;
       // trace: 6
@@ -840,6 +845,19 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Successfully processed SQS message", requestId });
     } catch (error) {
+      // If we couldn't parse the body or extract IDs, re-throw so SQS retries or sends to DLQ
+      // rather than silently dropping the record.
+      const isParseOrIdError = error.message.includes("Failed to parse SQS message body") ||
+                               error.message.includes("SQS record missing userId or requestId");
+      if (isParseOrIdError) {
+        logger.error({
+          message: "Re-throwing parse or ID extraction error for SQS redelivery",
+          error: error.message,
+          messageId: record.messageId,
+        });
+        throw error;
+      }
+
       const isRetryable = isRetryableError(error);
 
       if (isRetryable) {

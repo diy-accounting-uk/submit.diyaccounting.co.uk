@@ -214,13 +214,21 @@ describe("hmrcVatReturnPost workerHandler", () => {
     expect(updates[0].input.ExpressionAttributeValues[":status"]).toBe("completed");
   });
 
-  test("a record whose body is not JSON is logged and dropped without retry, and reports the failure", async () => {
+  test("a record whose body is not JSON is re-thrown for SQS redelivery instead of being silently dropped", async () => {
     const unparseable = { messageId: "msg-unparseable", body: "not json" };
 
-    await expect(hmrcVatReturnPostWorker({ Records: [unparseable] })).resolves.toBeUndefined();
+    let caught;
+    try {
+      await hmrcVatReturnPostWorker({ Records: [unparseable] });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeDefined();
+    expect(caught.message).toContain("Failed to parse SQS message body");
 
     expect(mockFetch).not.toHaveBeenCalled();
     expect(await asyncTableUpdateCalls()).toHaveLength(0);
-    expect(mockPublishActivityFailureEvent).toHaveBeenCalledWith(expect.objectContaining({ failure: "internal-error" }));
+    expect(await receiptPutCalls()).toHaveLength(0);
   });
 });
