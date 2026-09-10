@@ -189,6 +189,16 @@ jobs:
         if: steps.role.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
+      # The only gate this pipeline can safely use before spending an agent run and posting to
+      # the issue: re-read CloudWatch's own alarm history for the exact name and window the
+      # issue body claims. An issue whose claimed alarm or window cannot be confirmed fails this
+      # step, and the job stops here with no triage run, no comment, no draft PR.
+      - name: Verify the alarm actually fired
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          node scripts/verify-alarm-origin.mjs \
+            --alarm-name "$ALARM_NAME" --window "$ALARM_WINDOW" --region "$ALARM_REGION"
+
       - name: Resolve the evidence links for this alarm
         if: steps.role.outputs.configured == 'true'
         run: |
