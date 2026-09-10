@@ -242,8 +242,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
   email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34;
-  issue #15. **Owner**: Operator. **Model**: none.
+  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
