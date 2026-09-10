@@ -38,16 +38,15 @@ branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on 
 the board is maintained here on `main` under the docs exception and a second copy conflicts at
 merge.
 
-Wave 3 runs as three concurrent worktree sub-agents:
+Wave 3 runs as concurrent worktree sub-agents:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 | DIYA-GL naming, the client and the toggle | B71.S3c | Sonnet | `.claude/worktrees/w-naming3c` | `claude/b18-naming3c` |
 | The main API's wildcard CORS | B86 | Sonnet | `.claude/worktrees/w-edgecors` | `claude/b18-edgecors` |
-| The DIYA-GL fixture directory | B71.S3f | Haiku | `.claude/worktrees/w-fixture` | `claude/b18-fixture` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23, B89, B71.S3b.
+CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge. S3c is the row a sibling repository holds live names from — the toggle flag, the
@@ -145,13 +144,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the main API gets the same allow list the storage routes use, or whether the wildcard is the
   intended answer for a public API, and write down which. Found while fixing B76. **Source**:
   B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B71.S3f. The DIYA-GL test fixture directory is still called `books`.**
-  `fixtures/books/diya-gl-example.zip` is read by `diyaGlPut.test.js`, `diyaGlCorsHeaders.test.js`,
-  `diyaGlStorage.system.test.js` and both DIYA-GL behaviour tests. It is a same-repository code
-  identifier, so `PLAN_DIYA_GL_NAMING.md`'s NM-S2 should have carried it and its class-4 table does
-  not list it — which is why S3b left it alone. Nothing outside this repository reads it, so it can
-  move on its own at any time. **Source**: B71.S3b's build, 2026-09-10. **Owner**: Claude Code.
-  **Model**: Haiku.
 
 ## Ready: operator
 
