@@ -51,7 +51,8 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Homebrew tap cron | B81 | Sonnet | `.claude/worktrees/w-homebrew` | `claude/b17-homebrew` |
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
-Merged into the batch, off this list when the branch's checks pass: B79, B81.
+Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
+submit half, B85.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -74,18 +75,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `claude/cost-focus-columns` at `4c74a0b2` and has never been pushed: push it, open the PR, and
   read the next environment deploy to confirm the export creates. Until it does, prod has no
   FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
-  Claude Code. **Model**: Haiku.
-- [ ] **B85. A push does not supersede the runs it replaces.** A push to a batch branch fans out
-  to roughly forty jobs across `test`, `deploy environment` and `deploy`, and the previous push's
-  runs keep going to completion beside the new ones. Some workflows carry a `concurrency` block
-  and the rest do not. Add one to every workflow with a `push` or `pull_request` trigger that
-  lacks it, keyed on `${{ github.ref }}` and not on `head_ref` or `ref_name`: a branch push is
-  `refs/heads/<branch>` and its pull request is `refs/pull/<n>/merge`, so `github.ref` keeps both
-  views alive and each cancels only the run it replaces, where the other two keys collapse them
-  and lose the merge-ref run that gates the PR. A workflow that deploys or destroys real
-  infrastructure does not get `cancel-in-progress`, because a cancelled deploy leaves a stack
-  mid-change. A run already in flight carries no group and has to be cancelled by hand once.
-  **Source**: the spreadsheets repository, which fixed the same shape on 2026-09-10. **Owner**:
   Claude Code. **Model**: Haiku.
 - [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
   that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
@@ -172,19 +161,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
   workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
   **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
-- [ ] **B82. The global git config will break signatures the day signing is turned on.**
-  `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
-  rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
-  replays a recorded conflict resolution silently while it happens. `REPORT_IDENTITY_AUDIT.md`
-  ranks SSH commit signing as the prerequisite for every auto-merge policy in
-  `PLAN_REPOSITORY_AUTOMATION.md`, and its check is `verification.verified` on each commit of a
-  PR, so this setting quietly defeats the thing everything else rests on. Settle what the local
-  git config should be before signing is enabled, not after: whether pulls merge or rebase here,
-  whether `rerere` stays on, and what a sub-agent's worktree inherits. Write the answer where a
-  future session reads it rather than leaving it in one machine's global config. **Source**:
-  `REPORT_IDENTITY_AUDIT.md`; `git config --global` reads `pull.rebase=true`,
-  `rerere.enabled=true`, with no `commit.gpgsign` and no `gpg.format` set. **Owner**: Claude Code
-  to propose, Operator to choose. **Model**: Sonnet.
 - [ ] **B77. The public support form files GitHub issues under the operator's name.**
   `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
   it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
@@ -195,16 +171,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
   authentication. Say in the issue body that it came from the public form. **Source**:
   `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B80. Four identities in the history are not ours.** `noreply@anthropic.com` authored 20
-  commits on the spreadsheets `main`, and it resolves to a third-party GitHub account named
-  `claude`; `action@github.com` authored 27 in submit and resolves to `actions-user`, a
-  stranger's account; and two employer addresses, `antony.cartwright@awaze.com` and
-  `antony.cartwright@westfieldhealth.com`, appear across archive, spreadsheets, www and submit.
-  History is not rewritten here, so this is about stopping the flow and recording what is there:
-  find what still writes each address, fix it, and say in `REPORT_IDENTITY_AUDIT.md` what remains
-  in history and why it stays. The spreadsheets commits came from a sub-agent setting the
-  identity inline with nothing to prevent a repeat, so the fix is a guard, not a one-off cleanup.
-  **Source**: `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
   repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
   and `www`. Establish per repository which author and committer identities appear in history,
@@ -251,6 +217,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
   first and stop if either holds an object, in which case S3a's copy sequence applies.
   **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
+  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
+  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
+  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
+  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
+  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
+  to its own legitimate committers. The submit session does not edit sibling repositories, so
+  spreadsheets takes its own copy through its board and the other three need a session or the
+  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
+  **Model**: Haiku per repository.
 
 ## Ready: operator
 
@@ -260,6 +236,19 @@ it nine tests fail on a missing file that has nothing to do with the change.
   our own prod deploys, and B30t stops them doing it again. All three name deployment
   prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
   **Owner**: Operator. **Model**: none.
+- [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
+  be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
+  `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
+  `rerere.enabled=true`, whose guard is `rerere.autoupdate` staying unset so a replayed resolution
+  still pauses for review. What is left is three global lines and registering the key: set
+  `gpg.format ssh`, `user.signingkey` and `commit.gpgsign true`, and add the SSH key as a signing
+  key on the GitHub account. One global config covers all six repositories, since each has one
+  committer. `verify-commit-signatures.yml` is on the batch and reports each commit's
+  `verification.verified` in the job summary without failing, because no commit is signed yet;
+  flip its last step to fail and make it a required ruleset check once signing is routine. This
+  is what every auto-merge policy in `PLAN_REPOSITORY_AUTOMATION.md` rests on. **Source**:
+  `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
+  none.
 - [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
   (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
   make: create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and write and put
