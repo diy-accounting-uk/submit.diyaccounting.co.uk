@@ -132,6 +132,12 @@ it nine tests fail on a missing file that has nothing to do with the change.
   AdministratorAccess stays and what watches it. **Source**:
   `iam list-attached-role-policies` on submit-ci, 2026-09-10; B30t's exclusion. **Owner**: Claude
   Code to propose, Operator to choose. **Model**: Sonnet.
+- [ ] **B97. `prod-env-github-probe-failed` has been in alarm since 00:26 UTC.** Issue #174, opened
+  05:26 on 2026-09-10 against deployment prod-318271f, on a five-hour evaluation window. It is the
+  only one of the five overnight alarm issues with no explanation attached to it: the other four are
+  one incident, the raw export's missing lake grants. Find what the probe checks, why it failed at
+  00:26, and whether it has recovered; the long window means it can sit in alarm for hours after the
+  cause has gone. **Source**: issue #174. **Owner**: Claude Code. **Model**: Haiku.
 
 ## Ready: operator
 
@@ -141,23 +147,14 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
-- [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
-  chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
-  nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
-  our own prod deploys, and B30t stops them doing it again. All three name deployment
-  prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
-  **Owner**: Operator. **Model**: none.
-- [ ] **O39. Two attribution rules contradict each other; pick one.**
-  `REPORT_IDENTITY_AUDIT.md` recommendation 5 wants one canonical `Co-Authored-By` trailer in all
-  six `CLAUDE.md` files, because fourteen forms in the history is one of the signals behind the May
-  2026 suspension (`_developers/archive/PLAN_FLAGGED.md`). But the trailer is not set by any
-  `CLAUDE.md` today: it arrives per session from the harness, which names the model that did the
-  work and says it replaces any earlier attribution guidance. Every commit in batches 17 and 18
-  carries `Claude Opus 5 (1M context)` for that reason. So the two rules want different things:
-  one form that never varies, against a form that says which model wrote the code. Decide which
-  matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
-  per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
-  finding. **Owner**: Operator. **Model**: none.
+- [ ] **O35. Close five alarm issues.** #166 and #167, the two CIS alarms that fire on our own
+  prod deploys, which B30t stops. #171 (`raw-export-publish-errors`), #172
+  (`analytics-nightly-failed`) and #170 (`cis-unauthorized-api-calls`) are one incident with one
+  cause, now fixed on batch 18: the raw export Lambda's role had `s3:PutObject` on `exports/*` and
+  no `GetObject` or `ListBucket`, so Athena could not read the lake, and the `AccessDenied` it threw
+  at 02:12 UTC is also what tripped the CIS unauthorized-calls alarm five minutes later. Close all
+  three once the fix reaches prod and a nightly run succeeds. #164 is already closed. **Source**:
+  this board's alarm pass. **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -298,15 +295,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-- [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
-  Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
-  so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
-  `s3://prod-env-analytics-lake-972912397388/exports/prod/2026-09-09/`: 21 CSVs, one per view,
-  and 8 JSONs, one per objective. Then pull one day through the notebook's data path
+- [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
+  the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
+  `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
+  `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
+  and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
+  runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
+  never got them. The grants are on batch 18. The first real export is the next 02:15 UTC run after
+  that reaches prod. Then pull one day through the notebook's data path
   (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
-  entries, so a field that never fills is found now rather than in three months. **Source**:
-  BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
-  export exists at 02:15 UTC on 2026-09-10.
+  entries, so a field that never fills is found now rather than in three months. Proof the run
+  worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
+  showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked until batch 18 reaches
+  prod and one nightly runs.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
