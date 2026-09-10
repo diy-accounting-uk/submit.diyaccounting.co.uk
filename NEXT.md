@@ -31,26 +31,26 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 17 on `claude/b17-board`, PR #169.** Pushed at 5649f2fb with twelve items; its checks are
-running. The integration branch has its own worktree at `.claude/worktrees/b17`; every sub-agent
-worktree branches from `claude/b17-board`, not from `main`, and `NEXT.md` deliberately does not
-travel on the batch, because the board is maintained here on `main` under the docs exception and a
-second copy conflicts at merge.
+**Batch 18 on `claude/b18-board`.** Batch 17 merged as PR #169 at 6994c749 and main is deploying
+it now; `copilot-setup-steps` has already passed on main for the first time since 2026-08-24. The
+integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
+branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
+the board is maintained here on `main` under the docs exception and a second copy conflicts at
+merge.
 
-On the branch and off this list when its checks pass: B84, B83, B30t, B76, B77, B79, B80's submit
-half, B81's report, B82, B85, B88, B11.T20, and the DIYA-GL callback fix.
+Wave 2 runs as four concurrent worktree sub-agents:
 
-The first deploy of this branch failed at `diyaGlSubscriptionBehaviour-ci`, on the run and the
-retry. Not a regression: the spreadsheets site moved its DIYA-GL pages from `/books/` to
-`/diya-gl/` and left a 301 behind, and our OAuth redirect URI held the old path as a literal
-string, so the test's exact-prefix `waitForURL` never matched. A redirect is transparent to a
-browser and opaque to a prefix matcher, which is the same shape B71.S3d points the other way when
-our API prefix moves. The fix is on the branch.
+| Workstream | Item | Model | Worktree | Branch |
+|---|---|---|---|---|
+| DIYA-GL naming, the stack rename | B71.S3b | Sonnet | `.claude/worktrees/w-naming3b` | `claude/b18-naming3b` |
+| The alarm-origin verifier | B87 | Sonnet | `.claude/worktrees/w-auditcode` | `claude/b18-auditcode` |
+| The Bedrock triage path | B78b | Sonnet | `.claude/worktrees/w-triagefix` | `claude/b18-triagefix` |
+| The catalogue's free ITSA writes | B11.T23 | Sonnet | `.claude/worktrees/w-catalogue` | `claude/b18-catalogue` |
 
-Wave 2 branches off `claude/b17-board` once this PR is stable: the DIYA-GL deployed-identifier
-chain (B71.S3b to S3e, serialized in one worktree, since they share `EdgeStack`, `ApiStack`,
-`SubmitApplication` and `cdk.json`) and the ITSA property tracks (B11.T11 to T14) on their shared
-spine.
+`PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
+previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
+tracks (B11.T11 to T14) wait for S3b to land, because they share `SubmitApplication.java`,
+`DataStack.java`, `HmrcStack.java` and `cdk.json` with it. B86 waits for S3d for the same reason.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -58,30 +58,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B84. Every main deploy fails on the cost export.** `deploy environment from main` run
-  34414615591 failed at `cost-CostExportStack`: `AWS::BCMDataExports::Export` answered 400,
-  "the columns in the query provided are not a subset of the table FOCUS_1_2_AWS", and the stack
-  rolled back. `FOCUS_1_2_COLUMNS` was written in Glue's snake_case; the live schema
-  (`aws bcm-data-exports get-table --table-name FOCUS_1_2_AWS`) names all 60 columns in
-  PascalCase, with only the three AWS extension columns keeping a lowercase `x_` prefix. Glue and
-  the Athena views over `cost_focus` want the snake_case spellings, so the fix derives one from
-  the other rather than pairing two lists. The fix is committed on the local branch
-  `claude/cost-focus-columns` at `4c74a0b2` and has never been pushed: push it, open the PR, and
-  read the next environment deploy to confirm the export creates. Until it does, prod has no
-  FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
-  Claude Code. **Model**: Haiku.
-- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
-  that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
-  check. The cause was that the `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN`
-  nor `SUBMIT_DEPLOY_ROLE_ARN`, so `role-to-assume` resolved to an empty string. The job installs
-  uv and nothing else, so it needs no AWS credentials at all: the fix removes both configure steps,
-  and is committed on the local branch `claude/ops-copilot-setup` at `d158cb45`, never pushed.
-  Push it and open the PR. It also leaves the two role ARNs unused on the `copilot` environment,
-  where they would hand an unattended agent the ci deployment role, so ask the operator to clear
-  them once the PR merges. `security-review.yml` assigns an OWASP issue to GitHub's Copilot coding
-  agent with its weekly cron commented out; decide whether either stays in the same pass.
-  **Source**: runs on `main` and `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**:
-  Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
