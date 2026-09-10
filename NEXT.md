@@ -42,7 +42,7 @@ authoriser rejecting a caller on a route that exists. The spreadsheets repositor
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
 
-Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1, plus B92 which waited on B102's file:
+Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's remaining wave:
 
 - [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
   run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
@@ -110,23 +110,6 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1, plu
   `completed` first and then have the older `processing` write clobber it, dropping the result
   attribute. Every later poll then read `processing` and answered 202 until the client gave up. The
   fix awaits the marker before the processor starts.
-- [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
-  `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
-  stacks, an hour and a half past its own slot. A second set, `ci-claud6807`, went up at 16:13, so
-  two ci sets stood at once.
-
-  Both are gone now: at 19:26 UTC ci holds no `-app-` stacks at all. `destroy-ci.yml` did not take
-  them — its cron is `34 2,4,6,8,10,12 * * *` UTC and its last run was 13:04, before either set was
-  created. So the self-destructs did fire, hours late. That is the thing to find: whether the
-  EventBridge schedule itself is late, or the rule fires on time and the Lambda retries. The stacks
-  are deleted, so the rule is gone with them; the Lambda's log group outlives it and carries the
-  invocation times against the creation times above. A self-destruct that runs hours late leaves
-  every ci deploy standing well past its slot, which is how two sets came to overlap.
-  **Source**: this board's deployment pass, 2026-09-10 16:41 and 19:26 UTC. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
-  **In flight** in `.claude/worktrees/b22-self-destruct` on `worktree-agent-self-destruct`, off `claude/b22-board`. No PR yet.
-
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
@@ -147,6 +130,32 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B101. Every redeploy pushes a ci set's self-destruct two hours further out.** The
+  investigation is done and EventBridge is not the culprit. `ci-claudf179` was created 13:03 with a
+  destruct at 15:03; a push at 14:15 rewrote it to 16:15, and a push at 14:55 rewrote it again to
+  16:53, each overwriting a schedule that had not yet fired. EventBridge then invoked at 16:53:41,
+  30 seconds after the target it was actually given. The control case proves it: `ci-claud6807` was
+  deployed once, never redeployed, and fired within a minute of its computed time. A branch under
+  active development therefore never tears down, because every push defers it again.
+
+  The cause is `deploy.yml:460`: `SELF_DESTRUCT_START_DATETIME=$(date -u -d "+N hours")` is
+  recomputed on every push-triggered redeploy with nothing anchoring it to the deployment's own
+  creation, and `SelfDestructStack.java` rightly treats what it is handed as authoritative. Fix it
+  by computing the start once, at first creation, and reusing it on updates — or by having the
+  Lambda check elapsed time against a persisted creation marker rather than trusting a schedule
+  that can be silently rewritten. Say which and why.
+
+  Two more things to settle in the same change, because they are the same confusion:
+  `SELF_DESTRUCT_DELAY_HOURS` is never forwarded through `deploy-cdk-stack.yml`, so
+  `props.selfDestructDelayHours()` always falls back to `cdk.json`'s `1` — the stack output and the
+  recurring safety-net cron both say one hour while `deploy.yml` intends two. And `destroy-ci.yml`
+  holds `SELF_DESTRUCT_DELAY_HOURS: '8'` as the sweep's minimum age. Three numbers, one concept.
+  Also fix `infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java:56-58`, where `envOr`'s
+  "using alternative" log prints the null environment value instead of the value it actually
+  resolved, which is what made this take longer to read.
+
+  **Source**: this batch's investigation, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
+  Sequenced after B92, which holds `deploy.yml`.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
