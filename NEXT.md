@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t, B76, B78's comparison, B77, B88.
+submit half, B85, B30t, B76, B78's comparison, B77, B88, B11.T20.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -111,10 +111,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   cumulative period summaries, which is what 2025-26 onwards actually files) and T19 (the
   cumulative pages). Same shared spine and the same one-at-a-time rule as T11 to T14.
   **Source**: `PLAN_ITSA_PHASE_2.md` T15 to T19. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T20. ITSA phase 2: the submission cost line.** `submission-cost.js` above the submit
-  control on every ITSA page that writes, saying what the submission costs before the customer
-  sends it. Every page T14, T19 and T22 add includes it, so it lands before or with them.
-  **Source**: `PLAN_ITSA_PHASE_2.md` T20; plan row D8. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B11.T21 and T22. ITSA phase 2: losses, claims and tax liability adjustments.** The
   Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 endpoints, then their two
   pages. The operator decided on 2026-09-09 to build these rather than declare the product does
@@ -209,6 +205,17 @@ it nine tests fail on a missing file that has nothing to do with the change.
   dispatch against an old issue reads an empty window and answers confidently about nothing.
   B88 fixed the spend guard, so the budget's deny action can see the spend this would create. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
   **Owner**: Claude Code, Operator to check the first triage. **Model**: Sonnet.
+- [ ] **B11.T23. The catalogue cannot say which ITSA writes are free.** `submit.catalogue.toml`
+  carries one flat `self-employed` activity, `tokenCost = 1`, `metered = true`, covering all ten
+  ITSA paths including the free ones — the annual submission, the adjustments, and the losses and
+  tax liability adjustments that D1 and D8 price at nothing. T20's cost line had to work around it
+  with a `data-metered="false"` attribute on the one page that is free today, which is a fact about
+  pricing living in a page's markup. T14, T19 and T22 each add more pages to that same single
+  activity, so the workaround spreads unless the catalogue learns the distinction first. Give the
+  free ITSA writes their own activity, or give the activity a per-path cost, and delete the
+  attribute. Changing the catalogue also changes what `tokenEnforcement.js` charges, so the server
+  side moves with it. **Source**: B11.T20's build, 2026-09-10; `PLAN_ITSA_PHASE_2.md` D1 and D8.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
