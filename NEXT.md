@@ -63,6 +63,24 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
   One commit per track. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T22; operator, 2026-09-09.
   **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B105. The cross-account vault's restore grant names a principal nothing can assume.**
+  `CrossAccountBackupVaultStack.java` grants the restore actions to `ci-env-backup-role`, whose
+  trust policy admits only `backup.amazonaws.com`. No CLI session and no Actions job can
+  authenticate as it, so `restore-drill.yml` — which runs as ci's deployment role — can never use
+  the grant. The stack cannot fix this on its own: `CrossAccountBackupVaultStackProps` carries only
+  `sourceBackupRoleArns` and `vaultName`, so the deployment role's ARN has to be added as a new
+  prop, populated by the caller and threaded through `SubmitApplication.java` and the workflow that
+  deploys the backup account. The reasoning is recorded in the stack beside the grant. **Source**:
+  B25c's investigation. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B113. A corrupted SQS body strands a VAT request in processing forever.** In
+  `hmrcVatReturnPost.js`'s `workerHandler`, an unparseable record body throws before `userSub` and
+  `requestId` are assigned, so the `if (userSub && requestId)` guard around `asyncApiServices.error()`
+  is always false in that branch. The request is never marked completed or failed and every later
+  poll waits on a status that never arrives — the same stranding class as the race fixed in
+  `asyncApiServices.js`. Not currently producible: the body is this codebase's own `JSON.stringify`
+  output. Read the ids out of the record before the parse that can throw, or fail the record
+  explicitly. The worker test pins today's silent-drop behaviour and will need updating with the
+  fix. **Source**: B111's test pass. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -138,6 +156,12 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
+- [ ] **O41. Redeploy the backup account stack.** The cross-account vault's restore grant reached
+  main on 2026-09-09 but the backup account's stack was last deployed 2026-08-29, so the grant is
+  not live. Dispatch `setup-backup-account.yml`. This is an AWS write in the backup account, so it
+  is yours. It does not on its own make the drill work — B105 is the other half — but nothing can
+  be tested until the deployed policy matches the code. **Source**: B25c's investigation.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
