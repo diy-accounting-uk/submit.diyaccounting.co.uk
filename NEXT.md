@@ -37,7 +37,7 @@ finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified be
 `npm run lint:workflows` clean across 38 workflows.
 
 On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
-B89, B90, B11.T23, and the concurrency caller collision below.
+B89, B90, B11.T23, B95, B97, B52x's grants, and the concurrency caller collision below.
 
 The batch's first run was fully red and three of the four causes are worth keeping. `test.yml`
 carried B85's `concurrency: test-${{ github.ref }}` with `cancel-in-progress: true`, and
@@ -132,12 +132,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   AdministratorAccess stays and what watches it. **Source**:
   `iam list-attached-role-policies` on submit-ci, 2026-09-10; B30t's exclusion. **Owner**: Claude
   Code to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B97. `prod-env-github-probe-failed` has been in alarm since 00:26 UTC.** Issue #174, opened
-  05:26 on 2026-09-10 against deployment prod-318271f, on a five-hour evaluation window. It is the
-  only one of the five overnight alarm issues with no explanation attached to it: the other four are
-  one incident, the raw export's missing lake grants. Find what the probe checks, why it failed at
-  00:26, and whether it has recovered; the long window means it can sit in alarm for hours after the
-  cause has gone. **Source**: issue #174. **Owner**: Claude Code. **Model**: Haiku.
 
 ## Ready: operator
 
