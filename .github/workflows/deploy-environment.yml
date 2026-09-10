@@ -10,9 +10,16 @@ concurrency:
   # Two branches that both touch a watched infra path (an env stack's Java source, cdk.json,
   # web/public, the holding page) would otherwise deploy to the identical stack at once and hit
   # CloudFormation's "Stack is in UPDATE_IN_PROGRESS state" error, which is what happened to the
-  # sibling spreadsheets repo. There is no wait-for-ci-deploys equivalent for this workflow, so
-  # the group always resolves to the effective environment (the explicit input when a
+  # sibling spreadsheets repo. This workflow has no wait-for-ci-deploys step of its own, so the
+  # group always resolves to the effective environment (the explicit input when a
   # workflow_dispatch names one, otherwise the branch), for ci as much as for prod.
+  #
+  # deploy.yml's `wait-for-environment-deploy` job polls this workflow's runs (by workflow file
+  # name and this same branch-based environment resolution) before its own `names` job reads
+  # anything this workflow creates, e.g. the DIYA-GL Cognito client IdentityStack creates below —
+  # see that job's comment in deploy.yml. It re-derives this group's resolution independently
+  # rather than sharing it, so changing how an environment name is resolved here needs the same
+  # change on that side.
   group: deploy-environment-${{ (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
   cancel-in-progress: false
 

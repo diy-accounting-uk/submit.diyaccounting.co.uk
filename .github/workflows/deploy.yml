@@ -19,6 +19,14 @@ concurrency:
   # *effective* target is prod (explicit deployment-name, explicit environment-name, or a push to
   # main) the group always resolves to the same 'deploy-prod', or a same-time push to main and an
   # explicit-input prod dispatch would land in different groups and run concurrently.
+  #
+  # This group gives no ordering at all against deploy-environment.yml, which used to share this
+  # exact group string by accident (both keyed on plain github.ref) until B90 split them so two
+  # branches stopped fighting over deploy-environment's shared `{env}-env-*` stacks. That side
+  # effect was never written down, so removing it broke deploy.yml's `names` job racing
+  # deploy-environment.yml's `deploy identity` job for the DIYA-GL Cognito client (B94). The
+  # `wait-for-environment-deploy` job below restores that ordering on purpose, by polling instead
+  # of a shared group — see its comment for why a shared group is the wrong tool here.
   group: deploy-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod') || github.ref }}
   cancel-in-progress: false
 
@@ -217,9 +225,58 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
+  # Restores app-after-environment ordering on purpose (see the concurrency block's comment for
+  # the regression this fixes: B94, caused by removing an ordering nobody had written down when
+  # B90 split deploy.yml and deploy-environment.yml's concurrency groups).
+  #
+  # A shared concurrency group would restore the ordering in one line, but it is the wrong tool:
+  # deploy-environment.yml's paths (Java infra source, cdk.json, holding page) change far less
+  # often than deploy.yml's (app/functions, web/public, package.json, ...), so folding deploy.yml
+  # into deploy-environment.yml's per-environment group would queue every ordinary app-only ci
+  # push behind that shared slot too. GitHub keeps only the latest queued run per group, so a
+  # third push while a second is queued drops the second's run entirely — exactly the failure
+  # wait-for-ci-deploys exists to avoid for deploy.yml's own cross-branch races, and merging
+  # groups here would reintroduce it on a wider, busier group. A workflow_run trigger (start
+  # deploy.yml only after deploy-environment.yml completes) was also rejected: deploy.yml's push
+  # trigger needs to keep firing immediately for the (usual) case where no environment deploy
+  # runs at all, and layering a second workflow_run trigger on top risks two runs for one push
+  # (one push-triggered, one workflow_run-triggered) with no clean way to dedupe them.
+  #
+  # So this polls instead, the same technique wait-for-ci-deploys already uses for the other
+  # cross-branch race, extended to watch deploy-environment.yml and match by resolved environment
+  # rather than by which run was created first: both workflows fire off the same push and can be
+  # created in either order a few hundred milliseconds apart, so "older than me" isn't reliable
+  # here the way it is for two runs of the same workflow. No deadlock risk: neither workflow calls
+  # the other with `uses:`, unlike deploy.yml's `destroy-previous` job calling destroy-prod.yml,
+  # which is why that pairing keeps its own distinct group instead of this polling approach.
+  #
+  # `names` (below) needs this job because its own Cognito lookup is what raced IdentityStack in
+  # B94; every job in this workflow that needs `names` — test, mvn-package,
+  # npm-unit-test-coverage, push-images(-us-east-1), and everything past them — inherits the wait
+  # for free. If you change how either workflow resolves its environment name, keep this in step:
+  # it re-derives deploy-environment.yml's side of that resolution from head_branch alone (see
+  # environmentResolvedFromBranch in wait-for-ci-deploys.mjs).
+  wait-for-environment-deploy:
+    name: 'wait for environment deploy'
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Wait for an in-progress or queued deploy-environment.yml run for this environment
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+          workflows: 'deploy-environment.yml'
+          match-mode: 'environment'
+          target-environment: ${{ needs.params.outputs.github-environment }}
+
   names:
     needs:
       - params
+      - wait-for-environment-deploy
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
