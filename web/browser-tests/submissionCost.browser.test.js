@@ -20,7 +20,15 @@ name = "Self Assessment (HMRC)"
 bundles = ["resident-itsa"]
 tokenCost = 1
 metered = true
-paths = ["hmrc/itsa/selfEmploymentPeriod.html"]
+paths = ["activity.html"]
+
+[[activities]]
+id = "self-employed-year-end"
+name = "Self Assessment year-end submissions (HMRC)"
+bundles = ["resident-itsa"]
+tokenCost = 0
+metered = true
+paths = ["free-activity.html"]
 `;
 
 test.describe("Submission cost widget", () => {
@@ -34,14 +42,13 @@ test.describe("Submission cost widget", () => {
     submissionCostJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/submission-cost.js"), "utf-8");
   });
 
-  function pageHtml({ metered = true } = {}) {
-    const dataAttr = metered ? "" : ' data-metered="false"';
+  function pageHtml() {
     return `<!doctype html>
 <html lang="en">
   <head><base href="http://localhost:3000/" /></head>
   <body>
     <input id="turnover" type="number" />
-    <div id="submissionCost" class="submission-cost"${dataAttr}></div>
+    <div id="submissionCost" class="submission-cost"></div>
     <button type="submit" id="submitBtn">File Quarterly Update</button>
     <script src="lib/toml-parser.js"></script>
     <script src="lib/request-cache.js"></script>
@@ -50,7 +57,7 @@ test.describe("Submission cost widget", () => {
 </html>`;
   }
 
-  async function setupRoutes(page, { loggedIn = true, bundleResponse = null, metered = true, buttonDisabled = false } = {}) {
+  async function setupRoutes(page, { loggedIn = true, bundleResponse = null, buttonDisabled = false } = {}) {
     if (loggedIn) {
       await page.addInitScript(() => {
         try {
@@ -60,9 +67,15 @@ test.describe("Submission cost widget", () => {
     }
 
     const html = buttonDisabled
-      ? pageHtml({ metered }).replace('<button type="submit" id="submitBtn">', '<button type="submit" id="submitBtn" disabled>')
-      : pageHtml({ metered });
+      ? pageHtml().replace('<button type="submit" id="submitBtn">', '<button type="submit" id="submitBtn" disabled>')
+      : pageHtml();
+    // Two distinct page paths, each matching a different catalogue activity - activity.html is
+    // the metered one (self-employed), free-activity.html the free one (self-employed-year-end)
+    // - so the widget picks the right activity from the URL the same way the server does.
     await page.route("**/activity.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: html });
+    });
+    await page.route("**/free-activity.html", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: html });
     });
     await page.route("**/lib/toml-parser.js", async (route) => {
@@ -112,10 +125,12 @@ test.describe("Submission cost widget", () => {
     await expect(page.locator("#submitBtn")).toBeEnabled();
   });
 
-  test("says the write is free and never touches the submit button when the page declares it unmetered", async ({ page }) => {
-    await setupRoutes(page, { loggedIn: true, metered: false });
+  test("says the write is free and never touches the submit button on a page whose activity carries no token cost", async ({
+    page,
+  }) => {
+    await setupRoutes(page, { loggedIn: true });
 
-    await page.goto("http://localhost:3000/activity.html", { waitUntil: "domcontentloaded" });
+    await page.goto("http://localhost:3000/free-activity.html", { waitUntil: "domcontentloaded" });
     await delay(300);
 
     await expect(page.locator("#submissionCost")).toHaveText("This submission is free. It does not use a token.");

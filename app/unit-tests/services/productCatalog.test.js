@@ -79,6 +79,29 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 
+  it("self-employed costs a token and does not carry the annual submission or the adjustable summary", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.tokenCost).toBe(1);
+    expect(activity.paths).not.toContain("hmrc/itsa/annualSubmission.html");
+    expect(activity.paths).not.toContain("hmrc/itsa/adjustments.html");
+  });
+
+  it("self-employed-year-end carries the annual submission and the adjustable summary at no token cost", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed-year-end");
+    expect(activity).toBeTruthy();
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.metered).toBe(true);
+    expect(activity.paths).toEqual(["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html"]);
+    // Same entitlement and access rules as self-employed - a year-end write is still gated on
+    // an ITSA bundle, it just spends nothing from it.
+    expect(bundlesForActivity(catalog, "self-employed-year-end")).toEqual(bundlesForActivity(catalog, "self-employed"));
+    const selfEmployed = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.environments).toEqual(selfEmployed.environments);
+    expect(activity.hmrcScopesRequired).toEqual(selfEmployed.hmrcScopesRequired);
+  });
+
   it("file-micro-entity-accounts activity should be granted by resident-ltd and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
     expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident-pro"]);
