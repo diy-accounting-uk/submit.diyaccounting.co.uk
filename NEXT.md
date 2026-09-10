@@ -37,7 +37,16 @@ finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified be
 `npm run lint:workflows` clean across 38 workflows.
 
 On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
-B89, B90, B11.T23, and B87's labels and CODEOWNERS.
+B89, B90, B11.T23, B95, B97, B52x's grants, and the concurrency caller collision below.
+
+The batch's first run was fully red and three of the four causes are worth keeping. `test.yml`
+carried B85's `concurrency: test-${{ github.ref }}` with `cancel-in-progress: true`, and
+`deploy.yml` calls that same workflow with `uses:` — a reusable workflow evaluates its concurrency
+in the caller's context, so the delegated call and the standalone push run shared a group and one
+cancelled the other, at 08:23:43 against jobs starting at 08:23:45. `generate-pass.yml` had it too.
+Both group keys now carry `github.workflow`. That is the same caller-and-callee shape B90 designed
+around for `deploy.yml` calling `destroy-prod.yml`, shipped four hours earlier in the same batch by
+a row that did not look for callers.
 
 The integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
 branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
@@ -60,6 +69,19 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B94. The app deploy reads a Cognito client the environment deploy has not created yet.**
+  Batch 18's first run failed at `deploy api` with `COGNITO_DIYA_GL_CLIENT_ID is not set`, and the
+  timestamps say why: `deploy.yml`'s `names` job did its live Cognito lookup at 08:22:40 to 08:23:06,
+  while `deploy-environment.yml`'s `deploy identity` job created the client and wrote the parameter
+  at 08:23:48 to 08:26:22. Two workflows triggered by one push, racing. The lookup found nothing and
+  carried on, because `.github/actions/lookup-resources/action.yml` treats that specific lookup as
+  lenient by design — no retry, empty string on failure — a choice made so a destroy is not aborted
+  by a transient lookup, unlike the `USER_POOL_ID` lookup two lines above it which retries three
+  times with backoff. So this reproduces for any newly created environment-level Cognito client, not
+  just this rename. The instance has cleared, since the client and parameter now exist. Give the
+  lookup the retry its sibling has, or make the app deploy wait on the environment deploy; the
+  action is shared with the destroy workflows, so changing its leniency needs care. **Source**: run
+  34454797197 against run 34454796683, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
   spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
   `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
@@ -95,6 +117,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
   keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
   same mechanism, which is new work rather than another key. **Source**: B90's finding,
   2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B96. The deployment role holds AdministratorAccess, and B30t just made it quieter.**
+  `submit-ci-deployment-role` carries exactly one policy, the AWS managed
+  `arn:aws:iam::aws:policy/AdministratorAccess`, with no inline policies. Every GitHub Actions
+  deploy runs as that. On its own that is a known shape and BACKLOG 33 already asks the same
+  question of `submit-backup`'s SSO policy. What makes it worth its own row is what landed beside
+  it today: B30t excluded any principal whose role name starts with the environment prefix from the
+  CIS route-table and S3-bucket-policy alarms, to stop a CDK-generated per-stack helper role opening
+  an issue on every deploy. That exclusion was the right fix for the noise, and it means those two
+  alarms no longer see an identity that can do anything in the account. The compensating control is
+  `cis-iam-policy-changes`, which still fires on the grant itself, so the gap is narrower than it
+  first reads — but nobody chose this combination deliberately. Work out what the deploy actually
+  needs and whether a scoped policy is reachable without breaking a CDK bootstrap, or record why
+  AdministratorAccess stays and what watches it. **Source**:
+  `iam list-attached-role-policies` on submit-ci, 2026-09-10; B30t's exclusion. **Owner**: Claude
+  Code to propose, Operator to choose. **Model**: Sonnet.
 
 ## Ready: operator
 
@@ -104,23 +141,14 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
-- [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
-  chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
-  nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
-  our own prod deploys, and B30t stops them doing it again. All three name deployment
-  prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
-  **Owner**: Operator. **Model**: none.
-- [ ] **O39. Two attribution rules contradict each other; pick one.**
-  `REPORT_IDENTITY_AUDIT.md` recommendation 5 wants one canonical `Co-Authored-By` trailer in all
-  six `CLAUDE.md` files, because fourteen forms in the history is one of the signals behind the May
-  2026 suspension (`_developers/archive/PLAN_FLAGGED.md`). But the trailer is not set by any
-  `CLAUDE.md` today: it arrives per session from the harness, which names the model that did the
-  work and says it replaces any earlier attribution guidance. Every commit in batches 17 and 18
-  carries `Claude Opus 5 (1M context)` for that reason. So the two rules want different things:
-  one form that never varies, against a form that says which model wrote the code. Decide which
-  matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
-  per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
-  finding. **Owner**: Operator. **Model**: none.
+- [ ] **O35. Close five alarm issues.** #166 and #167, the two CIS alarms that fire on our own
+  prod deploys, which B30t stops. #171 (`raw-export-publish-errors`), #172
+  (`analytics-nightly-failed`) and #170 (`cis-unauthorized-api-calls`) are one incident with one
+  cause, now fixed on batch 18: the raw export Lambda's role had `s3:PutObject` on `exports/*` and
+  no `GetObject` or `ListBucket`, so Athena could not read the lake, and the `AccessDenied` it threw
+  at 02:12 UTC is also what tripped the CIS unauthorized-calls alarm five minutes later. Close all
+  three once the fix reaches prod and a nightly run succeeds. #164 is already closed. **Source**:
+  this board's alarm pass. **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -261,15 +289,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-- [ ] **B52x. A short extract from the raw export to prove every field fills.** The RawExport
-  Lambda reached prod at 18:01 UTC on 2026-09-09, after that morning's 02:15 UTC nightly run,
-  so nothing has been exported yet. The first files land at 02:15 UTC on 2026-09-10 in
-  `s3://prod-env-analytics-lake-972912397388/exports/prod/2026-09-09/`: 21 CSVs, one per view,
-  and 8 JSONs, one per objective. Then pull one day through the notebook's data path
+- [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
+  the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
+  `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
+  `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
+  and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
+  runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
+  never got them. The grants are on batch 18. The first real export is the next 02:15 UTC run after
+  that reaches prod. Then pull one day through the notebook's data path
   (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
-  entries, so a field that never fills is found now rather than in three months. **Source**:
-  BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
-  export exists at 02:15 UTC on 2026-09-10.
+  entries, so a field that never fills is found now rather than in three months. Proof the run
+  worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
+  showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked until batch 18 reaches
+  prod and one nightly runs.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
