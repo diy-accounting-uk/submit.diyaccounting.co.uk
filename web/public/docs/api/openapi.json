@@ -72,6 +72,30 @@
         }
       }
     },
+    "/diya-gl/{bookId}/versions/{version}" : {
+      "get" : {
+        "summary" : "Read a book version",
+        "description" : "Reads one version of a stored book, or its latest version, for the authenticated books user",
+        "operationId" : "getBookVersion",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "version",
+          "in" : "path",
+          "required" : true,
+          "description" : "\"latest\" or a positive version number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/pass" : {
       "get" : {
         "summary" : "Validate a pass code",
@@ -483,13 +507,6 @@
         }
       }
     },
-    "/books" : {
-      "get" : {
-        "summary" : "List the caller's books",
-        "description" : "Lists every stored book's metadata for the authenticated books user",
-        "operationId" : "listBooks"
-      }
-    },
     "/companies-house/accounts" : {
       "post" : {
         "summary" : "Submit a micro-entity accounts filing",
@@ -572,6 +589,43 @@
           "in" : "path",
           "required" : true,
           "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/diya-gl" : {
+      "get" : {
+        "summary" : "List the caller's books",
+        "description" : "Lists every stored book's metadata for the authenticated books user",
+        "operationId" : "listBooks"
+      }
+    },
+    "/diya-gl/{bookId}" : {
+      "put" : {
+        "summary" : "Store a book version",
+        "description" : "Writes the next version of a book with optimistic concurrency via If-Match",
+        "operationId" : "putBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Delete a book",
+        "description" : "Deletes a book and every stored version for the authenticated books user",
+        "operationId" : "deleteBook",
+        "parameters" : [ {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
           "schema" : {
             "type" : "string"
           }
@@ -1123,36 +1177,6 @@
           "in" : "path",
           "required" : true,
           "description" : "The Companies House transaction id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/books/{bookId}" : {
-      "put" : {
-        "summary" : "Store a book version",
-        "description" : "Writes the next version of a book with optimistic concurrency via If-Match",
-        "operationId" : "putBook",
-        "parameters" : [ {
-          "name" : "bookId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The book's id",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      },
-      "delete" : {
-        "summary" : "Delete a book",
-        "description" : "Deletes a book and every stored version for the authenticated books user",
-        "operationId" : "deleteBook",
-        "parameters" : [ {
-          "name" : "bookId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The book's id",
           "schema" : {
             "type" : "string"
           }
@@ -2101,30 +2125,6 @@
           "in" : "path",
           "required" : true,
           "description" : "The 8-character company number",
-          "schema" : {
-            "type" : "string"
-          }
-        } ]
-      }
-    },
-    "/books/{bookId}/versions/{version}" : {
-      "get" : {
-        "summary" : "Read a book version",
-        "description" : "Reads one version of a stored book, or its latest version, for the authenticated books user",
-        "operationId" : "getBookVersion",
-        "parameters" : [ {
-          "name" : "bookId",
-          "in" : "path",
-          "required" : true,
-          "description" : "The book's id",
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "version",
-          "in" : "path",
-          "required" : true,
-          "description" : "\"latest\" or a positive version number",
           "schema" : {
             "type" : "string"
           }

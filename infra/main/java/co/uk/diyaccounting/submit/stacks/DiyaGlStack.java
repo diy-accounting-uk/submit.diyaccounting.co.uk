@@ -147,6 +147,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlListGetLambda = diyaGlListGetApiLambda.ingestLambda;
         this.diyaGlListGetLambdaLogGroup = diyaGlListGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlListGetLambdaProps);
+        this.lambdaFunctionProps.add(
+                onLegacyPath(this.diyaGlListGetLambdaProps, props.sharedNames().diyaGlListGetLegacyUrlPath));
         this.diyaGlListGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -191,6 +193,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlVersionGetLambda = diyaGlVersionGetApiLambda.ingestLambda;
         this.diyaGlVersionGetLambdaLogGroup = diyaGlVersionGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlVersionGetLambdaProps);
+        this.lambdaFunctionProps.add(
+                onLegacyPath(this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetLegacyUrlPath));
         this.diyaGlVersionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
@@ -240,6 +244,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlPutLambda = diyaGlPutApiLambda.ingestLambda;
         this.diyaGlPutLambdaLogGroup = diyaGlPutApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlPutLambdaProps);
+        this.lambdaFunctionProps.add(
+                onLegacyPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGlPutLegacyUrlPath));
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject", "s3:PutObject", "s3:DeleteObject"))
@@ -283,6 +289,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlDeleteLambda = diyaGlDeleteApiLambda.ingestLambda;
         this.diyaGlDeleteLambdaLogGroup = diyaGlDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlDeleteLambdaProps);
+        this.lambdaFunctionProps.add(
+                onLegacyPath(this.diyaGlDeleteLambdaProps, props.sharedNames().diyaGlDeleteLegacyUrlPath));
         this.diyaGlDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -306,10 +314,22 @@ public class DiyaGlStack extends Stack {
         cfnOutput(this, "DiyaGlVersionGetLambdaArn", this.diyaGlVersionGetLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlPutLambdaArn", this.diyaGlPutLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlDeleteLambdaArn", this.diyaGlDeleteLambda.getFunctionArn());
-        cfnOutput(this, "DiyaGlApiBaseUrl", props.sharedNames().publicBaseUrl + "api/v1/books");
+        cfnOutput(this, "DiyaGlApiBaseUrl", props.sharedNames().publicBaseUrl + "api/v1/diya-gl");
 
         infof(
                 "DiyaGlStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    /**
+     * Builds a second route entry for the same already-created Lambda, differing only in
+     * urlPath. ApiStack imports the function by ARN rather than creating it, so this adds a
+     * route with no new Lambda resource. Serves the old {@code /api/v1/books} path alongside the
+     * new {@code /api/v1/diya-gl} one for the window: the spreadsheets site's cloud.js, including
+     * copies held by installed service workers, keeps calling the old path until its own deploy
+     * switches over.
+     */
+    private static AbstractApiLambdaProps onLegacyPath(AbstractApiLambdaProps primary, String legacyUrlPath) {
+        return ApiLambdaProps.builder().from(primary).urlPath(legacyUrlPath).build();
     }
 }

@@ -21,14 +21,18 @@ const logger = createLogger({ source: "app/functions/diyaGl/diyaGlVersionGet.js"
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "get", "/api/v1/books/:bookId/versions/:version", ingestHandler);
-  app.options("/api/v1/books/:bookId/versions/:version", async (httpRequest, httpResponse) => {
-    const lambdaResult = await ingestHandler({
-      requestContext: { http: { method: "OPTIONS" } },
-      headers: httpRequest.headers,
+  // Both prefixes serve for the window: the spreadsheets site's cloud.js, including copies held
+  // by installed service workers, keeps calling the old path until its own deploy switches over.
+  for (const urlPath of ["/api/v1/diya-gl/:bookId/versions/:version", "/api/v1/books/:bookId/versions/:version"]) {
+    registerLambdaRoute(app, "get", urlPath, ingestHandler);
+    app.options(urlPath, async (httpRequest, httpResponse) => {
+      const lambdaResult = await ingestHandler({
+        requestContext: { http: { method: "OPTIONS" } },
+        headers: httpRequest.headers,
+      });
+      httpResponse.status(lambdaResult.statusCode).set(lambdaResult.headers).send(lambdaResult.body);
     });
-    httpResponse.status(lambdaResult.statusCode).set(lambdaResult.headers).send(lambdaResult.body);
-  });
+  }
 }
 /* v8 ignore stop */
 

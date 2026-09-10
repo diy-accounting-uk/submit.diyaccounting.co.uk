@@ -28,6 +28,20 @@
 // IMPORTANT: UpdateUserPoolClient replaces ALL settings, not just the ones you specify.
 // This script reads the current config and replays it with only SupportedIdentityProviders modified.
 
+// The spreadsheets repository runs this file. Two steps in its deploy.yml fetch it from our
+// main branch by raw URL during a CI run and execute it. Nothing in this repository records
+// that: there is no import to grep, no test that fails, and no reference a rename would break.
+//
+// So changing what --client accepts, adding a required argument, or changing what this prints
+// breaks a caller you cannot see from here. Give the old form a window first. The "books" alias
+// below is one, live: it accepts their existing spelling while they move to the new one.
+//
+// They have agreed to pin their fetch to a commit rather than track our main, but until that
+// lands on THEIR main every merge here still reaches their runners immediately. Check which is
+// true before you rely on either. Once pinned, a change here reaches them only when they bump
+// that SHA, which turns a surprise into a silence — so a change worth their having needs telling
+// them.
+
 import { fileURLToPath } from "node:url";
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";

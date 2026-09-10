@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -255,28 +256,51 @@ public class SecurityDetectionStack extends Stack {
         // ----------------------------------------------------------------------------------
         String cisDeploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
         String cisGithubActionsRoleName = "submit-%s-github-actions-role".formatted(props.envName());
+
+        // Two exclusion clauses, not one: the wildcard's drift risk below only pays for itself
+        // on the two controls it actually fixes.
+        //
+        // The three long-standing exact-name patterns identify the deployment pipeline's own
+        // roles by name. Root, IAM-user and any other AssumedRole session (including an
+        // operator's own SSO session, which issues as "AWSReservedSSO_...") still fire these
+        // controls: only a name that matches exactly is excluded.
+        List<String> deployRoleExactPatterns =
+                List.of("cdk-hnb659fds-*", cisDeploymentRoleName, cisGithubActionsRoleName);
+        String cisDeployRoleExactExclusion = deployRoleExclusionClause(deployRoleExactPatterns);
+
         // CDK also runs per-stack helper Lambdas as custom resources during deploy: emptying a
         // bucket before DESTROY, completing point-in-time recovery, and similar. Each gets its
         // own IAM role with a name CDK generates per stack and per deploy, so it can't be listed
-        // here by exact name the way the two roles above can. Every one of them is still named
-        // with this environment's own prefix, the same convention the salt-secret-read alarm
-        // below already relies on, so match that prefix instead of the individual roles.
-        String cisDeployRoleExclusion = (" && (($.userIdentity.type != \"AssumedRole\") || "
-                        + "(($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-*\") "
-                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
-                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
-                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\")))")
-                .formatted(cisDeploymentRoleName, cisGithubActionsRoleName, props.envName());
+        // by exact name the way the three roles above can. Every one of them is still named with
+        // this environment's own prefix, the same convention the salt-secret-read alarm above
+        // already relies on, so an "<env>-*" wildcard catches them without listing names AWS
+        // itself generates.
+        //
+        // This wildcard once applied to all eight deployChangedControls below, but only two of
+        // them, RouteTableChanges and S3BucketPolicyChanges, were ever actually noisy from
+        // these helper roles on ordinary deploys. Sharing one clause across all eight silently
+        // widened the other six too, without anyone deciding that. The wildcard now applies to
+        // just the two controls it fixes; the other six, IamPolicyChanges included, keep the
+        // three exact patterns above. An enumerated list of AWS-generated helper-role names
+        // would be its own drift risk, so the wildcard's reach stays as narrow as the noise it
+        // fixes, not as wide as the clause that used to carry it.
+        List<String> deployRolePatternsWithEnvWildcard =
+                List.of("cdk-hnb659fds-*", cisDeploymentRoleName, cisGithubActionsRoleName, props.envName() + "-*");
+        String cisDeployRoleWildcardExclusion = deployRoleExclusionClause(deployRolePatternsWithEnvWildcard);
 
-        Set<String> deployChangedControls = Set.of(
-                "UnauthorizedApiCalls",
-                "IamPolicyChanges",
-                "S3BucketPolicyChanges",
-                "SecurityGroupChanges",
-                "NaclChanges",
-                "NetworkGatewayChanges",
-                "RouteTableChanges",
-                "VpcChanges");
+        // The six controls that carry only the three exact deploy-role names, no wildcard.
+        // IamPolicyChanges is here on purpose: it is the compensating control for keeping
+        // AdministratorAccess on the deployment role and the CDK bootstrap's cfn-exec-role (see
+        // REPORT_DEPLOYMENT_ROLE_AUDIT.md). Adding the env-name wildcard here would hide any
+        // AttachRolePolicy/PutRolePolicy call made under a role that happens to start with the
+        // environment's name, which is exactly the kind of grant this control exists to catch.
+        Set<String> deployChangedControlsExact = Set.of(
+                "UnauthorizedApiCalls", "IamPolicyChanges", "SecurityGroupChanges", "NaclChanges",
+                "NetworkGatewayChanges", "VpcChanges");
+
+        // The two controls proven noisy from CDK's per-stack helper roles, so they alone carry
+        // the env-name wildcard.
+        Set<String> deployChangedControlsWithEnvWildcard = Set.of("RouteTableChanges", "S3BucketPolicyChanges");
 
         for (CisControl control : CIS_CONTROLS) {
             String metricName = "Cis" + control.name();
@@ -286,13 +310,16 @@ public class SecurityDetectionStack extends Stack {
             // changes the deployment pipeline itself performs. Root and IAMUser events (which
             // have no sessionIssuer) pass through; only AssumedRole events matching deploy roles
             // are excluded. Only a person or unrecognised principal should fire these alarms.
-            if (deployChangedControls.contains(control.name())) {
+            String deployRoleExclusion = deployChangedControlsWithEnvWildcard.contains(control.name())
+                    ? cisDeployRoleWildcardExclusion
+                    : (deployChangedControlsExact.contains(control.name()) ? cisDeployRoleExactExclusion : null);
+            if (deployRoleExclusion != null) {
                 // Patterns are "{ <event-name chain> }": wrap the chain in its own parentheses
                 // before appending the guard, since "&&" binds tighter than "||" and an
                 // unparenthesized guard would apply to the chain's last clause only, leaving
                 // every other event name matching unconditionally.
                 String eventNameChain = filterPatternStr.substring(2, filterPatternStr.length() - 2);
-                filterPatternStr = "{ (" + eventNameChain + ")" + cisDeployRoleExclusion + " }";
+                filterPatternStr = "{ (" + eventNameChain + ")" + deployRoleExclusion + " }";
             }
 
             MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-Cis" + control.name() + "MetricFilter")
@@ -326,6 +353,16 @@ public class SecurityDetectionStack extends Stack {
                         + " secret unexpected-read alarm, and the fourteen CIS CloudWatch metric filter controls, all"
                         + " wired to the security-findings topic",
                 this.getNode().getId());
+    }
+
+    // Builds the "exclude these role name patterns, unless the event isn't an AssumedRole at
+    // all" guard clause shared by both the exact and the env-wildcard deploy-role exclusions, so
+    // the two only ever differ in which name patterns they list, not in guard structure.
+    private static String deployRoleExclusionClause(List<String> excludedRoleNamePatterns) {
+        String negatedPatterns = excludedRoleNamePatterns.stream()
+                .map(pattern -> "($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")".formatted(pattern))
+                .collect(Collectors.joining(" && "));
+        return " && (($.userIdentity.type != \"AssumedRole\") || (%s))".formatted(negatedPatterns);
     }
 
     /** One CIS AWS Foundations Benchmark CloudWatch log metric filter control. */

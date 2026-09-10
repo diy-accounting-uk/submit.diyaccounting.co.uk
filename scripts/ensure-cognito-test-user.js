@@ -17,6 +17,21 @@
 // bundles for whoever they log in as, and a rotation from one lane would invalidate another
 // lane's password mid-run.
 
+// The spreadsheets repository runs this file. One step in its deploy.yml fetches it from our
+// main branch by raw URL during a CI run and executes it, then masks what it prints into a
+// behaviour test. Nothing in this repository records that: there is no import to grep, no test
+// that fails, and no reference a rename would break.
+//
+// So changing the argument order, adding a required argument, or changing the shape of what
+// this prints breaks a caller you cannot see from here. Give the old form a window first;
+// scripts/toggle-cognito-native-auth.js has a live example of one.
+//
+// They have agreed to pin their fetch to a commit rather than track our main, but until that
+// lands on THEIR main every merge here still reaches their runners immediately. Check which is
+// true before you rely on either. Once pinned, a change here reaches them only when they bump
+// that SHA, which turns a surprise into a silence — so a change worth their having needs telling
+// them.
+
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import {
   CognitoIdentityProviderClient,
