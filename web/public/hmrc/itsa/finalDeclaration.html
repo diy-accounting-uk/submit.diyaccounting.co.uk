@@ -151,6 +151,7 @@
               and prosecution if I give false information.
             </label>
           </div>
+          <div id="submissionCost" class="submission-cost"></div>
           <button type="button" id="submitDeclarationBtn" class="btn" disabled>Submit Final Declaration</button>
         </div>
 
@@ -207,6 +208,7 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
     <script>
       let retrievedCalculation = null;
       let retrievedNino = "";
@@ -397,12 +399,16 @@
               document.getElementById("declarationContainer").style.display = "none";
               document.getElementById("finalDeclarationResults").style.display = "block";
               hideStatus();
+              window.dispatchEvent(new CustomEvent("bundle-changed"));
             } catch (error) {
               // A figure changed since the calculation the customer confirmed - the fix is a
               // fresh calculation, not a retry of this same submission.
               if (String(error.message || "").includes("RULE_RECENT_SUBMISSIONS_EXIST") || String(error.message || "").includes("More recent submissions exist")) {
                 document.getElementById("recentSubmissionsChanged").style.display = "block";
                 hideStatus();
+              } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+                hideStatus();
+                window.SubmissionCost?.refresh();
               } else {
                 showStatus(`Failed to submit the final declaration: ${error.message}`, "error");
               }
@@ -451,6 +457,7 @@
             document.getElementById("declarationContainer").style.display = "none";
             document.getElementById("finalDeclarationResults").style.display = "block";
             hideStatus();
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
             sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
           } else {
             return;
@@ -458,7 +465,12 @@
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("oauth_state");
         } catch (error) {
-          showStatus(`Failed: ${error.message}`, "error");
+          if (error.status === 403 && error.reason === "tokens_exhausted") {
+            hideStatus();
+            window.SubmissionCost?.refresh();
+          } else {
+            showStatus(`Failed: ${error.message}`, "error");
+          }
           sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
           sessionStorage.removeItem("pendingFinalDeclarationSubmitRequest");
           sessionStorage.removeItem("hmrcAccessToken");
