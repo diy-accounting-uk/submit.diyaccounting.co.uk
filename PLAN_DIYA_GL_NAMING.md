@@ -147,7 +147,9 @@ generate run. This lands in NM-4 (spreadsheets); nothing in Submit reads the sta
 **Landed and live.** S3d shipped in PR #178 and reached prod in deployment prod-f0787f7 on
 2026-09-10. Both prefixes were verified answering on the live apex — `/api/v1/books` and
 `/api/v1/diya-gl` each return 401 to an unauthenticated request, which is the authoriser rejecting
-a caller on a route that exists. S3e, the bucket, is the only naming row left.
+a caller on a route that exists. S3e, the bucket, is the only naming row left. The decision also settles the three rows S3d was
+going to remove — the `BooksUserPoolClientId` output, the `--client books` alias and the `/books/`
+callback URLs. Each of them is read by the spreadsheets repository, so each stays for good.
 
 Decided by the operator on 2026-09-10: both `/api/v1/books/*` and `/api/v1/diya-gl/*` are served
 permanently. The old prefix is never retired, and the spreadsheets repository's `cloud.js` keeps
@@ -211,11 +213,11 @@ versions and no delete markers. `ci-env-books-367191799875` holds only behaviour
 | Workflow job `deploy-books` | `deploy-diya-gl` | `deploy-api`'s `needs:`, same file | in-place | S3b |
 | Literal `${DEPLOYMENT}-app-BooksStack` in `deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml` | `-app-DiyaGlStack` | the sets already deployed under the old name | dual | S3b adds, S3e removes |
 | Cognito client display name `{env}-env-books-client` | `{env}-env-diya-gl-client` | `lookup-resources/action.yml` finds the client by this exact name | in-place | S3c |
-| CFN output `BooksUserPoolClientId` | `DiyaGlUserPoolClientId` | `toggle-cognito-native-auth.js`, `probe-test.yml` via `stack-output.js` | dual | S3c adds, S3d removes |
+| CFN output `BooksUserPoolClientId` | `DiyaGlUserPoolClientId` | `toggle-cognito-native-auth.js`, `probe-test.yml` via `stack-output.js` | permanent | S3c |
 | SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | `spreadsheets-diya-gl-app-client-id` | no workflow or script in either repository | in-place | S3c |
-| `--client books` flag | `--client diya-gl` | the spreadsheets ci run, once their LP-24 lands | dual | S3c adds, S3d removes |
+| `--client books` flag | `--client diya-gl` | the spreadsheets ci run | permanent | S3c |
 | Routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | the `diya-gl` forms, added beside the `books` forms | `cloud.js` on the spreadsheets site, including copies held by installed service workers | permanent | S3d |
-| Cognito callback and logout URLs under `/books/` on the spreadsheets hosts | whatever path their NM-3 moves the pages to | the pages themselves | dual | S3d |
+| Cognito callback and logout URLs under `/books/` on the spreadsheets hosts | whatever path their NM-3 moves the pages to | the pages themselves | permanent | S3d |
 | S3 bucket `{env}-env-books-{account}`, `booksBucketName`, `booksBucketArn`, output `BooksBucketName` | `{env}-env-diya-gl-{account}` and the `diyaGl` forms | `BackupStack`'s selection ARN | replace | S3e |
 
 The S3 key prefix `users/{hash}/books/{bookId}/` in `s3BooksRepository.js`, and the matching IAM
@@ -259,20 +261,19 @@ returning nothing in ci and in prod.
 **The CFN output `BooksUserPoolClientId`.** `IdentityStack` emits both keys from S3c. The stack side
 switches first: S3c's env deploy has to complete before `toggle-cognito-native-auth.js` and
 `probe-test.yml` move to the new key, or a run between the two reads a key its stack does not have.
-The old key goes in S3d. What proves it unused is that no file in this repository names
-`BooksUserPoolClientId`, which is a grep, since both readers are ours.
+Both keys stay, for the same reason the routes do: the operator's decision of 2026-09-10 retires
+nothing the spreadsheets side can see, and a CFN output costs nothing to keep.
 
 **The `--client books` flag.** `toggle-cognito-native-auth.js` accepts `books` and `diya-gl` as the
-same value from S3c. The spreadsheets ci run switches to `--client diya-gl`. The `books` spelling
-goes in S3d. What proves it unused is that the spreadsheets workflow file names `diya-gl`. Their
-LP-24 row, which adds the only call site, is in flight and has not landed: if it lands after S3c it
-should be written as `--client diya-gl` from the start and this window never opens.
+same value from S3c. Both spellings stay accepted. The spreadsheets repository fetches this script from our main by
+raw URL, so a spelling we drop breaks a caller we cannot grep for; they write new calls as
+`--client diya-gl`.
 
 **The API routes.** All four paths are served under both prefixes from S3d's first deploy. Both
 prefixes stay served forever. See "Decision: the API route prefixes" above.
 
 **The Cognito callback and logout URLs.** Cognito matches each URL exactly, so both the `/books/`
-set and the new set are listed in `buildBooksUrls` while the spreadsheets pages move. Their side
+set and the new set are listed in `buildBooksUrls`, both permanently. Their side
 switches last here, because a URL has to be registered before a page can redirect to it. The old
 set goes once their pages no longer live under `/books/` and their redirects are in place. This is
 the one window driven by their NM-3 rather than by anything else in this table.

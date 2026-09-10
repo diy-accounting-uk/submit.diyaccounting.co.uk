@@ -16,12 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7b75b75** (the merge of PR #177, run 34494648968). That run's
-`destroy-previous` retired prod-b95799e cleanly, which is the destroy hardening working on its first
-outing — the earlier attempt was abandoned by a Maven Central 403. Two spares stand at $46.88/month
-each: prod-504ec0d, created 09:00 UTC and past the eight-hour gate, and prod-c78fb84, six stacks from
-the deploy that died at `deploy api`, eligible 19:07. Both go on the next scheduled sweep, or sooner
-by name (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
+**Prod runs deployment prod-f0787f7** (the merge of PR #178). Its `destroy-previous` retired
+prod-7b75b75. One spare stands at $46.88/month: prod-c78fb84, six stacks from the deploy that died
+at `deploy api`. It goes by name once B102 lands, and not before — the destroy's safety refusal is
+the thing B102 fixes (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -41,39 +39,11 @@ only because the deployment name was malformed and matched nothing. Until it lan
 `destroy-prod` and no `destroy-ci`: the check that stops a dispatch deleting the live production
 deployment currently stops nothing. Its full row is at the top of `## Ready: Claude Code`.
 
-**Batches 18 and 19 are on main** (PR #175 at c78fb846, PR #176 at b95799e1), and main is
-deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to prod. The cost export
-is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
-layers — B84's column casing and B89's `us-east-1` region in the bucket policy condition.
-
-**Batch 20 merged as PR #177 at 7b75b75d**, eight items, and the merge took the branch tip — head
-102b01b matched the pushed tip, so nothing was orphaned this time. Main is deploying it now. S3d is
-on main and the sibling repository has the second of its three lines; the third goes when it reaches
-prod.
-
-**The API route prefixes are permanent.** Operator decision, 2026-09-10: both `/api/v1/books/*`
-and `/api/v1/diya-gl/*` are served for good and the old prefix is never retired. The spreadsheets
-repository changes nothing, now or ever, and their NM-5 is not blocked on us — it is not needed. The
-route path is a code identifier no customer sees; the DIYA-GL rename was about the product, and that
-is shipped. Retiring the old prefix was tidiness whose cross-repository sequencing cost more than it
-was worth. B71.S3e, the bucket, is the last naming row and is internal.
-
-**Batch 21 on `claude/b21-board`**, two workstreams:
-
-| Workstream | Item | Model | Worktree | Branch |
-|---|---|---|---|---|
-| The environment deploy's paths filter | B100 | Sonnet | `.claude/worktrees/w-envpaths` | `claude/b21-envpaths` |
-| Both route prefixes made permanent | B71.S3d.1 | Sonnet | `.claude/worktrees/w-permanent` | `claude/b21-permanent` |
-
-B100 is merged: `deploy-environment.yml`'s `paths:` filter named environment stack sources by hand
-and had drifted. `ScanDetectionStack` and `SecurityDetectionStack` were deployed by the workflow and
-watched by nothing — two, not three; `EcrUE1Stack` is a second instantiation of the `EcrStack`
-construct and has no source file of its own, so it was already covered. A unit test now parses the
-workflow and asserts every stack it deploys is watched, proved by failing on the pre-fix state. A change to any of the
-three never triggers the deploy that ships it. B30t changed `SecurityDetectionStack.java` and
-shipped only because its batch also touched other watched paths; pushed alone it would have looked
-deployed and not been. The fix adds the three and then makes the drift impossible, because a
-hand-maintained list is what broke.
+**Both API route prefixes are permanent.** Operator decision, 2026-09-10, live on prod: an
+unauthenticated call to `/api/v1/books` and to `/api/v1/diya-gl` each returns 401, which is the
+authoriser rejecting a caller on a route that exists. The spreadsheets repository changes nothing,
+now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
+internal.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
