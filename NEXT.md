@@ -153,22 +153,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
   authentication. Say in the issue body that it came from the public form. **Source**:
   `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
-  repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
-  and `www`. Establish per repository which author and committer identities appear in history,
-  whether anything is signed, which co-author trailer forms are in use, and which token each
-  workflow, Lambda and script writes to GitHub under. Then define the identity classes a reader
-  and a policy can tell apart, at least human user, Claude Code, and GitHub Actions initiation,
-  splitting further only where something downstream would treat the two differently, and
-  recommend what each should present and what proves the claim rather than asserting it. This
-  gates `PLAN_REPOSITORY_AUTOMATION.md`'s auto-merge policies, which all rest on commit
-  authorship being trustworthy: every one of the six repositories currently authors commits as
-  `antonyccartwright@gmail.com` while the working identity is `antony@polycode.co.uk`, and
-  `_developers/archive/PLAN_FLAGGED.md` lists author identity churn among the signals behind the
-  May 2026 suspension. The audit lands as `REPORT_IDENTITY_AUDIT.md`; changing anything is a
-  separate row once the operator picks from its recommendations. `homebrew-diya-gl` is missing
-  from the workspace `CLAUDE.md` repository table. **Source**: operator, 2026-09-09;
-  `PLAN_REPOSITORY_AUTOMATION.md`. **Owner**: Claude Code, then Operator. **Model**: Opus.
 - [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
   `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
   `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
@@ -220,6 +204,18 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the main API gets the same allow list the storage routes use, or whether the wildcard is the
   intended answer for a public API, and write down which. Found while fixing B76. **Source**:
   B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
+- [ ] **B87. The identity audit's code recommendations, 5, 6, 7 and 10.**
+  `REPORT_IDENTITY_AUDIT.md` section 8 ranks twelve. Numbers 4 and 9 landed in batch 17, 1 is O37,
+  8 is BACKLOG 53, and 2, 3 and 12 need the operator (O38). These four are code and need nobody's
+  permission: standardise the co-author trailer to one canonical form across all six `CLAUDE.md`
+  files, which is what removes `_developers/archive/PLAN_FLAGGED.md`'s signal 8 and stops fourteen
+  forms becoming twenty; create the five `origin:*` labels and apply them from the creating path;
+  build the alarm-origin verifier, which re-reads `describe-alarm-history` for the name and window
+  an issue body claims and is the strongest proof in the whole design; and add CODEOWNERS and a PR
+  template carrying `Closes #N` and an origin line. The verifier is the one with real value, so it
+  goes first and can ship without the other three. The trailer edit reaches five sibling
+  repositories, so it follows B80b's routing rather than being done from here. **Source**:
+  `REPORT_IDENTITY_AUDIT.md` section 8. **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
@@ -229,6 +225,18 @@ it nine tests fail on a missing file that has nothing to do with the change.
   our own prod deploys, and B30t stops them doing it again. All three name deployment
   prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
   **Owner**: Operator. **Model**: none.
+- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
+  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
+  operator's own account and is the single move that fixes the worst disclosure gap; and
+  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
+  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
+  and a private key into Secrets Manager. Neither depends on signing. B77's support-form work is
+  written so the token and identity are configuration, so it switches over without a code change
+  once `diya-ops` exists. While deciding, settle recommendation 12 as well: the byline on articles
+  and support replies, before the emails-to-articles pipeline is built, because that is the largest
+  volume of machine-written public prose the company will produce. **Source**:
+  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
+  **Model**: none.
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
   `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
