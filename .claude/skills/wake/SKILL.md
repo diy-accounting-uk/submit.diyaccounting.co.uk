@@ -14,7 +14,8 @@ beside the rule it undoes and the two cannot drift apart.
 
 Three things this skill adds, and nothing else:
 
-**Only the operator wakes a session**, in their own words. "Carry on" or "resume" is enough.
+**Only the operator wakes a session**, in their own words. "Carry on" or "resume" is enough, and
+so is `/do-next`, which cannot do its job while cool-down is on and so runs this skill first.
 Silence is not consent, an idle hour is not consent, and a green branch is not consent.
 
 **The seven steps run in order**, because each depends on the one before. If any cannot be

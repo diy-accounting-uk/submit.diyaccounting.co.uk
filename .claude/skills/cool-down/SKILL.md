@@ -173,6 +173,11 @@ temperature without reading the transcript:
 Only the operator lifts cool-down, in their own words. "Carry on" or "resume" is enough; the
 absence of new instructions is not. Silence is not consent to resume.
 
+**`/do-next` is such an instruction.** Asking for the board to be worked and staying cool cannot
+both be true, so that skill runs the seven steps below before its first dispatch rather than
+stopping to ask. Everything here still applies: a step that cannot be completed keeps the session
+cool, and `/do-next` says which step and stops there.
+
 The order matters, because each step depends on the one before:
 
 1. Delete the cool-down marker from `NEXT.md`.
