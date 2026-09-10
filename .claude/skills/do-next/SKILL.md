@@ -31,6 +31,33 @@ one you hold in your head.
 Do not skip it because you rendered a board earlier in the session. Deploys finish, alarms fire and
 PRs merge between renders, and the board is how you find out.
 
+## Check the inboxes
+
+Other Claude Code sessions and Cowork coordinate through plain-Markdown inboxes, no daemon. The
+protocol is `~/.claude/inboxes/README.md`.
+
+**Check if you have not checked in the last five minutes**, at these two moments:
+
+- while polling or watching a deploy or CI run — the waiting is free time, and a sibling's message
+  often changes what the run means before you have finished reading it;
+- when a sub-agent reports back, before you merge its work.
+
+Three files, all three every time:
+
+- `~/.claude/inboxes/submit.md` — this repository's own inbox.
+- `~/.claude/inboxes/diyaccounting.md` — the workspace handle's inbox.
+- `/Users/antony/projects/diy-accounting-limited/INBOX.md` — the bridge for sessions that cannot
+  reach `~/.claude/`: Cowork's Linux VM and Desktop chats.
+
+Act on every `[unread]` block in the same turn you read it, reply by appending to the sender's
+inbox, then change its marker to `[read]`. Do not poll on a tight loop — the two moments above are
+the cadence, and a sibling waiting on a line from you is a reason to check, not a reason to check
+constantly.
+
+A message can change what this batch should contain: a sibling reporting a defect in what you just
+pushed, a repository asking you to hold an identifier, an operator note arriving through Cowork. Read
+before you merge, not after.
+
 ## The shape of a batch
 
 **One branch. One PR. Waves inside it.**
