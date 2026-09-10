@@ -20,7 +20,7 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand };
 });
 
-const { ingestHandler } = await import("../../functions/books/booksVersionGet.js");
+const { ingestHandler } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
 
@@ -44,11 +44,11 @@ function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version =
   });
 }
 
-describe("booksVersionGet", () => {
+describe("diyaGlVersionGet", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
-    process.env.BOOKS_BUCKET_NAME = "test-books-bucket";
-    process.env.BOOKS_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
+    process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
+    process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     _setTestSalt("test-salt");
   });
 

@@ -50,10 +50,10 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
-const { ingestHandler: booksListGet } = await import("../../functions/books/booksListGet.js");
-const { ingestHandler: booksVersionGet } = await import("../../functions/books/booksVersionGet.js");
-const { ingestHandler: booksPut } = await import("../../functions/books/booksPut.js");
-const { ingestHandler: booksDelete } = await import("../../functions/books/booksDelete.js");
+const { ingestHandler: diyaGlListGet } = await import("../../functions/diyaGl/diyaGlListGet.js");
+const { ingestHandler: diyaGlVersionGet } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
+const { ingestHandler: diyaGlPut } = await import("../../functions/diyaGl/diyaGlPut.js");
+const { ingestHandler: diyaGlDelete } = await import("../../functions/diyaGl/diyaGlDelete.js");
 const { _setTestSalt } = await import("../../services/subHasher.js");
 
 const ALLOWED_ORIGIN = "https://spreadsheets.diyaccounting.co.uk";
@@ -80,7 +80,7 @@ function putBody(overrides = {}) {
 const routes = [
   {
     name: "GET /api/v1/books",
-    handler: booksListGet,
+    handler: diyaGlListGet,
     clientError: (origin) => buildLambdaEvent({ method: "GET", path: "/api/v1/books", headers: { origin }, authorizer: {} }),
     expectedClientStatus: 401,
     storageFailure: (origin) =>
@@ -93,7 +93,7 @@ const routes = [
   },
   {
     name: "GET /api/v1/books/{bookId}/versions/{version}",
-    handler: booksVersionGet,
+    handler: diyaGlVersionGet,
     clientError: (origin) =>
       buildLambdaEvent({
         method: "GET",
@@ -114,7 +114,7 @@ const routes = [
   },
   {
     name: "PUT /api/v1/books/{bookId}",
-    handler: booksPut,
+    handler: diyaGlPut,
     clientError: (origin) =>
       buildLambdaEvent({
         method: "PUT",
@@ -137,7 +137,7 @@ const routes = [
   },
   {
     name: "DELETE /api/v1/books/{bookId}",
-    handler: booksDelete,
+    handler: diyaGlDelete,
     clientError: (origin) =>
       buildLambdaEvent({
         method: "DELETE",
@@ -161,12 +161,12 @@ const routes = [
 describe("DIYA-GL storage error responses", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
-    process.env.BOOKS_BUCKET_NAME = "test-books-bucket";
-    process.env.BOOKS_ALLOWED_ORIGINS = ALLOWED_ORIGIN;
-    process.env.BOOKS_MAX_BYTES = "2097152";
-    process.env.BOOKS_MAX_PER_USER = "20";
-    process.env.BOOKS_VERSIONS_KEPT = "30";
-    delete process.env.BOOKS_ENTITLEMENT_ENFORCED;
+    process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
+    process.env.DIYA_GL_ALLOWED_ORIGINS = ALLOWED_ORIGIN;
+    process.env.DIYA_GL_MAX_BYTES = "2097152";
+    process.env.DIYA_GL_MAX_PER_USER = "20";
+    process.env.DIYA_GL_VERSIONS_KEPT = "30";
+    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
     _setTestSalt("test-salt");
   });
 
@@ -228,7 +228,7 @@ describe("DIYA-GL storage error responses", () => {
       throw new Error("cannot decode");
     });
 
-    const result = await booksPut(event);
+    const result = await diyaGlPut(event);
 
     expect(result.statusCode).toBe(500);
     expect(result.headers["Access-Control-Allow-Origin"]).toBe(ALLOWED_ORIGIN);

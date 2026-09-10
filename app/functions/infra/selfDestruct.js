@@ -120,7 +120,7 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.COMPANIES_HOUSE_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.BILLING_STACK_NAME);
-    addStackNameIfPresent(stacksToDelete, process.env.BOOKS_STACK_NAME);
+    addStackNameIfPresent(stacksToDelete, process.env.DIYA_GL_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.ACCOUNT_STACK_NAME);
     const selfDestructStackName = process.env.SELF_DESTRUCT_STACK_NAME;
 

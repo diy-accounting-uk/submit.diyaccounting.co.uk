@@ -4,7 +4,7 @@
 // app/services/diyaGlEntitlement.js
 //
 // Gates the DIYA-GL PUT route on an active subscription. A stub until the billing row wires up
-// the DIYA-GL bundle: BOOKS_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every
+// the DIYA-GL bundle: DIYA_GL_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every
 // caller passes.
 
 import { createLogger } from "../lib/logger.js";
@@ -23,12 +23,12 @@ const DEFAULT_DIYA_GL_BUNDLE_ID = "resident-diya-gl";
 export async function entitlementFor(sub) {
   const checkedAt = new Date().toISOString();
 
-  if (process.env.BOOKS_ENTITLEMENT_ENFORCED !== "true") {
+  if (process.env.DIYA_GL_ENTITLEMENT_ENFORCED !== "true") {
     return { allowed: true, reason: "not-enforced", bundleId: null, expiry: null, checkedAt };
   }
 
   await initializeSalt();
-  const diyaGlBundleId = process.env.BOOKS_BUNDLE_ID || DEFAULT_DIYA_GL_BUNDLE_ID;
+  const diyaGlBundleId = process.env.DIYA_GL_BUNDLE_ID || DEFAULT_DIYA_GL_BUNDLE_ID;
   const bundles = await getUserBundles(sub);
   const matchingBundle = bundles.find((bundle) => bundle.bundleId === diyaGlBundleId);
 

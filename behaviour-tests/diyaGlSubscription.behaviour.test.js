@@ -52,10 +52,10 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const spreadsheetsBaseUrl = getEnvVarAndLog("spreadsheetsBaseUrl", "SPREADSHEETS_BASE_URL", "http://localhost:3000/");
 const cognitoBaseUri = getEnvVarAndLog("cognitoBaseUri", "COGNITO_BASE_URI", null);
-const cognitoBooksClientId = getEnvVarAndLog("cognitoBooksClientId", "COGNITO_BOOKS_CLIENT_ID", null);
+const cognitoDiyaGlClientId = getEnvVarAndLog("cognitoDiyaGlClientId", "COGNITO_DIYA_GL_CLIENT_ID", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
-const entitlementEnforced = getEnvVarAndLog("entitlementEnforced", "BOOKS_ENTITLEMENT_ENFORCED", null) === "true";
+const entitlementEnforced = getEnvVarAndLog("entitlementEnforced", "DIYA_GL_ENTITLEMENT_ENFORCED", null) === "true";
 
 // One of the four DIYA-GL page paths IdentityStack registers as a books-client callback/logout
 // URL (see BOOKS_PAGE_NAMES in IdentityStack.java). The spreadsheets site serves these pages at
@@ -94,8 +94,8 @@ test.afterAll(async () => {
 
 test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ page }) => {
   test.skip(
-    !cognitoBooksClientId,
-    "DIYA-GL client credentials (COGNITO_BOOKS_CLIENT_ID) are not configured on this environment; skipping.",
+    !cognitoDiyaGlClientId,
+    "DIYA-GL client credentials (COGNITO_DIYA_GL_CLIENT_ID) are not configured on this environment; skipping.",
   );
 
   addOnPageLogging(page);
@@ -112,7 +112,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
 
   const { idToken } = await signInWithDiyaGlHostedUi(
     page,
-    { cognitoBaseUri, booksClientId: cognitoBooksClientId, redirectUri, testAuthUsername, testAuthPassword },
+    { cognitoBaseUri, booksClientId: cognitoDiyaGlClientId, redirectUri, testAuthUsername, testAuthPassword },
     screenshotPath,
   );
   expect(idToken).toBeTruthy();
@@ -128,7 +128,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   } else {
     test.info().annotations.push({
       type: "skipped-assertion",
-      description: "BOOKS_ENTITLEMENT_ENFORCED is not true on this environment, so the unentitled-PUT-is-refused step was not exercised.",
+      description: "DIYA_GL_ENTITLEMENT_ENFORCED is not true on this environment, so the unentitled-PUT-is-refused step was not exercised.",
     });
   }
 
