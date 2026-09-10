@@ -10,8 +10,18 @@ run-name: "record ${{ inputs.script }} video"
 # procedure — local iteration first, then this workflow for the real recording.
 
 concurrency:
-  group: video-capture-${{ github.ref_name }}
-  cancel-in-progress: false
+  # This workflow toggles Cognito native auth during recording. Two runs targeting the same
+  # environment can interfere: if one toggles native auth on and gets cancelled before disabling
+  # it, the other will find it already on. Key the group on the environment being recorded, not
+  # the branch triggering it, so that workflow_dispatch calls targeting prod from any branch
+  # serialize with each other and with deploy/deploy-app runs modifying the same Cognito setting.
+  # When deployment-name is given, use it (often reused across branches for targeted re-records);
+  # otherwise resolve the effective environment from the explicit input or branch.
+  group: video-capture-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
+  # Capture runs consume time and resources but make no infrastructure changes: the Cognito
+  # toggle is transient and can be reset via the standalone disable script if a run cancels
+  # mid-flight. Newer captures targeting the same environment supersede older ones.
+  cancel-in-progress: true
 
 on:
   workflow_dispatch:
