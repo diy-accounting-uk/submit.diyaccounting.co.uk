@@ -64,6 +64,18 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B99. A destroy job runs after its own sweep fails.** Both `destroy-ci.yml` and
+  `destroy-prod.yml` gate their destroy job on
+  `if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}`. That reads as
+  "only when the sweep succeeded" and is not: `!cancelled()` is true when a dependency has *failed*,
+  and it is only false on cancellation. A failed sweep leaves `sweeper-hit` empty, `'' != 'false'`
+  is true, and the destroy job runs on whatever the sweep managed to emit before it died. Today that
+  is probably an empty list and nothing happens, which is why it has never been noticed, but a sweep
+  that fails part-way through building its list would hand a partial list to a job that deletes
+  CloudFormation stacks. Gate on `success()` for the sweep and keep `!cancelled()` only where it is
+  meant, on steps that must survive an unrelated earlier failure. Pre-existing, and unrelated to the
+  step guards batch 20 added, which sit inside the job rather than on it. **Source**: reviewing the
+  destroy hardening, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B91. `video-capture.yml` has B90's bug and was outside its file list.** Its concurrency
   group is keyed on the ref, it takes an `environment-name` input that can target prod from any
   branch, and it toggles the same Cognito native-auth flag `deploy.yml` and `deploy-app.yml` touch.
