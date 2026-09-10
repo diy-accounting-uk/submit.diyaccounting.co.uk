@@ -47,10 +47,10 @@ Wave 4 runs as five concurrent worktree sub-agents, all branched from `claude/b2
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 | DIYA-GL naming, the API routes | B71.S3d | Sonnet | `.claude/worktrees/w-naming3d` | `claude/b20-naming3d` |
-| The destroy job's success condition | B99 | Sonnet | `.claude/worktrees/w-destroycond` | `claude/b20-destroycond` |
-| Video capture concurrency | B91 | Haiku | `.claude/worktrees/w-videoconc` | `claude/b20-videoconc` |
 | The fetched scripts' consumer comment | B93 | Haiku | `.claude/worktrees/w-consumercomment` | `claude/b20-consumercomment` |
 | The deploy role's privilege | B96 | Sonnet | `.claude/worktrees/w-adminrole` | `claude/b20-adminrole` |
+
+Merged into the batch, off this list when its checks pass: B91, B99.
 
 S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
 literal strings and their service worker precaches them, so both prefixes serve for the window
@@ -66,25 +66,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B99. A destroy job runs after its own sweep fails.** Both `destroy-ci.yml` and
-  `destroy-prod.yml` gate their destroy job on
-  `if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}`. That reads as
-  "only when the sweep succeeded" and is not: `!cancelled()` is true when a dependency has *failed*,
-  and it is only false on cancellation. A failed sweep leaves `sweeper-hit` empty, `'' != 'false'`
-  is true, and the destroy job runs on whatever the sweep managed to emit before it died. Today that
-  is probably an empty list and nothing happens, which is why it has never been noticed, but a sweep
-  that fails part-way through building its list would hand a partial list to a job that deletes
-  CloudFormation stacks. Gate on `success()` for the sweep and keep `!cancelled()` only where it is
-  meant, on steps that must survive an unrelated earlier failure. Pre-existing, and unrelated to the
-  step guards batch 20 added, which sit inside the job rather than on it. **Source**: reviewing the
-  destroy hardening, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B91. `video-capture.yml` has B90's bug and was outside its file list.** Its concurrency
-  group is keyed on the ref, it takes an `environment-name` input that can target prod from any
-  branch, and it toggles the same Cognito native-auth flag `deploy.yml` and `deploy-app.yml` touch.
-  So a capture run and a deploy can fight over one environment's sign-in configuration, and the
-  loser gets a behaviour failure that looks like a broken test. Key it on what it mutates, the way
-  B90 keyed the other five. **Source**: B90's sweep, 2026-09-10. **Owner**: Claude Code.
-  **Model**: Haiku.
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
