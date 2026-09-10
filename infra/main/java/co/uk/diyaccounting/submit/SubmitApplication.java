@@ -498,6 +498,7 @@ public class SubmitApplication {
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
                         .booksUserPoolClientId(cognitoBooksUserPoolClientId)
+                        .booksAllowedOrigins(booksAllowedOrigins)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)
                         .regionalCertificateArn(regionalCertificateArn)
