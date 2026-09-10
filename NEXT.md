@@ -31,22 +31,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 18 merged as PR #175 at c78fb846, and three fixes missed it.** The PR merged at 11:02:37Z
-against head 773de15; the three fixes pushed three minutes later are not in main. They are B95 (the
-last-known-good sentinel), B52x's raw export grants, and B97 (the Cognito toggle retry). This is
-the same trap as batch 16, where the PR merged 59 of 63 commits: a branch is settled only when
-nothing is committed after its last push, and the race can run the other way too, with a merge
-taking a head the branch has already moved past. Before merging, compare the PR's head with the
-branch tip.
+**Batches 18 and 19 are on main** (PR #175 at c78fb846, PR #176 at b95799e1), and main is
+deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to prod. The cost export
+is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
+layers — B84's column casing and B89's `us-east-1` region in the bucket policy condition.
 
-**Batch 19 on `claude/b19-board`** carries those three, branched from `claude/b18-board` at
-702ebccd with main merged in. It waits on main's own `deploy` and `deploy environment` runs of
-c78fb846 finishing before it pushes.
+**Batch 20 on `claude/b20-board`** carries one row, and it is a regression this session created.
 
-None of the three is currently failing anything, and that is luck rather than repair. The
-successful `deploy from claude/b18-board` created ci set ci-claud63a9 and wrote
-`/submit/ci/last-known-good-deployment` back, so the parameter B95 exists to survive is present
-again. The next ci sweep deletes it and the next environment deploy fails the same way.
+`deploy.yml` used to wait for `deploy-environment.yml`, and it stopped. Before B90 both workflows
+carried the identical concurrency group `deploy-${{ github.ref }}` with `cancel-in-progress: false`,
+so the same string put them in one group and they serialised. Nothing recorded that the ordering
+existed or that anything depended on it. B90 keyed each on what it actually mutates, which was
+right for its own problem — two branches deploying one ci environment at once, which CloudFormation
+refuses outright — and removed the shared name with it. B94, the lookup race that broke a prod
+deploy today, is the consequence: `deploy.yml`'s `names` job reads the DIYA-GL Cognito client while
+`deploy-environment.yml` is still creating it. B94's retry is on main and is worth keeping, but it
+treats the symptom.
+
+The fix has to hold both properties at once, cross-branch protection and app-after-environment
+ordering, and must not put a caller and its callee in one group: `deploy.yml` calls
+`destroy-prod.yml` as its own `destroy-previous` job, and `test.yml` and `generate-pass.yml` were
+fixed today for that same collision on the caller side.
+
+| Workstream | Item | Model | Worktree | Branch |
+|---|---|---|---|---|
+| Deploy ordering | B98 | Sonnet | `.claude/worktrees/w-deployorder` | `claude/b20-deployorder` |
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -54,19 +63,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B94. The app deploy reads a Cognito client the environment deploy has not created yet.**
-  Batch 18's first run failed at `deploy api` with `COGNITO_DIYA_GL_CLIENT_ID is not set`, and the
-  timestamps say why: `deploy.yml`'s `names` job did its live Cognito lookup at 08:22:40 to 08:23:06,
-  while `deploy-environment.yml`'s `deploy identity` job created the client and wrote the parameter
-  at 08:23:48 to 08:26:22. Two workflows triggered by one push, racing. The lookup found nothing and
-  carried on, because `.github/actions/lookup-resources/action.yml` treats that specific lookup as
-  lenient by design — no retry, empty string on failure — a choice made so a destroy is not aborted
-  by a transient lookup, unlike the `USER_POOL_ID` lookup two lines above it which retries three
-  times with backoff. So this reproduces for any newly created environment-level Cognito client, not
-  just this rename. The instance has cleared, since the client and parameter now exist. Give the
-  lookup the retry its sibling has, or make the app deploy wait on the environment deploy; the
-  action is shared with the destroy workflows, so changing its leniency needs care. **Source**: run
-  34454797197 against run 34454796683, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
   spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
   `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
