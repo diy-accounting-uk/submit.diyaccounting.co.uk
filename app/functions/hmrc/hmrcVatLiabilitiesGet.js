@@ -99,7 +99,6 @@ export function extractAndValidateParameters(event, errorMessages) {
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
-// TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
   await detectVendorPublicIp();
@@ -264,16 +263,6 @@ export async function ingestHandler(event) {
         queueUrl: sqsQueueUrl,
         maxWaitMs: MAX_WAIT_MS,
       });
-    }
-
-    // If still no result (async path) and we have a wait time, poll for completion
-    if (!result && waitTimeMs > 0) {
-      result = await asyncApiServices.wait({ userId: userSub, requestId, waitTimeMs, tableName: asyncRequestsTableName });
-    }
-
-    // One last check before deciding whether to yield or return the final result
-    if (!result) {
-      result = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
     }
   } catch (error) {
     if (error instanceof asyncApiServices.RequestFailedError) {
