@@ -51,7 +51,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Homebrew tap cron | B81 | Sonnet | `.claude/worktrees/w-homebrew` | `claude/b17-homebrew` |
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
-Merged into the batch, off this list when the branch's checks pass: B79.
+Merged into the batch, off this list when the branch's checks pass: B79, B81.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -172,14 +172,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
   workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
   **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
-- [ ] **B81. `homebrew-diya-gl` self-commits to `main` every hour.** An hourly cron pushes to
-  `main` in that repository, about 720 runs a month against 17 commits of real content, and the
-  repository has no ruleset at all, so nothing stands between the cron and the default branch.
-  It is also missing from the workspace `CLAUDE.md` repository table, which is why nobody has
-  looked at it. Work out what the cron is for and whether it needs to run at all, cut the
-  schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
-  The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B82. The global git config will break signatures the day signing is turned on.**
   `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
   rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
@@ -268,6 +260,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
   our own prod deploys, and B30t stops them doing it again. All three name deployment
   prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
   **Owner**: Operator. **Model**: none.
+- [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
+  (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
+  make: create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and write and put
+  it on `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`, because the default
+  `GITHUB_TOKEN` cannot dispatch across repositories; apply the ruleset (deletion and
+  non_fast_forward on the default branch, the same shape all five siblings carry, which still
+  allows the bot's fast-forward pushes) with
+  `gh api --method POST repos/diy-accounting-uk/homebrew-diya-gl/rulesets --input ruleset.json`;
+  and make the two workflow edits, swapping the hourly poll for a `repository_dispatch` fired by
+  the npm publish step in the spreadsheets repository. The poll turned out to be cheaper than it
+  looked — 12 scheduled runs in the repository's first 61 hours, not one an hour, because GitHub
+  delays schedules — but it still polls a registry that could just tell it. **Source**: B81's
+  report. **Owner**: Operator, or Claude Code once the operator says the writes are approved.
+  **Model**: none.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
