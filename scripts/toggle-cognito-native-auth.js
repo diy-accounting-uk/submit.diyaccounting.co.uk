@@ -28,14 +28,17 @@
 // IMPORTANT: UpdateUserPoolClient replaces ALL settings, not just the ones you specify.
 // This script reads the current config and replays it with only SupportedIdentityProviders modified.
 
-// CONSUMER DEPENDENCY: The spreadsheets repository fetches this script from our main branch
-// at runtime. Two call sites in their deploy.yml curl it and execute it during CI runs.
-// Changing the --client flag values, adding required arguments, or changing the output format
-// is a breaking change for them. They have no import to grep and no test that will fail.
-// Before changing these, coordinate with the spreadsheets repository or provide a compatibility
-// window. The "books" alias below shows a working example of a compatibility window.
-// They pin their fetch to a commit, so a change here reaches them only when they bump
-// their deploy workflow.
+// The spreadsheets repository runs this file. Two steps in its deploy.yml fetch it from our
+// main branch by raw URL during a CI run and execute it. Nothing in this repository records
+// that: there is no import to grep, no test that fails, and no reference a rename would break.
+//
+// So changing what --client accepts, adding a required argument, or changing what this prints
+// breaks a caller you cannot see from here. Give the old form a window first. The "books" alias
+// below is one, live: it accepts their existing spelling while they move to the new one.
+//
+// They pin their fetch to a commit, so a change here reaches them only when they bump that SHA.
+// That turns a surprise into a silence, which means a change worth their having needs telling
+// them.
 
 import { fileURLToPath } from "node:url";
 
