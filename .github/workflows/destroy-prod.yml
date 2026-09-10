@@ -4,7 +4,20 @@
 name: destroy-prod
 run-name: "destroy prod from ${{ github.ref_name }}"
 concurrency:
-  group: destroy-prod-${{ github.ref_name }}
+  # This workflow always destroys prod's `{deployment}-app-*` stacks (environment-name is
+  # hardcoded 'prod' below) regardless of which branch dispatched it, so keying on
+  # github.ref_name let two destroy-prod runs from different branches race each other — the
+  # same bug as the other four workflows here, just against a fixed environment instead of an
+  # input-selected one. A fixed group name is the fix, not a per-branch one.
+  #
+  # This is deliberately its own group, not shared with deploy.yml's prod path: deploy.yml calls
+  # this workflow directly (its 'destroy-previous' job) to remove the deployment it just cut
+  # over from, so giving the two the same concurrency group would have that call wait on a slot
+  # its own parent run is holding — a permanent deadlock. deploy.yml keeps a distinct
+  # 'deploy-prod' name for exactly this reason. A destroy-prod run triggered independently (the
+  # schedule, or a standalone workflow_dispatch) can still overlap with a deploy.yml prod run
+  # that isn't the one that spawned it; nothing in this batch closes that gap.
+  group: destroy-prod
   cancel-in-progress: false
 
 on:
@@ -750,6 +763,7 @@ jobs:
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BooksStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-DiyaGlStack" eu-west-2
 
           echo "=== Stack deletion complete ==="
 
@@ -770,7 +784,7 @@ jobs:
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
-          COGNITO_BOOKS_CLIENT_ID: ${{ steps.lookup.outputs.cognito-books-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

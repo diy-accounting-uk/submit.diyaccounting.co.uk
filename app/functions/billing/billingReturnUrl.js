@@ -5,8 +5,8 @@
 //
 // A DIYA-GL subscriber has to come back to the spreadsheets page they left, not to Submit's own
 // bundles.html. Both the checkout and portal handlers accept an optional returnTo and check its
-// origin against BILLING_RETURN_URL_ORIGINS, the comma-separated allow-list BooksStack builds for
-// BOOKS_ALLOWED_ORIGINS plus this deployment's own origin. An origin that isn't on the list is
+// origin against BILLING_RETURN_URL_ORIGINS, the comma-separated allow-list DiyaGlStack builds for
+// DIYA_GL_ALLOWED_ORIGINS plus this deployment's own origin. An origin that isn't on the list is
 // ignored: the caller falls back to its own default URL, so a bad returnTo never 400s and never
 // redirects off-site.
 

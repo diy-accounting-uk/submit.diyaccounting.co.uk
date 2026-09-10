@@ -14,8 +14,8 @@ import co.uk.diyaccounting.submit.stacks.AccountStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.BillingStack;
-import co.uk.diyaccounting.submit.stacks.BooksStack;
 import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
+import co.uk.diyaccounting.submit.stacks.DiyaGlStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
@@ -38,7 +38,7 @@ public class SubmitApplication {
     public final CompaniesHouseStack companiesHouseStack;
     public final AccountStack accountStack;
     public final BillingStack billingStack;
-    public final BooksStack booksStack;
+    public final DiyaGlStack diyaGlStack;
     public final ApiStack apiStack;
     public final OpsStack opsStack;
     public final EdgeStack edgeStack;
@@ -71,7 +71,7 @@ public class SubmitApplication {
         public String selfDestructDelayHours;
         public String userPoolArn;
         public String userPoolClientId;
-        public String booksUserPoolClientId;
+        public String diyaGlUserPoolClientId;
         public String bundlesTableArn;
         public String hostedZoneId;
         public String certificateArn;
@@ -162,7 +162,9 @@ public class SubmitApplication {
         var cognitoUserPoolClientId =
                 envOr("COGNITO_CLIENT_ID", appProps.userPoolClientId, "(from userPoolClientId in cdk.json)");
         var cognitoBooksUserPoolClientId = envOr(
-                "COGNITO_BOOKS_CLIENT_ID", appProps.booksUserPoolClientId, "(from booksUserPoolClientId in cdk.json)");
+                "COGNITO_DIYA_GL_CLIENT_ID",
+                appProps.diyaGlUserPoolClientId,
+                "(from diyaGlUserPoolClientId in cdk.json)");
         // The books page runs on the spreadsheets site's own origins, not this deployment's;
         // prod is the one live spreadsheets domain, every other deployment uses the shared ci one
         // plus local dev.
@@ -440,14 +442,14 @@ public class SubmitApplication {
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());
 
-        // Create the BooksStack
+        // Create the DiyaGlStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
-                sharedNames.booksStackId, deploymentName, envName);
-        this.booksStack = new BooksStack(
+                sharedNames.diyaGlStackId, deploymentName, envName);
+        this.diyaGlStack = new DiyaGlStack(
                 app,
-                sharedNames.booksStackId,
-                BooksStack.BooksStackProps.builder()
+                sharedNames.diyaGlStackId,
+                DiyaGlStack.DiyaGlStackProps.builder()
                         .env(primaryEnv)
                         .crossRegionReferences(false)
                         .envName(envName)
@@ -470,8 +472,8 @@ public class SubmitApplication {
         // env var and the SSM parameter IdentityStack writes it to during the environment deploy.
         if (cognitoBooksUserPoolClientId == null || cognitoBooksUserPoolClientId.isBlank()) {
             throw new IllegalStateException(
-                    "COGNITO_BOOKS_CLIENT_ID is not set and booksUserPoolClientId is blank in cdk.json. Set it "
-                            + "from the /submit/" + envName + "/spreadsheets-books-app-client-id SSM parameter, "
+                    "COGNITO_DIYA_GL_CLIENT_ID is not set and diyaGlUserPoolClientId is blank in cdk.json. Set it "
+                            + "from the /submit/" + envName + "/spreadsheets-diya-gl-app-client-id SSM parameter, "
                             + "written by IdentityStack during the environment deploy.");
         }
 
@@ -482,7 +484,7 @@ public class SubmitApplication {
         lambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
-        lambdaFunctions.addAll(this.booksStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -509,7 +511,7 @@ public class SubmitApplication {
         this.apiStack.addStackDependency(companiesHouseStack);
         this.apiStack.addStackDependency(authStack);
         this.apiStack.addStackDependency(billingStack);
-        this.apiStack.addStackDependency(booksStack);
+        this.apiStack.addStackDependency(diyaGlStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");

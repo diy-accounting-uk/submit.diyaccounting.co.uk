@@ -20,8 +20,8 @@ function restoreEnv(key, value) {
 }
 
 describe("diyaGlEntitlement", () => {
-  const originalEnabled = process.env.BOOKS_ENTITLEMENT_ENFORCED;
-  const originalBundleId = process.env.BOOKS_BUNDLE_ID;
+  const originalEnabled = process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
+  const originalBundleId = process.env.DIYA_GL_BUNDLE_ID;
   const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
@@ -31,14 +31,14 @@ describe("diyaGlEntitlement", () => {
   });
 
   afterEach(() => {
-    restoreEnv("BOOKS_ENTITLEMENT_ENFORCED", originalEnabled);
-    restoreEnv("BOOKS_BUNDLE_ID", originalBundleId);
+    restoreEnv("DIYA_GL_ENTITLEMENT_ENFORCED", originalEnabled);
+    restoreEnv("DIYA_GL_BUNDLE_ID", originalBundleId);
     restoreEnv("NODE_ENV", originalNodeEnv);
     _clearSalt();
   });
 
   test("stub allows everyone when enforcement is off", async () => {
-    delete process.env.BOOKS_ENTITLEMENT_ENFORCED;
+    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
 
     const result = await entitlementFor("some-sub");
 
@@ -48,7 +48,7 @@ describe("diyaGlEntitlement", () => {
   });
 
   test("allows a caller with an active, unexpired DIYA-GL bundle", async () => {
-    process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
+    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
     getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: future }]);
 
@@ -60,7 +60,7 @@ describe("diyaGlEntitlement", () => {
   });
 
   test("reports expired for a DIYA-GL bundle whose expiry has passed", async () => {
-    process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
+    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
     const past = new Date(Date.now() - 60_000).toISOString();
     getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: past }]);
 
@@ -71,7 +71,7 @@ describe("diyaGlEntitlement", () => {
   });
 
   test("reports no-subscription when the caller has no matching bundle", async () => {
-    process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
+    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
     getUserBundles.mockResolvedValue([{ bundleId: "resident-vat", subscriptionStatus: "active", expiry: null }]);
 
     const result = await entitlementFor("no-bundle-sub");
@@ -80,9 +80,9 @@ describe("diyaGlEntitlement", () => {
     expect(result.reason).toBe("no-subscription");
   });
 
-  test("respects a configured BOOKS_BUNDLE_ID", async () => {
-    process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
-    process.env.BOOKS_BUNDLE_ID = "custom-books-bundle";
+  test("respects a configured DIYA_GL_BUNDLE_ID", async () => {
+    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
+    process.env.DIYA_GL_BUNDLE_ID = "custom-books-bundle";
     getUserBundles.mockResolvedValue([{ bundleId: "custom-books-bundle", subscriptionStatus: "active", expiry: null }]);
 
     const result = await entitlementFor("custom-sub");

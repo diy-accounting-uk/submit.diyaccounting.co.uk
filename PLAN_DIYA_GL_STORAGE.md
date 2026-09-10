@@ -329,7 +329,7 @@ the test registry as the billing tests do.
 | `booksPut` 400s a bookId that is not a UUID | `../../other` | 400 `invalid-book-id`, no S3 call |
 | `booksDelete` removes every object, and 404s an unknown book | 4 objects under the prefix; no metadata | 200 `deletedObjects: 4`; 404 |
 | preflight is answered without a token, and only for a listed origin | `OPTIONS` with an allow-listed `Origin` and no auth header; then `Origin: https://evil.example` | 204 echoing the origin; 204 with no `Access-Control-Allow-Origin` |
-| `zipMembers` reads a real diya-gl zip and throws on truncated bytes | a fixture zip under `fixtures/books/`; its first 40 bytes | the five member names; `NotAZipError` |
+| `zipMembers` reads a real diya-gl zip and throws on truncated bytes | a fixture zip under `fixtures/diya-gl/`; its first 40 bytes | the five member names; `NotAZipError` |
 | `booksEntitlement` reads an active and an expired bundle | `resident-diya-gl` active with a future expiry; the same expired | `"active-subscription"`; `allowed: false, reason: "expired"` |
 
 ## 7. Verification ladder
@@ -360,7 +360,7 @@ Each step is one commit with its own acceptance check.
 | # | Step | Files | Accepted when |
 |---|---|---|---|
 | 1 ✅ | The bucket and its name | `SubmitSharedNames.java`, `DataStack.java`, `BackupStack.java`, `infra/test/.../stacks/DataStackTest.java`, `infra/test/.../BackupStackCdkResourceTest.java` | `./mvnw clean verify` synthesises a versioned, encrypted, DESTROY bucket and the backup selection names it |
-| 2 ✅ | The zip reader and the store | `app/lib/zipMembers.js` and its test, a fixture zip under `fixtures/books/`, `app/data/s3BooksRepository.js` | the fixture's five members are read; truncated bytes throw |
+| 2 ✅ | The zip reader and the store | `app/lib/zipMembers.js` and its test, a fixture zip under `fixtures/diya-gl/`, `app/data/s3BooksRepository.js` | the fixture's five members are read; truncated bytes throw |
 | 3 ✅ | The entitlement stub | `app/services/booksEntitlement.js`, its test | both enforced and unenforced paths pass |
 | 4 ✅ | The two read handlers | `booksListGet.js`, `booksVersionGet.js`, their tests, the two new response helpers, `app/lib/booksCors.js` (a shared CORS/preflight helper the plan didn't name but all four handlers need identically) | `npm run test:app-unit` green, every read case in section 6.5 |
 | 5 ✅ | The write handlers | `booksPut.js`, `booksDelete.js`, their tests | every write case in section 6.5, including 412, 413, 422, 403 and the cross-user 404 |

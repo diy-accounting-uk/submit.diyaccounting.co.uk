@@ -4,7 +4,14 @@
 name: destroy-ci
 run-name: "destroy ci from ${{ github.ref_name }}"
 concurrency:
-  group: destroy-ci-${{ github.ref_name }}
+  # This workflow always destroys ci's `{deployment}-app-*` stacks (environment-name is
+  # hardcoded 'ci' below) — the branch that dispatched it is irrelevant to what it deletes, so
+  # keying on github.ref_name only let two destroy-ci runs from different branches race each
+  # other. A fixed group name is correct here, not a smaller bug fix short of one. This still
+  # doesn't need to also cover deploy.yml/deploy-app.yml: this workflow's own
+  # wait-for-ci-deploys step (below) already waits for their older runs to finish, and vice
+  # versa, so a destroy racing a ci deploy is already handled outside this concurrency block.
+  group: destroy-ci
   cancel-in-progress: false
 
 on:
@@ -703,6 +710,7 @@ jobs:
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BooksStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-DiyaGlStack" eu-west-2
 
           echo "=== Stack deletion complete ==="
 
@@ -723,7 +731,7 @@ jobs:
           BASE_IMAGE_TAG: "${{ env.BASE_IMAGE_TAG }}:latest"
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
-          COGNITO_BOOKS_CLIENT_ID: ${{ steps.lookup.outputs.cognito-books-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

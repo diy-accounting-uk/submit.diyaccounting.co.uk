@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { buildJwtAuthorizerContext, buildLambdaEvent } from "../test-helpers/eventBuilders.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../../fixtures/books/diya-gl-example.zip")).toString("base64");
+const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../../fixtures/diya-gl/diya-gl-example.zip")).toString("base64");
 
 class PreconditionFailedError extends Error {
   constructor() {
@@ -149,10 +149,10 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command };
 });
 
-const { ingestHandler: booksListGet } = await import("../functions/books/booksListGet.js");
-const { ingestHandler: booksVersionGet } = await import("../functions/books/booksVersionGet.js");
-const { ingestHandler: booksPut } = await import("../functions/books/booksPut.js");
-const { ingestHandler: booksDelete } = await import("../functions/books/booksDelete.js");
+const { ingestHandler: diyaGlListGet } = await import("../functions/diyaGl/diyaGlListGet.js");
+const { ingestHandler: diyaGlVersionGet } = await import("../functions/diyaGl/diyaGlVersionGet.js");
+const { ingestHandler: diyaGlPut } = await import("../functions/diyaGl/diyaGlPut.js");
+const { ingestHandler: diyaGlDelete } = await import("../functions/diyaGl/diyaGlDelete.js");
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
 const SUB = "system-test-books-user";
@@ -183,15 +183,15 @@ function putBody(overrides = {}) {
 describe("System: DIYA-GL storage end to end", () => {
   beforeEach(() => {
     fakeBucket.objects.clear();
-    process.env.BOOKS_BUCKET_NAME = "system-test-books-bucket";
-    process.env.BOOKS_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
+    process.env.DIYA_GL_BUCKET_NAME = "system-test-books-bucket";
+    process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"system-test-salt"}}';
-    delete process.env.BOOKS_ENTITLEMENT_ENFORCED;
+    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
   });
 
   test("create, read, put-with-etag, stale-etag-conflict, then delete", async () => {
     // 1. Create the book (no If-Match: it doesn't exist yet).
-    const createResult = await booksPut(
+    const createResult = await diyaGlPut(
       buildEvent({ method: "PUT", path: `/api/v1/books/${BOOK_ID}`, pathParameters: { bookId: BOOK_ID }, body: putBody() }),
     );
     expect(createResult.statusCode).toBe(200);
@@ -200,12 +200,12 @@ describe("System: DIYA-GL storage end to end", () => {
     const firstETag = created.metadata.latestETag;
 
     // 2. List: the new book shows up.
-    const listResult = await booksListGet(buildEvent({ method: "GET", path: "/api/v1/books" }));
+    const listResult = await diyaGlListGet(buildEvent({ method: "GET", path: "/api/v1/books" }));
     expect(listResult.statusCode).toBe(200);
     expect(JSON.parse(listResult.body).books.map((b) => b.bookId)).toContain(BOOK_ID);
 
     // 3. Read latest: bytes round-trip.
-    const readResult = await booksVersionGet(
+    const readResult = await diyaGlVersionGet(
       buildEvent({
         method: "GET",
         path: `/api/v1/books/${BOOK_ID}/versions/latest`,
@@ -218,7 +218,7 @@ describe("System: DIYA-GL storage end to end", () => {
     expect(read.etag).toBe(firstETag);
 
     // 4. Put again with the correct If-Match: writes version 2.
-    const secondPutResult = await booksPut(
+    const secondPutResult = await diyaGlPut(
       buildEvent({
         method: "PUT",
         path: `/api/v1/books/${BOOK_ID}`,
@@ -231,7 +231,7 @@ describe("System: DIYA-GL storage end to end", () => {
     expect(JSON.parse(secondPutResult.body).metadata.latestVersion).toBe(2);
 
     // 5. Put with the now-stale first ETag: 412, carrying the true latest ETag and version.
-    const staleResult = await booksPut(
+    const staleResult = await diyaGlPut(
       buildEvent({
         method: "PUT",
         path: `/api/v1/books/${BOOK_ID}`,
@@ -246,14 +246,14 @@ describe("System: DIYA-GL storage end to end", () => {
     expect(staleBody.latestVersion).toBe(2);
 
     // 6. Delete: removes every object.
-    const deleteResult = await booksDelete(
+    const deleteResult = await diyaGlDelete(
       buildEvent({ method: "DELETE", path: `/api/v1/books/${BOOK_ID}`, pathParameters: { bookId: BOOK_ID } }),
     );
     expect(deleteResult.statusCode).toBe(200);
     expect(JSON.parse(deleteResult.body).deletedObjects).toBeGreaterThan(0);
 
     // 7. Confirmed gone: a read now 404s.
-    const afterDeleteResult = await booksVersionGet(
+    const afterDeleteResult = await diyaGlVersionGet(
       buildEvent({
         method: "GET",
         path: `/api/v1/books/${BOOK_ID}/versions/latest`,

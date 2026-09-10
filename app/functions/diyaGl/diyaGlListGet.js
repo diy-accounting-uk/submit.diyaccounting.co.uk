@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/books/booksListGet.js
+// app/functions/diyaGl/diyaGlListGet.js
 
 import { createLogger } from "../../lib/logger.js";
 import {
@@ -15,7 +15,7 @@ import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { resolveOwnerPrefix, listBooks } from "../../data/s3DiyaGlRepository.js";
 
-const logger = createLogger({ source: "app/functions/books/booksListGet.js" });
+const logger = createLogger({ source: "app/functions/diyaGl/diyaGlListGet.js" });
 
 /* v8 ignore start */
 export function apiEndpoint(app) {

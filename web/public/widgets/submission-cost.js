@@ -11,11 +11,6 @@
 (function () {
   "use strict";
 
-  // Every page this widget appears on writes to the same "self-employed" catalogue activity -
-  // the property and cumulative page tracks add paths to it rather than creating their own -
-  // so the activity id is fixed rather than read per page.
-  const ACTIVITY_ID = "self-employed";
-
   let catalogCache = null;
   let catalogPromise = null;
 
@@ -43,8 +38,38 @@
     return catalogPromise;
   }
 
-  function findActivity(catalog) {
-    return catalog?.activities?.find((a) => a.id === ACTIVITY_ID) || null;
+  // Mirrors entitlement-status.js and hmrc-scope-check.js: the activity that governs a page is
+  // whichever one lists that page's own path, not a name fixed in this file. Pages on the same
+  // self-employment flow can and do carry different token costs - a quarterly update spends a
+  // token, the annual submission next to it does not - so each page's own activity is what
+  // tells the truth about what it costs.
+  function matchesRegexPattern(pattern, normalizedPath) {
+    try {
+      const regex = new RegExp(pattern);
+      return regex.test(normalizedPath) || regex.test("/" + normalizedPath);
+    } catch (err) {
+      console.warn("Invalid regex pattern in catalog:", pattern, err);
+      return false;
+    }
+  }
+
+  function matchesSimplePath(path, normalizedPath) {
+    const normalizedActivityPath = path.replace(/^\//, "");
+    return normalizedPath === normalizedActivityPath || normalizedPath.endsWith("/" + normalizedActivityPath);
+  }
+
+  function findActivity(catalog, pagePath) {
+    if (!catalog?.activities) return null;
+    const normalizedPath = String(pagePath || "").replace(/^\//, "").split("?")[0];
+
+    for (const activity of catalog.activities) {
+      const paths = activity.paths || (activity.path ? [activity.path] : []);
+      for (const p of paths) {
+        const isMatch = p.startsWith("^") ? matchesRegexPattern(p, normalizedPath) : matchesSimplePath(p, normalizedPath);
+        if (isMatch) return activity;
+      }
+    }
+    return null;
   }
 
   async function fetchBundleData() {
@@ -136,16 +161,8 @@
   }
 
   async function renderContainer(container) {
-    // A page declares its own write free with data-metered="false" - the catalogue's
-    // "self-employed" activity covers both free and metered writes at one flat token cost, so
-    // it cannot say this on its own.
-    if (container.dataset.metered === "false") {
-      renderFree(container);
-      return;
-    }
-
     const catalog = await fetchCatalog();
-    const activity = findActivity(catalog);
+    const activity = findActivity(catalog, window.location.pathname);
     const tokenCost = activity?.tokenCost || 0;
     if (tokenCost === 0) {
       renderFree(container);
@@ -193,7 +210,6 @@
       findQualifyingBundle,
       formatResetDate,
       findActivity,
-      ACTIVITY_ID,
     };
 
     // The page dispatches this after a successful write (mirroring bundles.html after a grant

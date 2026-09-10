@@ -8,7 +8,16 @@ run-name: "lean deploy ${{ inputs.deployment-name || '(auto)' }} from ${{ github
 # without running CDK. Bypasses full deploy.yml for rapid iteration (~5-8 min vs 15-25 min).
 
 concurrency:
-  group: deploy-app-${{ github.ref }}
+  # This workflow updates Lambda code and S3 assets on one existing deployment, chosen by the
+  # deployment-name input or, when that's left blank, by last-known-good lookup for the
+  # environment. deployment-name is often reused deliberately across branches and sessions (the
+  # docs' own example is `--deployment ci-leanbuild`), so two lean deploys from different
+  # branches can target the identical deployment: the race is on the deployment, not the branch
+  # that triggered it. This is workflow_dispatch-only (no automatic push flood), so it's safe to
+  # key broadly: on the literal deployment-name when one is given, otherwise on the effective
+  # environment (explicit input, else the branch) so an unnamed deploy still queues behind
+  # anything else touching that environment's last-known-good deployment.
+  group: deploy-app-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
   cancel-in-progress: false
 
 on:

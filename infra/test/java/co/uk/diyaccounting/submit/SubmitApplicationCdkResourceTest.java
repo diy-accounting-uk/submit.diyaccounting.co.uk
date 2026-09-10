@@ -34,7 +34,7 @@ import software.amazon.awscdk.assertions.Template;
             key = "COGNITO_USER_POOL_ARN",
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
-    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
+    @SetEnvironmentVariable(key = "COGNITO_DIYA_GL_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/client_secret"),
@@ -287,11 +287,11 @@ class SubmitApplicationCdkResourceTest {
         // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
 
-        // /api/v1/books/* is more specific than /api/v1/*, so CloudFront routes it separately,
-        // to a response headers policy with no CORS override - the books routes answer their own
-        // CORS, and the API-wide policy's Access-Control-Allow-Origin: * would otherwise stamp
-        // over the handler's own header and break both the PUT preflight and the ETag read.
-        assertBooksBehaviourHasNoCorsOverride(edgeStackTemplate);
+        // /api/v1/* and the more specific /api/v1/books/* both carry a response headers policy
+        // with no CORS override, so CloudFront never overwrites the header API Gateway's own
+        // corsPreflight allow list (or, for the books routes, diyaGlCors.js's per-request echo)
+        // already sent.
+        assertApiBehavioursHaveNoCorsOverride(edgeStackTemplate);
 
         // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining
         // them, landing Parquet directly in the shared analytics lake for the Glue catalog.
@@ -416,8 +416,8 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
-    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "")
-    void shouldThrowWhenBooksUserPoolClientIdIsBlank() throws IOException {
+    @SetEnvironmentVariable(key = "COGNITO_DIYA_GL_CLIENT_ID", value = "")
+    void shouldThrowWhenDiyaGlUserPoolClientIdIsBlank() throws IOException {
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
         Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
         App app = new App(AppProps.builder().context(ctx).build());
@@ -425,8 +425,9 @@ class SubmitApplicationCdkResourceTest {
 
         IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalStateException.class, () -> new SubmitApplication(app, appProps));
-        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_BOOKS_CLIENT_ID"));
-        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("spreadsheets-books-app-client-id"));
+        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_DIYA_GL_CLIENT_ID"));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
     }
 
     /**
@@ -501,34 +502,46 @@ class SubmitApplicationCdkResourceTest {
     }
 
     /**
-     * Finds the /api/v1/books/* cache behaviour on the distribution and asserts its response
-     * headers policy carries no CorsConfig - unlike the /api/v1/* behaviour's policy, which
-     * overrides Access-Control-Allow-Origin to "*" for every other API route.
+     * Finds the /api/v1/* and /api/v1/books/* cache behaviours on the distribution and asserts
+     * they point at the same response headers policy, and that the policy carries no CorsConfig -
+     * so neither behaviour lets CloudFront override whatever CORS header the origin already sent.
      */
     @SuppressWarnings("unchecked")
-    private static void assertBooksBehaviourHasNoCorsOverride(Template template) {
+    private static void assertApiBehavioursHaveNoCorsOverride(Template template) {
         var distributions = template.findResources("AWS::CloudFront::Distribution");
         org.junit.jupiter.api.Assertions.assertEquals(1, distributions.size());
         var distributionConfig = (Map<String, Object>)
                 ((Map<String, Object>) distributions.values().iterator().next()).get("Properties");
         var config = (Map<String, Object>) distributionConfig.get("DistributionConfig");
         var cacheBehaviors = (List<Map<String, Object>>) config.get("CacheBehaviors");
+
+        var apiBehaviour = cacheBehaviors.stream()
+                .filter(behaviour -> "/api/v1/*".equals(behaviour.get("PathPattern")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected an /api/v1/* cache behaviour"));
         var booksBehaviour = cacheBehaviors.stream()
                 .filter(behaviour -> "/api/v1/books/*".equals(behaviour.get("PathPattern")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected a /api/v1/books/* cache behaviour"));
 
-        var policyRef = (Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId");
-        String policyLogicalId = (String) policyRef.get("Ref");
+        String apiPolicyLogicalId =
+                (String) ((Map<String, Object>) apiBehaviour.get("ResponseHeadersPolicyId")).get("Ref");
+        String booksPolicyLogicalId =
+                (String) ((Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId")).get("Ref");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                booksPolicyLogicalId,
+                apiPolicyLogicalId,
+                "expected /api/v1/* and /api/v1/books/* to share one response headers policy");
+
         var policyResource =
-                template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(policyLogicalId);
+                template.findResources("AWS::CloudFront::ResponseHeadersPolicy").get(apiPolicyLogicalId);
         org.junit.jupiter.api.Assertions.assertTrue(
-                policyResource != null, "expected to find the books response headers policy resource");
+                policyResource != null, "expected to find the shared API response headers policy resource");
         var policyProperties = (Map<String, Object>) ((Map<String, Object>) policyResource).get("Properties");
         var policyConfig = (Map<String, Object>) policyProperties.get("ResponseHeadersPolicyConfig");
         org.junit.jupiter.api.Assertions.assertFalse(
                 policyConfig.containsKey("CorsConfig"),
-                "expected the books response headers policy to carry no CorsConfig");
+                "expected the shared API response headers policy to carry no CorsConfig");
     }
 
     /**

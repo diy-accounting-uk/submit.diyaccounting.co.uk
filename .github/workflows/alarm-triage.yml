@@ -189,6 +189,16 @@ jobs:
         if: steps.role.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
+      # The only gate this pipeline can safely use before spending an agent run and posting to
+      # the issue: re-read CloudWatch's own alarm history for the exact name and window the
+      # issue body claims. An issue whose claimed alarm or window cannot be confirmed fails this
+      # step, and the job stops here with no triage run, no comment, no draft PR.
+      - name: Verify the alarm actually fired
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          node scripts/verify-alarm-origin.mjs \
+            --alarm-name "$ALARM_NAME" --window "$ALARM_WINDOW" --region "$ALARM_REGION"
+
       - name: Resolve the evidence links for this alarm
         if: steps.role.outputs.configured == 'true'
         run: |
@@ -214,19 +224,36 @@ jobs:
           DISABLE_ERROR_REPORTING: '1'
           DISABLE_AUTOUPDATER: '1'
         run: |
+          set -o pipefail
           PROMPT=$(envsubst < prompts/alarm-triage.md)
           claude -p "$PROMPT" \
             --max-turns 30 \
             --output-format json \
-            --permission-mode dontAsk \
+            --permission-mode default \
             --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
             2>&1 | tee /tmp/triage.json
+          # pipefail (above) makes $? claude's own exit status, not tee's, but a run that stops
+          # early (max-turns, a denied tool, an entitlement error from Bedrock) can still exit 0
+          # with a JSON result that carries no usable answer. Gate on the content, not just the
+          # exit code, so every failure shape - including the AWS Marketplace entitlement error an
+          # environment without the Anthropic model agreement gets back from Bedrock - fails this
+          # step with the reason on record, instead of falling through to be posted as a comment.
+          jq -e '.subtype == "success" and (.is_error | not) and (.result | length > 0)' /tmp/triage.json \
+            > /dev/null || {
+              echo "triage produced no answer:" | tee -a "$GITHUB_STEP_SUMMARY"
+              head -c 2000 /tmp/triage.json | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 1
+            }
 
       - name: Filter the output
         if: steps.role.outputs.configured == 'true'
         id: filter
         run: |
-          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md
+          set -o pipefail
+          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md || {
+            echo "redaction failed, see the log above" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
           echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Apply the Bedrock guardrail
@@ -297,6 +324,12 @@ jobs:
             --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \
             --body "Draft from the alarm-triage workflow for #${ISSUE_NUMBER}. Not reviewed by a human. Closes nothing.")
           echo "url=${PR_URL}" | tee -a "$GITHUB_OUTPUT"
+          # origin:unattended-agent says a model ran this with nobody watching. Adding a label
+          # through this endpoint, rather than gh pr create's own --label flag, creates the label
+          # on first use if it doesn't already exist, so this never fails while the label is
+          # still pending creation (see REPORT_IDENTITY_AUDIT.md section 8, recommendation 6).
+          PR_NUMBER="${PR_URL##*/}"
+          gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/labels" -f "labels[]=origin:unattended-agent"
 
       - name: Comment the triage
         if: steps.role.outputs.configured == 'true'

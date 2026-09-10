@@ -421,7 +421,10 @@ export async function handler(event) {
   const issue = await createGitHubIssue(githubToken, githubRepo, {
     title: buildIssueTitle(familyKey),
     body: buildIssueBody(bodyFields),
-    labels: ["alarm", "ops"],
+    // origin:machine says a deterministic pipeline opened this, not a person. GitHub creates a
+    // label on first use if it doesn't already exist, so this never fails while the label is
+    // still pending creation (see REPORT_IDENTITY_AUDIT.md section 8, recommendation 6).
+    labels: ["alarm", "ops", "origin:machine"],
   });
 
   logger.info({

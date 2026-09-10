@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { buildJwtAuthorizerContext, buildLambdaEvent } from "../../test-helpers/eventBuilders.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../../../fixtures/books/diya-gl-example.zip")).toString("base64");
+const FIXTURE_ZIP_BASE64 = fs.readFileSync(path.join(__dirname, "../../../fixtures/diya-gl/diya-gl-example.zip")).toString("base64");
 
 /**
  * Builds a minimal stored-method (uncompressed) zip with the given member names, for exercising
@@ -88,7 +88,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
-const { ingestHandler } = await import("../../functions/books/booksPut.js");
+const { ingestHandler } = await import("../../functions/diyaGl/diyaGlPut.js");
 const { _setTestSalt, _clearSalt, hashSub } = await import("../../services/subHasher.js");
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
@@ -125,15 +125,15 @@ function versionKeyFor(sub, bookId, version) {
   return `users/${hashSub(sub)}/books/${bookId}/v${version}.zip`;
 }
 
-describe("booksPut", () => {
+describe("diyaGlPut", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
-    process.env.BOOKS_BUCKET_NAME = "test-books-bucket";
-    process.env.BOOKS_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
-    process.env.BOOKS_MAX_BYTES = "2097152";
-    process.env.BOOKS_MAX_PER_USER = "20";
-    process.env.BOOKS_VERSIONS_KEPT = "30";
-    delete process.env.BOOKS_ENTITLEMENT_ENFORCED;
+    process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
+    process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
+    process.env.DIYA_GL_MAX_BYTES = "2097152";
+    process.env.DIYA_GL_MAX_PER_USER = "20";
+    process.env.DIYA_GL_VERSIONS_KEPT = "30";
+    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
     _setTestSalt("test-salt");
   });
 
@@ -257,7 +257,7 @@ describe("booksPut", () => {
   });
 
   test("413s an oversized zip with no S3 write", async () => {
-    process.env.BOOKS_MAX_BYTES = "10";
+    process.env.DIYA_GL_MAX_BYTES = "10";
 
     const result = await ingestHandler(buildPutEvent({}));
 
@@ -285,7 +285,7 @@ describe("booksPut", () => {
   });
 
   test("403s subscription-required when entitlement is enforced and unmet, with no S3 write", async () => {
-    process.env.BOOKS_ENTITLEMENT_ENFORCED = "true";
+    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
 
     const result = await ingestHandler(buildPutEvent({}));
 
@@ -329,7 +329,7 @@ describe("booksPut", () => {
   });
 
   test("prunes the oldest version beyond 30 kept, keeping versions at 30 and latestVersion climbing", async () => {
-    process.env.BOOKS_VERSIONS_KEPT = "30";
+    process.env.DIYA_GL_VERSIONS_KEPT = "30";
     const metaKey = metadataKeyFor("test-sub", BOOK_ID);
     const thirtyVersions = Array.from({ length: 30 }, (_, i) => ({
       version: i + 1,

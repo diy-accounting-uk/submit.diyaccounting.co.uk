@@ -43,9 +43,9 @@ outputs:
   cognito-client-id:
     description: "Cognito User Pool Client ID (the main app client, selected by ClientName)"
     value: ${{ steps.cognito.outputs.CLIENT_ID }}
-  cognito-books-client-id:
+  cognito-diya-gl-client-id:
     description: "Cognito User Pool Client ID for the spreadsheets DIYA-GL pages (selected by ClientName)"
-    value: ${{ steps.cognito.outputs.BOOKS_CLIENT_ID }}
+    value: ${{ steps.cognito.outputs.DIYA_GL_CLIENT_ID }}
   http-api-id:
     description: "API Gateway HTTP API ID"
     value: ${{ steps.api-gateway.outputs.HTTP_API_ID }}
@@ -111,20 +111,20 @@ runs:
         # Looked up leniently (unlike the main client above): destroy workflows call this
         # action before their CloudFormation cleanup runs, and must not abort stack deletion
         # just because the books client lookup had a transient problem.
-        BOOKS_CLIENT_NAME="${{ inputs.environment-name }}-env-books-client"
-        BOOKS_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
+        DIYA_GL_CLIENT_NAME="${{ inputs.environment-name }}-env-diya-gl-client"
+        DIYA_GL_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
           --user-pool-id "${USER_POOL_ID}" \
-          --query "UserPoolClients[?ClientName=='${BOOKS_CLIENT_NAME}'].ClientId | [0]" \
+          --query "UserPoolClients[?ClientName=='${DIYA_GL_CLIENT_NAME}'].ClientId | [0]" \
           --output text 2>/dev/null || echo "")
-        if [ "$BOOKS_CLIENT_ID" = "None" ]; then
-          BOOKS_CLIENT_ID=""
+        if [ "$DIYA_GL_CLIENT_ID" = "None" ]; then
+          DIYA_GL_CLIENT_ID=""
         fi
-        echo "Found Books Client ID: ${BOOKS_CLIENT_ID:-<not found>}"
+        echo "Found DIYA-GL Client ID: ${DIYA_GL_CLIENT_ID:-<not found>}"
 
         echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
         echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"
         echo "CLIENT_ID=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
-        echo "BOOKS_CLIENT_ID=${BOOKS_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+        echo "DIYA_GL_CLIENT_ID=${DIYA_GL_CLIENT_ID}" >> "$GITHUB_OUTPUT"
 
     - name: Lookup API Gateway from custom domain
       id: api-gateway

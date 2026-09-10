@@ -283,7 +283,7 @@ public class IdentityStack extends Stack {
         this.booksUserPoolClient = UserPoolClient.Builder.create(
                         this, props.resourceNamePrefix() + "-BooksUserPoolClient")
                 .userPool(userPool)
-                .userPoolClientName(props.resourceNamePrefix() + "-books-client")
+                .userPoolClientName(props.resourceNamePrefix() + "-diya-gl-client")
                 .generateSecret(false)
                 .preventUserExistenceErrors(true)
                 .oAuth(OAuthSettings.builder()
@@ -299,7 +299,7 @@ public class IdentityStack extends Stack {
                 .forEach(idp -> this.booksUserPoolClient.getNode().addDependency(idp));
 
         var booksUserPoolClientIdParameterName =
-                "/submit/%s/spreadsheets-books-app-client-id".formatted(props.envName());
+                "/submit/%s/spreadsheets-diya-gl-app-client-id".formatted(props.envName());
         StringParameter.Builder.create(this, props.resourceNamePrefix() + "-BooksUserPoolClientIdParameter")
                 .parameterName(booksUserPoolClientIdParameterName)
                 .stringValue(this.booksUserPoolClient.getUserPoolClientId())

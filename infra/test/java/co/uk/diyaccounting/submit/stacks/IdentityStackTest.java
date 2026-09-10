@@ -83,7 +83,7 @@ class IdentityStackTest {
                 .filter(resource -> {
                     @SuppressWarnings("unchecked")
                     var properties = (Map<String, Object>) resource.get("Properties");
-                    return String.valueOf(properties.get("ClientName")).endsWith("-books-client");
+                    return String.valueOf(properties.get("ClientName")).endsWith("-diya-gl-client");
                 })
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("no books client found"));
@@ -128,7 +128,7 @@ class IdentityStackTest {
                 "AWS::Cognito::UserPoolClient",
                 Match.objectLike(Map.of(
                         "ClientName",
-                        Match.stringLikeRegexp(".*-books-client$"),
+                        Match.stringLikeRegexp(".*-diya-gl-client$"),
                         "CallbackURLs",
                         Match.arrayEquals(expectedUrls),
                         "LogoutURLs",
@@ -166,7 +166,7 @@ class IdentityStackTest {
                 "AWS::Cognito::UserPoolClient",
                 Match.objectLike(Map.of(
                         "ClientName",
-                        Match.stringLikeRegexp(".*-books-client$"),
+                        Match.stringLikeRegexp(".*-diya-gl-client$"),
                         "CallbackURLs",
                         Match.arrayEquals(expectedUrls),
                         "LogoutURLs",
@@ -180,7 +180,8 @@ class IdentityStackTest {
 
         template.hasOutput("BooksUserPoolClientId", Match.anyValue());
         template.hasResourceProperties(
-                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-books-app-client-id")));
+                "AWS::SSM::Parameter",
+                Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-diya-gl-app-client-id")));
     }
 
     @Test

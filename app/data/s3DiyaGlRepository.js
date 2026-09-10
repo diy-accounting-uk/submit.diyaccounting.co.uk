@@ -27,9 +27,9 @@ export function isValidBookId(bookId) {
 }
 
 function getTableName() {
-  const bucketName = process.env.BOOKS_BUCKET_NAME;
+  const bucketName = process.env.DIYA_GL_BUCKET_NAME;
   if (!bucketName) {
-    throw new Error("BOOKS_BUCKET_NAME environment variable is required");
+    throw new Error("DIYA_GL_BUCKET_NAME environment variable is required");
   }
   return bucketName;
 }
