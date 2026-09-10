@@ -506,7 +506,17 @@ jobs:
       deployment-name: ${{ steps.select-stack.outputs.SELECTED_DEPLOYMENT_NAME }}
 
   names:
-    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
+    # `sweep-for-stacks` is skipped (an explicit deployment-name dispatch needs no sweep) as
+    # often as it fails, and both leave `sweeper-hit` empty. Checking only that output could
+    # not tell the two apart, so a failed sweep read the same as "run anyway" and this job
+    # would compute names from whatever the sweep managed to emit before it died.
+    # needs.sweep-for-stacks.result distinguishes them: 'skipped' is the explicit-name path,
+    # safe to proceed on; 'success' with sweeper-hit != 'false' is a completed sweep that
+    # found something. Anything else, 'failure' above all, must not reach this job — a
+    # partial stack list is not one to act on. `!cancelled()` only lifts the implicit
+    # success() this job would otherwise inherit from `needs`; it does not mean the sweep
+    # worked, which was the bug.
+    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
     needs:
       - params
       - sweep-for-stacks
@@ -532,7 +542,11 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   destroy:
-    if: ${{ !cancelled() && needs.sweep-for-stacks.outputs.sweeper-hit != 'false' }}
+    # Same gate as the `names` job above, and for the same reason: this job deletes
+    # CloudFormation stacks, so it must not run on a sweep that failed partway through
+    # building its list. Only a skipped sweep (explicit deployment-name) or a sweep that
+    # completed and found a hit may reach here.
+    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
     needs:
       - params
       - names
