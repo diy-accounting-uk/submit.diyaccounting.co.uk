@@ -30,141 +30,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Dispatch no `destroy-prod` and no `destroy-ci` until B102 lands.** The refusal step that stops a
-dispatch deleting the live production deployment currently stops nothing: it failed twice on
-2026-09-10 and the steps after it ran both times, including the one that deletes stacks. Nothing was
-harmed only because the deployment name was malformed and matched nothing. B102 is at the top of
-`## Ready: Claude Code` and goes first.
-
 **Both API route prefixes are permanent.** Operator decision, 2026-09-10, live on prod: an
 unauthenticated call to `/api/v1/books` and to `/api/v1/diya-gl` each returns 401, which is the
 authoriser rejecting a caller on a route that exists. The spreadsheets repository changes nothing,
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
-
-Batch 22 is PR #179 on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's remaining wave:
-
-- [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
-  run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
-  the live or last known good deployment", **failed** — and steps 16 to 22 ran anyway, including
-  step 19, "Delete stacks in dependency order". The refusal is the one thing standing between a
-  dispatch and deleting the live production deployment, and it currently stops nothing.
-
-  The cause is this batch's own O42 fix. It gave the AWS-CLI steps `if: ${{ !cancelled() }}` so a
-  failed `Build CDK` could not abandon a retirement those steps never needed. `!cancelled()` is also
-  true when an *earlier* step failed, so the guards let the destroy run past the refusal as well.
-  The guards were right about the build and wrong about everything before it.
-
-  Nothing was harmed this time, and only by luck: the deployment name was malformed, so the deletion
-  matched no stacks. All three prod sets stand and prod-7b75b75 is live, confirmed after the run.
-
-  Two more faults in the same job, and they are why the refusal fired at all. The dispatch input
-  carried a **leading space** — the log shows `DEPLOYMENT:  prod-c78fb84` and the refusal printed
-  `Refusing to destroy [ prod-c78fb84]: not an app deployment name` — and nothing trims it. Then step
-  23, "Delete leftover Lambda log groups", passed that same untrimmed value to `DescribeLogGroups`
-  and got `InvalidParameterException ... failed to satisfy constraint`, because a space is not legal
-  in a log group prefix.
-
-  So: make every step after the refusal conditional on the refusal having succeeded, not merely on
-  the job not being cancelled, while keeping O42's property that a failed build does not abandon a
-  retirement. Trim the input where it is read. Validate the deployment name before any AWS call
-  rather than letting a malformed one reach three different APIs. Apply all of it to
-  `destroy-ci.yml` too, which carries the same guards. **Source**: run 34512145857. **Owner**:
-  Claude Code. **Model**: Sonnet.
-
-  It has now fired twice: run 34512761956, dispatched 18:11 UTC, failed at the same step 10. The
-  spare prod set is still standing because of it, and no destroy should be dispatched again until
-  this row lands.
-
-  A third fault sits beside those: a destroy against a deployment with no stacks reports success.
-  Runs 34512251765 and 34512721011, 18:06 and 18:10 UTC, were given `prod-b95799e` and
-  `prod-504ec0d`. Neither name has ever had a stack in prod. Both runs passed the refusal, deleted
-  nothing and finished green, so the log reads exactly like a destroy that worked. Fix it here:
-  after the name is validated, count the stacks it matches and fail when the count is zero.
-
-  **Code complete** on `claude/b22-board` (merge 6b5d22aa), worktree removed. Waits on PR #179's checks.
-
-  It grew one row while being fixed: `destroy-ci.yml` had no refusal step at all. A comment in that
-  file already warned against widening the guards around a "Refuse to destroy" check that did not
-  exist there, so a ci destroy could take the live or last-known-good ci deployment with nothing
-  objecting. It now carries the same refusal and the same stack-count check as prod.
-- [ ] **B103. `postVatReturnBehaviour` turned the prod deploy run red.** Run 34511779119 on main,
-  18:01 UTC on 2026-09-10, finished `failure`. One job failed, `delegate to test workflow /
-  simulator - postVatReturnBehaviour`; prod deployed, the twelve prod probes passed, the last known
-  good moved to prod-f0787f7 and the previous set retired, all after it. The test that failed is
-  "The user sees a submission error message for the HMRC sandbox scenario": HMRC answered
-  `VRN_INVALID`, the server logged the failure and marked the async request completed, and the page
-  polled "Still processing..." for the full 60 seconds without ever rendering the error. The same
-  suite passed on the standalone `test` run of the same commit 30 minutes later, and on five earlier
-  runs today, so it is a race rather than a break: the receipt page misses a terminal state that
-  arrives while it is between polls. Find it in the poll loop, not in the test's timeout. **Source**:
-  run 34511779119, job log. **Owner**: Claude Code. **Model**: Sonnet.
-
-  **Code complete** on `claude/b22-board` (merge 93439d51), worktree removed. 2551 unit tests pass on
-  the merged tree. Waits on PR #179's checks and on a prod deploy to prove it against the real HMRC sandbox.
-
-  It was not a flaky test. `initiateProcessing` in `app/services/asyncApiServices.js` wrote the
-  `processing` marker fire-and-forget, deliberately, so the request did not wait on DynamoDB. Both
-  that write and the processor's own `completed` write target the same item with no ordering guard,
-  so a rejection fast enough to need no real HMRC work — `VRN_INVALID` is exactly that — could land
-  `completed` first and then have the older `processing` write clobber it, dropping the result
-  attribute. Every later poll then read `processing` and answered 202 until the client gave up. The
-  fix awaits the marker before the processor starts.
-- [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
-  concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
-  directly as its `destroy-previous` job, so if both resolved to the same group name that call
-  would wait on a slot its own parent run holds — a permanent deadlock. They are on deliberately
-  distinct names as a result, which leaves a `destroy-prod.yml` run started on its own (its
-  schedule, or a dispatch) able to overlap a `deploy.yml` prod run that did not spawn it. The
-  existing `wait-for-ci-deploys` action solves exactly this shape for ci by polling for older
-  unfinished runs rather than using a concurrency group, and its own comment explains why: GitHub
-  keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
-  same mechanism, which is new work rather than another key. **Source**: B90's finding,
-  2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
-
-  **Code complete** on `claude/b22-board` (merge 788839ae), worktree removed. Waits on PR #179's checks.
-
-  A standalone `destroy-prod` run now waits for a running prod `deploy.yml`, polling rather than
-  sharing a concurrency group, which is the deadlock B90 hit. `deploy.yml` passes
-  `called-from-deploy: true` on its own `destroy-previous` call and that run skips the wait, so it
-  never waits on its own parent. The destroy defers and the deploy never does: a janitorial sweep
-  must not delay a release. A timed-out wait fails the job, which with B102's gating means nothing
-  destructive runs.
-- [ ] **B101. Every redeploy pushes a ci set's self-destruct two hours further out.** The
-  investigation is done and EventBridge is not the culprit. `ci-claudf179` was created 13:03 with a
-  destruct at 15:03; a push at 14:15 rewrote it to 16:15, and a push at 14:55 rewrote it again to
-  16:53, each overwriting a schedule that had not yet fired. EventBridge then invoked at 16:53:41,
-  30 seconds after the target it was actually given. The control case proves it: `ci-claud6807` was
-  deployed once, never redeployed, and fired within a minute of its computed time. A branch under
-  active development therefore never tears down, because every push defers it again.
-
-  The cause is `deploy.yml:460`: `SELF_DESTRUCT_START_DATETIME=$(date -u -d "+N hours")` is
-  recomputed on every push-triggered redeploy with nothing anchoring it to the deployment's own
-  creation, and `SelfDestructStack.java` rightly treats what it is handed as authoritative. Fix it
-  by computing the start once, at first creation, and reusing it on updates — or by having the
-  Lambda check elapsed time against a persisted creation marker rather than trusting a schedule
-  that can be silently rewritten. Say which and why.
-
-  Two more things to settle in the same change, because they are the same confusion:
-  `SELF_DESTRUCT_DELAY_HOURS` is never forwarded through `deploy-cdk-stack.yml`, so
-  `props.selfDestructDelayHours()` always falls back to `cdk.json`'s `1` — the stack output and the
-  recurring safety-net cron both say one hour while `deploy.yml` intends two. And `destroy-ci.yml`
-  holds `SELF_DESTRUCT_DELAY_HOURS: '8'` as the sweep's minimum age. Three numbers, one concept.
-  Also fix `infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java:56-58`, where `envOr`'s
-  "using alternative" log prints the null environment value instead of the value it actually
-  resolved, which is what made this take longer to read.
-
-  **Source**: this batch's investigation, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
-  Sequenced after B92, which holds `deploy.yml`.
-
-  **Code complete** on `claude/b22-board` (merge a111f477), worktree removed. Waits on PR #179's checks.
-
-  The start time now derives from the `SelfDestructStack`'s CloudFormation `CreationTime`, which
-  survives updates, so a redeploy no longer moves it. Prod never deploys that stack and is
-  unaffected. `SELF_DESTRUCT_DELAY_HOURS` is forwarded through `deploy-cdk-stack.yml`, so the
-  stack stops falling back to `cdk.json`'s `1`, and `destroy-ci.yml`'s `8` is renamed
-  `SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS` because a sweep's minimum age is a different thing from a
-  destruct delay.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
@@ -223,6 +93,29 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Steps 2, 4 and 6 are AWS writes against prod data: each waits for the operator. **Source**:
   `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code, with the operator at the write gates.
   **Model**: Sonnet.
+- [ ] **B104. The SBOM workflow keeps a count, not a bill of materials.** `sbom.yml` runs
+  `npm sbom --sbom-format cyclonedx`, reads five fields out of the result, writes one row to
+  `curated/security/sbom/dt=<date>/<run-id>.json` in the lake, and lets the document die with the
+  runner. There is no `upload-artifact` step and no S3 copy of the SBOM itself. On 2026-09-10 the
+  row it stored was `component_count: 906` and nothing else.
+
+  So the question an SBOM exists to answer cannot be answered: given a CVE and a date, which
+  versions were we shipping that day. A count does not say. The document has to be kept, in the
+  lake beside the row, with a retention that outlives the question — a supply-chain question
+  arrives years after the build.
+
+  Java is not covered at all. The "Check for a configured Maven CycloneDX plugin" step only echoes
+  whether `pom.xml` has one, and it does not, so a push touching `infra/**` or `pom.xml` triggers a
+  run that produces nothing about the CDK dependency tree. Add `cyclonedx-maven-plugin` and store
+  its output the same way.
+
+  `Dockerfile*` is in the trigger list too and the base image's OS packages are in no SBOM either.
+  Say whether that is worth a third generator or is deliberately out, rather than leaving the
+  trigger implying a coverage that is not there.
+
+  Done when: pick any past date with a stored SBOM, retrieve the document, and read the exact
+  version of a named dependency from it. **Source**: the sbom job of run 34537197338. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
   in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
   and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
