@@ -42,7 +42,7 @@ authoriser rejecting a caller on a route that exists. The spreadsheets repositor
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
 
-Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is these three:
+Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1, plus B92 which waited on B102's file:
 
 - [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
   run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
@@ -82,7 +82,12 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is t
   nothing and finished green, so the log reads exactly like a destroy that worked. Fix it here:
   after the name is validated, count the stacks it matches and fail when the count is zero.
 
-  **In flight** in `.claude/worktrees/b22-destroy-guards` on `worktree-agent-destroy-guards`, off `claude/b22-board`. No PR yet.
+  **Code complete** on `claude/b22-board` (merge 6b5d22aa), worktree removed. Waits on CI.
+
+  It grew one row while being fixed: `destroy-ci.yml` had no refusal step at all. A comment in that
+  file already warned against widening the guards around a "Refuse to destroy" check that did not
+  exist there, so a ci destroy could take the live or last-known-good ci deployment with nothing
+  objecting. It now carries the same refusal and the same stack-count check as prod.
 - [ ] **B103. `postVatReturnBehaviour` turned the prod deploy run red.** Run 34511779119 on main,
   18:01 UTC on 2026-09-10, finished `failure`. One job failed, `delegate to test workflow /
   simulator - postVatReturnBehaviour`; prod deployed, the twelve prod probes passed, the last known
@@ -113,13 +118,6 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Wave 1 is t
 
   **In flight** in `.claude/worktrees/b22-self-destruct` on `worktree-agent-self-destruct`, off `claude/b22-board`. No PR yet.
 
-
-A worktree agent runs `npm run bundle` before any unit, system or browser suite:
-`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
-it nine tests fail on a missing file that has nothing to do with the change.
-
-## Ready: Claude Code
-
 - [ ] **B92. A prod destroy can still overlap a prod deploy.** B90 could not close this one with a
   concurrency group, and the reason is worth keeping: `deploy.yml` calls `destroy-prod.yml`
   directly as its `destroy-previous` job, so if both resolved to the same group name that call
@@ -131,6 +129,15 @@ it nine tests fail on a missing file that has nothing to do with the change.
   keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
   same mechanism, which is new work rather than another key. **Source**: B90's finding,
   2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
+
+  **In flight** in `.claude/worktrees/b22-destroy-overlap` on `worktree-agent-destroy-overlap`, off `claude/b22-board`. Dispatched once B102 freed `destroy-prod.yml`.
+
+A worktree agent runs `npm run bundle` before any unit, system or browser suite:
+`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
+it nine tests fail on a missing file that has nothing to do with the change.
+
+## Ready: Claude Code
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
