@@ -17,6 +17,14 @@
 // bundles for whoever they log in as, and a rotation from one lane would invalidate another
 // lane's password mid-run.
 
+// CONSUMER DEPENDENCY: The spreadsheets repository fetches this script from our main branch
+// at runtime. One call site in their deploy.yml curl it and execute it during CI runs.
+// Changing the argument order, adding required parameters, or changing the credentials the
+// script prints is a breaking change for them. They have no import to grep and no test that
+// will fail. Before changing these, coordinate with the spreadsheets repository or provide a
+// compatibility window if needed. They pin their fetch to a commit, so a change here reaches
+// them only when they bump their deploy workflow.
+
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import {
   CognitoIdentityProviderClient,
