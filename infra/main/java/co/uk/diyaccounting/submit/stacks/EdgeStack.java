@@ -861,14 +861,16 @@ public class EdgeStack extends Stack {
                         .build())
                 .build();
 
-        // The DIYA-GL routes answer their own CORS (DIYA_GL_ALLOWED_ORIGINS, see diyaGlCors.js):
-        // the /api/v1/* behaviour's CORS override above would stamp Access-Control-Allow-Origin: *
-        // over every response, breaking both the PUT preflight and the client's read of ETag.
-        // Same security headers, no corsBehavior, so CloudFront passes the handler's own through.
+        // CORS for the whole shared HttpApi (/api/v1/*, DIYA-GL routes included) is decided one
+        // layer down: ApiStack's own HttpApi.corsPreflight (booksAllowedOrigins) answers for every
+        // route, and the DIYA-GL routes additionally echo their own per-request origin
+        // (DIYA_GL_ALLOWED_ORIGINS, see diyaGlCors.js). No corsBehavior here at all, so CloudFront
+        // passes whichever of those the origin already sent straight through, instead of
+        // overwriting an already-correct, origin-restricted header with a CloudFront-level one.
         ResponseHeadersPolicy diyaGlApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-DiyaGlWHP")
                 .responseHeadersPolicyName(props.resourceNamePrefix() + "-diya-gl-whp")
-                .comment("Security headers for the DIYA-GL API, with no CORS override")
+                .comment("Security headers for /api/v1/* API routes, with no CORS override")
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
@@ -992,15 +994,18 @@ public class EdgeStack extends Stack {
                 .cookieBehavior(OriginRequestCookieBehavior.all())
                 .build();
 
-        // Create additional behaviours for the API Gateway Lambda origins
+        // Create additional behaviours for the API Gateway Lambda origins. /api/v1/* and the more
+        // specific /api/v1/books/* share the same response-headers policy: no CORS override on
+        // either, since API Gateway's own HttpApi.corsPreflight allow list (and, for the books
+        // routes, diyaGlCors.js's per-request echo) already decide the header correctly. The two
+        // path patterns stay as separate CloudFront behaviours so a future security-header change
+        // scoped to one of them doesn't have to touch the other.
         HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
         BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), webResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
 
-        // More specific than /api/v1/*, so CloudFront prefers this one for the books routes and
-        // leaves every other /api/v1/* route on the CORS-overriding policy above unaffected.
         BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
                 props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
         additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
