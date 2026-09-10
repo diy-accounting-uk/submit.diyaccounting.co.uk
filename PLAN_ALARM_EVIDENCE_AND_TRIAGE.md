@@ -750,7 +750,7 @@ environment's `SUBMIT_ACTIONS_ROLE_ARN`. The rest of the second job:
           git apply triage-change.patch
           rm triage-change.patch
           git add -A
-          git -c user.name='claude-alarm-triage' -c user.email='noreply@anthropic.com' \
+          git -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com' \
             commit -m "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}"
           git push origin "$BRANCH"
           gh pr create --draft --base main --head "$BRANCH" \
