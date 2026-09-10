@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f0787f7** (the merge of PR #178). Its `destroy-previous` retired
-prod-7b75b75. One spare stands at $46.88/month: prod-c78fb84, six stacks from the deploy that died
-at `deploy api`. It goes by name once B102 lands, and not before — the destroy's safety refusal is
-the thing B102 fixes (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
+**Prod runs deployment prod-49fd9b3** (the merge of PR #179). Its `destroy-previous` retired
+prod-f0787f7, which is the fixed destroy working in anger: the refusal passed, the stack-count
+check found stacks, and the right set went. One spare still stands at $46.88/month, prod-c78fb84,
+six stacks from the deploy that died at `deploy api`. B102 is live now, so destroying it by name is
+safe: `gh workflow run destroy-prod.yml -f deployment-name=prod-c78fb84`.
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
