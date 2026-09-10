@@ -26,8 +26,10 @@
 // this prints breaks a caller you cannot see from here. Give the old form a window first;
 // scripts/toggle-cognito-native-auth.js has a live example of one.
 //
-// They pin their fetch to a commit, so a change here reaches them only when they bump that SHA.
-// That turns a surprise into a silence, which means a change worth their having needs telling
+// They have agreed to pin their fetch to a commit rather than track our main, but until that
+// lands on THEIR main every merge here still reaches their runners immediately. Check which is
+// true before you rely on either. Once pinned, a change here reaches them only when they bump
+// that SHA, which turns a surprise into a silence — so a change worth their having needs telling
 // them.
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
