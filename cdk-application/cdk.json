@@ -42,7 +42,7 @@
     "companiesHousePresenterIdArn": "",
     "companiesHousePresenterCodeArn": "",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
-    "selfDestructDelayHours": "1",
+    "selfDestructDelayHours": "2",
     "certificateArn": "arn:aws:acm:us-east-1:972912397388:certificate/e465ad23-baf8-4b5c-94a4-33f73a266ec6",
     "regionalCertificateArn": "arn:aws:acm:eu-west-2:972912397388:certificate/eea7a266-4b80-42d9-9d10-39af2455ce5b",
     "simulatorCertificateArn": "arn:aws:acm:us-east-1:972912397388:certificate/e465ad23-baf8-4b5c-94a4-33f73a266ec6",

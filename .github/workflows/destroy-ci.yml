@@ -52,7 +52,12 @@ env:
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: '8'
+  # This is a backstop's minimum age, not deploy.yml's self-destruct delay: the primary
+  # teardown is the EventBridge schedule each deployment's own SelfDestructStack carries
+  # (deploy.yml's SELF_DESTRUCT_DELAY_HOURS, default 2h). This sweep runs on a fixed cron
+  # regardless of any single deployment's schedule, so it needs its own, larger, minimum age
+  # to avoid destroying a deployment the primary schedule hasn't had a chance to reach yet.
+  SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS: '8'
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: 'false'
   COMMIT_HASH: ${{ github.sha }}
@@ -75,14 +80,20 @@ jobs:
         id: normalise
         shell: bash
         run: |
-          echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
+          # Trim here, once, because this is the only place the raw operator-supplied input is
+          # read. A leading/trailing space (easy to paste in by accident) made the deployment
+          # name fail its format check downstream and also broke the log-group prefix query,
+          # which rejects whitespace outright.
+          RAW_DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
+          TRIMMED_DEPLOYMENT_NAME=$(printf '%s' "$RAW_DEPLOYMENT_NAME" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          echo "deployment-name=$TRIMMED_DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
           # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
           # and this run is on a schedule. A reusable workflow call inherits github.event_name from
           # the caller, so an explicit deployment-name must win over the event.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
-          DEPLOYMENT_NAME='${{ inputs.deployment-name }}'
+          DEPLOYMENT_NAME="$TRIMMED_DEPLOYMENT_NAME"
           if [ "${SWEEP_FOR_STACKS:-false}" = "true" ]; then
             echo "isSweeping=true" | tee -a "$GITHUB_OUTPUT"
           elif [ -z "$DEPLOYMENT_NAME" ] && [ "$EVENT_NAME" = "schedule" ]; then
@@ -302,13 +313,13 @@ jobs:
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
           PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
           DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
-          SELF_DESTRUCT_DELAY_HOURS="${{ env.SELF_DESTRUCT_DELAY_HOURS }}"
+          SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS="${{ env.SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS }}"
 
           echo "Last known good deployment name: '$LAST_KNOWN_GOOD_DEPLOYMENT_NAME'"
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
-          echo "Self-destruct delay hours: $SELF_DESTRUCT_DELAY_HOURS"
+          echo "Sweep minimum age hours: $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS"
 
           # Function to get the most recent creation time for a deployment's stacks
           get_deployment_age_hours() {
@@ -440,12 +451,12 @@ jobs:
               continue
             fi
 
-            if [ "$DEPLOYMENT_AGE_HOURS" -lt "$SELF_DESTRUCT_DELAY_HOURS" ]; then
-              echo "Skipping $DEPLOYMENT_NAME as it is only $DEPLOYMENT_AGE_HOURS hours old (minimum age: $SELF_DESTRUCT_DELAY_HOURS hours)"
+            if [ "$DEPLOYMENT_AGE_HOURS" -lt "$SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS" ]; then
+              echo "Skipping $DEPLOYMENT_NAME as it is only $DEPLOYMENT_AGE_HOURS hours old (minimum age: $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS hours)"
               continue
             fi
 
-            echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_DELAY_HOURS hours), eligible for destruction"
+            echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS hours), eligible for destruction"
 
             SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
             echo "Selected deployment for destruction: Environment='ci', Deployment='$SELECTED_DEPLOYMENT_NAME'"
@@ -612,6 +623,69 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
+      # This workflow had no equivalent of destroy-prod.yml's live/last-known-good refusal — a
+      # comment further down already referred to a "Refuse to destroy" check "above" that did not
+      # exist in this file. Carrying that same protection here, adapted to ci: the base domain a
+      # deployment gets is always "{deployment}.submit.diyaccounting.co.uk" (see
+      # .github/actions/get-names), regardless of environment, so the live-distribution check
+      # matches on that plus this environment's own apex domain.
+      - name: Refuse to destroy the live or last known good deployment
+        id: refuse
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+          CI_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$DEPLOYMENT" =~ ^ci-[a-zA-Z0-9-]+$ ]] \
+             || [[ "$DEPLOYMENT" == *-holding ]] || [[ "$DEPLOYMENT" == *-gateway ]] || [[ "$DEPLOYMENT" == *-spreadsheets ]]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: not an app deployment name"
+            exit 1
+          fi
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter \
+            --name "/submit/ci/last-known-good-deployment" \
+            --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          echo "Last known good ci deployment: [$LAST_KNOWN_GOOD]"
+          if [ "$DEPLOYMENT" = "$LAST_KNOWN_GOOD" ]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: it is the last known good deployment"
+            exit 1
+          fi
+          LIVE_DISTRIBUTION=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${CI_APEX_DOMAIN}') && contains(Aliases.Items, '${DEPLOYMENT}.submit.diyaccounting.co.uk')].Id | [0]" \
+            --output text)
+          if [ -n "$LIVE_DISTRIBUTION" ] && [ "$LIVE_DISTRIBUTION" != "None" ]; then
+            echo "Refusing to destroy [$DEPLOYMENT]: distribution [$LIVE_DISTRIBUTION] still serves [$CI_APEX_DOMAIN]"
+            exit 1
+          fi
+          echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
+
+      # A destroy that matches no stacks must not report success: that reads exactly like a
+      # destroy that worked, when in fact the caller named a deployment that was never live in
+      # this account (or already gone). This step, like the refusal above it, has no explicit
+      # `if:` guard, so it only runs when the refusal step succeeded — the default `success()`
+      # every step carries unless overridden. Every step below this one that must not run past a
+      # failed refusal checks `steps.confirm-stacks.outcome == 'success'`, which is true only when
+      # both this step and the refusal before it succeeded.
+      - name: Confirm the deployment has stacks to destroy
+        id: confirm-stacks
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          set -euo pipefail
+          STACK_COUNT=0
+          for REGION in eu-west-2 us-east-1; do
+            REGION_COUNT=$(aws cloudformation describe-stacks --region "$REGION" \
+              --query "length(Stacks[?starts_with(StackName, '${DEPLOYMENT}-')])" --output text 2>/dev/null || echo "0")
+            echo "Found $REGION_COUNT stack(s) for [$DEPLOYMENT] in $REGION"
+            STACK_COUNT=$((STACK_COUNT + REGION_COUNT))
+          done
+          if [ "$STACK_COUNT" -eq 0 ]; then
+            echo "Refusing to report success: [$DEPLOYMENT] matches no stacks in eu-west-2 or us-east-1"
+            exit 1
+          fi
+          echo "[$DEPLOYMENT] matches $STACK_COUNT stack(s); proceeding"
+
       - name: Node dependencies
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
         timeout-minutes: 6
@@ -655,11 +729,16 @@ jobs:
       # retirement: none of the steps below through 'Delete stacks in dependency order' touch the
       # jar this step builds. They delete named CloudFormation stacks by AWS CLI, which needs no
       # CDK synth. Only 'CDK destroy (cleanup pass)' further down needs it, and it already
-      # tolerates failure on its own. Never widen these `if` guards to also skip on a bad
-      # 'Refuse to destroy' check above — that step still runs unconditionally before this one and
-      # is what stops the live or last-known-good deployment from ever reaching here.
+      # tolerates failure on its own.
+      #
+      # `!cancelled()` alone is not enough: it is also true when an EARLIER step failed, which is
+      # exactly what would let a failed 'Refuse to destroy' (or a failed 'Confirm the deployment
+      # has stacks to destroy') run straight into stack deletion. Every step from here through
+      # 'Delete leftover Lambda log groups' also requires `steps.confirm-stacks.outcome ==
+      # 'success'` — true only when both the refusal and the stack-count check above it succeeded.
+      # Never widen these `if` guards back to bare `!cancelled()`.
       - name: Lookup Cognito from domain convention
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
@@ -670,7 +749,7 @@ jobs:
           lenient-diya-gl-client-lookup: 'true'
 
       - name: Empty origin bucket
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         shell: bash
         run: |
           EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
@@ -687,7 +766,7 @@ jobs:
           fi
 
       - name: Clean up external API Gateway custom domain mappings
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         shell: bash
         run: |
           set +e  # Best-effort cleanup
@@ -724,7 +803,7 @@ jobs:
           echo "API Gateway custom domain mapping cleanup complete"
 
       - name: Delete stacks in dependency order
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         shell: bash
         run: |
           DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
@@ -776,7 +855,7 @@ jobs:
           echo "=== Stack deletion complete ==="
 
       - name: CDK destroy (cleanup pass)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.ci -- \
@@ -797,7 +876,7 @@ jobs:
           HTTP_API_URL: 'https://placeholder'
 
       - name: Retry DELETE_FAILED stacks
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         shell: bash
         run: |
           DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
@@ -824,7 +903,7 @@ jobs:
           done
 
       - name: CDK stacks after
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
@@ -832,7 +911,7 @@ jobs:
       # CDK custom-resource provider Lambdas create their own log groups outside the stacks, so
       # they survive stack deletion with no retention.
       - name: Delete leftover Lambda log groups
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
