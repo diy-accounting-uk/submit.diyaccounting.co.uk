@@ -31,6 +31,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+**Batch 17 on `claude/b17-board`, PR #169.** The integration branch has its own worktree at
+`.claude/worktrees/b17`; every sub-agent worktree branches from `claude/b17-board`, not from
+`main`, and merges it before starting. Opened with B84 and B83, the two red pipelines. Waves land
+on this one branch and push in batches, because a branch deploy is expensive and slow.
+
+A worktree agent runs `npm run bundle` before any unit, system or browser suite:
+`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
+it nine tests fail on a missing file that has nothing to do with the change.
+
 ## Ready: Claude Code
 
 - [ ] **B84. Every main deploy fails on the cost export.** `deploy environment from main` run
@@ -102,6 +111,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
+- [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
+  in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
+  and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
+  16, which is the proof the issue was waiting for. Run the drill against the prod vault, record
+  what it restored and how long it took, and either close #11 on that evidence or say in the issue
+  what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
+  Sonnet.
 - [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
   authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
   CORS header on it and the browser reports a CORS block rather than the real status. This is
