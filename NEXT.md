@@ -35,6 +35,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 **COOL-DOWN is on since 2026-09-10T18:40:40Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
+**FIRST THING WHEN COOL-DOWN LIFTS: B102**, the destroy's safety refusal. It has failed twice today
+and the steps after it ran both times, including the one that deletes stacks. Nothing was harmed
+only because the deployment name was malformed and matched nothing. Until it lands, dispatch no
+`destroy-prod` and no `destroy-ci`: the check that stops a dispatch deleting the live production
+deployment currently stops nothing. Its full row is at the top of `## Ready: Claude Code`.
+
 **Batches 18 and 19 are on main** (PR #175 at c78fb846, PR #176 at b95799e1), and main is
 deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to prod. The cost export
 is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
