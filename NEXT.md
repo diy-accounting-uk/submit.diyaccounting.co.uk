@@ -131,6 +131,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
   The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
   **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B82. The global git config will break signatures the day signing is turned on.**
+  `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
+  rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
+  replays a recorded conflict resolution silently while it happens. `REPORT_IDENTITY_AUDIT.md`
+  ranks SSH commit signing as the prerequisite for every auto-merge policy in
+  `PLAN_REPOSITORY_AUTOMATION.md`, and its check is `verification.verified` on each commit of a
+  PR, so this setting quietly defeats the thing everything else rests on. Settle what the local
+  git config should be before signing is enabled, not after: whether pulls merge or rebase here,
+  whether `rerere` stays on, and what a sub-agent's worktree inherits. Write the answer where a
+  future session reads it rather than leaving it in one machine's global config. **Source**:
+  `REPORT_IDENTITY_AUDIT.md`; `git config --global` reads `pull.rebase=true`,
+  `rerere.enabled=true`, with no `commit.gpgsign` and no `gpg.format` set. **Owner**: Claude Code
+  to propose, Operator to choose. **Model**: Sonnet.
 - [ ] **B77. The public support form files GitHub issues under the operator's name.**
   `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
   it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
@@ -150,6 +163,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   rather than a per-caller string. A machine identity for the path would fix the disclosure and
   the attribution together, so land this with B77's identity work if they meet. **Source**:
   `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B80. Four identities in the history are not ours.** `noreply@anthropic.com` authored 20
+  commits on the spreadsheets `main`, and it resolves to a third-party GitHub account named
+  `claude`; `action@github.com` authored 27 in submit and resolves to `actions-user`, a
+  stranger's account; and two employer addresses, `antony.cartwright@awaze.com` and
+  `antony.cartwright@westfieldhealth.com`, appear across archive, spreadsheets, www and submit.
+  History is not rewritten here, so this is about stopping the flow and recording what is there:
+  find what still writes each address, fix it, and say in `REPORT_IDENTITY_AUDIT.md` what remains
+  in history and why it stays. The spreadsheets commits came from a sub-agent setting the
+  identity inline with nothing to prevent a repeat, so the fix is a guard, not a one-off cleanup.
+  **Source**: `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
   repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
   and `www`. Establish per repository which author and committer identities appear in history,
