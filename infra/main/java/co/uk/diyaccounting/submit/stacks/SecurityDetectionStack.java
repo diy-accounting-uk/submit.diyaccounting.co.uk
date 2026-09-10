@@ -255,11 +255,18 @@ public class SecurityDetectionStack extends Stack {
         // ----------------------------------------------------------------------------------
         String cisDeploymentRoleName = "submit-%s-deployment-role".formatted(props.envName());
         String cisGithubActionsRoleName = "submit-%s-github-actions-role".formatted(props.envName());
+        // CDK also runs per-stack helper Lambdas as custom resources during deploy: emptying a
+        // bucket before DESTROY, completing point-in-time recovery, and similar. Each gets its
+        // own IAM role with a name CDK generates per stack and per deploy, so it can't be listed
+        // here by exact name the way the two roles above can. Every one of them is still named
+        // with this environment's own prefix, the same convention the salt-secret-read alarm
+        // below already relies on, so match that prefix instead of the individual roles.
         String cisDeployRoleExclusion = (" && (($.userIdentity.type != \"AssumedRole\") || "
                         + "(($.userIdentity.sessionContext.sessionIssuer.userName != \"cdk-hnb659fds-*\") "
                         + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
-                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\")))")
-                .formatted(cisDeploymentRoleName, cisGithubActionsRoleName);
+                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") "
+                        + "&& ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\")))")
+                .formatted(cisDeploymentRoleName, cisGithubActionsRoleName, props.envName());
 
         Set<String> deployChangedControls = Set.of(
                 "UnauthorizedApiCalls",
@@ -411,10 +418,14 @@ public class SecurityDetectionStack extends Stack {
                     "RouteTableChanges",
                     "route-table-changes",
                     "CIS CloudWatch.13: a route table was changed",
-                    "{ ($.eventName = CreateRoute) || ($.eventName = CreateRouteTable) ||"
-                            + " ($.eventName = ReplaceRoute) || ($.eventName = ReplaceRouteTableAssociation) ||"
-                            + " ($.eventName = DeleteRouteTable) || ($.eventName = DeleteRoute) ||"
-                            + " ($.eventName = DisassociateRouteTable) }"),
+                    // API Gateway V2 has its own CreateRoute and DeleteRoute operations, so this
+                    // needs the eventSource guard the way S3BucketPolicyChanges and CmkDeletion
+                    // already have: without it, every API Gateway route created or replaced
+                    // during a deploy counts as a route table change.
+                    "{ ($.eventSource = ec2.amazonaws.com) && (($.eventName = CreateRoute) ||"
+                            + " ($.eventName = CreateRouteTable) || ($.eventName = ReplaceRoute) ||"
+                            + " ($.eventName = ReplaceRouteTableAssociation) || ($.eventName = DeleteRouteTable) ||"
+                            + " ($.eventName = DeleteRoute) || ($.eventName = DisassociateRouteTable)) }"),
             new CisControl(
                     "VpcChanges",
                     "vpc-changes",
