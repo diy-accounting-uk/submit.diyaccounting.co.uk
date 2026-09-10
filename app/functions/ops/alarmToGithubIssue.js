@@ -110,6 +110,12 @@ const DEPLOYMENT_SLUG_PATTERN = /^(ci|prod)-([^-]+)-app-/;
  * failure, still points at the deployment whose Lambda wrote the logs).
  * The SSM answer is cached per container: it changes only on a deploy, and
  * every alarm in the same invocation environment shares it.
+ *
+ * The parameter names "None" (the sweeper's sentinel for "no deployment is
+ * live", see destroy-ci.yml/destroy-prod.yml) and a missing parameter both
+ * resolve to a null slug, the same as an environment-scoped alarm firing
+ * with nothing live: the evidence links widen to the environment prefix
+ * instead of a deployment slug that would match no log group.
  */
 export async function resolveDeploymentSlug({ alarmName, env }) {
   const match = (alarmName || "").match(DEPLOYMENT_SLUG_PATTERN);
@@ -118,8 +124,20 @@ export async function resolveDeploymentSlug({ alarmName, env }) {
   if (cachedDeploymentSlugs.has(env)) return cachedDeploymentSlugs.get(env);
 
   const parameterName = `/submit/${env}/last-known-good-deployment`;
-  const result = await ssmClient.send(new GetParameterCommand({ Name: parameterName }));
-  const slug = result.Parameter?.Value || null;
+  let slug = null;
+  try {
+    const result = await ssmClient.send(new GetParameterCommand({ Name: parameterName }));
+    const value = result.Parameter?.Value || null;
+    slug = value && value !== "None" ? value : null;
+  } catch (error) {
+    if (error.name !== "ParameterNotFound") {
+      logger.warn({
+        message: "Could not read last-known-good-deployment parameter, treating as no live deployment",
+        parameterName,
+        error: error.message,
+      });
+    }
+  }
   cachedDeploymentSlugs.set(env, slug);
   return slug;
 }
