@@ -42,15 +42,14 @@ ordering B90 removed), and the destroy hardening for prod and ci, where a failed
 cancelling four AWS-CLI steps that never needed it. Its `deploy environment` is already green,
 which is B98 passing its own first real deploy.
 
-Wave 5 is one workstream carrying two operator decisions taken on 2026-09-10, in
-`.claude/worktrees/w-cisscope` on `claude/b20-cisscope`, Sonnet.
+Wave 5 is merged and carries two operator decisions taken on 2026-09-10.
 
-B30u: the `{env}-*` exclusion goes on the two controls that were provably noisy on every prod
+B30u, landed: the `{env}-*` exclusion goes on the two controls that were provably noisy on every prod
 deploy, RouteTableChanges and S3BucketPolicyChanges, and the other six go back to the three exact
 patterns they carried before B30t. The wildcard exists for a CDK-generated helper role whose name
 changes every deploy, so it earns its place where the drift causes noise and nowhere else.
 
-O43: `AdministratorAccess` on the deployment role is the standing posture, with
+O43, landed: `AdministratorAccess` on the deployment role is the standing posture, with
 `cis-iam-policy-changes` named as the compensating control, recorded where the grant is made rather
 than only in the audit. The deployment role does not execute stack changes — CDK assumes
 `cdk-hnb659fds-cfn-exec-role`, bootstrapped with the same policy by CDK's own default — and
@@ -65,8 +64,8 @@ Wave 4, complete. Its five workstreams and their worktrees:
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 
-Merged into the batch and pushed at 84dfb51d, off this list when its checks pass: B91, B99,
-B93, B96's audit, B71.S3d.
+Merged into the batch, off this list when its checks pass: B91, B99, B93, B96's audit,
+B71.S3d, B30u, O43. Pushed to 84dfb51d and green there; wave 5 pushes next.
 
 S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
 literal strings and their service worker precaches them, so both prefixes serve for the window
