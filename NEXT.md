@@ -251,6 +251,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
+- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
+  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
+  once they have the presenter's name, contact name, address, email address and telephone
+  number, and then issue the test presenter credentials to use in every test submission; the
+  specification they pointed at is the public TIS set the build already follows. Reply with
+  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
+  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
+  the credentials arrive, put them on the GitHub `ci` environment as the secrets
+  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
+  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -309,17 +320,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   schemas, record what the sandbox returned in the simulator, then add `prod` to the
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
   34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
-- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
-  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
-  once they have the presenter's name, contact name, address, email address and telephone
-  number, and then issue the test presenter credentials to use in every test submission; the
-  specification they pointed at is the public TIS set the build already follows. Reply with
-  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
-  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
-  the credentials arrive, put them on the GitHub `ci` environment as the secrets
-  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
-  which starts B34.6b. Chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
-  **Owner**: Operator. **Model**: none.
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
