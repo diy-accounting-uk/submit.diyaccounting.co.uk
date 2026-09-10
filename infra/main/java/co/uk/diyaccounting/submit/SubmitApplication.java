@@ -17,6 +17,7 @@ import co.uk.diyaccounting.submit.stacks.BillingStack;
 import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
 import co.uk.diyaccounting.submit.stacks.DiyaGlStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.HmrcItsaStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
@@ -35,6 +36,7 @@ public class SubmitApplication {
 
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
+    public final HmrcItsaStack hmrcItsaStack;
     public final CompaniesHouseStack companiesHouseStack;
     public final AccountStack accountStack;
     public final BillingStack billingStack;
@@ -347,6 +349,27 @@ public class SubmitApplication {
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .build());
 
+        // Create the HmrcItsaStack - the ITSA Lambdas added after HmrcStack reached
+        // CloudFormation's per-stack resource ceiling
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.hmrcItsaStackId, deploymentName, envName);
+        this.hmrcItsaStack = new HmrcItsaStack(
+                app,
+                sharedNames.hmrcItsaStackId,
+                HmrcItsaStack.HmrcItsaStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .hmrcBaseUri(appProps.hmrcBaseUri)
+                        .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .build());
+
         // Create the CompaniesHouseStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -481,6 +504,7 @@ public class SubmitApplication {
         List<AbstractApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
+        lambdaFunctions.addAll(this.hmrcItsaStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);

@@ -189,6 +189,7 @@ public class SubmitSharedNames {
     public String appResourceNamePrefix;
     public String authStackId;
     public String hmrcStackId;
+    public String hmrcItsaStackId;
     public String companiesHouseStackId;
     public String accountStackId;
     public String apiStackId;
@@ -1199,6 +1200,7 @@ public class SubmitSharedNames {
         this.appResourceNamePrefix = "%s-app".formatted(props.deploymentName);
         this.authStackId = "%s-app-AuthStack".formatted(props.deploymentName);
         this.hmrcStackId = "%s-app-HmrcStack".formatted(props.deploymentName);
+        this.hmrcItsaStackId = "%s-app-HmrcItsaStack".formatted(props.deploymentName);
         this.companiesHouseStackId = "%s-app-CompaniesHouseStack".formatted(props.deploymentName);
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.billingStackId = "%s-app-BillingStack".formatted(props.deploymentName);
