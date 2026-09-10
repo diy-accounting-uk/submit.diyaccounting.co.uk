@@ -8,7 +8,7 @@ every one is an error. `PLAN_REPOSITORY_AUTOMATION.md` phase 3 builds on it, so 
 something that has never produced an answer. The operator is weighing LangGraph as the
 orchestrator, because they need to learn it for other work.
 
-This document says what the workflow actually does today, prices three ways forward, recommends
+This document says what the workflow actually does today, prices four ways forward, recommends
 one, and ends with steps a Sonnet or Haiku sub-agent can execute.
 
 Every AWS number below was read from the live accounts on 2026-09-10 with the `submit-ci` and
@@ -86,8 +86,8 @@ that sentence to the issue.
 
 `default` is the right value on 2.0.30. `--allowedTools` already names the fence, and `default`
 denies anything outside it rather than prompting. `plan` was the earlier value and it was wrong:
-plan mode blocks the `aws logs` calls the prompt depends on, which is what burned the 12 turns on
-#138.
+plan mode blocks the `aws logs` calls the prompt depends on, which is what burned the 12 turns
+on #138.
 
 ---
 
@@ -180,7 +180,7 @@ last three days, on a deployment that still exists.
 
 ---
 
-## 3. The three options
+## 3. The options
 
 ### Option 1. Finish the Bedrock path as built
 
