@@ -37,43 +37,24 @@ deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to pro
 is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
 layers — B84's column casing and B89's `us-east-1` region in the bucket policy condition.
 
-**Batch 20 on `claude/b20-board`, PR #177.** Three items landed and pushed: B98 (the deploy
-ordering B90 removed), and the destroy hardening for prod and ci, where a failed CDK build was
-cancelling four AWS-CLI steps that never needed it. Its `deploy environment` is already green,
-which is B98 passing its own first real deploy.
+**Batch 20 merged as PR #177 at 7b75b75d**, eight items, and the merge took the branch tip — head
+102b01b matched the pushed tip, so nothing was orphaned this time. Main is deploying it now. S3d is
+on main and the sibling repository has the second of its three lines; the third goes when it reaches
+prod.
 
-Wave 5 is merged and carries two operator decisions taken on 2026-09-10.
-
-B30u, landed: the `{env}-*` exclusion goes on the two controls that were provably noisy on every prod
-deploy, RouteTableChanges and S3BucketPolicyChanges, and the other six go back to the three exact
-patterns they carried before B30t. The wildcard exists for a CDK-generated helper role whose name
-changes every deploy, so it earns its place where the drift causes noise and nowhere else.
-
-O43, landed: `AdministratorAccess` on the deployment role is the standing posture, with
-`cis-iam-policy-changes` named as the compensating control, recorded where the grant is made rather
-than only in the audit. The deployment role does not execute stack changes — CDK assumes
-`cdk-hnb659fds-cfn-exec-role`, bootstrapped with the same policy by CDK's own default — and
-narrowing safely needs permission boundaries on every role the pipeline creates, which is a design
-with no owner.
-
-The two interlock: `IamPolicyChanges` is one of the six losing the wildcard, so B30u is what makes
-the alarm O43 names credible.
-
-Wave 4, complete. Its five workstreams and their worktrees:
+**Batch 21 on `claude/b21-board`**, one workstream so far:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
+| The environment deploy's paths filter | B100 | Sonnet | `.claude/worktrees/w-envpaths` | `claude/b21-envpaths` |
 
-Merged into the batch, off this list when its checks pass: B91, B99, B93, B96's audit,
-B71.S3d, B30u, O43. Pushed to 84dfb51d and green there; wave 5 pushes next.
-
-S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
-literal strings and their service worker precaches them, so both prefixes serve for the window
-`PLAN_DIYA_GL_NAMING.md` names, and they get the line when it starts and again when it is on main.
-
-Held out of this wave for collisions rather than for priority. B92 touches `destroy-prod.yml`,
-which B99 owns. The ITSA property tracks share `SubmitApplication.java` with S3d. B96 is scoped to a
-document for the same reason, with anything under `infra/` described rather than written.
+`deploy-environment.yml` decides whether to run from a `paths:` filter that names environment stack
+sources by hand, and the list has drifted: `EcrUE1Stack`, `ScanDetectionStack` and
+`SecurityDetectionStack` are deployed by the workflow and watched by nothing. A change to any of the
+three never triggers the deploy that ships it. B30t changed `SecurityDetectionStack.java` and
+shipped only because its batch also touched other watched paths; pushed alone it would have looked
+deployed and not been. The fix adds the three and then makes the drift impossible, because a
+hand-maintained list is what broke.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
