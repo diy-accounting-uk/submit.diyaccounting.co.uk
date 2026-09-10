@@ -278,7 +278,14 @@ it nine tests fail on a missing file that has nothing to do with the change.
   package, and an import control on `annualSubmission.html` that fills the form from a book.
   The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
   of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
-  omission, never a zero, for a field the book does not carry.
+  omission, never a zero, for a field the book does not carry. Two findings from their side carry
+  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
+  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
+  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
+  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
+  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
+  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
+  shipped template cannot source at all, which arrive omitted rather than zeroed.
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1.
@@ -343,7 +350,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on the spreadsheets plan's LU-14 and H-LU-7 (the brand package existing).
+  Blocked on the brand package existing, now planned in the spreadsheets repository's
+  `PLAN_DIYACCOUNTING_BRAND.md`.
 
 ## Discipline
 

@@ -44,9 +44,9 @@ accounts for the class 4 design found four more, so 20. See below.
 | `_developers/archive/PLAN_DIYA_GL_TAXI_CLI_MCP_WEB.md` | 1 | "the books page" | "the DIYA-GL pages" |
 | `_developers/archive/PLAN_DIYA_GL_LTD_CLI_MCP_WEB.md` | 2 | "the books page", "DIYA-GL books page loads" | "the DIYA-GL pages", "the DIYA-GL page loads" |
 | `_developers/archive/PLAN_DIYA_GL_BST_CLI_MCP_WEB.md` | 3 | "the books page" (x2), "Books tab" | "the DIYA-GL pages", "DIYA-GL tab" |
-| `PLAN_DIYA_GL_CLOUD_PAGE.md` | 6 | "the books client" (x5) and its open-question note | "the DIYA-GL client" |
+| `_developers/archive/PLAN_DIYA_GL_CLOUD_PAGE.md` | 6 | "the books client" (x5) and its open-question note | "the DIYA-GL client" |
 | `PLAN_DIYA_GL_LAUNCH.md` | 1 | "the books pages" | "the DIYA-GL pages" |
-| `PLAN_LICENSING_UPLIFT.md` | 8 | "the books pages" / "the books bundle" (lines 75, 188, 235, 349, 350, 443, 541, 581) | "the DIYA-GL pages" / "the DIYA-GL bundle" |
+| `_developers/archive/PLAN_LICENSING_UPLIFT.md` | 8 | "the books pages" / "the books bundle" (lines 75, 188, 235, 349, 350, 443, 541, 581) | "the DIYA-GL pages" / "the DIYA-GL bundle" |
 | `LICENSING.md` | 2 | "the books bundle" | "the DIYA-GL bundle" |
 | `NOTICE` | 3 | "the books bundle" | "the DIYA-GL bundle" |
 | `.github/workflows/deploy.yml`, `test.yml` | 2 | step name "Build books engine bundle" | "Build DIYA-GL engine bundle" |
@@ -119,7 +119,7 @@ Every one of these needs its importers and CI references updated in the same cha
 | `BooksUserPoolClientId` (CFN output) | `IdentityStack.java:331` only, not `BooksStack`. Read by `scripts/toggle-cognito-native-auth.js:176` and by `probe-test.yml:414` through `scripts/stack-output.js` | named exactly in a comment, `web/spreadsheets.diyaccounting.co.uk/public/books/cloud-config.js:9` | `DiyaGlUserPoolClientId` |
 | Cognito client name `-books-client` / `{env}-env-books-client` | `IdentityStack.java`, `.github/actions/lookup-resources/action.yml` | toggled from this side per `NEXT.md`'s LP-24 row | `-diya-gl-client` |
 | `--client books` flag | `scripts/toggle-cognito-native-auth.js` | `NEXT.md` LP-24 documents calling the script this way | `--client diya-gl` |
-| SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | written by `IdentityStack.java:301`, asserted in `IdentityStackTest.java:165`, named in a `SubmitApplication.java:474` error message and in `SubmitApplicationCdkResourceTest.java:432` | named in `PLAN_DIYA_GL_CLOUD_PAGE.md` prose. No workflow or script in either repository reads it. | `/submit/{env}/spreadsheets-diya-gl-app-client-id` |
+| SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | written by `IdentityStack.java:301`, asserted in `IdentityStackTest.java:165`, named in a `SubmitApplication.java:474` error message and in `SubmitApplicationCdkResourceTest.java:432` | named in `_developers/archive/PLAN_DIYA_GL_CLOUD_PAGE.md` prose. No workflow or script in either repository reads it. | `/submit/{env}/spreadsheets-diya-gl-app-client-id` |
 | `cdk.json` key `booksUserPoolClientId` | `cdk-application/cdk.json` | none by name | `diyaGlUserPoolClientId` |
 | `booksBucketName` / `booksBucketArn`, S3 bucket `{env}-env-books-{account}`, CFN output `BooksBucketName` | the bucket is built in `DataStack.java:646` (an env stack, not `BooksStack`); the name in `SubmitSharedNames.java:1105`; the backup selection ARN in `BackupStack.java:306`; `BooksStack.java` builds its IAM patterns from the name | none by name | `diyaGlBucketName` / `diyaGlBucketArn`, bucket `{env}-env-diya-gl-{account}`, output `DiyaGlBucketName` |
 | `booksStackId` field | `SubmitSharedNames.java` | none by name | `diyaGlStackId` |
@@ -367,7 +367,7 @@ then Sonnet to carry out that design.
 | NM-2 | 1, prose | Haiku | none | the 16 files in the spreadsheets class 1 table above, plus the 46 test files' titles |
 | NM-3 | 2, public paths | Sonnet | none | `public/books/**`, `public/download.html`, `app/bin/build-diya-gl-spec.js`, `app/lib/app-resources.js`, `redirects.toml`, the CloudFront function |
 | NM-4 | 3, same-repo code | Sonnet | none | `app/lib/books-engine.js`, `app/lib/books-interchange.js`, `scripts/build-books-bundle.mjs`, the 46 test filenames, `public/download.html`'s DOM ids, `public/books/books-events.js`, `public/books/books.css`, and the `"diya-gl-books"` format-string special case (needs a version bump and a back-compat reader) |
-| NM-5 | 4, cross-repo | Opus (design), then Sonnet | NM-S3 | `PLAN_DIYA_GL_CLOUD_PAGE.md`, `NEXT.md`'s LP-24 row, against the shared class-4 table above |
+| NM-5 | closed, not needed | — | — | The operator decided on 2026-09-10 that both API route prefixes are permanent, so nothing on the spreadsheets side has to move. |
 
 ### Submit (Submit's NEXT.md)
 
