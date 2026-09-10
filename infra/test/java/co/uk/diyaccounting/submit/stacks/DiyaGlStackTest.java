@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -169,9 +170,39 @@ class DiyaGlStackTest {
     void outputsCarryTheApiBaseUrl() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
-        String expectedBaseUrl = SubmitSharedNames.forDocs().publicBaseUrl + "api/v1/books";
+        String expectedBaseUrl = SubmitSharedNames.forDocs().publicBaseUrl + "api/v1/diya-gl";
 
         template.hasOutput("DiyaGlApiBaseUrl", Match.objectLike(Map.of("Value", expectedBaseUrl)));
+    }
+
+    @Test
+    void lambdaFunctionPropsCarryBothTheNewAndTheLegacyBooksPathForEveryRoute() {
+        DiyaGlStack stack = synthDiyaGlStack();
+
+        assertEquals(
+                8,
+                stack.lambdaFunctionProps.size(),
+                "expected four routes doubled for the /api/v1/books compatibility window");
+
+        var urlPaths =
+                stack.lambdaFunctionProps.stream().map(AbstractApiLambdaProps::urlPath).toList();
+        assertTrue(urlPaths.contains("/api/v1/diya-gl"));
+        assertTrue(urlPaths.contains("/api/v1/books"));
+        assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}/versions/{version}"));
+        assertTrue(urlPaths.contains("/api/v1/books/{bookId}/versions/{version}"));
+        assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}"));
+        assertTrue(urlPaths.contains("/api/v1/books/{bookId}"));
+
+        // Every legacy entry must still resolve to the same underlying Lambda as its new-path
+        // twin, so the window adds routes rather than a second, drifting implementation.
+        var byFunctionName = stack.lambdaFunctionProps.stream()
+                .collect(java.util.stream.Collectors.groupingBy(AbstractApiLambdaProps::ingestFunctionName));
+        for (var entry : byFunctionName.entrySet()) {
+            assertEquals(
+                    2,
+                    entry.getValue().size(),
+                    "expected exactly a new-path and a legacy-path route for " + entry.getKey());
+        }
     }
 
     @SuppressWarnings("unchecked")

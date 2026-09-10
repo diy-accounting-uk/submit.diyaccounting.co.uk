@@ -329,7 +329,12 @@ public class IdentityStack extends Stack {
         cfnOutput(this, "UserPoolId", this.userPool.getUserPoolId());
         cfnOutput(this, "UserPoolArn", this.userPool.getUserPoolArn());
         cfnOutput(this, "UserPoolClientId", this.userPoolClient.getUserPoolClientId());
+        // BooksUserPoolClientId is the key toggle-cognito-native-auth.js and probe-test.yml read
+        // today; DiyaGlUserPoolClientId is added alongside it so a deployed stack carries the new
+        // key before either reader switches to it. Once both readers use the new key, this old
+        // one goes.
         cfnOutput(this, "BooksUserPoolClientId", this.booksUserPoolClient.getUserPoolClientId());
+        cfnOutput(this, "DiyaGlUserPoolClientId", this.booksUserPoolClient.getUserPoolClientId());
         cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);

@@ -228,6 +228,23 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        // The new diya-gl paths are the primary routes; the old books paths are served alongside
+        // them for the window (see PLAN_DIYA_GL_NAMING.md), and removed once the spreadsheets
+        // site's own deploy has switched its calls over.
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/diya-gl/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/diya-gl/{bookId}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}/versions/{version}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}"));
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
@@ -254,8 +271,12 @@ class SubmitApplicationCdkResourceTest {
         // another method, for 96 + 2 + 2 = 100. POST /api/v1/hmrc/itsa/bsas/trigger, GET
         // /api/v1/hmrc/itsa/bsas/self-employment and POST
         // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
-        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 112);
+        // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106,
+        // and the earlier count of 112 (106 plus the WAF-explored figure above). Each of the four
+        // DIYA-GL storage routes now also answers on /api/v1/books, its old path, for the window:
+        // the same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
+        // another 10 routes, bringing the total to 112 + 10 = 122.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 122);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -287,10 +308,10 @@ class SubmitApplicationCdkResourceTest {
         // The origin bucket is the only S3::Bucket this stack creates.
         edgeStackTemplate.resourceCountIs("AWS::S3::Bucket", 1);
 
-        // /api/v1/* and the more specific /api/v1/books/* both carry a response headers policy
-        // with no CORS override, so CloudFront never overwrites the header API Gateway's own
-        // corsPreflight allow list (or, for the books routes, diyaGlCors.js's per-request echo)
-        // already sent.
+        // /api/v1/* and the more specific /api/v1/diya-gl/* and /api/v1/books/* all carry a
+        // response headers policy with no CORS override, so CloudFront never overwrites the
+        // header API Gateway's own corsPreflight allow list (or, for the DIYA-GL routes,
+        // diyaGlCors.js's per-request echo) already sent.
         assertApiBehavioursHaveNoCorsOverride(edgeStackTemplate);
 
         // CloudFront access logs (v2 delivery): one source, one destination, one delivery joining
@@ -493,18 +514,33 @@ class SubmitApplicationCdkResourceTest {
                 (Map<String, Object>) ((Map<String, Object>) conditions.get(1).get("NotStatement")).get("Statement");
         var exemptionParts =
                 (List<Map<String, Object>>) ((Map<String, Object>) exemption.get("AndStatement")).get("Statements");
-        var searchStrings = exemptionParts.stream()
-                .map(part -> (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
-                .toList();
+        org.junit.jupiter.api.Assertions.assertEquals(2, exemptionParts.size());
+
+        // The uri-prefix half is an OrStatement covering both the new diya-gl prefix and, for the
+        // window, the old books prefix - a PUT under either must be exempt from the size block.
+        var uriPrefixOr = (Map<String, Object>) exemptionParts.get(0).get("OrStatement");
         org.junit.jupiter.api.Assertions.assertTrue(
-                searchStrings.contains("/api/v1/books") && searchStrings.contains("PUT"),
-                "the exemption must be a PUT to a book route and nothing wider, was " + searchStrings);
+                uriPrefixOr != null, "expected the uri-prefix exemption to be an OrStatement of both prefixes");
+        var uriPrefixSearchStrings = ((List<Map<String, Object>>) uriPrefixOr.get("Statements"))
+                .stream()
+                        .map(part -> (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
+                        .toList();
+        org.junit.jupiter.api.Assertions.assertTrue(
+                uriPrefixSearchStrings.contains("/api/v1/diya-gl") && uriPrefixSearchStrings.contains("/api/v1/books"),
+                "the size exemption must cover both the new and the legacy book route prefix, was "
+                        + uriPrefixSearchStrings);
+
+        var methodSearchString =
+                (String) ((Map<String, Object>) exemptionParts.get(1).get("ByteMatchStatement")).get("SearchString");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                "PUT", methodSearchString, "the exemption must be scoped to PUT and nothing wider");
     }
 
     /**
-     * Finds the /api/v1/* and /api/v1/books/* cache behaviours on the distribution and asserts
-     * they point at the same response headers policy, and that the policy carries no CorsConfig -
-     * so neither behaviour lets CloudFront override whatever CORS header the origin already sent.
+     * Finds the /api/v1/*, /api/v1/diya-gl/* and /api/v1/books/* cache behaviours on the
+     * distribution and asserts they all point at the same response headers policy, and that the
+     * policy carries no CorsConfig - so no behaviour lets CloudFront override whatever CORS header
+     * the origin already sent.
      */
     @SuppressWarnings("unchecked")
     private static void assertApiBehavioursHaveNoCorsOverride(Template template) {
@@ -519,6 +555,10 @@ class SubmitApplicationCdkResourceTest {
                 .filter(behaviour -> "/api/v1/*".equals(behaviour.get("PathPattern")))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected an /api/v1/* cache behaviour"));
+        var diyaGlBehaviour = cacheBehaviors.stream()
+                .filter(behaviour -> "/api/v1/diya-gl/*".equals(behaviour.get("PathPattern")))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected an /api/v1/diya-gl/* cache behaviour"));
         var booksBehaviour = cacheBehaviors.stream()
                 .filter(behaviour -> "/api/v1/books/*".equals(behaviour.get("PathPattern")))
                 .findFirst()
@@ -526,8 +566,14 @@ class SubmitApplicationCdkResourceTest {
 
         String apiPolicyLogicalId =
                 (String) ((Map<String, Object>) apiBehaviour.get("ResponseHeadersPolicyId")).get("Ref");
+        String diyaGlPolicyLogicalId =
+                (String) ((Map<String, Object>) diyaGlBehaviour.get("ResponseHeadersPolicyId")).get("Ref");
         String booksPolicyLogicalId =
                 (String) ((Map<String, Object>) booksBehaviour.get("ResponseHeadersPolicyId")).get("Ref");
+        org.junit.jupiter.api.Assertions.assertEquals(
+                apiPolicyLogicalId,
+                diyaGlPolicyLogicalId,
+                "expected /api/v1/* and /api/v1/diya-gl/* to share one response headers policy");
         org.junit.jupiter.api.Assertions.assertEquals(
                 booksPolicyLogicalId,
                 apiPolicyLogicalId,

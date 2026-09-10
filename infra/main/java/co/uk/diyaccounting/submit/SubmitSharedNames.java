@@ -858,6 +858,10 @@ public class SubmitSharedNames {
     public String diyaGlListGetIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod diyaGlListGetLambdaHttpMethod;
     public String diyaGlListGetLambdaUrlPath;
+    // Served alongside diyaGlListGetLambdaUrlPath for the window: the spreadsheets site's
+    // cloud.js, including copies held by installed service workers, still calls this path until
+    // its own deploy switches over. Removed once the API access log shows no traffic on it.
+    public String diyaGlListGetLegacyUrlPath;
     public boolean diyaGlListGetLambdaJwtAuthorizer;
     public boolean diyaGlListGetLambdaCustomAuthorizer;
 
@@ -867,6 +871,7 @@ public class SubmitSharedNames {
     public String diyaGlVersionGetIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod diyaGlVersionGetLambdaHttpMethod;
     public String diyaGlVersionGetLambdaUrlPath;
+    public String diyaGlVersionGetLegacyUrlPath;
     public boolean diyaGlVersionGetLambdaJwtAuthorizer;
     public boolean diyaGlVersionGetLambdaCustomAuthorizer;
 
@@ -876,6 +881,7 @@ public class SubmitSharedNames {
     public String diyaGlPutIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod diyaGlPutLambdaHttpMethod;
     public String diyaGlPutLambdaUrlPath;
+    public String diyaGlPutLegacyUrlPath;
     public boolean diyaGlPutLambdaJwtAuthorizer;
     public boolean diyaGlPutLambdaCustomAuthorizer;
 
@@ -885,6 +891,7 @@ public class SubmitSharedNames {
     public String diyaGlDeleteIngestProvisionedConcurrencyLambdaAliasArn;
     public HttpMethod diyaGlDeleteLambdaHttpMethod;
     public String diyaGlDeleteLambdaUrlPath;
+    public String diyaGlDeleteLegacyUrlPath;
     public boolean diyaGlDeleteLambdaJwtAuthorizer;
     public boolean diyaGlDeleteLambdaCustomAuthorizer;
 
@@ -3080,7 +3087,8 @@ public class SubmitSharedNames {
 
         // DIYA-GL List GET Lambda (DIYA-GL JWT auth, scoped to the DIYA-GL app client)
         this.diyaGlListGetLambdaHttpMethod = HttpMethod.GET;
-        this.diyaGlListGetLambdaUrlPath = "/api/v1/books";
+        this.diyaGlListGetLambdaUrlPath = "/api/v1/diya-gl";
+        this.diyaGlListGetLegacyUrlPath = "/api/v1/books";
         this.diyaGlListGetLambdaJwtAuthorizer = false;
         this.diyaGlListGetLambdaCustomAuthorizer = false;
         var diyaGlListGetLambdaHandlerName = "diyaGlListGet.ingestHandler";
@@ -3102,7 +3110,8 @@ public class SubmitSharedNames {
 
         // DIYA-GL Version GET Lambda (books JWT auth)
         this.diyaGlVersionGetLambdaHttpMethod = HttpMethod.GET;
-        this.diyaGlVersionGetLambdaUrlPath = "/api/v1/books/{bookId}/versions/{version}";
+        this.diyaGlVersionGetLambdaUrlPath = "/api/v1/diya-gl/{bookId}/versions/{version}";
+        this.diyaGlVersionGetLegacyUrlPath = "/api/v1/books/{bookId}/versions/{version}";
         this.diyaGlVersionGetLambdaJwtAuthorizer = false;
         this.diyaGlVersionGetLambdaCustomAuthorizer = false;
         var diyaGlVersionGetLambdaHandlerName = "diyaGlVersionGet.ingestHandler";
@@ -3127,7 +3136,8 @@ public class SubmitSharedNames {
 
         // DIYA-GL PUT Lambda (books JWT auth)
         this.diyaGlPutLambdaHttpMethod = HttpMethod.PUT;
-        this.diyaGlPutLambdaUrlPath = "/api/v1/books/{bookId}";
+        this.diyaGlPutLambdaUrlPath = "/api/v1/diya-gl/{bookId}";
+        this.diyaGlPutLegacyUrlPath = "/api/v1/books/{bookId}";
         this.diyaGlPutLambdaJwtAuthorizer = false;
         this.diyaGlPutLambdaCustomAuthorizer = false;
         var diyaGlPutLambdaHandlerName = "diyaGlPut.ingestHandler";
@@ -3148,7 +3158,8 @@ public class SubmitSharedNames {
 
         // DIYA-GL DELETE Lambda (books JWT auth)
         this.diyaGlDeleteLambdaHttpMethod = HttpMethod.DELETE;
-        this.diyaGlDeleteLambdaUrlPath = "/api/v1/books/{bookId}";
+        this.diyaGlDeleteLambdaUrlPath = "/api/v1/diya-gl/{bookId}";
+        this.diyaGlDeleteLegacyUrlPath = "/api/v1/books/{bookId}";
         this.diyaGlDeleteLambdaJwtAuthorizer = false;
         this.diyaGlDeleteLambdaCustomAuthorizer = false;
         var diyaGlDeleteLambdaHandlerName = "diyaGlDelete.ingestHandler";
