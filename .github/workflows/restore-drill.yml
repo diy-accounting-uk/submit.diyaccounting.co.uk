@@ -9,7 +9,17 @@ run-name: "Restore drill: prod tables into ci from the cross-account vault"
 # each critical prod DynamoDB table from submit-cross-account-vault, restores it into ci
 # as ci-restore-<table>, checks the restored bundles table for the salt's own DynamoDB
 # backup item so the salt is proven to come back with it, compares each restored table's
-# item count against its recovery point, then deletes every table this run created.
+# item count against its recovery point, times each restore, then deletes every table
+# this run created.
+#
+# This restore runs cross-account: the caller is ci's own deployment role, reading and
+# restoring recovery points owned by the backup account (914216784828). AWS Backup vault
+# access policies only grant a resource-based allow to a named principal; that principal
+# has to be one the caller can actually authenticate as. ci-env-backup-role, the principal
+# the vault currently names for restore, can only be assumed by the backup service itself
+# (its trust policy has no AssumeRole statement for any IAM caller) — so this drill fails
+# at the first AWS Backup call until the vault grants the actual caller identity, not a
+# service-only role, the read/restore actions. See _developers/RESTORE_DRILL.md.
 
 on:
   workflow_dispatch: {}
@@ -73,6 +83,8 @@ jobs:
             local SOURCE_TABLE="prod-env-${SHORT_NAME}"
             local SOURCE_TABLE_ARN="arn:aws:dynamodb:${AWS_REGION}:${PROD_ACCOUNT_ID}:table/${SOURCE_TABLE}"
             local TARGET_TABLE="ci-restore-${SHORT_NAME}"
+            local START_TS
+            START_TS=$(date +%s)
 
             echo "=== ${SOURCE_TABLE} -> ${TARGET_TABLE} ==="
 
@@ -85,7 +97,7 @@ jobs:
               --output json 2>&1) || [ -z "$RP" ] || [ "$RP" = "null" ]; then
               echo "FAIL: could not find a completed recovery point for ${SOURCE_TABLE} in ${CROSS_ACCOUNT_VAULT_NAME}."
               echo "$RP"
-              printf '%s\tno-recovery-point\t-\t-\t-\n' "$SOURCE_TABLE" >> /tmp/restore-drill-results.tsv
+              printf '%s\tno-recovery-point\t-\t-\t-\t%s\n' "$SOURCE_TABLE" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
 
@@ -103,7 +115,7 @@ jobs:
               --query RestoreMetadata --output json 2>&1); then
               echo "FAIL: could not read restore metadata for $RP_ARN."
               echo "$META"
-              printf '%s\tmetadata-failed\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              printf '%s\tmetadata-failed\t-\t-\t%s\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
             META=$(echo "$META" | jq --arg t "$TARGET_TABLE" '.targetTableName = $t')
@@ -118,7 +130,7 @@ jobs:
               --query RestoreJobId --output text 2>&1); then
               echo "FAIL: could not start the restore job for ${TARGET_TABLE}."
               echo "$JOB_ID"
-              printf '%s\tstart-failed\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              printf '%s\tstart-failed\t-\t-\t%s\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
             echo "Restore job: $JOB_ID"
@@ -134,7 +146,7 @@ jobs:
                 COMPLETED) break ;;
                 FAILED|ABORTED)
                   aws backup describe-restore-job --restore-job-id "$JOB_ID" --region "${AWS_REGION}" --output json
-                  printf '%s\trestore-%s\t-\t-\t%s\n' "$SOURCE_TABLE" "$STATUS" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+                  printf '%s\trestore-%s\t-\t-\t%s\t%s\n' "$SOURCE_TABLE" "$STATUS" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
                   return 1
                   ;;
               esac
@@ -143,7 +155,7 @@ jobs:
             done
             if [ "$STATUS" != "COMPLETED" ]; then
               echo "FAIL: restore job $JOB_ID did not finish within 20 minutes."
-              printf '%s\ttimed-out\t-\t-\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              printf '%s\ttimed-out\t-\t-\t%s\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
 
@@ -152,7 +164,7 @@ jobs:
               --region "${AWS_REGION}" --query 'Table.TableStatus' --output text 2>/dev/null || echo "MISSING")
             if [ "$TABLE_STATE" != "ACTIVE" ]; then
               echo "FAIL: restored table ${TARGET_TABLE} is ${TABLE_STATE}, not ACTIVE."
-              printf '%s\ttable-%s\t-\t-\t%s\n' "$SOURCE_TABLE" "$TABLE_STATE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              printf '%s\ttable-%s\t-\t-\t%s\t%s\n' "$SOURCE_TABLE" "$TABLE_STATE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
 
@@ -165,7 +177,7 @@ jobs:
             # available here is: a recovery point that held real data must not restore empty.
             if [ "$RESTORED_ITEMS" -eq 0 ] && [ "$BACKUP_SIZE_BYTES" -gt 0 ]; then
               echo "FAIL: restored table is empty but its recovery point held ${BACKUP_SIZE_BYTES} bytes."
-              printf '%s\tempty-restore\t%s\t-\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+              printf '%s\tempty-restore\t%s\t-\t%s\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
 
@@ -183,7 +195,7 @@ jobs:
               echo "Salt backup check (system#config/salt-v2): $SALT_NOTE"
             fi
 
-            printf '%s\tpass\t%s\t%s\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$SALT_NOTE" "$BACKUP_SIZE_BYTES" >> /tmp/restore-drill-results.tsv
+            printf '%s\tpass\t%s\t%s\t%s\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$SALT_NOTE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
             return 0
           }
 
@@ -219,14 +231,15 @@ jobs:
           {
             echo "## Restore drill: prod into ci"
             echo ""
-            echo "| Source table | Result | Restored items | Salt / notes | Recovery point bytes |"
-            echo "|---|---|---|---|---|"
+            echo "| Source table | Result | Restored items | Salt / notes | Recovery point bytes | Duration |"
+            echo "|---|---|---|---|---|---|"
             if [ -s /tmp/restore-drill-results.tsv ]; then
-              while IFS=$'\t' read -r TABLE RESULT ITEMS NOTE BYTES; do
-                echo "| $TABLE | $RESULT | $ITEMS | $NOTE | $BYTES |"
+              while IFS=$'\t' read -r TABLE RESULT ITEMS NOTE BYTES DURATION_SECONDS; do
+                printf '| %s | %s | %s | %s | %s | %dm%02ds |\n' \
+                  "$TABLE" "$RESULT" "$ITEMS" "$NOTE" "$BYTES" "$((DURATION_SECONDS / 60))" "$((DURATION_SECONDS % 60))"
               done < /tmp/restore-drill-results.tsv
             else
-              echo "| (none) | no results recorded | - | - | - |"
+              echo "| (none) | no results recorded | - | - | - | - |"
             fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
