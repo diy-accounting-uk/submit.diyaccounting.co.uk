@@ -46,10 +46,9 @@ Wave 2 runs as concurrent worktree sub-agents:
 | The alarm-origin verifier | B87 | Sonnet | `.claude/worktrees/w-auditcode` | `claude/b18-auditcode` |
 | The Bedrock triage path | B78b | Sonnet | `.claude/worktrees/w-triagefix` | `claude/b18-triagefix` |
 | The catalogue's free ITSA writes | B11.T23 | Sonnet | `.claude/worktrees/w-catalogue` | `claude/b18-catalogue` |
-| The cost export's bucket policy | B89 | Sonnet | `.claude/worktrees/w-costbucket` | `claude/b18-costbucket` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23.
+CODEOWNERS, B11.T23, B89.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
@@ -62,18 +61,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B89. The cost export now fails on the bucket, not the columns.** B84 fixed the column
-  casing and it worked: `deploy environment from main` run 34446279898 no longer complains that the
-  query's columns are not a subset of `FOCUS_1_2_AWS`. It fails one layer deeper instead, at
-  `AWS::BCMDataExports::Export`: "S3 bucket permission validation failed", so the stack rolls back
-  and prod still has no FOCUS export and the cost panel's source stays empty. `CostExportStack.java`
-  already carries a bucket policy statement for `bcm-data-exports.amazonaws.com` with an
-  `arn:aws:bcm-data-exports:...:export/*` condition, and Data Exports still refuses it, so the
-  statement is wrong rather than missing — the actions, the bucket-versus-objects resource split,
-  the condition keys, the ARN's region and account, an ordering race with the export, or the
-  bucket's own encryption or deny statements. Do not make the export conditional to get the deploy
-  green; a skipped resource turns a visible failure into an invisible one. **Source**: run
-  34446279898, job 102771709834. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
