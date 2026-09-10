@@ -42,6 +42,27 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B11.T11 to T22. ITSA phase 2, the whole spine in one pass.** Every remaining ITSA phase 2
+  track edits the same files — `SubmitSharedNames.java`, `SubmitApplication.java`, `DataStack.java`,
+  `HmrcStack.java`, their tests, `app/bin/server.js`, `app/http-simulator/server.js`, `cdk.json` and
+  the `.env.*` files — so they are one workstream with one owner, not four queued behind each other.
+  `PLAN_ITSA_PHASE_2.md` is the specification and fixes the order.
+
+  T11 to T14, UK property: the period summary's four handlers, the annual submission, the adjustable
+  summary, and the property pages with the business picker. Each copies its self-employment twin and
+  differs only in the path, the body field names and the scenario set.
+
+  T15 to T19: the business picker and the mixed-customer year end (T15), the tax year model and the
+  shared validator (T16), the self-employment and UK property cumulative period summaries (T17, T18)
+  which are what 2025-26 onwards actually files, and the cumulative pages (T19).
+
+  T21 and T22: Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0, then their two
+  pages. The operator decided on 2026-09-09 to build these rather than declare the product does not
+  offer those journeys; a sole trader making a loss is the ordinary first year of trading. Both
+  pages include `submission-cost.js` and both say the write is free.
+
+  One commit per track. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T22; operator, 2026-09-09.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -50,29 +71,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B11.T11 to T14. ITSA phase 2: UK property.** `PLAN_ITSA_PHASE_2.md`'s four property
-  tracks: the period summary's four handlers, the annual submission, the adjustable summary, and
-  the property pages with the business picker. Each copies its self-employment twin and differs
-  only in the path, the body field names and the scenario set, all of which the plan lists. The
-  ten endpoint tracks share a spine of files (`SubmitSharedNames.java`, `SubmitApplication.java`,
-  `DataStack.java`, `HmrcStack.java`, their two tests, `app/bin/server.js`,
-  `app/http-simulator/server.js`, `cdk.json` and the `.env.*` files), so they hold it one at a
-  time, each rebasing on the previous merge. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T14.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T15 to T19. ITSA phase 2: the mixed year and the cumulative period summaries.**
-  `PLAN_ITSA_PHASE_2.md` T15 (the business picker and the mixed-customer year end), T16 (the tax
-  year model and the shared validator, Haiku), T17 and T18 (the self-employment and UK property
-  cumulative period summaries, which is what 2025-26 onwards actually files) and T19 (the
-  cumulative pages). Same shared spine and the same one-at-a-time rule as T11 to T14.
-  **Source**: `PLAN_ITSA_PHASE_2.md` T15 to T19. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B11.T21 and T22. ITSA phase 2: losses, claims and tax liability adjustments.** The
-  Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 endpoints, then their two
-  pages. The operator decided on 2026-09-09 to build these rather than declare the product does
-  not offer those journeys, and B11.T10's recognition pack answers for all nine APIs on the back
-  of them. A sole trader making a loss is the ordinary first year of trading, so Individual
-  Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
-  write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
-  Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3e. Migrate the books bucket as customer data.** The row's precondition fired on
   2026-09-10: `prod-env-books-972912397388` holds 14 current objects under one user hash, seven
   books written between 00:02 and 07:43 UTC that day, plus 22 delete markers.
@@ -89,6 +87,10 @@ it nine tests fail on a missing file that has nothing to do with the change.
   deploy, repeated until it copies nothing — between the first sync and the end of that deploy the
   app still writes to the old bucket, and a deploy takes tens of minutes. The old bucket goes only
   after a verified read and a confirmed backup recovery point, both, never either alone.
+
+  Step 1, adding the new bucket beside the old and its ARN to the backup selection, rides with the
+  ITSA spine agent, because it edits `DataStack.java`, `BackupStack.java` and `SubmitSharedNames.java`
+  and holding a second agent behind that file set buys nothing. Steps 2 onward are this row.
 
   Steps 2, 4 and 6 are AWS writes against prod data: each waits for the operator. **Source**:
   `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code, with the operator at the write gates.
