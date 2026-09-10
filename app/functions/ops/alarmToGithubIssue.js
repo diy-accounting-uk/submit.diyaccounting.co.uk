@@ -42,6 +42,7 @@ import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
 import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../../lib/alarmEvidence.js";
 import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
+import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
 
 const logger = createLogger({ source: "app/functions/ops/alarmToGithubIssue.js" });
 
@@ -211,14 +212,13 @@ export function buildIssueBody({
     evidence,
   });
 
-  return `${headerLines.join("\n")}
+  const body = `${headerLines.join("\n")}
 
 ${evidenceSection}
 
-Every link needs a signed-in AWS session. Nothing from the logs is copied here.
+Every link needs a signed-in AWS session. Nothing from the logs is copied here.`;
 
----
-*Raised automatically by the alarm-to-issue pipeline.*`;
+  return appendAutomationDisclosure(body);
 }
 
 export function buildCommentBody({ alarmName, state, previousState, reason, timestamp, window, evidence, links }) {
@@ -236,9 +236,11 @@ export function buildCommentBody({ alarmName, state, previousState, reason, time
     evidence,
   });
 
-  return `${headerLines.join("\n")}
+  const body = `${headerLines.join("\n")}
 
 ${evidenceSection}`;
+
+  return appendAutomationDisclosure(body);
 }
 
 /**
