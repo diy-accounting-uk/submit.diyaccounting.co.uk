@@ -49,7 +49,7 @@ Wave 2 runs as concurrent worktree sub-agents:
 | The cost export's bucket policy | B89 | Sonnet | `.claude/worktrees/w-costbucket` | `claude/b18-costbucket` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS.
+CODEOWNERS, B11.T23.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
@@ -163,17 +163,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the main API gets the same allow list the storage routes use, or whether the wildcard is the
   intended answer for a public API, and write down which. Found while fixing B76. **Source**:
   B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B11.T23. The catalogue cannot say which ITSA writes are free.** `submit.catalogue.toml`
-  carries one flat `self-employed` activity, `tokenCost = 1`, `metered = true`, covering all ten
-  ITSA paths including the free ones — the annual submission, the adjustments, and the losses and
-  tax liability adjustments that D1 and D8 price at nothing. T20's cost line had to work around it
-  with a `data-metered="false"` attribute on the one page that is free today, which is a fact about
-  pricing living in a page's markup. T14, T19 and T22 each add more pages to that same single
-  activity, so the workaround spreads unless the catalogue learns the distinction first. Give the
-  free ITSA writes their own activity, or give the activity a per-path cost, and delete the
-  attribute. Changing the catalogue also changes what `tokenEnforcement.js` charges, so the server
-  side moves with it. **Source**: B11.T20's build, 2026-09-10; `PLAN_ITSA_PHASE_2.md` D1 and D8.
-  **Owner**: Claude Code. **Model**: Sonnet.
 
 ## Ready: operator
 
