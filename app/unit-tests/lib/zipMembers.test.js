@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { listZipMemberNames, isDiyaGlPackage, NotAZipError } from "../../lib/zipMembers.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE_PATH = path.join(__dirname, "../../../fixtures/books/diya-gl-example.zip");
+const FIXTURE_PATH = path.join(__dirname, "../../../fixtures/diya-gl/diya-gl-example.zip");
 
 describe("zipMembers", () => {
   test("reads the five member names from a real diya-gl zip", () => {
