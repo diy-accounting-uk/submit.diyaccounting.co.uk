@@ -307,6 +307,12 @@ jobs:
             --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \
             --body "Draft from the alarm-triage workflow for #${ISSUE_NUMBER}. Not reviewed by a human. Closes nothing.")
           echo "url=${PR_URL}" | tee -a "$GITHUB_OUTPUT"
+          # origin:unattended-agent says a model ran this with nobody watching. Adding a label
+          # through this endpoint, rather than gh pr create's own --label flag, creates the label
+          # on first use if it doesn't already exist, so this never fails while the label is
+          # still pending creation (see REPORT_IDENTITY_AUDIT.md section 8, recommendation 6).
+          PR_NUMBER="${PR_URL##*/}"
+          gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/labels" -f "labels[]=origin:unattended-agent"
 
       - name: Comment the triage
         if: steps.role.outputs.configured == 'true'
