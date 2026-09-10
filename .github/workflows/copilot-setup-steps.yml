@@ -14,6 +14,10 @@ on:
       - '.github/workflows/copilot-setup-steps.yml'
   workflow_dispatch:
 
+concurrency:
+  group: copilot-setup-steps-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   id-token: write
   contents: read

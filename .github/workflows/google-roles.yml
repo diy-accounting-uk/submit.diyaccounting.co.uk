@@ -5,7 +5,7 @@ name: google roles
 run-name: "google roles (${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }}) from ${{ github.ref_name }}"
 
 concurrency:
-  group: google-roles-${{ github.ref_name }}
+  group: google-roles-${{ github.ref }}
   cancel-in-progress: false
 
 on:

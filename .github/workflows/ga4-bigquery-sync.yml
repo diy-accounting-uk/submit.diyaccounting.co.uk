@@ -5,7 +5,7 @@ name: ga4 bigquery sync
 run-name: "ga4 bigquery sync (${{ inputs.dry_run == 'true' && 'dry run' || 'apply' }}) from ${{ github.ref_name }}"
 
 concurrency:
-  group: ga4-bigquery-sync-${{ github.ref_name }}
+  group: ga4-bigquery-sync-${{ github.ref }}
   cancel-in-progress: false
 
 on:
