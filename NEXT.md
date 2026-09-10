@@ -18,10 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-b95799e** (the merge of PR #176, run 34474493729), carrying batches 18
 and 19 and with them the DIYA-GL stack rename, so prod's stack is `DiyaGlStack` now. Two spare sets
-stand, at $46.88/month each: prod-504ec0d, which that run's `destroy previous` job failed to retire
-when Maven Central answered 403 for `maven-jar-plugin:3.5.0`, and prod-c78fb84, six stacks left by
-the earlier deploy that died at `deploy api`. Neither was ever a failure of ours and neither goes on
-its own; only `destroy-prod.yml` with the deployment name removes one
+stand and both age out on their own: prod-504ec0d, created 09:00 UTC, and prod-c78fb84, created
+11:07 UTC, each retiring at the first scheduled `destroy-prod` run after it passes the eight-hour
+gate. No dispatch is needed unless they are wanted gone sooner
 (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
@@ -181,26 +180,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O42. Retire two spare prod deployment sets.** prod-504ec0d was superseded by the cut-over
-  but its `destroy previous` job failed on an upstream 403 from Maven Central, and prod-c78fb84 is
-  six stacks left by the deploy that died at `deploy api` before B94's retry existed. Neither is
-  live, neither goes on its own, and together they cost about $94 a month. Either re-run the failed
-  job, which retries the same retirement, or dispatch each by name:
-
-  ```
-  ! gh run rerun 34474493729 --failed
-  ```
-
-  ```
-  ! gh workflow run destroy-prod.yml -f deployment-name=prod-504ec0d
-  ```
-
-  ```
-  ! gh workflow run destroy-prod.yml -f deployment-name=prod-c78fb84
-  ```
-
-  **Source**: run 34474493729; the board's deployment pass, 2026-09-10. **Owner**: Operator.
-  **Model**: none.
 - [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
   through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
   label does not fail anything — but until they exist with real descriptions and colours they carry
