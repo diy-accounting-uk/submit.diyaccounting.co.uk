@@ -473,7 +473,7 @@ public class SubmitApplication {
         if (cognitoBooksUserPoolClientId == null || cognitoBooksUserPoolClientId.isBlank()) {
             throw new IllegalStateException(
                     "COGNITO_DIYA_GL_CLIENT_ID is not set and diyaGlUserPoolClientId is blank in cdk.json. Set it "
-                            + "from the /submit/" + envName + "/spreadsheets-books-app-client-id SSM parameter, "
+                            + "from the /submit/" + envName + "/spreadsheets-diya-gl-app-client-id SSM parameter, "
                             + "written by IdentityStack during the environment deploy.");
         }
 

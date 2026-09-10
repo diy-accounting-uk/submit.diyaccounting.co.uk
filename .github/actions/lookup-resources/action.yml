@@ -111,7 +111,7 @@ runs:
         # Looked up leniently (unlike the main client above): destroy workflows call this
         # action before their CloudFormation cleanup runs, and must not abort stack deletion
         # just because the books client lookup had a transient problem.
-        DIYA_GL_CLIENT_NAME="${{ inputs.environment-name }}-env-books-client"
+        DIYA_GL_CLIENT_NAME="${{ inputs.environment-name }}-env-diya-gl-client"
         DIYA_GL_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
           --user-pool-id "${USER_POOL_ID}" \
           --query "UserPoolClients[?ClientName=='${DIYA_GL_CLIENT_NAME}'].ClientId | [0]" \
