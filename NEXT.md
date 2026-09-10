@@ -110,19 +110,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
   reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
   **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
-  posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
-  form not submitted, and three parse failures. Its configuration reads as a working
-  Claude-on-Bedrock agent that triages an alarm issue and opens a draft PR when its answer holds
-  a diff, and it has never once done that. `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it,
-  so the plan rests on something unproven. The operator is considering **LangGraph** as the
-  orchestrator, because they need to learn it for other work and the learning would pay twice.
-  So this row is a design decision before it is a fix: compare finishing the Bedrock path as
-  built, rebuilding the orchestration on LangGraph, and any third option, on what each costs to
-  run, what it takes to keep working, and whether the marketplace and use-case-form blockers go
-  away or move. Whichever wins, the first proof is one real alarm triaged end to end, not a green
-  workflow badge. **Source**: `REPORT_IDENTITY_AUDIT.md`; the workflow's own comment history.
-  **Owner**: Claude Code to compare, Operator to choose. **Model**: Opus for the comparison.
+- [ ] **B78. `alarm-triage.yml` has never succeeded.** All five comments it has posted are
+  errors, and `PLAN_REPOSITORY_AUTOMATION.md`'s phase 3 rests on it.
+  `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md` compares finishing the Bedrock path, rebuilding on
+  LangGraph, calling the Anthropic API directly, and moving triage into the alarm-to-issue
+  Lambda, on measured cost, upkeep and whether the Marketplace and use-case-form blockers move.
+  It recommends the Bedrock path and holds the execution steps. The operator picks. Whichever
+  wins, the first proof is one real prod alarm triaged end to end, on an alarm that fired within
+  three days, because prod log groups keep three days.
+  **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`. **Owner**: Operator to choose, then Sonnet for
+  steps 1 and 2. **Model**: Sonnet.
 - [ ] **B81. `homebrew-diya-gl` self-commits to `main` every hour.** An hourly cron pushes to
   `main` in that repository, about 720 runs a month against 17 commits of real content, and the
   repository has no ruleset at all, so nothing stands between the cron and the default branch.
