@@ -144,16 +144,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `REPORT_IDENTITY_AUDIT.md`; `git config --global` reads `pull.rebase=true`,
   `rerere.enabled=true`, with no `commit.gpgsign` and no `gpg.format` set. **Owner**: Claude Code
   to propose, Operator to choose. **Model**: Sonnet.
-- [ ] **B77. The public support form files GitHub issues under the operator's name.**
-  `supportTicketPost.js` serves `POST /api/v1/support/ticket` with no authorizer, and the issue
-  it opens is authored by `antonycc`. So a stranger's words become a public GitHub issue under
-  the operator's identity. That is two problems at once: an unauthenticated write to a public
-  surface, and a provenance failure that breaks the rule a human-raised ticket needs a human to
-  close, because the author field cannot say who wrote it. Give the path its own identity so the
-  issue is not attributed to a person, carry the submitter's own words as quoted content rather
-  than as the issue's voice, and decide what stops abuse: a rate limit, a captcha, a size cap, or
-  authentication. Say in the issue body that it came from the public form. **Source**:
-  `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B77. Support ticket issue needs a dedicated GitHub identity.** `supportTicketPost.js` now
+  rate-limits by IP (`SECURITY_STATE_DYNAMODB_TABLE_NAME`, 3/minute, on top of the WAF's site-wide
+  limit), quotes the submitter's subject and message in fenced code blocks, and reads its token
+  from `OPS_GITHUB_TOKEN_SECRET_ARN` — falling back to the shared `GITHUB_TOKEN_SECRET_ARN` while
+  that secret is blank — matching `alarmToGithubIssue.js`. What's left: create the `diya-ops`
+  GitHub App (or a machine-user PAT) and rotate `{env}/submit/github/issue_bot_token` in Secrets
+  Manager to its token, in both `ci` and `prod`; then join B79's shared disclosure footer into
+  `buildIssueBody()` here once it lands. **Source**: `REPORT_IDENTITY_AUDIT.md`. **Owner**:
+  Operator. **Model**: none.
 - [ ] **B79. The alarm Lambda's comments carry no disclosure.** 386 of the 426 issue comments
   attributed to `antonycc` were written by the alarm-to-issue Lambda. `buildIssueBody()` adds a
   footer saying the pipeline wrote it; `buildCommentBody()` omits it, so every comment reads as

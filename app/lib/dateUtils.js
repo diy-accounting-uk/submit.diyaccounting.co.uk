@@ -97,6 +97,20 @@ export function fiveMinuteTtl() {
 }
 
 /**
+ * Fixed one-minute bucket key for a rate counter. A sliding window would need a read per
+ * request; a fixed bucket needs one atomic ADD whose return value is the count. The edge is
+ * a caller spreading requests across a minute boundary can reach roughly double the stated
+ * threshold before tripping it - acceptable for a limiter whose purpose is to catch a burst,
+ * not to enforce an exact quota.
+ *
+ * @param {Date} [date]
+ * @returns {number}
+ */
+export function nowMinute(date = new Date()) {
+  return Math.floor(date.getTime() / 60000);
+}
+
+/**
  * Add an ISO 8601 duration of the form PnYnMnD to a date. Minimal support for years,
  * months and days only — no time components.
  * @param {Date} fromDate - The date to add the duration to

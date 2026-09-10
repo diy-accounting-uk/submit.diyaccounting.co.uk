@@ -398,6 +398,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
                         .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
+                        .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .build());
 

@@ -5,7 +5,7 @@
 
 import { validateEnv } from "../../lib/env.js";
 import { createLogger, context } from "../../lib/logger.js";
-import { parseIsoDurationToDate } from "../../lib/dateUtils.js";
+import { parseIsoDurationToDate, nowMinute } from "../../lib/dateUtils.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -28,19 +28,6 @@ const logger = createLogger({ source: "app/functions/account/bundleGet.js" });
 export const BUNDLE_GET_BURST_PER_MINUTE = 500;
 
 /**
- * Fixed one-minute bucket key for the burst counter. A sliding window would need a read per
- * request; a fixed bucket needs one atomic ADD whose return value is the count. The edge is a
- * consumer spreading requests across a minute boundary can reach about 1000 before tripping
- * the threshold - acceptable for a detector whose purpose is to catch bulk extraction.
- *
- * @param {Date} [date]
- * @returns {number}
- */
-export function nowMinute(date = new Date()) {
-  return Math.floor(date.getTime() / 60000);
-}
-
-/**
  * Increments the caller's one-minute request counter and, on crossing the threshold, reports
  * one burst event. Never blocks the request: a counter failure is logged and swallowed, and
  * the check is a no-op when the security state table isn't configured (simulator, local dev).
@@ -52,7 +39,7 @@ async function checkBundleGetBurst(userId) {
 
   try {
     const hashedSub = hashSub(userId);
-    const hits = await incrementRateCounter({ hashedSub, minute: nowMinute() });
+    const hits = await incrementRateCounter({ identifier: hashedSub, minute: nowMinute() });
     if (hits === BUNDLE_GET_BURST_PER_MINUTE + 1 && resolveActorClass() === "customer") {
       await publishActivityFailureEvent({
         event: "api-burst-detected",
