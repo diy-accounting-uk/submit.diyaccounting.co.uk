@@ -423,10 +423,10 @@ public class EdgeStack extends Stack {
                         // Replaces SizeRestrictions_BODY everywhere except a DIYA-GL book write.
                         // oversizeHandling MATCH means "the body is larger than CloudFront let WAF
                         // see", which is the same 8KB the managed rule enforced, so no other route
-                        // loses that protection. A PUT under /api/v1/diya-gl/* or, for the window,
-                        // /api/v1/books/*, is the one request shape that legitimately carries
-                        // megabytes, and it is authenticated by the books JWT authoriser before
-                        // diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
+                        // loses that protection. A PUT under /api/v1/diya-gl/* or its permanent
+                        // second path /api/v1/books/* is the one request shape that legitimately
+                        // carries megabytes, and it is authenticated by the books JWT authoriser
+                        // before diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
                         CfnWebACL.RuleProperty.builder()
                                 .name("OversizedBodyOutsideBookWrite")
                                 .priority(5)
@@ -995,7 +995,7 @@ public class EdgeStack extends Stack {
                 .build();
 
         // Create additional behaviours for the API Gateway Lambda origins. /api/v1/*, the DIYA-GL
-        // storage routes' /api/v1/diya-gl/* and, for the window, their old /api/v1/books/* all
+        // storage routes' /api/v1/diya-gl/* and their permanent second prefix /api/v1/books/* all
         // share the same response-headers policy: no CORS override on any of them, since API
         // Gateway's own HttpApi.corsPreflight allow list (and, for the DIYA-GL routes,
         // diyaGlCors.js's per-request echo) already decide the header correctly. The path patterns
@@ -1012,12 +1012,12 @@ public class EdgeStack extends Stack {
         additionalBehaviors.put("/api/v1/diya-gl/*", diyaGlApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/diya-gl/* pointing to %s", props.apiGatewayUrl());
 
-        // Serves the old prefix alongside the new one for the window: the spreadsheets site's
-        // cloud.js, including copies held by installed service workers, keeps calling this path
-        // until its own deploy switches over.
-        BehaviorOptions legacyBooksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
+        // Serves the old prefix alongside the new one permanently: the spreadsheets site's
+        // cloud.js, including copies held by installed service workers, calls this path and
+        // never switches to the new one.
+        BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
                 props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
-        additionalBehaviors.put("/api/v1/books/*", legacyBooksApiGatewayBehavior);
+        additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
 
         // Add behaviour for /tests/* and /docs/* with short TTL cache policy
@@ -1163,7 +1163,7 @@ public class EdgeStack extends Stack {
 
     /**
      * Matches every DIYA-GL storage route under either prefix: the new {@code /api/v1/diya-gl}
-     * and, for the window, the old {@code /api/v1/books}.
+     * and the old {@code /api/v1/books}, both served permanently.
      */
     private static CfnWebACL.StatementProperty diyaGlRouteUriPrefixStatement() {
         return CfnWebACL.StatementProperty.builder()

@@ -148,7 +148,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlListGetLambdaLogGroup = diyaGlListGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlListGetLambdaProps);
         this.lambdaFunctionProps.add(
-                onLegacyPath(this.diyaGlListGetLambdaProps, props.sharedNames().diyaGlListGetLegacyUrlPath));
+                onSecondPublishedPath(this.diyaGlListGetLambdaProps, props.sharedNames().diyaGlListGetBooksUrlPath));
         this.diyaGlListGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -194,7 +194,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlVersionGetLambdaLogGroup = diyaGlVersionGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlVersionGetLambdaProps);
         this.lambdaFunctionProps.add(
-                onLegacyPath(this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetLegacyUrlPath));
+                onSecondPublishedPath(this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetBooksUrlPath));
         this.diyaGlVersionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
@@ -245,7 +245,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlPutLambdaLogGroup = diyaGlPutApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlPutLambdaProps);
         this.lambdaFunctionProps.add(
-                onLegacyPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGlPutLegacyUrlPath));
+                onSecondPublishedPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGlPutBooksUrlPath));
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject", "s3:PutObject", "s3:DeleteObject"))
@@ -290,7 +290,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlDeleteLambdaLogGroup = diyaGlDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlDeleteLambdaProps);
         this.lambdaFunctionProps.add(
-                onLegacyPath(this.diyaGlDeleteLambdaProps, props.sharedNames().diyaGlDeleteLegacyUrlPath));
+                onSecondPublishedPath(this.diyaGlDeleteLambdaProps, props.sharedNames().diyaGlDeleteBooksUrlPath));
         this.diyaGlDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
@@ -322,14 +322,15 @@ public class DiyaGlStack extends Stack {
     }
 
     /**
-     * Builds a second route entry for the same already-created Lambda, differing only in
-     * urlPath. ApiStack imports the function by ARN rather than creating it, so this adds a
-     * route with no new Lambda resource. Serves the old {@code /api/v1/books} path alongside the
-     * new {@code /api/v1/diya-gl} one for the window: the spreadsheets site's cloud.js, including
-     * copies held by installed service workers, keeps calling the old path until its own deploy
-     * switches over.
+     * Builds a second route entry for the same already-created Lambda, differing only in urlPath.
+     * ApiStack imports the function by ARN rather than creating it, so this adds a route with no
+     * new Lambda resource. Serves the old {@code /api/v1/books} path permanently, alongside the
+     * new {@code /api/v1/diya-gl} one: the spreadsheets site's cloud.js, including copies held by
+     * installed service workers, calls the old path and never switches to the new one. There is
+     * no import of it to grep for in this repository, so removing this second entry breaks that
+     * caller silently.
      */
-    private static AbstractApiLambdaProps onLegacyPath(AbstractApiLambdaProps primary, String legacyUrlPath) {
-        return ApiLambdaProps.builder().from(primary).urlPath(legacyUrlPath).build();
+    private static AbstractApiLambdaProps onSecondPublishedPath(AbstractApiLambdaProps primary, String secondUrlPath) {
+        return ApiLambdaProps.builder().from(primary).urlPath(secondUrlPath).build();
     }
 }
