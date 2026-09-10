@@ -327,11 +327,30 @@ S3e's sequence:
 6. Delete the `${DEPLOYMENT}-app-BooksStack` lines from `destroy-ci.yml`, `destroy-prod.yml` and
    `stack-drift.yml` once no set of that name remains.
 
-If step 1 finds objects, the row instead becomes: add the new bucket to `DataStack` beside the old
-one; `aws s3 sync` the old bucket to the new; add the new bucket ARN to the backup selection beside
-the old one; point the DIYA-GL Lambdas at the new bucket and deploy a set; verify a list and a
-version read return the copied objects; take one on-demand backup of the new bucket and confirm the
-recovery point; then remove the old bucket from `DataStack`, which empties and deletes it.
+Step 1 found objects on 2026-09-10, so the copy sequence below is the row. It is written for
+customer data whoever the books turn out to belong to, because this is the migration path the
+service needs when the answer is unambiguously a customer.
+
+1. Add the new bucket to `DataStack` beside the old one, and its ARN to the backup selection beside
+   the old one. Deploy. No data moves; both buckets now exist and both are backed up.
+2. `aws s3 sync` the old bucket to the new.
+3. Point the DIYA-GL Lambdas at the new bucket and deploy.
+4. **Re-run the sync after that deploy completes, and keep re-running it until it copies nothing.**
+   This is the step the sequence cannot skip. Between step 2 and the moment step 3's deploy finishes
+   the app is still writing to the old bucket, and a deploy takes tens of minutes; anything saved in
+   that window exists only in the old bucket, which step 7 deletes. A sync that reports no objects is
+   what proves the window is closed.
+5. Verify against the new bucket: the object count matches, a list returns the customer's books, and
+   a version read returns byte-identical content for a sampled object.
+6. Take one on-demand backup of the new bucket and confirm the recovery point exists.
+7. Only then remove the old bucket from `DataStack`, which empties and deletes it.
+
+Steps 2, 4 and 6 are AWS writes against prod data and the operator approves each before it runs.
+Step 7 is irreversible and waits on step 5 and step 6 both having passed, not on either alone.
+
+A dual-write in the application would close step 4's window without a repeated sync. It is not
+chosen here: it needs code on the write path for a migration that runs once, and repeating the sync
+until it is empty closes the same window with no code and no new failure mode.
 
 ### What the spreadsheets repository has to do, and when
 

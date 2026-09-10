@@ -203,26 +203,26 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
   write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
   Claude Code. **Model**: Sonnet.
-- [ ] **B71.S3e. DIYA-GL naming: copy the bucket, do not rename it.** The row's own precondition
-  fired on 2026-09-10: `list-object-versions` on `prod-env-books-972912397388` returns customer
-  books under one user hash, `metadata.json` and `v1.zip` pairs written through that day, plus 22
-  delete markers. `ci-env-books-367191799875` holds behaviour-run objects. The emptiness this row
-  rested on was checked on 2026-09-09 and is no longer true, and `PLAN_DIYA_GL_NAMING.md` now says
-  so.
+- [ ] **B71.S3e. Migrate the books bucket as customer data.** The row's precondition fired on
+  2026-09-10: `prod-env-books-972912397388` holds 14 current objects under one user hash, seven
+  books written between 00:02 and 07:43 UTC that day, plus 22 delete markers.
+  `ci-env-books-367191799875` holds behaviour-run objects.
 
-  A plain rename would delete the books: `bucketName` is a replacement property, and
-  `DataStack.java:655` sets `removalPolicy(DESTROY)` with `autoDeleteObjects(true)`. So the row is
-  the copy sequence in `PLAN_DIYA_GL_NAMING.md` instead: add `{prefix}-diya-gl-{account}` to
-  `DataStack` beside the old bucket, `aws s3 sync` across, add the new ARN to the backup selection
-  beside the old, point the DIYA-GL Lambdas at the new bucket and deploy a set, verify a list and a
-  version read return the copied objects, take one on-demand backup and confirm the recovery point,
-  then remove the old bucket from `DataStack`.
+  The books are handled as customer data whoever they belong to. Not because the owner is known —
+  the prefix is a salted hash and nothing here identifies it — but because this is the migration
+  path the service needs the first time the answer is unambiguously a customer, and 14 objects is
+  the cheapest occasion to build and prove it.
 
-  The data is in the AWS Backup critical selection already (`BackupStack.java:311`), and the destroy
-  workflows cannot reach it: their sweep matches `prod-*-app-*` and `-del-*` only, and this bucket
-  lives in `prod-env-DataStack`. So this is a bigger row than it was, not an urgent one. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3; the re-check of 2026-09-10. **Owner**: Claude Code. **Model**:
-  Sonnet.
+  So the row is the seven-step copy sequence in `PLAN_DIYA_GL_NAMING.md`, not a rename: a plain
+  rename replaces the bucket, and `DataStack.java:655` sets `removalPolicy(DESTROY)` with
+  `autoDeleteObjects(true)`. The step that carries the sequence is the re-sync after the cutover
+  deploy, repeated until it copies nothing — between the first sync and the end of that deploy the
+  app still writes to the old bucket, and a deploy takes tens of minutes. The old bucket goes only
+  after a verified read and a confirmed backup recovery point, both, never either alone.
+
+  Steps 2, 4 and 6 are AWS writes against prod data: each waits for the operator. **Source**:
+  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code, with the operator at the write gates.
+  **Model**: Sonnet.
 - [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
   in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
   and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
