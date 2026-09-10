@@ -58,79 +58,107 @@ export function parseArgs(argv) {
   return { action: positional[0], environmentName: positional[1] || "ci", client };
 }
 
-async function updateClient(cognitoClient, userPoolId, clientId, clientName, action) {
-  // Describe the current UserPoolClient to get all settings
-  console.log(`Describing current ${clientName} configuration...`);
-  let clientConfig;
-  try {
-    const describeResponse = await cognitoClient.send(
-      new DescribeUserPoolClientCommand({
-        UserPoolId: userPoolId,
-        ClientId: clientId,
-      }),
-    );
-    clientConfig = describeResponse.UserPoolClient;
-  } catch (error) {
-    console.error(`ERROR: Failed to describe ${clientName}: ${error.message}`);
-    throw error;
-  }
+// probe-test.yml runs several behaviour-test suites in parallel, and every suite calls this
+// script against the same shared UserPoolClient at roughly the same moment. Cognito serialises
+// UpdateUserPoolClient calls and rejects the losers with ConcurrentModificationException
+// ("Only one request to update this ... can be processed at a time"), so a losing suite must
+// retry rather than fail outright. Re-describing on each attempt also means a retry that lands
+// after the winner's update sees COGNITO already in the desired state and exits as a no-op.
+const concurrentUpdateMaxAttempts = 5;
+const concurrentUpdateBaseDelayMs = 500;
 
-  const currentProviders = clientConfig.SupportedIdentityProviders || [];
-  console.log(`  Current SupportedIdentityProviders: [${currentProviders.join(", ")}]`);
+function isConcurrentModification(error) {
+  return error.name === "ConcurrentModificationException" || /only one request/i.test(error.message || "");
+}
 
-  const hasCognito = currentProviders.includes("COGNITO");
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (action === "enable" && hasCognito) {
-    console.log(`  COGNITO is already enabled. No changes needed.`);
-    return;
-  }
+export async function updateClient(cognitoClient, userPoolId, clientId, clientName, action) {
+  for (let attempt = 1; attempt <= concurrentUpdateMaxAttempts; attempt++) {
+    // Describe the current UserPoolClient to get all settings
+    console.log(`Describing current ${clientName} configuration...`);
+    let clientConfig;
+    try {
+      const describeResponse = await cognitoClient.send(
+        new DescribeUserPoolClientCommand({
+          UserPoolId: userPoolId,
+          ClientId: clientId,
+        }),
+      );
+      clientConfig = describeResponse.UserPoolClient;
+    } catch (error) {
+      console.error(`ERROR: Failed to describe ${clientName}: ${error.message}`);
+      throw error;
+    }
 
-  if (action === "disable" && !hasCognito) {
-    console.log(`  COGNITO is already disabled. No changes needed.`);
-    return;
-  }
+    const currentProviders = clientConfig.SupportedIdentityProviders || [];
+    console.log(`  Current SupportedIdentityProviders: [${currentProviders.join(", ")}]`);
 
-  // Build the new provider list
-  let newProviders;
-  if (action === "enable") {
-    newProviders = [...currentProviders, "COGNITO"];
-  } else {
-    newProviders = currentProviders.filter((p) => p !== "COGNITO");
-  }
+    const hasCognito = currentProviders.includes("COGNITO");
 
-  console.log(`  New SupportedIdentityProviders: [${newProviders.join(", ")}]`);
+    if (action === "enable" && hasCognito) {
+      console.log(`  COGNITO is already enabled. No changes needed.`);
+      return;
+    }
 
-  // UpdateUserPoolClient requires ALL parameters — omitted ones reset to defaults.
-  // We replay the current config with only SupportedIdentityProviders changed.
-  try {
-    await cognitoClient.send(
-      new UpdateUserPoolClientCommand({
-        UserPoolId: userPoolId,
-        ClientId: clientId,
-        ClientName: clientConfig.ClientName,
-        RefreshTokenValidity: clientConfig.RefreshTokenValidity,
-        AccessTokenValidity: clientConfig.AccessTokenValidity,
-        IdTokenValidity: clientConfig.IdTokenValidity,
-        TokenValidityUnits: clientConfig.TokenValidityUnits,
-        ReadAttributes: clientConfig.ReadAttributes,
-        WriteAttributes: clientConfig.WriteAttributes,
-        ExplicitAuthFlows: clientConfig.ExplicitAuthFlows,
-        SupportedIdentityProviders: newProviders,
-        CallbackURLs: clientConfig.CallbackURLs,
-        LogoutURLs: clientConfig.LogoutURLs,
-        AllowedOAuthFlows: clientConfig.AllowedOAuthFlows,
-        AllowedOAuthScopes: clientConfig.AllowedOAuthScopes,
-        AllowedOAuthFlowsUserPoolClient: clientConfig.AllowedOAuthFlowsUserPoolClient,
-        PreventUserExistenceErrors: clientConfig.PreventUserExistenceErrors,
-        EnableTokenRevocation: clientConfig.EnableTokenRevocation,
-        EnablePropagateAdditionalUserContextData: clientConfig.EnablePropagateAdditionalUserContextData,
-      }),
-    );
+    if (action === "disable" && !hasCognito) {
+      console.log(`  COGNITO is already disabled. No changes needed.`);
+      return;
+    }
 
-    console.log(`  ✓ ${clientName} ${action === "enable" ? "enabled" : "disabled"}`);
-  } catch (error) {
-    console.error(`ERROR: Failed to update ${clientName}: ${error.message}`);
-    throw error;
+    // Build the new provider list
+    let newProviders;
+    if (action === "enable") {
+      newProviders = [...currentProviders, "COGNITO"];
+    } else {
+      newProviders = currentProviders.filter((p) => p !== "COGNITO");
+    }
+
+    console.log(`  New SupportedIdentityProviders: [${newProviders.join(", ")}]`);
+
+    // UpdateUserPoolClient requires ALL parameters — omitted ones reset to defaults.
+    // We replay the current config with only SupportedIdentityProviders changed.
+    try {
+      await cognitoClient.send(
+        new UpdateUserPoolClientCommand({
+          UserPoolId: userPoolId,
+          ClientId: clientId,
+          ClientName: clientConfig.ClientName,
+          RefreshTokenValidity: clientConfig.RefreshTokenValidity,
+          AccessTokenValidity: clientConfig.AccessTokenValidity,
+          IdTokenValidity: clientConfig.IdTokenValidity,
+          TokenValidityUnits: clientConfig.TokenValidityUnits,
+          ReadAttributes: clientConfig.ReadAttributes,
+          WriteAttributes: clientConfig.WriteAttributes,
+          ExplicitAuthFlows: clientConfig.ExplicitAuthFlows,
+          SupportedIdentityProviders: newProviders,
+          CallbackURLs: clientConfig.CallbackURLs,
+          LogoutURLs: clientConfig.LogoutURLs,
+          AllowedOAuthFlows: clientConfig.AllowedOAuthFlows,
+          AllowedOAuthScopes: clientConfig.AllowedOAuthScopes,
+          AllowedOAuthFlowsUserPoolClient: clientConfig.AllowedOAuthFlowsUserPoolClient,
+          PreventUserExistenceErrors: clientConfig.PreventUserExistenceErrors,
+          EnableTokenRevocation: clientConfig.EnableTokenRevocation,
+          EnablePropagateAdditionalUserContextData: clientConfig.EnablePropagateAdditionalUserContextData,
+        }),
+      );
+
+      console.log(`  ✓ ${clientName} ${action === "enable" ? "enabled" : "disabled"}`);
+      return;
+    } catch (error) {
+      if (isConcurrentModification(error) && attempt < concurrentUpdateMaxAttempts) {
+        const delayMs = concurrentUpdateBaseDelayMs * attempt + Math.floor(Math.random() * concurrentUpdateBaseDelayMs);
+        console.log(
+          `  ${clientName}: another caller is updating this client (attempt ${attempt}/${concurrentUpdateMaxAttempts}), retrying in ${delayMs}ms...`,
+        );
+        await sleep(delayMs);
+        continue;
+      }
+      console.error(`ERROR: Failed to update ${clientName}: ${error.message}`);
+      throw error;
+    }
   }
 }
 
