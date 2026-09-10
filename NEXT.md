@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t, B76, B78's comparison, B77.
+submit half, B85, B30t, B76, B78's comparison, B77, B88.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -76,15 +76,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   read the next environment deploy to confirm the export creates. Until it does, prod has no
   FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
   Claude Code. **Model**: Haiku.
-- [ ] **B88. The Bedrock budget's deny action cannot fire.** Both `CfnBudget`s filter on
-  `Service: ["Amazon Bedrock"]` and report `actual=0.0`, while the model spend actually bills under
-  the Marketplace service names — Cost Explorer shows it as "Claude Sonnet 4.5 (Amazon Bedrock
-  Edition)". So the `APPLY_IAM_POLICY` deny on the $150 monthly budget is attached to a number that
-  never moves, and the one guard standing between a runaway agent loop and the bill does nothing.
-  Fix the filter to the service names the spend lands under and prove it against Cost Explorer's
-  own figures rather than the console's summary. Found while pricing B78. **Source**:
-  `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`; Cost Explorer, submit-prod, 2026-09-06. **Owner**: Claude
-  Code. **Model**: Sonnet.
 - [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
   that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
   check. The cause was that the `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN`
@@ -216,7 +207,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   The proof is one live prod alarm on a current deployment triaged end to end, not a green badge:
   prod log groups keep three days and a retired deployment's groups are deleted outright, so a
   dispatch against an old issue reads an empty window and answers confidently about nothing.
-  Do B88 first — it is the spend guard for this. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
+  B88 fixed the spend guard, so the budget's deny action can see the spend this would create. **Source**: `PLAN_ALARM_TRIAGE_ORCHESTRATOR.md`.
   **Owner**: Claude Code, Operator to check the first triage. **Model**: Sonnet.
 
 ## Ready: operator
