@@ -82,6 +82,36 @@ class CostExportStackTest {
                                                         "Action", "s3:ListBucket")))))))));
     }
 
+    /**
+     * Data Exports has one endpoint for the whole partition, in us-east-1, so the ARN it presents
+     * when it validates the bucket policy always names that region — never the stack's own region
+     * (eu-west-2 here). A condition built from the stack's region matches nothing Data Exports
+     * ever sends, and the export fails with "S3 bucket permission validation failed" at deploy
+     * time, which is what happened before this test existed.
+     */
+    @Test
+    void bucketPolicyGrantsDataExportsDeliveryUsingDataExportsOwnRegionNotTheStacksRegion() {
+        Template template = synthCostExportStack();
+
+        template.hasResourceProperties(
+                "AWS::S3::BucketPolicy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Sid",
+                                        "AllowBcmDataExportsDelivery",
+                                        "Condition",
+                                        Map.of(
+                                                "StringEquals",
+                                                Map.of("aws:SourceAccount", "887764105431"),
+                                                "StringLike",
+                                                Map.of(
+                                                        "aws:SourceArn",
+                                                        "arn:aws:bcm-data-exports:us-east-1:887764105431:export/*")))))))))));
+    }
+
     @Test
     void exportIsFocusOneTwoInParquetWithDailyGranularity() {
         Template template = synthCostExportStack();

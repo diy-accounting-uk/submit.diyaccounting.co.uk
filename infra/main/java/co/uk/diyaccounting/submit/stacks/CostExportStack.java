@@ -56,6 +56,16 @@ public class CostExportStack extends Stack {
     /** Prefix the export writes under, inside {@link #bucket}. */
     public static final String EXPORT_S3_PREFIX = "focus";
 
+    /**
+     * Data Exports has one endpoint for the whole partition, {@code bcm-data-exports.us-east-1.api.aws}
+     * (see the AWS Billing and Cost Management endpoints list) — there is no endpoint in
+     * eu-west-2 or any other region. So every export's ARN reads {@code us-east-1} no matter which
+     * region the stack that creates it deploys to, and the bucket policy's {@code aws:SourceArn}
+     * condition must say the same, or Data Exports rejects the bucket with "S3 bucket permission
+     * validation failed" because the ARN it presents never matches the one the condition expects.
+     */
+    private static final String DATA_EXPORTS_REGION = "us-east-1";
+
     public final Bucket bucket;
     public final CfnExport export;
 
@@ -119,7 +129,7 @@ public class CostExportStack extends Stack {
                                 Map.of(
                                         "aws:SourceArn",
                                         "arn:aws:bcm-data-exports:%s:%s:export/*"
-                                                .formatted(this.getRegion(), this.getAccount()))))
+                                                .formatted(DATA_EXPORTS_REGION, this.getAccount()))))
                 .build());
 
         if (!props.readerRoleArns().isEmpty()) {
