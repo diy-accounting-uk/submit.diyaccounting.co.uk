@@ -32,6 +32,16 @@ inputs:
     description: "Look up CloudFront distribution from OriginFor tag"
     required: false
     default: "false"
+  lenient-diya-gl-client-lookup:
+    description: >-
+      Return an empty cognito-diya-gl-client-id instead of failing when the DIYA-GL app client
+      cannot be found, after a short single attempt with no retry. Set to 'true' only from a
+      destroy workflow, where the client may legitimately be gone already and a transient lookup
+      problem must not abort stack cleanup. Every other caller needs the retry-and-fail-loud
+      default: a deploy cannot proceed without a real client id, and failing fast here beats
+      failing deep inside CDK synth several minutes later.
+    required: false
+    default: "false"
 
 outputs:
   cognito-user-pool-arn:
@@ -108,18 +118,54 @@ runs:
         fi
         echo "Found Client ID: ${CLIENT_ID}"
 
-        # Looked up leniently (unlike the main client above): destroy workflows call this
-        # action before their CloudFormation cleanup runs, and must not abort stack deletion
-        # just because the books client lookup had a transient problem.
+        # The DIYA-GL client is created by IdentityStack during the environment deploy
+        # (deploy-environment.yml), a separate workflow from the one that reads it here. Both
+        # fire off the same push, so a deploy that starts before IdentityStack has finished
+        # creating the client would otherwise see it missing when it is only late. Retry with
+        # backoff for long enough to ride out that ordinary race, then fail loudly and early —
+        # here, before the deploy spends minutes on a build and CDK synth it cannot finish, not
+        # nine minutes from now inside SubmitApplication.java's own check for this value.
+        #
+        # A destroy workflow passes lenient-diya-gl-client-lookup: 'true' to opt back out: there
+        # the client may legitimately already be gone, and a transient lookup problem must not
+        # abort stack cleanup, so it keeps the single quick attempt with no retry and no failure.
         DIYA_GL_CLIENT_NAME="${{ inputs.environment-name }}-env-diya-gl-client"
-        DIYA_GL_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
-          --user-pool-id "${USER_POOL_ID}" \
-          --query "UserPoolClients[?ClientName=='${DIYA_GL_CLIENT_NAME}'].ClientId | [0]" \
-          --output text 2>/dev/null || echo "")
-        if [ "$DIYA_GL_CLIENT_ID" = "None" ]; then
+        DIYA_GL_LOOKUP_QUERY="UserPoolClients[?ClientName=='${DIYA_GL_CLIENT_NAME}'].ClientId | [0]"
+
+        if [ "${{ inputs.lenient-diya-gl-client-lookup }}" = "true" ]; then
+          DIYA_GL_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
+            --user-pool-id "${USER_POOL_ID}" \
+            --query "${DIYA_GL_LOOKUP_QUERY}" \
+            --output text 2>/dev/null || echo "")
+          if [ "$DIYA_GL_CLIENT_ID" = "None" ]; then
+            DIYA_GL_CLIENT_ID=""
+          fi
+          echo "Found DIYA-GL Client ID: ${DIYA_GL_CLIENT_ID:-<not found, proceeding leniently>}"
+        else
           DIYA_GL_CLIENT_ID=""
+          DIYA_GL_MAX_ATTEMPTS=30
+          DIYA_GL_SLEEP_SECONDS=15
+          for ATTEMPT in $(seq 1 "${DIYA_GL_MAX_ATTEMPTS}"); do
+            DIYA_GL_LOOKUP_OUTPUT=$(aws cognito-idp list-user-pool-clients \
+              --user-pool-id "${USER_POOL_ID}" \
+              --query "${DIYA_GL_LOOKUP_QUERY}" \
+              --output text 2>&1) || DIYA_GL_LOOKUP_OUTPUT=""
+            if [ -n "$DIYA_GL_LOOKUP_OUTPUT" ] && [ "$DIYA_GL_LOOKUP_OUTPUT" != "None" ]; then
+              DIYA_GL_CLIENT_ID="$DIYA_GL_LOOKUP_OUTPUT"
+              break
+            fi
+            echo "  DIYA-GL client not found yet (attempt ${ATTEMPT}/${DIYA_GL_MAX_ATTEMPTS}); IdentityStack's environment deploy may still be creating it. Retrying in ${DIYA_GL_SLEEP_SECONDS}s."
+            sleep "${DIYA_GL_SLEEP_SECONDS}"
+          done
+
+          if [ -z "$DIYA_GL_CLIENT_ID" ]; then
+            echo "ERROR: No Cognito User Pool Client named ${DIYA_GL_CLIENT_NAME} found in pool ${USER_POOL_ID} after ${DIYA_GL_MAX_ATTEMPTS} attempts." >&2
+            echo "  Set it from the /submit/${{ inputs.environment-name }}/spreadsheets-diya-gl-app-client-id SSM parameter, written by IdentityStack during the environment deploy." >&2
+            echo "  If a 'deploy environment' run for ${{ inputs.environment-name }} is still in progress, wait for it to finish and re-run this deploy." >&2
+            exit 1
+          fi
+          echo "Found DIYA-GL Client ID: ${DIYA_GL_CLIENT_ID}"
         fi
-        echo "Found DIYA-GL Client ID: ${DIYA_GL_CLIENT_ID:-<not found>}"
 
         echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
         echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"
