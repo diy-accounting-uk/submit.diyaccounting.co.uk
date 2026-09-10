@@ -163,16 +163,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   rather than a per-caller string. A machine identity for the path would fix the disclosure and
   the attribution together, so land this with B77's identity work if they meet. **Source**:
   `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B80. Four identities in the history are not ours.** `noreply@anthropic.com` authored 20
-  commits on the spreadsheets `main`, and it resolves to a third-party GitHub account named
-  `claude`; `action@github.com` authored 27 in submit and resolves to `actions-user`, a
-  stranger's account; and two employer addresses, `antony.cartwright@awaze.com` and
-  `antony.cartwright@westfieldhealth.com`, appear across archive, spreadsheets, www and submit.
-  History is not rewritten here, so this is about stopping the flow and recording what is there:
-  find what still writes each address, fix it, and say in `REPORT_IDENTITY_AUDIT.md` what remains
-  in history and why it stays. The spreadsheets commits came from a sub-agent setting the
-  identity inline with nothing to prevent a repeat, so the fix is a guard, not a one-off cleanup.
-  **Source**: `REPORT_IDENTITY_AUDIT.md`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B75. Review commit authorship and every GitHub activity identity, across the six
   repositories.** `diy-accounting-archive`, `homebrew-diya-gl`, `root`, `spreadsheets`, `submit`
   and `www`. Establish per repository which author and committer identities appear in history,
