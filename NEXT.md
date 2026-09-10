@@ -31,37 +31,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 18 on `claude/b18-board`, PR #175.** Ten items, pushed once main's prod deploy of batch 17
-finished (`deploy from main`, 1h 8m, green; prod runs prod-6994c74). Verified before pushing:
-`./mvnw clean verify` green over the combined tree, `npm test` 2770 passing across 225 files,
-`npm run lint:workflows` clean across 38 workflows.
+**Batch 18 merged as PR #175 at c78fb846, and three fixes missed it.** The PR merged at 11:02:37Z
+against head 773de15; the three fixes pushed three minutes later are not in main. They are B95 (the
+last-known-good sentinel), B52x's raw export grants, and B97 (the Cognito toggle retry). This is
+the same trap as batch 16, where the PR merged 59 of 63 commits: a branch is settled only when
+nothing is committed after its last push, and the race can run the other way too, with a merge
+taking a head the branch has already moved past. Before merging, compare the PR's head with the
+branch tip.
 
-On the branch and off this list when its checks pass: B71.S3b, B71.S3c, B71.S3f, B78b, B86, B87,
-B89, B90, B11.T23, B95, B97, B52x's grants, and the concurrency caller collision below.
+**Batch 19 on `claude/b19-board`** carries those three, branched from `claude/b18-board` at
+702ebccd with main merged in. It waits on main's own `deploy` and `deploy environment` runs of
+c78fb846 finishing before it pushes.
 
-The batch's first run was fully red and three of the four causes are worth keeping. `test.yml`
-carried B85's `concurrency: test-${{ github.ref }}` with `cancel-in-progress: true`, and
-`deploy.yml` calls that same workflow with `uses:` — a reusable workflow evaluates its concurrency
-in the caller's context, so the delegated call and the standalone push run shared a group and one
-cancelled the other, at 08:23:43 against jobs starting at 08:23:45. `generate-pass.yml` had it too.
-Both group keys now carry `github.workflow`. That is the same caller-and-callee shape B90 designed
-around for `deploy.yml` calling `destroy-prod.yml`, shipped four hours earlier in the same batch by
-a row that did not look for callers.
-
-The integration branch has its own worktree at `.claude/worktrees/b18`; every sub-agent worktree
-branches from `claude/b18-board`, and `NEXT.md` deliberately does not travel on the batch, because
-the board is maintained here on `main` under the docs exception and a second copy conflicts at
-merge.
-
-`PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
-previous merge. S3d is next and it is the row a sibling repository's pages hold live: their
-`cloud.js` keeps the literal `/api/v1/books` paths and their service worker precaches them, so a
-redirect reaches a cached client as a changed URL rather than a followed one. It gets its window
-sent explicitly when it is on main, not when it merges to a batch.
-
-The ITSA property tracks (B11.T11 to T14) start when S3d lands, since the naming chain holds the
-shared spine (`SubmitApplication.java`, `DataStack.java`, `HmrcStack.java`, `cdk.json`) one row at
-a time.
+None of the three is currently failing anything, and that is luck rather than repair. The
+successful `deploy from claude/b18-board` created ci set ci-claud63a9 and wrote
+`/submit/ci/last-known-good-deployment` back, so the parameter B95 exists to survive is present
+again. The next ci sweep deletes it and the next environment deploy fails the same way.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
