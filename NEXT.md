@@ -42,13 +42,13 @@ ordering B90 removed), and the destroy hardening for prod and ci, where a failed
 cancelling four AWS-CLI steps that never needed it. Its `deploy environment` is already green,
 which is B98 passing its own first real deploy.
 
-Wave 4 runs as five concurrent worktree sub-agents, all branched from `claude/b20-board`:
+Wave 4 is complete. Its five workstreams and their worktrees:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| DIYA-GL naming, the API routes | B71.S3d | Sonnet | `.claude/worktrees/w-naming3d` | `claude/b20-naming3d` |
 
-Merged into the batch, off this list when its checks pass: B91, B99, B93, B96's audit.
+Merged into the batch and pushed at 84dfb51d, off this list when its checks pass: B91, B99,
+B93, B96's audit, B71.S3d.
 
 S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
 literal strings and their service worker precaches them, so both prefixes serve for the window
@@ -123,14 +123,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
-- [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
-  and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
-  `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
-  paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
-  The spreadsheets NM-5 is blocked on this reaching prod. Watch for the shape their NM-4 hit:
-  growing the closure can make a module reachable from the browser bundle, where work done at
-  module scope runs where it never ran before. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
   `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
   `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
