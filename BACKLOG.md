@@ -22,8 +22,6 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Operator-only steps are briefed for Claude Cowork in
 `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 
-- **COOL-DOWN is on** since 2026-09-10T18:40:40Z. No new rows except a degradation; other
-  discoveries go to `PARKED.md`.
 - **Four batches merged on 2026-09-10**: PR #175 and #176 (the DIYA-GL stack, client and toggle
   renames, the alarm-origin verifier, the automated-comment disclosure, the support form's rate
   limit and quoting, the identity guard, the free ITSA year-end activity, the cost export's column
