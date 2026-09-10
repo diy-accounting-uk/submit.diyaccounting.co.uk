@@ -4,7 +4,20 @@
 name: destroy-prod
 run-name: "destroy prod from ${{ github.ref_name }}"
 concurrency:
-  group: destroy-prod-${{ github.ref_name }}
+  # This workflow always destroys prod's `{deployment}-app-*` stacks (environment-name is
+  # hardcoded 'prod' below) regardless of which branch dispatched it, so keying on
+  # github.ref_name let two destroy-prod runs from different branches race each other — the
+  # same bug as the other four workflows here, just against a fixed environment instead of an
+  # input-selected one. A fixed group name is the fix, not a per-branch one.
+  #
+  # This is deliberately its own group, not shared with deploy.yml's prod path: deploy.yml calls
+  # this workflow directly (its 'destroy-previous' job) to remove the deployment it just cut
+  # over from, so giving the two the same concurrency group would have that call wait on a slot
+  # its own parent run is holding — a permanent deadlock. deploy.yml keeps a distinct
+  # 'deploy-prod' name for exactly this reason. A destroy-prod run triggered independently (the
+  # schedule, or a standalone workflow_dispatch) can still overlap with a deploy.yml prod run
+  # that isn't the one that spawned it; nothing in this batch closes that gap.
+  group: destroy-prod
   cancel-in-progress: false
 
 on:
