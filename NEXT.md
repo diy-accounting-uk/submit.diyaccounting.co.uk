@@ -32,6 +32,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-10T18:40:40Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 **Batches 18 and 19 are on main** (PR #175 at c78fb846, PR #176 at b95799e1), and main is
 deploying b95799e1 to prod now. That run carries the DIYA-GL stack rename to prod. The cost export
 is fixed and live: `deploy cost export` is green and both exports read HEALTHY, which took two
