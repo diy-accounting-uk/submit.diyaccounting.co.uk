@@ -72,6 +72,33 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
+  run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
+  the live or last known good deployment", **failed** — and steps 16 to 22 ran anyway, including
+  step 19, "Delete stacks in dependency order". The refusal is the one thing standing between a
+  dispatch and deleting the live production deployment, and it currently stops nothing.
+
+  The cause is this batch's own O42 fix. It gave the AWS-CLI steps `if: ${{ !cancelled() }}` so a
+  failed `Build CDK` could not abandon a retirement those steps never needed. `!cancelled()` is also
+  true when an *earlier* step failed, so the guards let the destroy run past the refusal as well.
+  The guards were right about the build and wrong about everything before it.
+
+  Nothing was harmed this time, and only by luck: the deployment name was malformed, so the deletion
+  matched no stacks. All three prod sets stand and prod-7b75b75 is live, confirmed after the run.
+
+  Two more faults in the same job, and they are why the refusal fired at all. The dispatch input
+  carried a **leading space** — the log shows `DEPLOYMENT:  prod-c78fb84` and the refusal printed
+  `Refusing to destroy [ prod-c78fb84]: not an app deployment name` — and nothing trims it. Then step
+  23, "Delete leftover Lambda log groups", passed that same untrimmed value to `DescribeLogGroups`
+  and got `InvalidParameterException ... failed to satisfy constraint`, because a space is not legal
+  in a log group prefix.
+
+  So: make every step after the refusal conditional on the refusal having succeeded, not merely on
+  the job not being cancelled, while keeping O42's property that a failed build does not abandon a
+  retirement. Trim the input where it is read. Validate the deployment name before any AWS call
+  rather than letting a malformed one reach three different APIs. Apply all of it to
+  `destroy-ci.yml` too, which carries the same guards. **Source**: run 34512145857. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
   `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
   stacks. A second set, `ci-claud6807`, went up at 16:13, so two ci sets stand at once. The sweep in
