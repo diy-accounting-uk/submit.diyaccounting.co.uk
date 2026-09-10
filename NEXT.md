@@ -42,13 +42,12 @@ Wave 2 runs as concurrent worktree sub-agents:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| DIYA-GL naming, the stack rename | B71.S3b | Sonnet | `.claude/worktrees/w-naming3b` | `claude/b18-naming3b` |
 | The alarm-origin verifier | B87 | Sonnet | `.claude/worktrees/w-auditcode` | `claude/b18-auditcode` |
 | The Bedrock triage path | B78b | Sonnet | `.claude/worktrees/w-triagefix` | `claude/b18-triagefix` |
 | The catalogue's free ITSA writes | B11.T23 | Sonnet | `.claude/worktrees/w-catalogue` | `claude/b18-catalogue` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23, B89.
+CODEOWNERS, B11.T23, B89, B71.S3b.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge, so only S3b is in flight; S3c follows it in the same batch. The ITSA property
@@ -99,15 +98,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B71.S3b. DIYA-GL naming: the CDK and workflow identifiers nobody else consumes.**
-  `BooksStack` to `DiyaGlStack` and its literal name in `deploy.yml`, `destroy-ci.yml`,
-  `destroy-prod.yml` and `stack-drift.yml`; `booksStackId`, `BOOKS_STACK_NAME`,
-  `COGNITO_BOOKS_CLIENT_ID`, the lookup-resources outputs, the `deploy-books` job, the
-  headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
-  S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
-  through one deploy of main. It also carries the four `app/functions/books/` modules and
-  their unit tests, whose basenames are the deployed Lambda names. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
   `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
   to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
@@ -150,6 +140,13 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the main API gets the same allow list the storage routes use, or whether the wildcard is the
   intended answer for a public API, and write down which. Found while fixing B76. **Source**:
   B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
+- [ ] **B71.S3f. The DIYA-GL test fixture directory is still called `books`.**
+  `fixtures/books/diya-gl-example.zip` is read by `diyaGlPut.test.js`, `diyaGlCorsHeaders.test.js`,
+  `diyaGlStorage.system.test.js` and both DIYA-GL behaviour tests. It is a same-repository code
+  identifier, so `PLAN_DIYA_GL_NAMING.md`'s NM-S2 should have carried it and its class-4 table does
+  not list it — which is why S3b left it alone. Nothing outside this repository reads it, so it can
+  move on its own at any time. **Source**: B71.S3b's build, 2026-09-10. **Owner**: Claude Code.
+  **Model**: Haiku.
 
 ## Ready: operator
 
