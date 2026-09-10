@@ -96,14 +96,33 @@ branch point in the same commit.
 A wave is a set of concurrent workstreams grouped by area of the repository, sized so that no two
 agents own the same file.
 
+**Fill the wave until file contention stops you, not until a count stops you.** There is no target
+number of agents. Keep adding independent workstreams while independent work remains; stop when the
+next item would have to share a file with one already dispatched.
+
 1. **Sequence the board.** Take the unblocked items in board order. Group them by where they live:
    `infra/**` (Java CDK), `app/functions/**` and their tests, `web/public/**` (never
    `web/public-simulator/`, it is a generated export), `web/browser-tests/`, `behaviour-tests/`,
    `.github/workflows/**` and `.github/actions/**`, `scripts/**`, and the root `PLAN_*.md` and
    `REPORT_*.md` documents.
-2. **Two agents that need the same file are not two workstreams.** Sequence them, or scope each to
-   a region and say so in both briefs. Where a plan already fixes an order — the DIYA-GL naming
-   chain, the ITSA shared spine — that order is the specification, not a suggestion.
+2. **Items that share a file are one workstream, so give them to one agent in one brief.** Not one
+   per wave with the rest queued behind: that turns a file boundary into three round trips and the
+   later items wait for nothing. Say "do A, then B, then C on these files, a commit per item", give
+   the order the plan fixes, and let one owner make the whole pass. A four-line change that happens
+   to touch a contended file rides along with the big item rather than waiting a wave for its own
+   turn — name it in the brief as its own separate commit and say plainly that it is unrelated.
+
+   Scoping two agents to different regions of one file is the fallback, not the default, and only
+   when the regions are genuinely disjoint and both briefs say so. Where a plan already fixes an
+   order — the DIYA-GL naming chain, the ITSA shared spine — that order is the specification.
+
+   A brief this size needs one extra instruction: if the total is more than the agent can finish,
+   commit what is done and report exactly where it stopped. A clean stopping point mid-sequence is
+   recoverable; a rushed tail is not.
+
+   You can extend a running agent rather than dispatching a second one. `SendMessage` to its id
+   continues it with its context intact, which is cheaper than a fresh agent rebuilding the same
+   understanding of the same files.
 3. **Run a design wave when the plan is not rich enough to execute.** A higher tier writes the
    design as a document at the repo root; cheaper, faster models then build from it. The test is
    whether a Sonnet or Haiku agent could pick up the document and build without asking a question.
