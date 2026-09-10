@@ -497,9 +497,15 @@ jobs:
       # The keep list above always protects the deployment SSM names as last-known-good, so if
       # that deployment's own stacks are already gone (an explicit dispatch destroyed it directly,
       # bypassing the keep list, or the last straggler stack from the leftover scan above finally
-      # cleared), the pointer is left naming nothing. Clear it so a future sweep, and every other
-      # workflow that reads it, stop treating an empty name as something to protect or fall back to.
-      - name: Clear last-known-good pointer if it names a deployment with no stacks left
+      # cleared), the pointer is left naming nothing. Set it to the sentinel "None" so a future
+      # sweep, and every other workflow that reads it, stop treating that name as something to
+      # protect or fall back to. It used to delete the parameter outright, but
+      # ObservabilityStack's dashboard reads it as an AWS::SSM::Parameter::Value<String> template
+      # parameter, which CloudFormation refuses to resolve at all against a missing parameter —
+      # that broke the very next environment deploy's changeset. Every reader already treats the
+      # literal string "None" the same as empty (the AWS CLI's own rendering of a null field), so
+      # the sentinel changes nothing downstream.
+      - name: Set last-known-good pointer to "None" if it names a deployment with no stacks left
         run: |
           PARAMETER_NAME="/submit/prod/last-known-good-deployment"
           LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
@@ -518,8 +524,8 @@ jobs:
           )
 
           if [ "${REMAINING_STACKS:-0}" -eq 0 ]; then
-            echo "Last-known-good prod deployment $LAST_KNOWN_GOOD has no stacks left, clearing $PARAMETER_NAME"
-            aws ssm delete-parameter --name "$PARAMETER_NAME" 2>/dev/null || true
+            echo "Last-known-good prod deployment $LAST_KNOWN_GOOD has no stacks left, setting $PARAMETER_NAME to None"
+            aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "None" --overwrite
           else
             echo "Last-known-good prod deployment $LAST_KNOWN_GOOD still has $REMAINING_STACKS stack(s), leaving $PARAMETER_NAME alone"
           fi
@@ -663,6 +669,9 @@ jobs:
         with:
           environment-name: prod
           lookup-cognito: 'true'
+          # The DIYA-GL client may already be gone by the time cleanup runs; don't retry or
+          # abort stack deletion over it.
+          lenient-diya-gl-client-lookup: 'true'
 
       - name: Empty origin bucket
         shell: bash

@@ -365,11 +365,26 @@ class SubmitEnvironmentCdkResourceTest {
                 "expected the live deployment name to come from the last-known-good-deployment SSM parameter, got: "
                         + dashboardBody);
 
-        assertTrue(dashboardBody.contains("VAT Submissions (live deployment)"));
+        assertTrue(dashboardBody.contains("VAT Submissions (deployment: "));
         assertTrue(dashboardBody.contains("Active Bundle Allocations (reconciled)"));
-        assertTrue(dashboardBody.contains("Lambda Errors (live deployment)"));
-        assertTrue(dashboardBody.contains("Lambda Throttles (live deployment)"));
-        assertTrue(dashboardBody.contains("Lambda p95 Duration (live deployment)"));
+        assertTrue(dashboardBody.contains("Lambda Errors (deployment: "));
+        assertTrue(dashboardBody.contains("Lambda Throttles (deployment: "));
+        assertTrue(dashboardBody.contains("Lambda p95 Duration (deployment: "));
+
+        // The titles embed the same last-known-good-deployment reference as the search
+        // expressions, not a static "(live deployment)" label: when the sentinel "None" is the
+        // resolved value (no deployment is live, or the sweep just cleared one), the dashboard
+        // shows that in the title instead of a blank graph that reads the same as a live
+        // deployment with no traffic.
+        long lastKnownGoodDeploymentRefCount =
+                dashboardBody.split("lastknowngooddeployment", -1).length - 1;
+        assertTrue(
+                lastKnownGoodDeploymentRefCount >= 5,
+                "expected the last-known-good-deployment reference in all four titles plus the "
+                        + "function-prefix expressions, found "
+                        + lastKnownGoodDeploymentRefCount
+                        + " occurrences in: "
+                        + dashboardBody);
 
         assertFalse(dashboardBody.contains("HMRC Authentications"));
         assertFalse(dashboardBody.contains("Bundle Operations"));

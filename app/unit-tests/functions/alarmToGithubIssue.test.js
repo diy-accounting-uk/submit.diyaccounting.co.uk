@@ -338,6 +338,24 @@ describe("alarmToGithubIssue", () => {
       expect(second).toBe("prod-cached-slug");
       expect(mockSsmSend).toHaveBeenCalledTimes(1);
     });
+
+    test("returns null when the sweep has set the pointer to the sentinel None", async () => {
+      mockSsmSend.mockResolvedValue({ Parameter: { Value: "None" } });
+
+      const slug = await resolveDeploymentSlug({ alarmName: "prod-env-hmrc-submission-failure", env: "prod-test-none" });
+
+      expect(slug).toBeNull();
+    });
+
+    test("returns null rather than throwing when the parameter does not exist", async () => {
+      const error = new Error("not found");
+      error.name = "ParameterNotFound";
+      mockSsmSend.mockRejectedValue(error);
+
+      const slug = await resolveDeploymentSlug({ alarmName: "prod-env-hmrc-submission-failure", env: "prod-test-missing" });
+
+      expect(slug).toBeNull();
+    });
   });
 
   describe("resolveCompositeChildFunctionNames", () => {

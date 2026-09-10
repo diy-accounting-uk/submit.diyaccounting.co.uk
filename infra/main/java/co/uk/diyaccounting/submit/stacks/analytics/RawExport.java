@@ -162,7 +162,22 @@ public class RawExport extends Construct {
                 .resources(List.of(props.resultsBucket().getBucketArn()))
                 .build());
 
-        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        // Athena reads every view's underlying data from the lake bucket to answer this
+        // Lambda's queries, the same grant AnalyticsDashboard.metricsPublishLambda carries.
+        // Without it, StartQueryExecution accepts the query but the query itself fails with
+        // S3 AccessDenied once Athena tries to read the curated data.
+        this.publishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(props.lakeBucket().getBucketArn() + "/*"))
+                .build());
+        this.publishLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(props.lakeBucket().getBucketArn()))
+                .build());
+
+        // Own prefix only for writes: the job never overwrites another entity's data.
         this.publishLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:PutObject"))
