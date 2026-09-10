@@ -149,7 +149,12 @@ the end) gets a note in `Action`: rename before its next push.
   (`B30<letter>`, next free letter) with the file or lookup it needs, the owner and the model
   tier, in the ready or blocked section its blocker dictates (an AWS lookup with no SSO session
   is blocked on `aws sso login --sso-session diyaccounting`). `keep open and watch` needs no
-  item. Never close, label or comment on an issue from this skill; the operator closes them.
+  item. **Never close, label or comment on an issue while rendering the board.** A render is a
+  read-and-report pass: it must not change GitHub state, or the thing being reported moves while it
+  is being described. That is this skill's own restriction and nothing wider — outside a render,
+  labelling, closing or commenting on an issue is ordinary work, needs no special permission, and
+  should be done rather than handed back. If a render finds an issue whose label is wrong, say so
+  and do it after the render, not during.
 - **Show every operator command in full.** Whenever the board hands a command to the
   operator (a dispatch, a re-run, a deletion, a cancel, anything the permission system or
   a classifier blocked in the session), print the whole command in a fenced block on its
