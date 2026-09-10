@@ -421,6 +421,19 @@
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.19.1</version>
             </plugin>
+            <!-- Not bound to a lifecycle phase, so a plain build is unaffected: the sbom workflow
+                 invokes it explicitly with ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeBom -->
+            <plugin>
+                <groupId>org.cyclonedx</groupId>
+                <artifactId>cyclonedx-maven-plugin</artifactId>
+                <version>2.9.3</version>
+                <configuration>
+                    <outputFormat>json</outputFormat>
+                    <outputName>bom-java-cyclonedx</outputName>
+                    <schemaVersion>1.6</schemaVersion>
+                    <skipAttach>true</skipAttach>
+                </configuration>
+            </plugin>
         </plugins>
         <!-- Change the default source directories -->
         <sourceDirectory>infra/main/java</sourceDirectory>
