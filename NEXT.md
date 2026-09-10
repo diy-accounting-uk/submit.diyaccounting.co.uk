@@ -47,9 +47,8 @@ Wave 4 runs as five concurrent worktree sub-agents, all branched from `claude/b2
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 | DIYA-GL naming, the API routes | B71.S3d | Sonnet | `.claude/worktrees/w-naming3d` | `claude/b20-naming3d` |
-| The deploy role's privilege | B96 | Sonnet | `.claude/worktrees/w-adminrole` | `claude/b20-adminrole` |
 
-Merged into the batch, off this list when its checks pass: B91, B99, B93.
+Merged into the batch, off this list when its checks pass: B91, B99, B93, B96's audit.
 
 S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
 literal strings and their service worker precaches them, so both prefixes serve for the window
@@ -114,21 +113,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B96. The deployment role holds AdministratorAccess, and B30t just made it quieter.**
-  `submit-ci-deployment-role` carries exactly one policy, the AWS managed
-  `arn:aws:iam::aws:policy/AdministratorAccess`, with no inline policies. Every GitHub Actions
-  deploy runs as that. On its own that is a known shape and BACKLOG 33 already asks the same
-  question of `submit-backup`'s SSO policy. What makes it worth its own row is what landed beside
-  it today: B30t excluded any principal whose role name starts with the environment prefix from the
-  CIS route-table and S3-bucket-policy alarms, to stop a CDK-generated per-stack helper role opening
-  an issue on every deploy. That exclusion was the right fix for the noise, and it means those two
-  alarms no longer see an identity that can do anything in the account. The compensating control is
-  `cis-iam-policy-changes`, which still fires on the grant itself, so the gap is narrower than it
-  first reads — but nobody chose this combination deliberately. Work out what the deploy actually
-  needs and whether a scoped policy is reachable without breaking a CDK bootstrap, or record why
-  AdministratorAccess stays and what watches it. **Source**:
-  `iam list-attached-role-policies` on submit-ci, 2026-09-10; B30t's exclusion. **Owner**: Claude
-  Code to propose, Operator to choose. **Model**: Sonnet.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
@@ -154,9 +138,32 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the lifecycle rules and the AWS Backup selection follow the CDK name. Re-check both buckets
   first and stop if either holds an object, in which case S3a's copy sequence applies.
   **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B30u. B30t's exclusion is wider than the two alarms it was written for.**
+  `REPORT_DEPLOYMENT_ROLE_AUDIT.md` found that the `{env}-*` wildcard B30t added applies to all
+  eight of the `deployChangedControls` CIS alarms, not only the route-table and S3-bucket-policy
+  pair it was built to quieten. That was not a decision anyone took; it is what the shared helper
+  does. The audit recommends leaving it, because narrowing it to exact CDK-generated role-name
+  patterns swaps a wide blind spot for a brittle list, and a name that drifts is the failure that
+  produced B30t in the first place. The alternative worth having is gating these alarms on deploy
+  timing rather than on the principal's name, which is a build rather than an edit. Either settle
+  it as the standing posture in the code with the reason, or take the timing design. **Source**:
+  `REPORT_DEPLOYMENT_ROLE_AUDIT.md`. **Owner**: Claude Code to propose, Operator to choose.
+  **Model**: Sonnet.
 
 ## Ready: operator
 
+- [ ] **O43. Decide the deployment role's standing posture.** `REPORT_DEPLOYMENT_ROLE_AUDIT.md`
+  recommends keeping `AdministratorAccess` and says why: the deployment role does not execute stack
+  changes itself, CDK assumes `cdk-hnb659fds-cfn-exec-role`, and `bootstrap-account.sh` bootstraps
+  that role with `AdministratorAccess` explicitly — CDK's own default, not drift. Thirty days of
+  CloudTrail put the deployment role's direct calls across 13 services and the exec role's resource
+  changes across 28 more, and 16 CDK stacks construct IAM roles, so the pipeline needs `PassRole`
+  regardless. Narrowing it safely needs permission boundaries on every role the pipeline creates,
+  which is a design effort with no owner rather than a policy edit — the same open question
+  BACKLOG 33 asks of `submit-backup`. So the decision is: accept the posture and record it in the
+  code with `cis-iam-policy-changes` named as the compensating control, or commission the
+  permission-boundary work. **Source**: `REPORT_DEPLOYMENT_ROLE_AUDIT.md`. **Owner**: Operator.
+  **Model**: none.
 - [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
   through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
   label does not fail anything — but until they exist with real descriptions and colours they carry
