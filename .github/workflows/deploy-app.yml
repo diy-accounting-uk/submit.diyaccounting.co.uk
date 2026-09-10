@@ -8,7 +8,7 @@ run-name: "lean deploy ${{ inputs.deployment-name || '(auto)' }} from ${{ github
 # without running CDK. Bypasses full deploy.yml for rapid iteration (~5-8 min vs 15-25 min).
 
 concurrency:
-  group: deploy-app-${{ github.ref_name }}
+  group: deploy-app-${{ github.ref }}
   cancel-in-progress: false
 
 on:
