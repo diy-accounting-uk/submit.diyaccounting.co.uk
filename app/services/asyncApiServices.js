@@ -78,12 +78,16 @@ export async function initiateProcessing({
 }) {
   if (tableName) {
     logger.info({ message: "Marking request as processing in DynamoDB", userId, requestId, tableName });
-    // await putAsyncRequest(userId, requestId, "processing", null, tableName);
-    // Non-awaited async method so we don't wait on the DynamoDB put
-    // Even if this fails, we await the SQS send
-    putAsyncRequest(userId, requestId, "processing", null, tableName).catch((error) => {
+    // Awaited so this write is guaranteed to land before the processor (below) is started.
+    // The processor's own completion write targets the same DynamoDB item; if this "processing"
+    // write were left unawaited (fire-and-forget) it could reach DynamoDB after a fast processor
+    // already wrote "completed"/"failed", silently reverting the item back to "processing" and
+    // stranding every future poll on a 202 that never resolves.
+    try {
+      await putAsyncRequest(userId, requestId, "processing", null, tableName);
+    } catch (error) {
       logger.error({ message: "Error storing processing request", error: error.message, requestId, tableName });
-    });
+    }
   }
 
   // Synchronous path: wait time header is large or no async tracking table is configured
