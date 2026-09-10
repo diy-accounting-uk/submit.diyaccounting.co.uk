@@ -28,6 +28,15 @@
 // IMPORTANT: UpdateUserPoolClient replaces ALL settings, not just the ones you specify.
 // This script reads the current config and replays it with only SupportedIdentityProviders modified.
 
+// CONSUMER DEPENDENCY: The spreadsheets repository fetches this script from our main branch
+// at runtime. Two call sites in their deploy.yml curl it and execute it during CI runs.
+// Changing the --client flag values, adding required arguments, or changing the output format
+// is a breaking change for them. They have no import to grep and no test that will fail.
+// Before changing these, coordinate with the spreadsheets repository or provide a compatibility
+// window. The "books" alias below shows a working example of a compatibility window.
+// They pin their fetch to a commit, so a change here reaches them only when they bump
+// their deploy workflow.
+
 import { fileURLToPath } from "node:url";
 
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
