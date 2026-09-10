@@ -660,10 +660,45 @@ jobs:
       - name: Silence the deployment's alarms
         run: node scripts/silence-deployment-alarms.mjs --env prod --deployment "${{ needs.names.outputs.deployment-name }}"
 
-      - name: Build CDK
-        run: ./mvnw --errors clean verify -DskipTests
+      # deploy.yml's own cut-over calls this workflow in the same run as its 'maven package' job.
+      # That job's jar is usually already sitting in this run's artifacts, so reuse it instead of
+      # rebuilding, the same fallback chain deploy-cdk-stack.yml uses. This only feeds the CDK
+      # cleanup pass below. The actual stack deletion further down reads stack names, not the jar.
+      - name: Download Maven build artifact
+        id: download-maven-destroy
+        uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          name: maven-target
+          path: target/
 
+      - name: Cache Maven build output
+        if: steps.download-maven-destroy.outcome != 'success'
+        uses: actions/cache@v6
+        with:
+          path: target
+          key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
+
+      - name: Build CDK
+        run: |
+          if [ -f target/submit-application.jar ]; then
+            echo "Maven output already available (target/submit-application.jar), skipping build"
+          else
+            echo "Maven output not cached, building with profile cdk-application..."
+            ./mvnw --errors clean verify -DskipTests \
+              -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -P cdk-application
+          fi
+
+      # A transient failure here (a Maven Central 403, for instance) must not abandon the
+      # retirement: none of the steps below through 'Delete stacks in dependency order' touch the
+      # jar this step builds. They delete named CloudFormation stacks by AWS CLI, which needs no
+      # CDK synth. Only 'CDK destroy (cleanup pass)' further down needs it, and it already
+      # tolerates failure on its own. Never widen these `if` guards to also skip on a bad
+      # 'Refuse to destroy' check above — that step still runs unconditionally before this one and
+      # is what stops the live or last-known-good deployment from ever reaching here.
       - name: Lookup Cognito from domain convention
+        if: ${{ !cancelled() }}
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
@@ -674,6 +709,7 @@ jobs:
           lenient-diya-gl-client-lookup: 'true'
 
       - name: Empty origin bucket
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
@@ -690,6 +726,7 @@ jobs:
           fi
 
       - name: Clean up external API Gateway custom domain mappings
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set +e  # Best-effort cleanup
@@ -726,6 +763,7 @@ jobs:
           echo "API Gateway custom domain mapping cleanup complete"
 
       - name: Delete stacks in dependency order
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
