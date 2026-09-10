@@ -5,6 +5,10 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import co.uk.diyaccounting.submit.SubmitEnvironment;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -20,6 +25,8 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
 import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
+import software.amazon.awscdk.services.s3.LifecycleRule;
+import software.amazon.awscdk.services.s3.StorageClass;
 
 /**
  * WP-3-specific assertions: the activity-event delivery stream converts to Parquet under a
@@ -118,6 +125,53 @@ class AnalyticsStackTest {
         // TableChangeDelivery's stream consumer). Every one of those functions must route its logs
         // to an explicit, retained log group rather than the unretained one CDK auto-creates.
         assertEveryLambdaHasAnExplicitLogGroup(analytics);
+    }
+
+    @Test
+    void sbomArchivePrefixOutlivesTheCuratedRuleThatWouldOtherwiseCatchIt() {
+        List<LifecycleRule> rules = AnalyticsStack.buildLakeLifecycleRules(true);
+
+        LifecycleRule curatedRule = findRuleById(rules, "age-curated");
+        assertEquals("curated/", curatedRule.getPrefix());
+        assertEquals(800, curatedRule.getExpiration().toDays().intValue());
+
+        LifecycleRule sbomRule = findRuleById(rules, "age-sbom-archive");
+        assertEquals("archive/security/sbom/", sbomRule.getPrefix());
+        assertEquals(2555, sbomRule.getExpiration().toDays().intValue());
+        assertEquals(
+                StorageClass.INFREQUENT_ACCESS,
+                sbomRule.getTransitions().get(0).getStorageClass());
+        assertEquals(
+                30,
+                sbomRule.getTransitions().get(0).getTransitionAfter().toDays().intValue());
+
+        // The SBOM archive prefix must sit outside every prefix a shorter-lived rule matches -
+        // S3 applies every matching rule independently and the earliest expiration wins, so a
+        // sub-prefix rule can never lengthen retention that an enclosing rule already shortened.
+        for (LifecycleRule rule : rules) {
+            if (rule.getId().equals("age-sbom-archive")) continue;
+            String prefix = rule.getPrefix();
+            if (prefix == null) continue;
+            assertFalse(
+                    "archive/security/sbom/".startsWith(prefix),
+                    "rule '" + rule.getId() + "' on prefix '" + prefix
+                            + "' also matches the SBOM archive prefix and would expire it early");
+        }
+    }
+
+    @Test
+    void nonProdHasNoLongLivedSbomArchiveRule() {
+        List<LifecycleRule> rules = AnalyticsStack.buildLakeLifecycleRules(false);
+        assertTrue(
+                rules.stream().noneMatch(rule -> "age-sbom-archive".equals(rule.getId())),
+                "non-prod should not carry the prod-only SBOM archive retention rule");
+    }
+
+    private static LifecycleRule findRuleById(List<LifecycleRule> rules, String id) {
+        return rules.stream()
+                .filter(rule -> id.equals(rule.getId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no lifecycle rule with id '" + id + "'"));
     }
 
     /**
