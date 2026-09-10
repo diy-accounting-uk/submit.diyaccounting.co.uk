@@ -3,6 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -125,6 +126,29 @@ describe("tokenEnforcement", () => {
 
       expect(result.consumed).toBe(false);
       expect(result.reason).toBe("tokens_exhausted");
+    });
+
+    it("charges a token for self-employed against the real catalogue - the quarterly update and final declaration handlers hardcode this activity id", async () => {
+      const catalog = loadCatalogFromRoot();
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
+
+      const result = await consumeTokenForActivity("user-1", "self-employed", catalog);
+
+      expect(result.consumed).toBe(true);
+      expect(result.cost).toBe(1);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+    });
+
+    it("charges nothing for self-employed-year-end against the real catalogue - the annual submission and adjustable summary", async () => {
+      const catalog = loadCatalogFromRoot();
+
+      const result = await consumeTokenForActivity("user-1", "self-employed-year-end", catalog);
+
+      expect(result.consumed).toBe(true);
+      expect(result.cost).toBe(0);
+      expect(getUserBundles).not.toHaveBeenCalled();
+      expect(consumeToken).not.toHaveBeenCalled();
     });
   });
 });
