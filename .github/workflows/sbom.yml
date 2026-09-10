@@ -101,10 +101,10 @@ jobs:
             sha: process.env.GITHUB_SHA,
             npm_component_count: npmComponents.length,
             npm_sbom_created_at: npmSbom.metadata?.timestamp || null,
-            npm_sbom_key: `curated/security/sbom/dt=${dt}/${runId}-npm-cyclonedx.json`,
+            npm_sbom_key: `archive/security/sbom/dt=${dt}/${runId}-npm-cyclonedx.json`,
             java_component_count: javaComponents.length,
             java_sbom_created_at: javaSbom.metadata?.timestamp || null,
-            java_sbom_key: `curated/security/sbom/dt=${dt}/${runId}-java-cyclonedx.json`,
+            java_sbom_key: `archive/security/sbom/dt=${dt}/${runId}-java-cyclonedx.json`,
             checked_at: new Date().toISOString(),
           };
 
@@ -142,12 +142,18 @@ jobs:
         # right for the small metadata row but wrong for these documents - the npm SBOM alone
         # runs to hundreds of components and would risk GitHub Actions' payload/env size limits
         # and JSON-in-YAML-expression escaping. A direct file upload has neither problem.
+        #
+        # Written under archive/, not curated/: AnalyticsStack's curated/ lifecycle rule expires
+        # everything at 800 days, and a longer-lived rule scoped to a sub-prefix does not override
+        # it - S3 applies every matching rule independently and the earliest expiration wins. The
+        # documents need years of retention to answer a supply-chain question long after the
+        # build, so they live under a prefix curated/'s rule does not match at all.
         run: |
           aws s3 cp sbom-npm-cyclonedx.json \
-            "s3://${LAKE_BUCKET}/curated/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-npm-cyclonedx.json" \
+            "s3://${LAKE_BUCKET}/archive/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-npm-cyclonedx.json" \
             --content-type application/json
           aws s3 cp target/bom-java-cyclonedx.json \
-            "s3://${LAKE_BUCKET}/curated/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-java-cyclonedx.json" \
+            "s3://${LAKE_BUCKET}/archive/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-java-cyclonedx.json" \
             --content-type application/json
         env:
           LAKE_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'

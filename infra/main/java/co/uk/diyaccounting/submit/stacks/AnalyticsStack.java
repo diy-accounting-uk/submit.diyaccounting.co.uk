@@ -95,6 +95,7 @@ public class AnalyticsStack extends Stack {
     private static final String ACTIVITY_EVENTS_TABLE_NAME = "activity_events_raw";
     private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
     private static final String ACTIVITY_EVENTS_CURATED_TABLE_NAME = "activity_events";
+    private static final String SBOM_ARCHIVE_PREFIX = "archive/security/sbom/";
     private static final String ACTIVITY_EVENTS_UNION_VIEW_NAME = "activity_events_all";
 
     public final Bucket lakeBucket;
@@ -922,7 +923,9 @@ public class AnalyticsStack extends Stack {
         infof("AnalyticsStack %s created successfully for %s", this.getNode().getId(), prefix);
     }
 
-    private static List<LifecycleRule> buildLakeLifecycleRules(boolean isProd) {
+    // Package-private so AnalyticsStackTest can assert on the rules directly, without paying for
+    // a full environment synth just to inspect a bucket's lifecycle configuration.
+    static List<LifecycleRule> buildLakeLifecycleRules(boolean isProd) {
         var rules = new ArrayList<LifecycleRule>();
 
         rules.add(LifecycleRule.builder()
@@ -965,6 +968,22 @@ public class AnalyticsStack extends Stack {
                             .transitionAfter(Duration.days(30))
                             .build()))
                     .expiration(Duration.days(800))
+                    .build());
+
+            // SBOM documents live under archive/, not curated/, precisely so this 800-day rule
+            // does not reach them: S3 applies every lifecycle rule whose prefix matches, and the
+            // earliest expiration wins, so a longer-lived rule scoped only to a sub-prefix of
+            // curated/ would not have protected them. An SBOM answers "which version were we
+            // running" against a CVE disclosed years later, so it gets the same 7-year retention
+            // already used for HMRC receipts elsewhere in this repository.
+            rules.add(LifecycleRule.builder()
+                    .id("age-sbom-archive")
+                    .prefix(SBOM_ARCHIVE_PREFIX)
+                    .transitions(List.of(Transition.builder()
+                            .storageClass(StorageClass.INFREQUENT_ACCESS)
+                            .transitionAfter(Duration.days(30))
+                            .build()))
+                    .expiration(Duration.days(2555))
                     .build());
             rules.add(LifecycleRule.builder()
                     .id("age-raw-cloudfront")
