@@ -138,6 +138,7 @@
               </div>
             </div>
 
+            <div id="submissionCost" class="submission-cost"></div>
             <button type="submit" id="submitBtn" class="btn">Amend Period Summary</button>
           </form>
         </div>
@@ -186,6 +187,7 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
     <script>
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
@@ -302,6 +304,7 @@
         if (!response.ok) {
           const error = new Error(result.message || "Failed to amend the period summary");
           error.status = response.status;
+          error.reason = result.reason;
           throw error;
         }
         return result;
@@ -323,6 +326,7 @@
 
           document.getElementById("periodAmendResults").style.display = "block";
           hideStatus();
+          window.dispatchEvent(new CustomEvent("bundle-changed"));
 
           sessionStorage.removeItem("currentActivity");
           sessionStorage.removeItem("pendingSelfEmploymentPeriodAmendRequest");
@@ -332,6 +336,9 @@
             sessionStorage.removeItem("hmrcAccessToken");
             sessionStorage.removeItem("hmrcTokenScope");
             showStatus("Access token expired. Please re-authenticate.", "error");
+          } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+            hideStatus();
+            window.SubmissionCost?.refresh();
           } else {
             showStatus(`Failed to amend the period summary: ${error.message}`, "error");
           }
@@ -414,11 +421,15 @@
 
             document.getElementById("periodAmendResults").style.display = "block";
             hideStatus();
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
           } catch (error) {
             if (error.status === 401) {
               sessionStorage.removeItem("hmrcAccessToken");
               sessionStorage.removeItem("hmrcTokenScope");
               showStatus("Access token expired. Please try again.", "error");
+            } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+              hideStatus();
+              window.SubmissionCost?.refresh();
             } else {
               showStatus(`Failed to amend the period summary: ${error.message}`, "error");
             }
