@@ -4,7 +4,14 @@
 name: destroy-ci
 run-name: "destroy ci from ${{ github.ref_name }}"
 concurrency:
-  group: destroy-ci-${{ github.ref_name }}
+  # This workflow always destroys ci's `{deployment}-app-*` stacks (environment-name is
+  # hardcoded 'ci' below) — the branch that dispatched it is irrelevant to what it deletes, so
+  # keying on github.ref_name only let two destroy-ci runs from different branches race each
+  # other. A fixed group name is correct here, not a smaller bug fix short of one. This still
+  # doesn't need to also cover deploy.yml/deploy-app.yml: this workflow's own
+  # wait-for-ci-deploys step (below) already waits for their older runs to finish, and vice
+  # versa, so a destroy racing a ci deploy is already handled outside this concurrency block.
+  group: destroy-ci
   cancel-in-progress: false
 
 on:

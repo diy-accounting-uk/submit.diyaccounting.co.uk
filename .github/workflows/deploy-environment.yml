@@ -5,7 +5,15 @@
 name: deploy environment
 run-name: "deploy environment from ${{ github.ref_name }}"
 concurrency:
-  group: deploy-${{ github.ref }}
+  # This workflow deploys the shared `{env}-env-*` stacks: one ObservabilityStack, one
+  # DataStack, one IdentityStack, and so on, per environment — not per branch, not per commit.
+  # Two branches that both touch a watched infra path (an env stack's Java source, cdk.json,
+  # web/public, the holding page) would otherwise deploy to the identical stack at once and hit
+  # CloudFormation's "Stack is in UPDATE_IN_PROGRESS state" error, which is what happened to the
+  # sibling spreadsheets repo. There is no wait-for-ci-deploys equivalent for this workflow, so
+  # the group always resolves to the effective environment (the explicit input when a
+  # workflow_dispatch names one, otherwise the branch), for ci as much as for prod.
+  group: deploy-environment-${{ (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
   cancel-in-progress: false
 
 # bump12

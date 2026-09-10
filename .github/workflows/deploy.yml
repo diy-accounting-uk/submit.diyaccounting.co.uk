@@ -6,7 +6,20 @@ name: deploy
 run-name: "deploy from ${{ github.ref_name }}"
 
 concurrency:
-  group: deploy-${{ github.ref }}
+  # This workflow's own app-level CDK stacks are named after the resolved deployment, normally
+  # unique per commit, so two branches don't usually fight over the same stack. What they do
+  # share is per-environment state this workflow also writes: the last-known-good SSM
+  # parameter, the live CloudFront origin (set-origins), and the Cognito native-auth toggle used
+  # for behaviour tests. For the everyday ci push flow the fallback below still keys on the ref
+  # and leaves cross-branch ordering to the wait-for-ci-deploys action: a shared 'deploy-ci'
+  # group here would queue every ci branch behind one slot, and GitHub only keeps the latest
+  # queued run in a group, so a third branch pushing while a second waits would drop the
+  # second's run entirely — the exact failure wait-for-ci-deploys exists to avoid. Prod has no
+  # such backstop, and workflow_dispatch can send a prod deploy from any branch, so whenever the
+  # *effective* target is prod (explicit deployment-name, explicit environment-name, or a push to
+  # main) the group always resolves to the same 'deploy-prod', or a same-time push to main and an
+  # explicit-input prod dispatch would land in different groups and run concurrently.
+  group: deploy-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod') || github.ref }}
   cancel-in-progress: false
 
 # Bump25
