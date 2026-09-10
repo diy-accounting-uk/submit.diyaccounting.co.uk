@@ -1687,6 +1687,136 @@
         }
       }
     },
+    "/hmrc/itsa/uk-property/annual" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA UK property annual submission",
+        "description" : "Retrieves the adjustments and allowances submitted for a UK property business for a tax year",
+        "operationId" : "getItsaUkPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Create or amend an ITSA UK property annual submission",
+        "description" : "Submits the adjustments and allowances for a UK property business for a tax year in one call",
+        "operationId" : "putItsaUkPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "adjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "allowances",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual allowances",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/bundle" : {
       "get" : {
         "summary" : "Get user bundles",

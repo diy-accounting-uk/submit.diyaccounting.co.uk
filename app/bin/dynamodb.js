@@ -439,6 +439,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName =
+      process.env.HMRC_ITSA_UK_PROPERTY_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

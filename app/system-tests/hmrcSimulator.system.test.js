@@ -528,6 +528,73 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA UK Property Annual", () => {
+    const validBody = () => ({ ukProperty: { adjustments: { balancingCharge: 100 } } });
+
+    it("should retrieve an annual submission when a scenario is given", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`, {
+        headers: { "Gov-Test-Scenario": "UK_PROPERTY" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.ukProperty).toBeDefined();
+    });
+
+    it("should default the retrieve to not-found when no scenario is given", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`);
+      expect(response.status).toBe(404);
+    });
+
+    it("should create and amend an annual submission and answer 200, not 204", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.6.0+json",
+        },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(200);
+    });
+
+    it("should return 400 when the body is entirely empty", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ukProperty: {} }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should return 400 when propertyIncomeAllowance sits beside the itemised allowances", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ukProperty: { allowances: { propertyIncomeAllowance: 1000, annualInvestmentAllowance: 200 } },
+        }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_BOTH_ALLOWANCES_SUPPLIED");
+    });
+
+    it("should return 400 when propertyIncomeAllowance sits beside a privateUseAdjustment", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/annual/2023-24`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ukProperty: { adjustments: { privateUseAdjustment: 50 }, allowances: { propertyIncomeAllowance: 1000 } },
+        }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_PROPERTY_INCOME_ALLOWANCE");
+    });
+  });
+
   describe("ITSA Self-Employment Annual", () => {
     const validBody = () => ({
       adjustments: { includedNonTaxableProfits: 200 },

@@ -35,6 +35,8 @@ import { apiEndpoint as hmrcItsaUkPropertyPeriodPostApiEndpoint } from "../funct
 import { apiEndpoint as hmrcItsaUkPropertyPeriodsGetApiEndpoint } from "../functions/hmrc/hmrcItsaUkPropertyPeriodsGet.js";
 import { apiEndpoint as hmrcItsaUkPropertyPeriodGetApiEndpoint } from "../functions/hmrc/hmrcItsaUkPropertyPeriodGet.js";
 import { apiEndpoint as hmrcItsaUkPropertyPeriodPutApiEndpoint } from "../functions/hmrc/hmrcItsaUkPropertyPeriodPut.js";
+import { apiEndpoint as hmrcItsaUkPropertyAnnualGetApiEndpoint } from "../functions/hmrc/hmrcItsaUkPropertyAnnualGet.js";
+import { apiEndpoint as hmrcItsaUkPropertyAnnualPutApiEndpoint } from "../functions/hmrc/hmrcItsaUkPropertyAnnualPut.js";
 import { apiEndpoint as hmrcItsaCrystallisationObligationsGetApiEndpoint } from "../functions/hmrc/hmrcItsaCrystallisationObligationsGet.js";
 import { apiEndpoint as hmrcItsaStatusGetApiEndpoint } from "../functions/hmrc/hmrcItsaStatusGet.js";
 import { apiEndpoint as hmrcItsaBsasTriggerPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasTriggerPost.js";
@@ -287,6 +289,8 @@ hmrcItsaUkPropertyPeriodPostApiEndpoint(app);
 hmrcItsaUkPropertyPeriodsGetApiEndpoint(app);
 hmrcItsaUkPropertyPeriodGetApiEndpoint(app);
 hmrcItsaUkPropertyPeriodPutApiEndpoint(app);
+hmrcItsaUkPropertyAnnualGetApiEndpoint(app);
+hmrcItsaUkPropertyAnnualPutApiEndpoint(app);
 hmrcItsaCrystallisationObligationsGetApiEndpoint(app);
 hmrcItsaStatusGetApiEndpoint(app);
 hmrcItsaBsasTriggerPostApiEndpoint(app);

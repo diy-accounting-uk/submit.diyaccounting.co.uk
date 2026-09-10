@@ -164,6 +164,12 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const hmrcItsaUkPropertyPeriodPutAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaUkPropertyPeriodPutAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyPeriodPutAsyncTable, endpoint);
 
+    const hmrcItsaUkPropertyAnnualGetAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyAnnualGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyAnnualGetAsyncTable, endpoint);
+
+    const hmrcItsaUkPropertyAnnualPutAsyncTable = process.env.HMRC_ITSA_UK_PROPERTY_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaUkPropertyAnnualPutAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyAnnualPutAsyncTable, endpoint);
+
     const hmrcItsaSelfEmploymentAnnualGetAsyncTable = process.env.HMRC_ITSA_SELF_EMPLOYMENT_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaSelfEmploymentAnnualGetAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualGetAsyncTable, endpoint);

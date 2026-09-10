@@ -51,6 +51,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaUkPropertyPeriodsGetAsyncRequestsTable;
     public ITable hmrcItsaUkPropertyPeriodGetAsyncRequestsTable;
     public ITable hmrcItsaUkPropertyPeriodPutAsyncRequestsTable;
+    public ITable hmrcItsaUkPropertyAnnualGetAsyncRequestsTable;
+    public ITable hmrcItsaUkPropertyAnnualPutAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable;
     public ITable hmrcItsaCrystallisationObligationsGetAsyncRequestsTable;
@@ -456,6 +458,38 @@ public class DataStack extends Stack {
         infof(
                 "Ensured HMRC ITSA UK Property Period PUT async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName);
+
+        // HMRC ITSA UK Property Annual GET (retrieve) async request storage
+        this.hmrcItsaUkPropertyAnnualGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualGetAsyncTTL",
+                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA UK Property Annual GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName);
+
+        // HMRC ITSA UK Property Annual PUT (create and amend) async request storage
+        this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualPutAsyncTTL",
+                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA UK Property Annual PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Annual GET (retrieve) async request storage
         this.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable = ensureTable(
@@ -865,6 +899,22 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaUkPropertyPeriodPutAsyncRequestsTableArn",
                 this.hmrcItsaUkPropertyPeriodPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaUkPropertyAnnualGetAsyncRequestsTableName",
+                this.hmrcItsaUkPropertyAnnualGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaUkPropertyAnnualGetAsyncRequestsTableArn",
+                this.hmrcItsaUkPropertyAnnualGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaUkPropertyAnnualPutAsyncRequestsTableName",
+                this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaUkPropertyAnnualPutAsyncRequestsTableArn",
+                this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName",
