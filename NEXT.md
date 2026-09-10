@@ -16,8 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-15f3483 (the merge of PR #160, run 34385269183, 2026-09-09 18:29
-UTC), which retired prod-4600d25 in its own destroy-previous job; no spare stands.** A main deploy retires the previous set
+**Prod runs deployment prod-318271f (the merge of PR #168, run 34414615907, its EdgeStack
+updated 2026-09-09 23:30 UTC and its last stack 23:36), which retired prod-15f3483 in its own
+destroy-previous job; no spare stands.** A main deploy retires the previous set
 itself; a `prod-*-app-*` set left standing by anything else costs $46.88/month until named to
 `destroy-prod.yml` (`_developers/archive/PLAN_COST_OPTIMISATION.md`).
 
@@ -30,37 +31,50 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch 16 on `claude/b16-board`, PR #168.** The branch is deploying. `test` and CodeQL are
-green; `deploy environment` failed at `ci-env-BackupStack`: IAM answered 404 for
-`arn:aws:iam::aws:policy/service-role/AWSBackupServiceRolePolicyForS3Restore`. Checked against
-IAM: the S3 pair lives at the root path and the DynamoDB pair under `service-role/`, so both S3
-policies moved. The fix is committed and waiting on the running `deploy`.
-
-Merged and locally verified (`npm test` 2701 passed, `./mvnw clean verify` green), off this list
-when the branch's checks pass: B30s, B67, B68, B66, B65 (the five prod defects), B30r, B64 and
-B25 including the vault's restore grants, B70.S1 to S6 (the licence files, the public statement,
-the headers across 1238 files with a test that walks `git ls-files`, the OpenAPI fields, the
-image labels, the third-party lines), B71.S1, B71.S2 and B71.S3a, B17b.1, and B11.T7's script
-and runbook.
-
-Still running as worktree sub-agents:
-
-| Workstream | Items | Model | Owns |
-|---|---|---|---|
-| ITSA property design | The five O30 answers, then UK property | Opus | `PLAN_ITSA_PHASE_2.md` |
-| Simulator rebuild | B70.S7 | Sonnet | `deploy.yml`, `scripts/build-simulator.js` |
-
-A worktree agent runs `npm run bundle` before any unit, system or browser suite:
-`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and
-without it nine tests fail on a missing file that has nothing to do with the change.
-
-Two rules this batch proved. A whole-tree sweep runs alone, and it skips what a tool reads as
-data: generated Swagger output under `web/public/docs/api/`, which `mvnw verify` rewrites, and
-`.claude/commands/`, where a command with no front matter takes its description from its first
-line. B71.S3b to S3e change deployed resource names, so they wait for this batch to prove green.
-
 ## Ready: Claude Code
 
+- [ ] **B84. Every main deploy fails on the cost export.** `deploy environment from main` run
+  34414615591 failed at `cost-CostExportStack`: `AWS::BCMDataExports::Export` answered 400,
+  "the columns in the query provided are not a subset of the table FOCUS_1_2_AWS", and the stack
+  rolled back. `FOCUS_1_2_COLUMNS` was written in Glue's snake_case; the live schema
+  (`aws bcm-data-exports get-table --table-name FOCUS_1_2_AWS`) names all 60 columns in
+  PascalCase, with only the three AWS extension columns keeping a lowercase `x_` prefix. Glue and
+  the Athena views over `cost_focus` want the snake_case spellings, so the fix derives one from
+  the other rather than pairing two lists. The fix is committed on the local branch
+  `claude/cost-focus-columns` at `4c74a0b2` and has never been pushed: push it, open the PR, and
+  read the next environment deploy to confirm the export creates. Until it does, prod has no
+  FOCUS export and the cost panel's source is empty. **Source**: run 34414615591. **Owner**:
+  Claude Code. **Model**: Haiku.
+- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** It runs on pushes
+  that touch its own file, so it is a red check on those PRs that teaches everyone to ignore a red
+  check. The cause was that the `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN`
+  nor `SUBMIT_DEPLOY_ROLE_ARN`, so `role-to-assume` resolved to an empty string. The job installs
+  uv and nothing else, so it needs no AWS credentials at all: the fix removes both configure steps,
+  and is committed on the local branch `claude/ops-copilot-setup` at `d158cb45`, never pushed.
+  Push it and open the PR. It also leaves the two role ARNs unused on the `copilot` environment,
+  where they would hand an unattended agent the ci deployment role, so ask the operator to clear
+  them once the PR merges. `security-review.yml` assigns an OWASP issue to GitHub's Copilot coding
+  agent with its weekly cron commented out; decide whether either stays in the same pass.
+  **Source**: runs on `main` and `claude/b16-board`, 2026-09-09. **Owner**: Claude Code. **Model**:
+  Haiku.
+- [ ] **B30t. Two CIS alarms fire on our own deploys.** `prod-env-cis-route-table-changes` (issue
+  #166) counted 32 changes at 18:17 UTC and 841 at 18:48 on 2026-09-09, and
+  `prod-env-cis-s3-bucket-policy-changes` (issue #167) fired at 18:41 and again at 23:52. Both
+  windows are prod deploys: the CDK deployment role making the changes the CIS metric filters
+  count. So every main deploy opens two alarm issues that mean nothing, which is the same
+  false-alarm cost `_developers/archive/PLAN_ALARM_CONSOLIDATION.md` exists to remove. Exclude the
+  deployment role's own identity from both metric filters in `ObservabilityStack.java`, or gate
+  them on a change made outside a CloudFormation stack operation, and keep them firing for a
+  change made by anything else. **Source**: issues #166 and #167. **Owner**: Claude Code.
+  **Model**: Sonnet.
+- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
+  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
+  CORS header on it and the browser reports a CORS block rather than the real status. This is
+  the remainder of B72's second half, which fixed every error the handlers themselves return.
+  Add an authoriser response mapping, or a gateway-response CORS configuration, in
+  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
+  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
   posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
   form not submitted, and three parse failures. Its configuration reads as a working
@@ -82,58 +96,41 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   schedule to what the job actually needs, and give the repository a ruleset like its siblings'.
   The work happens in `homebrew-diya-gl`, not here. **Source**: `REPORT_IDENTITY_AUDIT.md`.
   **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B83. `copilot-setup-steps.yml` has failed every run since 2026-08-24.** Four runs, four
-  failures, across `main`, `claude/workflow-currency` and now `claude/b16-board`, so it fails on
-  every branch and predates this batch. It runs on every push, so it is a red check on every PR
-  that teaches everyone to ignore a red check. Read the run log, fix it or delete the workflow if
-  nothing uses GitHub's Copilot coding agent here; `security-review.yml` assigns an OWASP issue to
-  that agent with its weekly cron commented out, so decide both together. The cause was that the
-  `copilot` GitHub environment held neither `SUBMIT_ACTIONS_ROLE_ARN` nor `SUBMIT_DEPLOY_ROLE_ARN`,
-  so `role-to-assume` resolved to an empty string; the operator set both to the ci roles on
-  2026-09-09, which should turn the workflow green on its next run. That leaves the `copilot`
-  environment holding the ci deployment role ARN, which an unattended agent inherits if the
-  Copilot coding agent is ever switched on. `REPORT_IDENTITY_AUDIT.md`'s third recommendation, a
-  `diya-agent` GitHub App for unattended model runs, is where that gets a narrower identity. The
-  workflow fires only when its own file changes, so it is red on a push that touches it rather
-  than on every push. **Source**: runs on `claude/b16-board`, 2026-09-09. **Owner**: Claude Code.
-  **Model**: Haiku.
-- [ ] **B72. AWS WAF blocks every DIYA-GL book save on prod.** `PUT /api/v1/books/{bookId}`
-  never reaches API Gateway: a Logs Insights query over `/aws/apigw/prod-env/access` for any PUT
-  on the books routes across three hours matched zero records, and
-  `wafv2 get-sampled-requests` on `prod-15f3483-app-waf` shows eight book PUTs blocked in that
-  window, every one by `AWS#AWSManagedRulesCommonRuleSet#SizeRestrictions_BODY`, including the
-  spreadsheets ci case's own request and our probe's `/api/v1/books/book-1`. That rule blocks a
-  body over 8KB, which is all CloudFront hands WAF by default; `BOOKS_MAX_BYTES` is 2MB, so the
-  storage API is built to accept a book 256 times larger than the edge will pass and has never
-  taken a real one on prod. A CloudFront block returns before the origin, so there is no
-  access-log row and no CORS header, and the browser reports `net::ERR_FAILED`. Fix the rule in
-  `EdgeStack.java` without weakening the common rule set on routes that do not need a large
-  body, and pin it with a CDK test. Its twin: every error response on the storage routes must
-  carry the CORS header the preflight already grants, so a 4xx or 5xx reads as its real status
-  rather than as a CORS failure. **Source**: WAF sampled requests, 2026-09-09; the spreadsheets
-  repository's LP-24. **Owner**: Claude Code. **Model**: Opus.
-- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
-  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
-  CORS header on it and the browser reports a CORS block rather than the real status. This is
-  the remainder of B72's second half, which fixed every error the handlers themselves return.
-  Add an authoriser response mapping, or a gateway-response CORS configuration, in
-  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
-  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B74. A missing bundle costs the deploy 25 minutes.** `generatePassActivityBehaviour`
-  waits on `#generatePassBtn` until Playwright's timeout rather than failing when the enabling
-  bundle never arrives, so each test takes 5.8 minutes to fail and its retry held run
-  34402276934 open for 25 minutes after every other job had finished. Fail fast on the disabled
-  button with the reason, the way the other suites do. Pre-existing. **Source**: run
-  34402276934. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
-  pages (liabilities, payments, penalties; against prod once B17b.1 is live, in the 17a
+  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
   accounts filing and a fresh one for ITSA (business details through the quarterly update),
   both against a ci set since neither activity goes to prod, each described on screen and in
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B11.T11 to T14. ITSA phase 2: UK property.** `PLAN_ITSA_PHASE_2.md`'s four property
+  tracks: the period summary's four handlers, the annual submission, the adjustable summary, and
+  the property pages with the business picker. Each copies its self-employment twin and differs
+  only in the path, the body field names and the scenario set, all of which the plan lists. The
+  ten endpoint tracks share a spine of files (`SubmitSharedNames.java`, `SubmitApplication.java`,
+  `DataStack.java`, `HmrcStack.java`, their two tests, `app/bin/server.js`,
+  `app/http-simulator/server.js`, `cdk.json` and the `.env.*` files), so they hold it one at a
+  time, each rebasing on the previous merge. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T14.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B11.T15 to T19. ITSA phase 2: the mixed year and the cumulative period summaries.**
+  `PLAN_ITSA_PHASE_2.md` T15 (the business picker and the mixed-customer year end), T16 (the tax
+  year model and the shared validator, Haiku), T17 and T18 (the self-employment and UK property
+  cumulative period summaries, which is what 2025-26 onwards actually files) and T19 (the
+  cumulative pages). Same shared spine and the same one-at-a-time rule as T11 to T14.
+  **Source**: `PLAN_ITSA_PHASE_2.md` T15 to T19. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B11.T20. ITSA phase 2: the submission cost line.** `submission-cost.js` above the submit
+  control on every ITSA page that writes, saying what the submission costs before the customer
+  sends it. Every page T14, T19 and T22 add includes it, so it lands before or with them.
+  **Source**: `PLAN_ITSA_PHASE_2.md` T20; plan row D8. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B11.T21 and T22. ITSA phase 2: losses, claims and tax liability adjustments.** The
+  Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 endpoints, then their two
+  pages. The operator decided on 2026-09-09 to build these rather than declare the product does
+  not offer those journeys, and B11.T10's recognition pack answers for all nine APIs on the back
+  of them. A sole trader making a loss is the ordinary first year of trading, so Individual
+  Losses earns its build on its own. Both pages include `submission-cost.js` and both say the
+  write is free. **Source**: `PLAN_ITSA_PHASE_2.md` T21, T22; operator, 2026-09-09. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B82. The global git config will break signatures the day signing is turned on.**
   `pull.rebase=true` with `rerere.enabled=true` are set globally on this machine. A rebase
   rewrites commits, so their SHAs change and any signature on them stops verifying, and `rerere`
@@ -199,8 +196,8 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   headers policy name, `BOOKS_ALLOWED_ORIGINS`, the `cdk.json` key and the CFN outputs, per
   S3a's order; a stack rename is a replacement, so it lands on a ci set first and on prod
   through one deploy of main. It also carries the four `app/functions/books/` modules and
-  their unit tests, whose basenames are the deployed Lambda names. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude
-  Code. **Model**: Sonnet.
+  their unit tests, whose basenames are the deployed Lambda names. **Source**:
+  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
   `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
   to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
@@ -211,9 +208,10 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
   `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
   paths served for the window S3a sets, in step with the spreadsheets side's `cloud.js`.
-  **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. Both
-  prefixes are served from this row's first deploy and the spreadsheets side switches after,
-  so nothing gates this.
+  The spreadsheets NM-5 is blocked on this reaching prod. Watch for the shape their NM-4 hit:
+  growing the closure can make a module reachable from the browser bundle, where work done at
+  module scope runs where it never ran before. **Source**: `PLAN_DIYA_GL_NAMING.md` NM-S3.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B71.S3e. DIYA-GL naming: the bucket.** `{prefix}-books-{account}` to
   `{prefix}-diya-gl-{account}` in `DataStack.java`, `SubmitSharedNames.java` and
   `BackupStack.java`. S3a decided the rename needs no data copy: `list-object-versions` on
@@ -224,6 +222,12 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
 
 ## Ready: operator
 
+- [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
+  chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
+  nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
+  our own prod deploys, and B30t stops them doing it again. All three name deployment
+  prod-4600d25, which no longer exists. **Source**: this board's alarm pass, 2026-09-10.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
@@ -247,6 +251,10 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
   **Owner**: Operator. **Model**: none.
+- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
+  submission and the production-credentials email described the service as AGPL open source, and
+  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
+  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -259,6 +267,7 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
+
 ## Blocked
 
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
@@ -279,7 +288,12 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
   entries, so a field that never fills is found now rather than in three months. **Source**:
   BACKLOG 52; plan row D16. **Owner**: Claude Code. **Model**: Haiku. Blocked until the first
-  export exists on 2026-09-10.
+  export exists at 02:15 UTC on 2026-09-10.
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
+  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
+  call with `403 RESOURCE_FORBIDDEN`. Re-run it after O34, work through whatever the sandbox
+  answers next, and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on O34.
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
@@ -291,15 +305,11 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   and on `PLAN_SUBMISSION_MCP.md` M1.
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T10. One application now covers both approval stages, and the operator
-  decided on 2026-09-09 to build Individual Losses and Individuals Tax Liability Adjustments
-  rather than declare the product does not offer those journeys, so the checklist answers for
-  all nine APIs in the minimum functionality standards with a build behind each. Individual
-  Losses earns its build on its own: a sole trader making a loss is the ordinary first year of
-  trading, and without it that customer files with us all year and finishes in their HMRC
-  account. **Owner**: Claude Code, then Operator. **Model**: Haiku.
-  Blocked on B11.T7 and on the two new API tracks.
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
+  B11.T22.
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
@@ -337,10 +347,6 @@ line. B71.S3b to S3e change deployed resource names, so they wait for this batch
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph (the MTD approval
-  submission and the production-credentials email described the service as AGPL open
-  source). **Source**: `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator.
-  **Model**: none. Blocked on B70.S2, which is in flight, reaching main.
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
