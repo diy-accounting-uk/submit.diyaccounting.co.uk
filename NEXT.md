@@ -42,11 +42,10 @@ Wave 3 runs as concurrent worktree sub-agents:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
-| DIYA-GL naming, the client and the toggle | B71.S3c | Sonnet | `.claude/worktrees/w-naming3c` | `claude/b18-naming3c` |
-| The main API's wildcard CORS | B86 | Sonnet | `.claude/worktrees/w-edgecors` | `claude/b18-edgecors` |
+| Deploy concurrency keyed on the environment | B90 | Sonnet | `.claude/worktrees/w-deployconc` | `claude/b18-deployconc` |
 
 Merged into the batch, off this list when its checks pass: B78b, B87's verifier, labels and
-CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f.
+CODEOWNERS, B11.T23, B89, B71.S3b, B71.S3f, B71.S3c, B86.
 
 `PLAN_DIYA_GL_NAMING.md` fixes the naming order at S3b, S3c, S3d, S3e, each rebasing on the
 previous merge. S3c is the row a sibling repository holds live names from — the toggle flag, the
@@ -64,6 +63,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B90. A deploy's concurrency group names the branch, not the environment.** B85 keyed every
+  workflow on `${{ github.ref }}`, which is right for `test` and `codeql`, where two branches' runs
+  are independent, and wrong for a deploy, because every branch deploys the same ci environment.
+  The sibling spreadsheets repository hit it: two branch deploys six seconds apart, different
+  concurrency groups, and CloudFormation answered "Stack ci-spreadsheets-SpreadsheetsStack is in
+  UPDATE_IN_PROGRESS state and can not be updated". All three of ours are keyed the same way and
+  have escaped it only because one batch branch has been running at a time. The group has to name
+  the thing being changed, not the thing changing it. `deploy-environment.yml` is the clear case.
+  `deploy.yml` is subtler: its `{deployment}-app-*` stack names are unique per commit so the stacks
+  do not race, while the same run writes the last-known-good SSM parameter, sets origins and
+  toggles Cognito native auth, which are shared within the environment. The destroy workflows are
+  in scope too, because a destroy racing a deploy is the same bug with worse consequences.
+  `cancel-in-progress` stays `false` everywhere that deploys: queueing strictly reduces
+  cancellation. **Source**: the spreadsheets repository, 2026-09-10. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -102,12 +116,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B71.S3c. DIYA-GL naming: the Cognito client, the SSM parameter and the toggle flag.**
-  `{env}-env-books-client` to `-diya-gl-client`, `/submit/{env}/spreadsheets-books-app-client-id`
-  to `-diya-gl-app-client-id`, `--client books` to `--client diya-gl`, each with the window
-  S3a sets so the spreadsheets side switches before the old name goes. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code. **Model**: Sonnet. The
-  spreadsheets side switches after ours, so nothing gates this.
 - [ ] **B71.S3d. DIYA-GL naming: the API routes.** `/api/v1/books`, `/api/v1/books/{bookId}`
   and `/api/v1/books/{bookId}/versions/{version}` to their `diya-gl` forms in `EdgeStack.java`,
   `SubmitApplication.java`, `openapi.json`, `submit.catalogue.toml` and the handlers, both
@@ -133,17 +141,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
-- [ ] **B86. The main API stamps `access-control-allow-origin: *` on every response.**
-  `EdgeStack.java`'s `webResponseHeadersPolicy` sets it with `override(true)` on the whole
-  `/api/v1/*` CloudFront behaviour, so it lands on every response whatever API Gateway or the
-  Lambda underneath returned. That is why the authoriser's 401 was only visible on the DIYA-GL
-  routes: those deliberately opted out of the stamp to keep a strict origin allow list and expose
-  `ETag`. A wildcard is not credential-bearing, and these routes carry a bearer token rather than
-  a cookie, so this is not the same defect B76 fixed. It is still a decision nobody has made on
-  purpose: any origin can read a main-API response from a browser holding a token. Settle whether
-  the main API gets the same allow list the storage routes use, or whether the wildcard is the
-  intended answer for a public API, and write down which. Found while fixing B76. **Source**:
-  B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
 
 ## Ready: operator
 
