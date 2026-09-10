@@ -42,7 +42,7 @@ authoriser rejecting a caller on a route that exists. The spreadsheets repositor
 now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
 internal.
 
-Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's remaining wave:
+Batch 22 is PR #179 on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's remaining wave:
 
 - [ ] **B102. The destroy's safety refusal no longer stops the destroy.** `destroy prod from main`
   run 34512145857, job 102988742496, dispatched 18:05 UTC on 2026-09-10. Step 10, "Refuse to destroy
@@ -82,7 +82,7 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's 
   nothing and finished green, so the log reads exactly like a destroy that worked. Fix it here:
   after the name is validated, count the stacks it matches and fail when the count is zero.
 
-  **Code complete** on `claude/b22-board` (merge 6b5d22aa), worktree removed. Waits on CI.
+  **Code complete** on `claude/b22-board` (merge 6b5d22aa), worktree removed. Waits on PR #179's checks.
 
   It grew one row while being fixed: `destroy-ci.yml` had no refusal step at all. A comment in that
   file already warned against widening the guards around a "Refuse to destroy" check that did not
@@ -101,7 +101,7 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's 
   run 34511779119, job log. **Owner**: Claude Code. **Model**: Sonnet.
 
   **Code complete** on `claude/b22-board` (merge 93439d51), worktree removed. 2551 unit tests pass on
-  the merged tree. Waits on CI and on a prod deploy to prove it against the real HMRC sandbox.
+  the merged tree. Waits on PR #179's checks and on a prod deploy to prove it against the real HMRC sandbox.
 
   It was not a flaky test. `initiateProcessing` in `app/services/asyncApiServices.js` wrote the
   `processing` marker fire-and-forget, deliberately, so the request did not wait on DynamoDB. Both
@@ -122,7 +122,7 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's 
   same mechanism, which is new work rather than another key. **Source**: B90's finding,
   2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
 
-  **Code complete** on `claude/b22-board` (merge 788839ae), worktree removed. Waits on CI.
+  **Code complete** on `claude/b22-board` (merge 788839ae), worktree removed. Waits on PR #179's checks.
 
   A standalone `destroy-prod` run now waits for a running prod `deploy.yml`, polling rather than
   sharing a concurrency group, which is the deadlock B90 hit. `deploy.yml` passes
@@ -157,7 +157,14 @@ Batch 22 is on `claude/b22-board`, worktree `.claude/worktrees/b22`. Batch 22's 
   **Source**: this batch's investigation, 2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
   Sequenced after B92, which holds `deploy.yml`.
 
-  **In flight** in `.claude/worktrees/b22-destruct-clock` on `worktree-agent-destruct-clock`, off `claude/b22-board`. Dispatched once B92 freed `deploy.yml`.
+  **Code complete** on `claude/b22-board` (merge a111f477), worktree removed. Waits on PR #179's checks.
+
+  The start time now derives from the `SelfDestructStack`'s CloudFormation `CreationTime`, which
+  survives updates, so a redeploy no longer moves it. Prod never deploys that stack and is
+  unaffected. `SELF_DESTRUCT_DELAY_HOURS` is forwarded through `deploy-cdk-stack.yml`, so the
+  stack stops falling back to `cdk.json`'s `1`, and `destroy-ci.yml`'s `8` is renamed
+  `SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS` because a sweep's minimum age is a different thing from a
+  destruct delay.
 
 A worktree agent runs `npm run bundle` before any unit, system or browser suite:
 `web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
