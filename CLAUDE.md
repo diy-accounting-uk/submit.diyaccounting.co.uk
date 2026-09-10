@@ -65,6 +65,7 @@ convenience — gitignored, recreate with `ln -s` if missing.
 
 - `.claude/skills/plain-prose/SKILL.md` — writing rules for plain, human prose; follow this for all human-facing text (docs, comments, chat)
 - `.claude/skills/do-next/SKILL.md` — dispatch `NEXT.md`'s open items as worktree-isolated sub-agents
+- `.claude/skills/watch/SKILL.md` — watch GitHub CI on main and every open PR's head branch until the whole scope is green, and fix what goes red; invoke as `/watch`
 - `.claude/skills/stripe-catalogue-sync/SKILL.md` — sync Stripe products and prices from the bundle catalogue, test then live, and land the price ids
 - `.claude/skills/site-video-capture/SKILL.md` — record a video of the real site from a scene script (`videos/*.json`)
 - `.claude/skills/video-publish/SKILL.md` — publish the recordings to the YouTube channel: fetch them from their capture runs, check them, upload unlisted with the stored credentials, flip public; carries the once-per-project console walk-through
