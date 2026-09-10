@@ -179,6 +179,7 @@ class IdentityStackTest {
         Template template = Template.fromStack(stack);
 
         template.hasOutput("BooksUserPoolClientId", Match.anyValue());
+        template.hasOutput("DiyaGlUserPoolClientId", Match.anyValue());
         template.hasResourceProperties(
                 "AWS::SSM::Parameter",
                 Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-diya-gl-app-client-id")));

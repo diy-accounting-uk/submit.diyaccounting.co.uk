@@ -431,7 +431,7 @@ metered = false
 # The DIYA-GL storage PUT route (app/services/diyaGlEntitlement.js) checks the resident-diya-gl bundle
 # id directly rather than reading this activity, so this entry documents the entitlement
 # without adding a second enforcement path.
-paths = ["^/api/v1/books.*"]
+paths = ["^/api/v1/(books|diya-gl).*"]
 
 [[activities]]
 id = "my-receipts"
