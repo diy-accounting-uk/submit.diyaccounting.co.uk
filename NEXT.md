@@ -52,7 +52,7 @@ Wave 1 runs as eight concurrent worktree sub-agents, each on its own branch off
 | Workflow concurrency | B85 | Haiku | `.claude/worktrees/w-concurrency` | `claude/b17-concurrency` |
 
 Merged into the batch, off this list when the branch's checks pass: B79, B81, B82, B80's
-submit half, B85, B30t.
+submit half, B85, B30t, B76.
 
 Wave 2 takes the DIYA-GL deployed-identifier chain (B71.S3b to S3e, serialized, one worktree) and
 the ITSA phase 2 tracks (B11.T20 first, then T11 to T14 on the shared spine). It branches off
@@ -130,14 +130,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B76. An expired token on the storage routes reads as a CORS failure.** The DIYA-GL JWT
-  authoriser's `401` is answered by API Gateway before any Lambda runs, so no handler can put a
-  CORS header on it and the browser reports a CORS block rather than the real status. This is
-  the remainder of B72's second half, which fixed every error the handlers themselves return.
-  Add an authoriser response mapping, or a gateway-response CORS configuration, in
-  `ApiStack.java`, and prove it by sending an expired token from an allow-listed origin and
-  reading a `401` with `access-control-allow-origin` set. **Source**: B72's fix, 2026-09-09.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B78. `alarm-triage.yml` has never succeeded.** Every one of the five comments it has
   posted since it shipped is an error: Bedrock Marketplace access denied, the Anthropic use-case
   form not submitted, and three parse failures. Its configuration reads as a working
@@ -217,6 +209,17 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
+- [ ] **B86. The main API stamps `access-control-allow-origin: *` on every response.**
+  `EdgeStack.java`'s `webResponseHeadersPolicy` sets it with `override(true)` on the whole
+  `/api/v1/*` CloudFront behaviour, so it lands on every response whatever API Gateway or the
+  Lambda underneath returned. That is why the authoriser's 401 was only visible on the DIYA-GL
+  routes: those deliberately opted out of the stamp to keep a strict origin allow list and expose
+  `ETag`. A wildcard is not credential-bearing, and these routes carry a bearer token rather than
+  a cookie, so this is not the same defect B76 fixed. It is still a decision nobody has made on
+  purpose: any origin can read a main-API response from a browser holding a token. Settle whether
+  the main API gets the same allow list the storage routes use, or whether the wildcard is the
+  intended answer for a public API, and write down which. Found while fixing B76. **Source**:
+  B76's fix, 2026-09-10. **Owner**: Claude Code to propose, Operator to choose. **Model**: Sonnet.
 
 ## Ready: operator
 
