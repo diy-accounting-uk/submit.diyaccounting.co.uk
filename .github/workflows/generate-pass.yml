@@ -120,7 +120,13 @@ env:
   AWS_REGION: eu-west-2
 
 concurrency:
-  group: generate-pass-${{ github.ref }}
+  # deploy.yml calls this workflow ('generate-test-pass') with `uses:`, and a reusable workflow's
+  # own concurrency block runs in the CALLER's context — so `github.ref` alone would put the
+  # delegated call in the same group as a standalone push or workflow_dispatch run on that same
+  # branch, and whichever started later cancels the other. `github.workflow` tells them apart: it
+  # is the name of the top-level triggering workflow, 'Generate Pass' standalone and 'deploy' for
+  # a call from deploy.yml. Same fix as test.yml's concurrency group, for the same reason.
+  group: generate-pass-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
