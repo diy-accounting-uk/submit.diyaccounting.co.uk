@@ -229,8 +229,7 @@ class SubmitApplicationCdkResourceTest {
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
         // The new diya-gl paths are the primary routes; the old books paths are served alongside
-        // them for the window (see PLAN_DIYA_GL_NAMING.md), and removed once the spreadsheets
-        // site's own deploy has switched its calls over.
+        // them permanently, since the spreadsheets site's cloud.js keeps calling the old paths.
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
         apiStackTemplate.hasResourceProperties(
@@ -273,8 +272,8 @@ class SubmitApplicationCdkResourceTest {
         // /api/v1/hmrc/itsa/bsas/self-employment/adjust each add their own route plus their own
         // automatic HEAD route, since none of the three paths is shared, for 100 + 2 + 2 + 2 = 106,
         // and the earlier count of 112 (106 plus the WAF-explored figure above). Each of the four
-        // DIYA-GL storage routes now also answers on /api/v1/books, its old path, for the window:
-        // the same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
+        // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
+        // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
         // another 10 routes, bringing the total to 112 + 10 = 122.
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 122);
 

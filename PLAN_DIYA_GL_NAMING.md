@@ -142,6 +142,15 @@ accepts both the new stamp and the two old ones, so every file saved so far stil
 generated provenance data and the checked-in `examples/parity/*/report.json` follow at the next
 generate run. This lands in NM-4 (spreadsheets); nothing in Submit reads the stamp.
 
+## Decision: the API route prefixes
+
+Decided by the operator on 2026-09-10: both `/api/v1/books/*` and `/api/v1/diya-gl/*` are served
+permanently. The old prefix is never retired, and the spreadsheets repository's `cloud.js` keeps
+calling `/api/v1/books` — it does not need to change, now or later. The route path is a code
+identifier customers never see. Retiring it bought only tidiness, and the cross-repo sequencing it
+needed cost more than that tidiness was worth. Serving both permanently removes the sequencing
+surface between the two repositories entirely.
+
 ## Class 4 design: order, windows and the bucket
 
 Read from the code and from the live accounts on 2026-09-09. Four facts settle almost everything.
@@ -176,6 +185,7 @@ versions and no delete markers. `ci-env-books-367191799875` holds only behaviour
 - **in-place** — an env-stack property that updates without replacing its resource, or an
   identifier no other repository or deployed resource reads.
 - **dual** — both names live at once for a stated window, then the old one goes.
+- **permanent** — both names are served forever. There is no retirement step.
 - **replace** — the resource is deleted and recreated. Only the S3 bucket is in this class.
 
 ### Every identifier, its class and its row
@@ -199,7 +209,7 @@ versions and no delete markers. `ci-env-books-367191799875` holds only behaviour
 | CFN output `BooksUserPoolClientId` | `DiyaGlUserPoolClientId` | `toggle-cognito-native-auth.js`, `probe-test.yml` via `stack-output.js` | dual | S3c adds, S3d removes |
 | SSM parameter `/submit/{env}/spreadsheets-books-app-client-id` | `spreadsheets-diya-gl-app-client-id` | no workflow or script in either repository | in-place | S3c |
 | `--client books` flag | `--client diya-gl` | the spreadsheets ci run, once their LP-24 lands | dual | S3c adds, S3d removes |
-| Routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | the `diya-gl` forms | `cloud.js` on the spreadsheets site, including copies held by installed service workers | dual | S3d |
+| Routes `/api/v1/books`, `/api/v1/books/{bookId}`, `/api/v1/books/{bookId}/versions/{version}` | the `diya-gl` forms, added beside the `books` forms | `cloud.js` on the spreadsheets site, including copies held by installed service workers | permanent | S3d |
 | Cognito callback and logout URLs under `/books/` on the spreadsheets hosts | whatever path their NM-3 moves the pages to | the pages themselves | dual | S3d |
 | S3 bucket `{env}-env-books-{account}`, `booksBucketName`, `booksBucketArn`, output `BooksBucketName` | `{env}-env-diya-gl-{account}` and the `diyaGl` forms | `BackupStack`'s selection ARN | replace | S3e |
 
@@ -253,22 +263,8 @@ goes in S3d. What proves it unused is that the spreadsheets workflow file names 
 LP-24 row, which adds the only call site, is in flight and has not landed: if it lands after S3c it
 should be written as `--client diya-gl` from the start and this window never opens.
 
-**The API routes.** All four paths are served under both prefixes from S3d's first deploy. Our side
-switches first, and must reach prod before the spreadsheets side changes `cloud.js`. The old paths
-cannot go in the same release: their DIYA-GL pages are a PWA, and `sw.js` precaches `cloud.js`
-against a build stamp, so a browser that has not picked up the new service worker keeps calling
-`/api/v1/books` after their deploy. What proves the old paths unused is the API access log group
-`/aws/apigw/{env}-env/access`, which records `routeKey` on every request and lives at environment
-level, so it survives set rotation. The old paths go once a Logs Insights query over the prod group
-returns zero rows for a full seven days after the spreadsheets deploy:
-
-```
-fields @timestamp, routeKey
-| filter routeKey like /\/api\/v1\/books/
-| stats count() by routeKey
-```
-
-That removal is a follow-on deploy of S3d, not a new row.
+**The API routes.** All four paths are served under both prefixes from S3d's first deploy. Both
+prefixes stay served forever. See "Decision: the API route prefixes" above.
 
 **The Cognito callback and logout URLs.** Cognito matches each URL exactly, so both the `/books/`
 set and the new set are listed in `buildBooksUrls` while the spreadsheets pages move. Their side
@@ -281,10 +277,10 @@ the one window driven by their NM-3 rather than by anything else in this table.
 `ApiStack.createRouteForLambda` builds one route per `AbstractApiLambdaProps` entry and keys its
 construct ids off method plus path, so a second entry for the same function with a different
 `urlPath` produces a second route on the same integration with no id collision. S3d serves both
-prefixes by giving the DIYA-GL stack's `lambdaFunctionProps` eight entries instead of four for the
-window, the extra four differing only in `urlPath`. `EdgeStack` gains a second CloudFront behaviour
-`/api/v1/diya-gl/*` on the same policies. `submit.catalogue.toml`'s licensing pattern becomes
-`^/api/v1/(books|diya-gl).*` for the window. `openapi.json` is generated by `OpenApiGenerator` from
+prefixes permanently by giving the DIYA-GL stack's `lambdaFunctionProps` eight entries instead of
+four, the extra four differing only in `urlPath`. `EdgeStack` gains a second, permanent CloudFront
+behaviour `/api/v1/diya-gl/*` on the same policies. `submit.catalogue.toml`'s licensing pattern is
+`^/api/v1/(books|diya-gl).*`. `openapi.json` is generated by `OpenApiGenerator` from
 `SubmitSharedNames`, so it follows on the next `mvnw` run and is never hand-edited.
 
 ### The bucket: renamed
@@ -327,16 +323,13 @@ recovery point; then remove the old bucket from `DataStack`, which empties and d
 
 ### What the spreadsheets repository has to do, and when
 
-Three cut-over points. Each waits for a deploy of ours, not for a merge.
+Two cut-over points. Each waits for a deploy of ours, not for a merge. `cloud.js` keeps calling
+`/api/v1/books` — the routes are permanent, so there is nothing to change there.
 
 1. **After S3c reaches prod**: if their LP-24 step exists by then, change
    `toggle-cognito-native-auth.js ... --client books` to `--client diya-gl`. If LP-24 has not landed
    yet, write it as `--client diya-gl` from the start and there is nothing to change later.
-2. **After S3d reaches prod**: change the four `apiFetch` calls in
-   `web/spreadsheets.diyaccounting.co.uk/public/books/cloud.js` (lines 805, 842, 881, 974) from
-   `/books...` to `/diya-gl...`, and deploy. Not before: the new paths do not answer until our
-   deploy completes. Their deploy starts the seven-day clock on our old paths.
-3. **Around their own NM-3**, whenever they run it: tell us the new page paths before they deploy
+2. **Around their own NM-3**, whenever they run it: tell us the new page paths before they deploy
    them, so `IdentityStack.buildBooksUrls` can register both sets of callback and logout URLs first.
    Cognito rejects a redirect to a URL it does not hold, so their pages cannot move ahead of our env
    deploy.
@@ -374,7 +367,7 @@ then Sonnet to carry out that design.
 | NM-2 | 1, prose | Haiku | none | the 16 files in the spreadsheets class 1 table above, plus the 46 test files' titles |
 | NM-3 | 2, public paths | Sonnet | none | `public/books/**`, `public/download.html`, `app/bin/build-diya-gl-spec.js`, `app/lib/app-resources.js`, `redirects.toml`, the CloudFront function |
 | NM-4 | 3, same-repo code | Sonnet | none | `app/lib/books-engine.js`, `app/lib/books-interchange.js`, `scripts/build-books-bundle.mjs`, the 46 test filenames, `public/download.html`'s DOM ids, `public/books/books-events.js`, `public/books/books.css`, and the `"diya-gl-books"` format-string special case (needs a version bump and a back-compat reader) |
-| NM-5 | 4, cross-repo | Opus (design), then Sonnet | NM-S3 | `public/books/cloud.js`, `PLAN_DIYA_GL_CLOUD_PAGE.md`, `NEXT.md`'s LP-24 row, against the shared class-4 table above |
+| NM-5 | 4, cross-repo | Opus (design), then Sonnet | NM-S3 | `PLAN_DIYA_GL_CLOUD_PAGE.md`, `NEXT.md`'s LP-24 row, against the shared class-4 table above |
 
 ### Submit (Submit's NEXT.md)
 
