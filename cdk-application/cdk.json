@@ -16,7 +16,7 @@
     "googleClientSecretArn": "",
     "userPoolArn": "",
     "userPoolClientId": "",
-    "booksUserPoolClientId": "",
+    "diyaGlUserPoolClientId": "",
     "cloudTrailEnabled": "true",
     "subDomainName": "submit",
     "baseImageTag": "latest",

@@ -17,20 +17,20 @@ import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Match;
 import software.amazon.awscdk.assertions.Template;
 
-class BooksStackTest {
+class DiyaGlStackTest {
 
     private static final String BOOKS_BUCKET_NAME = "docs-env-books-111111111111";
     private static final String BOOKS_ALLOWED_ORIGINS =
             "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
 
-    private static BooksStack synthBooksStack() {
+    private static DiyaGlStack synthDiyaGlStack() {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
-        return new BooksStack(
+        return new DiyaGlStack(
                 app,
-                "TestBooksStack",
-                BooksStack.BooksStackProps.builder()
+                "TestDiyaGlStack",
+                DiyaGlStack.DiyaGlStackProps.builder()
                         .env(Environment.builder()
                                 .account("111111111111")
                                 .region("eu-west-2")
@@ -49,15 +49,15 @@ class BooksStackTest {
 
     @Test
     void stackWiresFourLambdas() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         template.resourceCountIs("AWS::Lambda::Function", 4);
         for (String functionName : List.of(
-                stack.booksListGetLambdaProps.ingestFunctionName(),
-                stack.booksVersionGetLambdaProps.ingestFunctionName(),
-                stack.booksPutLambdaProps.ingestFunctionName(),
-                stack.booksDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -65,14 +65,14 @@ class BooksStackTest {
 
     @Test
     void everyFunctionGetsTheBucketNameAllowedOriginsAndEnvironmentName() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.booksListGetLambdaProps.ingestFunctionName(),
-                stack.booksVersionGetLambdaProps.ingestFunctionName(),
-                stack.booksPutLambdaProps.ingestFunctionName(),
-                stack.booksDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function",
                     Match.objectLike(Map.of(
@@ -82,48 +82,48 @@ class BooksStackTest {
                             Match.objectLike(Map.of(
                                     "Variables",
                                     Match.objectLike(Map.of(
-                                            "BOOKS_BUCKET_NAME", BOOKS_BUCKET_NAME,
+                                            "DIYA_GL_BUCKET_NAME", BOOKS_BUCKET_NAME,
                                             "ENVIRONMENT_NAME", "docs",
-                                            "BOOKS_ALLOWED_ORIGINS", BOOKS_ALLOWED_ORIGINS)))))));
+                                            "DIYA_GL_ALLOWED_ORIGINS", BOOKS_ALLOWED_ORIGINS)))))));
         }
     }
 
     @Test
     void thePutFunctionGetsQuotaAndEntitlementEnvironmentVariables() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         template.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
                         "FunctionName",
-                        stack.booksPutLambdaProps.ingestFunctionName(),
+                        stack.diyaGlPutLambdaProps.ingestFunctionName(),
                         "Environment",
                         Match.objectLike(Map.of(
                                 "Variables",
                                 Match.objectLike(Map.of(
-                                        "BOOKS_MAX_BYTES", "2097152",
-                                        "BOOKS_MAX_PER_USER", "20",
-                                        "BOOKS_VERSIONS_KEPT", "30",
-                                        "BOOKS_ENTITLEMENT_ENFORCED", "false",
-                                        "BOOKS_BUNDLE_ID", "resident-diya-gl",
+                                        "DIYA_GL_MAX_BYTES", "2097152",
+                                        "DIYA_GL_MAX_PER_USER", "20",
+                                        "DIYA_GL_VERSIONS_KEPT", "30",
+                                        "DIYA_GL_ENTITLEMENT_ENFORCED", "false",
+                                        "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
     }
 
     @Test
     void onlyThePutFunctionGetsWriteAccessToTheBucket() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         assertTrue(
-                iamStatementsForFunction(template, stack.booksPutLambdaProps.ingestFunctionName()).stream()
+                iamStatementsForFunction(template, stack.diyaGlPutLambdaProps.ingestFunctionName()).stream()
                         .anyMatch(statement -> actionsOf(statement).contains("s3:PutObject")),
                 "expected the put function to have s3:PutObject");
 
         for (String functionName : List.of(
-                stack.booksListGetLambdaProps.ingestFunctionName(),
-                stack.booksVersionGetLambdaProps.ingestFunctionName(),
-                stack.booksDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
             assertTrue(
                     iamStatementsForFunction(template, functionName).stream()
                             .noneMatch(statement -> actionsOf(statement).contains("s3:PutObject")),
@@ -133,14 +133,14 @@ class BooksStackTest {
 
     @Test
     void noFunctionGetsWildcardS3Access() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.booksListGetLambdaProps.ingestFunctionName(),
-                stack.booksVersionGetLambdaProps.ingestFunctionName(),
-                stack.booksPutLambdaProps.ingestFunctionName(),
-                stack.booksDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
             assertTrue(
                     iamStatementsForFunction(template, functionName).stream()
                             .noneMatch(statement -> actionsOf(statement).contains("s3:*")),
@@ -150,14 +150,14 @@ class BooksStackTest {
 
     @Test
     void everyFunctionHasSaltSecretAccess() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.booksListGetLambdaProps.ingestFunctionName(),
-                stack.booksVersionGetLambdaProps.ingestFunctionName(),
-                stack.booksPutLambdaProps.ingestFunctionName(),
-                stack.booksDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
             assertTrue(
                     iamStatementsForFunction(template, functionName).stream()
                             .anyMatch(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue")),
@@ -167,11 +167,11 @@ class BooksStackTest {
 
     @Test
     void outputsCarryTheApiBaseUrl() {
-        BooksStack stack = synthBooksStack();
+        DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
         String expectedBaseUrl = SubmitSharedNames.forDocs().publicBaseUrl + "api/v1/books";
 
-        template.hasOutput("BooksApiBaseUrl", Match.objectLike(Map.of("Value", expectedBaseUrl)));
+        template.hasOutput("DiyaGlApiBaseUrl", Match.objectLike(Map.of("Value", expectedBaseUrl)));
     }
 
     @SuppressWarnings("unchecked")

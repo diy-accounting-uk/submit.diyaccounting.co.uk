@@ -34,7 +34,7 @@ import software.amazon.awscdk.assertions.Template;
             key = "COGNITO_USER_POOL_ARN",
             value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
     @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
-    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
+    @SetEnvironmentVariable(key = "COGNITO_DIYA_GL_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
     @SetEnvironmentVariable(
             key = "HMRC_CLIENT_SECRET_ARN",
             value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/client_secret"),
@@ -416,8 +416,8 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
-    @SetEnvironmentVariable(key = "COGNITO_BOOKS_CLIENT_ID", value = "")
-    void shouldThrowWhenBooksUserPoolClientIdIsBlank() throws IOException {
+    @SetEnvironmentVariable(key = "COGNITO_DIYA_GL_CLIENT_ID", value = "")
+    void shouldThrowWhenDiyaGlUserPoolClientIdIsBlank() throws IOException {
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
         Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
         App app = new App(AppProps.builder().context(ctx).build());
@@ -425,7 +425,7 @@ class SubmitApplicationCdkResourceTest {
 
         IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalStateException.class, () -> new SubmitApplication(app, appProps));
-        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_BOOKS_CLIENT_ID"));
+        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_DIYA_GL_CLIENT_ID"));
         org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("spreadsheets-books-app-client-id"));
     }
 
