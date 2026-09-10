@@ -206,6 +206,13 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
 
 // Native Cognito authentication via the Cognito Hosted UI email/password form
 export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath = defaultScreenshotPath) {
+  if (!testAuthUsername) {
+    // A missing username reaches here as null, which keyboard.type() rejects with the opaque
+    // "text: expected string, got object" (typeof null === "object"). Fail with the actual
+    // cause instead: TEST_AUTH_USERNAME wasn't set, usually because an earlier setup step
+    // (e.g. the Cognito test-user step in probe-test.yml) didn't run or was skipped.
+    throw new Error("fillInHostedUINativeAuth: testAuthUsername is missing (TEST_AUTH_USERNAME not set)");
+  }
   await test.step("The user enters their credentials on the Cognito Hosted UI", async () => {
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
 
