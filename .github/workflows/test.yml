@@ -80,7 +80,16 @@ on:
     - cron: '23 4 * * *'
 
 concurrency:
-  group: test-${{ github.ref }}
+  # deploy.yml calls this workflow ('delegate to test workflow') with `uses:`, and a reusable
+  # workflow's own concurrency block runs in the CALLER's context — so `github.ref` alone would
+  # put the delegated call in the same group as the standalone push-triggered run on that same
+  # branch, and whichever started later cancels the other. `github.workflow` tells them apart:
+  # it is the name of the top-level triggering workflow, so it reads 'test' for a standalone run
+  # and 'deploy' for a call from deploy.yml. Keying on both keeps this workflow's own cancel-the-
+  # superseded-push behaviour (same `github.workflow`, same `github.ref`) while a delegated call
+  # never shares a group with, and so never cancels or is cancelled by, the standalone run. Same
+  # shape as destroy-prod.yml's caller/callee group split — see its concurrency comment.
+  group: test-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
