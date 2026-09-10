@@ -117,6 +117,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
   keeps only one run queued per group and drops the older one when a third arrives. Prod needs the
   same mechanism, which is new work rather than another key. **Source**: B90's finding,
   2026-09-10. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B96. The deployment role holds AdministratorAccess, and B30t just made it quieter.**
+  `submit-ci-deployment-role` carries exactly one policy, the AWS managed
+  `arn:aws:iam::aws:policy/AdministratorAccess`, with no inline policies. Every GitHub Actions
+  deploy runs as that. On its own that is a known shape and BACKLOG 33 already asks the same
+  question of `submit-backup`'s SSO policy. What makes it worth its own row is what landed beside
+  it today: B30t excluded any principal whose role name starts with the environment prefix from the
+  CIS route-table and S3-bucket-policy alarms, to stop a CDK-generated per-stack helper role opening
+  an issue on every deploy. That exclusion was the right fix for the noise, and it means those two
+  alarms no longer see an identity that can do anything in the account. The compensating control is
+  `cis-iam-policy-changes`, which still fires on the grant itself, so the gap is narrower than it
+  first reads — but nobody chose this combination deliberately. Work out what the deploy actually
+  needs and whether a scoped policy is reachable without breaking a CDK bootstrap, or record why
+  AdministratorAccess stays and what watches it. **Source**:
+  `iam list-attached-role-policies` on submit-ci, 2026-09-10; B30t's exclusion. **Owner**: Claude
+  Code to propose, Operator to choose. **Model**: Sonnet.
 
 ## Ready: operator
 
@@ -126,26 +141,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
-- [ ] **O41. Refresh the AWS SSO session.** It expired at about 06:40 UTC and every `aws` call has
-  failed since, which blocks B52x's read of the first raw export and leaves one CI failure
-  undiagnosed: `ci-env-ObservabilityStack` answered `Unable to fetch parameters
-  [/submit/ci/last-known-good-deployment] from parameter store for this account` at changeset
-  creation. That parameter does exist and read fine earlier today, the deployment role in the log is
-  the right one, and nothing in batch 18's diff touches IAM, the account, the region or that
-  parameter's name — so the likeliest reading is a live AWS-side condition rather than a regression,
-  and it cannot be settled without a session. The command:
-
-  ```
-  ! aws sso login --sso-session diyaccounting
-  ```
-
-  Then this settles it:
-
-  ```
-  ! aws --profile submit-ci iam simulate-principal-policy --policy-source-arn arn:aws:iam::367191799875:role/submit-ci-deployment-role --action-names ssm:GetParameters --resource-arns arn:aws:ssm:eu-west-2:367191799875:parameter/submit/ci/last-known-good-deployment
-  ```
-
-  **Source**: run 34454796683. **Owner**: Operator. **Model**: none.
 - [ ] **O35. Close three alarm issues.** #164 (`prod-env-hmrc-submission-failure`): the customer
   chose a period HMRC had no obligation for, retried and was accepted at 14:40 UTC on 2026-09-09;
   nobody wrote to support and no reply is owed. #166 and #167 (the two CIS alarms): both fired on
