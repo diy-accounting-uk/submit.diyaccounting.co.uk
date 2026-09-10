@@ -43,15 +43,29 @@ export async function signInWithDiyaGlHostedUi(
     // The callback URL is a real DIYA-GL page whose own sign-in script (cloud.js) exchanges the
     // code and strips it from the address bar on load. Record the navigation request that
     // carries the code, and serve that script empty so the page leaves the code alone.
-    const isCallback = (url) => url.toString().startsWith(redirectUri);
+    //
+    // The spreadsheets site is mid-move from books/ to diya-gl/, with a CloudFront redirect from
+    // the old prefix to the new one. Both prefixes are registered as Cognito callback URLs, so
+    // matching on redirectUri alone breaks the moment a redirect lands on the other prefix.
+    // Match on either prefix so this test survives the move in either direction.
+    const alternatePrefixRedirectUri = redirectUri.includes("/diya-gl/")
+      ? redirectUri.replace("/diya-gl/", "/books/")
+      : redirectUri.replace("/books/", "/diya-gl/");
+    const isCallback = (url) => {
+      const candidate = url.toString();
+      return candidate.startsWith(redirectUri) || candidate.startsWith(alternatePrefixRedirectUri);
+    };
     let callbackRequestUrl = null;
     const rememberCallback = (request) => {
-      if (request.isNavigationRequest() && request.url().startsWith(redirectUri)) {
+      if (request.isNavigationRequest() && isCallback(request.url())) {
         callbackRequestUrl = request.url();
       }
     };
     page.on("request", rememberCallback);
     await page.route("**/books/cloud.js", (route) =>
+      route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
+    );
+    await page.route("**/diya-gl/cloud.js", (route) =>
       route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
     );
 
@@ -67,6 +81,7 @@ export async function signInWithDiyaGlHostedUi(
     await page.waitForURL(isCallback, { timeout: 30_000 });
     page.off("request", rememberCallback);
     await page.unroute("**/books/cloud.js");
+    await page.unroute("**/diya-gl/cloud.js");
     const callbackUrl = new URL(callbackRequestUrl || page.url());
     const code = callbackUrl.searchParams.get("code");
     if (!code) {

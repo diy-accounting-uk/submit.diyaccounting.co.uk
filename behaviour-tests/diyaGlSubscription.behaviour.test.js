@@ -58,9 +58,9 @@ const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD
 const entitlementEnforced = getEnvVarAndLog("entitlementEnforced", "BOOKS_ENTITLEMENT_ENFORCED", null) === "true";
 
 // One of the four DIYA-GL page paths IdentityStack registers as a books-client callback/logout
-// URL (see BOOKS_PAGE_NAMES in IdentityStack.java). No such page is built yet — the callback URL
-// only needs to exist for Cognito's exact-match check, not to render anything.
-const diyaGlPageUrl = new URL("books/ltd.html", spreadsheetsBaseUrl).toString();
+// URL (see BOOKS_PAGE_NAMES in IdentityStack.java). The spreadsheets site serves these pages at
+// diya-gl/, not books/ — going straight to the real path means no redirect in the sign-in flow.
+const diyaGlPageUrl = new URL("diya-gl/ltd.html", spreadsheetsBaseUrl).toString();
 
 let mockOAuth2Process;
 let serverProcess;
