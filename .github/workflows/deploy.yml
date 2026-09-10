@@ -1348,7 +1348,6 @@ jobs:
           echo "API Gateway re-deployment complete"
         shell: bash
     outputs:
-      # TODO: Can this be derived from shared names?
       httpApiUrl: ${{ steps.api-outputs.outputs.HTTP_API_URL }}
       httpApiId: ${{ steps.api-outputs.outputs.HTTP_API_ID }}
 
