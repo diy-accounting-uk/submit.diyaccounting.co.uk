@@ -463,7 +463,7 @@ jobs:
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
           # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
-          COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
           # returns there; the ci client also lists localhost:3000 for local runs.
@@ -504,7 +504,7 @@ jobs:
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
           # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
-          COGNITO_BOOKS_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the spreadsheets site's pages, so the sign-in
           # returns there; the ci client also lists localhost:3000 for local runs.
