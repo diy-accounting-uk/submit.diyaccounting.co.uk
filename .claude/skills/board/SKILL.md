@@ -13,7 +13,36 @@ root). Read both files fresh every time — never render from memory of an earli
 
 ## Output shape
 
-Exactly five parts, in this order.
+A mode line, then exactly five parts, in this order.
+
+**The mode line — one line, before Part 1.** Two facts, because both change what the reader
+should do with everything below.
+
+**Cool-down.** `/cool-down` writes its marker at the top of `NEXT.md`'s `## In flight` section, and
+`/wake` deletes it:
+
+```bash
+grep -n "^\*\*COOL-DOWN is on since" NEXT.md
+```
+
+If it is there, say so and quote its timestamp: under cool-down nothing on the board should be
+dispatched, so a render that does not mention it invites exactly the wrong next move. If it is not,
+say nothing about it — an absent mode needs no announcement.
+
+**Monitors.** `/watch` runs a background poller. It is session-local, so a monitor another session
+started is not yours to report and yours does not survive this one:
+
+```bash
+pgrep -fl 'watch.sh' 2>/dev/null | head -5
+```
+
+Say whether one is running and over what scope, or that none is. This matters because a red in
+Part 1 or Part 3 reads differently depending on whether anything is watching it: an unwatched red
+needs an owner now, a watched one already has one.
+
+Neither fact belongs in a table. One sentence each, or one sentence for both when both are quiet —
+"no cool-down, no monitor running" is worth saying once, because its absence is otherwise
+indistinguishable from not having looked.
 
 **Part 1 — a table** covering every open item in `NEXT.md` plus every row in the
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
