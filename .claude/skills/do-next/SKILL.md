@@ -143,9 +143,16 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   wave is nearby, name it.
 - **The evidence, not just the task.** Paste the run ids, the log lines, the timestamps. An agent
   given a diagnosis it can verify beats one given a symptom to rediscover.
-- **Commit before the turn ends.** A sub-agent that backgrounds a verification and stops leaves an
-  uncommitted tree that vanishes with the worktree. Tell it to run verification in the foreground
-  so the result reaches its report, and to commit what it has either way.
+- **Commit before verifying, not after.** This is the instruction that matters most and the one
+  that is easiest to get wrong. A build like `./mvnw clean verify` runs for minutes, the harness
+  promotes a long command to the background, and that ends the agent's turn — so "run verification
+  in the foreground, then commit" is not a thing an agent can actually do. Told that, it stops with
+  the work uncommitted in a worktree, which is exactly how work is lost. Tell it instead: write the
+  change, commit it, then verify, and amend or add a fixing commit if the verification fails. A
+  commit that needs amending is recoverable; an uncommitted worktree is not.
+
+  For a suite that finishes in seconds — a targeted `vitest` run, a YAML parse, actionlint — verify
+  first and commit after, as normal. The inversion is for the long ones.
 - **Blast-radius testing only.** `npm run bundle` first for anything touching `app/` or `web/` —
   the bundle is gitignored and `pretest` fires only for a bare `npm test`, so without it nine
   unrelated tests fail on a missing file. Then the unit, system or browser tests its change
