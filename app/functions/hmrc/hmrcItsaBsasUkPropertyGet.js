@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/hmrc/hmrcItsaBsasTriggerPost.js
+// app/functions/hmrc/hmrcItsaBsasUkPropertyGet.js
 
 import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
-  parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
@@ -15,27 +14,28 @@ import {
   serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
-  hmrcHttpPost,
+  hmrcHttpGet,
   extractHmrcAccessTokenFromLambdaEvent,
-  generateHmrcErrorResponseWithRetryAdvice,
-  http400BadRequestFromHmrcResponse,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
   validateFraudPreventionHeaders,
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate } from "../../lib/hmrcValidation.js";
+import { isValidNino } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
-const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaBsasTriggerPost.js" });
+const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaBsasUkPropertyGet.js" });
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
@@ -43,76 +43,30 @@ const DEFAULT_WAIT_MS = 0;
 // Business Source Adjustable Summary v7.0 - the API version this endpoint requires.
 const HMRC_API_VERSION = "7.0";
 
-const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
-
-// The trigger endpoint is one endpoint for every income type this repository submits for;
-// typeOfBusiness in its body chooses which. Foreign property is not a journey this repository
-// builds, so it is not in this set even though HMRC's trigger accepts it too.
-const VALID_TYPES_OF_BUSINESS = ["self-employment", "uk-property"];
-
-/**
- * Build the Business Source Adjustable Summary v7.0 "Trigger a Business Source Adjustable
- * Summary" request body. typeOfBusiness comes from the caller - the trigger is shared by every
- * income type, so the picked business decides it rather than a fixed constant.
- * @param {Object} triggerDetails - accountingPeriodStartDate, accountingPeriodEndDate, businessId, typeOfBusiness
- * @returns {Object} the HMRC request body
- */
-export function buildBsasTriggerRequestBody(triggerDetails) {
-  return {
-    accountingPeriod: {
-      startDate: triggerDetails.accountingPeriodStartDate,
-      endDate: triggerDetails.accountingPeriodEndDate,
-    },
-    typeOfBusiness: triggerDetails.typeOfBusiness,
-    businessId: triggerDetails.businessId,
-  };
-}
+// HMRC's calculationId is either an 8-digit id or a UUID - see the BSAS 7.0 spec.
+const CALCULATION_ID_PATTERN = /^([0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/hmrc/itsa/bsas/trigger", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-  app.head("/api/v1/hmrc/itsa/bsas/trigger", async (httpRequest, httpResponse) => {
-    httpResponse.status(200).send();
-  });
+  registerLambdaRoute(app, "get", "/api/v1/hmrc/itsa/bsas/uk-property", ingestHandler);
 }
 /* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
-  const parsedBody = parseRequestBody(event);
-  const {
-    nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
-    runFraudPreventionHeaderValidation,
-  } = parsedBody || {};
+  const queryParams = event.queryStringParameters || {};
+  const { nino, calculationId, taxYear, runFraudPreventionHeaderValidation } = queryParams;
+  const { "Gov-Test-Scenario": testScenario } = queryParams;
 
-  if (!nino) errorMessages.push("Missing nino parameter from body");
+  if (!nino) errorMessages.push("Missing nino parameter");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
 
-  if (!businessId) errorMessages.push("Missing businessId parameter from body");
-  if (businessId && !BUSINESS_ID_PATTERN.test(businessId)) errorMessages.push("Invalid businessId format");
+  if (!calculationId) errorMessages.push("Missing calculationId parameter");
+  if (calculationId && !CALCULATION_ID_PATTERN.test(calculationId)) errorMessages.push("Invalid calculationId format");
 
-  if (!accountingPeriodStartDate) errorMessages.push("Missing accountingPeriodStartDate parameter from body");
-  if (accountingPeriodStartDate && !isValidIsoDate(accountingPeriodStartDate)) {
-    errorMessages.push("Invalid accountingPeriodStartDate format - must be YYYY-MM-DD");
-  }
-
-  if (!accountingPeriodEndDate) errorMessages.push("Missing accountingPeriodEndDate parameter from body");
-  if (accountingPeriodEndDate && !isValidIsoDate(accountingPeriodEndDate)) {
-    errorMessages.push("Invalid accountingPeriodEndDate format - must be YYYY-MM-DD");
-  }
-
-  if (!typeOfBusiness) errorMessages.push("Missing typeOfBusiness parameter from body");
-  if (typeOfBusiness && !VALID_TYPES_OF_BUSINESS.includes(typeOfBusiness)) {
-    errorMessages.push(`Invalid typeOfBusiness - must be one of ${VALID_TYPES_OF_BUSINESS.join(", ")}`);
-  }
+  if (!taxYear) errorMessages.push("Missing taxYear parameter");
+  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -126,10 +80,9 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   return {
     nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
+    calculationId,
+    taxYear,
+    testScenario,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
   };
@@ -144,13 +97,13 @@ export async function ingestHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME",
     "SQS_QUEUE_URL",
   ]);
 
   const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
-  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME;
   const sqsQueueUrl = process.env.SQS_QUEUE_URL;
 
   let errorMessages = [];
@@ -164,28 +117,12 @@ export async function ingestHandler(event) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
-  // If HEAD request, return 200 OK immediately after bundle enforcement
-  if (event?.requestContext?.http?.method === "HEAD") {
-    return http200OkResponse({
-      request,
-      headers: { "Content-Type": "application/json" },
-      data: {},
-    });
-  }
-
   const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event, { bundleIds });
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const {
-    nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
-    hmrcAccount,
-    runFraudPreventionHeaderValidation,
-  } = extractAndValidateParameters(event, errorMessages);
+  const { nino, calculationId, taxYear, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } =
+    extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -209,7 +146,7 @@ export async function ingestHandler(event) {
     return buildValidationError(request, [err.toString()], responseHeaders);
   }
 
-  const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario");
+  const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario") || testScenario;
 
   logger.info({ "Checking for test scenario": govTestScenarioHeader });
   if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
@@ -224,10 +161,8 @@ export async function ingestHandler(event) {
 
   const payload = {
     nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
+    calculationId,
+    taxYear,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -260,14 +195,10 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { triggerResult, hmrcResponse, hmrcResponseBody } = await triggerBsas(
+        const { bsas, hmrcResponse } = await getItsaBsasUkProperty(
           payload.nino,
-          {
-            businessId: payload.businessId,
-            accountingPeriodStartDate: payload.accountingPeriodStartDate,
-            accountingPeriodEndDate: payload.accountingPeriodEndDate,
-            typeOfBusiness: payload.typeOfBusiness,
-          },
+          payload.calculationId,
+          payload.taxYear,
           payload.hmrcAccessToken,
           payload.govClientHeaders,
           payload.testScenario,
@@ -283,10 +214,10 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
+          data: hmrcResponse.data,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
-
-        return { triggerResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+        return { bsas, hmrcResponse: serializableHmrcResponse };
       };
 
       result = await asyncApiServices.initiateProcessing({
@@ -316,7 +247,11 @@ export async function ingestHandler(event) {
     if (error instanceof asyncApiServices.RequestFailedError) {
       result = error.data;
     } else {
-      logger.error({ message: "Unexpected error during BSAS trigger", error: error.message, stack: error.stack });
+      logger.error({
+        message: "Unexpected error during BSAS UK property retrieval",
+        error: error.message,
+        stack: error.stack,
+      });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -326,28 +261,19 @@ export async function ingestHandler(event) {
     }
   }
 
-  // Map HMRC error responses to our HTTP responses. A 400 is the caller's to fix (a malformed
-  // accounting period, not a system fault), so it comes back as a 400 carrying HMRC's own
-  // message, the way hmrcItsaSelfEmploymentPeriodPost.js's createSelfEmploymentPeriod does.
+  // Map HMRC error responses to our HTTP responses
   if (result && result.hmrcResponse && !result.hmrcResponse.ok) {
-    if (result.hmrcResponse.status === 400) {
-      result.hmrcResponse.data = result.hmrcResponseBody;
-      return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
-    }
-    return generateHmrcErrorResponseWithRetryAdvice(
-      request,
-      result.hmrcResponse,
-      result.hmrcResponseBody,
-      hmrcAccessToken,
-      responseHeaders,
-    );
+    const status = result.hmrcResponse.status;
+    if (status === 403) return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
+    if (status === 404) return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
   }
 
   return asyncApiServices.respond({
     request,
     requestId,
     responseHeaders,
-    data: result ? result.triggerResult : null,
+    data: result ? result.bsas : null,
   });
 }
 
@@ -359,10 +285,10 @@ export async function workerHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME",
   ]);
 
-  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME;
 
   logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
@@ -394,14 +320,10 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
-      const { triggerResult, hmrcResponse, hmrcResponseBody } = await triggerBsas(
+      const { bsas, hmrcResponse } = await getItsaBsasUkProperty(
         payload.nino,
-        {
-          businessId: payload.businessId,
-          accountingPeriodStartDate: payload.accountingPeriodStartDate,
-          accountingPeriodEndDate: payload.accountingPeriodEndDate,
-          typeOfBusiness: payload.typeOfBusiness,
-        },
+        payload.calculationId,
+        payload.taxYear,
         payload.hmrcAccessToken,
         payload.govClientHeaders,
         payload.testScenario,
@@ -417,10 +339,11 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
+        data: hmrcResponse.data,
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
-      const result = { triggerResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+      const result = { bsas, hmrcResponse: serializableHmrcResponse };
 
       if (!hmrcResponse.ok) {
         // Distinguish retryable errors (e.g. 429, 503, 504)
@@ -498,9 +421,10 @@ function isRetryableError(error) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function triggerBsas(
+export async function getItsaBsasUkProperty(
   nino,
-  triggerDetails,
+  calculationId,
+  taxYear,
   hmrcAccessToken,
   govClientHeaders,
   testScenario,
@@ -527,14 +451,8 @@ export async function triggerBsas(
     });
   }
 
-  const hmrcRequestBody = buildBsasTriggerRequestBody(triggerDetails);
-
-  // hmrcHttpPost does not prepend the HMRC base URI itself - the caller builds the full URL,
-  // the way hmrcVatReturnPost.js's submitVat does.
-  const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/individuals/self-assessment/adjustable-summary/${nino}/trigger`;
+  const hmrcRequestUrl = `/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${calculationId}/${taxYear}`;
   let hmrcResponse = {};
-  let hmrcResponseBody;
   /* v8 ignore start */
   if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {
     logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
@@ -555,18 +473,16 @@ export async function triggerBsas(
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
-    hmrcResponse = httpResult.hmrcResponse;
-    hmrcResponseBody = httpResult.hmrcResponseBody;
+    hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
   }
 
   if (!hmrcResponse.ok) {
-    return { hmrcResponse, hmrcResponseBody, triggerResult: null };
+    return { hmrcResponse, bsas: null };
   }
   await publishActivityEvent({
-    event: "itsa-bsas-triggered",
-    summary: "ITSA business source adjustable summary triggered",
+    event: "itsa-bsas-uk-property-queried",
+    summary: "ITSA UK property business source adjustable summary retrieved",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, hmrcResponseBody, triggerResult: hmrcResponseBody, hmrcRequestUrl };
+  return { hmrcResponse, bsas: hmrcResponse.data, hmrcRequestUrl };
 }

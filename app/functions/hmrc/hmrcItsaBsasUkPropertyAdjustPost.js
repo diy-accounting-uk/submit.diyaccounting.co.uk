@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/hmrc/hmrcItsaBsasTriggerPost.js
+// app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js
 
 import { createLogger, context } from "../../lib/logger.js";
 import {
@@ -15,7 +15,7 @@ import {
   serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { buildHttpResponseFromLambdaResult, buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
@@ -28,14 +28,14 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate } from "../../lib/hmrcValidation.js";
+import { isValidNino } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
-const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaBsasTriggerPost.js" });
+const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js" });
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
@@ -43,75 +43,118 @@ const DEFAULT_WAIT_MS = 0;
 // Business Source Adjustable Summary v7.0 - the API version this endpoint requires.
 const HMRC_API_VERSION = "7.0";
 
-const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
-
-// The trigger endpoint is one endpoint for every income type this repository submits for;
-// typeOfBusiness in its body chooses which. Foreign property is not a journey this repository
-// builds, so it is not in this set even though HMRC's trigger accepts it too.
-const VALID_TYPES_OF_BUSINESS = ["self-employment", "uk-property"];
+// HMRC's calculationId is either an 8-digit id or a UUID - see the BSAS 7.0 spec.
+const CALCULATION_ID_PATTERN = /^([0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 /**
- * Build the Business Source Adjustable Summary v7.0 "Trigger a Business Source Adjustable
- * Summary" request body. typeOfBusiness comes from the caller - the trigger is shared by every
- * income type, so the picked business decides it rather than a fixed constant.
- * @param {Object} triggerDetails - accountingPeriodStartDate, accountingPeriodEndDate, businessId, typeOfBusiness
+ * An adjustment was rejected before it ever reached HMRC, because the body we would have sent
+ * is one HMRC always rejects (both zeroAdjustments and figures, or neither). Thrown from
+ * buildBsasUkPropertyAdjustRequestBody and turned into a 400 by the caller, the same way
+ * hmrcItsaBsasSelfEmploymentAdjustPost.js's BsasAdjustValidationError works.
+ */
+export class BsasUkPropertyAdjustValidationError extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "BsasUkPropertyAdjustValidationError";
+    this.code = code;
+  }
+}
+
+/**
+ * Round a money value to 2 decimal places, the way every amount in the Business Source
+ * Adjustable Summary v7.0 schema is specified ("up to 2 decimal places").
+ * @param {number|string} value
+ * @returns {number}
+ */
+function roundToTwoDecimalPlaces(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+}
+
+/**
+ * Build a money-valued section (income or expenses) for the HMRC request body. HMRC's spec
+ * makes each of these objects optional, but rejects an empty object at its path - so a section
+ * with no entered values must be left out of the body entirely, never sent as {}.
+ * @param {Object|undefined} section - the caller's object of numeric fields
+ * @returns {Object|undefined} the section with numeric values, or undefined if it has nothing in it
+ */
+function buildMoneySection(section) {
+  if (!section || typeof section !== "object") return undefined;
+  const entries = Object.entries(section).filter(([, value]) => value !== undefined && value !== null && value !== "");
+  if (entries.length === 0) return undefined;
+  return Object.fromEntries(entries.map(([key, value]) => [key, roundToTwoDecimalPlaces(value)]));
+}
+
+/**
+ * Build the Business Source Adjustable Summary v7.0 "Submit UK Property Accounting
+ * Adjustments" request body: everything wrapped in ukProperty, holding either income/expenses,
+ * or zeroAdjustments on its own. HMRC rejects a body carrying both forms and a body carrying
+ * neither, so both are rejected here rather than sent, the same way
+ * buildBsasAdjustRequestBody rejects them for self-employment.
+ * @param {Object} adjustDetails - income, expenses, zeroAdjustments
  * @returns {Object} the HMRC request body
  */
-export function buildBsasTriggerRequestBody(triggerDetails) {
-  return {
-    accountingPeriod: {
-      startDate: triggerDetails.accountingPeriodStartDate,
-      endDate: triggerDetails.accountingPeriodEndDate,
-    },
-    typeOfBusiness: triggerDetails.typeOfBusiness,
-    businessId: triggerDetails.businessId,
-  };
+export function buildBsasUkPropertyAdjustRequestBody(adjustDetails) {
+  const income = buildMoneySection(adjustDetails.income);
+  const expenses = buildMoneySection(adjustDetails.expenses);
+  const hasAdjustments = Boolean(income) || Boolean(expenses);
+  const hasZeroAdjustments = adjustDetails.zeroAdjustments === true;
+
+  if (hasZeroAdjustments && hasAdjustments) {
+    throw new BsasUkPropertyAdjustValidationError(
+      "RULE_BOTH_ADJUSTMENTS_SUPPLIED",
+      "Both adjustments and zero adjustments must not be present",
+    );
+  }
+
+  if (!hasZeroAdjustments && !hasAdjustments) {
+    throw new BsasUkPropertyAdjustValidationError(
+      "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+      "An empty or non-matching body was submitted",
+    );
+  }
+
+  if (hasZeroAdjustments) {
+    return { ukProperty: { zeroAdjustments: true } };
+  }
+
+  const ukProperty = {};
+  if (income) ukProperty.income = income;
+  if (expenses) ukProperty.expenses = expenses;
+  return { ukProperty };
 }
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  app.post("/api/v1/hmrc/itsa/bsas/trigger", async (httpRequest, httpResponse) => {
-    const lambdaEvent = buildLambdaEventFromHttpRequest(httpRequest);
-    const lambdaResult = await ingestHandler(lambdaEvent);
-    return buildHttpResponseFromLambdaResult(lambdaResult, httpResponse);
-  });
-  app.head("/api/v1/hmrc/itsa/bsas/trigger", async (httpRequest, httpResponse) => {
-    httpResponse.status(200).send();
-  });
+  registerLambdaRoute(app, "post", "/api/v1/hmrc/itsa/bsas/uk-property/adjust", ingestHandler);
 }
 /* v8 ignore stop */
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const {
-    nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
-    runFraudPreventionHeaderValidation,
-  } = parsedBody || {};
+  const { nino, calculationId, taxYear, income, expenses, zeroAdjustments, runFraudPreventionHeaderValidation } =
+    parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
 
-  if (!businessId) errorMessages.push("Missing businessId parameter from body");
-  if (businessId && !BUSINESS_ID_PATTERN.test(businessId)) errorMessages.push("Invalid businessId format");
+  if (!calculationId) errorMessages.push("Missing calculationId parameter from body");
+  if (calculationId && !CALCULATION_ID_PATTERN.test(calculationId)) errorMessages.push("Invalid calculationId format");
 
-  if (!accountingPeriodStartDate) errorMessages.push("Missing accountingPeriodStartDate parameter from body");
-  if (accountingPeriodStartDate && !isValidIsoDate(accountingPeriodStartDate)) {
-    errorMessages.push("Invalid accountingPeriodStartDate format - must be YYYY-MM-DD");
-  }
+  if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
+  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
-  if (!accountingPeriodEndDate) errorMessages.push("Missing accountingPeriodEndDate parameter from body");
-  if (accountingPeriodEndDate && !isValidIsoDate(accountingPeriodEndDate)) {
-    errorMessages.push("Invalid accountingPeriodEndDate format - must be YYYY-MM-DD");
-  }
-
-  if (!typeOfBusiness) errorMessages.push("Missing typeOfBusiness parameter from body");
-  if (typeOfBusiness && !VALID_TYPES_OF_BUSINESS.includes(typeOfBusiness)) {
-    errorMessages.push(`Invalid typeOfBusiness - must be one of ${VALID_TYPES_OF_BUSINESS.join(", ")}`);
+  // Reject a body HMRC always rejects (both zeroAdjustments and figures, or neither) before
+  // ever calling HMRC, the same way an invalid nino or calculationId never reaches HMRC.
+  try {
+    buildBsasUkPropertyAdjustRequestBody({ income, expenses, zeroAdjustments });
+  } catch (error) {
+    if (error instanceof BsasUkPropertyAdjustValidationError) {
+      errorMessages.push(error.message);
+    } else {
+      throw error;
+    }
   }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
@@ -126,10 +169,13 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   return {
     nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
+    calculationId,
+    taxYear,
+    // Pass through whatever the caller sent and let buildBsasUkPropertyAdjustRequestBody drop
+    // any of income/expenses that end up empty - HMRC rejects an empty object at either path.
+    income: income || {},
+    expenses: expenses || {},
+    zeroAdjustments: zeroAdjustments === true,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
   };
@@ -144,13 +190,13 @@ export async function ingestHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME",
     "SQS_QUEUE_URL",
   ]);
 
   const { request, requestId, traceparent, correlationId } = extractRequest(event);
 
-  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
   const sqsQueueUrl = process.env.SQS_QUEUE_URL;
 
   let errorMessages = [];
@@ -177,15 +223,8 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const {
-    nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
-    hmrcAccount,
-    runFraudPreventionHeaderValidation,
-  } = extractAndValidateParameters(event, errorMessages);
+  const { nino, calculationId, taxYear, income, expenses, zeroAdjustments, hmrcAccount, runFraudPreventionHeaderValidation } =
+    extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -224,10 +263,11 @@ export async function ingestHandler(event) {
 
   const payload = {
     nino,
-    businessId,
-    accountingPeriodStartDate,
-    accountingPeriodEndDate,
-    typeOfBusiness,
+    calculationId,
+    taxYear,
+    income,
+    expenses,
+    zeroAdjustments,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -260,13 +300,14 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { triggerResult, hmrcResponse, hmrcResponseBody } = await triggerBsas(
+        const { adjustResult, hmrcResponse, hmrcResponseBody } = await adjustBsasUkProperty(
           payload.nino,
+          payload.calculationId,
+          payload.taxYear,
           {
-            businessId: payload.businessId,
-            accountingPeriodStartDate: payload.accountingPeriodStartDate,
-            accountingPeriodEndDate: payload.accountingPeriodEndDate,
-            typeOfBusiness: payload.typeOfBusiness,
+            income: payload.income,
+            expenses: payload.expenses,
+            zeroAdjustments: payload.zeroAdjustments,
           },
           payload.hmrcAccessToken,
           payload.govClientHeaders,
@@ -286,7 +327,7 @@ export async function ingestHandler(event) {
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
 
-        return { triggerResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+        return { adjustResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
       };
 
       result = await asyncApiServices.initiateProcessing({
@@ -316,7 +357,7 @@ export async function ingestHandler(event) {
     if (error instanceof asyncApiServices.RequestFailedError) {
       result = error.data;
     } else {
-      logger.error({ message: "Unexpected error during BSAS trigger", error: error.message, stack: error.stack });
+      logger.error({ message: "Unexpected error during BSAS UK property adjustment", error: error.message, stack: error.stack });
       return http500ServerErrorResponse({
         request,
         headers: { ...responseHeaders },
@@ -327,8 +368,8 @@ export async function ingestHandler(event) {
   }
 
   // Map HMRC error responses to our HTTP responses. A 400 is the caller's to fix (a malformed
-  // accounting period, not a system fault), so it comes back as a 400 carrying HMRC's own
-  // message, the way hmrcItsaSelfEmploymentPeriodPost.js's createSelfEmploymentPeriod does.
+  // adjustment, not a system fault), so it comes back as a 400 carrying HMRC's own message, the
+  // way hmrcItsaBsasSelfEmploymentAdjustPost.js's adjustBsasSelfEmployment does.
   if (result && result.hmrcResponse && !result.hmrcResponse.ok) {
     if (result.hmrcResponse.status === 400) {
       result.hmrcResponse.data = result.hmrcResponseBody;
@@ -347,7 +388,7 @@ export async function ingestHandler(event) {
     request,
     requestId,
     responseHeaders,
-    data: result ? result.triggerResult : null,
+    data: result ? result.adjustResult : null,
   });
 }
 
@@ -359,10 +400,10 @@ export async function workerHandler(event) {
     "HMRC_SANDBOX_BASE_URI",
     "BUNDLE_DYNAMODB_TABLE_NAME",
     "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME",
+    "HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME",
   ]);
 
-  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+  const asyncRequestsTableName = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
 
   logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
 
@@ -394,13 +435,14 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
 
-      const { triggerResult, hmrcResponse, hmrcResponseBody } = await triggerBsas(
+      const { adjustResult, hmrcResponse, hmrcResponseBody } = await adjustBsasUkProperty(
         payload.nino,
+        payload.calculationId,
+        payload.taxYear,
         {
-          businessId: payload.businessId,
-          accountingPeriodStartDate: payload.accountingPeriodStartDate,
-          accountingPeriodEndDate: payload.accountingPeriodEndDate,
-          typeOfBusiness: payload.typeOfBusiness,
+          income: payload.income,
+          expenses: payload.expenses,
+          zeroAdjustments: payload.zeroAdjustments,
         },
         payload.hmrcAccessToken,
         payload.govClientHeaders,
@@ -420,7 +462,7 @@ export async function workerHandler(event) {
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
-      const result = { triggerResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+      const result = { adjustResult, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
 
       if (!hmrcResponse.ok) {
         // Distinguish retryable errors (e.g. 429, 503, 504)
@@ -498,9 +540,11 @@ function isRetryableError(error) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function triggerBsas(
+export async function adjustBsasUkProperty(
   nino,
-  triggerDetails,
+  calculationId,
+  taxYear,
+  adjustDetails,
   hmrcAccessToken,
   govClientHeaders,
   testScenario,
@@ -527,12 +571,11 @@ export async function triggerBsas(
     });
   }
 
-  const hmrcRequestBody = buildBsasTriggerRequestBody(triggerDetails);
+  const hmrcRequestBody = buildBsasUkPropertyAdjustRequestBody(adjustDetails);
 
-  // hmrcHttpPost does not prepend the HMRC base URI itself - the caller builds the full URL,
-  // the way hmrcVatReturnPost.js's submitVat does.
+  // hmrcHttpPost does not prepend the HMRC base URI itself - the caller builds the full URL.
   const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/individuals/self-assessment/adjustable-summary/${nino}/trigger`;
+  const hmrcRequestUrl = `${hmrcBase}/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${calculationId}/adjust/${taxYear}`;
   let hmrcResponse = {};
   let hmrcResponseBody;
   /* v8 ignore start */
@@ -561,12 +604,12 @@ export async function triggerBsas(
   }
 
   if (!hmrcResponse.ok) {
-    return { hmrcResponse, hmrcResponseBody, triggerResult: null };
+    return { hmrcResponse, hmrcResponseBody, adjustResult: null };
   }
   await publishActivityEvent({
-    event: "itsa-bsas-triggered",
-    summary: "ITSA business source adjustable summary triggered",
+    event: "itsa-bsas-uk-property-adjusted",
+    summary: "ITSA UK property business source adjustable summary adjusted",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, hmrcResponseBody, triggerResult: hmrcResponseBody, hmrcRequestUrl };
+  return { hmrcResponse, hmrcResponseBody, adjustResult: hmrcResponseBody ?? {}, hmrcRequestUrl };
 }

@@ -602,7 +602,7 @@ export async function putSelfEmploymentAnnual(
 
 /**
  * Trigger an ITSA business source adjustable summary (BSAS) for an accounting period.
- * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate }
+ * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate, typeOfBusiness }
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
@@ -631,6 +631,7 @@ export async function triggerBsas(
     businessId: triggerDetails.businessId,
     accountingPeriodStartDate: triggerDetails.accountingPeriodStartDate,
     accountingPeriodEndDate: triggerDetails.accountingPeriodEndDate,
+    typeOfBusiness: triggerDetails.typeOfBusiness,
     runFraudPreventionHeaderValidation,
   });
 

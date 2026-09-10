@@ -60,6 +60,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaBsasTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable;
     public ITable hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable;
+    public ITable hmrcItsaBsasUkPropertyGetAsyncRequestsTable;
+    public ITable hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationGetAsyncRequestsTable;
     public ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable;
@@ -603,6 +605,38 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA BSAS self-employment adjust async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName);
 
+        // HMRC ITSA business source adjustable summary (UK property) retrieve async request storage
+        this.hmrcItsaBsasUkPropertyGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyGetAsyncTTL",
+                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA BSAS UK property retrieve async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName);
+
+        // HMRC ITSA business source adjustable summary (UK property) adjust async request storage
+        this.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyAdjustPostAsyncTTL",
+                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA BSAS UK property adjust async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName);
+
         // HMRC ITSA tax calculation trigger async request storage
         this.hmrcItsaCalculationTriggerPostAsyncRequestsTable = ensureTable(
                 this,
@@ -969,6 +1003,22 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableArn",
                 this.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasUkPropertyGetAsyncRequestsTableName",
+                this.hmrcItsaBsasUkPropertyGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasUkPropertyGetAsyncRequestsTableArn",
+                this.hmrcItsaBsasUkPropertyGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName",
+                this.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableArn",
+                this.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaCalculationTriggerPostAsyncRequestsTableName",

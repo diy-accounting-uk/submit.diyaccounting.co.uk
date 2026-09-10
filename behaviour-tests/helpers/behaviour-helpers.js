@@ -198,6 +198,14 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable, endpoint);
 
+    const hmrcItsaBsasUkPropertyGetAsyncTable = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasUkPropertyGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyGetAsyncTable, endpoint);
+
+    const hmrcItsaBsasUkPropertyAdjustPostAsyncTable =
+      process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasUkPropertyAdjustPostAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyAdjustPostAsyncTable, endpoint);
+
     const hmrcItsaCalculationTriggerPostAsyncTable = process.env.HMRC_ITSA_CALCULATION_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaCalculationTriggerPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaCalculationTriggerPostAsyncTable, endpoint);

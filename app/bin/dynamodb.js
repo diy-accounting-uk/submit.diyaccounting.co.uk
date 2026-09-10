@@ -449,6 +449,26 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName =
+      process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaBsasUkPropertyGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasUkPropertyGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName =
+      process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

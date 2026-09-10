@@ -320,7 +320,13 @@
           return;
         }
 
-        const triggerDetails = { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate };
+        const triggerDetails = {
+          nino,
+          businessId,
+          accountingPeriodStartDate,
+          accountingPeriodEndDate,
+          typeOfBusiness: "self-employment",
+        };
 
         try {
           const accessTokenForCheck = sessionStorage.getItem("hmrcAccessToken");

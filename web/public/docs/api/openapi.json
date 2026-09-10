@@ -1029,7 +1029,7 @@
     "/hmrc/itsa/bsas/trigger" : {
       "post" : {
         "summary" : "Trigger an ITSA business source adjustable summary",
-        "description" : "Triggers a self-employment adjustable summary calculation for an accounting period",
+        "description" : "Triggers an adjustable summary calculation for an accounting period, for self-employment or UK property",
         "operationId" : "triggerItsaBsas",
         "parameters" : [ {
           "name" : "nino",
@@ -1060,6 +1060,14 @@
           "in" : "body",
           "required" : true,
           "description" : "The accounting period's end date",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "typeOfBusiness",
+          "in" : "body",
+          "required" : true,
+          "description" : "self-employment or uk-property, from the picked business",
           "schema" : {
             "type" : "string"
           }
@@ -1166,6 +1174,88 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/itsa/bsas/uk-property/adjust" : {
+      "post" : {
+        "summary" : "Adjust an ITSA UK property business source adjustable summary",
+        "description" : "Submits income and expenses adjustments, or states there are none, for a triggered summary",
+        "operationId" : "adjustItsaBsasUkProperty",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "income",
+          "in" : "body",
+          "required" : false,
+          "description" : "Income adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "expenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Expenses adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "zeroAdjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "True to state that nothing changes",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/cognito/token" : {
@@ -1327,6 +1417,64 @@
         "summary" : "Create billing checkout session",
         "description" : "Creates a Stripe checkout session for subscription",
         "operationId" : "createCheckoutSession"
+      }
+    },
+    "/hmrc/itsa/bsas/uk-property" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA UK property business source adjustable summary",
+        "description" : "Retrieves the income, expenses and resulting net profit or loss for a triggered summary",
+        "operationId" : "getItsaBsasUkProperty",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/hmrc/itsa/status" : {

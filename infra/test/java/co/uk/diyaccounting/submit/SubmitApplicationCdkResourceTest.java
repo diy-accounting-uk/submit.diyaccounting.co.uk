@@ -93,8 +93,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 12);
-        assertStackHealthAlarm(hmrcItsaStackTemplate, 6, 6, routedPrefixes);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 16);
+        assertStackHealthAlarm(hmrcItsaStackTemplate, 8, 8, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -280,7 +280,7 @@ class SubmitApplicationCdkResourceTest {
         // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
         // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
         // another 10 routes, bringing the total to 112 + 10 = 122.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 131);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 135);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

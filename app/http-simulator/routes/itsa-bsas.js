@@ -12,6 +12,8 @@ import {
   getBsasTriggerErrorForScenario,
   getBsasSelfEmploymentForScenario,
   getBsasAdjustErrorForScenario,
+  getBsasUkPropertyForScenario,
+  getBsasUkPropertyAdjustErrorForScenario,
 } from "../scenarios/itsa-bsas.js";
 
 /**
@@ -153,6 +155,78 @@ export function apiEndpoint(app) {
     }
 
     const scenarioError = getBsasAdjustErrorForScenario(govTestScenario);
+    if (scenarioError) {
+      return res.status(scenarioError.status).json(scenarioError.body);
+    }
+
+    // Default and STATEFUL: HMRC's submit-adjustments endpoint returns 200 with no body.
+    res.setHeader("x-correlationid", randomUUID());
+    res.status(200).send();
+  });
+
+  // GET /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}
+  app.get("/individuals/self-assessment/adjustable-summary/:nino/uk-property/:calculationId/:taxYear", (req, res) => {
+    const { nino, calculationId, taxYear } = req.params;
+    const govTestScenario = req.headers["gov-test-scenario"];
+
+    console.log(
+      `[http-simulator:itsa-bsas] GET /individuals/self-assessment/adjustable-summary/${nino}/uk-property/${calculationId}/${taxYear}`,
+    );
+
+    if (!isValidNino(nino)) {
+      return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });
+    }
+    if (!isValidCalculationId(calculationId)) {
+      return res.status(400).json({ code: "FORMAT_CALCULATION_ID", message: "The provided calculation ID is invalid" });
+    }
+    if (!isValidTaxYear(taxYear)) {
+      return res.status(400).json({ code: "FORMAT_TAX_YEAR", message: "The provided tax year is invalid" });
+    }
+
+    const result = getBsasUkPropertyForScenario(govTestScenario, nino, calculationId, taxYear);
+    if (result.status) {
+      return res.status(result.status).json(result.body);
+    }
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("x-correlationid", randomUUID());
+    res.json(result.bsas);
+  });
+
+  // POST /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/adjust/{taxYear}
+  app.post("/individuals/self-assessment/adjustable-summary/:nino/uk-property/:calculationId/adjust/:taxYear", (req, res) => {
+    const { nino, calculationId, taxYear } = req.params;
+    const govTestScenario = req.headers["gov-test-scenario"];
+
+    console.log(
+      `[http-simulator:itsa-bsas] POST /individuals/self-assessment/adjustable-summary/${nino}/uk-property/${calculationId}/adjust/${taxYear}`,
+    );
+
+    if (!isValidNino(nino)) {
+      return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });
+    }
+    if (!isValidCalculationId(calculationId)) {
+      return res.status(400).json({ code: "FORMAT_CALCULATION_ID", message: "The provided calculation ID is invalid" });
+    }
+    if (!isValidTaxYear(taxYear)) {
+      return res.status(400).json({ code: "FORMAT_TAX_YEAR", message: "The provided tax year is invalid" });
+    }
+
+    const ukProperty = req.body?.ukProperty;
+    if (hasBothAdjustmentForms(ukProperty)) {
+      return res.status(400).json({
+        code: "RULE_BOTH_ADJUSTMENTS_SUPPLIED",
+        message: "Both adjustments and zero adjustments must not be present",
+      });
+    }
+    if (isEntirelyEmptyAdjustBody(ukProperty)) {
+      return res.status(400).json({
+        code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+        message: "An empty or non-matching body was submitted",
+      });
+    }
+
+    const scenarioError = getBsasUkPropertyAdjustErrorForScenario(govTestScenario);
     if (scenarioError) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }

@@ -1021,6 +1021,75 @@ describe("HTTP Simulator", () => {
       const data = await response.json();
       expect(data.code).toBe("RULE_ALREADY_ADJUSTED");
     });
+
+    it("should trigger a summary for a UK property business", async () => {
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountingPeriod: { startDate: "2023-04-06", endDate: "2024-04-05" },
+          typeOfBusiness: "uk-property",
+          businessId: "XAIS12345678910",
+        }),
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(typeof data.calculationId).toBe("string");
+    });
+
+    it("should answer not-found with no Gov-Test-Scenario header on the UK property retrieve", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+      );
+      expect(response.status).toBe(404);
+    });
+
+    it("should retrieve a profit summary for UK_PROPERTY_PROFIT, using the adjustable summary's own income labels", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+        { headers: { "Gov-Test-Scenario": "UK_PROPERTY_PROFIT" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.adjustableSummaryCalculation.income.totalRentsReceived).toBeDefined();
+      expect(data.adjustableSummaryCalculation.netProfit).toBeDefined();
+    });
+
+    it("should retrieve a loss summary for UK_PROPERTY_LOSS", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
+        { headers: { "Gov-Test-Scenario": "UK_PROPERTY_LOSS" } },
+      );
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.adjustableSummaryCalculation.netLoss).toBeDefined();
+    });
+
+    it("should adjust a UK property summary and answer 200 with no body", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ukProperty: { income: { totalRentsReceived: 9000 } } }),
+        },
+      );
+      expect(response.status).toBe(200);
+    });
+
+    it("should return 400 for an entirely empty UK property adjust body", async () => {
+      const response = await fetch(
+        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/adjust/2023-24`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        },
+      );
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
   });
 
   describe("ITSA Calculations", () => {
