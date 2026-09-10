@@ -47,10 +47,9 @@ Wave 4 runs as five concurrent worktree sub-agents, all branched from `claude/b2
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 | DIYA-GL naming, the API routes | B71.S3d | Sonnet | `.claude/worktrees/w-naming3d` | `claude/b20-naming3d` |
-| The fetched scripts' consumer comment | B93 | Haiku | `.claude/worktrees/w-consumercomment` | `claude/b20-consumercomment` |
 | The deploy role's privilege | B96 | Sonnet | `.claude/worktrees/w-adminrole` | `claude/b20-adminrole` |
 
-Merged into the batch, off this list when its checks pass: B91, B99.
+Merged into the batch, off this list when its checks pass: B91, B99, B93.
 
 S3d is the row the spreadsheets repository waits on; their `cloud.js` holds our route paths as
 literal strings and their service worker precaches them, so both prefixes serve for the window
@@ -115,23 +114,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   what it restored and how long it took, and either close #11 on that evidence or say in the issue
   what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
   Sonnet.
-- [ ] **B93. Two of our scripts are a published interface with an invisible consumer.** The
-  spreadsheets CI fetches `scripts/toggle-cognito-native-auth.js` and
-  `scripts/ensure-cognito-test-user.js` from our `main` by raw URL at run time, from three call
-  sites in one workflow, and executes them. So every merge to main is an immediate release to their
-  runners, with nothing in our tree that says so: no import to grep, no test that fails, no
-  reference a rename would break. It cost them a failed deploy on 2026-09-10, when S3c's
-  `--client diya-gl` was on our batch branch and their runner was still fetching main's older
-  `app|books|both` validation. S3c gave that flag a dual window precisely because we knew about the
-  caller — from a conversation, which is the part that does not survive a session.
-  **Decided 2026-09-10**, their operator having handed the choice here: they pin their fetch to a
-  commit, which is the only option either repository can take alone and puts the upgrade under the
-  side that suffers the breakage. This row is our half. Put a comment at the top of both files
-  saying another repository fetches it from our main and executes it, that changing its arguments or
-  its output shape breaks a consumer with no import to grep, and where to look before touching it.
-  A pin goes stale silently, so the mitigation is a line from us whenever one of these lands on
-  main; that makes our line load-bearing rather than courteous. **Source**: the spreadsheets
-  repository's failed deploy, 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B96. The deployment role holds AdministratorAccess, and B30t just made it quieter.**
   `submit-ci-deployment-role` carries exactly one policy, the AWS managed
   `arn:aws:iam::aws:policy/AdministratorAccess`, with no inline policies. Every GitHub Actions
