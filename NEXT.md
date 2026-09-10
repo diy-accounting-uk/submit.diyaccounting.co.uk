@@ -42,15 +42,25 @@ layers — B84's column casing and B89's `us-east-1` region in the bucket policy
 on main and the sibling repository has the second of its three lines; the third goes when it reaches
 prod.
 
-**Batch 21 on `claude/b21-board`**, one workstream so far:
+**The API route prefixes are permanent.** Operator decision, 2026-09-10: both `/api/v1/books/*`
+and `/api/v1/diya-gl/*` are served for good and the old prefix is never retired. The spreadsheets
+repository changes nothing, now or ever, and their NM-5 is not blocked on us — it is not needed. The
+route path is a code identifier no customer sees; the DIYA-GL rename was about the product, and that
+is shipped. Retiring the old prefix was tidiness whose cross-repository sequencing cost more than it
+was worth. B71.S3e, the bucket, is the last naming row and is internal.
+
+**Batch 21 on `claude/b21-board`**, two workstreams:
 
 | Workstream | Item | Model | Worktree | Branch |
 |---|---|---|---|---|
 | The environment deploy's paths filter | B100 | Sonnet | `.claude/worktrees/w-envpaths` | `claude/b21-envpaths` |
+| Both route prefixes made permanent | B71.S3d.1 | Sonnet | `.claude/worktrees/w-permanent` | `claude/b21-permanent` |
 
-`deploy-environment.yml` decides whether to run from a `paths:` filter that names environment stack
-sources by hand, and the list has drifted: `EcrUE1Stack`, `ScanDetectionStack` and
-`SecurityDetectionStack` are deployed by the workflow and watched by nothing. A change to any of the
+B100 is merged: `deploy-environment.yml`'s `paths:` filter named environment stack sources by hand
+and had drifted. `ScanDetectionStack` and `SecurityDetectionStack` were deployed by the workflow and
+watched by nothing — two, not three; `EcrUE1Stack` is a second instantiation of the `EcrStack`
+construct and has no source file of its own, so it was already covered. A unit test now parses the
+workflow and asserts every stack it deploys is watched, proved by failing on the pre-fix state. A change to any of the
 three never triggers the deploy that ships it. B30t changed `SecurityDetectionStack.java` and
 shipped only because its batch also touched other watched paths; pushed alone it would have looked
 deployed and not been. The fix adds the three and then makes the drift impossible, because a
