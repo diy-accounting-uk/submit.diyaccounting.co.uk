@@ -30,6 +30,7 @@ permissions:
 
 env:
   NODE_VERSION: '24'
+  JAVA_VERSION: '25'
   AWS_REGION: 'eu-west-2'
 
 jobs:
@@ -56,29 +57,54 @@ jobs:
       - name: Generate the npm CycloneDX SBOM
         run: npm sbom --sbom-format cyclonedx > sbom-npm-cyclonedx.json
 
-      - name: Check for a configured Maven CycloneDX plugin
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Generate the Maven CycloneDX SBOM
+        run: ./mvnw -q -B org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeBom
+        # pom.xml pins the plugin version and its output name/format; this goal is not bound to
+        # a lifecycle phase, so it only runs here, not on every mvnw build.
+
+      - name: Container base image is not covered
         run: |
-          if grep -q 'cyclonedx-maven-plugin' pom.xml; then
-            echo "cyclonedx-maven-plugin is configured in pom.xml, but this workflow only reads it"
-            echo "when present - it does not add the plugin itself."
-          else
-            echo "No cyclonedx-maven-plugin in pom.xml - only the npm SBOM is checked."
-          fi
+          echo "This workflow generates SBOMs from source manifests (npm, Maven). It does not"
+          echo "scan the container image that deploy-app.yml builds from Dockerfile and pushes"
+          echo "to ECR. The base image's OS packages come from upstream, not from a manifest in"
+          echo "this repo, so neither the npm nor the Maven generator can see them. Covering that"
+          echo "needs an image scanner (e.g. Syft or Trivy) run against the built image, which is"
+          echo "a separate step from this one."
+
+      - name: Compute the lake date partition
+        id: sbom-date
+        run: echo "dt=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
       - name: Log SBOM metadata
         id: sbom-info
+        env:
+          SBOM_DT: ${{ steps.sbom-date.outputs.dt }}
         run: |
           cat > /tmp/sbom-info.mjs <<'EOF'
           import { readFileSync, writeFileSync } from "node:fs";
 
-          const sbom = JSON.parse(readFileSync("sbom-npm-cyclonedx.json", "utf-8"));
-          const components = sbom.components || [];
+          const npmSbom = JSON.parse(readFileSync("sbom-npm-cyclonedx.json", "utf-8"));
+          const javaSbom = JSON.parse(readFileSync("target/bom-java-cyclonedx.json", "utf-8"));
+          const npmComponents = npmSbom.components || [];
+          const javaComponents = javaSbom.components || [];
+          const runId = process.env.GITHUB_RUN_ID;
+          const dt = process.env.SBOM_DT;
 
           const row = {
-            run_id: process.env.GITHUB_RUN_ID,
+            run_id: runId,
             sha: process.env.GITHUB_SHA,
-            component_count: components.length,
-            sbom_created_at: sbom.metadata?.timestamp || null,
+            npm_component_count: npmComponents.length,
+            npm_sbom_created_at: npmSbom.metadata?.timestamp || null,
+            npm_sbom_key: `curated/security/sbom/dt=${dt}/${runId}-npm-cyclonedx.json`,
+            java_component_count: javaComponents.length,
+            java_sbom_created_at: javaSbom.metadata?.timestamp || null,
+            java_sbom_key: `curated/security/sbom/dt=${dt}/${runId}-java-cyclonedx.json`,
             checked_at: new Date().toISOString(),
           };
 
@@ -86,7 +112,7 @@ jobs:
           EOF
           node /tmp/sbom-info.mjs
           echo "row=$(cat sbom-info-result.json)" >> "$GITHUB_OUTPUT"
-          echo "key=curated/security/sbom/dt=$(date -u +%F)/${GITHUB_RUN_ID}.json" >> "$GITHUB_OUTPUT"
+          echo "key=curated/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}.json" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -109,6 +135,23 @@ jobs:
           role-skip-session-tagging: true
           output-credentials: true
           retry-max-attempts: 3
+
+      - name: Write the SBOM documents to the lake
+        # Uploaded straight from disk with aws s3 cp, not through the dora-row action: dora-row
+        # pipes its `row` input through a GitHub Actions expression into an env var, which is
+        # right for the small metadata row but wrong for these documents - the npm SBOM alone
+        # runs to hundreds of components and would risk GitHub Actions' payload/env size limits
+        # and JSON-in-YAML-expression escaping. A direct file upload has neither problem.
+        run: |
+          aws s3 cp sbom-npm-cyclonedx.json \
+            "s3://${LAKE_BUCKET}/curated/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-npm-cyclonedx.json" \
+            --content-type application/json
+          aws s3 cp target/bom-java-cyclonedx.json \
+            "s3://${LAKE_BUCKET}/curated/security/sbom/dt=${SBOM_DT}/${GITHUB_RUN_ID}-java-cyclonedx.json" \
+            --content-type application/json
+        env:
+          LAKE_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          SBOM_DT: ${{ steps.sbom-date.outputs.dt }}
 
       - name: Write the SBOM metadata row to the lake
         uses: './.github/actions/dora-row'
