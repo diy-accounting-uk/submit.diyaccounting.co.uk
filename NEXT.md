@@ -99,6 +99,10 @@ it nine tests fail on a missing file that has nothing to do with the change.
   rather than letting a malformed one reach three different APIs. Apply all of it to
   `destroy-ci.yml` too, which carries the same guards. **Source**: run 34512145857. **Owner**:
   Claude Code. **Model**: Sonnet.
+
+  It has now fired twice: run 34512761956, dispatched 18:11 UTC, failed at the same step 10. Both
+  spare prod sets are still standing because of it, and no destroy should be dispatched again until
+  this row lands.
 - [ ] **B101. A ci set outlived its own self-destruct.** `ci-claudf179` was created 13:04 UTC with
   `SelfDestructStack` scheduled two hours out, and at 16:41 it was still standing with all nine
   stacks. A second set, `ci-claud6807`, went up at 16:13, so two ci sets stand at once. The sweep in
@@ -125,7 +129,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   accounts filing and a fresh one for ITSA (business details through the quarterly update),
   both against a ci set since neither activity goes to prod, each described on screen and in
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c; issue #19. **Owner**: Claude
+  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
 - [ ] **B11.T11 to T14. ITSA phase 2: UK property.** `PLAN_ITSA_PHASE_2.md`'s four property
   tracks: the period summary's four handlers, the annual submission, the adjustable summary, and
@@ -183,14 +187,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   no meaning to a reader. The five commands are in B87's report and the classes are
   `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
   **Owner**: Operator. **Model**: none.
-- [ ] **O35. Close seven alarm issues.** #166 and #167, the two CIS alarms that fire on our own
-  prod deploys, which B30t stops. #171 (`raw-export-publish-errors`), #172
-  (`analytics-nightly-failed`) and #170 (`cis-unauthorized-api-calls`) are one incident with one
-  cause, now fixed on batch 18: the raw export Lambda's role had `s3:PutObject` on `exports/*` and
-  no `GetObject` or `ListBucket`, so Athena could not read the lake, and the `AccessDenied` it threw
-  at 02:12 UTC is also what tripped the CIS unauthorized-calls alarm five minutes later. Close all
-  three once the fix reaches prod and a nightly run succeeds. #164 is already closed. **Source**:
-  this board's alarm pass. **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -252,7 +248,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
-  it went; a receipt or an error message is enough. **Source**: BACKLOG 34; issue #15.
+  it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
   **Owner**: Operator. **Model**: none.
 - [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
   team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
@@ -263,7 +259,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
   the credentials arrive, put them on the GitHub `ci` environment as the secrets
   `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
-  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b; issue #15.
+  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b.
   **Owner**: Operator. **Model**: none.
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
@@ -331,7 +327,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
   -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
   and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
-  selector fix. **Source**: BACKLOG 34; issue #15. **Owner**: Claude Code. **Model**: Sonnet.
+  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17.
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
@@ -340,7 +336,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   correct the envelope and iXBRL where the sandbox's own validation differs from the public
   schemas, record what the sandbox returned in the simulator, then add `prod` to the
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
-  34b; issue #15. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
+  34b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
