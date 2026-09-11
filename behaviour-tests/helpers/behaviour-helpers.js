@@ -217,6 +217,34 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaFinalDeclarationPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncTable, endpoint);
 
+    const hmrcItsaLossesAndClaimsGetAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsGetAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsGetAsyncTable, endpoint);
+
+    const hmrcItsaLossesAndClaimsPutAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsPutAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsPutAsyncTable, endpoint);
+
+    const hmrcItsaLossesAndClaimsDeleteAsyncTable =
+      process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsDeleteAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsDeleteAsyncTable, endpoint);
+
+    const hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable, endpoint);
+
+    const hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable, endpoint);
+
+    const hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncTable =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncTable)
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncTable, endpoint);
+
     const companiesHouseAccountsAsyncTable = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncTable) await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncTable, endpoint);
   } else {

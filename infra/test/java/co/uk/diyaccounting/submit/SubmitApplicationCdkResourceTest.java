@@ -93,8 +93,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 16);
-        assertStackHealthAlarm(hmrcItsaStackTemplate, 8, 8, routedPrefixes);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 28);
+        assertStackHealthAlarm(hmrcItsaStackTemplate, 14, 14, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -280,7 +280,11 @@ class SubmitApplicationCdkResourceTest {
         // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
         // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
         // another 10 routes, bringing the total to 112 + 10 = 122.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 135);
+        // GET, PUT and DELETE /api/v1/hmrc/itsa/losses-and-claims share one path: three method
+        // routes plus one auto-HEAD route for the GET. The same shape repeats for
+        // /api/v1/hmrc/itsa/tax-liability-adjustments, for another 4 + 4 = 8 routes, bringing the
+        // total to 135 + 8 = 143.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 143);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

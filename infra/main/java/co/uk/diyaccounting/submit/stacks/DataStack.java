@@ -66,6 +66,12 @@ public class DataStack extends Stack {
     public ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationGetAsyncRequestsTable;
     public ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable;
+    public ITable hmrcItsaLossesAndClaimsGetAsyncRequestsTable;
+    public ITable hmrcItsaLossesAndClaimsPutAsyncRequestsTable;
+    public ITable hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable;
+    public ITable hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable;
+    public ITable hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable;
+    public ITable hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable;
     public ITable companiesHouseAccountsAsyncRequestsTable;
     public ITable hmrcApiRequestsTable;
     public ITable passesTable;
@@ -686,6 +692,102 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA final declaration async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
 
+        // HMRC ITSA losses and claims GET (retrieve) async request storage
+        this.hmrcItsaLossesAndClaimsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsGetAsyncTTL",
+                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA losses and claims GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName);
+
+        // HMRC ITSA losses and claims PUT (create and amend) async request storage
+        this.hmrcItsaLossesAndClaimsPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsPutAsyncTTL",
+                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA losses and claims PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName);
+
+        // HMRC ITSA losses and claims DELETE async request storage
+        this.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsDeleteAsyncRequestsTable",
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsDeleteAsyncTTL",
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA losses and claims DELETE async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName);
+
+        // HMRC ITSA tax liability adjustments GET (retrieve) async request storage
+        this.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsGetAsyncTTL",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA tax liability adjustments GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName);
+
+        // HMRC ITSA tax liability adjustments PUT (create and amend) async request storage
+        this.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsPutAsyncTTL",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA tax liability adjustments PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName);
+
+        // HMRC ITSA tax liability adjustments DELETE async request storage
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncTTL",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA tax liability adjustments DELETE async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName);
+
         // Companies House accounts filing async request storage - the submission-number counter
         // allocateSubmissionNumber() increments also lives here, keyed apart from any real
         // request id.
@@ -1070,6 +1172,54 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaFinalDeclarationPostAsyncRequestsTableArn",
                 this.hmrcItsaFinalDeclarationPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsGetAsyncRequestsTableName",
+                this.hmrcItsaLossesAndClaimsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsGetAsyncRequestsTableArn",
+                this.hmrcItsaLossesAndClaimsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsPutAsyncRequestsTableName",
+                this.hmrcItsaLossesAndClaimsPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsPutAsyncRequestsTableArn",
+                this.hmrcItsaLossesAndClaimsPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName",
+                this.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaLossesAndClaimsDeleteAsyncRequestsTableArn",
+                this.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName",
+                this.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableArn",
+                this.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName",
+                this.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableArn",
+                this.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName",
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableArn",
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "CompaniesHouseAccountsAsyncRequestsTableName",
