@@ -11,7 +11,7 @@ concurrency:
 on:
   pull_request:
     paths:
-      - 'analytics/google-roles.toml'
+      - 'google/project.toml'
       - 'scripts/google-roles-apply.js'
       - 'scripts/gcp-billing-assert.js'
       - 'scripts/gcp-enable-apis.js'
@@ -20,7 +20,7 @@ on:
     branches:
       - 'main'
     paths:
-      - 'analytics/google-roles.toml'
+      - 'google/project.toml'
       - 'scripts/google-roles-apply.js'
       - 'scripts/gcp-billing-assert.js'
       - 'scripts/gcp-enable-apis.js'

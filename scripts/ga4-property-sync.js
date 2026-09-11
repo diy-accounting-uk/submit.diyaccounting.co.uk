@@ -11,7 +11,7 @@
 //
 // This is a separate, per-environment split from the single shared "DIY Accounting"
 // property that already covers the gateway, spreadsheets and submit production sites
-// (see google-analytics.toml) — it does not touch that property.
+// (see google/analytics.toml) — it does not touch that property.
 //
 // Usage:
 //   GA4_SERVICE_ACCOUNT_JSON=... (or GA4_SERVICE_ACCOUNT_ARN with AWS credentials) node scripts/ga4-property-sync.js --environment ci --hostname ci-submit.diyaccounting.co.uk

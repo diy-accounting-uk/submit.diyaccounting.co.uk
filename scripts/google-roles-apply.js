@@ -4,7 +4,7 @@
 
 // scripts/google-roles-apply.js
 //
-// Reads analytics/google-roles.toml, lists the live GA4 Analytics Admin API access bindings
+// Reads google/project.toml, lists the live GA4 Analytics Admin API access bindings
 // and GCP Resource Manager IAM bindings for the principals named in that file, diffs them
 // against what the file declares, and applies the difference. Read-only unless --apply is
 // given.
@@ -50,7 +50,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Parse and validate analytics/google-roles.toml's content.
+ * Parse and validate google/project.toml's content.
  *
  * @param {string} tomlString
  * @returns {{serviceAccountEmail: string, ga4AccountBindings: {accountId: string, user: string, roles: string[]}[], gcpProjectBindings: {projectId: string, member: string, roles: string[]}[]}}
@@ -59,7 +59,7 @@ export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
   const serviceAccountEmail = parsed.service_account?.email;
   if (!serviceAccountEmail) {
-    throw new Error("google-roles.toml is missing [service_account].email");
+    throw new Error("project.toml is missing [service_account].email");
   }
   const ga4AccountBindings = (parsed.ga4?.account_bindings ?? []).map((entry) => {
     if (!entry.account_id || !entry.user || !Array.isArray(entry.roles)) {
@@ -186,7 +186,7 @@ function groupBy(items, keyFn) {
  * @returns {{serviceAccountEmail: string, ga4AccountBindings: object[], gcpProjectBindings: object[]}}
  */
 export function loadConfigFromRoot() {
-  const filePath = path.join(process.cwd(), "analytics/google-roles.toml");
+  const filePath = path.join(process.cwd(), "google/project.toml");
   return parseConfig(fs.readFileSync(filePath, "utf-8"));
 }
 
