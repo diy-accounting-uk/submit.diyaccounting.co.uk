@@ -43,34 +43,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B117. The ITSA endpoints are not bundle-gated.** `web/public/submit.catalogue.toml` has no
-  entries for `losses-and-claims` or `tax-liability-adjustments`, so `bundleManagement.js`'s
-  `enforceBundles()` treats both as unrestricted and lets any signed-in caller through. The same
-  gap covers several ITSA endpoints already deployed — self-employment annual, UK property annual
-  and others — so it is a pre-existing hole across the ITSA surface rather than something the
-  losses work introduced.
-
-  That means the whole ITSA journey is currently free, while VAT is gated. Decide what each ITSA
-  activity should cost before adding entries: the plan has a quarterly update costing one token
-  like a VAT return, and the year-end activity free, but the newer endpoints have no stated price.
-  This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
-  on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
-  2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
-- [ ] **B116. No ITSA journey has ever run end to end.** All five ITSA behaviour suites skip on
-  every push. `deploy.yml`'s `params` job computes `skipTestScenarios=${X:-true}`, so an empty
-  dispatch input means true, and every scenario suite is gated off. The VAT suites run because they
-  are not scenario tests; the ITSA ones are. So business details, obligations, the self-employment
-  period, and both UK property suites have never executed against a deployed environment — while
-  ITSA is the strategic bet and phase 2 now has sixteen tracks shipped.
-
-  This is a default that keeps deploys fast, not a bug, so do not flip it. Run them deliberately
-  against a standing ci set instead, one suite at a time, and fix what they find. The two property
-  suites are the ones never run at all; the other three have not run since the gate was introduced.
-  Expect the first run to fail on selectors or ids rather than on the handlers — the property suites
-  were written against the source without ever executing.
-
-  **Source**: deploy run 34571638567's job list. **Owner**: Claude Code, after the operator
-  dispatches the first run. **Model**: Sonnet.
+- [ ] **B30l. Two prod roles are denied a call they need, every night.**
+  `prod-env-cis-unauthorized-api-calls` fired at 02:17 UTC on 2026-09-11 (issue #181) on four
+  datapoints, and the CloudTrail window names both callers: `prod-env-data-quality-eval` was denied
+  `CreateLogGroup` eleven times, and `prod-env-alarm-triage-role` was denied `ListInferenceProfiles`
+  once. So the Glue data-quality job cannot create its own log group and the triage Lambda cannot
+  list Bedrock inference profiles. Grant each what it calls, or pre-create the log group the way
+  `ObservabilityStack.java` already does for CloudTrail's. The alarm is telling the truth, and one
+  that fires nightly on our own missing grants is how a real unauthorized call gets ignored.
+  **Source**: issue #181; CloudTrail `prod-env-cloud-trail`, 2026-09-11. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -79,16 +61,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
-  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
-  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
-  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
-  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
-  to its own legitimate committers. The submit session does not edit sibling repositories, so
-  spreadsheets takes its own copy through its board and the other three need a session or the
-  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
-  **Model**: Haiku per repository.
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
   backup selection. The books stay where they are until the rest runs.
@@ -218,6 +190,44 @@ it nine tests fail on a missing file that has nothing to do with the change.
   matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
   per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
   finding. **Owner**: Operator. **Model**: none.
+- [ ] **B117. The ITSA endpoints are not bundle-gated.** `web/public/submit.catalogue.toml` has no
+  entries for `losses-and-claims` or `tax-liability-adjustments`, so `bundleManagement.js`'s
+  `enforceBundles()` treats both as unrestricted and lets any signed-in caller through. The same
+  gap covers several ITSA endpoints already deployed — self-employment annual, UK property annual
+  and others — so it is a pre-existing hole across the ITSA surface rather than something the
+  losses work introduced.
+
+  That means the whole ITSA journey is currently free, while VAT is gated. Decide what each ITSA
+  activity should cost before adding entries: the plan has a quarterly update costing one token
+  like a VAT return, and the year-end activity free, but the newer endpoints have no stated price.
+  This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
+  on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
+  2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
+- [ ] **B116. No ITSA journey has ever run end to end.** All five ITSA behaviour suites skip on
+  every push. `deploy.yml`'s `params` job computes `skipTestScenarios=${X:-true}`, so an empty
+  dispatch input means true, and every scenario suite is gated off. The VAT suites run because they
+  are not scenario tests; the ITSA ones are. So business details, obligations, the self-employment
+  period, and both UK property suites have never executed against a deployed environment — while
+  ITSA is the strategic bet and phase 2 now has sixteen tracks shipped.
+
+  This is a default that keeps deploys fast, not a bug, so do not flip it. Run them deliberately
+  against a standing ci set instead, one suite at a time, and fix what they find. The two property
+  suites are the ones never run at all; the other three have not run since the gate was introduced.
+  Expect the first run to fail on selectors or ids rather than on the handlers — the property suites
+  were written against the source without ever executing.
+
+  **Source**: deploy run 34571638567's job list. **Owner**: Operator to dispatch the first suite,
+  then Claude Code. **Model**: Sonnet.
+- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
+  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
+  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
+  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
+  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
+  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
+  to its own legitimate committers. The submit session does not edit sibling repositories, so
+  spreadsheets takes its own copy through its board and the other three need a session or the
+  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
+  **Model**: Haiku per repository.
 
 ## Blocked
 
@@ -283,14 +293,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
   runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
   never got them. The grants reached prod at 18:14 UTC on 2026-09-10:
   `prod-env-raw-export-publish`'s role now carries `s3:GetObject` and `s3:ListBucket` on
-  `prod-env-analytics-lake-972912397388`. The first real export is the 02:15 UTC run of 2026-09-11.
-  Then pull one day through the notebook's data path
+  `prod-env-analytics-lake-972912397388`. The 02:15 UTC run of 2026-09-11 failed as well and
+  raised alarm issue #182: the analytics view chain's own fix only reached prod in the merge of
+  2026-09-11 evening, so that run still hit the missing view. The first export that can work is
+  the 02:15 UTC run of 2026-09-12. Then pull one day through the notebook's data path
   (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
   entries, so a field that never fills is found now rather than in three months. Proof the run
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
   execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the next 02:15 UTC
-  nightly. The missing view that failed every previous run now exists in prod.
+  nightly of 2026-09-12. The missing view that failed every previous run now exists in prod.
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
   stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
