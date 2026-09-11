@@ -129,15 +129,22 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
-  first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
-  answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
-  attempting to invoke". On the HMRC Developer Hub, open the sandbox application with client id
+- [ ] **O34. Subscribe the HMRC sandbox application to six ITSA APIs.** Two runs have now stopped
+  on the same 403, "The application is not subscribed to the API which it is attempting to invoke":
+  the sandbox year's first call to `DELETE .../self-assessment-test-support/vendor-state`, and
+  `POST /individuals/business/property/...` in `itsaUkPropertyPeriodBehaviour` at 23:38 UTC on
+  2026-09-11 (probe-test run 34658626362).
+
+  On the HMRC Developer Hub, open the sandbox application with client id
   `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` and subscribe it to Self Assessment Test Support, Obligations,
-  Self Employment Business, Business Source Adjustable Summary and Individual Calculations.
-  Only the Developer Hub account holder can do this; no stored credential in `.env*` or Secrets
-  Manager reaches it. Unblocks B11.T7's run. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
-  run record. **Owner**: Operator. **Model**: none.
+  Self Employment Business, **Property Business**, Business Source Adjustable Summary and
+  Individual Calculations. Property Business is the one this row did not previously name, and it is
+  what the UK property suites need. Only the Developer Hub account holder can do this; no stored
+  credential in `.env*` or Secrets Manager reaches it.
+
+  Unblocks B11.T7r's run and the two UK property suites. **Source**:
+  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record; probe-test run 34658626362's Lambda log.
+  **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
