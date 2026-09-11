@@ -72,6 +72,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
   sit in the tree because `eslint-plugin-sonarjs` pins 6.0.3. Fix the filter and the resolution,
   then make eslint run somewhere. **Source**: PR #186's verification, 2026-09-11. **Owner**: Claude
   Code. **Model**: Sonnet.
+- [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
+  reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
+  `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
+  so none of this blocks anything today.
+
+  **Operator decision, 2026-09-11: fix all 214.** Take the formatting pass as its own commit
+  touching no logic, then the `no-var` and `no-empty` fixes as a second. The second half changes
+  real code in pages covered only by the behaviour suites, so it needs those suites run against a
+  deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
+  Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -100,30 +110,23 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O41x. The vault will not accept a cross-account restore grant.** Dispatched
-  `setup-backup-account.yml` at 19:17 UTC on 2026-09-11 (run 34638032553, `dry-run=false`). It
-  failed at `Deploy backup account stacks`: AWS Backup refused the vault policy with "The specified
-  policy cannot be added to the vault due to cross-account sharing restrictions" (403, AccessDenied,
-  `HandlerErrorCode: AccessDenied`). The stack rolled back cleanly to `UPDATE_ROLLBACK_COMPLETE`,
-  so nothing is stuck and nothing was lost.
+- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
+  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
+  policy with "cross-account sharing restrictions" (403). A vault access policy takes
+  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
+  statement cannot deploy. The organisation setting is not implicated;
+  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
 
-  The cause is structural, not a typo. Reading the policy live on the vault shows two statements,
-  `AllowCrossAccountCopy` and `DenyDeleteFromOutsideBackupAccount`. The third that
-  `CrossAccountBackupVaultStack.java` now builds, `AllowCiRestoreRoleToRestore`, grants
-  `backup:StartRestoreJob`, `ListRecoveryPointsByBackupVault`, `DescribeRecoveryPoint` and
-  `GetRecoveryPointRestoreMetadata` to a principal in submit-ci, and that is what AWS rejects: a
-  backup vault access policy takes `backup:CopyIntoBackupVault` cross-account, not restore. The
-  organisation setting is not the problem — `isCrossAccountBackupEnabled` has been `true` since
-  2026-08-29.
+  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
+  the recovery point from the backup vault to a vault in the source account and restores it there,
+  which is AWS's documented cross-account restore path and the route a real recovery would take. It
+  costs one copy per drill and writes into the source account.
 
-  So B105's fix named a principal that can be assumed, which was the right half of the problem, but
-  the mechanism cannot work. Two candidate designs, and this needs a decision before any more
-  dispatching: restore from inside the backup account, with `restore-drill.yml` assuming a role
-  there rather than in ci; or copy the recovery point back to the source account and restore it
-  locally, which is AWS's documented cross-account restore path and costs a copy. Whichever is
-  chosen, the `AllowCiRestoreRoleToRestore` statement comes out of the vault policy or the stack
-  never deploys again. **Source**: run 34638032553's job log; the live vault policy.
-  **Owner**: Operator to choose the design, then Claude Code. **Model**: Opus for the design.
+  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
+  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
+  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
+  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
@@ -230,19 +233,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
   matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
   per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
   finding. **Owner**: Operator. **Model**: none.
-- [ ] **B117. The ITSA endpoints are not bundle-gated.** `web/public/submit.catalogue.toml` has no
-  entries for `losses-and-claims` or `tax-liability-adjustments`, so `bundleManagement.js`'s
-  `enforceBundles()` treats both as unrestricted and lets any signed-in caller through. The same
-  gap covers several ITSA endpoints already deployed — self-employment annual, UK property annual
-  and others — so it is a pre-existing hole across the ITSA surface rather than something the
-  losses work introduced.
+- [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
+  no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
+  unrestricted and lets any signed-in caller through. The gap covers the whole ITSA surface, not
+  just the newer endpoints, so the entire ITSA journey is currently free while VAT is gated.
 
-  That means the whole ITSA journey is currently free, while VAT is gated. Decide what each ITSA
-  activity should cost before adding entries: the plan has a quarterly update costing one token
-  like a VAT return, and the year-end activity free, but the newer endpoints have no stated price.
-  This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
-  on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
-  2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
+  **Operator decision, 2026-09-11: submissions cost, reads free.** Anything that submits to HMRC
+  costs one token like a VAT return — quarterly updates, annual submissions, losses and claims,
+  tax liability adjustments, final declaration. Anything that only reads is free: business details,
+  obligations, calculations. That matches the existing VAT rule and introduces no new pricing
+  concept.
+
+  Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
+  submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
+  agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B116x. Re-run the ITSA suites against a ci set that outlives them.**
   `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
   run 34651928296), the first time any ITSA journey has executed against a deployed environment.
