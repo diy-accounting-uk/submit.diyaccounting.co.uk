@@ -17,7 +17,8 @@
  *   --apply                        Make the changes; without it, report only
  *   --billing-project <id>         Project whose billing account holds the budget
  *                                  (default: diyaccounting-ga4)
- *   --stray-project <id>           Project to inspect and, if empty, delete
+ *   --stray-project <id>           Project to inspect, and remove only with
+ *                                  --delete-stray-project
  *                                  (default: valued-context-507200-m9)
  *
  * Environment variables:
@@ -80,6 +81,7 @@ export const CONFIG_PATH = "google/project.toml";
 export function parseArgs(argv) {
   const opts = {
     apply: false,
+    deleteStrayProject: false,
     billingProjectId: DEFAULT_BILLING_PROJECT_ID,
     strayProjectId: DEFAULT_STRAY_PROJECT_ID,
   };
@@ -88,6 +90,9 @@ export function parseArgs(argv) {
     switch (argv[i]) {
       case "--apply":
         opts.apply = true;
+        break;
+      case "--delete-stray-project":
+        opts.deleteStrayProject = true;
         break;
       case "--billing-project":
         opts.billingProjectId = argv[++i];
@@ -413,11 +418,14 @@ async function assertStrayProjectEmpty(accessToken, opts) {
 
   const safeToDelete = isProjectSafeToDelete(inventory);
 
-  if (!opts.apply) {
+  // Deleting a project is not part of --apply. --apply keeps the budget in step, which is a
+  // change a push can safely make; removing a project is irreversible in a way a merge should
+  // never trigger on its own, so it needs its own flag and the workflow never passes it.
+  if (!opts.deleteStrayProject) {
     console.log(
       safeToDelete
-        ? `Dry run: ${opts.strayProjectId} is empty and would be deleted.`
-        : `Dry run: ${opts.strayProjectId} is not empty and would NOT be deleted.`,
+        ? `${opts.strayProjectId} is empty. Pass --delete-stray-project to remove it.`
+        : `${opts.strayProjectId} is not empty and would not be removed. See the inventory above.`,
     );
     return;
   }
