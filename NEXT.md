@@ -52,9 +52,13 @@ it nine tests fail on a missing file that has nothing to do with the change.
   that fires nightly on our own missing grants is how a real unauthorized call gets ignored.
   **Source**: issue #181; CloudTrail `prod-env-cloud-trail`, 2026-09-11. **Owner**: Claude Code.
   **Model**: Sonnet.
-- [ ] **B120. The self-destruct leaves an HmrcItsaStack behind on every ci set.** `ci-claudd608`
-  and `ci-clauddb3b` each have every app stack in `DELETE_COMPLETE` except
-  `{deployment}-app-HmrcItsaStack`, which still stands in `CREATE_COMPLETE`. The deletions fall
+- [ ] **B120. The self-destruct leaves an HmrcItsaStack behind on every ci set.** `ci-clauddb3b`,
+  `ci-claudd608` and now `ci-claud5589` each have every app stack in `DELETE_COMPLETE` except
+  `{deployment}-app-HmrcItsaStack`, which still stands in `CREATE_COMPLETE`. Three orphans is every
+  ci set there has been today, one per deploy, and the third appeared while a board was rendering.
+  ci therefore has no working environment at all: `/submit/ci/last-known-good-deployment` still
+  names `ci-claud5589`, whose other eight stacks went at 18:06. Anything needing a ci set — B17v.1's
+  two videos, B116's ITSA suites, B34.7's filing suites — has to deploy one first. The deletions fall
   about two hours after each set's creation, which is `SelfDestructStack` firing rather than
   `destroy-ci.yml`'s cron, and both destroy workflows do list `HmrcItsaStack` in their phase 4.
   So the omission is in the self-destruct path's own stack list, not the workflows'. One leftover
