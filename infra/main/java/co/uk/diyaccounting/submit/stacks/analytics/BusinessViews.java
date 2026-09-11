@@ -11,7 +11,6 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -366,24 +365,20 @@ public class BusinessViews extends Construct {
     }
 
     /**
-     * The Glue catalog, the database, and every table any view reads or writes: each view's own
-     * table plus the tables named in its {@code readTables}, de-duplicated because several views
-     * read the same source and one view reads another view's table.
+     * The Glue catalog, the database, and every table in it.
+     *
+     * <p>Not an enumeration of each view's {@code readTables}: creating a view makes Athena analyse
+     * the stored views it reads, which in turn needs read access to the tables <em>those</em> views
+     * read, transitively. {@code readTables} records direct dependencies only, so an enumerated
+     * grant denies a legitimate read one hop further down — {@code v_login_to_submission_funnel}
+     * reads {@code activity_events_all}, which reads {@code activity_events}, which the enumeration
+     * never named. The grant is already scoped to this database and already carries CreateTable and
+     * UpdateTable on it, so reading every table in the same database adds no privilege worth the
+     * fragility of keeping a transitive list by hand.
      */
     private static List<String> allTableResources(
             String region, String account, String databaseName, String catalogArn, String databaseArn) {
-        var all = new ArrayList<String>();
-        all.add(catalogArn);
-        all.add(databaseArn);
-        var tableNames = new LinkedHashSet<String>();
-        for (ViewDefinition view : VIEWS) {
-            tableNames.add(view.name());
-            tableNames.addAll(view.readTables());
-        }
-        for (String tableName : tableNames) {
-            all.add(glueTableArn(region, account, databaseName, tableName));
-        }
-        return all;
+        return List.of(catalogArn, databaseArn, glueTableArn(region, account, databaseName, "*"));
     }
 
     private static String glueTableArn(String region, String account, String databaseName, String tableName) {
