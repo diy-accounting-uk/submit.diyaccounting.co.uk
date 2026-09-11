@@ -20,6 +20,8 @@ test.describe("usage.html - ITSA year token cost summary", () => {
   });
 
   async function loadPage(page) {
+    const url = "http://localhost:3000/usage.html";
+
     await page.route("**/*.js", async (route) => {
       const request = route.request();
       if (request.resourceType() === "script") {
@@ -30,7 +32,15 @@ test.describe("usage.html - ITSA year token cost summary", () => {
     });
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/">');
-    await page.setContent(modifiedHtml, { url: "http://localhost:3000/usage.html", waitUntil: "domcontentloaded" });
+
+    // page.setContent() does not count as a navigation, so an addInitScript() registered before
+    // it never runs and sessionStorage set that way is invisible to the page - route the exact
+    // URL to the modified HTML and goto it instead, the way finalDeclaration.browser.test.js's
+    // loadPage already does for the same reason.
+    await page.route(url, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
+    });
+    await page.goto(url, { waitUntil: "domcontentloaded" });
     await delay(200);
   }
 
