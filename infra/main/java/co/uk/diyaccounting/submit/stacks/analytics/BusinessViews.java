@@ -53,7 +53,7 @@ import software.constructs.Construct;
  * submitted, not once it completes, so an {@code AwsCustomResource} around it alone marks
  * CloudFormation successful the instant the query starts — a {@code CREATE OR REPLACE VIEW} that
  * fails afterwards leaves the stack green and the view silently missing from the catalog. See
- * {@code app/functions/analytics/createView.js} for the onEvent/isComplete handler pair that
+ * {@code app/functions/analytics/createView.mjs} for the onEvent/isComplete handler pair that
  * polls {@code GetQueryExecution} to a terminal state and fails loudly, carrying Athena's {@code
  * StateChangeReason}, on anything but {@code SUCCEEDED}.
  *
@@ -265,7 +265,7 @@ public class BusinessViews extends Construct {
                 .code(Code.fromAsset(
                         createViewAssetDir,
                         AssetOptions.builder()
-                                .exclude(List.of("*", "!createView.js"))
+                                .exclude(List.of("*", "!createView.mjs"))
                                 .build()))
                 .timeout(Duration.seconds(30))
                 .role(athenaViewProviderRole)
@@ -290,7 +290,7 @@ public class BusinessViews extends Construct {
                 .code(Code.fromAsset(
                         createViewAssetDir,
                         AssetOptions.builder()
-                                .exclude(List.of("*", "!createView.js"))
+                                .exclude(List.of("*", "!createView.mjs"))
                                 .build()))
                 .timeout(Duration.seconds(30))
                 .role(athenaViewProviderRole)

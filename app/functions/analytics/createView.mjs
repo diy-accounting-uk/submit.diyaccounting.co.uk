@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/analytics/createView.js
+// app/functions/analytics/createView.mjs
 //
 // Custom resource handler pair for a CDK Provider that creates (or replaces) one Athena
 // business view. Athena.startQueryExecution returns as soon as the query is submitted, not once

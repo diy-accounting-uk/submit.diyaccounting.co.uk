@@ -22,7 +22,7 @@ vi.mock("@aws-sdk/client-athena", () => ({
   },
 }));
 
-import { onEvent, isComplete } from "@app/functions/analytics/createView.js";
+import { onEvent, isComplete } from "@app/functions/analytics/createView.mjs";
 
 function resourceProperties(overrides = {}) {
   return {
