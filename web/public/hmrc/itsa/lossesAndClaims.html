@@ -1,0 +1,582 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Losses and Claims - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Losses and Claims</h1>
+      <p class="subtitle">Tell HMRC how a loss carries forward, sideways or back once the tax year has ended</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div id="loadCriteriaForm" class="form-container">
+        <h2>Load a Business's Losses and Claims</h2>
+        <form id="itsaLossesLoadForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="typeOfBusiness">Business type</label>
+            <p id="typeOfBusiness-hint" class="hint">
+              Carry-back is only available for a sole trade. A landlord's loss carries forward.
+            </p>
+            <select id="typeOfBusiness" name="typeOfBusiness" aria-describedby="typeOfBusiness-hint">
+              <option value="self-employment">Self-employment (sole trade)</option>
+              <option value="uk-property">UK property</option>
+              <option value="foreign-property">Foreign property</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for loading losses and claims</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (loads a carry-forward claim)</option>
+              <option value="TERMINAL_LOSS_CLAIM">Terminal loss claim</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" />
+              <label for="suspendTemporalValidations" style="display: inline; font-weight: normal"
+                >Suspend temporal validations (sandbox tax year has not really ended)</label
+              >
+            </div>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="loadBtn" class="btn">Load Losses and Claims</button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once losses and claims have been loaded (or for a first-time entry) -->
+      <div id="lossesEditForm" class="form-container" style="display: none">
+        <h2>Losses brought forward</h2>
+        <p class="hint">The amount of earlier losses applied in this tax year. Leave at 0 if none.</p>
+        <div class="form-group">
+          <label for="broughtForwardLosses">Brought forward losses</label>
+          <input type="number" id="broughtForwardLosses" name="broughtForwardLosses" step="0.01" value="0" />
+        </div>
+
+        <h2>Carry forward</h2>
+        <p class="hint">The ordinary first-year-of-trading case, and any bad year. Also how a landlord's rental loss carries.</p>
+        <div class="form-group">
+          <label for="currentYearLosses">This year's loss to carry forward</label>
+          <input type="number" id="currentYearLosses" name="currentYearLosses" step="0.01" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="previousYearsLosses">Previous years' losses used this year</label>
+          <input type="number" id="previousYearsLosses" name="previousYearsLosses" step="0.01" value="0" />
+        </div>
+
+        <h2>Carry sideways</h2>
+        <p class="hint">Set this year's trading loss against this year's other income. Real for a sole trader who also has a job.</p>
+        <div class="form-group">
+          <label for="currentYearGeneralIncome">Loss set against this year's other income</label>
+          <input type="number" id="currentYearGeneralIncome" name="currentYearGeneralIncome" step="0.01" value="0" />
+        </div>
+
+        <div id="carryBackSection">
+          <h2>Carry back</h2>
+          <p class="hint">Carries a loss back to an earlier year. Not available for a property business.</p>
+          <div class="form-group">
+            <label for="previousYearGeneralIncome">Set against an earlier year's general income</label>
+            <input type="number" id="previousYearGeneralIncome" name="previousYearGeneralIncome" step="0.01" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="earlyYearLosses">Early years losses</label>
+            <input type="number" id="earlyYearLosses" name="earlyYearLosses" step="0.01" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="terminalLosses">Terminal losses, on ceasing to trade</label>
+            <input type="number" id="terminalLosses" name="terminalLosses" step="0.01" value="0" />
+          </div>
+        </div>
+
+        <div id="preferenceOrderSection" class="form-group" style="display: none">
+          <label for="applyFirst">Which claim applies first</label>
+          <p class="hint">Only meaningful when both a carry-sideways and a carry-back claim are made in the same year.</p>
+          <select id="applyFirst" name="applyFirst">
+            <option value="">Not specified</option>
+            <option value="carry-sideways">Carry sideways first</option>
+            <option value="carry-back">Carry back first</option>
+          </select>
+        </div>
+
+        <p id="claimSummary" class="hint" aria-live="polite"></p>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button type="button" id="saveBtn" class="btn">Save Losses and Claims</button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="lossesResults" class="results-container" style="display: none">
+        <h3>Losses and Claims Saved</h3>
+        <p>HMRC has accepted the losses and claims.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Load Another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2006-2026 DIY Accounting Limited</p>
+          <p>
+            Free to use.
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
+            under the
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
+              >PolyForm Internal Use License</a
+            >.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script>
+      let loadedNino = "";
+      let loadedBusinessId = "";
+      let loadedTaxYear = "";
+      let loadedTypeOfBusiness = "self-employment";
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+
+        ["broughtForwardLosses", "currentYearLosses", "previousYearsLosses", "currentYearGeneralIncome"].forEach((id) => {
+          document.getElementById(id).addEventListener("input", updateClaimSummary);
+        });
+        ["previousYearGeneralIncome", "earlyYearLosses", "terminalLosses"].forEach((id) => {
+          document.getElementById(id).addEventListener("input", updateClaimSummary);
+        });
+        document.getElementById("applyFirst").addEventListener("change", updateClaimSummary);
+      }
+
+      // Carry-back is refused server-side for anything but a sole trade (the sandbox's
+      // CARRY_BACK_CLAIM scenario), so the page hides the section entirely for a property
+      // business rather than letting the customer fill it in and be turned away.
+      function updateCarryBackVisibility() {
+        const typeOfBusiness = document.getElementById("typeOfBusiness").value;
+        const isSelfEmployment = typeOfBusiness === "self-employment";
+        document.getElementById("carryBackSection").style.display = isSelfEmployment ? "block" : "none";
+        if (!isSelfEmployment) {
+          document.getElementById("previousYearGeneralIncome").value = 0;
+          document.getElementById("earlyYearLosses").value = 0;
+          document.getElementById("terminalLosses").value = 0;
+        }
+        updateClaimSummary();
+      }
+
+      function hasEntry(...values) {
+        return values.some((v) => Number(v) !== 0);
+      }
+
+      // States plainly which claim is about to be made, before the customer saves - the
+      // sentence the plan calls for, so a customer never sends a claim they did not mean to.
+      function updateClaimSummary() {
+        const carryForward = hasEntry(
+          document.getElementById("currentYearLosses").value,
+          document.getElementById("previousYearsLosses").value,
+        );
+        const carrySideways = hasEntry(document.getElementById("currentYearGeneralIncome").value);
+        const carryBack = hasEntry(
+          document.getElementById("previousYearGeneralIncome").value,
+          document.getElementById("earlyYearLosses").value,
+          document.getElementById("terminalLosses").value,
+        );
+
+        const preferenceOrderSection = document.getElementById("preferenceOrderSection");
+        preferenceOrderSection.style.display = carrySideways && carryBack ? "block" : "none";
+        if (!(carrySideways && carryBack)) document.getElementById("applyFirst").value = "";
+
+        const claims = [];
+        if (carryForward) claims.push("carry the loss forward");
+        if (carrySideways) claims.push("set it sideways against this year's other income");
+        if (carryBack) claims.push("carry it back to an earlier year");
+
+        const summary = document.getElementById("claimSummary");
+        summary.textContent = claims.length > 0 ? `This save will ${claims.join(", ")}.` : "No claim is entered yet.";
+      }
+
+      function readLosses() {
+        const broughtForwardLosses = Number(document.getElementById("broughtForwardLosses").value) || 0;
+        return broughtForwardLosses !== 0 ? { broughtForwardLosses } : {};
+      }
+
+      function readClaims() {
+        const claims = {};
+
+        const currentYearLosses = Number(document.getElementById("currentYearLosses").value) || 0;
+        const previousYearsLosses = Number(document.getElementById("previousYearsLosses").value) || 0;
+        if (currentYearLosses !== 0 || previousYearsLosses !== 0) {
+          claims.carryForward = {};
+          if (currentYearLosses !== 0) claims.carryForward.currentYearLosses = currentYearLosses;
+          if (previousYearsLosses !== 0) claims.carryForward.previousYearsLosses = previousYearsLosses;
+        }
+
+        const currentYearGeneralIncome = Number(document.getElementById("currentYearGeneralIncome").value) || 0;
+        if (currentYearGeneralIncome !== 0) {
+          claims.carrySideways = { currentYearGeneralIncome };
+        }
+
+        if (document.getElementById("typeOfBusiness").value === "self-employment") {
+          const previousYearGeneralIncome = Number(document.getElementById("previousYearGeneralIncome").value) || 0;
+          const earlyYearLosses = Number(document.getElementById("earlyYearLosses").value) || 0;
+          const terminalLosses = Number(document.getElementById("terminalLosses").value) || 0;
+          if (previousYearGeneralIncome !== 0 || earlyYearLosses !== 0 || terminalLosses !== 0) {
+            claims.carryBack = {};
+            if (previousYearGeneralIncome !== 0) claims.carryBack.previousYearGeneralIncome = previousYearGeneralIncome;
+            if (earlyYearLosses !== 0) claims.carryBack.earlyYearLosses = earlyYearLosses;
+            if (terminalLosses !== 0) claims.carryBack.terminalLosses = terminalLosses;
+          }
+        }
+
+        const applyFirst = document.getElementById("applyFirst").value;
+        if (applyFirst && claims.carrySideways && claims.carryBack) {
+          claims.preferenceOrder = { applyFirst };
+        }
+
+        return claims;
+      }
+
+      function populateEditForm(lossesAndClaims) {
+        const losses = lossesAndClaims?.losses || {};
+        const claims = lossesAndClaims?.claims || {};
+
+        document.getElementById("broughtForwardLosses").value = losses.broughtForwardLosses ?? 0;
+        document.getElementById("currentYearLosses").value = claims.carryForward?.currentYearLosses ?? 0;
+        document.getElementById("previousYearsLosses").value = claims.carryForward?.previousYearsLosses ?? 0;
+        document.getElementById("currentYearGeneralIncome").value = claims.carrySideways?.currentYearGeneralIncome ?? 0;
+        document.getElementById("previousYearGeneralIncome").value = claims.carryBack?.previousYearGeneralIncome ?? 0;
+        document.getElementById("earlyYearLosses").value = claims.carryBack?.earlyYearLosses ?? 0;
+        document.getElementById("terminalLosses").value = claims.carryBack?.terminalLosses ?? 0;
+        document.getElementById("applyFirst").value = claims.preferenceOrder?.applyFirst || "";
+
+        updateCarryBackVisibility();
+      }
+
+      async function loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getLossesAndClaims(
+          nino,
+          businessId,
+          taxYear,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
+      }
+
+      async function saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await putLossesAndClaims(lossesDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingLoad = JSON.parse(sessionStorage.getItem("pendingLossesLoadRequest") || "null");
+          const pendingSave = JSON.parse(sessionStorage.getItem("pendingLossesSaveRequest") || "null");
+
+          if (pendingLoad) {
+            showLoading();
+            showStatus("Loading losses and claims...", "info");
+            const result = await loadLossesAndClaims(
+              pendingLoad.nino,
+              pendingLoad.businessId,
+              pendingLoad.taxYear,
+              pendingLoad.testScenario,
+              pendingLoad.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            loadedNino = pendingLoad.nino;
+            loadedBusinessId = pendingLoad.businessId;
+            loadedTaxYear = pendingLoad.taxYear;
+            loadedTypeOfBusiness = pendingLoad.typeOfBusiness;
+            populateEditForm(result);
+            document.getElementById("loadCriteriaForm").style.display = "none";
+            document.getElementById("lossesEditForm").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingLossesLoadRequest");
+          } else if (pendingSave) {
+            showLoading();
+            showStatus("Saving losses and claims...", "info");
+            await saveLossesAndClaims(
+              pendingSave.lossesDetails,
+              pendingSave.testScenario,
+              pendingSave.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            document.getElementById("lossesEditForm").style.display = "none";
+            document.getElementById("lossesResults").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingLossesSaveRequest");
+          } else {
+            return;
+          }
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingLossesLoadRequest");
+          sessionStorage.removeItem("pendingLossesSaveRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function handleLoadFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const businessId = document.getElementById("businessId").value.trim();
+        const typeOfBusiness = document.getElementById("typeOfBusiness").value;
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !businessId || !taxYear) {
+          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
+          return;
+        }
+
+        await ensureAuthorizedThen(
+          "pendingLossesLoadRequest",
+          { nino, businessId, taxYear, typeOfBusiness, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Loading losses and claims...", "info");
+              const result = await loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              loadedNino = nino;
+              loadedBusinessId = businessId;
+              loadedTaxYear = taxYear;
+              loadedTypeOfBusiness = typeOfBusiness;
+              populateEditForm(result);
+              document.getElementById("loadCriteriaForm").style.display = "none";
+              document.getElementById("lossesEditForm").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              if (error.status === 404 || /not.?found/i.test(error.message)) {
+                loadedNino = nino;
+                loadedBusinessId = businessId;
+                loadedTaxYear = taxYear;
+                loadedTypeOfBusiness = typeOfBusiness;
+                populateEditForm(null);
+                document.getElementById("loadCriteriaForm").style.display = "none";
+                document.getElementById("lossesEditForm").style.display = "block";
+                showStatus("HMRC has no losses or claims on file yet for this business and tax year.", "info");
+              } else {
+                showStatus(`Failed to load losses and claims: ${error.message}`, "error");
+              }
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function handleSaveClick() {
+        const lossesDetails = {
+          nino: loadedNino,
+          businessId: loadedBusinessId,
+          taxYear: loadedTaxYear,
+          typeOfBusiness: loadedTypeOfBusiness,
+          losses: readLosses(),
+          claims: readClaims(),
+          suspendTemporalValidations: document.getElementById("suspendTemporalValidations")?.checked || false,
+        };
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        await ensureAuthorizedThen(
+          "pendingLossesSaveRequest",
+          { lossesDetails, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Saving losses and claims...", "info");
+              await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              document.getElementById("lossesEditForm").style.display = "none";
+              document.getElementById("lossesResults").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to save losses and claims: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      document.getElementById("itsaLossesLoadForm").addEventListener("submit", handleLoadFormSubmission);
+      document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
+      document.getElementById("typeOfBusiness").addEventListener("change", updateCarryBackVisibility);
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("lossesResults").style.display = "none";
+        document.getElementById("loadCriteriaForm").style.display = "block";
+        document.getElementById("lossesEditForm").style.display = "none";
+        document.getElementById("itsaLossesLoadForm").reset();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>

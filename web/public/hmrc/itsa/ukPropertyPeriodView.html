@@ -95,7 +95,12 @@
               <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
             </div>
 
-            <div class="form-group">
+            <p id="cumulativeViewNote" class="hint" style="display: none">
+              This tax year reports one running total, so there is no submission ID to enter - HMRC returns the current total
+              for the tax year.
+            </p>
+
+            <div id="submissionIdGroup" class="form-group">
               <label for="submissionId">Submission ID</label>
               <p id="submissionId-hint" class="hint">From the Period Summaries list.</p>
               <input type="text" id="submissionId" name="submissionId" required aria-describedby="submissionId-hint" />
@@ -166,12 +171,27 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script>
+      // A cumulative tax year (2025-26 onwards) retrieves the single running total addressed
+      // by taxYear alone, so there is no submissionId to enter or require.
+      function updateSubmissionModelUI() {
+        const taxYearValue = document.getElementById("taxYear").value.trim();
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYearValue) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYearValue) === "cumulative";
+
+        document.getElementById("cumulativeViewNote").style.display = isCumulative ? "block" : "none";
+        document.getElementById("submissionIdGroup").style.display = isCumulative ? "none" : "block";
+        document.getElementById("submissionId").required = !isCumulative;
+      }
+
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
         const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
@@ -238,7 +258,8 @@
       }
 
       async function fetchPeriod(nino, businessId, taxYear, submissionId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
-        const params = new URLSearchParams({ nino, businessId, taxYear, submissionId });
+        const params = new URLSearchParams({ nino, businessId, taxYear });
+        if (submissionId) params.append("submissionId", submissionId);
         if (testScenario) params.append("Gov-Test-Scenario", testScenario);
         if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
 
@@ -335,7 +356,12 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !businessId || !taxYear || !submissionId) {
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
+
+        if (!nino || !businessId || !taxYear || (!isCumulative && !submissionId)) {
           showStatus("Please fill in the National Insurance number, business ID, tax year and submission ID.", "error");
           return;
         }
@@ -410,6 +436,29 @@
 
       function displayPeriod(period) {
         const details = document.getElementById("periodDetails");
+
+        // The cumulative model (2025-26 onwards) carries one flat ukProperty object - furnished
+        // holiday lettings ended 5 April 2025, so there is no FHL/non-FHL split to read there.
+        if (period?.ukProperty) {
+          const property = period.ukProperty;
+          const income = property.income || {};
+          const expenses = property.expenses || {};
+
+          details.innerHTML = `
+            <dt>Reported to</dt>
+            <dd>${escapeHtml(period?.toDate || "-")}</dd>
+            <dt>Rental income (year to date)</dt>
+            <dd>${escapeHtml(income.periodAmount ?? "-")}</dd>
+            <dt>Other property income (year to date)</dt>
+            <dd>${escapeHtml(income.otherIncome ?? "-")}</dd>
+            <dt>Repairs and maintenance (year to date)</dt>
+            <dd>${escapeHtml(expenses.repairsAndMaintenance ?? "-")}</dd>
+            <dt>Other property expenses (year to date)</dt>
+            <dd>${escapeHtml(expenses.other ?? expenses.consolidatedExpenses ?? "-")}</dd>
+          `;
+          return;
+        }
+
         const propertyType = period?.ukFhlProperty ? "ukFhlProperty" : "ukNonFhlProperty";
         const property = period?.[propertyType] || {};
         const income = property.income || {};
@@ -461,10 +510,13 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      document.getElementById("taxYear").addEventListener("input", updateSubmissionModelUI);
+
       document.getElementById("itsaUkPropertyPeriodViewForm").addEventListener("submit", handleFormSubmission);
 
       document.addEventListener("DOMContentLoaded", function () {
         initializePage();
+        updateSubmissionModelUI();
         handleOAuthCallback();
       });
     </script>

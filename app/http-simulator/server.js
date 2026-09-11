@@ -29,6 +29,8 @@ import { apiEndpoint as itsaCrystallisationObligationsEndpoint } from "./routes/
 import { apiEndpoint as itsaStatusEndpoint } from "./routes/itsa-status.js";
 import { apiEndpoint as itsaBsasEndpoint } from "./routes/itsa-bsas.js";
 import { apiEndpoint as itsaCalculationsEndpoint } from "./routes/itsa-calculations.js";
+import { apiEndpoint as itsaLossesAndClaimsEndpoint } from "./routes/itsa-losses-and-claims.js";
+import { apiEndpoint as itsaTaxLiabilityAdjustmentsEndpoint } from "./routes/itsa-tax-liability-adjustments.js";
 import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
@@ -96,6 +98,8 @@ export function createApp() {
   itsaStatusEndpoint(app);
   itsaBsasEndpoint(app);
   itsaCalculationsEndpoint(app);
+  itsaLossesAndClaimsEndpoint(app);
+  itsaTaxLiabilityAdjustmentsEndpoint(app);
   fraudHeadersEndpoint(app);
   testUserEndpoint(app);
   companiesHouseEndpoint(app);

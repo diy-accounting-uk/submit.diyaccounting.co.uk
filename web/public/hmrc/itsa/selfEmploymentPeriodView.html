@@ -95,7 +95,12 @@
               <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
             </div>
 
-            <div class="form-group">
+            <p id="cumulativeViewNote" class="hint" style="display: none">
+              This tax year reports one running total, so there is no period ID to enter - HMRC returns the current total for
+              the tax year.
+            </p>
+
+            <div id="periodIdGroup" class="form-group">
               <label for="periodId">Period ID</label>
               <p id="periodId-hint" class="hint">From the Period Summaries list, for example 2023-04-06_2023-07-05.</p>
               <input type="text" id="periodId" name="periodId" required placeholder="e.g., 2023-04-06_2023-07-05" aria-describedby="periodId-hint" />
@@ -162,12 +167,27 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script>
+      // A cumulative tax year (2025-26 onwards) retrieves the single running total addressed
+      // by taxYear alone, so there is no periodId to enter or require.
+      function updateSubmissionModelUI() {
+        const taxYearValue = document.getElementById("taxYear").value.trim();
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYearValue) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYearValue) === "cumulative";
+
+        document.getElementById("cumulativeViewNote").style.display = isCumulative ? "block" : "none";
+        document.getElementById("periodIdGroup").style.display = isCumulative ? "none" : "block";
+        document.getElementById("periodId").required = !isCumulative;
+      }
+
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
         const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
@@ -234,7 +254,8 @@
       }
 
       async function fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
-        const params = new URLSearchParams({ nino, businessId, taxYear, periodId });
+        const params = new URLSearchParams({ nino, businessId, taxYear });
+        if (periodId) params.append("periodId", periodId);
         if (testScenario) params.append("Gov-Test-Scenario", testScenario);
         if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
 
@@ -331,7 +352,12 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !businessId || !taxYear || !periodId) {
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
+
+        if (!nino || !businessId || !taxYear || (!isCumulative && !periodId)) {
           showStatus("Please fill in the National Insurance number, business ID, tax year and period ID.", "error");
           return;
         }
@@ -444,10 +470,13 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      document.getElementById("taxYear").addEventListener("input", updateSubmissionModelUI);
+
       document.getElementById("itsaSelfEmploymentPeriodViewForm").addEventListener("submit", handleFormSubmission);
 
       document.addEventListener("DOMContentLoaded", function () {
         initializePage();
+        updateSubmissionModelUI();
         handleOAuthCallback();
       });
     </script>

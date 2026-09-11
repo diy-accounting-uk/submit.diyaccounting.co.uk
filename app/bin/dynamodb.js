@@ -469,6 +469,34 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaLossesAndClaimsGetAsyncRequestsTableName = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaLossesAndClaimsPutAsyncRequestsTableName = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsPutAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName =
+      process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName =
+      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

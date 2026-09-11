@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// behaviour-tests/itsaSelfEmploymentPeriod.behaviour.test.js
+// behaviour-tests/itsaLossesAndClaims.behaviour.test.js
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
@@ -28,13 +28,16 @@ import {
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import {
   fillInItsaBusinessDetails,
-  fillInItsaSelfEmploymentPeriod,
+  fillInItsaLossesEdits,
+  fillInItsaLossesLoad,
   initItsaBusinessDetails,
-  initItsaSelfEmploymentPeriod,
+  initItsaLossesAndClaims,
   submitItsaBusinessDetailsForm,
-  submitItsaSelfEmploymentPeriodForm,
+  submitItsaLossesLoadForm,
+  submitItsaLossesSaveForm,
   verifyItsaBusinessDetailsResults,
-  verifyItsaSelfEmploymentPeriodResults,
+  verifyItsaLossesLoadResults,
+  verifyItsaLossesSaveResults,
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
@@ -49,7 +52,6 @@ import {
   assertHmrcApiRequestExists,
   assertConsistentHashedSub,
   assertEssentialFraudPreventionHeadersPresent,
-  countHmrcApiRequestValues,
   assertFraudPreventionHeaders,
   intentionallyNotSuppliedHeaders,
 } from "./helpers/dynamodb-assertions.js";
@@ -65,7 +67,7 @@ import {
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, HMRC API credentials
 
-const screenshotPath = "target/behaviour-test-results/screenshots/itsa-self-employment-period-behaviour-test";
+const screenshotPath = "target/behaviour-test-results/screenshots/itsa-losses-and-claims-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -87,12 +89,6 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 // Enable fraud prevention header validation in synthetic mode (required for HMRC API compliance testing)
 const runFraudPreventionHeaderValidation = isSyntheticMode();
-// The two forced HTTP 500 scenarios below are implemented only by our own HTTP simulator
-// (app/http-simulator/scenarios/itsa-self-employment-period.js), not by the real HMRC sandbox.
-// isSyntheticMode() can't tell the two apart, so use TEST_HTTP_SIMULATOR (only .env.simulator
-// sets it to "run") to gate the simulator-only scenarios out of any lane that talks to the
-// real sandbox.
-const usingHttpSimulator = getEnvVarAndLog("usingHttpSimulator", "TEST_HTTP_SIMULATOR", null) === "run";
 
 let mockOAuth2Process;
 let serverProcess;
@@ -103,7 +99,7 @@ let observedTraceparent = null;
 test.setTimeout(1200_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "itsaSelfEmploymentPeriodBehaviour" });
+  testInfo.annotations.push({ type: "test-id", description: "itsaLossesAndClaimsBehaviour" });
 });
 
 test.beforeAll(async ({ page }, testInfo) => {
@@ -152,8 +148,8 @@ test.afterEach(async ({ page }, testInfo) => {
 
 /**
  * Read the businessId of the first business row from the Business Details results table
- * already displayed on the page. Every self-employment endpoint after Business Details
- * needs this id - it is never guessed or hardcoded.
+ * already displayed on the page. The losses and claims endpoint needs this id - it is never
+ * guessed or hardcoded.
  */
 async function readFirstBusinessId(page) {
   const rowLocator = page.locator("#businessDetailsTable table tbody tr");
@@ -162,15 +158,7 @@ async function readFirstBusinessId(page) {
   return (await rowLocator.first().locator("td").nth(2).innerText()).trim();
 }
 
-async function requestAndVerifyPeriodFiling(page, periodQuery) {
-  await initItsaSelfEmploymentPeriod(page, screenshotPath);
-  await fillInItsaSelfEmploymentPeriod(page, { ...periodQuery, runFraudPreventionHeaderValidation }, screenshotPath);
-  await submitItsaSelfEmploymentPeriodForm(page, screenshotPath);
-  await verifyItsaSelfEmploymentPeriodResults(page, periodQuery, screenshotPath);
-  await goToHomePageUsingMainNav(page, screenshotPath);
-}
-
-test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, testInfo) => {
+test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
@@ -200,9 +188,9 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   let testPassword = hmrcTestPassword;
   let testNino = hmrcTestNino;
 
-  // HMRC obligations and business ids are unpredictable - never hardcode either. The run's
-  // own test user, minted with both mtd-vat and mtd-income-tax, supplies a NINO; the
-  // businessId comes from a real Business Details read further down.
+  // HMRC business ids are unpredictable - never hardcode them. The run's own test user, minted
+  // with both mtd-vat and mtd-income-tax, supplies a NINO; the businessId comes from a real
+  // Business Details read further down.
   if (!hmrcTestUsername) {
     console.log("[HMRC Test User] Synthetic mode detected without full credentials - creating test user");
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
@@ -275,84 +263,30 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   await verifyItsaBusinessDetailsResults(page, screenshotPath);
   const businessId = await readFirstBusinessId(page);
   if (!businessId) {
-    throw new Error("Business Details returned no businesses - cannot file a quarterly update without a businessId");
+    throw new Error("Business Details returned no businesses - cannot load losses and claims without a businessId");
   }
   await goToHomePageUsingMainNav(page, screenshotPath);
 
-  /* ******************************* */
-  /*  FILE A QUARTERLY UPDATE        */
-  /* ******************************* */
+  /* ***************************** */
+  /*  LOAD AND SAVE LOSSES AND CLAIMS */
+  /* ***************************** */
 
-  await initItsaSelfEmploymentPeriod(page, screenshotPath);
-  await fillInItsaSelfEmploymentPeriod(
+  const taxYear = "2023-24";
+
+  await initItsaLossesAndClaims(page, screenshotPath);
+  await fillInItsaLossesLoad(
     page,
-    {
-      hmrcNino: testNino,
-      businessId,
-      taxYear: "2024-25",
-      periodStartDate: "2024-04-06",
-      periodEndDate: "2024-07-05",
-      turnover: 1000,
-      runFraudPreventionHeaderValidation,
-    },
+    { hmrcNino: testNino, businessId, typeOfBusiness: "self-employment", taxYear, runFraudPreventionHeaderValidation },
     screenshotPath,
   );
-  await submitItsaSelfEmploymentPeriodForm(page, screenshotPath);
+  await submitItsaLossesLoadForm(page, screenshotPath);
+  await verifyItsaLossesLoadResults(page, screenshotPath);
 
-  await verifyItsaSelfEmploymentPeriodResults(page, screenshotPath);
+  await fillInItsaLossesEdits(page, { currentYearLosses: 1000 }, screenshotPath);
+  await submitItsaLossesSaveForm(page, screenshotPath);
+  await verifyItsaLossesSaveResults(page, screenshotPath);
+
   await goToHomePageUsingMainNav(page, screenshotPath);
-
-  /* ***************************************** */
-  /*  FILE WITH TEST SCENARIOS  */
-  /* ***************************************** */
-  if (isSyntheticMode()) {
-    /**
-     * Self Employment Business v5.0 sandbox scenarios (see _developers/hmrc/ITSA_SPIKE.md and
-     * the OpenAPI spec's create-period-summary description)
-     */
-    await requestAndVerifyPeriodFiling(page, {
-      hmrcNino: testNino,
-      businessId,
-      taxYear: "2023-24",
-      periodStartDate: "2023-04-06",
-      periodEndDate: "2023-07-05",
-      turnover: 500,
-      testScenario: "OVERLAPPING_PERIOD",
-    });
-    await requestAndVerifyPeriodFiling(page, {
-      hmrcNino: testNino,
-      businessId,
-      taxYear: "2023-24",
-      periodStartDate: "2023-04-06",
-      periodEndDate: "2023-07-05",
-      turnover: 500,
-      testScenario: "NOT_FOUND",
-    });
-
-    // Custom forced error scenarios are simulator-only (see the usingHttpSimulator comment
-    // above) - the real HMRC sandbox rejects these Gov-Test-Scenario values with a 400, so
-    // only run them against our own simulator.
-    if (usingHttpSimulator) {
-      await requestAndVerifyPeriodFiling(page, {
-        hmrcNino: testNino,
-        businessId,
-      taxYear: "2023-24",
-        periodStartDate: "2023-04-06",
-        periodEndDate: "2023-07-05",
-        turnover: 500,
-        testScenario: "SUBMIT_API_HTTP_500",
-      });
-      await requestAndVerifyPeriodFiling(page, {
-        hmrcNino: testNino,
-        businessId,
-      taxYear: "2023-24",
-        periodStartDate: "2023-04-06",
-        periodEndDate: "2023-07-05",
-        turnover: 500,
-        testScenario: "SUBMIT_HMRC_API_HTTP_500",
-      });
-    }
-  }
 
   /* ****************** */
   /*  Extract user sub  */
@@ -371,13 +305,14 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   /* ****************** */
 
   const testContext = {
-    testId: "itsaSelfEmploymentPeriodBehaviour",
+    testId: "itsaLossesAndClaimsBehaviour",
     name: testInfo.title,
-    title: "File an ITSA Quarterly Update (HMRC: Self Employment Business POST)",
-    description: "Creates a self-employment period summary with HMRC and verifies the result flows in the UI.",
+    title: "Load and Save ITSA Losses and Claims (HMRC: Individual Losses GET/PUT)",
+    description: "Loads the year's losses and claims for a business, enters a loss to carry forward, and saves it to HMRC.",
     hmrcApis: [
       { url: "/api/v1/hmrc/itsa/business/details", method: "GET" },
-      { url: "/api/v1/hmrc/itsa/self-employment/period", method: "POST" },
+      { url: "/api/v1/hmrc/itsa/losses-and-claims", method: "GET" },
+      { url: "/api/v1/hmrc/itsa/losses-and-claims", method: "PUT" },
       { url: "/test/fraud-prevention-headers/validate", method: "GET" },
     ],
     env: {
@@ -398,6 +333,7 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
       hmrcTestPassword: testPassword ? "***MASKED***" : "<not provided>",
       testUserGenerated: isSyntheticMode() && !hmrcTestUsername,
       businessId,
+      taxYear,
       userSub,
       observedTraceparent,
       testUrl,
@@ -411,35 +347,6 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   try {
     fs.writeFileSync(path.join(outputDir, "testContext.json"), JSON.stringify(testContext, null, 2), "utf-8");
   } catch (_e) {}
-
-  /* ****************** */
-  /*  FIGURES (SCREENSHOTS) */
-  /* ****************** */
-
-  const { selectKeyScreenshots, copyScreenshots, generateFiguresMetadata, writeFiguresJson } = await import("./helpers/figures-helper.js");
-
-  const keyScreenshotPatterns = [
-    "00.*focus.*submitting.*self-employment.*period.*form",
-    "01.*self-employment-period-submit",
-    "02.*self-employment-period-results",
-    "00.*focus.*a.*developer.*test.*scenario",
-  ];
-
-  const screenshotDescriptions = {
-    "00.*focus.*submitting.*self-employment.*period.*form": "Filling in the quarterly update form",
-    "01.*self-employment-period-submit": "Submitting the quarterly update form",
-    "02.*self-employment-period-results": "Viewing the quarterly update result",
-    "00.*focus.*a.*developer.*test.*scenario": "Submitting the quarterly update form with a test scenario",
-  };
-
-  const selectedScreenshots = selectKeyScreenshots(screenshotPath, keyScreenshotPatterns, 5);
-  console.log(`[Figures]: Selected ${selectedScreenshots.length} key screenshots from ${screenshotPath}`);
-
-  const copiedScreenshots = copyScreenshots(screenshotPath, outputDir, selectedScreenshots);
-  console.log(`[Figures]: Copied ${copiedScreenshots.length} screenshots to ${outputDir}`);
-
-  const figures = generateFiguresMetadata(copiedScreenshots, screenshotDescriptions);
-  writeFiguresJson(outputDir, figures);
 
   /* **************** */
   /*  EXPORT DYNAMODB */
@@ -474,33 +381,22 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
     const oauthRequests = assertHmrcApiRequestExists(hmrcApiRequestsFile, "POST", "/oauth/token", "OAuth token exchange");
     console.log(`[DynamoDB Assertions]: Found ${oauthRequests.length} OAuth token exchange request(s)`);
 
-    const periodRequests = assertHmrcApiRequestExists(
+    const putRequests = assertHmrcApiRequestExists(
       hmrcApiRequestsFile,
-      "POST",
-      `/individuals/business/self-employment/${testNino}/${businessId}/period`,
-      "ITSA self-employment period creation",
+      "PUT",
+      `/individuals/losses/${testNino}/businesses/${businessId}/loss-claims/${taxYear}`,
+      "ITSA losses and claims",
     );
-    console.log(`[DynamoDB Assertions]: Found ${periodRequests.length} ITSA self-employment period POST request(s)`);
+    console.log(`[DynamoDB Assertions]: Found ${putRequests.length} ITSA losses and claims PUT request(s)`);
 
-    expect(periodRequests.length).toBeGreaterThan(0);
-    let http200OkResults = 0;
-    periodRequests.forEach((periodRequest, index) => {
-      assertEssentialFraudPreventionHeadersPresent(periodRequest, `POST self-employment period request ${index + 1}`);
-      http200OkResults += countHmrcApiRequestValues(periodRequest, {
-        "httpRequest.method": "POST",
-        "httpResponse.statusCode": 200,
-      });
+    expect(putRequests.length).toBeGreaterThan(0);
+    putRequests.forEach((putRequest, index) => {
+      assertEssentialFraudPreventionHeadersPresent(putRequest, `PUT losses and claims request ${index + 1}`);
     });
-
-    console.log("[DynamoDB Assertions]: ITSA Self-Employment Period POST request results summary:");
-    console.log(`  HTTP 200 OK: ${http200OkResults}`);
-    // 1 = the initial filing. OVERLAPPING_PERIOD and NOT_FOUND return a 400/404 instead. The
-    // two forced-500 scenarios never reach hmrcHttpPost, so they never appear in this table.
-    expect(http200OkResults).toBe(1);
 
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
-    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Self-Employment Period test", {
+    const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Losses and Claims test", {
       filterByUserSub: userSub,
     });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
