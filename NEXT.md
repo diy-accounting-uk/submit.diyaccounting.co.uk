@@ -43,6 +43,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B114. The prod analytics nightly failed.** Alarm issue #182, raised 02:27 UTC on
+  2026-09-11: `prod-env-analytics-nightly-failed` went OK to ALARM on deployment prod-49fd9b3. This
+  is the run B52x was waiting for — the first nightly since the raw export's lake grants reached
+  prod — so its first real outing failed. Read the state machine's execution and the
+  `/aws/vendedlogs/states/prod-env-analytics-nightly` log group, find which step failed, and fix it.
+  If the raw export step is the one that failed, B52x stays blocked on the next nightly after the
+  fix. **Source**: issue #182. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  `aws sso login --sso-session diyaccounting`.
+- [ ] **B115. Unauthorized API calls in prod.** Alarm issue #181, raised 02:17 UTC on 2026-09-11:
+  `prod-env-cis-unauthorized-api-calls`. Establish what called what and was refused, from CloudTrail
+  over the alarm's window, before deciding whether it is a benign denied call from one of our own
+  roles or something to act on. Do not post anything identifying to a public issue.
+  **Source**: issue #181. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  `aws sso login --sso-session diyaccounting`.
 - [ ] **B11.T17 to T22 and T15. ITSA phase 2, the rest of the spine.** T11 to T16 shipped in
   PR #180, including a new `HmrcItsaStack` because `HmrcStack` hit CloudFormation's 500-resource
   ceiling. The remaining tracks run in `PLAN_ITSA_PHASE_2.md`'s own dependency order, which is not
