@@ -153,6 +153,11 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 
   For a suite that finishes in seconds — a targeted `vitest` run, a YAML parse, actionlint — verify
   first and commit after, as normal. The inversion is for the long ones.
+- **Any new file needs the licence header.** Every comment-capable tracked file carries the SPDX
+  identifier and the copyright line, and `app/unit-tests/licenceHeaders.test.js` fails the suite
+  when one does not. A new `_developers/*.md` written at the end of an investigation is the usual
+  casualty, because the agent is writing prose by then rather than code. Say it in the brief: the
+  two-line header goes on before the first commit.
 - **Blast-radius testing only.** `npm run bundle` first for anything touching `app/` or `web/` —
   the bundle is gitignored and `pretest` fires only for a bare `npm test`, so without it nine
   unrelated tests fail on a missing file. Then the unit, system or browser tests its change
