@@ -3,7 +3,8 @@
 
 # PLAN: Google Cloud and GA4 as code
 
-Status: open, design only. No code written.
+Status: open. Items 1-7 and 12-14 are shipped. Items 8-11 (the workload identity pool, GitHub
+Actions and Lambda federation, and key rotation) remain.
 
 Everything the operator does by hand in the Google consoles moves into files in this repo, applied
 by one workflow. The target is no console visit for a routine change, and no generated id copied
@@ -366,9 +367,10 @@ needing an id nobody had looked up. `scripts/youtube-upload.js` reads `CLIENT_SE
 `.github/workflows/youtube-check.yml` runs `--check` weekly (Monday 06:00 UTC) and on demand, and
 fails the run when the resolved handle no longer matches.
 
-**14. Record the design in the repository contents report.** Add the `google/` directory and
-`google-apply.yml` to `REPORT_REPOSITORY_CONTENTS.md`, and remove the rows for the files and
-workflows deleted by items 3, 5 and 7.
+**14. Record the design in the repository contents report — done.** `google/oauth.toml` and
+`google/youtube.toml` joined the existing `google/*.toml` rows; `google-apply.yml` and
+`youtube-check.yml` joined the workflow table. Nothing deleted by items 3, 5 or 7 had a row there
+to remove.
 
 ## What stays manual
 
