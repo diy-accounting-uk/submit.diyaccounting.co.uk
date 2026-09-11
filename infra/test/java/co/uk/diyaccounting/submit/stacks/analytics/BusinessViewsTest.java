@@ -62,18 +62,35 @@ class BusinessViewsTest {
         Template template = synthBusinessViews();
 
         template.resourceCountIs("AWS::Athena::NamedQuery", VIEW_COUNT);
-        template.resourceCountIs("Custom::AWS", VIEW_COUNT);
+        template.resourceCountIs("Custom::AthenaView", VIEW_COUNT);
     }
 
     @Test
-    void allViewCreatorsShareOneSingletonProviderWithOneExplicitLogGroup() {
+    void allViewCreatorsShareOneOnEventAndOneIsCompleteLambdaRatherThanOnePairPerView() {
         Template template = synthBusinessViews();
 
-        // Every AwsCustomResource here omits functionName, so all VIEW_COUNT of them reuse one
-        // singleton provider Lambda per stack. A second LogGroup with the same name would fail at
-        // deploy with "already exists", so there must be exactly one function and one log group.
-        template.resourceCountIs("AWS::Lambda::Function", 1);
-        template.resourceCountIs("AWS::Logs::LogGroup", 1);
+        // Every per-view Custom::AthenaView shares the same Provider, so there is exactly one
+        // "createView.onEvent" function and one "createView.isComplete" function regardless of
+        // VIEW_COUNT — not one pair per view, which is what would blow the per-role inline-policy
+        // budget the class Javadoc warns about. The Provider framework itself adds a handful more
+        // Lambda functions (its own onEvent/isComplete/onTimeout dispatch), so the total function
+        // count is intentionally not asserted here.
+        var lambdas = template.findResources("AWS::Lambda::Function");
+        var onEventCount = countByHandler(lambdas, "createView.onEvent");
+        var isCompleteCount = countByHandler(lambdas, "createView.isComplete");
+
+        assertEquals(1, onEventCount, "expected exactly one createView.onEvent function");
+        assertEquals(1, isCompleteCount, "expected exactly one createView.isComplete function");
+    }
+
+    private static long countByHandler(Map<String, Map<String, Object>> lambdas, String handler) {
+        return lambdas.values().stream()
+                .filter(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return handler.equals(properties.get("Handler"));
+                })
+                .count();
     }
 
     @Test
@@ -103,22 +120,18 @@ class BusinessViewsTest {
                 "v_operator_interventions_daily",
                 "v_compliance_status");
 
-        var customResources = template.findResources("Custom::AWS");
+        var customResources = template.findResources("Custom::AthenaView");
         var viewNamesFound = new ArrayList<String>();
         for (var resource : customResources.values()) {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) resource.get("Properties");
-            var create = String.valueOf(properties.get("Create"));
+            var viewName = String.valueOf(properties.get("ViewName"));
+            var sql = String.valueOf(properties.get("Sql"));
             assertTrue(
-                    create.contains("startQueryExecution"), "expected an Athena startQueryExecution call: " + create);
-            assertTrue(
-                    create.contains("CREATE OR REPLACE VIEW"),
-                    "expected a CREATE OR REPLACE VIEW statement: " + create);
-            for (String viewName : expectedViewNames) {
-                if (create.contains("CREATE OR REPLACE VIEW " + viewName + " AS")) {
-                    viewNamesFound.add(viewName);
-                    break;
-                }
+                    sql.contains("CREATE OR REPLACE VIEW " + viewName + " AS"),
+                    "expected " + viewName + "'s Sql property to define that view: " + sql);
+            if (expectedViewNames.contains(viewName)) {
+                viewNamesFound.add(viewName);
             }
         }
         assertEquals(
@@ -127,44 +140,91 @@ class BusinessViewsTest {
     }
 
     @Test
+    void everyViewCreatorRunsThroughTheSharedProviderNotDirectlyAgainstAthena() {
+        Template template = synthBusinessViews();
+
+        // A Custom::AthenaView with no polling behind it is exactly the bug this construct fixes:
+        // a bare AwsCustomResource around startQueryExecution returns as soon as the query is
+        // submitted, so CloudFormation would mark it successful before the view actually exists.
+        // ServiceToken pointing at the shared Provider's framework function is what proves the
+        // resource runs through the onEvent/isComplete waiter instead.
+        var customResources = template.findResources("Custom::AthenaView");
+        assertEquals(VIEW_COUNT, customResources.size());
+        for (var resource : customResources.values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var serviceToken = String.valueOf(properties.get("ServiceToken"));
+            assertTrue(
+                    serviceToken.contains("frameworkonEvent"),
+                    "expected ServiceToken to reference the Provider framework's onEvent function: " + serviceToken);
+        }
+    }
+
+    @Test
+    void onEventAndIsCompleteFunctionsDependOnTheirIamPolicyAttaching() {
+        Template template = synthBusinessViews();
+
+        // The policy that grants Athena, Glue and S3 permissions is a separate resource attached
+        // to the shared role after the role exists; a Lambda Function only orders after the role
+        // itself (it references the role by ARN), so without an explicit dependency here the
+        // function could run before the policy attaches — the same race the single shared grant
+        // used to guard against for every AwsCustomResource.
+        var lambdas = template.findResources("AWS::Lambda::Function");
+        var policies = template.findResources("AWS::IAM::Policy");
+        var athenaViewPolicyLogicalId = policies.keySet().stream()
+                .filter(id -> id.contains("AthenaViewCreatorPolicy"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected an AthenaViewCreatorPolicy resource"));
+
+        for (String handler : List.of("createView.onEvent", "createView.isComplete")) {
+            var function = lambdas.values().stream()
+                    .filter(resource -> {
+                        @SuppressWarnings("unchecked")
+                        var properties = (Map<String, Object>) resource.get("Properties");
+                        return handler.equals(properties.get("Handler"));
+                    })
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("expected a " + handler + " function"));
+            var dependsOn = function.get("DependsOn");
+            assertTrue(dependsOn instanceof List<?>, "expected a DependsOn list on the " + handler + " function");
+            assertTrue(
+                    ((List<?>) dependsOn).stream().anyMatch(id -> String.valueOf(id).contains(athenaViewPolicyLogicalId)),
+                    "expected the " + handler + " function to depend on the Athena view IAM policy, found: "
+                            + dependsOn);
+        }
+    }
+
+    @Test
     void purchaseReconciliationDependsOnTheGa4FunnelViewItReadsFrom() {
         Template template = synthBusinessViews();
 
         // v_purchase_reconciliation_daily's SQL reads v_ga4_funnel_daily directly, and two
-        // AwsCustomResources carry no implicit CloudFormation ordering between them: without an
+        // CustomResources carry no implicit CloudFormation ordering between them: without an
         // explicit dependency, CloudFormation could create the reconciliation view before the
         // funnel view exists in the catalog, and the CREATE OR REPLACE VIEW would fail.
-        var customResources = template.findResources("Custom::AWS");
-        var reconciliationLogicalId = customResources.entrySet().stream()
-                .filter(entry -> {
-                    @SuppressWarnings("unchecked")
-                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
-                    return String.valueOf(properties.get("Create"))
-                            .contains("CREATE OR REPLACE VIEW v_purchase_reconciliation_daily AS");
-                })
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElseThrow(
-                        () -> new AssertionError("expected a v_purchase_reconciliation_daily Custom::AWS resource"));
-
-        var funnelLogicalId = customResources.entrySet().stream()
-                .filter(entry -> {
-                    @SuppressWarnings("unchecked")
-                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
-                    return String.valueOf(properties.get("Create"))
-                            .contains("CREATE OR REPLACE VIEW v_ga4_funnel_daily AS");
-                })
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("expected a v_ga4_funnel_daily Custom::AWS resource"));
+        var customResources = template.findResources("Custom::AthenaView");
+        var reconciliationLogicalId = logicalIdForView(customResources, "v_purchase_reconciliation_daily");
+        var funnelLogicalId = logicalIdForView(customResources, "v_ga4_funnel_daily");
 
         var reconciliationResource = customResources.get(reconciliationLogicalId);
         var dependsOn = reconciliationResource.get("DependsOn");
         assertTrue(dependsOn instanceof List<?>, "expected a DependsOn list on the reconciliation view resource");
         assertTrue(
                 ((List<?>) dependsOn).stream().anyMatch(id -> String.valueOf(id).contains(funnelLogicalId)),
-                "expected the reconciliation view to depend on the funnel view's Custom::AWS resource, found: "
+                "expected the reconciliation view to depend on the funnel view's Custom::AthenaView resource, found: "
                         + dependsOn);
+    }
+
+    private static String logicalIdForView(Map<String, Map<String, Object>> customResources, String viewName) {
+        return customResources.entrySet().stream()
+                .filter(entry -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return viewName.equals(properties.get("ViewName"));
+                })
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected a Custom::AthenaView resource for " + viewName));
     }
 
     @Test

@@ -282,6 +282,17 @@ public class DataQuality extends Construct {
                 .resources(prepend(props.lakeBucket().getBucketArn(), curatedPrefixResources))
                 .build());
 
+        // Glue sets up continuous logging for the evaluation run against /aws-glue/jobs/logs-v2
+        // before it evaluates anything; without these the role's own log group and stream can
+        // never be created, which is non-fatal (the evaluation still runs and publishes its
+        // result) but denies CreateLogGroup on every run.
+        this.evaluationRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"))
+                .resources(List.of("arn:aws:logs:%s:%s:log-group:/aws-glue/jobs/logs-v2:*"
+                        .formatted(stack.getRegion(), stack.getAccount())))
+                .build());
+
         // CloudWatch's PutMetricData has no ARN form to scope to, so the wildcard resource is
         // narrowed with a namespace condition instead: the role can publish only to the "Glue
         // Data Quality" namespace Glue itself writes to, nothing else in the account.

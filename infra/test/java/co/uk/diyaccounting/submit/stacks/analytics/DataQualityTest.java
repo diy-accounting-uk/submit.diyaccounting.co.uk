@@ -253,6 +253,26 @@ class DataQualityTest {
     }
 
     @Test
+    void evaluationRoleCanWriteItsOwnContinuousLoggingLogGroup() {
+        Template template = synthDataQuality();
+
+        // Glue sets up continuous logging for the evaluation run before it evaluates anything,
+        // against a log group fixed by Glue itself rather than named by this stack.
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        Match.arrayWith(List.of(
+                                                "logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents")),
+                                        "Resource",
+                                        "arn:aws:logs:eu-west-2:111111111111:log-group:/aws-glue/jobs/logs-v2:*")))))))));
+    }
+
+    @Test
     void runnerLambdaEnvironmentCarriesLakeBucketAndEveryTarget() {
         Template template = synthDataQuality();
 
