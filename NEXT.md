@@ -97,12 +97,30 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O41. Redeploy the backup account stack.** The cross-account vault's restore grant reached
-  main on 2026-09-09 but the backup account's stack was last deployed 2026-08-29, so the grant is
-  not live. Dispatch `setup-backup-account.yml`. This is an AWS write in the backup account, so it
-  is yours. It does not on its own make the drill work — B105 is the other half — but nothing can
-  be tested until the deployed policy matches the code. **Source**: B25c's investigation.
-  **Owner**: Operator. **Model**: none.
+- [ ] **O41x. The vault will not accept a cross-account restore grant.** Dispatched
+  `setup-backup-account.yml` at 19:17 UTC on 2026-09-11 (run 34638032553, `dry-run=false`). It
+  failed at `Deploy backup account stacks`: AWS Backup refused the vault policy with "The specified
+  policy cannot be added to the vault due to cross-account sharing restrictions" (403, AccessDenied,
+  `HandlerErrorCode: AccessDenied`). The stack rolled back cleanly to `UPDATE_ROLLBACK_COMPLETE`,
+  so nothing is stuck and nothing was lost.
+
+  The cause is structural, not a typo. Reading the policy live on the vault shows two statements,
+  `AllowCrossAccountCopy` and `DenyDeleteFromOutsideBackupAccount`. The third that
+  `CrossAccountBackupVaultStack.java` now builds, `AllowCiRestoreRoleToRestore`, grants
+  `backup:StartRestoreJob`, `ListRecoveryPointsByBackupVault`, `DescribeRecoveryPoint` and
+  `GetRecoveryPointRestoreMetadata` to a principal in submit-ci, and that is what AWS rejects: a
+  backup vault access policy takes `backup:CopyIntoBackupVault` cross-account, not restore. The
+  organisation setting is not the problem — `isCrossAccountBackupEnabled` has been `true` since
+  2026-08-29.
+
+  So B105's fix named a principal that can be assumed, which was the right half of the problem, but
+  the mechanism cannot work. Two candidate designs, and this needs a decision before any more
+  dispatching: restore from inside the backup account, with `restore-drill.yml` assuming a role
+  there rather than in ci; or copy the recovery point back to the source account and restore it
+  locally, which is AWS's documented cross-account restore path and costs a copy. Whichever is
+  chosen, the `AllowCiRestoreRoleToRestore` statement comes out of the vault policy or the stack
+  never deploys again. **Source**: run 34638032553's job log; the live vault policy.
+  **Owner**: Operator to choose the design, then Claude Code. **Model**: Opus for the design.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
@@ -331,7 +349,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   three of its last four runs, most recently restoring 4826 receipt items against a live source of
   4832. A comment saying exactly this is drafted and not yet posted. After B105 and O41, run the
   drill and settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on O41; B105's code is on main.
+  **Model**: Sonnet. Blocked on O41x: the drill cannot run until the vault accepts a restore
+  grant at all, and today's dispatch proved the current design does not deploy.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
