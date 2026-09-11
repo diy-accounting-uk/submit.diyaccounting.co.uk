@@ -295,24 +295,26 @@ array carrying the eight services now hardcoded in `gcp-enable-apis.js`, and a `
 `gcp-billing-assert.js`. Both scripts read the file; the CLI flags for these values go. Keep the
 `--project`, `--stray-project` flags. Extend the two test files with a parse case.
 
-**5. One workflow — done for the five scripts that exist.** `.github/workflows/google-apply.yml`
-runs inventory, enable-apis, roles-apply, billing-assert and bigquery-sync, plan on pull request and
-apply on push to main, replacing `google-roles.yml` and `ga4-bigquery-sync.yml`. The ga4-sync,
-oauth-assert and youtube-check steps join it as items 7, 12 and 13 land.
+**5. One workflow — done for the scripts that exist.** `.github/workflows/google-apply.yml` runs
+inventory, enable-apis, roles-apply, billing-assert, ga4-sync and bigquery-sync, plan on pull
+request and apply on push to main, replacing `google-roles.yml` and `ga4-bigquery-sync.yml`. The
+oauth-assert and youtube-check steps join it as items 12 and 13 land.
 
-**6. `google/analytics.toml` in the shape above.** Carry across account `1035014`, property
-`523400333` with its three streams and its `[key_events]`, and the ci property with
-`github_environment = "ci"` and `G-DV0SDVEZWC`. Leave `[old_property]` and `[legacy]` where they are
-as a record; they are not applied. Add prod's property entry only once item 7 can create it.
+**6. `google/analytics.toml` in the shape above — done.** Account `1035014`, property `523400333`
+with its three streams and its `key_events`, and the ci property with `github_environment = "ci"`
+and `G-DV0SDVEZWC`. `[old_property]` and `[legacy]` stay as a record; `scripts/ga4-sync.js` does not
+read either. No prod property entry: nothing live to carry across for one yet.
 
-**7. `scripts/ga4-sync.js`.** Fold `ga4-property-sync.js`, `ga4-key-events-sync.js` and
-`ga4-bigquery-link-export.js` into one script over `google/analytics.toml`. Keep
-`ga4-property-sync.js`'s `buildPlan`, `extractBigQueryLinks` and the `deleteTime` skip. Keep
-`ga4-key-events-sync.js`'s shared-event handling, which marks one GA4 event once when two labels map
-to it. Add enhanced measurement settings through
-`v1alpha properties.dataStreams.updateEnhancedMeasurementSettings`. Fail on a recorded id that does
-not match live. Delete the three old scripts, their four test files, the two `ga4:` npm scripts, and
-`.claude/skills/ga4-property-sync/SKILL.md` with its root symlink. Port the tests to
+**7. `scripts/ga4-sync.js` — done.** Folds `ga4-property-sync.js`, `ga4-key-events-sync.js` and
+`ga4-bigquery-link-export.js` into one script over `google/analytics.toml`, keyed by iterating every
+`[[property]]` entry rather than one `--environment`/`--hostname` pair per run. Carries across
+`buildPlan`'s per-facet shape, `extractBigQueryLinks`'s lowercase-q fix, the `deleteTime` skip, and
+key-event grouping so two labels sharing one GA4 event are marked once. Fails when a recorded `id` or
+`measurement_id` doesn't match a live property or stream. Enhanced measurement settings go through
+`v1alpha .../enhancedMeasurementSettings`, modelled as a `streamEnabled` field the real response shape
+has not been checked against — confirm with a dry run before relying on that write. The three old
+scripts, their four test files, the `ga4:bigquery-link-export` npm script (the only one of the two the
+plan expected that existed) and `.claude/skills/ga4-property-sync/SKILL.md` are gone; tests live in
 `app/unit-tests/scripts/ga4Sync.test.js`.
 
 **8. Workload identity pool and GitHub provider.** Add `google/identity.toml` declaring the service

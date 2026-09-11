@@ -91,9 +91,9 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
-      # Steps run in dependency order: APIs, then IAM roles, then billing, then BigQuery.
-      # A step for a script not yet written (ga4-sync, the OAuth assertion, the YouTube
-      # credential check) joins this list once its own work item lands.
+      # Steps run in dependency order: APIs, then IAM roles, then billing, then GA4, then the
+      # GA4-in-BigQuery dataset. A step for a script not yet written (the OAuth assertion, the
+      # YouTube credential check) joins this list once its own work item lands.
 
       - name: Read-only inventory
         env:
@@ -130,6 +130,17 @@ jobs:
             node scripts/gcp-billing-assert.js --apply 2>&1 | tee gcp-billing-assert.log
           fi
 
+      - name: Run ga4-sync
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/ga4-sync.js 2>&1 | tee ga4-sync.log
+          else
+            node scripts/ga4-sync.js --apply 2>&1 | tee ga4-sync.log
+          fi
+
       - name: Run ga4-bigquery-sync
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
@@ -145,7 +156,7 @@ jobs:
         run: |
           echo "# Google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-bigquery-sync.log; do
+          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
