@@ -103,6 +103,7 @@ function buildTriggerBody(overrides = {}) {
     businessId: VALID_BUSINESS_ID,
     accountingPeriodStartDate: VALID_START_DATE,
     accountingPeriodEndDate: VALID_END_DATE,
+    typeOfBusiness: "self-employment",
     ...overrides,
   };
 }
@@ -115,17 +116,28 @@ function buildTriggerEvent({ body = {}, headers = {} } = {}) {
 }
 
 describe("buildBsasTriggerRequestBody", () => {
-  test("shapes accountingPeriod, fixes typeOfBusiness to self-employment, and carries businessId", () => {
+  test("shapes accountingPeriod, carries the caller's typeOfBusiness, and carries businessId", () => {
     const body = buildBsasTriggerRequestBody({
       accountingPeriodStartDate: VALID_START_DATE,
       accountingPeriodEndDate: VALID_END_DATE,
       businessId: VALID_BUSINESS_ID,
+      typeOfBusiness: "self-employment",
     });
     expect(body).toEqual({
       accountingPeriod: { startDate: VALID_START_DATE, endDate: VALID_END_DATE },
       typeOfBusiness: "self-employment",
       businessId: VALID_BUSINESS_ID,
     });
+  });
+
+  test("carries uk-property through unchanged when a property business is picked", () => {
+    const body = buildBsasTriggerRequestBody({
+      accountingPeriodStartDate: VALID_START_DATE,
+      accountingPeriodEndDate: VALID_END_DATE,
+      businessId: VALID_BUSINESS_ID,
+      typeOfBusiness: "uk-property",
+    });
+    expect(body.typeOfBusiness).toBe("uk-property");
   });
 });
 
@@ -175,6 +187,20 @@ describe("hmrcItsaBsasTriggerPost ingestHandler", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  test("returns 400 when typeOfBusiness is missing", async () => {
+    const event = buildTriggerEvent({ body: { typeOfBusiness: undefined } });
+    const response = await hmrcItsaBsasTriggerPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("typeOfBusiness");
+  });
+
+  test("returns 400 when typeOfBusiness is not self-employment or uk-property", async () => {
+    const event = buildTriggerEvent({ body: { typeOfBusiness: "foreign-property" } });
+    const response = await hmrcItsaBsasTriggerPostHandler(event);
+    expect(response.statusCode).toBe(400);
+  });
+
   test("returns 200 with the calculationId on success", async () => {
     mockHmrcSuccess(mockFetch, { calculationId: "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c" });
 
@@ -182,6 +208,28 @@ describe("hmrcItsaBsasTriggerPost ingestHandler", () => {
     const response = await hmrcItsaBsasTriggerPostHandler(event);
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ calculationId: "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c" });
+  });
+
+  test("still sends self-employment when a self-employment business is picked", async () => {
+    mockHmrcSuccess(mockFetch, { calculationId: "12345678" });
+
+    const event = buildTriggerEvent();
+    await hmrcItsaBsasTriggerPostHandler(event);
+
+    const calledInit = mockFetch.mock.calls[0][1];
+    const sentBody = JSON.parse(calledInit.body);
+    expect(sentBody.typeOfBusiness).toBe("self-employment");
+  });
+
+  test("sends uk-property when a property business is picked", async () => {
+    mockHmrcSuccess(mockFetch, { calculationId: "12345678" });
+
+    const event = buildTriggerEvent({ body: { typeOfBusiness: "uk-property" } });
+    await hmrcItsaBsasTriggerPostHandler(event);
+
+    const calledInit = mockFetch.mock.calls[0][1];
+    const sentBody = JSON.parse(calledInit.body);
+    expect(sentBody.typeOfBusiness).toBe("uk-property");
   });
 
   test("calls the correct HMRC endpoint path with the NINO", async () => {

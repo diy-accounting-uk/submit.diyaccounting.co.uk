@@ -309,6 +309,10 @@ public class BackupStack extends Stack {
         ITable subscriptionsTable =
                 importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
         String booksBucketArn = "arn:aws:s3:::" + props.sharedNames().booksBucketName;
+        // Added beside booksBucketArn, not replacing it - see PLAN_DIYA_GL_NAMING.md's copy
+        // sequence. Both buckets stay in the selection at once until the sequence's later steps
+        // move the DIYA-GL Lambdas over and the old bucket is removed.
+        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
                 .backupPlan(this.backupPlan)
@@ -319,7 +323,8 @@ public class BackupStack extends Stack {
                         BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
                         BackupResource.fromDynamoDbTable(passesTable),
                         BackupResource.fromDynamoDbTable(subscriptionsTable),
-                        BackupResource.fromArn(booksBucketArn)))
+                        BackupResource.fromArn(booksBucketArn),
+                        BackupResource.fromArn(diyaGlBucketArn)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();
 

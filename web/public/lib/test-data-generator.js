@@ -340,6 +340,28 @@ function populateSelfEmploymentPeriodForm() {
   console.log("[Test Data] Populated ITSA self-employment period form with test data");
 }
 
+/**
+ * Populate the ITSA UK property period form with test data
+ * Used in ukPropertyPeriod.html - NINO, a placeholder business ID, tax year and a quarter's dates
+ */
+function populateUkPropertyPeriodForm() {
+  const ninoInput = document.getElementById("nino");
+  const businessIdInput = document.getElementById("businessId");
+  const taxYearInput = document.getElementById("taxYear");
+  const fromDateInput = document.getElementById("fromDate");
+  const toDateInput = document.getElementById("toDate");
+  const periodAmountInput = document.getElementById("periodAmount");
+
+  if (ninoInput) ninoInput.value = generateTestNino();
+  if (businessIdInput) businessIdInput.value = "XAIS12345678910";
+  if (taxYearInput) taxYearInput.value = "2024-25";
+  if (fromDateInput) fromDateInput.value = "2024-04-06";
+  if (toDateInput) toDateInput.value = "2024-07-05";
+  if (periodAmountInput) periodAmountInput.value = "1000.00";
+
+  console.log("[Test Data] Populated ITSA UK property period form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -359,5 +381,6 @@ if (typeof window !== "undefined") {
     populateItsaBusinessDetailsForm,
     populateItsaObligationsForm,
     populateSelfEmploymentPeriodForm,
+    populateUkPropertyPeriodForm,
   };
 }

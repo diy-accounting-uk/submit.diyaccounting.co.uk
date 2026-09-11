@@ -1,0 +1,555 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File a UK Property Quarterly Update - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>File a UK Property Quarterly Update</h1>
+      <p class="subtitle">Create a UK property period summary with HMRC</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Period Summary Form -->
+      <div id="ukPropertyPeriodForm" class="form-container">
+        <div class="form-toggle-buttons">
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Form</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2>Create a Period Summary</h2>
+          <form id="itsaUkPropertyPeriodForm">
+            <div class="form-group">
+              <label for="nino">National Insurance number</label>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example AB123456C.
+              </p>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                placeholder="e.g., AB123456C"
+                maxlength="9"
+                aria-describedby="nino-hint"
+                spellcheck="false"
+                autocapitalize="characters"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="businessId">Business ID</label>
+              <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+              <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="taxYear">Tax year</label>
+              <p id="taxYear-hint" class="hint">The tax year this period falls in, format YYYY-YY, for example 2024-25.</p>
+              <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2024-25" maxlength="7" aria-describedby="taxYear-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="propertyType">Property type</label>
+              <p id="propertyType-hint" class="hint">
+                Furnished holiday lettings ended on 5 April 2025 - only choose it for a period before then.
+              </p>
+              <select id="propertyType" name="propertyType" aria-describedby="propertyType-hint">
+                <option value="ukNonFhlProperty">UK property</option>
+                <option value="ukFhlProperty">UK furnished holiday letting</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="fromDate">Period start date</label>
+              <input type="date" id="fromDate" name="fromDate" required />
+            </div>
+
+            <div class="form-group">
+              <label for="toDate">Period end date</label>
+              <input type="date" id="toDate" name="toDate" required />
+            </div>
+
+            <div class="form-group">
+              <label for="periodAmount">Rental income</label>
+              <p id="periodAmount-hint" class="hint">The rent and other income received for this period. Enter 0 if none.</p>
+              <input type="number" id="periodAmount" name="periodAmount" step="0.01" min="0" value="0" required aria-describedby="periodAmount-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="otherIncome">Other property income</label>
+              <input type="number" id="otherIncome" name="otherIncome" step="0.01" min="0" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="repairsAndMaintenance">Repairs and maintenance</label>
+              <input type="number" id="repairsAndMaintenance" name="repairsAndMaintenance" step="0.01" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label for="otherExpenses">Other property expenses</label>
+              <input type="number" id="otherExpenses" name="otherExpenses" step="0.01" value="0" />
+            </div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <div id="testDataLink" class="test-data-link">
+                <a
+                  href="#"
+                  onclick="
+                    event.preventDefault();
+                    window.testDataGenerator.populateUkPropertyPeriodForm();
+                  "
+                  >add test data</a
+                >
+              </div>
+              <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+              <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+                <option value="">Default (create succeeds)</option>
+                <option value="OVERLAPPING">Overlapping period</option>
+                <option value="MISALIGNED">Misaligned period</option>
+                <option value="NOT_CONTIGUOUS">Not contiguous period</option>
+                <option value="DUPLICATE_SUBMISSION">Duplicate submission</option>
+                <option value="TYPE_OF_BUSINESS_INCORRECT">Type of business incorrect</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div style="margin-top: 10px">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                  >Validate Fraud Prevention Headers</label
+                >
+              </div>
+            </div>
+
+            <div id="submissionCost" class="submission-cost"></div>
+            <button type="submit" id="submitBtn" class="btn">File Quarterly Update</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="ukPropertyPeriodResults" class="results-container" style="display: none">
+        <h3>Quarterly Update Filed</h3>
+        <p>HMRC has accepted the period summary.</p>
+        <dl>
+          <dt>Submission ID</dt>
+          <dd id="submissionIdResult"></dd>
+        </dl>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">File Another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2006-2026 DIY Accounting Limited</p>
+          <p>
+            Free to use.
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
+            under the
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
+              >PolyForm Internal Use License</a
+            >.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script src="../../lib/test-data-generator.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script>
+      // Global variables
+      let searchCriteriaHidden = false;
+
+      function hideSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "none";
+          toggleBtn.style.display = "inline-block";
+          if (cancelBtn) cancelBtn.style.display = "inline-block";
+          searchCriteriaHidden = true;
+        }
+      }
+
+      function showSearchCriteria() {
+        const container = document.getElementById("searchCriteriaContainer");
+        const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
+        const cancelBtn = document.getElementById("cancelRequestBtn");
+        if (container && toggleBtn) {
+          container.style.display = "block";
+          toggleBtn.style.display = "none";
+          if (cancelBtn) cancelBtn.style.display = "none";
+          searchCriteriaHidden = false;
+        }
+      }
+
+      function cancelRequest() {
+        sessionStorage.removeItem("pendingUkPropertyPeriodRequest");
+        sessionStorage.removeItem("hmrcAccessToken");
+        sessionStorage.removeItem("hmrcTokenScope");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("hmrcAccount");
+        sessionStorage.removeItem("currentActivity");
+
+        showSearchCriteria();
+        document.getElementById("ukPropertyPeriodResults").style.display = "none";
+        hideStatus();
+        console.log("Request cancelled, session data cleared");
+      }
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) {
+            syntheticIndicator.classList.add("visible");
+          }
+          const testDataLink = document.getElementById("testDataLink");
+          if (testDataLink) {
+            testDataLink.classList.add("visible");
+          }
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) {
+            devSection.style.display = developerModeEnabled ? "block" : "none";
+          }
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) {
+          console.log("OAuth callback handler (accessToken found)");
+          continuePeriodSubmission();
+        } else {
+          console.log("OAuth callback handler (no accessToken found)");
+        }
+      }
+
+      function readPeriodData(source) {
+        const propertyDetails = {
+          income: {
+            periodAmount: Number(source.periodAmount) || 0,
+            otherIncome: Number(source.otherIncome) || 0,
+          },
+          expenses: {
+            repairsAndMaintenance: Number(source.repairsAndMaintenance) || 0,
+            other: Number(source.otherExpenses) || 0,
+          },
+        };
+
+        const periodData = {
+          nino: (source.nino || "").trim().toUpperCase(),
+          businessId: (source.businessId || "").trim(),
+          taxYear: (source.taxYear || "").trim(),
+          fromDate: source.fromDate,
+          toDate: source.toDate,
+        };
+        periodData[source.propertyType] = propertyDetails;
+        return periodData;
+      }
+
+      async function submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+
+        const requestHeaders = {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...govClientHeaders,
+        };
+        if (testScenario) requestHeaders["Gov-Test-Scenario"] = testScenario;
+
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount) {
+          requestHeaders["hmrcAccount"] = hmrcAccount;
+        }
+
+        const response = await window.authorizedFetch("/api/v1/hmrc/itsa/uk-property/period", {
+          method: "POST",
+          headers: {
+            ...requestHeaders,
+            "x-wait-time-ms": "0",
+          },
+          body: JSON.stringify({ ...periodData, runFraudPreventionHeaderValidation }),
+          pollPendingMessage: "Still processing...",
+          pollSuccessMessage: "Quarterly update filed.",
+          pollErrorMessage: "Failed to file the quarterly update.",
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          const error = new Error(result.message || "Failed to file the quarterly update");
+          error.status = response.status;
+          error.reason = result.reason;
+          throw error;
+        }
+        return result;
+      }
+
+      async function continuePeriodSubmission() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyPeriodRequest") || "null");
+
+          if (!pendingRequest) {
+            console.log("No pending UK property period request found");
+            return;
+          }
+
+          hideSearchCriteria();
+          showLoading();
+          hideStatus();
+          showStatus("Filing quarterly update...", "info");
+
+          const result = await submitPeriod(
+            pendingRequest.periodData,
+            pendingRequest.testScenario,
+            pendingRequest.runFraudPreventionHeaderValidation,
+            accessToken,
+          );
+
+          displayResult(result);
+          document.getElementById("ukPropertyPeriodResults").style.display = "block";
+          hideStatus();
+          window.dispatchEvent(new CustomEvent("bundle-changed"));
+
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingUkPropertyPeriodRequest");
+          sessionStorage.removeItem("oauth_state");
+          console.log("Quarterly update filed successfully");
+        } catch (error) {
+          console.error("Error filing quarterly update:", error);
+          if (error.status === 401) {
+            sessionStorage.removeItem("hmrcAccessToken");
+            sessionStorage.removeItem("hmrcTokenScope");
+            showStatus("Access token expired. Please re-authenticate.", "error");
+          } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+            hideStatus();
+            window.SubmissionCost?.refresh();
+          } else {
+            showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
+          }
+          showSearchCriteria();
+          sessionStorage.removeItem("pendingUkPropertyPeriodRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("hmrcAccount");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleFormSubmission(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const periodData = readPeriodData({
+          nino: formData.get("nino"),
+          businessId: formData.get("businessId"),
+          taxYear: formData.get("taxYear"),
+          propertyType: formData.get("propertyType"),
+          fromDate: formData.get("fromDate"),
+          toDate: formData.get("toDate"),
+          periodAmount: formData.get("periodAmount"),
+          otherIncome: formData.get("otherIncome"),
+          repairsAndMaintenance: formData.get("repairsAndMaintenance"),
+          otherExpenses: formData.get("otherExpenses"),
+        });
+        const testScenario = formData.get("testScenario");
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!periodData.nino || !periodData.businessId || !periodData.taxYear || !periodData.fromDate || !periodData.toDate) {
+          showStatus("Please fill in the National Insurance number, business ID, tax year and period dates.", "error");
+          return;
+        }
+
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken) {
+            console.log("HMRC access token exists but scope insufficient, clearing and re-authorizing");
+            if (window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          }
+          try {
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            const state = generateRandomState();
+            const requestData = { periodData, testScenario, runFraudPreventionHeaderValidation };
+
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+            const currentActivity = `${location.pathname}`;
+
+            sessionStorage.setItem("oauth_state", state);
+            sessionStorage.setItem("pendingUkPropertyPeriodRequest", JSON.stringify(requestData));
+            sessionStorage.setItem("currentActivity", currentActivity);
+
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+
+            try {
+              window.__correlation?.prepareRedirect?.();
+            } catch {}
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            console.error("Authentication error:", error);
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
+        } else {
+          try {
+            showLoading();
+            hideStatus();
+            showStatus("Filing quarterly update...", "info");
+
+            const result = await submitPeriod(periodData, testScenario, runFraudPreventionHeaderValidation, accessToken);
+
+            displayResult(result);
+            document.getElementById("ukPropertyPeriodResults").style.display = "block";
+            hideStatus();
+            window.dispatchEvent(new CustomEvent("bundle-changed"));
+          } catch (error) {
+            console.error("Error filing quarterly update:", error);
+            if (error.status === 401) {
+              sessionStorage.removeItem("hmrcAccessToken");
+              sessionStorage.removeItem("hmrcTokenScope");
+              showStatus("Access token expired. Please try again.", "error");
+            } else if (error.status === 403 && error.reason === "tokens_exhausted") {
+              hideStatus();
+              window.SubmissionCost?.refresh();
+            } else {
+              showStatus(`Failed to file the quarterly update: ${error.message}`, "error");
+            }
+          } finally {
+            hideLoading();
+          }
+        }
+      }
+
+      function displayResult(result) {
+        const submissionIdResult = document.getElementById("submissionIdResult");
+        submissionIdResult.textContent = result?.submissionId || "-";
+      }
+
+      document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
+        showSearchCriteria();
+      });
+
+      document.getElementById("cancelRequestBtn")?.addEventListener("click", () => {
+        cancelRequest();
+      });
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        const form = document.getElementById("itsaUkPropertyPeriodForm");
+        const resultsContainer = document.getElementById("ukPropertyPeriodResults");
+        form.reset();
+        resultsContainer.style.display = "none";
+        showSearchCriteria();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.getElementById("itsaUkPropertyPeriodForm").addEventListener("submit", handleFormSubmission);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("JS block started loading: DOMContentLoaded event handler");
+        initializePage();
+        handleOAuthCallback();
+        console.log("JS block finished loading: DOMContentLoaded event handler");
+      });
+
+      console.log("JS block finished loading.");
+    </script>
+  </body>
+</html>

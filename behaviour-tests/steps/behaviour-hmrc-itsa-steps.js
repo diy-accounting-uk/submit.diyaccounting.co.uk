@@ -470,6 +470,154 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
   });
 }
 
+export async function initItsaUkPropertyPeriod(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the File a UK Property Quarterly Update page and sees the period form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/ukPropertyPeriod.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-uk-property-period.png` });
+    await expect(page.locator("#itsaUkPropertyPeriodForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the UK property quarterly update form", async () => {
+    const {
+      hmrcNino,
+      businessId,
+      taxYear,
+      propertyType,
+      fromDate,
+      toDate,
+      periodAmount,
+      testScenario,
+      runFraudPreventionHeaderValidation,
+    } = periodQuery || {};
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-uk-property-period-fill-in.png` });
+
+    const testDataLink = page.locator("#testDataLink.visible");
+    const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
+
+    if (isSyntheticMode() && isTestDataLinkVisible && !businessId) {
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-uk-property-period-click-test-data.png` });
+      await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-uk-property-period-test-data-added.png` });
+
+      await expect(page.locator("#nino")).not.toHaveValue("");
+    } else {
+      await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+      if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+      if (propertyType) await loggedSelectOption(page, "#propertyType", propertyType, "the property type", { screenshotPath });
+      if (fromDate) await loggedFill(page, "#fromDate", fromDate, "Entering period start date", { screenshotPath });
+      if (toDate) await loggedFill(page, "#toDate", toDate, "Entering period end date", { screenshotPath });
+      if (periodAmount !== undefined) await loggedFill(page, "#periodAmount", String(periodAmount), "Entering rental income", { screenshotPath });
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-uk-property-period-fill-in.png` });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      console.log("Enabled developer mode for test scenario");
+
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      await page.keyboard.press("PageDown");
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-uk-property-period-fill-in.png` });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
+          screenshotPath,
+        });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+        console.log("Checked runFraudPreventionHeaderValidation checkbox");
+      }
+      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-uk-property-period-filled-in.png` });
+    }
+
+    await loggedFocus(page, "#submitBtn", "Submit button", { screenshotPath });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-uk-property-period-fill-in-pagedown.png` });
+    await expect(page.locator("#submitBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaUkPropertyPeriodForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the UK property quarterly update form", async () => {
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-uk-property-period-submit.png` });
+    // Clicking submit may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting UK property quarterly update form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-uk-property-period-submit.png` });
+  });
+}
+
+export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the UK property quarterly update filing result", async () => {
+    if (arguments.length === 2 && typeof periodQuery === "string") {
+      screenshotPath = periodQuery;
+      periodQuery = {};
+    }
+    const { testScenario } = periodQuery || {};
+    const hasScenario = !!testScenario;
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-uk-property-period-results.png` });
+    if (hasScenario) {
+      switch (testScenario) {
+        case "NOT_FOUND":
+        case "OVERLAPPING":
+        case "MISALIGNED":
+        case "NOT_CONTIGUOUS":
+        case "DUPLICATE_SUBMISSION":
+        case "TYPE_OF_BUSINESS_INCORRECT":
+          await page.waitForTimeout(500);
+          const ukPropertyPeriodResults = page.locator("#ukPropertyPeriodResults");
+          await expect(ukPropertyPeriodResults).toBeHidden();
+          break;
+        case "SUBMIT_API_HTTP_500":
+        case "SUBMIT_HMRC_API_HTTP_500":
+          await page.locator("#loadingSpinner").waitFor({ state: "hidden", timeout: 30_000 });
+          break;
+        default:
+          await waitForSuccessOrError(page, {
+            successSelector: "#ukPropertyPeriodResults",
+            description: `UK property quarterly update result (${testScenario})`,
+            timeout: 450_000,
+            screenshotPath,
+          });
+          await expect(page.locator("#ukPropertyPeriodResults")).toBeVisible();
+          break;
+      }
+      return;
+    }
+    await waitForSuccessOrError(page, {
+      successSelector: "#ukPropertyPeriodResults",
+      description: "UK property quarterly update result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-uk-property-period-results.png` });
+    const resultsContainer = page.locator("#ukPropertyPeriodResults");
+    await expect(resultsContainer).toBeVisible();
+
+    const submissionId = (await page.locator("#submissionIdResult").innerText()).trim();
+    expect(submissionId.length).toBeGreaterThan(0);
+  });
+}
+
 // Annual Submission, like Obligations and Self-Employment Period, has no home-page activity
 // button of its own - only the dashboard links to it - so navigate to it directly.
 export async function initItsaAnnualSubmission(page, screenshotPath = defaultScreenshotPath) {
@@ -571,6 +719,114 @@ export async function verifyItsaAnnualSaveResults(page, screenshotPath = default
     await waitForSuccessOrError(page, {
       successSelector: "#annualSubmissionResults",
       description: "Annual Submission saved result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualSubmissionResults")).toBeVisible();
+  });
+}
+
+// UK Property Annual Submission, like the self-employment one, has no home-page activity
+// button of its own - only the dashboard links to it - so navigate to it directly.
+export async function initItsaUkPropertyAnnualSubmission(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the UK Property Annual Submission page and sees the load form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/ukPropertyAnnualSubmission.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-uk-property-annual-submission.png` });
+    await expect(page.locator("#itsaAnnualLoadForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaUkPropertyAnnualLoad(page, annualQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the UK Property Annual Submission load form", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = annualQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+    }
+
+    await loggedFocus(page, "#loadBtn", "Load button", { screenshotPath });
+    await expect(page.locator("#loadBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaUkPropertyAnnualLoadForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the UK Property Annual Submission load form", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadBtn", "Submitting UK Property Annual Submission load form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the UK Property Annual Submission edit form", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualEditForm",
+      description: "UK Property Annual Submission edit form",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualEditForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaUkPropertyAnnualEdits(page, annualEdits = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters property adjustments and allowances", async () => {
+    const { balancingCharge, allowanceType, propertyIncomeAllowance } = annualEdits || {};
+    if (balancingCharge !== undefined) {
+      await loggedFill(page, "#balancingCharge", String(balancingCharge), "Entering balancing charge", { screenshotPath });
+    }
+    if (allowanceType === "propertyIncome") {
+      await page.locator("#allowanceTypePropertyIncome").check();
+      if (propertyIncomeAllowance !== undefined) {
+        await loggedFill(page, "#propertyIncomeAllowance", String(propertyIncomeAllowance), "Entering property income allowance", {
+          screenshotPath,
+        });
+      }
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-uk-property-annual-edits-filled.png` });
+  });
+}
+
+export async function submitItsaUkPropertyAnnualSaveForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user saves the UK Property Annual Submission", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#saveBtn", "Saving the UK Property Annual Submission", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaUkPropertyAnnualSaveResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the UK Property Annual Submission saved", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualSubmissionResults",
+      description: "UK Property Annual Submission saved result",
       timeout: 450_000,
       screenshotPath,
     });

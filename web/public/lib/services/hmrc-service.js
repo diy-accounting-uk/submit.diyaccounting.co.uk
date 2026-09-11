@@ -602,7 +602,7 @@ export async function putSelfEmploymentAnnual(
 
 /**
  * Trigger an ITSA business source adjustable summary (BSAS) for an accounting period.
- * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate }
+ * @param {object} triggerDetails - { nino, businessId, accountingPeriodStartDate, accountingPeriodEndDate, typeOfBusiness }
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
@@ -631,6 +631,7 @@ export async function triggerBsas(
     businessId: triggerDetails.businessId,
     accountingPeriodStartDate: triggerDetails.accountingPeriodStartDate,
     accountingPeriodEndDate: triggerDetails.accountingPeriodEndDate,
+    typeOfBusiness: triggerDetails.typeOfBusiness,
     runFraudPreventionHeaderValidation,
   });
 
@@ -740,6 +741,221 @@ export async function adjustBsasSelfEmployment(
     income: adjustDetails.income,
     expenses: adjustDetails.expenses,
     additions: adjustDetails.additions,
+    zeroAdjustments: adjustDetails.zeroAdjustments,
+  });
+
+  const response = await authorizedFetch(url, { method: "POST", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve an ITSA UK property annual submission (adjustments, allowances) from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing ukProperty.adjustments and ukProperty.allowances
+ */
+export async function getUkPropertyAnnual(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/uk-property/annual?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Create or amend an ITSA UK property annual submission with HMRC.
+ * @param {object} annualDetails - { nino, businessId, taxYear, adjustments, allowances }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putUkPropertyAnnual(
+  annualDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/uk-property/annual";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: annualDetails.nino,
+    businessId: annualDetails.businessId,
+    taxYear: annualDetails.taxYear,
+    runFraudPreventionHeaderValidation,
+    adjustments: annualDetails.adjustments,
+    allowances: annualDetails.allowances,
+  });
+
+  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve a triggered ITSA business source adjustable summary (BSAS) for UK property.
+ * @param {string} nino - National Insurance number
+ * @param {string} calculationId - The BSAS calculation ID from the trigger response
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing metadata, inputs and adjustableSummaryCalculation
+ */
+export async function getBsasUkProperty(
+  nino,
+  calculationId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, calculationId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/bsas/uk-property?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Submit an adjustment (or zeroAdjustments) to a triggered ITSA UK property adjustable summary.
+ * @param {object} adjustDetails - { nino, calculationId, taxYear, income, expenses, zeroAdjustments }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function adjustBsasUkProperty(
+  adjustDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/bsas/uk-property/adjust";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: adjustDetails.nino,
+    calculationId: adjustDetails.calculationId,
+    taxYear: adjustDetails.taxYear,
+    runFraudPreventionHeaderValidation,
+    income: adjustDetails.income,
+    expenses: adjustDetails.expenses,
     zeroAdjustments: adjustDetails.zeroAdjustments,
   });
 
@@ -954,9 +1170,13 @@ if (typeof window !== "undefined") {
   window.postSelfEmploymentPeriod = postSelfEmploymentPeriod;
   window.getSelfEmploymentAnnual = getSelfEmploymentAnnual;
   window.putSelfEmploymentAnnual = putSelfEmploymentAnnual;
+  window.getUkPropertyAnnual = getUkPropertyAnnual;
+  window.putUkPropertyAnnual = putUkPropertyAnnual;
   window.triggerBsas = triggerBsas;
   window.getBsasSelfEmployment = getBsasSelfEmployment;
   window.adjustBsasSelfEmployment = adjustBsasSelfEmployment;
+  window.getBsasUkProperty = getBsasUkProperty;
+  window.adjustBsasUkProperty = adjustBsasUkProperty;
   window.triggerCalculation = triggerCalculation;
   window.getCalculation = getCalculation;
   window.postFinalDeclaration = postFinalDeclaration;

@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -44,7 +44,6 @@ const DEFAULT_WAIT_MS = 0;
 // Individual Calculations v8.0 - the API version this endpoint requires.
 const HMRC_API_VERSION = "8.0";
 
-const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 // The three calculationType values the trigger path accepts. HMRC's own scope narrows this
 // further by tax year (intent-to-amend only applies from 2025-26), but that rule belongs to
@@ -87,7 +86,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
 
   if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
-  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   if (!calculationType) errorMessages.push("Missing calculationType parameter from body");
   if (calculationType && !CALCULATION_TYPES.includes(calculationType)) {

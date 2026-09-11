@@ -140,7 +140,7 @@ class BackupStackCdkResourceTest {
     }
 
     @Test
-    void everyCriticalTableAndTheBooksBucketAreSelected() {
+    void everyCriticalTableAndBothTheBooksAndDiyaGlBucketsAreSelected() {
         Template template = synthBackupStack(Optional.of(CROSS_ACCOUNT_VAULT_ARN));
 
         var selections = template.findResources("AWS::Backup::BackupSelection");
@@ -160,7 +160,12 @@ class BackupStackCdkResourceTest {
                                         selectedTable("prod-env-hmrc-api-requests"),
                                         selectedTable("prod-env-passes"),
                                         selectedTable("prod-env-subscriptions"),
-                                        "arn:aws:s3:::prod-env-books-972912397388")))))));
+                                        // Both buckets are in the selection at once - the old
+                                        // one keeps its backups until PLAN_DIYA_GL_NAMING.md's
+                                        // copy sequence moves the DIYA-GL Lambdas over and
+                                        // removes it.
+                                        "arn:aws:s3:::prod-env-books-972912397388",
+                                        "arn:aws:s3:::prod-env-diya-gl-972912397388")))))));
     }
 
     private static Matcher selectedTable(String tableName) {

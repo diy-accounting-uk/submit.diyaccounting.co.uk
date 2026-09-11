@@ -1089,6 +1089,31 @@ jobs:
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
+  deploy-hmrc-itsa:
+    name: 'deploy HmrcItsaStack via deploy-cdk-stack.yml'
+    needs:
+      - names
+      - skip-deploy-check
+      - push-images
+      - validate-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.deployment-name }}-app-HmrcItsaStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
   deploy-companies-house:
     name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
     needs:
@@ -1199,6 +1224,7 @@ jobs:
       - push-images
       - deploy-auth
       - deploy-hmrc
+      - deploy-hmrc-itsa
       - deploy-companies-house
       - deploy-account
       - deploy-billing
@@ -1361,6 +1387,7 @@ jobs:
       - push-images
       - deploy-auth
       - deploy-hmrc
+      - deploy-hmrc-itsa
       - deploy-account
       - deploy-api
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -1673,6 +1700,7 @@ jobs:
       - deploy-api
       - deploy-auth
       - deploy-hmrc
+      - deploy-hmrc-itsa
       - deploy-account
       - deploy-edge
       - deploy-publish

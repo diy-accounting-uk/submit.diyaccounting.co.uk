@@ -93,7 +93,12 @@ describe("productCatalogHelper", () => {
     expect(activity).toBeTruthy();
     expect(activity.tokenCost).toBe(0);
     expect(activity.metered).toBe(true);
-    expect(activity.paths).toEqual(["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html"]);
+    expect(activity.paths).toEqual([
+      "hmrc/itsa/annualSubmission.html",
+      "hmrc/itsa/adjustments.html",
+      "hmrc/itsa/ukPropertyAnnualSubmission.html",
+      "hmrc/itsa/ukPropertyAdjustments.html",
+    ]);
     // Same entitlement and access rules as self-employed - a year-end write is still gated on
     // an ITSA bundle, it just spends nothing from it.
     expect(bundlesForActivity(catalog, "self-employed-year-end")).toEqual(bundlesForActivity(catalog, "self-employed"));
