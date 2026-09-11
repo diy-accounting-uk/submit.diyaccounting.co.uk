@@ -29,7 +29,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -45,7 +45,6 @@ const DEFAULT_WAIT_MS = 0;
 // different version from every other ITSA endpoint in this batch.
 const HMRC_API_VERSION = "2.0";
 
-const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -66,7 +65,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid National Insurance number format");
 
   if (!taxYear) errorMessages.push("Missing taxYear parameter");
-  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";

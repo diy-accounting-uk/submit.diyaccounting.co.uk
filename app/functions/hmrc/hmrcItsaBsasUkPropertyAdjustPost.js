@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -45,7 +45,6 @@ const HMRC_API_VERSION = "7.0";
 
 // HMRC's calculationId is either an 8-digit id or a UUID - see the BSAS 7.0 spec.
 const CALCULATION_ID_PATTERN = /^([0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
-const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 /**
  * An adjustment was rejected before it ever reached HMRC, because the body we would have sent
@@ -143,7 +142,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (calculationId && !CALCULATION_ID_PATTERN.test(calculationId)) errorMessages.push("Invalid calculationId format");
 
   if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
-  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   // Reject a body HMRC always rejects (both zeroAdjustments and figures, or neither) before
   // ever calling HMRC, the same way an invalid nino or calculationId never reaches HMRC.

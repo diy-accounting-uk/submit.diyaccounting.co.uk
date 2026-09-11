@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
@@ -46,7 +46,6 @@ const DEFAULT_WAIT_MS = 0;
 const HMRC_API_VERSION = "6.0";
 
 const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
-const TAX_YEAR_PATTERN = /^\d{4}-\d{2}$/;
 
 const BUSINESS_METRICS_NAMESPACE = "Submit/Business";
 
@@ -182,7 +181,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (businessId && !BUSINESS_ID_PATTERN.test(businessId)) errorMessages.push("Invalid businessId format");
 
   if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
-  if (taxYear && !TAX_YEAR_PATTERN.test(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   if (!submissionId) errorMessages.push("Missing submissionId parameter from body");
 

@@ -86,6 +86,48 @@ export function isValidIsoDate(date) {
 }
 
 /**
+ * Validates an HMRC ITSA tax year in `YYYY-YY` form, where the second year is the first
+ * year's successor (e.g. "2024-25").
+ * @param {string} taxYear - The tax year to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidTaxYear(taxYear) {
+  if (typeof taxYear !== "string") {
+    return false;
+  }
+  const match = /^(\d{4})-(\d{2})$/.exec(taxYear);
+  if (!match) {
+    return false;
+  }
+  const startYear = Number(match[1]);
+  const endYearSuffix = Number(match[2]);
+  return endYearSuffix === (startYear + 1) % 100;
+}
+
+// The first tax year ITSA's cumulative period summary model applies to. Below this boundary,
+// HMRC's period summary endpoints use dated (fromDate/toDate) period keys; from this boundary
+// onwards, they use a single cumulative total for the tax year so far. This is the only place
+// in the repository that compares a tax year to this boundary.
+const CUMULATIVE_MODEL_START_TAX_YEAR = "2025-26";
+
+/**
+ * Resolves which ITSA period summary submission model a tax year uses: "dated" for periods
+ * with their own fromDate/toDate (2024-25 and earlier), or "cumulative" for a running total
+ * from the start of the tax year (2025-26 and later).
+ * @param {string} taxYear - The tax year to resolve, in `YYYY-YY` form
+ * @returns {"dated"|"cumulative"}
+ * @throws {Error} If taxYear is not a valid tax year in `YYYY-YY` form
+ */
+export function resolveItsaSubmissionModel(taxYear) {
+  if (!isValidTaxYear(taxYear)) {
+    throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
+  }
+  const startYear = Number(taxYear.slice(0, 4));
+  const boundaryStartYear = Number(CUMULATIVE_MODEL_START_TAX_YEAR.slice(0, 4));
+  return startYear >= boundaryStartYear ? "cumulative" : "dated";
+}
+
+/**
  * Validates that fromDate is not after toDate.
  * Both dates must be valid ISO dates.
  * @param {string} fromDate - ISO date string
