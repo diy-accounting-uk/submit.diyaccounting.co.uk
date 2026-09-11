@@ -149,6 +149,9 @@
           <h3>Allowances and Deductions</h3>
           <dl id="allowancesAndDeductions"></dl>
 
+          <h3>Businesses</h3>
+          <div id="businessProfitAndLossTable"></div>
+
           <p id="calculationIdDisplay" class="hint"></p>
           <div id="continueToFinalDeclaration" class="button-group" style="display: none">
             <a href="finalDeclaration.html" id="continueToFinalDeclarationLink" class="btn" style="display: inline-block; width: auto; text-decoration: none"
@@ -247,6 +250,8 @@
             .map((key) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(formatCurrency(allowances[key]))}</dd>`)
             .join("");
 
+          renderBusinessProfitAndLoss(calc.businessProfitAndLoss || []);
+
           document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
 
           const continueLink = document.getElementById("continueToFinalDeclaration");
@@ -276,6 +281,51 @@
       function formatCurrency(value) {
         if (value === undefined || value === null) return "-";
         return `£${Number(value).toFixed(2)}`;
+      }
+
+      // One row per business HMRC's calculation carries - a customer with one business sees one
+      // row. Where a row carries a loss figure (a brought-forward loss, one used this year, the
+      // adjusted loss itself, or the taxable profit after it is deducted) that figure shows too,
+      // so a customer can see the loss they claimed on Losses and Claims actually being used.
+      function renderBusinessProfitAndLoss(businessProfitAndLoss) {
+        const container = document.getElementById("businessProfitAndLossTable");
+        if (!businessProfitAndLoss || businessProfitAndLoss.length === 0) {
+          container.innerHTML = "";
+          return;
+        }
+
+        const lossFields = [
+          ["totalBroughtForwardIncomeTaxLosses", "Brought forward losses"],
+          ["broughtForwardIncomeTaxLossesUsed", "Brought forward losses used"],
+          ["adjustedIncomeTaxLoss", "Adjusted loss"],
+          ["taxableProfitAfterIncomeTaxLossesDeduction", "Taxable profit after losses deducted"],
+        ];
+
+        container.innerHTML = `
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Taxable profit</th>
+                ${lossFields.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${businessProfitAndLoss
+                .map((entry) => {
+                  const name = entry.incomeSourceName || entry.incomeSourceType || entry.incomeSourceId;
+                  return `
+                    <tr>
+                      <td>${escapeHtml(name)} (${escapeHtml(entry.incomeSourceId)})</td>
+                      <td>${escapeHtml(entry.taxableProfit ?? "-")}</td>
+                      ${lossFields.map(([key]) => `<td>${entry[key] !== undefined ? escapeHtml(entry[key]) : "-"}</td>`).join("")}
+                    </tr>
+                  `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        `;
       }
 
       async function ensureAuthorizedThen(pendingKey, pendingValue, run) {

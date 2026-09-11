@@ -156,4 +156,79 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     await expect(rows.nth(0)).toContainText("fulfilled");
     await expect(rows.nth(1)).toContainText("open");
   });
+
+  // A mixed customer's obligations answer carries one entry per business - the page groups by
+  // business, with its own heading and table, rather than one flat table the customer has to
+  // sort out themselves.
+  test("groups obligations under a heading per business for a mixed customer", async ({ page }) => {
+    await page.route("**/*.js", async (route) => {
+      const request = route.request();
+      if (request.resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+
+    const modifiedHtml = obligationsHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">');
+    await page.setContent(modifiedHtml, {
+      url: "http://localhost:3000/hmrc/itsa/obligations.html",
+      waitUntil: "domcontentloaded",
+    });
+    await delay(200);
+
+    await page.evaluate(() => {
+      window.displayObligations([
+        {
+          typeOfBusiness: "self-employment",
+          businessId: "XAIS12345678901",
+          obligationDetails: [{ periodStartDate: "2024-04-06", periodEndDate: "2024-07-05", dueDate: "2024-08-05", status: "open" }],
+        },
+        {
+          typeOfBusiness: "uk-property",
+          businessId: "XAIS12345678902",
+          obligationDetails: [{ periodStartDate: "2024-04-06", periodEndDate: "2024-07-05", dueDate: "2024-08-05", status: "fulfilled" }],
+        },
+      ]);
+    });
+
+    await expect(page.locator("#obligationsTable h4")).toHaveCount(2);
+    await expect(page.locator("#obligationsTable table")).toHaveCount(2);
+    await expect(page.locator("#obligationsTable h4").nth(0)).toContainText("XAIS12345678901");
+    await expect(page.locator("#obligationsTable h4").nth(1)).toContainText("XAIS12345678902");
+    await expect(page.locator("#obligationsTable table").nth(0).locator("tbody tr")).toHaveCount(1);
+    await expect(page.locator("#obligationsTable table").nth(1).locator("tbody tr")).toHaveCount(1);
+  });
+
+  test("omits a business with no open or fulfilled obligations from the grouping", async ({ page }) => {
+    await page.route("**/*.js", async (route) => {
+      const request = route.request();
+      if (request.resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+
+    const modifiedHtml = obligationsHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">');
+    await page.setContent(modifiedHtml, {
+      url: "http://localhost:3000/hmrc/itsa/obligations.html",
+      waitUntil: "domcontentloaded",
+    });
+    await delay(200);
+
+    await page.evaluate(() => {
+      window.displayObligations([
+        { typeOfBusiness: "self-employment", businessId: "XAIS12345678901", obligationDetails: [] },
+        {
+          typeOfBusiness: "uk-property",
+          businessId: "XAIS12345678902",
+          obligationDetails: [{ periodStartDate: "2024-04-06", periodEndDate: "2024-07-05", dueDate: "2024-08-05", status: "open" }],
+        },
+      ]);
+    });
+
+    await expect(page.locator("#obligationsTable h4")).toHaveCount(1);
+    await expect(page.locator("#obligationsTable h4")).toContainText("XAIS12345678902");
+  });
 });

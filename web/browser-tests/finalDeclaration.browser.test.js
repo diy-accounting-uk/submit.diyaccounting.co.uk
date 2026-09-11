@@ -142,4 +142,90 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     await expect(page.locator("#calculationIdDisplay")).toContainText("shown-calc-id");
   });
+
+  // The gap this page exists to catch is a business the customer has that HMRC did not count,
+  // so the business list must come from HMRC's own inputs.incomeSources.businessIncomeSources -
+  // never from a page the customer visited earlier - and a business showing a loss with no
+  // claim recorded must say so above the tick, not after.
+  const twoBusinessCalculation = {
+    metadata: { calculationId: "calc-3", calculationType: "intent-to-finalise" },
+    calculation: {
+      taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+      allowancesAndDeductions: {},
+      businessProfitAndLoss: [
+        { incomeSourceId: "XAIS12345678901", incomeSourceType: "self-employment", netLoss: 500 },
+        { incomeSourceId: "XAIS12345678902", incomeSourceType: "uk-property", netProfit: 1000 },
+      ],
+    },
+    inputs: {
+      incomeSources: {
+        businessIncomeSources: [
+          { incomeSourceId: "XAIS12345678901", incomeSourceType: "self-employment", latestPeriodEndDate: "2024-04-05" },
+          { incomeSourceId: "XAIS12345678902", incomeSourceType: "uk-property", latestPeriodEndDate: "2024-04-05" },
+        ],
+      },
+    },
+  };
+
+  async function showBusinessesAndLossPositions(page, calculation, lossesByBusiness = {}, taxLiabilityAdjustments = null) {
+    await page.evaluate(
+      ({ calculation, lossesByBusiness, taxLiabilityAdjustments }) => {
+        window.getLossesAndClaims = (nino, businessId) => {
+          const claims = lossesByBusiness[businessId];
+          return claims ? Promise.resolve({ claims }) : Promise.reject(new Error("Not found"));
+        };
+        window.getTaxLiabilityAdjustments = () => Promise.resolve(taxLiabilityAdjustments || {});
+        document.getElementById("declarationContainer").style.display = "block";
+        return window.displayBusinessesAndLossPositions(calculation, "AB123456C", "2023-24", "test-token");
+      },
+      { calculation, lossesByBusiness, taxLiabilityAdjustments },
+    );
+    await delay(100);
+  }
+
+  test("lists every business HMRC counted, with its latest period end date", async ({ page }) => {
+    await loadPage(page);
+
+    await showBusinessesAndLossPositions(page, twoBusinessCalculation, {
+      XAIS12345678901: { carryForward: { currentYearLosses: 500 } },
+    });
+
+    const businessesList = page.locator("#businessesList");
+    await expect(businessesList).toContainText("self-employment");
+    await expect(businessesList).toContainText("XAIS12345678901");
+    await expect(businessesList).toContainText("uk-property");
+    await expect(businessesList).toContainText("XAIS12345678902");
+    await expect(businessesList).toContainText("2024-04-05");
+  });
+
+  test("shows a loss with no claim recorded, and warns above the tick", async ({ page }) => {
+    await loadPage(page);
+
+    // Neither business has a claim recorded - the self-employment business shows a loss.
+    await showBusinessesAndLossPositions(page, twoBusinessCalculation, {});
+
+    await expect(page.locator("#businessesList")).toContainText("Loss shown, no claim recorded");
+    await expect(page.locator("#unclaimedLossWarning")).toBeVisible();
+  });
+
+  test("does not warn when the business showing a loss has a claim recorded", async ({ page }) => {
+    await loadPage(page);
+
+    await showBusinessesAndLossPositions(page, twoBusinessCalculation, {
+      XAIS12345678901: { carryForward: { currentYearLosses: 500 } },
+    });
+
+    await expect(page.locator("#businessesList")).toContainText("Claimed: carry forward");
+    await expect(page.locator("#unclaimedLossWarning")).toBeHidden();
+  });
+
+  test("says when no tax liability adjustment is recorded for the year", async ({ page }) => {
+    await loadPage(page);
+
+    await showBusinessesAndLossPositions(page, twoBusinessCalculation, {
+      XAIS12345678901: { carryForward: { currentYearLosses: 500 } },
+    });
+
+    await expect(page.locator("#taxLiabilityAdjustmentLine")).toContainText("No tax liability adjustment is recorded");
+  });
 });

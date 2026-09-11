@@ -141,6 +141,18 @@
 
         <p id="calculationIdDisplay" class="hint"></p>
 
+        <h3>Businesses in This Return</h3>
+        <p class="hint">
+          Every business HMRC counted in this calculation, so a business you have but HMRC did not count is a gap you can
+          still fix before you declare.
+        </p>
+        <div id="businessesList"></div>
+        <p id="taxLiabilityAdjustmentLine" class="hint"></p>
+        <div id="unclaimedLossWarning" class="status-message warning" style="display: none" role="alert">
+          A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you
+          meant to carry it forward, sideways or back.
+        </div>
+
         <div id="notReadyForDeclaration" class="status-message error" style="display: none" role="alert"></div>
 
         <div id="declarationSection">
@@ -302,6 +314,108 @@
         updateSubmitEnabled();
       }
 
+      // A 404 from the losses and claims retrieve means HMRC holds no claim for this business
+      // and tax year - the absence this page checks for, not an error the customer needs to
+      // see. Any other failure is swallowed the same way: a business list is worth showing even
+      // if one business's loss position could not be read.
+      async function fetchClaims(nino, businessId, taxYear, accessToken) {
+        try {
+          const govClientHeaders = await getGovClientHeaders();
+          const result = await getLossesAndClaims(nino, businessId, taxYear, accessToken, govClientHeaders, false, null);
+          return result?.claims || null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      async function fetchTaxLiabilityAdjustments(nino, taxYear, accessToken) {
+        try {
+          const govClientHeaders = await getGovClientHeaders();
+          const result = await getTaxLiabilityAdjustments(nino, taxYear, accessToken, govClientHeaders, false, null);
+          return result?.carryBackLossesDecrease ? result : null;
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function describeClaims(claims) {
+        if (!claims) return "No claim recorded";
+        const parts = [];
+        if (claims.carryForward) parts.push("carry forward");
+        if (claims.carrySideways) parts.push("carry sideways");
+        if (claims.carryBack) parts.push("carry back");
+        return parts.length > 0 ? `Claimed: ${parts.join(", ")}` : "No claim recorded";
+      }
+
+      // Lists every business HMRC counted in this calculation - the gap this page exists to
+      // catch is a business the customer has that HMRC did not count, so the list comes from
+      // HMRC's own inputs, never from a page the customer visited earlier. Against each business
+      // it shows what the losses and claims retrieve answered, so a business whose calculation
+      // shows a loss with no claim recorded is visible before the tick, not after.
+      async function displayBusinessesAndLossPositions(calculation, nino, taxYear, accessToken) {
+        const container = document.getElementById("businessesList");
+        const businesses = calculation?.inputs?.incomeSources?.businessIncomeSources || [];
+
+        if (businesses.length === 0) {
+          container.innerHTML = '<p class="no-data">HMRC counted no businesses in this calculation.</p>';
+          document.getElementById("taxLiabilityAdjustmentLine").textContent = "";
+          document.getElementById("unclaimedLossWarning").style.display = "none";
+          return;
+        }
+
+        container.innerHTML = '<p class="hint">Loading the loss position for each business...</p>';
+
+        const profitAndLossByBusiness = {};
+        (calculation?.calculation?.businessProfitAndLoss || []).forEach((entry) => {
+          profitAndLossByBusiness[entry.incomeSourceId] = entry;
+        });
+
+        const rows = await Promise.all(
+          businesses.map(async (business) => {
+            const profitAndLoss = profitAndLossByBusiness[business.incomeSourceId] || {};
+            const hasLoss = Number(profitAndLoss.netLoss || 0) > 0 || Number(profitAndLoss.adjustedIncomeTaxLoss || 0) > 0;
+            const claims = await fetchClaims(nino, business.incomeSourceId, taxYear, accessToken);
+            return { business, hasLoss, claims };
+          }),
+        );
+
+        const anyUnclaimedLoss = rows.some((row) => row.hasLoss && !row.claims);
+
+        container.innerHTML = `
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Business</th>
+                <th>Latest period end date</th>
+                <th>Loss position</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows
+                .map(({ business, hasLoss, claims }) => {
+                  const claimText = describeClaims(claims);
+                  const cellText = hasLoss && !claims ? "Loss shown, no claim recorded" : claimText;
+                  return `
+                    <tr>
+                      <td>${escapeHtml(business.incomeSourceType)} (${escapeHtml(business.incomeSourceId)})</td>
+                      <td>${escapeHtml(business.latestPeriodEndDate || "-")}</td>
+                      <td>${hasLoss && !claims ? `<strong>${escapeHtml(cellText)}</strong>` : escapeHtml(cellText)}</td>
+                    </tr>
+                  `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        `;
+
+        document.getElementById("unclaimedLossWarning").style.display = anyUnclaimedLoss ? "block" : "none";
+
+        const taxLiabilityAdjustments = await fetchTaxLiabilityAdjustments(nino, taxYear, accessToken);
+        document.getElementById("taxLiabilityAdjustmentLine").textContent = taxLiabilityAdjustments
+          ? "A tax liability adjustment is recorded for this tax year."
+          : "No tax liability adjustment is recorded for this tax year.";
+      }
+
       async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
@@ -364,6 +478,7 @@
               document.getElementById("retrieveForm").style.display = "none";
               document.getElementById("declarationContainer").style.display = "block";
               hideStatus();
+              await displayBusinessesAndLossPositions(calculation, nino, taxYear, accessToken);
             } catch (error) {
               showStatus(`Failed to retrieve the calculation: ${error.message}`, "error");
             } finally {
@@ -444,6 +559,7 @@
             document.getElementById("retrieveForm").style.display = "none";
             document.getElementById("declarationContainer").style.display = "block";
             hideStatus();
+            await displayBusinessesAndLossPositions(calculation, pendingRetrieve.nino, pendingRetrieve.taxYear, accessToken);
             sessionStorage.removeItem("pendingFinalDeclarationRetrieveRequest");
           } else if (pendingSubmit) {
             showLoading();

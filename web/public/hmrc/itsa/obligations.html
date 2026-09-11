@@ -470,50 +470,59 @@
         }
       }
 
+      // HMRC answers one entry per business, each carrying its own obligationDetails - so the
+      // page groups by business, with a heading naming the type and business ID above each
+      // business's own table, rather than one flat table a mixed customer has to sort out for
+      // themselves. Every row still carries the type and business ID too (D2's own words),
+      // because a row copied out of context - a screenshot, a support ticket - should still say
+      // which business it belongs to.
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");
 
-        const rows = obligations.flatMap((business) =>
-          (business.obligationDetails || []).map((detail) => ({ ...detail, businessId: business.businessId, typeOfBusiness: business.typeOfBusiness })),
-        );
+        const businessesWithObligations = (obligations || []).filter((business) => (business.obligationDetails || []).length > 0);
 
-        if (!rows.length) {
+        if (businessesWithObligations.length === 0) {
           tableContainer.innerHTML = '<p class="no-data">No obligations found for the specified National Insurance number.</p>';
           return;
         }
 
-        let tableHtml = `
-          <table class="results-table">
-            <thead>
-              <tr>
-                <th>Business type</th>
-                <th>Business ID</th>
-                <th>Period start</th>
-                <th>Period end</th>
-                <th>Due date</th>
-                <th>Status</th>
-                <th>Received</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
+        tableContainer.innerHTML = businessesWithObligations
+          .map((business) => {
+            const rows = business.obligationDetails
+              .map(
+                (detail) => `
+                  <tr>
+                    <td>${escapeHtml(business.typeOfBusiness)}</td>
+                    <td>${escapeHtml(business.businessId)}</td>
+                    <td>${escapeHtml(detail.periodStartDate)}</td>
+                    <td>${escapeHtml(detail.periodEndDate)}</td>
+                    <td>${escapeHtml(detail.dueDate)}</td>
+                    <td>${escapeHtml(detail.status)}</td>
+                    <td>${escapeHtml(detail.receivedDate || "-")}</td>
+                  </tr>
+                `,
+              )
+              .join("");
 
-        rows.forEach((row) => {
-          tableHtml += `
-            <tr>
-              <td>${escapeHtml(row.typeOfBusiness)}</td>
-              <td>${escapeHtml(row.businessId)}</td>
-              <td>${escapeHtml(row.periodStartDate)}</td>
-              <td>${escapeHtml(row.periodEndDate)}</td>
-              <td>${escapeHtml(row.dueDate)}</td>
-              <td>${escapeHtml(row.status)}</td>
-              <td>${escapeHtml(row.receivedDate || "-")}</td>
-            </tr>
-          `;
-        });
-
-        tableHtml += "</tbody></table>";
-        tableContainer.innerHTML = tableHtml;
+            return `
+              <h4>${escapeHtml(business.typeOfBusiness)} (${escapeHtml(business.businessId)})</h4>
+              <table class="results-table">
+                <thead>
+                  <tr>
+                    <th>Business type</th>
+                    <th>Business ID</th>
+                    <th>Period start</th>
+                    <th>Period end</th>
+                    <th>Due date</th>
+                    <th>Status</th>
+                    <th>Received</th>
+                  </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+              </table>
+            `;
+          })
+          .join("");
       }
 
       function escapeHtml(text) {
