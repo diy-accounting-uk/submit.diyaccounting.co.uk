@@ -1,46 +1,74 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# Google Analytics 4 Configuration
-# Non-sensitive: Measurement IDs are public (visible in page source)
-# Account: DIY Accounting Limited
+# Google Analytics 4, as code.
+#
+# scripts/ga4-sync.js reads this file, lists the live GA4 account, properties, data streams,
+# key events and BigQuery links, diffs them against what is written here, and creates or
+# updates the difference. A property recorded with an `id` must already exist live: the script
+# fails rather than creating a second one when that id can't be found. A property with no `id`
+# (a per-environment property, matched by display_name) is created when missing.
+#
+# Non-sensitive: Measurement IDs are public (visible in page source).
 
 [account]
 id = "1035014"
-name = "DIY Accounting"
-property_id = "523400333"
-property_name = "DIY Accounting"
+display_name = "DIY Accounting"
 
-[streams.gateway]
-name = "Gateway"
-url = "https://diyaccounting.co.uk"
-stream_id = "13496177464"
-measurement_id = "G-C76HK806F1"
-
-[streams.spreadsheets]
-name = "Spreadsheets"
-url = "https://spreadsheets.diyaccounting.co.uk"
-stream_id = "13496898428"
-measurement_id = "G-X4ZPD99X2K"
-
-[streams.submit]
-name = "Submit"
-url = "https://submit.diyaccounting.co.uk"
-stream_id = "13497119809"
-measurement_id = "G-T81V5NL5MB"
+# The shared production property, covering the gateway, spreadsheets and submit sites plus
+# the one-stop dashboard's BigQuery export. Its id is recorded, so the script fails rather
+# than guessing if this ever stops matching the live property.
+[[property]]
+id = "523400333"
+display_name = "DIY Accounting"
+time_zone = "Europe/London"
+currency = "GBP"
 
 # The four conversions the one-stop dashboard tracks, and the GA4 event name each fires as.
 # "purchase" covers both subscribe (a submit bundle checkout) and donate (a spreadsheets
-# donation) — scripts/ga4-key-events-sync.js marks it once rather than proposing a duplicate.
-[key_events]
-subscribe = "purchase"
-submit = "submit_vat_return"
-donate = "purchase"
-download = "runner_download"
+# donation) — scripts/ga4-sync.js marks it once rather than proposing a duplicate.
+key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "purchase", download = "runner_download" }
+
+  [[property.stream]]
+  name = "Gateway"
+  uri = "https://diyaccounting.co.uk"
+  stream_id = "13496177464"
+  measurement_id = "G-C76HK806F1"
+
+  [[property.stream]]
+  name = "Spreadsheets"
+  uri = "https://spreadsheets.diyaccounting.co.uk"
+  stream_id = "13496898428"
+  measurement_id = "G-X4ZPD99X2K"
+
+  [[property.stream]]
+  name = "Submit"
+  uri = "https://submit.diyaccounting.co.uk"
+  stream_id = "13497119809"
+  measurement_id = "G-T81V5NL5MB"
+  enhanced_measurement = true
+
+  [property.bigquery_link]
+  project = "diyaccounting-ga4"
+  location = "europe-west2"
+  daily_export = true
+  streaming_export = false
+
+# The per-environment ci property. No id recorded: the script matches it by display_name and
+# creates it if missing, then writes the resulting measurement id onto the "ci" GitHub
+# Environment as SUBMIT_GA4_MEASUREMENT_ID.
+[[property]]
+display_name = "DIY Accounting Submit (ci)"
+github_environment = "ci"
+
+  [[property.stream]]
+  name = "ci"
+  uri = "https://ci-submit.diyaccounting.co.uk"
+  measurement_id = "G-DV0SDVEZWC"
 
 # Retired GA4 property (www site)
 # Trashed 2026-09-05; permanent deletion ~2026-10-10, restorable until then from Admin>Account>Trash.
-# Kept as a reference record here. Property 523400333 is the account's only live property.
+# Kept as a reference record here. Not read or applied by scripts/ga4-sync.js.
 [old_property]
 property_name = "http://www.diyaccounting.co.uk - GA4"
 property_id = "395628828"
@@ -50,7 +78,7 @@ stream_id = "5793048524"
 measurement_id = "G-PJPVQWRWJZ"
 status = "Retired - trashed 2026-09-05; permanent deletion ~2026-10-10"
 
-# Legacy references (no longer collecting data)
+# Legacy references (no longer collecting data). Not read or applied by scripts/ga4-sync.js.
 [legacy]
 universal_analytics_id = "UA-1035014-1"
 universal_analytics_status = "Stopped collecting July 2023"

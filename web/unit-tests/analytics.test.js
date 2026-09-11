@@ -144,7 +144,8 @@ describe("web/public/lib/analytics.js", () => {
 
   it("keeps its linker domains in step with google/analytics.toml's streams", () => {
     const toml = parseToml(fs.readFileSync(path.join(process.cwd(), "google/analytics.toml"), "utf-8"));
-    const tomlHosts = Object.values(toml.streams).map((stream) => new URL(stream.url).host);
+    const sharedProperty = toml.property.find((property) => property.id === "523400333");
+    const tomlHosts = sharedProperty.stream.map((stream) => new URL(stream.uri).host);
 
     const match = scriptContent.match(/const GA4_LINKER_DOMAINS = \[([\s\S]*?)];/);
     expect(match).not.toBeNull();

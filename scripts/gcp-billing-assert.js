@@ -4,9 +4,10 @@
 
 /**
  *
- * Assert two GCP billing housekeeping facts as code: a budget with 50/90/100 percent alerts
- * on the billing account that holds diyaccounting-ga4, and that the auto-created project
- * valued-context-507200-m9 is empty before it is deleted.
+ * Assert two GCP billing housekeeping facts as code: a budget carrying the alert thresholds
+ * declared in google/project.toml's [budget] table on the billing account that holds
+ * diyaccounting-ga4, and that the auto-created project valued-context-507200-m9 is empty
+ * before it is deleted.
  *
  * Usage:
  *   node scripts/gcp-billing-assert.js
@@ -18,9 +19,6 @@
  *                                  (default: diyaccounting-ga4)
  *   --stray-project <id>           Project to inspect and, if empty, delete
  *                                  (default: valued-context-507200-m9)
- *   --amount <number>              Budget amount, whole units (default: 10)
- *   --currency <code>              Budget currency code (default: GBP)
- *   --budget-display-name <name>   Display name used only when creating a new budget
  *
  * Environment variables:
  *   GA4_SERVICE_ACCOUNT_JSON   Google service-account key JSON (local dev override)
@@ -36,7 +34,10 @@
  * than creating a second budget.
  */
 
+import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
+import TOML from "@iarna/toml";
 import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 // The APIs Google documents as enabled by default when a new project is created
@@ -67,15 +68,9 @@ export const DEFAULT_ENABLED_SERVICES = new Set([
   "telemetry.googleapis.com",
 ]);
 
-export const THRESHOLD_PERCENTAGES = [0.5, 0.9, 1.0];
-
-// Small round monthly amount, in the billing account's home currency; override with
-// --amount/--currency once a firmer figure is available.
-const DEFAULT_BUDGET_AMOUNT = "10";
-const DEFAULT_BUDGET_CURRENCY_CODE = "GBP";
-const DEFAULT_BUDGET_DISPLAY_NAME = "diyaccounting-ga4 monthly budget";
 const DEFAULT_BILLING_PROJECT_ID = "diyaccounting-ga4";
 const DEFAULT_STRAY_PROJECT_ID = "valued-context-507200-m9";
+export const CONFIG_PATH = "google/project.toml";
 
 /**
  * Parse CLI args. Unknown flags throw rather than being silently ignored.
@@ -87,9 +82,6 @@ export function parseArgs(argv) {
     apply: false,
     billingProjectId: DEFAULT_BILLING_PROJECT_ID,
     strayProjectId: DEFAULT_STRAY_PROJECT_ID,
-    budgetAmount: DEFAULT_BUDGET_AMOUNT,
-    budgetCurrencyCode: DEFAULT_BUDGET_CURRENCY_CODE,
-    budgetDisplayName: DEFAULT_BUDGET_DISPLAY_NAME,
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -103,15 +95,6 @@ export function parseArgs(argv) {
       case "--stray-project":
         opts.strayProjectId = argv[++i];
         break;
-      case "--amount":
-        opts.budgetAmount = argv[++i];
-        break;
-      case "--currency":
-        opts.budgetCurrencyCode = argv[++i];
-        break;
-      case "--budget-display-name":
-        opts.budgetDisplayName = argv[++i];
-        break;
       default:
         throw new Error(`Unknown argument: ${argv[i]}`);
     }
@@ -121,15 +104,40 @@ export function parseArgs(argv) {
 }
 
 /**
- * Which alert thresholds a budget's existing threshold rules are missing, out of
- * THRESHOLD_PERCENTAGES.
+ * Parse google/project.toml's [budget] table.
+ *
+ * @param {string} tomlString
+ * @returns {{displayName: string, amount: string, currencyCode: string, thresholds: number[]}}
+ */
+export function parseConfig(tomlString) {
+  const parsed = TOML.parse(tomlString);
+  const budget = parsed.budget;
+  if (!budget?.display_name || budget.amount === undefined || !budget.currency || !Array.isArray(budget.thresholds)) {
+    throw new Error("project.toml is missing [budget].display_name, amount, currency or thresholds");
+  }
+  return {
+    displayName: budget.display_name,
+    amount: String(budget.amount),
+    currencyCode: budget.currency,
+    thresholds: budget.thresholds.map(Number),
+  };
+}
+
+export function loadConfigFromRoot() {
+  const filePath = path.join(process.cwd(), CONFIG_PATH);
+  return parseConfig(fs.readFileSync(filePath, "utf-8"));
+}
+
+/**
+ * Which alert thresholds a budget's existing threshold rules are missing, out of `thresholds`.
  *
  * @param {Array<{thresholdPercent: number}>} existingThresholdRules
+ * @param {number[]} thresholds
  * @returns {number[]}
  */
-export function findThresholdGaps(existingThresholdRules) {
+export function findThresholdGaps(existingThresholdRules, thresholds) {
   const existingPercentages = (existingThresholdRules || []).map((rule) => rule.thresholdPercent);
-  return THRESHOLD_PERCENTAGES.filter((wanted) => !existingPercentages.some((have) => Math.abs(have - wanted) < 1e-9));
+  return thresholds.filter((wanted) => !existingPercentages.some((have) => Math.abs(have - wanted) < 1e-9));
 }
 
 /**
@@ -138,14 +146,15 @@ export function findThresholdGaps(existingThresholdRules) {
  * it is missing.
  *
  * @param {Array<{name: string, displayName: string, thresholdRules?: Array}>} existingBudgets
+ * @param {number[]} thresholds
  */
-export function decideBudgetAction(existingBudgets) {
+export function decideBudgetAction(existingBudgets, thresholds) {
   if (existingBudgets.length === 0) {
-    return { action: "create", targetBudget: null, missingThresholds: THRESHOLD_PERCENTAGES.slice() };
+    return { action: "create", targetBudget: null, missingThresholds: thresholds.slice() };
   }
 
   const targetBudget = existingBudgets[0];
-  const missingThresholds = findThresholdGaps(targetBudget.thresholdRules || []);
+  const missingThresholds = findThresholdGaps(targetBudget.thresholdRules || [], thresholds);
   return {
     action: missingThresholds.length === 0 ? "reuse-noop" : "reuse-update",
     targetBudget,
@@ -158,12 +167,12 @@ export function decideBudgetAction(existingBudgets) {
  * (an empty budgetFilter, rather than one project) since diyaccounting-ga4 is not the only
  * project the account could ever hold.
  */
-export function buildBudgetCreateBody({ displayName, amount, currencyCode }) {
+export function buildBudgetCreateBody({ displayName, amount, currencyCode, thresholds }) {
   return {
     displayName,
     budgetFilter: {},
     amount: { specifiedAmount: { currencyCode, units: String(amount) } },
-    thresholdRules: THRESHOLD_PERCENTAGES.map((thresholdPercent) => ({ thresholdPercent })),
+    thresholdRules: thresholds.map((thresholdPercent) => ({ thresholdPercent })),
   };
 }
 
@@ -344,7 +353,8 @@ async function deleteProject(accessToken, projectId) {
   });
 }
 
-async function assertBudget(accessToken, opts) {
+async function assertBudget(accessToken, opts, budgetConfig) {
+  const thresholdLabel = budgetConfig.thresholds.map((p) => `${p * 100}%`).join("/");
   const billingAccountName = await getBillingAccountForProject(accessToken, opts.billingProjectId);
   console.log(`Billing account: ${billingAccountName}`);
 
@@ -355,23 +365,24 @@ async function assertBudget(accessToken, opts) {
       : `Found ${existingBudgets.length} existing budget(s) on this billing account; reusing rather than creating a new one.`,
   );
 
-  const decision = decideBudgetAction(existingBudgets);
+  const decision = decideBudgetAction(existingBudgets, budgetConfig.thresholds);
 
   if (decision.action === "create") {
     console.log(
-      `No budget exists. Would create "${opts.budgetDisplayName}" for ${opts.budgetAmount} ${opts.budgetCurrencyCode}/month with 50/90/100% alerts.`,
+      `No budget exists. Would create "${budgetConfig.displayName}" for ${budgetConfig.amount} ${budgetConfig.currencyCode}/month with ${thresholdLabel} alerts.`,
     );
     if (opts.apply) {
       const body = buildBudgetCreateBody({
-        displayName: opts.budgetDisplayName,
-        amount: opts.budgetAmount,
-        currencyCode: opts.budgetCurrencyCode,
+        displayName: budgetConfig.displayName,
+        amount: budgetConfig.amount,
+        currencyCode: budgetConfig.currencyCode,
+        thresholds: budgetConfig.thresholds,
       });
       const created = await createBudget(accessToken, billingAccountName, body);
       console.log(`Created budget: ${created.name}`);
     }
   } else if (decision.action === "reuse-noop") {
-    console.log(`Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) already carries 50/90/100% alert thresholds.`);
+    console.log(`Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) already carries ${thresholdLabel} alert thresholds.`);
   } else {
     console.log(
       `Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) is missing the ${decision.missingThresholds
@@ -421,6 +432,7 @@ async function assertStrayProjectEmpty(accessToken, opts) {
 
 export async function main() {
   const opts = parseArgs(process.argv.slice(2));
+  const budgetConfig = loadConfigFromRoot();
 
   console.log(`GCP billing tidy-up: ${opts.apply ? "APPLY" : "DRY RUN"}`);
   console.log(`  Billing-holder project: ${opts.billingProjectId}`);
@@ -440,7 +452,7 @@ export async function main() {
   const failures = [];
 
   try {
-    await assertBudget(accessToken, opts);
+    await assertBudget(accessToken, opts, budgetConfig);
   } catch (err) {
     console.error(`Budget check failed: ${err.message}`);
     failures.push(`budget: ${err.message}`);

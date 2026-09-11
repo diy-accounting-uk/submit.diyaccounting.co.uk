@@ -373,7 +373,7 @@
     "stripe:cancel": "node scripts/stripe-cancel-subscription.js",
     "stripe:trigger-lifecycle": "bash scripts/stripe-trigger-lifecycle.sh",
     "stripe:configure-policies": "node scripts/stripe-configure-policies.js",
-    "ga4:bigquery-link-export": "node scripts/ga4-bigquery-link-export.js",
+    "ga4:sync": "node scripts/ga4-sync.js",
     "ga4:bigquery-sync": "node scripts/ga4-bigquery-sync.js",
     "google:inventory": "node scripts/google-inventory.js",
     "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",

@@ -259,6 +259,8 @@ Created per deployment by `deploy.yml`:
 | `codeql.yml` | CodeQL security analysis | Push, schedule |
 | `copilot-agent.yml` | GitHub Copilot agent workflow | workflow_dispatch |
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
+| `google-apply.yml` | Plan/apply the `google/` config files against live Google Cloud, GA4 and OAuth state | Pull request (plan), push to main (apply) |
+| `youtube-check.yml` | Check the stored YouTube refresh token still resolves to the declared channel | Schedule (weekly), manual |
 
 **Note:** Gateway and spreadsheets deployment workflows have been moved to their own repositories. This repo only deploys the submit application to submit-ci (367191799875) and submit-prod (972912397388).
 
@@ -601,9 +603,11 @@ Head-injected scripts for early API prefetching:
 |------|---------|
 | `submit.catalogue.toml` | Product catalogue (bundles, activities, display rules, tokens) |
 | `submit.passes.toml` | Pass type definitions (templates for generating passes) |
-| `google/project.toml` | Google Cloud project configuration |
+| `google/project.toml` | Google Cloud project APIs, IAM bindings and billing budget |
 | `google/bigquery.toml` | BigQuery configuration for GA4 daily tables |
-| `google/analytics.toml` | GA4 measurement ID configuration |
+| `google/analytics.toml` | GA4 account, properties, streams, key events and BigQuery links |
+| `google/oauth.toml` | The Google OAuth clients (Cognito sign-in, YouTube upload) this repo depends on |
+| `google/youtube.toml` | YouTube channel handle, quota project and credential secret names |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |

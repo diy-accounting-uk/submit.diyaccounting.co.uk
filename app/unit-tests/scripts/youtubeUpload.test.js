@@ -12,6 +12,8 @@ import {
   CLIENT_SECRET_NAME,
   REFRESH_TOKEN_SECRET_NAME,
   DEFAULT_QUOTA_PROJECT,
+  CHANNEL_HANDLE,
+  parseConfig,
   parseArgs,
   loadPublishList,
   savePublishList,
@@ -22,7 +24,8 @@ import {
   resolveClientCredentials,
   storeClientCredentials,
   obtainAccessToken,
-  fetchOwnChannelTitle,
+  fetchOwnChannel,
+  assertChannelHandleMatches,
   uploadVideo,
   uploadCaption,
   selectUploadedVideos,
@@ -303,13 +306,13 @@ describe("obtainAccessToken", () => {
   });
 });
 
-describe("fetchOwnChannelTitle", () => {
-  test("returns the signed-in channel's title", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit" } }] }) });
+describe("fetchOwnChannel", () => {
+  test("returns the signed-in channel's title and handle", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit", customUrl: "@DIYAccountingSubmit" } }] }) });
 
-    const title = await fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+    const channel = await fetchOwnChannel({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
 
-    expect(title).toBe("DIY Accounting Submit");
+    expect(channel).toEqual({ title: "DIY Accounting Submit", handle: "@DIYAccountingSubmit" });
     const [url, options] = fetchImpl.mock.calls[0];
     expect(url).toContain("/youtube/v3/channels?part=snippet&mine=true");
     expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
@@ -319,7 +322,44 @@ describe("fetchOwnChannelTitle", () => {
   test("fails loudly when no channel is linked to the account", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
 
-    await expect(fetchOwnChannelTitle({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(/no YouTube channel/);
+    await expect(fetchOwnChannel({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(/no YouTube channel/);
+  });
+});
+
+describe("assertChannelHandleMatches", () => {
+  test("passes silently when the handle matches", () => {
+    expect(() => assertChannelHandleMatches({ handle: "@DIYAccountingSubmit" }, "@DIYAccountingSubmit")).not.toThrow();
+  });
+
+  test("throws naming both handles when they differ", () => {
+    expect(() => assertChannelHandleMatches({ handle: "@SomeoneElse" }, "@DIYAccountingSubmit")).toThrow(/"@SomeoneElse".*"@DIYAccountingSubmit"/s);
+  });
+
+  test("throws when the signed-in account has no handle at all", () => {
+    expect(() => assertChannelHandleMatches({ handle: null }, "@DIYAccountingSubmit")).toThrow(/\(none\)/);
+  });
+});
+
+describe("parseConfig", () => {
+  test("reads the channel handle, quota project and secret names", () => {
+    const toml = `[channel]\nhandle = "@DIYAccountingSubmit"\nquota_project = "diyaccounting-ga4"\n\n[secrets]\noauth_client = "prod/submit/youtube/oauth_client"\nrefresh_token = "prod/submit/youtube/refresh_token"\n`;
+    expect(parseConfig(toml)).toEqual({
+      channelHandle: "@DIYAccountingSubmit",
+      quotaProject: "diyaccounting-ga4",
+      clientSecretName: "prod/submit/youtube/oauth_client",
+      refreshTokenSecretName: "prod/submit/youtube/refresh_token",
+    });
+  });
+
+  test("throws when a required field is missing", () => {
+    expect(() => parseConfig('[channel]\nhandle = "@x"\n')).toThrow(/youtube\.toml/);
+  });
+
+  test("the module's exported constants match the real repo config", () => {
+    expect(CHANNEL_HANDLE).toBe("@DIYAccountingSubmit");
+    expect(CLIENT_SECRET_NAME).toBe("prod/submit/youtube/oauth_client");
+    expect(REFRESH_TOKEN_SECRET_NAME).toBe("prod/submit/youtube/refresh_token");
+    expect(DEFAULT_QUOTA_PROJECT).toBe("diyaccounting-ga4");
   });
 });
 
