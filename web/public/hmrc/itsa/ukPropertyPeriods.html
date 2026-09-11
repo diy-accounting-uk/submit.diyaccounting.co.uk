@@ -101,6 +101,11 @@
               <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" aria-describedby="taxYear-hint" />
             </div>
 
+            <p id="cumulativeListNote" class="hint" style="display: none">
+              This tax year reports one running total rather than a list of submissions, so this shows the current total
+              instead of a list.
+            </p>
+
             <!-- Developer Test Scenario Section -->
             <div id="developerSection" class="form-group" style="display: none">
               <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
@@ -162,6 +167,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
@@ -169,6 +175,23 @@
     <script src="../../widgets/pass-redeemer.js"></script>
     <script>
       let searchCriteriaHidden = false;
+
+      // A cumulative tax year (2025-26 onwards) has no list of submissions to enumerate - it
+      // holds one running total - so this page shows that total instead of a list.
+      function isCumulativeTaxYear(taxYearValue) {
+        return (
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYearValue) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYearValue) === "cumulative"
+        );
+      }
+
+      function updateSubmissionModelUI() {
+        const taxYearValue = document.getElementById("taxYear").value.trim();
+        const isCumulative = isCumulativeTaxYear(taxYearValue);
+        document.getElementById("cumulativeListNote").style.display = isCumulative ? "block" : "none";
+        document.getElementById("retrieveBtn").textContent = isCumulative ? "Show Current Total" : "List Period Summaries";
+      }
 
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
@@ -275,6 +298,45 @@
         return result;
       }
 
+      // A cumulative tax year retrieves the single running total from the same endpoint the
+      // period pages use, rather than listing submissions that do not exist as a set.
+      async function fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const params = new URLSearchParams({ nino, businessId, taxYear });
+        if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+        if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+
+        const govClientHeaders = await getGovClientHeaders();
+
+        const requestHeaders = {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...govClientHeaders,
+        };
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount) {
+          requestHeaders["hmrcAccount"] = hmrcAccount;
+        }
+
+        const response = await window.authorizedFetch(`/api/v1/hmrc/itsa/uk-property/period?${params}`, {
+          method: "GET",
+          headers: {
+            ...requestHeaders,
+            "x-wait-time-ms": "0",
+          },
+          pollPendingMessage: "Still processing...",
+          pollSuccessMessage: "Current total retrieved.",
+          pollErrorMessage: "Failed to retrieve the current total.",
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          const error = new Error(result.message || "Failed to retrieve the current total");
+          error.status = response.status;
+          throw error;
+        }
+        return result;
+      }
+
       async function continuePeriodsRetrieval() {
         try {
           const accessToken = sessionStorage.getItem("hmrcAccessToken");
@@ -287,16 +349,27 @@
           hideStatus();
           showStatus("Retrieving period summaries...", "info");
 
-          const result = await fetchPeriods(
-            pendingRequest.nino,
-            pendingRequest.businessId,
-            pendingRequest.taxYear,
-            pendingRequest.testScenario,
-            pendingRequest.runFraudPreventionHeaderValidation,
-            accessToken,
-          );
-
-          displayPeriods(result.periods || []);
+          if (isCumulativeTaxYear(pendingRequest.taxYear)) {
+            const result = await fetchCurrentTotal(
+              pendingRequest.nino,
+              pendingRequest.businessId,
+              pendingRequest.taxYear,
+              pendingRequest.testScenario,
+              pendingRequest.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            displayCurrentTotal(result);
+          } else {
+            const result = await fetchPeriods(
+              pendingRequest.nino,
+              pendingRequest.businessId,
+              pendingRequest.taxYear,
+              pendingRequest.testScenario,
+              pendingRequest.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            displayPeriods(result.periods || []);
+          }
           document.getElementById("periodsResults").style.display = "block";
           hideStatus();
 
@@ -379,9 +452,13 @@
             hideStatus();
             showStatus("Retrieving period summaries...", "info");
 
-            const result = await fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
-
-            displayPeriods(result.periods || []);
+            if (isCumulativeTaxYear(taxYear)) {
+              const result = await fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              displayCurrentTotal(result);
+            } else {
+              const result = await fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              displayPeriods(result.periods || []);
+            }
             document.getElementById("periodsResults").style.display = "block";
             hideStatus();
           } catch (error) {
@@ -389,6 +466,9 @@
               sessionStorage.removeItem("hmrcAccessToken");
               sessionStorage.removeItem("hmrcTokenScope");
               showStatus("Access token expired. Please try again.", "error");
+            } else if (error.status === 404 && isCumulativeTaxYear(taxYear)) {
+              displayCurrentTotal(null);
+              document.getElementById("periodsResults").style.display = "block";
             } else {
               showStatus(`Failed to retrieve period summaries: ${error.message}`, "error");
             }
@@ -432,6 +512,40 @@
         tableContainer.innerHTML = tableHtml;
       }
 
+      function displayCurrentTotal(periodSummary) {
+        const tableContainer = document.getElementById("periodsTable");
+
+        if (!periodSummary) {
+          tableContainer.innerHTML = "<p class=\"no-data\">HMRC has no total on file yet for this tax year.</p>";
+          return;
+        }
+
+        const property = periodSummary.ukProperty || {};
+        const income = property.income || {};
+        const expenses = property.expenses || {};
+
+        tableContainer.innerHTML = `
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>Reported to</th>
+                <th>Rental income (year to date)</th>
+                <th>Other income (year to date)</th>
+                <th>Repairs and maintenance (year to date)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${escapeHtml(periodSummary.toDate || "-")}</td>
+                <td>${escapeHtml(income.periodAmount ?? "-")}</td>
+                <td>${escapeHtml(income.otherIncome ?? "-")}</td>
+                <td>${escapeHtml(expenses.repairsAndMaintenance ?? "-")}</td>
+              </tr>
+            </tbody>
+          </table>
+        `;
+      }
+
       function escapeHtml(text) {
         if (!text) return "";
         const div = document.createElement("div");
@@ -460,10 +574,13 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      document.getElementById("taxYear").addEventListener("input", updateSubmissionModelUI);
+
       document.getElementById("itsaUkPropertyPeriodsForm").addEventListener("submit", handleFormSubmission);
 
       document.addEventListener("DOMContentLoaded", function () {
         initializePage();
+        updateSubmissionModelUI();
         handleOAuthCallback();
       });
     </script>

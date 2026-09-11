@@ -341,6 +341,7 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
     const {
       hmrcNino,
       businessId,
+      taxYear,
       periodStartDate,
       periodEndDate,
       turnover,
@@ -359,9 +360,11 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
       await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-self-employment-period-test-data-added.png` });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
+      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
     } else {
       await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
       if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
       if (periodStartDate) await loggedFill(page, "#periodStartDate", periodStartDate, "Entering period start date", { screenshotPath });
       if (periodEndDate) await loggedFill(page, "#periodEndDate", periodEndDate, "Entering period end date", { screenshotPath });
       if (turnover !== undefined) await loggedFill(page, "#turnover", String(turnover), "Entering turnover", { screenshotPath });
