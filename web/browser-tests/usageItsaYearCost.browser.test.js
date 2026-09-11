@@ -43,12 +43,17 @@ test.describe("usage.html - ITSA year token cost summary", () => {
   });
 
   test("shows the year's token cost once the dashboard has recorded it", async ({ page }) => {
+    // sessionStorage set via an already-loaded page's own evaluate() call is refused with a
+    // SecurityError on a setContent() document with no real origin - an init script, which runs
+    // before the page's own scripts and does not hit that restriction, is how the other ITSA
+    // browser tests in this repo set sessionStorage ahead of a page load (see
+    // itsaDashboard.browser.test.js's synthetic-mode test).
+    await page.addInitScript(() => {
+      sessionStorage.setItem("itsaYearTokenCost", JSON.stringify({ yearTokens: 9, businessCount: 2 }));
+    });
     await loadPage(page);
 
-    await page.evaluate(() => {
-      sessionStorage.setItem("itsaYearTokenCost", JSON.stringify({ yearTokens: 9, businessCount: 2 }));
-      window.renderItsaYearCostSummary();
-    });
+    await page.evaluate(() => window.renderItsaYearCostSummary());
 
     await expect(page.locator("#itsaYearCostSummary")).toBeVisible();
     await expect(page.locator("#itsaYearCostSummary")).toContainText("9 tokens");
