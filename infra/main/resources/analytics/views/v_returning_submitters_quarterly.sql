@@ -5,15 +5,17 @@
 --
 -- Reads dynamo_receipts rather than activity_events_all: a receipt's change record carries a
 -- reliable hashed_sub straight off the DynamoDB item (see v_signup_to_first_submission.sql),
+-- and the quarter is wrapped in date() because Glue cannot store a view column typed
+-- 'timestamp with time zone', which is what date_trunc over from_iso8601_timestamp returns.
 -- where the activity event does not. One customer can file more than once in a quarter, so
 -- submitters is a distinct count, not a row count.
 CREATE OR REPLACE VIEW v_returning_submitters_quarterly AS
 WITH submitters_by_quarter AS (
   SELECT hashed_sub,
-         date_trunc('quarter', from_iso8601_timestamp(created_at)) AS quarter
+         date(date_trunc('quarter', from_iso8601_timestamp(created_at))) AS quarter
   FROM   dynamo_receipts
   WHERE  change_type = 'INSERT' AND actor = 'customer' AND hashed_sub IS NOT NULL
-  GROUP  BY hashed_sub, date_trunc('quarter', from_iso8601_timestamp(created_at)))
+  GROUP  BY hashed_sub, date(date_trunc('quarter', from_iso8601_timestamp(created_at))))
 SELECT this_quarter.quarter                                AS quarter,
        count(DISTINCT this_quarter.hashed_sub)              AS submitters,
        count(DISTINCT previous_quarter.hashed_sub)          AS returning_submitters
