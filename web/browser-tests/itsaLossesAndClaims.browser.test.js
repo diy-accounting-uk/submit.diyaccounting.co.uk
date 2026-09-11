@@ -62,6 +62,10 @@ test.describe("ITSA Losses and Claims - Form", () => {
     await expect(page.locator("#lossesEditForm")).toBeHidden();
   });
 
+  // #typeOfBusiness lives on the load form, so it must be selected while that form is still
+  // visible - hiding it first leaves the element with no visible ancestor, and Playwright's
+  // selectOption() then waits out the full test timeout for an element that can never become
+  // actionable again.
   async function showEditForm(page) {
     await page.evaluate(() => {
       document.getElementById("loadCriteriaForm").style.display = "none";
@@ -74,28 +78,25 @@ test.describe("ITSA Losses and Claims - Form", () => {
 
   test("shows the carry-back section for a self-employment business", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/lossesAndClaims.html");
-    await showEditForm(page);
 
     await page.locator("#typeOfBusiness").selectOption("self-employment");
-    await page.locator("#typeOfBusiness").dispatchEvent("change");
+    await showEditForm(page);
     await expect(page.locator("#carryBackSection")).toBeVisible();
   });
 
   test("hides the carry-back section for a UK property business", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/lossesAndClaims.html");
-    await showEditForm(page);
 
     await page.locator("#typeOfBusiness").selectOption("uk-property");
-    await page.locator("#typeOfBusiness").dispatchEvent("change");
+    await showEditForm(page);
     await expect(page.locator("#carryBackSection")).toBeHidden();
   });
 
   test("hides the carry-back section for a foreign property business", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/lossesAndClaims.html");
-    await showEditForm(page);
 
     await page.locator("#typeOfBusiness").selectOption("foreign-property");
-    await page.locator("#typeOfBusiness").dispatchEvent("change");
+    await showEditForm(page);
     await expect(page.locator("#carryBackSection")).toBeHidden();
   });
 
