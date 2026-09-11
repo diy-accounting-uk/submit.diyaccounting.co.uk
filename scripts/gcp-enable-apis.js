@@ -10,7 +10,7 @@
 // so a fresh project never needs a hand click in the console.
 //
 // Usage:
-//   node scripts/gcp-enable-apis.js [--dry-run] [--project diyaccounting-ga4]
+//   node scripts/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
 //
 // Credentials: GA4_SERVICE_ACCOUNT_JSON (local override) or GA4_SERVICE_ACCOUNT_ARN (Secrets
 // Manager). The key never reaches a log line.
@@ -32,13 +32,13 @@ export const REQUIRED_SERVICES = [
 ];
 
 export function parseArgs(argv) {
-  const opts = { dryRun: false, project: DEFAULT_PROJECT };
+  const opts = { apply: false, project: DEFAULT_PROJECT };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--dry-run") opts.dryRun = true;
+    if (arg === "--apply") opts.apply = true;
     else if (arg === "--project") opts.project = argv[++i];
     else if (arg === "--help") {
-      console.log("Usage: node scripts/gcp-enable-apis.js [--dry-run] [--project <id>]");
+      console.log("Usage: node scripts/gcp-enable-apis.js [--apply] [--project <id>]");
       process.exit(0);
     } else throw new Error(`Unknown argument "${arg}"`);
   }
@@ -76,9 +76,9 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const plan = planEnables(states);
   for (const { service, state, enable } of plan) {
-    console.log(`${service}: ${state}${enable ? (opts.dryRun ? " (would enable)" : " (enabling)") : ""}`);
+    console.log(`${service}: ${state}${enable ? (opts.apply ? " (enabling)" : " (would enable)") : ""}`);
   }
-  if (opts.dryRun) return plan;
+  if (!opts.apply) return plan;
   for (const { service, enable } of plan) {
     if (!enable) continue;
     const op = await googlePost(`${base}/${service}:enable`, token);

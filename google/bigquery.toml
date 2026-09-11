@@ -9,7 +9,7 @@
 # the script; delete its scheduled query by hand afterwards.
 #
 # Source: analytics_523400333.events_* in project diyaccounting-ga4, GA4's own daily export
-# for the shared "DIY Accounting" property (google-analytics.toml), not a lake copy. Each
+# for the shared "DIY Accounting" property (google/analytics.toml), not a lake copy. Each
 # query writes one day at a time (event_date two days back, matching the margin
 # app/functions/analytics/ga4EventExportPull.js gives the export) into its own table in the
 # ga4_daily dataset, partitioned on the query's `partition_field` and replaced one partition
@@ -17,7 +17,7 @@
 # alongside the Athena views (PLAN_ONE_STOP_DASHBOARD.md, "Where each dashboard lives").
 #
 # The service account (ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com) already
-# holds Owner on this project via analytics/google-roles.toml, which covers creating the
+# holds Owner on this project via google/project.toml, which covers creating the
 # dataset and the scheduled queries.
 
 [dataset]

@@ -22,7 +22,7 @@ describe("parseArgs", () => {
 });
 
 describe("readGa4Config", () => {
-  test("reads the property id and key events from google-analytics.toml", () => {
+  test("reads the property id and key events from google/analytics.toml", () => {
     const { propertyId, keyEvents } = readGa4Config();
 
     expect(propertyId).toBe("523400333");

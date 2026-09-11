@@ -4,7 +4,7 @@
 
 // scripts/ga4-bigquery-sync.js
 //
-// Reads analytics/ga4-bigquery.toml, lists the live ga4_daily dataset and its BigQuery Data
+// Reads google/bigquery.toml, lists the live ga4_daily dataset and its BigQuery Data
 // Transfer scheduled queries, diffs them against what the file declares, and creates or
 // updates the difference. Read-only and prints the plan unless --apply is given.
 //
@@ -30,7 +30,7 @@ const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
 const BIGQUERY_SCOPE = "https://www.googleapis.com/auth/bigquery";
 const CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
-export const CONFIG_PATH = "analytics/ga4-bigquery.toml";
+export const CONFIG_PATH = "google/bigquery.toml";
 
 export function parseArgs(argv) {
   const opts = { apply: false };
@@ -42,7 +42,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Parse and validate analytics/ga4-bigquery.toml's content. Pure and file-system free so it
+ * Parse and validate google/bigquery.toml's content. Pure and file-system free so it
  * can be unit tested with fixtures; sql text is read separately by `loadQueries`.
  *
  * @param {string} tomlString
@@ -54,7 +54,7 @@ export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
   const rawDataset = parsed.dataset;
   if (!rawDataset?.project_id || !rawDataset?.dataset_id || !rawDataset?.location) {
-    throw new Error("ga4-bigquery.toml is missing [dataset].project_id, .dataset_id or .location");
+    throw new Error("bigquery.toml is missing [dataset].project_id, .dataset_id or .location");
   }
   const dataset = {
     projectId: rawDataset.project_id,
@@ -85,7 +85,7 @@ export function parseConfig(tomlString) {
   const names = new Set();
   for (const query of queries) {
     if (names.has(query.name)) {
-      throw new Error(`Duplicate query name in ga4-bigquery.toml: ${query.name}`);
+      throw new Error(`Duplicate query name in bigquery.toml: ${query.name}`);
     }
     names.add(query.name);
   }
