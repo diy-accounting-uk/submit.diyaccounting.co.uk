@@ -4,10 +4,11 @@
 
 // scripts/gcp-enable-apis.js
 //
-// Makes sure the Google APIs the analytics scripts and the YouTube quota project need are
-// enabled on the GA4 project, using the same service account the scripts run as (it holds
-// Owner there). Idempotent: an enabled service is left alone. Runs first in google-roles.yml
-// so a fresh project never needs a hand click in the console.
+// Makes sure the Google APIs the analytics scripts and the YouTube quota project need, listed
+// in google/project.toml's [apis].services, are enabled on the GA4 project, using the same
+// service account the scripts run as (it holds Owner there). Idempotent: an enabled service is
+// left alone. Runs first in google-roles.yml so a fresh project never needs a hand click in the
+// console.
 //
 // Usage:
 //   node scripts/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
@@ -15,21 +16,34 @@
 // Credentials: GA4_SERVICE_ACCOUNT_JSON (local override) or GA4_SERVICE_ACCOUNT_ARN (Secrets
 // Manager). The key never reaches a log line.
 
+import fs from "node:fs";
+import path from "node:path";
+import TOML from "@iarna/toml";
+
 import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 export const DEFAULT_PROJECT = "diyaccounting-ga4";
+export const CONFIG_PATH = "google/project.toml";
 
-// Service Usage itself is enabled on every project by default and is what enables the rest.
-export const REQUIRED_SERVICES = [
-  "serviceusage.googleapis.com",
-  "cloudresourcemanager.googleapis.com",
-  "analyticsadmin.googleapis.com",
-  "cloudbilling.googleapis.com",
-  "billingbudgets.googleapis.com",
-  "bigquery.googleapis.com",
-  "bigquerydatatransfer.googleapis.com",
-  "youtube.googleapis.com",
-];
+/**
+ * Parse google/project.toml's [apis].services list.
+ *
+ * @param {string} tomlString
+ * @returns {string[]}
+ */
+export function parseConfig(tomlString) {
+  const parsed = TOML.parse(tomlString);
+  const services = parsed.apis?.services;
+  if (!Array.isArray(services) || services.length === 0) {
+    throw new Error("project.toml is missing [apis].services");
+  }
+  return services.map(String);
+}
+
+export function loadConfigFromRoot() {
+  const filePath = path.join(process.cwd(), CONFIG_PATH);
+  return parseConfig(fs.readFileSync(filePath, "utf-8"));
+}
 
 export function parseArgs(argv) {
   const opts = { apply: false, project: DEFAULT_PROJECT };
@@ -47,7 +61,7 @@ export function parseArgs(argv) {
 }
 
 // Decides what to do from the states Service Usage reports. Pure, so it is unit-tested.
-export function planEnables(states, required = REQUIRED_SERVICES) {
+export function planEnables(states, required) {
   return required.map((service) => ({ service, state: states[service] || "UNKNOWN", enable: states[service] !== "ENABLED" }));
 }
 
@@ -65,16 +79,17 @@ async function googlePost(url, token) {
 
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
+  const requiredServices = loadConfigFromRoot();
   const credentialsJson = await resolveServiceAccountCredentialsJson({ jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON", arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN" });
   const token = await getAccessToken(createGoogleAuthClient(credentialsJson));
   const base = `https://serviceusage.googleapis.com/v1/projects/${opts.project}/services`;
 
   const states = {};
-  for (const service of REQUIRED_SERVICES) {
+  for (const service of requiredServices) {
     const data = await googleGet(`${base}/${service}`, token);
     states[service] = data.state;
   }
-  const plan = planEnables(states);
+  const plan = planEnables(states, requiredServices);
   for (const { service, state, enable } of plan) {
     console.log(`${service}: ${state}${enable ? (opts.apply ? " (enabling)" : " (would enable)") : ""}`);
   }
