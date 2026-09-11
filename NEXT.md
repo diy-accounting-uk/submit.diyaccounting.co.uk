@@ -43,26 +43,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B11.T11 to T22. ITSA phase 2, the whole spine in one pass.** Every remaining ITSA phase 2
-  track edits the same files — `SubmitSharedNames.java`, `SubmitApplication.java`, `DataStack.java`,
-  `HmrcStack.java`, their tests, `app/bin/server.js`, `app/http-simulator/server.js`, `cdk.json` and
-  the `.env.*` files — so they are one workstream with one owner, not four queued behind each other.
-  `PLAN_ITSA_PHASE_2.md` is the specification and fixes the order.
+- [ ] **B11.T17 to T22 and T15. ITSA phase 2, the rest of the spine.** T11 to T16 shipped in
+  PR #180, including a new `HmrcItsaStack` because `HmrcStack` hit CloudFormation's 500-resource
+  ceiling. The remaining tracks run in `PLAN_ITSA_PHASE_2.md`'s own dependency order, which is not
+  the order an earlier brief gave: **T17 → T18 → T19 → T21/T22 → T15**, because T15's final
+  declaration page reads the loss position T21/T22 provide.
 
-  T11 to T14, UK property: the period summary's four handlers, the annual submission, the adjustable
-  summary, and the property pages with the business picker. Each copies its self-employment twin and
-  differs only in the path, the body field names and the scenario set.
+  T17 and T18 are the hard ones and want a fresh agent with room, not a tail. They change the
+  meaning of eight already-shipped handlers rather than adding new ones: the same HTTP route must
+  switch HMRC method and URL, switch response shape (200 with a period id against 204 with
+  nothing), make the period id conditionally required, and make period dates depend on the chosen
+  obligation — all keyed on `resolveItsaSubmissionModel(taxYear)`, which T16 landed. The cumulative
+  model is what 2025-26 onwards actually files, so this is the track that matters most. Get the
+  "zero survives, unanswered does not" rule pinned by a test.
 
-  T15 to T19: the business picker and the mixed-customer year end (T15), the tax year model and the
-  shared validator (T16), the self-employment and UK property cumulative period summaries (T17, T18)
-  which are what 2025-26 onwards actually files, and the cumulative pages (T19).
-
-  T21 and T22: Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0, then their two
-  pages. The operator decided on 2026-09-09 to build these rather than declare the product does not
-  offer those journeys; a sole trader making a loss is the ordinary first year of trading. Both
-  pages include `submission-cost.js` and both say the write is free.
-
-  One commit per track. **Source**: `PLAN_ITSA_PHASE_2.md` T11 to T22; operator, 2026-09-09.
+  Same shared spine, so one agent owns it. **Source**: `PLAN_ITSA_PHASE_2.md` T15, T17 to T22.
   **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B105. The cross-account vault's restore grant names a principal nothing can assume.**
   `CrossAccountBackupVaultStack.java` grants the restore actions to `ci-env-backup-role`, whose
@@ -73,15 +68,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   prop, populated by the caller and threaded through `SubmitApplication.java` and the workflow that
   deploys the backup account. The reasoning is recorded in the stack beside the grant. **Source**:
   B25c's investigation. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B113. A corrupted SQS body strands a VAT request in processing forever.** In
-  `hmrcVatReturnPost.js`'s `workerHandler`, an unparseable record body throws before `userSub` and
-  `requestId` are assigned, so the `if (userSub && requestId)` guard around `asyncApiServices.error()`
-  is always false in that branch. The request is never marked completed or failed and every later
-  poll waits on a status that never arrives — the same stranding class as the race fixed in
-  `asyncApiServices.js`. Not currently producible: the body is this codebase's own `JSON.stringify`
-  output. Read the ids out of the record before the parse that can throw, or fail the record
-  explicitly. The worker test pins today's silent-drop behaviour and will need updating with the
-  fix. **Source**: B111's test pass. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -90,60 +76,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B71.S3e. Migrate the books bucket as customer data.** The row's precondition fired on
-  2026-09-10: `prod-env-books-972912397388` holds 14 current objects under one user hash, seven
-  books written between 00:02 and 07:43 UTC that day, plus 22 delete markers.
-  `ci-env-books-367191799875` holds behaviour-run objects.
-
-  The books are handled as customer data whoever they belong to. Not because the owner is known —
-  the prefix is a salted hash and nothing here identifies it — but because this is the migration
-  path the service needs the first time the answer is unambiguously a customer, and 14 objects is
-  the cheapest occasion to build and prove it.
-
-  So the row is the seven-step copy sequence in `PLAN_DIYA_GL_NAMING.md`, not a rename: a plain
-  rename replaces the bucket, and `DataStack.java:655` sets `removalPolicy(DESTROY)` with
-  `autoDeleteObjects(true)`. The step that carries the sequence is the re-sync after the cutover
-  deploy, repeated until it copies nothing — between the first sync and the end of that deploy the
-  app still writes to the old bucket, and a deploy takes tens of minutes. The old bucket goes only
-  after a verified read and a confirmed backup recovery point, both, never either alone.
-
-  Step 1, adding the new bucket beside the old and its ARN to the backup selection, rides with the
-  ITSA spine agent, because it edits `DataStack.java`, `BackupStack.java` and `SubmitSharedNames.java`
-  and holding a second agent behind that file set buys nothing. Steps 2 onward are this row.
-
-  Steps 2, 4 and 6 are AWS writes against prod data: each waits for the operator. **Source**:
-  `PLAN_DIYA_GL_NAMING.md` NM-S3. **Owner**: Claude Code, with the operator at the write gates.
-  **Model**: Sonnet.
-- [ ] **B104. The SBOM workflow keeps a count, not a bill of materials.** `sbom.yml` runs
-  `npm sbom --sbom-format cyclonedx`, reads five fields out of the result, writes one row to
-  `curated/security/sbom/dt=<date>/<run-id>.json` in the lake, and lets the document die with the
-  runner. There is no `upload-artifact` step and no S3 copy of the SBOM itself. On 2026-09-10 the
-  row it stored was `component_count: 906` and nothing else.
-
-  So the question an SBOM exists to answer cannot be answered: given a CVE and a date, which
-  versions were we shipping that day. A count does not say. The document has to be kept, in the
-  lake beside the row, with a retention that outlives the question — a supply-chain question
-  arrives years after the build.
-
-  Java is not covered at all. The "Check for a configured Maven CycloneDX plugin" step only echoes
-  whether `pom.xml` has one, and it does not, so a push touching `infra/**` or `pom.xml` triggers a
-  run that produces nothing about the CDK dependency tree. Add `cyclonedx-maven-plugin` and store
-  its output the same way.
-
-  `Dockerfile*` is in the trigger list too and the base image's OS packages are in no SBOM either.
-  Say whether that is worth a third generator or is deliberately out, rather than leaving the
-  trigger implying a coverage that is not there.
-
-  Done when: pick any past date with a stored SBOM, retrieve the document, and read the exact
-  version of a named dependency from it. **Source**: the sbom job of run 34537197338. **Owner**:
-  Claude Code. **Model**: Sonnet.
-- [ ] **B25c. Issue #11, backups outside the account, is still open.** It is labelled
-  in-progress and has no row here, so nothing was driving it. B25 landed the cross-account vault
-  and the ci restore role's read and restore grants, and `restore-drill.yml` reached main in batch
-  16, which is the proof the issue was waiting for. Run the drill against the prod vault, record
-  what it restored and how long it took, and either close #11 on that evidence or say in the issue
-  what is still missing. **Source**: issue #11; BACKLOG 25. **Owner**: Claude Code. **Model**:
-  Sonnet.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
@@ -154,6 +86,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
   spreadsheets takes its own copy through its board and the other three need a session or the
   operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
   **Model**: Haiku per repository.
+- [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
+  `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
+  backup selection. The books stay where they are until the rest runs.
+
+  The sequence is in `PLAN_DIYA_GL_NAMING.md`: sync, cut the DIYA-GL Lambdas over and deploy,
+  **re-sync until it copies nothing** — the step that cannot be skipped, because the app writes to
+  the old bucket for the tens of minutes the deploy takes — verify a read, confirm an on-demand
+  backup recovery point, then remove the old bucket. The old bucket goes only after the verified
+  read and the recovery point, both.
+
+  Handled as customer data whoever the books belong to, because this is the migration path the
+  service needs the first time the answer is unambiguously a customer. Steps 2, 4 and 6 are AWS
+  writes against prod data and each waits for the operator. **Source**: `PLAN_DIYA_GL_NAMING.md`
+  NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
 
 ## Ready: operator
 
@@ -342,6 +288,16 @@ it nine tests fail on a missing file that has nothing to do with the change.
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
   execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the 02:15 UTC
   nightly of 2026-09-11.
+- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
+  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
+  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
+  account's stack has not been deployed since before that grant landed (O41). What is proven
+  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
+  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
+  three of its last four runs, most recently restoring 4826 receipt items against a live source of
+  4832. A comment saying exactly this is drafted and not yet posted. After B105 and O41, run the
+  drill and settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code.
+  **Model**: Sonnet. Blocked on B105 and O41.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
