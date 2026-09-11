@@ -63,9 +63,9 @@ it nine tests fail on a missing file that has nothing to do with the change.
   deploys; the two standing sets are the test. **Source**: `cloudformation list-stacks` on
   submit-ci, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B121. `deploy.yml` ignores `package-lock.json`, and nothing runs eslint.** Two paths-filter
-  holes found while verifying B119. First: `deploy.yml`'s push paths list `package.json` but not
+  holes found while verifying PR #186's lockfile bump. First: `deploy.yml`'s push paths list `package.json` but not
   `package-lock.json`, so a lockfile-only change never triggers a deploy — and a lockfile bump can
-  move shipped runtime code, as B119's `qs` does through `express` into the Lambda bundle.
+  move shipped runtime code, as PR #186's `qs` bump does through `express` into the Lambda bundle.
   `test.yml` lists both, which is why the tests ran and no deploy did. The #186 merge demonstrated
   it on main: commit `2a4c4044` fired `test`, CodeQL and `sbom`, and no deploy of any kind, so the
   `qs` patch sits on main and prod keeps the old one until some unrelated change deploys. Second: `eslint.config.js`
@@ -73,18 +73,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   crash below has never been seen by CI. `npm run linting` currently dies in `ts-api-utils` 2.5.0
   reading a TypeScript internal that `typescript` 7.0.2 no longer exposes; two TypeScript versions
   sit in the tree because `eslint-plugin-sonarjs` pins 6.0.3. Fix the filter and the resolution,
-  then make eslint run somewhere. **Source**: B119's verification, 2026-09-11. **Owner**: Claude
+  then make eslint run somewhere. **Source**: PR #186's verification, 2026-09-11. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B119. Three dependabot alerts, all fixed by a lockfile bump.** GitHub reports one high and
-  one moderate on the default branch; `npm audit` finds a third. All three are transitive and
-  `npm audit fix` resolves every one as a patch bump with nothing added or removed: `qs`
-  6.15.3 to 6.16.0 (array-limit bypass, reached through `express` and `supertest`), `js-yaml`
-  4.3.1 to 4.3.2 (CPU use on empty merge sources, reached through `eslint`), and `adm-zip` 0.6.0
-  to 0.6.1 (extraction follows destination symlinks, reached through `@axe-core/cli` and
-  `chromedriver`). Only `qs` is reachable at runtime; the other two are dev tooling. No
-  `package.json` change, so this is a `package-lock.json` commit on a branch with a PR, riding the
-  next batch rather than taking a branch of its own. **Source**: dependabot alerts, 2026-09-11.
-  **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
