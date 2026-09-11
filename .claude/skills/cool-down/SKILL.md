@@ -91,12 +91,12 @@ Per branch:
 
 1. **Wait for every workflow on it to conclude.** Not the first failure, all of them. A branch
    with three failing jobs and one still running is not ready to be fixed.
-2. **Gather every observed issue together.** One triage across all of them. Several failures
+3. **Gather every observed issue together.** One triage across all of them. Several failures
    usually share one cause, and finding that is cheaper than fixing three symptoms.
-3. **Reproduce each failure locally and get a passing result** before pushing anything. A push
+4. **Reproduce each failure locally and get a passing result** before pushing anything. A push
    whose fix has not been proven locally is a guess that costs a whole CI cycle, and guesses are
    what turned a batch into a loop in the first place.
-4. **Push once, carrying every fix.** Then back to step 1.
+5. **Push once, carrying every fix.** Then back to step 1.
 
 Repeat until the branch is green. There is no cap on pushes, because the local-proof rule is
 what stops the loop, not a quota.
@@ -180,15 +180,20 @@ cool, and `/do-next` says which step and stops there.
 
 The order matters, because each step depends on the one before:
 
-1. Delete the cool-down marker from `NEXT.md`.
-2. Account for every hotfix branch (rule 2's Waking note).
-3. Walk every worktree still on disk for uncommitted work (rule 3's Waking note).
-4. Confirm every branch that was open during cool-down is green or closed AND carries no
+1. **Run `/auto-merge` first**, before the marker comes off. A cool-down usually ends with work
+   sitting in a green PR nobody merged, and waking into a dispatch on top of an unmerged batch
+   stacks a second branch on the first. Merging what is genuinely ready is the cheapest thing that
+   reduces what is outstanding, and it is the one step here that shortens the list rather than
+   reading it.
+2. Delete the cool-down marker from `NEXT.md`.
+3. Account for every hotfix branch (rule 2's Waking note).
+4. Walk every worktree still on disk for uncommitted work (rule 3's Waking note).
+5. Confirm every branch that was open during cool-down is green or closed AND carries no
    unpushed commits, which is what lifts the one-branch serialisation (rule 4's Waking note).
-5. Read the tracking documents and work from them (rule 5's Waking note).
-6. Hand `PARKED.md` back for triage (rule 1's Waking note).
-7. Resequence the board, then run the `board` skill.
+6. Read the tracking documents and work from them (rule 5's Waking note).
+7. Hand `PARKED.md` back for triage (rule 1's Waking note).
+8. Resequence the board, then run the `board` skill.
 
-Only after all seven does new dispatch resume. If any step cannot be completed, say which and
+Only after all eight does new dispatch resume. If any step cannot be completed, say which and
 why, and stay cool until it is: a half-woken session with a red branch and an unaccounted
 worktree is worse than one still cooling.

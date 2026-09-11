@@ -49,6 +49,29 @@ Poll every 60-90s. Emit the reds as they land, then one tally when everything is
   which reads like a clean run. Count rows before interpreting them and report NO DATA when it is
   zero. Give up loudly after a few empty cycles rather than sitting there looking healthy.
 - Let a failed `gh` call skip the cycle rather than kill the loop.
+- **Probe merge-readiness every cycle.** A watch that only reports reds leaves a PR sitting green
+  for however long nobody looks. Each poll, for every open PR, emit one line when it appears
+  mergeable — not a draft, no unresolved review thread, and the latest run of every workflow on its
+  head SHA green:
+
+      gh pr list --state open --json number,headRefName,headRefOid,isDraft
+
+  A shell loop cannot invoke a skill, so the probe's job is only to notice and say so: emit
+  `MERGEABLE #<n> <branch>` and let the agent decide. Emit it once per PR per readiness, not every
+  cycle, or a ready PR floods the channel until someone merges it.
+
+## When a mergeable PR appears
+
+**Run `/auto-merge`.** Do not merge by hand: that skill is the only sanctioned path and it re-checks
+every gate properly, including the ones a shell probe cannot see — uncommitted work in the branch's
+worktree, a branch ahead of origin, a PR head that no longer equals the branch tip.
+
+The probe is a hint, not a verdict. It can be wrong in both directions: green checks on a stale head
+look ready and are not, and a PR whose runs have not registered yet looks unready and merely is
+early. `/auto-merge` is what settles it.
+
+If `/auto-merge` merges anything, the scope changes — the PR's branch leaves it and `main` gains a
+deploy. Re-read the scope on the next cycle rather than carrying the old one.
 
 ## When a red arrives
 

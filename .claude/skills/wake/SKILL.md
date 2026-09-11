@@ -18,7 +18,7 @@ Three things this skill adds, and nothing else:
 so is `/do-next`, which cannot do its job while cool-down is on and so runs this skill first.
 Silence is not consent, an idle hour is not consent, and a green branch is not consent.
 
-**The seven steps run in order**, because each depends on the one before. If any cannot be
+**The eight steps run in order**, because each depends on the one before. If any cannot be
 completed, say which and why and stay cool. A half-woken session with a red branch and an
 unaccounted worktree is worse than one still cooling.
 
