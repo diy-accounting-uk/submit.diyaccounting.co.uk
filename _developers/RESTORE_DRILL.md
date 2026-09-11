@@ -38,22 +38,18 @@ actually usable, not just present.
 The workflow authenticates as ci's deployment role
 (`submit-ci-deployment-role`, via `SUBMIT_DEPLOY_ROLE_ARN`). AWS Backup vault access
 policies grant permissions to one named IAM principal, and that principal has to be
-the one actually calling the API. The cross-account vault's policy names
+the one actually calling the API. The cross-account vault's policy named
 `ci-env-backup-role` for restore, but `ci-env-backup-role` can only be assumed by the
 `backup.amazonaws.com` service — nothing can authenticate as it from a CLI or GitHub
 Actions job. So the first AWS Backup call in the drill (listing recovery points in
-the vault) has no working grant to run under, regardless of which permissions the
-policy lists.
+the vault) had no working grant to run under, regardless of which permissions the
+policy listed.
 
-Separately, that policy statement itself is not live yet. The code for it
-(`CrossAccountBackupVaultStack.java`, commit `2b3d36b6`) is on `main`, but the backup
-account's CDK stack was last deployed on 2026-08-29, before that commit. Deploying it
-(dispatching `setup-backup-account.yml` with `dry-run: false`) is necessary but not
-sufficient — see above.
-
-Until the vault's access policy names a principal the workflow can actually call as
-(`submit-ci-deployment-role`, or the ci account itself), this drill cannot get past
-its first step.
+`CrossAccountBackupVaultStack.java` now grants the restore actions to
+`submit-ci-deployment-role` directly, passed in as `ciDeploymentRoleArn`
+(`cdk-backup/cdk.json`). What remains is deploying that stack: dispatch
+`setup-backup-account.yml` with `dry-run: false` against the backup account, then run
+the drill.
 
 ## What already proves restorability
 

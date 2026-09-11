@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -66,7 +66,10 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!taxYear) errorMessages.push("Missing taxYear parameter");
   if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
-  if (!periodId) errorMessages.push("Missing periodId parameter");
+  // The dated model retrieves one period summary by its periodId; the cumulative model
+  // retrieves the year's single running total, addressed by taxYear alone.
+  const submissionModel = taxYear && isValidTaxYear(taxYear) ? resolveItsaSubmissionModel(taxYear) : "dated";
+  if (submissionModel === "dated" && !periodId) errorMessages.push("Missing periodId parameter");
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -456,7 +459,10 @@ export async function getItsaSelfEmploymentPeriod(
     });
   }
 
-  const hmrcRequestUrl = `/individuals/business/self-employment/${nino}/${businessId}/period/${taxYear}/${periodId}`;
+  const hmrcRequestUrl =
+    resolveItsaSubmissionModel(taxYear) === "cumulative"
+      ? `/individuals/business/self-employment/${nino}/${businessId}/cumulative/${taxYear}`
+      : `/individuals/business/self-employment/${nino}/${businessId}/period/${taxYear}/${periodId}`;
   let hmrcResponse = {};
   /* v8 ignore start */
   if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {

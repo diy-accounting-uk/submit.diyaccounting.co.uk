@@ -7,6 +7,7 @@
     "@aws-cdk/core:stackRelativeExports": true,
     "vaultName": "submit-cross-account-vault",
     "githubRepository": "diy-accounting-uk/submit.diyaccounting.co.uk",
-    "sourceBackupRoleArns": "arn:aws:iam::972912397388:role/prod-env-backup-role,arn:aws:iam::367191799875:role/ci-env-backup-role"
+    "sourceBackupRoleArns": "arn:aws:iam::972912397388:role/prod-env-backup-role,arn:aws:iam::367191799875:role/ci-env-backup-role",
+    "ciDeploymentRoleArn": "arn:aws:iam::367191799875:role/submit-ci-deployment-role"
   }
 }
