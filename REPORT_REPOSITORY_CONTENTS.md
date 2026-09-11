@@ -601,7 +601,9 @@ Head-injected scripts for early API prefetching:
 |------|---------|
 | `submit.catalogue.toml` | Product catalogue (bundles, activities, display rules, tokens) |
 | `submit.passes.toml` | Pass type definitions (templates for generating passes) |
-| `google-analytics.toml` | GA4 configuration |
+| `google/project.toml` | Google Cloud project configuration |
+| `google/bigquery.toml` | BigQuery configuration for GA4 daily tables |
+| `google/analytics.toml` | GA4 measurement ID configuration |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |

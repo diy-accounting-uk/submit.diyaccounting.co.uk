@@ -3,7 +3,7 @@
 
 // app/functions/analytics/ga4DailyPull.js
 //
-// Nightly job that copies the four one-stop-dashboard aggregate tables analytics/ga4-bigquery.toml
+// Nightly job that copies the four one-stop-dashboard aggregate tables google/bigquery.toml
 // maintains in BigQuery's ga4_daily dataset (sessions_by_host_source_daily, funnel_steps_daily,
 // key_events_daily, downloads_by_product_daily) into the lake, so the dashboard's export and
 // Athena views read one place rather than reaching back into BigQuery. Each scheduled query in
@@ -22,7 +22,7 @@ import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4DailyPull.js" });
 
-// Matches analytics/ga4-bigquery.toml's [dataset] and each [[queries]] destination_table.
+// Matches google/bigquery.toml's [dataset] and each [[queries]] destination_table.
 const GA4_DAILY_DATASET_ID = "ga4_daily";
 const TABLES = [
   "sessions_by_host_source_daily",
@@ -90,7 +90,7 @@ async function getBigQueryClient() {
 }
 
 /**
- * D-2 in UTC, as "YYYY-MM-DD": every scheduled query in analytics/ga4-bigquery.toml writes
+ * D-2 in UTC, as "YYYY-MM-DD": every scheduled query in google/bigquery.toml writes
  * event_date two days back, so a D-1 pull would read a partition that doesn't exist yet.
  *
  * @returns {string}

@@ -445,7 +445,7 @@ public class IngestionStack extends Stack {
 
         // ============================================================================
         // GA4 daily aggregate pull job: the lake's copy of the four one-stop-dashboard tables
-        // analytics/ga4-bigquery.toml maintains in BigQuery's ga4_daily dataset
+        // google/bigquery.toml maintains in BigQuery's ga4_daily dataset
         // ============================================================================
         var ga4DailyPullFunctionName = prefix + "-ga4-daily-pull";
 
