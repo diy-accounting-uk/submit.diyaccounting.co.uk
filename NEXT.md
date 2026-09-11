@@ -43,31 +43,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B114. A failed view creation leaves the deploy green and the view missing.** The prod
-  analytics nightly has failed every night since 2026-09-10 (issue #182) on
-  `TABLE_NOT_FOUND: v_returning_submitters_quarterly`. `BusinessViews.java` registers 24 views;
-  both `prod_env_analytics` and `ci_env_analytics` hold 23, the same one missing from each, so it
-  is deterministic rather than transient. The view is not broken: its SQL file, its registration
-  and its test all exist, and its SELECT runs against prod today.
-
-  The cause is structural. Each view is created by an `AwsCustomResource` whose call is
-  `Athena.startQueryExecution`, which returns as soon as the query is submitted and never polls for
-  the terminal state. CloudFormation marks the resource successful the instant the query starts, so
-  a `CREATE VIEW` that fails afterwards leaves the stack green and the view absent — for any view,
-  in any environment, with no signal. This one surfaced only because the nightly selects from it.
-
-  Fix: make a failed query fail the deploy, surfacing Athena's `StateChangeReason`. The physical
-  resource id is fixed per view, so `onUpdate` fires on the next stack update, which is what should
-  finally create the missing view. **Source**: execution
-  `0d6aa364-24d8-4337-be9e-b10cbc035be1`; catalog counts, 2026-09-11. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
-- [ ] **B115. Unauthorized API calls in prod.** Alarm issue #181, raised 02:17 UTC on 2026-09-11:
-  `prod-env-cis-unauthorized-api-calls`. Establish what called what and was refused, from CloudTrail
-  over the alarm's window, before deciding whether it is a benign denied call from one of our own
-  roles or something to act on. Do not post anything identifying to a public issue.
-  **Source**: issue #181. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  `aws sso login --sso-session diyaccounting`.
 - [ ] **B117. The ITSA endpoints are not bundle-gated.** `web/public/submit.catalogue.toml` has no
   entries for `losses-and-claims` or `tax-liability-adjustments`, so `bundleManagement.js`'s
   `enforceBundles()` treats both as unrestricted and lets any signed-in caller through. The same
@@ -96,31 +71,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
   **Source**: deploy run 34571638567's job list. **Owner**: Claude Code, after the operator
   dispatches the first run. **Model**: Sonnet.
-- [ ] **B11.T17 to T22 and T15. ITSA phase 2, the rest of the spine.** T11 to T16 shipped in
-  PR #180, including a new `HmrcItsaStack` because `HmrcStack` hit CloudFormation's 500-resource
-  ceiling. The remaining tracks run in `PLAN_ITSA_PHASE_2.md`'s own dependency order, which is not
-  the order an earlier brief gave: **T17 → T18 → T19 → T21/T22 → T15**, because T15's final
-  declaration page reads the loss position T21/T22 provide.
-
-  T17 and T18 are the hard ones and want a fresh agent with room, not a tail. They change the
-  meaning of eight already-shipped handlers rather than adding new ones: the same HTTP route must
-  switch HMRC method and URL, switch response shape (200 with a period id against 204 with
-  nothing), make the period id conditionally required, and make period dates depend on the chosen
-  obligation — all keyed on `resolveItsaSubmissionModel(taxYear)`, which T16 landed. The cumulative
-  model is what 2025-26 onwards actually files, so this is the track that matters most. Get the
-  "zero survives, unanswered does not" rule pinned by a test.
-
-  Same shared spine, so one agent owns it. **Source**: `PLAN_ITSA_PHASE_2.md` T15, T17 to T22.
-  **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B105. The cross-account vault's restore grant names a principal nothing can assume.**
-  `CrossAccountBackupVaultStack.java` grants the restore actions to `ci-env-backup-role`, whose
-  trust policy admits only `backup.amazonaws.com`. No CLI session and no Actions job can
-  authenticate as it, so `restore-drill.yml` — which runs as ci's deployment role — can never use
-  the grant. The stack cannot fix this on its own: `CrossAccountBackupVaultStackProps` carries only
-  `sourceBackupRoleArns` and `vaultName`, so the deployment role's ARN has to be added as a new
-  prop, populated by the caller and threaded through `SubmitApplication.java` and the workflow that
-  deploys the backup account. The reasoning is recorded in the stack beside the grant. **Source**:
-  B25c's investigation. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -339,8 +289,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
   entries, so a field that never fills is found now rather than in three months. Proof the run
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
-  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the 02:15 UTC
-  nightly of 2026-09-11.
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the next 02:15 UTC
+  nightly. The missing view that failed every previous run now exists in prod.
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
   stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
@@ -350,7 +300,7 @@ it nine tests fail on a missing file that has nothing to do with the change.
   three of its last four runs, most recently restoring 4826 receipt items against a live source of
   4832. A comment saying exactly this is drafted and not yet posted. After B105 and O41, run the
   drill and settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on B105 and O41.
+  **Model**: Sonnet. Blocked on O41; B105's code is on main.
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
   secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
