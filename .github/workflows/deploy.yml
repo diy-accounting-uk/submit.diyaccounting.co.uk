@@ -2530,6 +2530,62 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-itsa-uk-property-period-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    name: 'itsaUkPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaUkPropertyPeriodBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-itsa-uk-property-annual-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    name: 'itsaUkPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaUkPropertyAnnualSubmissionBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-itsa-self-employment-period-synthetic:
     # Gated to non-prod environments until examined.
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
