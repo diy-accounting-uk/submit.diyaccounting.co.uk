@@ -42,16 +42,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B30l. Two prod roles are denied a call they need, every night.**
-  `prod-env-cis-unauthorized-api-calls` fired at 02:17 UTC on 2026-09-11 (issue #181) on four
-  datapoints, and the CloudTrail window names both callers: `prod-env-data-quality-eval` was denied
-  `CreateLogGroup` eleven times, and `prod-env-alarm-triage-role` was denied `ListInferenceProfiles`
-  once. So the Glue data-quality job cannot create its own log group and the triage Lambda cannot
-  list Bedrock inference profiles. Grant each what it calls, or pre-create the log group the way
-  `ObservabilityStack.java` already does for CloudTrail's. The alarm is telling the truth, and one
-  that fires nightly on our own missing grants is how a real unauthorized call gets ignored.
-  **Source**: issue #181; CloudTrail `prod-env-cloud-trail`, 2026-09-11. **Owner**: Claude Code.
-  **Model**: Sonnet.
 - [ ] **B120. The self-destruct leaves an HmrcItsaStack behind on every ci set.** `ci-clauddb3b`,
   `ci-claudd608` and now `ci-claud5589` each have every app stack in `DELETE_COMPLETE` except
   `{deployment}-app-HmrcItsaStack`, which still stands in `CREATE_COMPLETE`. Three orphans is every
