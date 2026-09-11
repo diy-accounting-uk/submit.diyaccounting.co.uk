@@ -425,4 +425,48 @@ class DataStackTest {
                         "UpdateReplacePolicy",
                         "Delete"));
     }
+
+    @Test
+    void diyaGlBucketIsVersionedEncryptedAndDestroyableAlongsideTheBooksBucket() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+        String expectedBooksBucketName = SubmitSharedNames.forDocs().booksBucketName;
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().diyaGlBucketName;
+
+        // The two bucket names are added beside each other, not one replacing the other - see
+        // PLAN_DIYA_GL_NAMING.md's copy sequence.
+        assertEquals(false, expectedBooksBucketName.equals(expectedDiyaGlBucketName));
+
+        template.hasResourceProperties(
+                "AWS::S3::Bucket",
+                Map.of(
+                        "BucketName",
+                        expectedDiyaGlBucketName,
+                        "VersioningConfiguration",
+                        Map.of("Status", "Enabled"),
+                        "BucketEncryption",
+                        Match.objectLike(Map.of(
+                                "ServerSideEncryptionConfiguration",
+                                Match.arrayWith(List.of(Match.objectLike(
+                                        Map.of("ServerSideEncryptionByDefault", Map.of("SSEAlgorithm", "AES256"))))))),
+                        "PublicAccessBlockConfiguration",
+                        Map.of(
+                                "BlockPublicAcls", true,
+                                "BlockPublicPolicy", true,
+                                "IgnorePublicAcls", true,
+                                "RestrictPublicBuckets", true)));
+
+        template.hasResource(
+                "AWS::S3::Bucket",
+                Map.of(
+                        "Properties",
+                        Match.objectLike(Map.of("BucketName", expectedDiyaGlBucketName)),
+                        "DeletionPolicy",
+                        "Delete",
+                        "UpdateReplacePolicy",
+                        "Delete"));
+
+        // Both buckets exist in the same stack at once.
+        template.hasResourceProperties("AWS::S3::Bucket", Map.of("BucketName", expectedBooksBucketName));
+    }
 }

@@ -119,6 +119,7 @@ public class SubmitSharedNames {
     public String subscriptionsTableName;
     public String securityStateTableName;
     public String booksBucketName;
+    public String diyaGlBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
     public String distributionAccessLogGroupName;
@@ -1255,6 +1256,10 @@ public class SubmitSharedNames {
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
         this.booksBucketName = "%s-books-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
+        // Added beside booksBucketName, not replacing it - see PLAN_DIYA_GL_NAMING.md's copy
+        // sequence. The old bucket holds real customer data and stays live until that sequence's
+        // later steps move the DIYA-GL Lambdas over and confirm the copy.
+        this.diyaGlBucketName = "%s-diya-gl-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =
                 "%s-holding-dist-logs-src".formatted(this.envResourceNamePrefix);

@@ -32,6 +32,7 @@ public class DataStack extends Stack {
 
     public ITable receiptsTable;
     public Bucket booksBucket;
+    public Bucket diyaGlBucket;
     public ITable bundlesTable;
     public ITable bundlePostAsyncRequestsTable;
     public ITable bundleDeleteAsyncRequestsTable;
@@ -802,6 +803,32 @@ public class DataStack extends Stack {
                 .build();
         infof("Ensured books bucket with name %s", props.sharedNames().booksBucketName);
 
+        // DIYA-GL bucket: added beside the books bucket above, not replacing it - see
+        // PLAN_DIYA_GL_NAMING.md's copy sequence. bucketName is a replacement property on
+        // AWS::S3::Bucket, so changing booksBucketName in place would delete the old bucket
+        // (removalPolicy(DESTROY) and autoDeleteObjects(true) below apply to it too) along with
+        // the real customer data it holds. Both buckets exist and are both in the backup
+        // selection until the copy sequence's later steps move the DIYA-GL Lambdas over.
+        this.diyaGlBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-DiyaGl")
+                .bucketName(props.sharedNames().diyaGlBucketName)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .enforceSsl(true)
+                .versioned(true)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .autoDeleteObjects(true)
+                .lifecycleRules(List.of(
+                        LifecycleRule.builder()
+                                .id("abort-incomplete-uploads")
+                                .abortIncompleteMultipartUploadAfter(Duration.days(1))
+                                .build(),
+                        LifecycleRule.builder()
+                                .id("expire-noncurrent-versions")
+                                .noncurrentVersionExpiration(Duration.days(30))
+                                .build()))
+                .build();
+        infof("Ensured diya-gl bucket with name %s", props.sharedNames().diyaGlBucketName);
+
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());
         cfnOutput(this, "ReceiptsTableStreamArn", receiptsStreamArn);
@@ -1064,6 +1091,7 @@ public class DataStack extends Stack {
         cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
         cfnOutput(this, "BooksBucketName", this.booksBucket.getBucketName());
+        cfnOutput(this, "DiyaGlBucketName", this.diyaGlBucket.getBucketName());
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).
         // Used by migration 003 to encrypt the passphrase salt as a system#config item.
