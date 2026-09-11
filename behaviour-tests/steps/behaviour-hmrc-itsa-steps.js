@@ -969,3 +969,106 @@ export async function verifyItsaFinalDeclarationResults(page, screenshotPath = d
     await expect(page.locator("#finalDeclarationResults")).toBeVisible();
   });
 }
+
+// Losses and Claims, like Annual Submission, has no home-page activity button of its own - only
+// the dashboard links to it - so navigate to it directly.
+export async function initItsaLossesAndClaims(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Losses and Claims page and sees the load form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/lossesAndClaims.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-losses-and-claims.png` });
+    await expect(page.locator("#itsaLossesLoadForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the Losses and Claims load form", async () => {
+    const { hmrcNino, businessId, typeOfBusiness, taxYear, testScenario, runFraudPreventionHeaderValidation } = lossesQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    if (typeOfBusiness) await loggedSelectOption(page, "#typeOfBusiness", typeOfBusiness, "the business type", { screenshotPath });
+    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    await page.waitForTimeout(50);
+
+    if (testScenario || runFraudPreventionHeaderValidation) {
+      if (isSyntheticMode()) {
+        await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+      }
+      await page.evaluate(() => {
+        sessionStorage.setItem("showDeveloperOptions", "true");
+        document.body.classList.add("developer-mode");
+        window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+      });
+      const devSection = page.locator("#developerSection");
+      await expect(devSection).toBeVisible({ timeout: 5000 });
+      if (testScenario) {
+        await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+      }
+      if (runFraudPreventionHeaderValidation) {
+        await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+    }
+
+    await loggedFocus(page, "#loadBtn", "Load button", { screenshotPath });
+    await expect(page.locator("#loadBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaLossesLoadForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the Losses and Claims load form", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadBtn", "Submitting Losses and Claims load form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaLossesLoadResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Losses and Claims edit form", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#lossesEditForm",
+      description: "Losses and Claims edit form",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#lossesEditForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaLossesEdits(page, lossesEdits = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters a loss to carry forward", async () => {
+    const { currentYearLosses } = lossesEdits || {};
+    if (currentYearLosses !== undefined) {
+      await loggedFill(page, "#currentYearLosses", String(currentYearLosses), "Entering this year's loss to carry forward", {
+        screenshotPath,
+      });
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-losses-edits-filled.png` });
+  });
+}
+
+export async function submitItsaLossesSaveForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user saves the Losses and Claims", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#saveBtn", "Saving the Losses and Claims", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaLossesSaveResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Losses and Claims saved", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#lossesResults",
+      description: "Losses and Claims saved result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#lossesResults")).toBeVisible();
+  });
+}

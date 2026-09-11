@@ -87,7 +87,7 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).not.toContain("hmrc/itsa/adjustments.html");
   });
 
-  it("self-employed-year-end carries the annual submission and the adjustable summary at no token cost", () => {
+  it("self-employed-year-end carries the annual submission, the adjustable summary, losses and claims, and tax liability adjustments at no token cost", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "self-employed-year-end");
     expect(activity).toBeTruthy();
@@ -98,6 +98,8 @@ describe("productCatalogHelper", () => {
       "hmrc/itsa/adjustments.html",
       "hmrc/itsa/ukPropertyAnnualSubmission.html",
       "hmrc/itsa/ukPropertyAdjustments.html",
+      "hmrc/itsa/lossesAndClaims.html",
+      "hmrc/itsa/taxLiabilityAdjustments.html",
     ]);
     // Same entitlement and access rules as self-employed - a year-end write is still gated on
     // an ITSA bundle, it just spends nothing from it.

@@ -1,0 +1,465 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tax Liability Adjustments - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>Tax Liability Adjustments</h1>
+      <p class="subtitle">Tell HMRC what a carry-back claim saves, so this year's liability is credited</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div id="loadCriteriaForm" class="form-container">
+        <h2>Load a Year's Tax Liability Adjustments</h2>
+        <p class="hint">
+          This is the second half of a carry-back claim. Record the loss on the Losses and Claims page first, then come here
+          to say what it saves.
+        </p>
+        <form id="itsaAdjustmentsLoadForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year the claim decreases</label>
+            <p id="taxYear-hint" class="hint">The earlier tax year the carry-back claim reduces the liability for.</p>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2022-23" maxlength="7" aria-describedby="taxYear-hint" />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for loading tax liability adjustments</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (loads an adjustment)</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" />
+              <label for="suspendTemporalValidations" style="display: inline; font-weight: normal"
+                >Suspend temporal validations (sandbox tax year has not really ended)</label
+              >
+            </div>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="loadBtn" class="btn">Load Tax Liability Adjustments</button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once adjustments have been loaded (or for a first-time entry) -->
+      <div id="adjustmentsEditForm" class="form-container" style="display: none">
+        <h2>What HMRC calculated for that year</h2>
+        <p class="hint">
+          Retrieved fresh from HMRC's own calculation, so the figure in front of you while you enter the decrease is theirs,
+          not ours. We add nothing to it and subtract nothing from it.
+        </p>
+        <button type="button" id="showEarlierYearBtn" class="secondary-button">Show that year's calculated liability</button>
+        <dl>
+          <dt>Total Income Tax and National Insurance due, before this claim</dt>
+          <dd id="earlierYearFigure">Not yet retrieved</dd>
+        </dl>
+
+        <h2>What the carry-back claim saves</h2>
+        <p class="hint">
+          The amount by which the carry-back claim decreases this year's liability, from your own or your accountant's
+          computation. Leave a field at 0 if it does not apply.
+        </p>
+        <div class="form-group">
+          <label for="incomeTax">Income Tax decrease</label>
+          <input type="number" id="incomeTax" name="incomeTax" step="0.01" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="class4">Class 4 National Insurance decrease</label>
+          <input type="number" id="class4" name="class4" step="0.01" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="capitalGainsTax">Capital Gains Tax decrease</label>
+          <input type="number" id="capitalGainsTax" name="capitalGainsTax" step="0.01" value="0" />
+        </div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button type="button" id="saveBtn" class="btn">Save Tax Liability Adjustments</button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="adjustmentsResults" class="results-container" style="display: none">
+        <h3>Tax Liability Adjustments Saved</h3>
+        <p>HMRC has accepted the adjustments.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Load Another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2006-2026 DIY Accounting Limited</p>
+          <p>
+            Free to use.
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
+            under the
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
+              >PolyForm Internal Use License</a
+            >.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script>
+      let loadedNino = "";
+      let loadedTaxYear = "";
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+      }
+
+      function formatCurrency(value) {
+        if (value === undefined || value === null) return "-";
+        return `£${Number(value).toFixed(2)}`;
+      }
+
+      function readCarryBackLossesDecrease() {
+        const incomeTax = Number(document.getElementById("incomeTax").value) || 0;
+        const class4 = Number(document.getElementById("class4").value) || 0;
+        const capitalGainsTax = Number(document.getElementById("capitalGainsTax").value) || 0;
+        const carryBackLossesDecrease = {};
+        if (incomeTax !== 0) carryBackLossesDecrease.incomeTax = incomeTax;
+        if (class4 !== 0) carryBackLossesDecrease.class4 = class4;
+        if (capitalGainsTax !== 0) carryBackLossesDecrease.capitalGainsTax = capitalGainsTax;
+        return carryBackLossesDecrease;
+      }
+
+      function populateEditForm(taxLiabilityAdjustments) {
+        const carryBackLossesDecrease = taxLiabilityAdjustments?.carryBackLossesDecrease || {};
+        document.getElementById("incomeTax").value = carryBackLossesDecrease.incomeTax ?? 0;
+        document.getElementById("class4").value = carryBackLossesDecrease.class4 ?? 0;
+        document.getElementById("capitalGainsTax").value = carryBackLossesDecrease.capitalGainsTax ?? 0;
+      }
+
+      async function loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getTaxLiabilityAdjustments(nino, taxYear, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await putTaxLiabilityAdjustments(
+          adjustmentsDetails,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
+      }
+
+      // Retrieves HMRC's own calculation for the year the claim decreases, so the customer has
+      // HMRC's figure in front of them while they enter the decrease. Nothing here is
+      // subtracted or computed - the page shows the figure and the customer enters their own.
+      async function showEarlierYearFigure() {
+        const nino = loadedNino;
+        const taxYear = loadedTaxYear;
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const button = document.getElementById("showEarlierYearBtn");
+        const figureEl = document.getElementById("earlierYearFigure");
+
+        try {
+          button.disabled = true;
+          figureEl.textContent = "Retrieving from HMRC...";
+          const govClientHeaders = await getGovClientHeaders();
+          const result = await triggerCalculation({ nino, taxYear, calculationType: "in-year" }, accessToken, govClientHeaders, false, null);
+          const totalIncomeTaxAndNicsDue = result?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
+          figureEl.textContent = formatCurrency(totalIncomeTaxAndNicsDue);
+        } catch (error) {
+          figureEl.textContent = "Could not retrieve HMRC's calculation for that year.";
+          console.error(error);
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingLoad = JSON.parse(sessionStorage.getItem("pendingAdjustmentsLoadRequest") || "null");
+          const pendingSave = JSON.parse(sessionStorage.getItem("pendingAdjustmentsSaveRequest") || "null");
+
+          if (pendingLoad) {
+            showLoading();
+            showStatus("Loading tax liability adjustments...", "info");
+            const result = await loadAdjustments(
+              pendingLoad.nino,
+              pendingLoad.taxYear,
+              pendingLoad.testScenario,
+              pendingLoad.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            loadedNino = pendingLoad.nino;
+            loadedTaxYear = pendingLoad.taxYear;
+            populateEditForm(result);
+            document.getElementById("loadCriteriaForm").style.display = "none";
+            document.getElementById("adjustmentsEditForm").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
+          } else if (pendingSave) {
+            showLoading();
+            showStatus("Saving tax liability adjustments...", "info");
+            await saveAdjustments(
+              pendingSave.adjustmentsDetails,
+              pendingSave.testScenario,
+              pendingSave.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            document.getElementById("adjustmentsEditForm").style.display = "none";
+            document.getElementById("adjustmentsResults").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
+          } else {
+            return;
+          }
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingAdjustmentsLoadRequest");
+          sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function handleLoadFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !taxYear) {
+          showStatus("Please fill in the National Insurance number and tax year.", "error");
+          return;
+        }
+
+        await ensureAuthorizedThen(
+          "pendingAdjustmentsLoadRequest",
+          { nino, taxYear, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Loading tax liability adjustments...", "info");
+              const result = await loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              loadedNino = nino;
+              loadedTaxYear = taxYear;
+              populateEditForm(result);
+              document.getElementById("loadCriteriaForm").style.display = "none";
+              document.getElementById("adjustmentsEditForm").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              if (error.status === 404 || /not.?found/i.test(error.message)) {
+                loadedNino = nino;
+                loadedTaxYear = taxYear;
+                populateEditForm(null);
+                document.getElementById("loadCriteriaForm").style.display = "none";
+                document.getElementById("adjustmentsEditForm").style.display = "block";
+                showStatus("HMRC has no tax liability adjustments on file yet for this tax year.", "info");
+              } else {
+                showStatus(`Failed to load tax liability adjustments: ${error.message}`, "error");
+              }
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function handleSaveClick() {
+        const adjustmentsDetails = {
+          nino: loadedNino,
+          taxYear: loadedTaxYear,
+          carryBackLossesDecrease: readCarryBackLossesDecrease(),
+          suspendTemporalValidations: document.getElementById("suspendTemporalValidations")?.checked || false,
+        };
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        await ensureAuthorizedThen(
+          "pendingAdjustmentsSaveRequest",
+          { adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Saving tax liability adjustments...", "info");
+              await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              document.getElementById("adjustmentsEditForm").style.display = "none";
+              document.getElementById("adjustmentsResults").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to save tax liability adjustments: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      document.getElementById("itsaAdjustmentsLoadForm").addEventListener("submit", handleLoadFormSubmission);
+      document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
+      document.getElementById("showEarlierYearBtn").addEventListener("click", showEarlierYearFigure);
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("adjustmentsResults").style.display = "none";
+        document.getElementById("loadCriteriaForm").style.display = "block";
+        document.getElementById("adjustmentsEditForm").style.display = "none";
+        document.getElementById("itsaAdjustmentsLoadForm").reset();
+        document.getElementById("earlierYearFigure").textContent = "Not yet retrieved";
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>
