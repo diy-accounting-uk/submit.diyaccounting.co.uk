@@ -68,6 +68,19 @@ it nine tests fail on a missing file that has nothing to do with the change.
   roles or something to act on. Do not post anything identifying to a public issue.
   **Source**: issue #181. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   `aws sso login --sso-session diyaccounting`.
+- [ ] **B117. The ITSA endpoints are not bundle-gated.** `web/public/submit.catalogue.toml` has no
+  entries for `losses-and-claims` or `tax-liability-adjustments`, so `bundleManagement.js`'s
+  `enforceBundles()` treats both as unrestricted and lets any signed-in caller through. The same
+  gap covers several ITSA endpoints already deployed — self-employment annual, UK property annual
+  and others — so it is a pre-existing hole across the ITSA surface rather than something the
+  losses work introduced.
+
+  That means the whole ITSA journey is currently free, while VAT is gated. Decide what each ITSA
+  activity should cost before adding entries: the plan has a quarterly update costing one token
+  like a VAT return, and the year-end activity free, but the newer endpoints have no stated price.
+  This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
+  on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
+  2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
 - [ ] **B116. No ITSA journey has ever run end to end.** All five ITSA behaviour suites skip on
   every push. `deploy.yml`'s `params` job computes `skipTestScenarios=${X:-true}`, so an empty
   dispatch input means true, and every scenario suite is gated off. The VAT suites run because they
