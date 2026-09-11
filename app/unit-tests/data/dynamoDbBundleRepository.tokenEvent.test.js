@@ -38,6 +38,7 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
     module: dynamoDbModule,
   }),
   executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
+  getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
 const { initializeSalt } = await import("@app/services/subHasher.js");

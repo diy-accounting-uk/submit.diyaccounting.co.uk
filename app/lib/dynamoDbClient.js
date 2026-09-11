@@ -71,3 +71,23 @@ export async function executeDynamoDbCommand(commandBuilder, options = {}) {
   const command = commandBuilder(module);
   return docClient.send(command);
 }
+
+/**
+ * Get a resource name (table, bucket, etc.) from an environment variable
+ * Reads at call time, not at module load time (important for tests that set env vars in beforeEach)
+ *
+ * @param {string} envVarName - The environment variable name
+ * @param {boolean} throwIfMissing - If true, throw an error if the env var is not set
+ * @returns {string} The environment variable value or empty string if not set
+ *
+ * @example
+ * const tableName = getResourceName('BUNDLE_DYNAMODB_TABLE_NAME');
+ * const bucket = getResourceName('DIYA_GL_BUCKET_NAME', true); // throws if not set
+ */
+export function getResourceName(envVarName, throwIfMissing = false) {
+  const value = process.env[envVarName];
+  if (!value && throwIfMissing) {
+    throw new Error(`${envVarName} environment variable is required`);
+  }
+  return value || "";
+}

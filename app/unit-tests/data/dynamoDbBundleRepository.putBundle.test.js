@@ -24,6 +24,7 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
     module: dynamoDbModule,
   }),
   executeDynamoDbCommand: (commandBuilder) => mockSend(commandBuilder(dynamoDbModule)),
+  getResourceName: (envVarName) => process.env[envVarName] || "",
 }));
 
 vi.mock("@app/services/subHasher.js", () => ({

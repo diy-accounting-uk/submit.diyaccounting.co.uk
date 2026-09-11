@@ -10,6 +10,8 @@ import {
   isValidPeriodKey,
   isValidIsoDate,
   isValidDateRange,
+  isValidTaxYear,
+  resolveItsaSubmissionModel,
   isValidVatMonetaryAmount,
   isValidNetVatDue,
   isValidVatWholeAmount,
@@ -198,6 +200,57 @@ describe("hmrcValidation", () => {
     test("rejects invalid date ranges", () => {
       expect(isValidDateRange("2024-12-31", "2024-01-01")).toBe(false); // from > to
       expect(isValidDateRange("2025-01-01", "2024-01-01")).toBe(false);
+    });
+  });
+
+  describe("isValidTaxYear", () => {
+    test("accepts a tax year where the second year follows the first", () => {
+      expect(isValidTaxYear("2023-24")).toBe(true);
+      expect(isValidTaxYear("2024-25")).toBe(true);
+      expect(isValidTaxYear("2025-26")).toBe(true);
+      expect(isValidTaxYear("1999-00")).toBe(true); // century rollover
+    });
+
+    test("rejects a second year that does not follow the first", () => {
+      expect(isValidTaxYear("2024-24")).toBe(false);
+      expect(isValidTaxYear("2024-26")).toBe(false);
+      expect(isValidTaxYear("2024-23")).toBe(false);
+    });
+
+    test("rejects malformed tax years", () => {
+      expect(isValidTaxYear("2024/25")).toBe(false);
+      expect(isValidTaxYear("24-25")).toBe(false);
+      expect(isValidTaxYear("2024-2025")).toBe(false);
+      expect(isValidTaxYear("")).toBe(false);
+      expect(isValidTaxYear(null)).toBe(false);
+      expect(isValidTaxYear(undefined)).toBe(false);
+      expect(isValidTaxYear(202425)).toBe(false);
+    });
+  });
+
+  describe("resolveItsaSubmissionModel", () => {
+    test("resolves dated years to the dated model", () => {
+      expect(resolveItsaSubmissionModel("2023-24")).toBe("dated");
+      expect(resolveItsaSubmissionModel("2024-25")).toBe("dated");
+    });
+
+    test("resolves the cumulative boundary year and every year after it to the cumulative model", () => {
+      expect(resolveItsaSubmissionModel("2025-26")).toBe("cumulative");
+      expect(resolveItsaSubmissionModel("2026-27")).toBe("cumulative");
+      expect(resolveItsaSubmissionModel("2030-31")).toBe("cumulative");
+    });
+
+    test("throws on a malformed tax year", () => {
+      expect(() => resolveItsaSubmissionModel("not-a-tax-year")).toThrow(/Invalid taxYear format/);
+      expect(() => resolveItsaSubmissionModel("2024-26")).toThrow(/Invalid taxYear format/);
+      expect(() => resolveItsaSubmissionModel(undefined)).toThrow(/Invalid taxYear format/);
+    });
+
+    test("reads no clock - the same call returns the same answer regardless of when it runs", () => {
+      const first = resolveItsaSubmissionModel("2024-25");
+      const second = resolveItsaSubmissionModel("2024-25");
+      expect(first).toBe(second);
+      expect(first).toBe("dated");
     });
   });
 

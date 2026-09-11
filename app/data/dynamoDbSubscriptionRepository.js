@@ -4,18 +4,14 @@
 // app/data/dynamoDbSubscriptionRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSubscriptionRepository.js" });
 
-function getTableName() {
-  return process.env.SUBSCRIPTIONS_DYNAMODB_TABLE_NAME || "";
-}
-
 export async function putSubscription(subscription) {
-  logger.info({ message: `putSubscription [table: ${getTableName()}]` });
+  logger.info({ message: `putSubscription [table: ${getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME")}]` });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME");
 
   await executeDynamoDbCommand(
     (module) =>
@@ -32,9 +28,9 @@ export async function putSubscription(subscription) {
 }
 
 export async function getSubscription(pk) {
-  logger.info({ message: `getSubscription [table: ${getTableName()}]`, pk });
+  logger.info({ message: `getSubscription [table: ${getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME")}]`, pk });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME");
 
   const result = await executeDynamoDbCommand(
     (module) =>
@@ -48,9 +44,9 @@ export async function getSubscription(pk) {
 }
 
 export async function updateSubscription(pk, updates) {
-  logger.info({ message: `updateSubscription [table: ${getTableName()}]`, pk });
+  logger.info({ message: `updateSubscription [table: ${getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME")}]`, pk });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME");
 
   const expressions = [];
   const values = {};

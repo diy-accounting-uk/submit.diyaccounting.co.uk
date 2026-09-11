@@ -201,6 +201,181 @@ export function getBsasSelfEmploymentForScenario(scenario, nino, calculationId, 
   return NOT_FOUND_RESPONSE;
 }
 
+/**
+ * Build the UK property adjustable summary the UK_PROPERTY_PROFIT scenario returns. The income
+ * and deductions field names are the adjustable summary's own labels - totalRentsReceived and
+ * otherPropertyIncome, not the period summary's periodAmount and otherIncome - because the two
+ * endpoints name the same money differently.
+ */
+function ukPropertyProfitSummary(nino, calculationId, taxYear) {
+  return {
+    metadata: {
+      calculationId,
+      requestedDateTime: "2024-04-10T09:30:00.000Z",
+      nino,
+      taxYear,
+      summaryStatus: "valid",
+    },
+    inputs: {
+      businessId: "XAIS12345678910",
+      typeOfBusiness: "uk-property",
+      accountingPeriodStartDate: "2023-04-06",
+      accountingPeriodEndDate: "2024-04-05",
+      source: "MTD-SA",
+      submissionPeriods: [
+        {
+          submissionId: "2023-04-06_2023-07-05",
+          startDate: "2023-04-06",
+          endDate: "2023-07-05",
+          receivedDateTime: "2023-07-10T09:30:00.000Z",
+        },
+      ],
+    },
+    adjustableSummaryCalculation: {
+      totalIncome: 10000,
+      income: { totalRentsReceived: 9000, premiumsOfLeaseGrant: 0, reversePremiums: 0, otherPropertyIncome: 1000 },
+      totalDeductions: 4000,
+      deductions: { propertyAllowance: 0, costOfReplacingDomesticItems: 1000, otherCapitalAllowance: 3000 },
+      netProfit: 6000,
+    },
+  };
+}
+
+/** Build the UK_PROPERTY_LOSS scenario's summary: the same shape as profit, ending in a net loss. */
+function ukPropertyLossSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.adjustableSummaryCalculation = {
+    totalIncome: 4000,
+    income: { totalRentsReceived: 4000, premiumsOfLeaseGrant: 0, reversePremiums: 0, otherPropertyIncome: 0 },
+    totalDeductions: 10000,
+    deductions: { propertyAllowance: 0, costOfReplacingDomesticItems: 4000, otherCapitalAllowance: 6000 },
+    netLoss: 6000,
+  };
+  return summary;
+}
+
+/** Build the UK_PROPERTY_CONSOLIDATED scenario's summary: consolidated deductions. */
+function ukPropertyConsolidatedSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.adjustableSummaryCalculation.deductions = { consolidatedExpenses: 4000 };
+  return summary;
+}
+
+/** Build the UK_PROPERTY_ALLOWANCE scenario's summary: the property income allowance applied. */
+function ukPropertyAllowanceSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.adjustableSummaryCalculation = {
+    totalIncome: 10000,
+    income: { totalRentsReceived: 10000, premiumsOfLeaseGrant: 0, reversePremiums: 0, otherPropertyIncome: 0 },
+    totalDeductions: 0,
+    deductions: { propertyAllowance: 1000 },
+    netProfit: 9000,
+  };
+  return summary;
+}
+
+/** Build the UK_PROPERTY_ZERO_ADJUSTMENTS scenario's summary: unchanged from the first calculation. */
+function ukPropertyZeroAdjustmentsSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.metadata.summaryStatus = "valid";
+  return summary;
+}
+
+/** Build the UK_PROPERTY_STATUS_INVALID scenario's summary: the periodic data has since changed. */
+function ukPropertyStatusInvalidSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.metadata.summaryStatus = "invalid";
+  return summary;
+}
+
+/** Build the UK_PROPERTY_STATUS_SUPERSEDED scenario's summary: a newer calculation exists. */
+function ukPropertyStatusSupersededSummary(nino, calculationId, taxYear) {
+  const summary = ukPropertyProfitSummary(nino, calculationId, taxYear);
+  summary.metadata.summaryStatus = "superseded";
+  return summary;
+}
+
+const ukPropertyRetrieveScenarioBuilders = {
+  UK_PROPERTY_PROFIT: ukPropertyProfitSummary,
+  UK_PROPERTY_LOSS: ukPropertyLossSummary,
+  UK_PROPERTY_CONSOLIDATED: ukPropertyConsolidatedSummary,
+  UK_PROPERTY_ALLOWANCE: ukPropertyAllowanceSummary,
+  UK_PROPERTY_ZERO_ADJUSTMENTS: ukPropertyZeroAdjustmentsSummary,
+  UK_PROPERTY_STATUS_INVALID: ukPropertyStatusInvalidSummary,
+  UK_PROPERTY_STATUS_SUPERSEDED: ukPropertyStatusSupersededSummary,
+};
+
+const ukPropertyRetrieveErrorScenarios = {
+  NOT_UK_PROPERTY: {
+    status: 400,
+    body: { code: "RULE_TYPE_OF_BUSINESS_INCORRECT", message: "The calculation ID supplied relates to a different type of business" },
+  },
+  TAX_YEAR_NOT_SUPPORTED: {
+    status: 400,
+    body: { code: "RULE_TAX_YEAR_NOT_SUPPORTED", message: "The tax year specified does not lie within the supported range" },
+  },
+  REQUEST_CANNOT_BE_FULFILLED: {
+    status: 422,
+    body: { code: "RULE_REQUEST_CANNOT_BE_FULFILLED", message: "Custom (will vary in production depending on the actual error)" },
+  },
+};
+
+/**
+ * Get the retrieve-a-UK-property-BSAS response for a Gov-Test-Scenario header. The default here
+ * is not-found, exactly as the self-employment retrieve's default is.
+ * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @param {string} nino
+ * @param {string} calculationId
+ * @param {string} taxYear
+ * @returns {{bsas: object}|{status: number, body: object}}
+ */
+export function getBsasUkPropertyForScenario(scenario, nino, calculationId, taxYear) {
+  if (!scenario) return NOT_FOUND_RESPONSE;
+
+  const scenarioUpper = scenario.toUpperCase();
+  if (scenarioUpper === "STATEFUL") return { bsas: ukPropertyProfitSummary(nino, calculationId, taxYear) };
+
+  const isDynamic = scenarioUpper.startsWith("DYNAMIC_");
+  const baseScenario = isDynamic ? scenarioUpper.slice("DYNAMIC_".length) : scenarioUpper;
+
+  const builder = ukPropertyRetrieveScenarioBuilders[baseScenario];
+  if (builder) return { bsas: builder(nino, calculationId, taxYear) };
+
+  if (ukPropertyRetrieveErrorScenarios[scenarioUpper]) return ukPropertyRetrieveErrorScenarios[scenarioUpper];
+
+  return NOT_FOUND_RESPONSE;
+}
+
+const ukPropertyAdjustExtraErrorScenarios = {
+  UK_PROPERTY_OVER_CONSOLIDATED_EXPENSES_THRESHOLD: {
+    status: 400,
+    body: {
+      code: "RULE_OVER_CONSOLIDATED_EXPENSES_THRESHOLD",
+      message: "Cumulative turnover amount exceeds the consolidated expenses threshold",
+    },
+  },
+  UK_PROPERTY_INCOME_ALLOWANCE_CLAIMED: {
+    status: 400,
+    body: {
+      code: "RULE_PROPERTY_INCOME_ALLOWANCE_CLAIMED",
+      message: "A property income allowance has already been claimed for this business",
+    },
+  },
+};
+
+/**
+ * Get the submit-UK-property-adjustments error response for a Gov-Test-Scenario header. Adds
+ * the two property-only scenarios to the self-employment adjust error set.
+ * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @returns {null|{status: number, body: object}}
+ */
+export function getBsasUkPropertyAdjustErrorForScenario(scenario) {
+  if (!scenario) return null;
+  const scenarioUpper = scenario.toUpperCase();
+  if (scenarioUpper === "STATEFUL") return null;
+  return ukPropertyAdjustExtraErrorScenarios[scenarioUpper] || adjustErrorScenarios[scenarioUpper] || null;
+}
+
 const adjustErrorScenarios = {
   TYPE_OF_BUSINESS_INCORRECT: {
     status: 400,

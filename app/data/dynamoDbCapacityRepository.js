@@ -4,19 +4,14 @@
 // app/data/dynamoDbCapacityRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbCapacityRepository.js" });
 
-function getTableName() {
-  const tableName = process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
-
 export async function incrementCounter(bundleId, cap) {
-  logger.info({ message: `incrementCounter [table: ${getTableName()}]`, bundleId, cap });
+  logger.info({ message: `incrementCounter [table: ${getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME")}]`, bundleId, cap });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME");
 
   try {
     await executeDynamoDbCommand(
@@ -42,9 +37,9 @@ export async function incrementCounter(bundleId, cap) {
 }
 
 export async function decrementCounter(bundleId) {
-  logger.info({ message: `decrementCounter [table: ${getTableName()}]`, bundleId });
+  logger.info({ message: `decrementCounter [table: ${getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME")}]`, bundleId });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME");
 
   try {
     await executeDynamoDbCommand(
@@ -69,9 +64,9 @@ export async function decrementCounter(bundleId) {
 }
 
 export async function getCounter(bundleId) {
-  logger.info({ message: `getCounter [table: ${getTableName()}]`, bundleId });
+  logger.info({ message: `getCounter [table: ${getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME")}]`, bundleId });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME");
 
   const result = await executeDynamoDbCommand(
     (module) =>
@@ -87,9 +82,9 @@ export async function getCounter(bundleId) {
 export async function getCounters(bundleIds) {
   if (!bundleIds || bundleIds.length === 0) return {};
 
-  logger.info({ message: `getCounters [table: ${getTableName()}]`, count: bundleIds.length });
+  logger.info({ message: `getCounters [table: ${getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME")}]`, count: bundleIds.length });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME");
 
   const result = await executeDynamoDbCommand(
     (module) =>
@@ -111,9 +106,9 @@ export async function getCounters(bundleIds) {
 }
 
 export async function putCounter(bundleId, activeCount) {
-  logger.info({ message: `putCounter [table: ${getTableName()}]`, bundleId, activeCount });
+  logger.info({ message: `putCounter [table: ${getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME")}]`, bundleId, activeCount });
 
-  const tableName = getTableName();
+  const tableName = getResourceName("BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME");
 
   await executeDynamoDbCommand(
     (module) =>

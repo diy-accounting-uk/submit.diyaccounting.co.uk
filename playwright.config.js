@@ -126,6 +126,22 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "itsaUkPropertyPeriodBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/itsaUkPropertyPeriod.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
+      name: "itsaUkPropertyAnnualSubmissionBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/itsaUkPropertyAnnualSubmission.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "itsaFinalDeclarationBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/itsaFinalDeclaration.behaviour.test.js"],

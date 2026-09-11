@@ -91,6 +91,11 @@ class SubmitApplicationCdkResourceTest {
                 "HmrcStack should have multiple CompositeAlarms (top-level + groups) due to rule length, but found "
                         + hmrcCompositeCount);
 
+        infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
+        Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 16);
+        assertStackHealthAlarm(hmrcItsaStackTemplate, 8, 8, routedPrefixes);
+
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
@@ -275,7 +280,7 @@ class SubmitApplicationCdkResourceTest {
         // DIYA-GL storage routes also answers on /api/v1/books, its permanent second path: the
         // same 4 primary + 3 auto-HEAD + 3 OPTIONS shape repeats under the second prefix, for
         // another 10 routes, bringing the total to 112 + 10 = 122.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 122);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 135);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -424,6 +429,7 @@ class SubmitApplicationCdkResourceTest {
         // it an unnamed one with no retention and no removal policy, and it outlives the stack.
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.authStack));
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcStack));
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcItsaStack));
         assertEveryLambdaHasAnExplicitLogGroup(accountStackTemplate);
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.billingStack));
         assertEveryLambdaHasAnExplicitLogGroup(apiStackTemplate);

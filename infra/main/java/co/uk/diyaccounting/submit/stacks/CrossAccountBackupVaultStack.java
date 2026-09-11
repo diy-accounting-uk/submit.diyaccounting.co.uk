@@ -71,6 +71,17 @@ public class CrossAccountBackupVaultStack extends Stack {
         // source backup roles that ever needs to read back out of the vault rather than just copy
         // into it. Copy-in and restore are different access levels, so this stays its own principal
         // rather than folding into sourceBackupRoles.
+        //
+        // This principal cannot actually be assumed by anything that calls it: ci-env-backup-role's
+        // trust policy only allows backup.amazonaws.com to assume it (confirmed by reading the role
+        // directly), so no CLI session or GitHub Actions job can authenticate as it. The identity
+        // that actually runs restore-drill.yml's `aws backup` commands is ci's deployment role
+        // (the GitHub variable SUBMIT_DEPLOY_ROLE_ARN resolves to it), and this stack has no way to
+        // receive that ARN today: CrossAccountBackupVaultStackProps only carries sourceBackupRoleArns
+        // (the backup-service roles that copy in) and vaultName. Granting the restore actions to the
+        // right principal needs a new prop here, populated by the caller from a new context key or
+        // env var, and threaded through the CDK app that builds this stack and the workflow that
+        // deploys it.
         String ciRestoreRoleArn = props.sourceBackupRoleArns().stream()
                 .filter(arn -> arn.endsWith(":role/ci-env-backup-role"))
                 .findFirst()

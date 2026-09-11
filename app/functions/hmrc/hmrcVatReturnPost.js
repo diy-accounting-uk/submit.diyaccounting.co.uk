@@ -412,7 +412,6 @@ async function resolvePeriodKeyFromObligations({
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
-// TODO: Remove all but the initial wait and async options.
 export async function ingestHandler(event) {
   await initializeSalt();
   await detectVendorPublicIp();
@@ -694,16 +693,6 @@ export async function ingestHandler(event) {
         maxWaitMs: MAX_WAIT_MS,
       });
     }
-
-    // If still no result (async path) and we have a wait time, poll for completion
-    if (!result && waitTimeMs > 0) {
-      result = await asyncApiServices.wait({ userId: userSub, requestId, waitTimeMs, tableName: asyncRequestsTableName });
-    }
-
-    // One last check before deciding whether to yield or return the final result
-    if (!result) {
-      result = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
-    }
   } catch (error) {
     if (error instanceof asyncApiServices.RequestFailedError) {
       result = error.data;
@@ -763,7 +752,12 @@ export async function workerHandler(event) {
     let traceparent;
     let correlationId;
     try {
-      const body = JSON.parse(record.body);
+      let body;
+      try {
+        body = JSON.parse(record.body);
+      } catch (parseError) {
+        throw new Error(`Failed to parse SQS message body: ${parseError.message}`);
+      }
       userSub = body.userId;
       requestId = body.requestId;
       // trace: 6
@@ -851,6 +845,19 @@ export async function workerHandler(event) {
 
       logger.info({ message: "Successfully processed SQS message", requestId });
     } catch (error) {
+      // If we couldn't parse the body or extract IDs, re-throw so SQS retries or sends to DLQ
+      // rather than silently dropping the record.
+      const isParseOrIdError = error.message.includes("Failed to parse SQS message body") ||
+                               error.message.includes("SQS record missing userId or requestId");
+      if (isParseOrIdError) {
+        logger.error({
+          message: "Re-throwing parse or ID extraction error for SQS redelivery",
+          error: error.message,
+          messageId: record.messageId,
+        });
+        throw error;
+      }
+
       const isRetryable = isRetryableError(error);
 
       if (isRetryable) {

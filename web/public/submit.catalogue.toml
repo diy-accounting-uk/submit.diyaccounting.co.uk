@@ -362,7 +362,7 @@ metered = true
 # tokenCost covers the writes that spend a token: a quarterly update, its amendment, and the
 # final declaration. The free year-end writes are the "self-employed-year-end" activity below,
 # not this one, so a page's own activity tells the truth about what it costs.
-paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
+paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html", "hmrc/itsa/ukPropertyPeriodAmend.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
@@ -379,7 +379,7 @@ display = "never"
 bundles = ["resident-itsa", "resident-pro"]
 tokenCost = 0
 metered = true
-paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html"]
+paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 

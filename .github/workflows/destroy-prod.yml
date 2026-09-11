@@ -80,7 +80,12 @@ env:
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: '8'
+  # This is a backstop's minimum age, not deploy.yml's self-destruct delay: the primary
+  # teardown is the EventBridge schedule each deployment's own SelfDestructStack carries
+  # (deploy.yml's SELF_DESTRUCT_DELAY_HOURS, default 2h). This sweep runs on a fixed cron
+  # regardless of any single deployment's schedule, so it needs its own, larger, minimum age
+  # to avoid destroying a deployment the primary schedule hasn't had a chance to reach yet.
+  SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS: '8'
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: 'false'
   COMMIT_HASH: ${{ github.sha }}
@@ -342,13 +347,13 @@ jobs:
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
           PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
           DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
-          SELF_DESTRUCT_DELAY_HOURS="${{ env.SELF_DESTRUCT_DELAY_HOURS }}"
+          SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS="${{ env.SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS }}"
 
           echo "Last known good deployment name: '$LAST_KNOWN_GOOD_DEPLOYMENT_NAME'"
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
           echo "Published deployment names: $PUBLISHED_DEPLOYMENT_NAMES"
           echo "Deployed deployment names: $DEPLOYED_DEPLOYMENT_NAMES"
-          echo "Self-destruct delay hours: $SELF_DESTRUCT_DELAY_HOURS"
+          echo "Sweep minimum age hours: $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS"
 
           # Report a deployment's age from its oldest stack's CreationTime, so a set the deploy
           # pipeline is still in the middle of building looks exactly as old as it truly is, and
@@ -493,12 +498,12 @@ jobs:
               continue
             fi
 
-            if [ "$DEPLOYMENT_AGE_HOURS" -lt "$SELF_DESTRUCT_DELAY_HOURS" ]; then
-              echo "Skipping $DEPLOYMENT_NAME as it is only $DEPLOYMENT_AGE_HOURS hours old (minimum age: $SELF_DESTRUCT_DELAY_HOURS hours)"
+            if [ "$DEPLOYMENT_AGE_HOURS" -lt "$SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS" ]; then
+              echo "Skipping $DEPLOYMENT_NAME as it is only $DEPLOYMENT_AGE_HOURS hours old (minimum age: $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS hours)"
               continue
             fi
 
-            echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_DELAY_HOURS hours), eligible for destruction"
+            echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS hours), eligible for destruction"
             ELIGIBLE_DEPLOYMENT_NAMES+=("$DEPLOYMENT_NAME")
           done
 
@@ -905,6 +910,7 @@ jobs:
           echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="
           delete_stack_in_region "${DEPLOYMENT}-app-AuthStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-HmrcStack" eu-west-2
+          delete_stack_in_region "${DEPLOYMENT}-app-HmrcItsaStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-CompaniesHouseStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2

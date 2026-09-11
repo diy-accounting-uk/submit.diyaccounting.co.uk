@@ -4,20 +4,15 @@
 // app/data/dynamoDbPassRepository.js
 
 import { createLogger } from "../lib/logger.js";
-import { executeDynamoDbCommand } from "../lib/dynamoDbClient.js";
+import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbPassRepository.js" });
 
-function getTableName() {
-  const tableName = process.env.PASSES_DYNAMODB_TABLE_NAME;
-  return tableName || "";
-}
-
 export async function putPass(pass) {
-  logger.info({ message: `putPass [table: ${getTableName()}]` });
+  logger.info({ message: `putPass [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]` });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
 
     logger.info({ message: "Storing pass in DynamoDB", passTypeId: pass.passTypeId, bundleId: pass.bundleId });
 
@@ -42,10 +37,10 @@ export async function putPass(pass) {
 }
 
 export async function getPass(code) {
-  logger.info({ message: `getPass [table: ${getTableName()}]` });
+  logger.info({ message: `getPass [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]` });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
 
     const result = await executeDynamoDbCommand(
       (module) =>
@@ -64,10 +59,10 @@ export async function getPass(code) {
 }
 
 export async function redeemPass(code, now) {
-  logger.info({ message: `redeemPass [table: ${getTableName()}]` });
+  logger.info({ message: `redeemPass [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]` });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
 
     const result = await executeDynamoDbCommand(
       (module) =>
@@ -107,10 +102,10 @@ export async function redeemPass(code, now) {
  * Queries the issuedBy-index GSI; the local table in app/bin/dynamodb.js carries the same index.
  */
 export async function getPassesByIssuer(issuedBy, { limit = 20 } = {}) {
-  logger.info({ message: `getPassesByIssuer [table: ${getTableName()}]`, issuedBy, limit });
+  logger.info({ message: `getPassesByIssuer [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]`, issuedBy, limit });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
     const items = [];
 
     let lastEvaluatedKey;
@@ -140,10 +135,10 @@ export async function getPassesByIssuer(issuedBy, { limit = 20 } = {}) {
 }
 
 export async function revokePass(code, now) {
-  logger.info({ message: `revokePass [table: ${getTableName()}]` });
+  logger.info({ message: `revokePass [table: ${getResourceName("PASSES_DYNAMODB_TABLE_NAME")}]` });
 
   try {
-    const tableName = getTableName();
+    const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
 
     const result = await executeDynamoDbCommand(
       (module) =>

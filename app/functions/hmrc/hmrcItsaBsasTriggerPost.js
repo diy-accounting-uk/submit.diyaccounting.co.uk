@@ -45,15 +45,16 @@ const HMRC_API_VERSION = "7.0";
 
 const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
 
-// This build only triggers a summary for a self-employment business - the trigger endpoint
-// itself also covers UK and foreign property, which this repository does not submit for.
-const TYPE_OF_BUSINESS = "self-employment";
+// The trigger endpoint is one endpoint for every income type this repository submits for;
+// typeOfBusiness in its body chooses which. Foreign property is not a journey this repository
+// builds, so it is not in this set even though HMRC's trigger accepts it too.
+const VALID_TYPES_OF_BUSINESS = ["self-employment", "uk-property"];
 
 /**
  * Build the Business Source Adjustable Summary v7.0 "Trigger a Business Source Adjustable
- * Summary" request body. typeOfBusiness is fixed to self-employment - the only business type
- * this repository submits for - rather than accepted from the caller.
- * @param {Object} triggerDetails - accountingPeriodStartDate, accountingPeriodEndDate, businessId
+ * Summary" request body. typeOfBusiness comes from the caller - the trigger is shared by every
+ * income type, so the picked business decides it rather than a fixed constant.
+ * @param {Object} triggerDetails - accountingPeriodStartDate, accountingPeriodEndDate, businessId, typeOfBusiness
  * @returns {Object} the HMRC request body
  */
 export function buildBsasTriggerRequestBody(triggerDetails) {
@@ -62,7 +63,7 @@ export function buildBsasTriggerRequestBody(triggerDetails) {
       startDate: triggerDetails.accountingPeriodStartDate,
       endDate: triggerDetails.accountingPeriodEndDate,
     },
-    typeOfBusiness: TYPE_OF_BUSINESS,
+    typeOfBusiness: triggerDetails.typeOfBusiness,
     businessId: triggerDetails.businessId,
   };
 }
@@ -88,6 +89,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     businessId,
     accountingPeriodStartDate,
     accountingPeriodEndDate,
+    typeOfBusiness,
     runFraudPreventionHeaderValidation,
   } = parsedBody || {};
 
@@ -107,6 +109,11 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Invalid accountingPeriodEndDate format - must be YYYY-MM-DD");
   }
 
+  if (!typeOfBusiness) errorMessages.push("Missing typeOfBusiness parameter from body");
+  if (typeOfBusiness && !VALID_TYPES_OF_BUSINESS.includes(typeOfBusiness)) {
+    errorMessages.push(`Invalid typeOfBusiness - must be one of ${VALID_TYPES_OF_BUSINESS.join(", ")}`);
+  }
+
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
   const hmrcAccount = hmrcAccountHeader.toLowerCase();
@@ -122,6 +129,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     businessId,
     accountingPeriodStartDate,
     accountingPeriodEndDate,
+    typeOfBusiness,
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
   };
@@ -174,6 +182,7 @@ export async function ingestHandler(event) {
     businessId,
     accountingPeriodStartDate,
     accountingPeriodEndDate,
+    typeOfBusiness,
     hmrcAccount,
     runFraudPreventionHeaderValidation,
   } = extractAndValidateParameters(event, errorMessages);
@@ -218,6 +227,7 @@ export async function ingestHandler(event) {
     businessId,
     accountingPeriodStartDate,
     accountingPeriodEndDate,
+    typeOfBusiness,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -256,6 +266,7 @@ export async function ingestHandler(event) {
             businessId: payload.businessId,
             accountingPeriodStartDate: payload.accountingPeriodStartDate,
             accountingPeriodEndDate: payload.accountingPeriodEndDate,
+            typeOfBusiness: payload.typeOfBusiness,
           },
           payload.hmrcAccessToken,
           payload.govClientHeaders,
@@ -389,6 +400,7 @@ export async function workerHandler(event) {
           businessId: payload.businessId,
           accountingPeriodStartDate: payload.accountingPeriodStartDate,
           accountingPeriodEndDate: payload.accountingPeriodEndDate,
+          typeOfBusiness: payload.typeOfBusiness,
         },
         payload.hmrcAccessToken,
         payload.govClientHeaders,

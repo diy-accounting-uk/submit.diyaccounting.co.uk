@@ -125,14 +125,16 @@ export async function initiateProcessing({
   } catch (error) {
     logger.error({ message: "Error in async processing initiation", error: error.message, userId, requestId });
     if (tableName) {
-      // try {
-      //   await putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName);
-      // } catch (dbError) {
-      //   logger.error({ message: "Error storing failed request state", error: dbError.message, requestId });
-      // }
-      putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName).catch((error) => {
-        logger.error({ message: "Error storing failed request state", error: error.message, requestId, tableName });
-      });
+      // Awaited for the same reason as the "processing" write above: an unawaited write here
+      // can be lost outright if the Lambda freezes once the 202 response is sent, leaving the
+      // item stuck in "processing" and every later poll waiting on a "failed" status that never
+      // arrives. Nothing else writes to this item in this branch - the enqueue itself failed, so
+      // no message ever reached the queue and no processor run will write a competing status.
+      try {
+        await putAsyncRequest(userId, requestId, "failed", { error: error.message }, tableName);
+      } catch (dbError) {
+        logger.error({ message: "Error storing failed request state", error: dbError.message, requestId, tableName });
+      }
     }
   }
 

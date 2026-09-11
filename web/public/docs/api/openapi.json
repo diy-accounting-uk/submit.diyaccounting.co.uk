@@ -117,6 +117,240 @@
         "operationId" : "redeemPass"
       }
     },
+    "/hmrc/itsa/uk-property/period" : {
+      "post" : {
+        "summary" : "File an ITSA UK property quarterly update",
+        "description" : "Creates a UK property period summary with HMRC for the given business, tax year and period",
+        "operationId" : "postItsaUkPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "Start of the period, format YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "End of the period, format YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ukFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "Furnished holiday lettings income and expenses",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ukNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "Non-FHL property income and expenses",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Retrieve an ITSA UK property period summary",
+        "description" : "Retrieves one UK property period summary by tax year and submission id",
+        "operationId" : "getItsaUkPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The submission id from a listed period summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Amend an ITSA UK property period summary",
+        "description" : "Amends the income and expenses of an existing UK property period summary",
+        "operationId" : "putItsaUkPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The submission id from a listed period summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ukFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "Furnished holiday lettings income and expenses",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "ukNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "Non-FHL property income and expenses",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/hmrc/itsa/self-employment/period" : {
       "post" : {
         "summary" : "File an ITSA self-employment quarterly update",
@@ -795,7 +1029,7 @@
     "/hmrc/itsa/bsas/trigger" : {
       "post" : {
         "summary" : "Trigger an ITSA business source adjustable summary",
-        "description" : "Triggers a self-employment adjustable summary calculation for an accounting period",
+        "description" : "Triggers an adjustable summary calculation for an accounting period, for self-employment or UK property",
         "operationId" : "triggerItsaBsas",
         "parameters" : [ {
           "name" : "nino",
@@ -826,6 +1060,14 @@
           "in" : "body",
           "required" : true,
           "description" : "The accounting period's end date",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "typeOfBusiness",
+          "in" : "body",
+          "required" : true,
+          "description" : "self-employment or uk-property, from the picked business",
           "schema" : {
             "type" : "string"
           }
@@ -932,6 +1174,88 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/itsa/bsas/uk-property/adjust" : {
+      "post" : {
+        "summary" : "Adjust an ITSA UK property business source adjustable summary",
+        "description" : "Submits income and expenses adjustments, or states there are none, for a triggered summary",
+        "operationId" : "adjustItsaBsasUkProperty",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "income",
+          "in" : "body",
+          "required" : false,
+          "description" : "Income adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "expenses",
+          "in" : "body",
+          "required" : false,
+          "description" : "Expenses adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "zeroAdjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "True to state that nothing changes",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/cognito/token" : {
@@ -1093,6 +1417,64 @@
         "summary" : "Create billing checkout session",
         "description" : "Creates a Stripe checkout session for subscription",
         "operationId" : "createCheckoutSession"
+      }
+    },
+    "/hmrc/itsa/bsas/uk-property" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA UK property business source adjustable summary",
+        "description" : "Retrieves the income, expenses and resulting net profit or loss for a triggered summary",
+        "operationId" : "getItsaBsasUkProperty",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "calculationId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The calculation id from a triggered summary",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/hmrc/itsa/status" : {
@@ -1449,6 +1831,136 @@
         "responses" : {
           "200" : {
             "description" : "Receipts retrieved successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/uk-property/annual" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA UK property annual submission",
+        "description" : "Retrieves the adjustments and allowances submitted for a UK property business for a tax year",
+        "operationId" : "getItsaUkPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Create or amend an ITSA UK property annual submission",
+        "description" : "Submits the adjustments and allowances for a UK property business for a tax year in one call",
+        "operationId" : "putItsaUkPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "adjustments",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual adjustments",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "allowances",
+          "in" : "body",
+          "required" : false,
+          "description" : "Annual allowances",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
           }
         }
       }
@@ -1873,6 +2385,64 @@
         "summary" : "Generate a pass using tokens",
         "description" : "Generates a new pass code using the authenticated user's token balance",
         "operationId" : "generatePassWithTokens"
+      }
+    },
+    "/hmrc/itsa/uk-property/periods" : {
+      "get" : {
+        "summary" : "List ITSA UK property period summaries",
+        "description" : "Lists the period summaries filed for a UK property business in a tax year, on HMRC's untyped list path",
+        "operationId" : "getItsaUkPropertyPeriods",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/companies-house/transaction/{transactionId}/registered-office-address" : {

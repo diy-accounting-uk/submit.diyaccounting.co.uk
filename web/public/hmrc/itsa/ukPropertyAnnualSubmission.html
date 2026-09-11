@@ -1,0 +1,539 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>UK Property Annual Submission - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <div class="header-nav">
+        <div class="header-left">
+          <a href="../../" title="Home" class="home-link">
+            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+            </svg>
+          </a>
+          <a href="../../about.html" title="About & Help" class="info-link">
+            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+            </svg>
+          </a>
+        </div>
+        <div class="auth-section">
+          <span class="entitlement-status">Activity: unrestricted</span>
+          <span class="login-status">Not logged in</span>
+          <a href="../../auth/login.html" class="login-link">Log in</a>
+        </div>
+      </div>
+      <h1>UK Property Annual Submission</h1>
+      <p class="subtitle">Load and save the year's property adjustments and allowances</p>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="../../">Activities</a>
+        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
+        <a href="../../bundles.html">Bundles</a>
+        <a href="../../spreadsheets.html">Spreadsheets</a>
+      </nav>
+    </header>
+
+    <main id="mainContent">
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div id="loadCriteriaForm" class="form-container">
+        <h2>Load an Annual Submission</h2>
+        <form id="itsaAnnualLoadForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">HMRC's retrieve defaults to not-found, so this page always sends one.</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="UK_PROPERTY">Default (loads a UK property submission)</option>
+              <option value="UK_ALL_OTHER_ALLOWANCES">Itemised allowances</option>
+              <option value="UK_PROPERTY_ALLOWANCE">Property income allowance</option>
+              <option value="FOREIGN_PROPERTY">Foreign property (wrong business type)</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div style="margin-top: 10px">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
+              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
+                >Validate Fraud Prevention Headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="loadBtn" class="btn">Load Annual Submission</button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once a submission has been loaded (or for a first-time entry) -->
+      <div id="annualEditForm" class="form-container" style="display: none">
+        <h2>Adjustments</h2>
+        <p class="hint">Enter only the figures that apply. Leave a field at 0 to leave it out of what's sent to HMRC.</p>
+        <div class="form-group">
+          <label for="balancingCharge">Balancing charge</label>
+          <input type="number" id="balancingCharge" name="balancingCharge" step="0.01" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="privateUseAdjustment">Private use adjustment</label>
+          <p id="privateUseAdjustment-hint" class="hint">
+            Cannot be entered alongside the property income allowance below - HMRC rejects the combination.
+          </p>
+          <input type="number" id="privateUseAdjustment" name="privateUseAdjustment" step="0.01" value="0" aria-describedby="privateUseAdjustment-hint" />
+        </div>
+        <div class="form-group">
+          <label for="businessPremisesRenovationAllowanceBalancingCharges">Business premises renovation allowance balancing charges</label>
+          <input
+            type="number"
+            id="businessPremisesRenovationAllowanceBalancingCharges"
+            name="businessPremisesRenovationAllowanceBalancingCharges"
+            step="0.01"
+            value="0"
+          />
+        </div>
+        <div class="form-group">
+          <input type="checkbox" id="nonResidentLandlord" name="nonResidentLandlord" />
+          <label for="nonResidentLandlord" style="display: inline; font-weight: normal">Non-resident landlord</label>
+        </div>
+        <div class="form-group">
+          <input type="checkbox" id="rentARoomJointlyLet" name="rentARoomJointlyLet" />
+          <label for="rentARoomJointlyLet" style="display: inline; font-weight: normal">Rent a room: jointly let</label>
+        </div>
+
+        <h2>Allowances</h2>
+        <p class="hint">
+          Claim the property income allowance on its own, or the itemised allowances below. HMRC does not accept both, and neither can sit
+          alongside a private use adjustment.
+        </p>
+        <div class="form-group">
+          <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked />
+          <label for="allowanceTypeNone" style="display: inline; font-weight: normal">Neither</label>
+          <br />
+          <input type="radio" id="allowanceTypePropertyIncome" name="allowanceType" value="propertyIncome" />
+          <label for="allowanceTypePropertyIncome" style="display: inline; font-weight: normal">Property income allowance</label>
+          <br />
+          <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" />
+          <label for="allowanceTypeItemised" style="display: inline; font-weight: normal">Itemised allowances</label>
+        </div>
+
+        <div id="propertyIncomeAllowanceFields">
+          <div class="form-group">
+            <label for="propertyIncomeAllowance">Property income allowance</label>
+            <input type="number" id="propertyIncomeAllowance" name="propertyIncomeAllowance" step="0.01" value="0" disabled />
+          </div>
+        </div>
+
+        <div id="itemisedAllowanceFields">
+          <div class="form-group">
+            <label for="annualInvestmentAllowance">Annual investment allowance</label>
+            <input type="number" id="annualInvestmentAllowance" name="annualInvestmentAllowance" step="0.01" value="0" disabled />
+          </div>
+          <div class="form-group">
+            <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
+            <input type="number" id="businessPremisesRenovationAllowance" name="businessPremisesRenovationAllowance" step="0.01" value="0" disabled />
+          </div>
+          <div class="form-group">
+            <label for="otherCapitalAllowance">Other capital allowance</label>
+            <input type="number" id="otherCapitalAllowance" name="otherCapitalAllowance" step="0.01" value="0" disabled />
+          </div>
+          <div class="form-group">
+            <label for="costOfReplacingDomesticItems">Cost of replacing domestic items</label>
+            <input type="number" id="costOfReplacingDomesticItems" name="costOfReplacingDomesticItems" step="0.01" value="0" disabled />
+          </div>
+          <div class="form-group">
+            <label for="zeroEmissionsCarAllowance">Zero emissions car allowance</label>
+            <input type="number" id="zeroEmissionsCarAllowance" name="zeroEmissionsCarAllowance" step="0.01" value="0" disabled />
+          </div>
+        </div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button type="button" id="saveBtn" class="btn">Save Annual Submission</button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="annualSubmissionResults" class="results-container" style="display: none">
+        <h3>Annual Submission Saved</h3>
+        <p>HMRC has accepted the annual submission.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Load Another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <a href="#" id="viewSourceLink" style="display: none">view source</a>
+        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
+        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
+      </div>
+      <div class="footer-content">
+        <div class="footer-center">
+          <p>&copy; 2006-2026 DIY Accounting Limited</p>
+          <p>
+            Free to use.
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
+            under the
+            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
+              >PolyForm Internal Use License</a
+            >.
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script>
+      let loadedNino = "";
+      let loadedBusinessId = "";
+      let loadedTaxYear = "";
+
+      function initializePage() {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+
+        if (hmrcAccount === "synthetic") {
+          const syntheticIndicator = document.getElementById("syntheticIndicator");
+          if (syntheticIndicator) syntheticIndicator.classList.add("visible");
+        }
+
+        const devSection = document.getElementById("developerSection");
+
+        function updateDeveloperSectionVisibility() {
+          const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+          if (devSection) devSection.style.display = developerModeEnabled ? "block" : "none";
+        }
+
+        updateDeveloperSectionVisibility();
+        window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+
+        document.querySelectorAll('input[name="allowanceType"]').forEach((radio) => {
+          radio.addEventListener("change", updateAllowanceFieldsEnabled);
+        });
+        updateAllowanceFieldsEnabled();
+      }
+
+      // The property income and itemised allowance forms are mutually exclusive - only one set
+      // of fields is enabled at a time, so a customer can never fill in both and have HMRC
+      // reject the submission with RULE_BOTH_ALLOWANCES_SUPPLIED.
+      function updateAllowanceFieldsEnabled() {
+        const allowanceType = document.querySelector('input[name="allowanceType"]:checked')?.value || "";
+        const propertyIncomeFields = document.querySelectorAll("#propertyIncomeAllowanceFields input");
+        const itemisedFields = document.querySelectorAll("#itemisedAllowanceFields input");
+        propertyIncomeFields.forEach((field) => (field.disabled = allowanceType !== "propertyIncome"));
+        itemisedFields.forEach((field) => (field.disabled = allowanceType !== "itemised"));
+      }
+
+      function numberOrUndefined(value) {
+        if (value === "" || value === null || value === undefined) return undefined;
+        const num = Number(value);
+        return num === 0 ? undefined : num;
+      }
+
+      function readAdjustments() {
+        return {
+          balancingCharge: numberOrUndefined(document.getElementById("balancingCharge").value),
+          privateUseAdjustment: numberOrUndefined(document.getElementById("privateUseAdjustment").value),
+          businessPremisesRenovationAllowanceBalancingCharges: numberOrUndefined(
+            document.getElementById("businessPremisesRenovationAllowanceBalancingCharges").value,
+          ),
+          nonResidentLandlord: document.getElementById("nonResidentLandlord").checked,
+          rentARoom: { jointlyLet: document.getElementById("rentARoomJointlyLet").checked },
+        };
+      }
+
+      function readAllowances() {
+        const allowanceType = document.querySelector('input[name="allowanceType"]:checked')?.value || "";
+        if (allowanceType === "propertyIncome") {
+          return { propertyIncomeAllowance: numberOrUndefined(document.getElementById("propertyIncomeAllowance").value) };
+        }
+        if (allowanceType === "itemised") {
+          return {
+            annualInvestmentAllowance: numberOrUndefined(document.getElementById("annualInvestmentAllowance").value),
+            businessPremisesRenovationAllowance: numberOrUndefined(document.getElementById("businessPremisesRenovationAllowance").value),
+            otherCapitalAllowance: numberOrUndefined(document.getElementById("otherCapitalAllowance").value),
+            costOfReplacingDomesticItems: numberOrUndefined(document.getElementById("costOfReplacingDomesticItems").value),
+            zeroEmissionsCarAllowance: numberOrUndefined(document.getElementById("zeroEmissionsCarAllowance").value),
+          };
+        }
+        return {};
+      }
+
+      function populateEditForm(annualSubmission) {
+        const ukProperty = annualSubmission?.ukProperty || {};
+        const adjustments = ukProperty.adjustments || {};
+        const allowances = ukProperty.allowances || {};
+
+        ["balancingCharge", "privateUseAdjustment", "businessPremisesRenovationAllowanceBalancingCharges"].forEach((key) => {
+          const field = document.getElementById(key);
+          if (field && adjustments[key] !== undefined) field.value = adjustments[key];
+        });
+        document.getElementById("nonResidentLandlord").checked = adjustments.nonResidentLandlord === true;
+        document.getElementById("rentARoomJointlyLet").checked = adjustments.rentARoom?.jointlyLet === true;
+
+        if (allowances.propertyIncomeAllowance !== undefined) {
+          document.getElementById("allowanceTypePropertyIncome").checked = true;
+          document.getElementById("propertyIncomeAllowance").value = allowances.propertyIncomeAllowance;
+        } else if (Object.keys(allowances).length > 0) {
+          document.getElementById("allowanceTypeItemised").checked = true;
+          Object.keys(allowances).forEach((key) => {
+            const field = document.getElementById(key);
+            if (field) field.value = allowances[key];
+          });
+        } else {
+          document.getElementById("allowanceTypeNone").checked = true;
+        }
+        updateAllowanceFieldsEnabled();
+      }
+
+      async function loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getUkPropertyAnnual(
+          nino,
+          businessId,
+          taxYear,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
+      }
+
+      async function saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await putUkPropertyAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingLoad = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualLoadRequest") || "null");
+          const pendingSave = JSON.parse(sessionStorage.getItem("pendingUkPropertyAnnualSaveRequest") || "null");
+
+          if (pendingLoad) {
+            showLoading();
+            showStatus("Loading annual submission...", "info");
+            const result = await loadAnnualSubmission(
+              pendingLoad.nino,
+              pendingLoad.businessId,
+              pendingLoad.taxYear,
+              pendingLoad.testScenario,
+              pendingLoad.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            loadedNino = pendingLoad.nino;
+            loadedBusinessId = pendingLoad.businessId;
+            loadedTaxYear = pendingLoad.taxYear;
+            populateEditForm(result);
+            document.getElementById("loadCriteriaForm").style.display = "none";
+            document.getElementById("annualEditForm").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
+          } else if (pendingSave) {
+            showLoading();
+            showStatus("Saving annual submission...", "info");
+            await saveAnnualSubmission(
+              pendingSave.annualDetails,
+              pendingSave.testScenario,
+              pendingSave.runFraudPreventionHeaderValidation,
+              accessToken,
+            );
+            document.getElementById("annualEditForm").style.display = "none";
+            document.getElementById("annualSubmissionResults").style.display = "block";
+            hideStatus();
+            sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
+          } else {
+            return;
+          }
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingUkPropertyAnnualLoadRequest");
+          sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function handleLoadFormSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const businessId = document.getElementById("businessId").value.trim();
+        const taxYear = document.getElementById("taxYear").value.trim();
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        if (!nino || !businessId || !taxYear) {
+          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
+          return;
+        }
+
+        await ensureAuthorizedThen(
+          "pendingUkPropertyAnnualLoadRequest",
+          { nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Loading annual submission...", "info");
+              const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              loadedNino = nino;
+              loadedBusinessId = businessId;
+              loadedTaxYear = taxYear;
+              populateEditForm(result);
+              document.getElementById("loadCriteriaForm").style.display = "none";
+              document.getElementById("annualEditForm").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to load the annual submission: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      async function handleSaveClick() {
+        const annualDetails = {
+          nino: loadedNino,
+          businessId: loadedBusinessId,
+          taxYear: loadedTaxYear,
+          adjustments: readAdjustments(),
+          allowances: readAllowances(),
+        };
+        const testScenario = document.getElementById("testScenario")?.value;
+        const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
+
+        await ensureAuthorizedThen(
+          "pendingUkPropertyAnnualSaveRequest",
+          { annualDetails, testScenario, runFraudPreventionHeaderValidation },
+          async (accessToken) => {
+            try {
+              showLoading();
+              hideStatus();
+              showStatus("Saving annual submission...", "info");
+              await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              document.getElementById("annualEditForm").style.display = "none";
+              document.getElementById("annualSubmissionResults").style.display = "block";
+              hideStatus();
+            } catch (error) {
+              showStatus(`Failed to save the annual submission: ${error.message}`, "error");
+            } finally {
+              hideLoading();
+            }
+          },
+        );
+      }
+
+      document.getElementById("itsaAnnualLoadForm").addEventListener("submit", handleLoadFormSubmission);
+      document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
+
+      document.getElementById("newSearchBtn")?.addEventListener("click", () => {
+        document.getElementById("annualSubmissionResults").style.display = "none";
+        document.getElementById("loadCriteriaForm").style.display = "block";
+        document.getElementById("annualEditForm").style.display = "none";
+        document.getElementById("itsaAnnualLoadForm").reset();
+        hideStatus();
+      });
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        initializePage();
+        handleOAuthCallback();
+      });
+    </script>
+  </body>
+</html>
