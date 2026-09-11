@@ -22,6 +22,7 @@ import { apiEndpoint as itsaSelfEmploymentCumulativeEndpoint } from "./routes/it
 import { apiEndpoint as itsaSelfEmploymentAnnualEndpoint } from "./routes/itsa-self-employment-annual.js";
 import { apiEndpoint as itsaUkPropertyPeriodEndpoint } from "./routes/itsa-uk-property-period.js";
 import { apiEndpoint as itsaUkPropertyPeriodDetailEndpoint } from "./routes/itsa-uk-property-period-detail.js";
+import { apiEndpoint as itsaUkPropertyCumulativeEndpoint } from "./routes/itsa-uk-property-cumulative.js";
 import { apiEndpoint as itsaUkPropertyPeriodsEndpoint } from "./routes/itsa-uk-property-periods.js";
 import { apiEndpoint as itsaUkPropertyAnnualEndpoint } from "./routes/itsa-uk-property-annual.js";
 import { apiEndpoint as itsaCrystallisationObligationsEndpoint } from "./routes/itsa-crystallisation-obligations.js";
@@ -88,6 +89,7 @@ export function createApp() {
   itsaSelfEmploymentAnnualEndpoint(app);
   itsaUkPropertyPeriodEndpoint(app);
   itsaUkPropertyPeriodDetailEndpoint(app);
+  itsaUkPropertyCumulativeEndpoint(app);
   itsaUkPropertyPeriodsEndpoint(app);
   itsaUkPropertyAnnualEndpoint(app);
   itsaCrystallisationObligationsEndpoint(app);

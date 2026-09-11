@@ -150,4 +150,16 @@ describe("hmrcItsaUkPropertyPeriodsGet ingestHandler", () => {
     const response = await hmrcItsaUkPropertyPeriodsGetHandler(event);
     expect([200, 400, 401]).toContain(response.statusCode);
   });
+
+  test("returns 400 for a cumulative tax year - there is no list of period summaries to retrieve", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: "2025-26" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodsGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("running total");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });

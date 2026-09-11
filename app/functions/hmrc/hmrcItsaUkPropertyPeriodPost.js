@@ -20,6 +20,7 @@ import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
   hmrcHttpPost,
+  hmrcHttpPut,
   extractHmrcAccessTokenFromLambdaEvent,
   generateHmrcErrorResponseWithRetryAdvice,
   http400BadRequestFromHmrcResponse,
@@ -28,7 +29,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate, isValidTaxYear } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
@@ -180,6 +181,34 @@ export function buildUkPropertyPeriodRequestBody(periodDetails) {
 }
 
 /**
+ * Build the Property Business v6.0 cumulative period summary request body, for tax years
+ * 2025-26 onwards. Furnished holiday lettings ended on 5 April 2025, so this model carries one
+ * flat `ukProperty` object rather than the dated model's ukFhlProperty/ukNonFhlProperty split.
+ *
+ * fromDate and toDate sit at the top level (not nested, unlike the dated model's periodDates
+ * equivalent) and are included only when the caller supplied both - present for a quarterly
+ * obligation, absent for an annual or latent one. ukProperty carries income and expenses; each
+ * field the caller answered survives exactly as answered, including a zero, and only an
+ * unanswered field is left out - the same rule buildPropertyIncomeSection/
+ * buildPropertyExpensesSection already implement for the dated model.
+ * @param {Object} periodDetails - fromDate, toDate, income, expenses
+ * @returns {Object} the HMRC request body
+ */
+export function buildUkPropertyCumulativeRequestBody(periodDetails) {
+  const hmrcRequestBody = {};
+
+  if (periodDetails.fromDate && periodDetails.toDate) {
+    hmrcRequestBody.fromDate = periodDetails.fromDate;
+    hmrcRequestBody.toDate = periodDetails.toDate;
+  }
+
+  const ukProperty = buildPropertyTypeSection({ income: periodDetails.income, expenses: periodDetails.expenses });
+  if (ukProperty) hmrcRequestBody.ukProperty = ukProperty;
+
+  return hmrcRequestBody;
+}
+
+/**
  * Serialize response headers to a plain object with lowercase keys
  * Handles both Headers objects (with forEach) and plain objects
  * @param {Headers|Object|null} headers - Response headers
@@ -215,7 +244,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { nino, businessId, taxYear, fromDate, toDate, ukFhlProperty, ukNonFhlProperty, runFraudPreventionHeaderValidation } =
+  const { nino, businessId, taxYear, fromDate, toDate, ukFhlProperty, ukNonFhlProperty, income, expenses, runFraudPreventionHeaderValidation } =
     parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
@@ -227,11 +256,25 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
   if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
-  if (!fromDate) errorMessages.push("Missing fromDate parameter from body");
-  if (fromDate && !isValidIsoDate(fromDate)) errorMessages.push("Invalid fromDate format - must be YYYY-MM-DD");
+  // The dated model (2024-25 and earlier) always identifies the period by fromDate/toDate. The
+  // cumulative model (2025-26 and later) carries them only for a quarterly obligation - an
+  // annual or latent one carries neither - so both are optional there, but one without the
+  // other is never valid.
+  const submissionModel = taxYear && isValidTaxYear(taxYear) ? resolveItsaSubmissionModel(taxYear) : "dated";
 
-  if (!toDate) errorMessages.push("Missing toDate parameter from body");
-  if (toDate && !isValidIsoDate(toDate)) errorMessages.push("Invalid toDate format - must be YYYY-MM-DD");
+  if (submissionModel === "cumulative") {
+    if (Boolean(fromDate) !== Boolean(toDate)) {
+      errorMessages.push("fromDate and toDate must both be present or both be absent");
+    }
+    if (fromDate && !isValidIsoDate(fromDate)) errorMessages.push("Invalid fromDate format - must be YYYY-MM-DD");
+    if (toDate && !isValidIsoDate(toDate)) errorMessages.push("Invalid toDate format - must be YYYY-MM-DD");
+  } else {
+    if (!fromDate) errorMessages.push("Missing fromDate parameter from body");
+    if (fromDate && !isValidIsoDate(fromDate)) errorMessages.push("Invalid fromDate format - must be YYYY-MM-DD");
+
+    if (!toDate) errorMessages.push("Missing toDate parameter from body");
+    if (toDate && !isValidIsoDate(toDate)) errorMessages.push("Invalid toDate format - must be YYYY-MM-DD");
+  }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -251,10 +294,14 @@ export function extractAndValidateParameters(event, errorMessages) {
     toDate,
     // Pass through whatever the caller sent for each property income type and let HMRC
     // validate the amounts, the way every other write handler in this repo defers box-level
-    // validation to HMRC. buildUkPropertyPeriodRequestBody drops any section that ends up
-    // empty - HMRC rejects an empty object at any of their paths.
+    // validation to HMRC. buildUkPropertyPeriodRequestBody/buildUkPropertyCumulativeRequestBody
+    // drop any section that ends up empty - HMRC rejects an empty object at any of their paths.
     ukFhlProperty: ukFhlProperty || {},
     ukNonFhlProperty: ukNonFhlProperty || {},
+    // The cumulative model's flat ukProperty carries these two directly - furnished holiday
+    // lettings ended 5 April 2025, so there is no FHL/non-FHL split to make from 2025-26.
+    income: income || {},
+    expenses: expenses || {},
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
   };
@@ -304,8 +351,19 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { nino, businessId, taxYear, fromDate, toDate, ukFhlProperty, ukNonFhlProperty, hmrcAccount, runFraudPreventionHeaderValidation } =
-    extractAndValidateParameters(event, errorMessages);
+  const {
+    nino,
+    businessId,
+    taxYear,
+    fromDate,
+    toDate,
+    ukFhlProperty,
+    ukNonFhlProperty,
+    income,
+    expenses,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation,
+  } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -350,6 +408,8 @@ export async function ingestHandler(event) {
     toDate,
     ukFhlProperty,
     ukNonFhlProperty,
+    income,
+    expenses,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -429,6 +489,8 @@ export async function ingestHandler(event) {
             toDate: payload.toDate,
             ukFhlProperty: payload.ukFhlProperty,
             ukNonFhlProperty: payload.ukNonFhlProperty,
+            income: payload.income,
+            expenses: payload.expenses,
           },
           payload.hmrcAccessToken,
           payload.govClientHeaders,
@@ -454,10 +516,12 @@ export async function ingestHandler(event) {
           return resultData;
         }
 
-        const submissionId = periodSummary?.submissionId;
-        if (payload.userSub && submissionId) {
+        // The dated create answers a submissionId to key the receipt on; the cumulative
+        // create-or-amend answers nothing (204), so the receipt keys on the tax year instead.
+        const receiptKey = periodSummary?.submissionId || payload.taxYear;
+        if (payload.userSub && receiptKey) {
           const timestamp = new Date().toISOString();
-          const receiptId = `${timestamp}-${submissionId}`;
+          const receiptId = `${timestamp}-${receiptKey}`;
           await putReceipt(payload.userSub, receiptId, periodSummary, resolveActorClass());
           resultData.receiptId = receiptId;
         }
@@ -585,6 +649,8 @@ export async function workerHandler(event) {
           toDate: payload.toDate,
           ukFhlProperty: payload.ukFhlProperty,
           ukNonFhlProperty: payload.ukNonFhlProperty,
+          income: payload.income,
+          expenses: payload.expenses,
         },
         payload.hmrcAccessToken,
         payload.govClientHeaders,
@@ -622,10 +688,10 @@ export async function workerHandler(event) {
         continue;
       }
 
-      const submissionId = periodSummary?.submissionId;
-      if (userSub && submissionId) {
+      const receiptKey = periodSummary?.submissionId || payload.taxYear;
+      if (userSub && receiptKey) {
         const timestamp = new Date().toISOString();
-        const receiptId = `${timestamp}-${submissionId}`;
+        const receiptId = `${timestamp}-${receiptKey}`;
         await putReceipt(userSub, receiptId, periodSummary, resolveActorClass());
         result.receiptId = receiptId;
       }
@@ -726,12 +792,22 @@ export async function createUkPropertyPeriod(
     });
   }
 
-  const hmrcRequestBody = buildUkPropertyPeriodRequestBody(periodDetails);
+  // The tax year decides which HMRC operation this create actually is - the same fork
+  // hmrcItsaSelfEmploymentPeriodPost.js's createSelfEmploymentPeriod makes. 2024-25 and
+  // earlier POSTs a new dated period, answering 200 with a submissionId. 2025-26 and later
+  // has no separate create: it PUTs the year's running total to the cumulative resource,
+  // answering 204 with nothing.
+  const submissionModel = resolveItsaSubmissionModel(taxYear);
+  const hmrcRequestBody =
+    submissionModel === "cumulative" ? buildUkPropertyCumulativeRequestBody(periodDetails) : buildUkPropertyPeriodRequestBody(periodDetails);
 
-  // hmrcHttpPost, unlike hmrcHttpGet, does not prepend the HMRC base URI itself - the
-  // caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.
+  // hmrcHttpPost/hmrcHttpPut, unlike hmrcHttpGet, do not prepend the HMRC base URI themselves -
+  // the caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.
   const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`;
+  const hmrcRequestUrl =
+    submissionModel === "cumulative"
+      ? `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/cumulative/${taxYear}`
+      : `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`;
   let hmrcResponse = {};
   let hmrcResponseBody;
   /* v8 ignore start */
@@ -754,7 +830,8 @@ export async function createUkPropertyPeriod(
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+    const hmrcHttpVerb = submissionModel === "cumulative" ? hmrcHttpPut : hmrcHttpPost;
+    const httpResult = await hmrcHttpVerb(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;
   }
@@ -774,5 +851,11 @@ export async function createUkPropertyPeriod(
     summary: "ITSA UK property quarterly update filed",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, hmrcResponseBody, periodSummary: hmrcResponseBody, hmrcRequestUrl };
+  // Our own response says which model was used and carries the submissionId only when HMRC
+  // gave one - the dated create does, the cumulative create-or-amend's 204 does not.
+  const periodSummary = {
+    model: submissionModel,
+    ...(hmrcResponseBody?.submissionId ? { submissionId: hmrcResponseBody.submissionId } : {}),
+  };
+  return { hmrcResponse, hmrcResponseBody, periodSummary, hmrcRequestUrl };
 }

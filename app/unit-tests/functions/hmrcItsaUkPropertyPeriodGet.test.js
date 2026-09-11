@@ -218,3 +218,44 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
     expect(response.statusCode).toBe(400);
   });
 });
+
+const VALID_CUMULATIVE_TAX_YEAR = "2025-26";
+
+describe("hmrcItsaUkPropertyPeriodGet ingestHandler - cumulative tax year", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
+    vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+  });
+
+  test("does not require a submissionId", async () => {
+    mockHmrcSuccess(mockFetch, { ukProperty: { income: { periodAmount: 5000 } } });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_CUMULATIVE_TAX_YEAR },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
+    expect(response.statusCode).toBe(200);
+  });
+
+  test("calls the cumulative HMRC endpoint path, addressed by taxYear alone", async () => {
+    mockHmrcSuccess(mockFetch, {});
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_CUMULATIVE_TAX_YEAR },
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcItsaUkPropertyPeriodGetHandler(event);
+
+    const calledUrl = mockFetch.mock.calls[0][0];
+    expect(calledUrl).toContain(`/individuals/business/property/uk/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(calledUrl).not.toContain("/period/");
+  });
+});
