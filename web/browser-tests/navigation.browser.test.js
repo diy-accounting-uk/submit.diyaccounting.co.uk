@@ -11,6 +11,18 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+// page.setContent() never fetches external <script src> files at all (no request is even
+// issued, routed or not), so a page's header icons and main nav - built at runtime by
+// widgets/page-chrome.js - never appear from setContent alone. Inject the widget the same
+// way the rest of this suite injects functional scripts setContent can't load on its own
+// (see chromium.client.test.js): page.addScriptTag() after the content is set.
+const pageChromeJs = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/page-chrome.js"), "utf-8");
+
+async function setContentWithChrome(page, html) {
+  await page.setContent(html, { baseURL: "http://localhost:3000", waitUntil: "domcontentloaded" });
+  await page.addScriptTag({ content: pageChromeJs });
+}
+
 test.describe("Navigation Browser Tests", () => {
   let indexHtmlContent;
   let submitVatHtmlContent;
@@ -28,10 +40,7 @@ test.describe("Navigation Browser Tests", () => {
   test.describe("Home Page Structure", () => {
     test("should display home page with navigation and dynamic activities container", async ({ page }) => {
       // Set the home page content
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
+      await setContentWithChrome(page, indexHtmlContent);
 
       // Verify page title
       await expect(page.locator("h1")).toContainText(/DIY Accounting Submit/);
@@ -44,10 +53,7 @@ test.describe("Navigation Browser Tests", () => {
     });
 
     test("home and Activities links resolve to the directory, not index.html", async ({ page }) => {
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
+      await setContentWithChrome(page, indexHtmlContent);
 
       await expect(page.locator("a.home-link")).toHaveAttribute("href", "./");
       await expect(page.locator("nav.main-nav a:has-text('Activities')")).toHaveAttribute("href", "./");
@@ -92,10 +98,7 @@ test.describe("Navigation Browser Tests", () => {
 
   test.describe("Main Navigation", () => {
     test("should navigate to bundles page from main navigation", async ({ page }) => {
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
+      await setContentWithChrome(page, indexHtmlContent);
 
       // Mock navigation to bundles page
       await page.route("**/bundles.html", async (route) => {
@@ -112,10 +115,7 @@ test.describe("Navigation Browser Tests", () => {
     });
 
     test("should have info icon that links to about page", async ({ page }) => {
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
+      await setContentWithChrome(page, indexHtmlContent);
 
       // Verify info icon is visible and links to about page
       const infoLink = page.locator("a.info-link");
@@ -126,10 +126,7 @@ test.describe("Navigation Browser Tests", () => {
 
   test.describe("Login Page Navigation", () => {
     test("should navigate to login page and display auth providers", async ({ page }) => {
-      await page.setContent(indexHtmlContent, {
-        baseURL: "http://localhost:3000",
-        waitUntil: "domcontentloaded",
-      });
+      await setContentWithChrome(page, indexHtmlContent);
 
       // Mock navigation to login page
       await page.route("**/login.html", async (route) => {

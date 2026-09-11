@@ -3,7 +3,8 @@
 
 # PLAN: Google Cloud and GA4 as code
 
-Status: open, design only. No code written.
+Status: open. Items 1-7 and 12-14 are shipped. Items 8-11 (the workload identity pool, GitHub
+Actions and Lambda federation, and key rotation) remain.
 
 Everything the operator does by hand in the Google consoles moves into files in this repo, applied
 by one workflow. The target is no console visit for a routine change, and no generated id copied
@@ -289,33 +290,32 @@ paths: `web/public/lib/analytics.js`, `app/functions/analytics/ga4DailyPull.js`,
 `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java`,
 `.../stacks/analytics/Ga4DailyTables.java`, and the row in `REPORT_REPOSITORY_CONTENTS.md`.
 
-**4. Fold the API list and the budget into `google/project.toml`.** Add an `[apis] services = [...]`
+**4. Fold the API list and the budget into `google/project.toml` — done.** Add an `[apis] services = [...]`
 array carrying the eight services now hardcoded in `gcp-enable-apis.js`, and a `[budget]` table with
 `display_name`, `amount`, `currency` and `thresholds = [0.5, 0.9, 1.0]` carrying the defaults now in
 `gcp-billing-assert.js`. Both scripts read the file; the CLI flags for these values go. Keep the
 `--project`, `--stray-project` flags. Extend the two test files with a parse case.
 
-**5. One workflow.** Add `.github/workflows/google-apply.yml` with the plan-on-pull-request,
-apply-on-push shape, running: inventory, enable-apis, roles-apply, billing-assert, ga4-sync,
-bigquery-sync, oauth-assert, youtube check. Copy the AWS OIDC chain and the step summary block from
-`google-roles.yml`. Path filters: `google/**`, `analytics/bigquery/**`, `scripts/google-*.js`,
-`scripts/ga4-*.js`, `scripts/gcp-*.js`, `.github/workflows/google-apply.yml`. Delete
-`google-roles.yml` and `ga4-bigquery-sync.yml`. Steps for scripts not yet written are added as those
-items land, so this item ships with the four that exist.
+**5. One workflow — done for the scripts that exist.** `.github/workflows/google-apply.yml` runs
+inventory, enable-apis, roles-apply, billing-assert, ga4-sync and bigquery-sync, plan on pull
+request and apply on push to main, replacing `google-roles.yml` and `ga4-bigquery-sync.yml`. The
+oauth-assert and youtube-check steps join it as items 12 and 13 land.
 
-**6. `google/analytics.toml` in the shape above.** Carry across account `1035014`, property
-`523400333` with its three streams and its `[key_events]`, and the ci property with
-`github_environment = "ci"` and `G-DV0SDVEZWC`. Leave `[old_property]` and `[legacy]` where they are
-as a record; they are not applied. Add prod's property entry only once item 7 can create it.
+**6. `google/analytics.toml` in the shape above — done.** Account `1035014`, property `523400333`
+with its three streams and its `key_events`, and the ci property with `github_environment = "ci"`
+and `G-DV0SDVEZWC`. `[old_property]` and `[legacy]` stay as a record; `scripts/ga4-sync.js` does not
+read either. No prod property entry: nothing live to carry across for one yet.
 
-**7. `scripts/ga4-sync.js`.** Fold `ga4-property-sync.js`, `ga4-key-events-sync.js` and
-`ga4-bigquery-link-export.js` into one script over `google/analytics.toml`. Keep
-`ga4-property-sync.js`'s `buildPlan`, `extractBigQueryLinks` and the `deleteTime` skip. Keep
-`ga4-key-events-sync.js`'s shared-event handling, which marks one GA4 event once when two labels map
-to it. Add enhanced measurement settings through
-`v1alpha properties.dataStreams.updateEnhancedMeasurementSettings`. Fail on a recorded id that does
-not match live. Delete the three old scripts, their four test files, the two `ga4:` npm scripts, and
-`.claude/skills/ga4-property-sync/SKILL.md` with its root symlink. Port the tests to
+**7. `scripts/ga4-sync.js` — done.** Folds `ga4-property-sync.js`, `ga4-key-events-sync.js` and
+`ga4-bigquery-link-export.js` into one script over `google/analytics.toml`, keyed by iterating every
+`[[property]]` entry rather than one `--environment`/`--hostname` pair per run. Carries across
+`buildPlan`'s per-facet shape, `extractBigQueryLinks`'s lowercase-q fix, the `deleteTime` skip, and
+key-event grouping so two labels sharing one GA4 event are marked once. Fails when a recorded `id` or
+`measurement_id` doesn't match a live property or stream. Enhanced measurement settings go through
+`v1alpha .../enhancedMeasurementSettings`, modelled as a `streamEnabled` field the real response shape
+has not been checked against — confirm with a dry run before relying on that write. The three old
+scripts, their four test files, the `ga4:bigquery-link-export` npm script (the only one of the two the
+plan expected that existed) and `.claude/skills/ga4-property-sync/SKILL.md` are gone; tests live in
 `app/unit-tests/scripts/ga4Sync.test.js`.
 
 **8. Workload identity pool and GitHub provider.** Add `google/identity.toml` declaring the service
@@ -347,21 +347,30 @@ that reads them. When the Lambdas work, delete the service account key, delete b
 the `ga4/service_account` row from `secrets-rotation.toml`, and delete `scripts/gcp-key-rotate.js`
 and its scheduled workflow.
 
-**12. `google/oauth.toml` and `scripts/google-oauth-assert.js`.** Record both clients as described
-above. Assert the brand through the IAP brands endpoint, the sign-in client id against each
-environment's Cognito identity provider, the YouTube client id against
-`prod/submit/youtube/oauth_client`, and the granted scopes against the file. Fail on any mismatch.
-Add the step to `google-apply.yml`.
+**12. `google/oauth.toml` and `scripts/google-oauth-assert.js` — done, narrower than drafted.**
+Both clients are recorded. The brand check runs (project number read off the client id itself,
+so nothing extra to record), and the sign-in client id is checked against each environment's live
+Cognito identity provider (`{env}-env-IdentityStack`'s `UserPoolId` and `CognitoGoogleIdpId`
+outputs). The YouTube client id and the granted-scopes check are wired but the file carries no
+`id` for that client yet — nobody has read it back out of Secrets Manager into this file, and nothing
+in this session could. `redirect_uris` and `application_type` stay a maintained record only: no
+Google API reads a non-IAP client's own configuration back, the same wall the plan's own "what
+stays manual" section already names for creating one. Added to `google-apply.yml`, after
+bigquery-sync.
 
-**13. `google/youtube.toml` and a credential check on a schedule.** Record the channel handle, the
-channel id, the quota project (`diyaccounting-ga4`), and the two secret names. Point
-`scripts/youtube-upload.js` at the file for its `CLIENT_SECRET_NAME`, `REFRESH_TOKEN_SECRET_NAME` and
-`DEFAULT_QUOTA_PROJECT` constants. Add a weekly scheduled job running `--check` and failing when the
-stored refresh token no longer resolves to the declared channel.
+**13. `google/youtube.toml` and a credential check on a schedule — done.** No numeric channel id
+recorded: the YouTube Data API resolves a channel from the signed-in account itself (`channels?
+part=snippet&mine=true`, already what `--check` called), so the file records the handle
+(`@DIYAccountingSubmit`) and `--check` compares it against the live `snippet.customUrl` instead of
+needing an id nobody had looked up. `scripts/youtube-upload.js` reads `CLIENT_SECRET_NAME`,
+`REFRESH_TOKEN_SECRET_NAME` and `DEFAULT_QUOTA_PROJECT` from the file.
+`.github/workflows/youtube-check.yml` runs `--check` weekly (Monday 06:00 UTC) and on demand, and
+fails the run when the resolved handle no longer matches.
 
-**14. Record the design in the repository contents report.** Add the `google/` directory and
-`google-apply.yml` to `REPORT_REPOSITORY_CONTENTS.md`, and remove the rows for the files and
-workflows deleted by items 3, 5 and 7.
+**14. Record the design in the repository contents report — done.** `google/oauth.toml` and
+`google/youtube.toml` joined the existing `google/*.toml` rows; `google-apply.yml` and
+`youtube-check.yml` joined the workflow table. Nothing deleted by items 3, 5 or 7 had a row there
+to remove.
 
 ## What stays manual
 

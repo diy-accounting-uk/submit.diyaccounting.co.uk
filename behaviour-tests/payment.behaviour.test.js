@@ -396,7 +396,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
   // gtag/collect otherwise) and a real Stripe checkout (never the simulator).
   //
   // GA4's BigQuery link for this property has only the daily export enabled (see
-  // scripts/ga4-property-sync.js) — no streaming — so a same-run purchase event's row cannot
+  // scripts/ga4-sync.js) — no streaming — so a same-run purchase event's row cannot
   // exist yet by the time this test checks. Instead this step looks up a Stripe subscription id
   // from an earlier scheduled run (old enough that its daily export should already have landed)
   // and confirms BigQuery has ingested a purchase event carrying it. A prior run's stripeSubscriptionId

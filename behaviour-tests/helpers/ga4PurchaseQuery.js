@@ -7,7 +7,7 @@
 // payment.behaviour.test.js.
 //
 // The ci property's BigQuery link only has the daily export enabled (see
-// scripts/ga4-property-sync.js — no streaming export), and that daily table for a given day
+// scripts/ga4-sync.js — no streaming export), and that daily table for a given day
 // can take up to about 27 hours to appear (the same margin app/functions/analytics/
 // ga4EventExportPull.js's D-2 targeting is built around). A same-run purchase event's row
 // therefore cannot exist yet when the test that fired it is still running. So this check looks

@@ -18,6 +18,31 @@
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
+# Google APIs the analytics scripts and the YouTube quota project need enabled on the GA4
+# project, applied by scripts/gcp-enable-apis.js. Service Usage itself is enabled on every
+# project by default and is what enables the rest. iap.googleapis.com is here for its brands
+# resource (scripts/google-oauth-assert.js), not for Identity-Aware Proxy itself.
+[apis]
+services = [
+  "serviceusage.googleapis.com",
+  "cloudresourcemanager.googleapis.com",
+  "analyticsadmin.googleapis.com",
+  "cloudbilling.googleapis.com",
+  "billingbudgets.googleapis.com",
+  "bigquery.googleapis.com",
+  "bigquerydatatransfer.googleapis.com",
+  "youtube.googleapis.com",
+  "iap.googleapis.com",
+]
+
+# The billing budget scripts/gcp-billing-assert.js reuses (it was created by hand on the
+# billing account) rather than duplicating, adding whichever alert threshold is missing.
+[budget]
+display_name = "diyaccounting-ga4 monthly budget"
+amount = "10"
+currency = "GBP"
+thresholds = [0.5, 0.9, 1.0]
+
 # GA4 Analytics Admin API access bindings (accounts/*/accessBindings). Account 1035014 is
 # "DIY Accounting" (see google/analytics.toml), holding property 523400333 (live, what
 # ga4ReportPull.js queries) and the trashed property 395628828. A binding at account level

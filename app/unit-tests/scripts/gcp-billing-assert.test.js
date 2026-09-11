@@ -7,8 +7,8 @@ import { describe, test, expect } from "vitest";
 
 import {
   DEFAULT_ENABLED_SERVICES,
-  THRESHOLD_PERCENTAGES,
   parseArgs,
+  parseConfig,
   findThresholdGaps,
   decideBudgetAction,
   buildBudgetCreateBody,
@@ -18,30 +18,24 @@ import {
   formatInventoryReport,
 } from "../../../scripts/gcp-billing-assert.js";
 
+const THRESHOLD_PERCENTAGES = [0.5, 0.9, 1.0];
+
 describe("parseArgs", () => {
   test("defaults to plan mode against diyaccounting-ga4 and the known stray project", () => {
     const opts = parseArgs([]);
     expect(opts.apply).toBe(false);
     expect(opts.billingProjectId).toBe("diyaccounting-ga4");
     expect(opts.strayProjectId).toBe("valued-context-507200-m9");
-    expect(opts.budgetAmount).toBe("10");
-    expect(opts.budgetCurrencyCode).toBe("GBP");
   });
 
   test("--apply sets apply true", () => {
     expect(parseArgs(["--apply"]).apply).toBe(true);
   });
 
-  test("overrides project ids, amount and currency", () => {
-    const opts = parseArgs(["--billing-project", "other-billing-project", "--stray-project", "other-stray-project", "--amount", "25", "--currency", "USD"]);
+  test("overrides project ids", () => {
+    const opts = parseArgs(["--billing-project", "other-billing-project", "--stray-project", "other-stray-project"]);
     expect(opts.billingProjectId).toBe("other-billing-project");
     expect(opts.strayProjectId).toBe("other-stray-project");
-    expect(opts.budgetAmount).toBe("25");
-    expect(opts.budgetCurrencyCode).toBe("USD");
-  });
-
-  test("overrides the budget display name", () => {
-    expect(parseArgs(["--budget-display-name", "custom name"]).budgetDisplayName).toBe("custom name");
   });
 
   test("throws on an unknown flag", () => {
@@ -49,30 +43,51 @@ describe("parseArgs", () => {
   });
 });
 
+describe("parseConfig", () => {
+  test("reads the budget table", () => {
+    const toml = `[budget]\ndisplay_name = "diyaccounting-ga4 monthly budget"\namount = 10\ncurrency = "GBP"\nthresholds = [0.5, 0.9, 1.0]\n`;
+    expect(parseConfig(toml)).toEqual({
+      displayName: "diyaccounting-ga4 monthly budget",
+      amount: "10",
+      currencyCode: "GBP",
+      thresholds: [0.5, 0.9, 1.0],
+    });
+  });
+
+  test("throws when [budget] is missing", () => {
+    expect(() => parseConfig("[service_account]\nemail = \"a@b.iam.gserviceaccount.com\"\n")).toThrow(/\[budget\]/);
+  });
+
+  test("throws when a budget field is missing", () => {
+    const toml = `[budget]\ndisplay_name = "name"\namount = 10\ncurrency = "GBP"\n`;
+    expect(() => parseConfig(toml)).toThrow(/\[budget\]/);
+  });
+});
+
 describe("findThresholdGaps", () => {
   test("all three thresholds are missing when there are no existing rules", () => {
-    expect(findThresholdGaps([])).toEqual(THRESHOLD_PERCENTAGES);
+    expect(findThresholdGaps([], THRESHOLD_PERCENTAGES)).toEqual(THRESHOLD_PERCENTAGES);
   });
 
   test("no gaps when all three thresholds are already present", () => {
     const rules = [{ thresholdPercent: 0.5 }, { thresholdPercent: 0.9 }, { thresholdPercent: 1.0 }];
-    expect(findThresholdGaps(rules)).toEqual([]);
+    expect(findThresholdGaps(rules, THRESHOLD_PERCENTAGES)).toEqual([]);
   });
 
   test("reports only the missing threshold", () => {
     const rules = [{ thresholdPercent: 0.5 }, { thresholdPercent: 1.0 }];
-    expect(findThresholdGaps(rules)).toEqual([0.9]);
+    expect(findThresholdGaps(rules, THRESHOLD_PERCENTAGES)).toEqual([0.9]);
   });
 
   test("tolerates floating point noise in an existing threshold", () => {
     const rules = [{ thresholdPercent: 0.5000000001 }, { thresholdPercent: 0.9 }, { thresholdPercent: 0.9999999999 }];
-    expect(findThresholdGaps(rules)).toEqual([]);
+    expect(findThresholdGaps(rules, THRESHOLD_PERCENTAGES)).toEqual([]);
   });
 });
 
 describe("decideBudgetAction", () => {
   test("creates a budget when the billing account has none", () => {
-    const decision = decideBudgetAction([]);
+    const decision = decideBudgetAction([], THRESHOLD_PERCENTAGES);
     expect(decision.action).toBe("create");
     expect(decision.targetBudget).toBeNull();
     expect(decision.missingThresholds).toEqual(THRESHOLD_PERCENTAGES);
@@ -84,7 +99,7 @@ describe("decideBudgetAction", () => {
       displayName: "hand-made budget",
       thresholdRules: [{ thresholdPercent: 0.5 }, { thresholdPercent: 0.9 }, { thresholdPercent: 1.0 }],
     };
-    const decision = decideBudgetAction([budget]);
+    const decision = decideBudgetAction([budget], THRESHOLD_PERCENTAGES);
     expect(decision.action).toBe("reuse-noop");
     expect(decision.targetBudget).toBe(budget);
     expect(decision.missingThresholds).toEqual([]);
@@ -96,7 +111,7 @@ describe("decideBudgetAction", () => {
       displayName: "hand-made budget",
       thresholdRules: [{ thresholdPercent: 0.5 }],
     };
-    const decision = decideBudgetAction([budget]);
+    const decision = decideBudgetAction([budget], THRESHOLD_PERCENTAGES);
     expect(decision.action).toBe("reuse-update");
     expect(decision.targetBudget).toBe(budget);
     expect(decision.missingThresholds).toEqual([0.9, 1.0]);
@@ -104,7 +119,7 @@ describe("decideBudgetAction", () => {
 
   test("treats a budget with no threshold rules at all as missing every threshold", () => {
     const budget = { name: "billingAccounts/123/budgets/abc", displayName: "hand-made budget" };
-    const decision = decideBudgetAction([budget]);
+    const decision = decideBudgetAction([budget], THRESHOLD_PERCENTAGES);
     expect(decision.action).toBe("reuse-update");
     expect(decision.missingThresholds).toEqual(THRESHOLD_PERCENTAGES);
   });
@@ -112,14 +127,19 @@ describe("decideBudgetAction", () => {
   test("picks the first budget when more than one already exists", () => {
     const first = { name: "billingAccounts/123/budgets/first", displayName: "first", thresholdRules: [] };
     const second = { name: "billingAccounts/123/budgets/second", displayName: "second", thresholdRules: [] };
-    const decision = decideBudgetAction([first, second]);
+    const decision = decideBudgetAction([first, second], THRESHOLD_PERCENTAGES);
     expect(decision.targetBudget).toBe(first);
   });
 });
 
 describe("buildBudgetCreateBody", () => {
   test("builds an account-wide filter with all three thresholds", () => {
-    const body = buildBudgetCreateBody({ displayName: "diyaccounting-ga4 monthly budget", amount: "10", currencyCode: "GBP" });
+    const body = buildBudgetCreateBody({
+      displayName: "diyaccounting-ga4 monthly budget",
+      amount: "10",
+      currencyCode: "GBP",
+      thresholds: THRESHOLD_PERCENTAGES,
+    });
     expect(body.displayName).toBe("diyaccounting-ga4 monthly budget");
     expect(body.budgetFilter).toEqual({});
     expect(body.amount).toEqual({ specifiedAmount: { currencyCode: "GBP", units: "10" } });
