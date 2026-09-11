@@ -53,8 +53,8 @@ on:
       - '.env.ci'
       - '.env.prod'
       - 'cdk-environment/cdk.json'
-      - '.github/actions/get-names'
-      - '.github/actions/set-origins'
+      - '.github/actions/get-names/**'
+      - '.github/actions/set-origins/**'
       - '.github/workflows/deploy-environment.yml'
       # Environment stacks
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java'
@@ -67,6 +67,8 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/AnalyticsStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityBaselineStack.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/security/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/**'
       # The view SQL is read into the stack at synth by BusinessViews.loadResourceText, so a
       # change to a .sql file changes the deployed view and has to redeploy the stack.
