@@ -111,6 +111,12 @@ public class SubmitSharedNames {
     public String hmrcItsaCalculationTriggerPostAsyncRequestsTableName;
     public String hmrcItsaCalculationGetAsyncRequestsTableName;
     public String hmrcItsaFinalDeclarationPostAsyncRequestsTableName;
+    public String hmrcItsaLossesAndClaimsGetAsyncRequestsTableName;
+    public String hmrcItsaLossesAndClaimsPutAsyncRequestsTableName;
+    public String hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName;
     public String companiesHouseAccountsAsyncRequestsTableName;
     public String hmrcApiRequestsTableName;
     public String passesTableName;
@@ -724,6 +730,96 @@ public class SubmitSharedNames {
     public boolean hmrcItsaFinalDeclarationPostLambdaJwtAuthorizer;
     public boolean hmrcItsaFinalDeclarationPostLambdaCustomAuthorizer;
 
+    public String hmrcItsaLossesAndClaimsGetIngestLambdaHandler;
+    public String hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsGetIngestLambdaArn;
+    public String hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsGetWorkerLambdaHandler;
+    public String hmrcItsaLossesAndClaimsGetWorkerLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsGetWorkerLambdaArn;
+    public String hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsGetLambdaQueueName;
+    public String hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaLossesAndClaimsGetLambdaHttpMethod;
+    public String hmrcItsaLossesAndClaimsGetLambdaUrlPath;
+    public boolean hmrcItsaLossesAndClaimsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaLossesAndClaimsGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaLossesAndClaimsPutIngestLambdaHandler;
+    public String hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsPutIngestLambdaArn;
+    public String hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsPutWorkerLambdaHandler;
+    public String hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsPutWorkerLambdaArn;
+    public String hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsPutLambdaQueueName;
+    public String hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaLossesAndClaimsPutLambdaHttpMethod;
+    public String hmrcItsaLossesAndClaimsPutLambdaUrlPath;
+    public boolean hmrcItsaLossesAndClaimsPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaLossesAndClaimsPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaLossesAndClaimsDeleteIngestLambdaHandler;
+    public String hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsDeleteIngestLambdaArn;
+    public String hmrcItsaLossesAndClaimsDeleteIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsDeleteWorkerLambdaHandler;
+    public String hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName;
+    public String hmrcItsaLossesAndClaimsDeleteWorkerLambdaArn;
+    public String hmrcItsaLossesAndClaimsDeleteWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaLossesAndClaimsDeleteLambdaQueueName;
+    public String hmrcItsaLossesAndClaimsDeleteLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaLossesAndClaimsDeleteLambdaHttpMethod;
+    public String hmrcItsaLossesAndClaimsDeleteLambdaUrlPath;
+    public boolean hmrcItsaLossesAndClaimsDeleteLambdaJwtAuthorizer;
+    public boolean hmrcItsaLossesAndClaimsDeleteLambdaCustomAuthorizer;
+
+    public String hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetLambdaQueueName;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaTaxLiabilityAdjustmentsGetLambdaHttpMethod;
+    public String hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlPath;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutLambdaQueueName;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaTaxLiabilityAdjustmentsPutLambdaHttpMethod;
+    public String hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlPath;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaHandler;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaQueueName;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHttpMethod;
+    public String hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlPath;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaJwtAuthorizer;
+    public boolean hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaCustomAuthorizer;
+
     public String receiptGetIngestLambdaHandler;
     public String receiptGetIngestLambdaFunctionName;
     public String receiptGetIngestLambdaArn;
@@ -1247,6 +1343,18 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-calculation-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaFinalDeclarationPostAsyncRequestsTableName =
                 "%s-hmrc-itsa-final-declaration-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaLossesAndClaimsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-losses-and-claims-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaLossesAndClaimsPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-losses-and-claims-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName =
+                "%s-hmrc-itsa-losses-and-claims-delete-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-tax-liability-adjustments-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-tax-liability-adjustments-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName =
+                "%s-hmrc-itsa-tax-liability-adjustments-delete-async-requests".formatted(this.envResourceNamePrefix);
         this.companiesHouseAccountsAsyncRequestsTableName =
                 "%s-companies-house-accounts-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcApiRequestsTableName = "%s-hmrc-api-requests".formatted(this.envResourceNamePrefix);
@@ -2911,6 +3019,319 @@ public class SubmitSharedNames {
                                 "body",
                                 true,
                                 "The figure shown to the customer and confirmed, stored on the receipt"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaLossesAndClaimsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaLossesAndClaimsGetLambdaUrlPath = "/api/v1/hmrc/itsa/losses-and-claims";
+        this.hmrcItsaLossesAndClaimsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaLossesAndClaimsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaLossesAndClaimsGetLambdaHandlerName = "hmrcItsaLossesAndClaimsGet.ingestHandler";
+        var hmrcItsaLossesAndClaimsGetLambdaWorkerHandlerName = "hmrcItsaLossesAndClaimsGet.workerHandler";
+        var hmrcItsaLossesAndClaimsGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaLossesAndClaimsGetLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaLossesAndClaimsGetLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsGetLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaLossesAndClaimsGetLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsGetLambdaWorkerHandlerName);
+        this.hmrcItsaLossesAndClaimsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaArn);
+        this.hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaLossesAndClaimsGetLambdaHttpMethod,
+                this.hmrcItsaLossesAndClaimsGetLambdaUrlPath,
+                "Retrieve ITSA losses and claims",
+                "Retrieves the losses and claims a business has recorded for a tax year",
+                "getItsaLossesAndClaims",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaLossesAndClaimsPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaLossesAndClaimsPutLambdaUrlPath = "/api/v1/hmrc/itsa/losses-and-claims";
+        this.hmrcItsaLossesAndClaimsPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaLossesAndClaimsPutLambdaCustomAuthorizer = true;
+        var hmrcItsaLossesAndClaimsPutLambdaHandlerName = "hmrcItsaLossesAndClaimsPut.ingestHandler";
+        var hmrcItsaLossesAndClaimsPutLambdaWorkerHandlerName = "hmrcItsaLossesAndClaimsPut.workerHandler";
+        var hmrcItsaLossesAndClaimsPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaLossesAndClaimsPutLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaLossesAndClaimsPutLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsPutLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaLossesAndClaimsPutLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsPutWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsPutLambdaWorkerHandlerName);
+        this.hmrcItsaLossesAndClaimsPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaArn);
+        this.hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaLossesAndClaimsPutLambdaHttpMethod,
+                this.hmrcItsaLossesAndClaimsPutLambdaUrlPath,
+                "Create or amend ITSA losses and claims",
+                "Submits the losses and claims a business is carrying for a tax year",
+                "putItsaLossesAndClaims",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "typeOfBusiness", "body", true, "One of self-employment, uk-property, foreign-property"),
+                        new ApiParameter("losses", "body", false, "Losses brought forward or made in the year"),
+                        new ApiParameter("claims", "body", false, "Claims made against those losses"),
+                        new ApiParameter(
+                                "suspendTemporalValidations",
+                                "body",
+                                false,
+                                "When true, allows a submission HMRC would otherwise reject as out of period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaLossesAndClaimsDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.hmrcItsaLossesAndClaimsDeleteLambdaUrlPath = "/api/v1/hmrc/itsa/losses-and-claims";
+        this.hmrcItsaLossesAndClaimsDeleteLambdaJwtAuthorizer = false;
+        this.hmrcItsaLossesAndClaimsDeleteLambdaCustomAuthorizer = true;
+        var hmrcItsaLossesAndClaimsDeleteLambdaHandlerName = "hmrcItsaLossesAndClaimsDelete.ingestHandler";
+        var hmrcItsaLossesAndClaimsDeleteLambdaWorkerHandlerName = "hmrcItsaLossesAndClaimsDelete.workerHandler";
+        var hmrcItsaLossesAndClaimsDeleteLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaLossesAndClaimsDeleteLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaLossesAndClaimsDeleteLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsDeleteIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsDeleteLambdaHandlerName);
+        this.hmrcItsaLossesAndClaimsDeleteIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaLossesAndClaimsDeleteLambdaHandlerDashed);
+        this.hmrcItsaLossesAndClaimsDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsDeleteWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsDeleteLambdaWorkerHandlerName);
+        this.hmrcItsaLossesAndClaimsDeleteWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaLossesAndClaimsDeleteIngestLambdaArn);
+        this.hmrcItsaLossesAndClaimsDeleteWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaLossesAndClaimsDeleteWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsDeleteLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName);
+        this.hmrcItsaLossesAndClaimsDeleteLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaLossesAndClaimsDeleteLambdaHttpMethod,
+                this.hmrcItsaLossesAndClaimsDeleteLambdaUrlPath,
+                "Delete ITSA losses and claims",
+                "Deletes the losses and claims a business has recorded for a tax year",
+                "deleteItsaLossesAndClaims",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "suspendTemporalValidations",
+                                "body",
+                                false,
+                                "When true, allows a deletion HMRC would otherwise reject as out of period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlPath = "/api/v1/hmrc/itsa/tax-liability-adjustments";
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaCustomAuthorizer = true;
+        var hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerName = "hmrcItsaTaxLiabilityAdjustmentsGet.ingestHandler";
+        var hmrcItsaTaxLiabilityAdjustmentsGetLambdaWorkerHandlerName =
+                "hmrcItsaTaxLiabilityAdjustmentsGet.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
+        var hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-get";
+        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaWorkerHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaHttpMethod,
+                this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlPath,
+                "Retrieve ITSA tax liability adjustments",
+                "Retrieves a person's carry-back losses decrease and tax refunded or set off for a tax year",
+                "getItsaTaxLiabilityAdjustments",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlPath = "/api/v1/hmrc/itsa/tax-liability-adjustments";
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaCustomAuthorizer = true;
+        var hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerName = "hmrcItsaTaxLiabilityAdjustmentsPut.ingestHandler";
+        var hmrcItsaTaxLiabilityAdjustmentsPutLambdaWorkerHandlerName =
+                "hmrcItsaTaxLiabilityAdjustmentsPut.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
+        var hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-put";
+        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaWorkerHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaHttpMethod,
+                this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlPath,
+                "Create or amend ITSA tax liability adjustments",
+                "Submits a person's carry-back losses decrease and tax refunded or set off for a tax year",
+                "putItsaTaxLiabilityAdjustments",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "carryBackLossesDecrease",
+                                "body",
+                                false,
+                                "Decrease to tax liability from losses carried back"),
+                        new ApiParameter(
+                                "taxRefundedOrSetOff", "body", false, "Tax already refunded or set off in-year"),
+                        new ApiParameter(
+                                "suspendTemporalValidations",
+                                "body",
+                                false,
+                                "When true, allows a submission HMRC would otherwise reject as out of period"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlPath = "/api/v1/hmrc/itsa/tax-liability-adjustments";
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaJwtAuthorizer = false;
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaCustomAuthorizer = true;
+        var hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerName =
+                "hmrcItsaTaxLiabilityAdjustmentsDelete.ingestHandler";
+        var hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaWorkerHandlerName =
+                "hmrcItsaTaxLiabilityAdjustmentsDelete.workerHandler";
+        // AWS Lambda function names cap at 64 characters - the deployed function name drops
+        // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
+        var hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-delete";
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaWorkerHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHttpMethod,
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlPath,
+                "Delete ITSA tax liability adjustments",
+                "Deletes a person's carry-back losses decrease and tax refunded or set off for a tax year",
+                "deleteItsaTaxLiabilityAdjustments",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "suspendTemporalValidations",
+                                "body",
+                                false,
+                                "When true, allows a deletion HMRC would otherwise reject as out of period"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
