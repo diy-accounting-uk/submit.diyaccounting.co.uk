@@ -7,7 +7,7 @@
 // Makes sure the Google APIs the analytics scripts and the YouTube quota project need, listed
 // in google/project.toml's [apis].services, are enabled on the GA4 project, using the same
 // service account the scripts run as (it holds Owner there). Idempotent: an enabled service is
-// left alone. Runs first in google-roles.yml so a fresh project never needs a hand click in the
+// left alone. Runs first in google-apply.yml so a fresh project never needs a hand click in the
 // console.
 //
 // Usage:

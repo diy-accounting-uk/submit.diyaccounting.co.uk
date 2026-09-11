@@ -1,38 +1,40 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-name: google roles
-run-name: "google roles (${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }}) from ${{ github.ref_name }}"
+name: google apply
+run-name: "google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }}) from ${{ github.ref_name }}"
 
 concurrency:
-  group: google-roles-${{ github.ref }}
+  group: google-apply-${{ github.ref }}
   cancel-in-progress: false
 
 on:
   pull_request:
     paths:
-      - 'google/project.toml'
-      - 'scripts/google-roles-apply.js'
-      - 'scripts/gcp-billing-assert.js'
-      - 'scripts/gcp-enable-apis.js'
-      - '.github/workflows/google-roles.yml'
+      - 'google/**'
+      - 'analytics/bigquery/**'
+      - 'scripts/google-*.js'
+      - 'scripts/ga4-*.js'
+      - 'scripts/gcp-*.js'
+      - '.github/workflows/google-apply.yml'
   push:
     branches:
       - 'main'
     paths:
-      - 'google/project.toml'
-      - 'scripts/google-roles-apply.js'
-      - 'scripts/gcp-billing-assert.js'
-      - 'scripts/gcp-enable-apis.js'
-      - '.github/workflows/google-roles.yml'
+      - 'google/**'
+      - 'analytics/bigquery/**'
+      - 'scripts/google-*.js'
+      - 'scripts/ga4-*.js'
+      - 'scripts/gcp-*.js'
+      - '.github/workflows/google-apply.yml'
 
 env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
 
 jobs:
-  google-roles:
-    name: ${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }}
+  google-apply:
+    name: ${{ github.event_name == 'pull_request' && 'plan' || 'apply' }}
     runs-on: ubuntu-24.04
     environment: prod
     permissions:
@@ -89,6 +91,15 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
+      # Steps run in dependency order: APIs, then IAM roles, then billing, then BigQuery.
+      # A step for a script not yet written (ga4-sync, the OAuth assertion, the YouTube
+      # credential check) joins this list once its own work item lands.
+
+      - name: Read-only inventory
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: node scripts/google-inventory.js 2>&1 | tee google-inventory.log
+
       - name: Enable the Google APIs the scripts need
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
@@ -109,25 +120,36 @@ jobs:
             node scripts/google-roles-apply.js --apply 2>&1 | tee google-roles-apply.log
           fi
 
-      - name: Dry-run gcp-billing-assert
-        if: ${{ github.event_name == 'pull_request' }}
+      - name: Run gcp-billing-assert
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
-        run: node scripts/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
+          else
+            node scripts/gcp-billing-assert.js --apply 2>&1 | tee gcp-billing-assert.log
+          fi
+
+      - name: Run ga4-bigquery-sync
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
+          else
+            node scripts/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
+          fi
 
       - name: Generate step summary
         if: always()
         run: |
-          echo "# Google roles (${{ github.event_name == 'pull_request' && 'dry run' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f google-roles-apply.log ]; then
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            cat google-roles-apply.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ -f gcp-billing-assert.log ]; then
-            echo "# GCP billing (dry run)" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            cat gcp-billing-assert.log >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-bigquery-sync.log; do
+            if [ -f "$log" ]; then
+              echo "## $log" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              cat "$log" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done

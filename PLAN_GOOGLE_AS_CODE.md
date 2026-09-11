@@ -289,19 +289,16 @@ paths: `web/public/lib/analytics.js`, `app/functions/analytics/ga4DailyPull.js`,
 `infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java`,
 `.../stacks/analytics/Ga4DailyTables.java`, and the row in `REPORT_REPOSITORY_CONTENTS.md`.
 
-**4. Fold the API list and the budget into `google/project.toml`.** Add an `[apis] services = [...]`
+**4. Fold the API list and the budget into `google/project.toml` — done.** Add an `[apis] services = [...]`
 array carrying the eight services now hardcoded in `gcp-enable-apis.js`, and a `[budget]` table with
 `display_name`, `amount`, `currency` and `thresholds = [0.5, 0.9, 1.0]` carrying the defaults now in
 `gcp-billing-assert.js`. Both scripts read the file; the CLI flags for these values go. Keep the
 `--project`, `--stray-project` flags. Extend the two test files with a parse case.
 
-**5. One workflow.** Add `.github/workflows/google-apply.yml` with the plan-on-pull-request,
-apply-on-push shape, running: inventory, enable-apis, roles-apply, billing-assert, ga4-sync,
-bigquery-sync, oauth-assert, youtube check. Copy the AWS OIDC chain and the step summary block from
-`google-roles.yml`. Path filters: `google/**`, `analytics/bigquery/**`, `scripts/google-*.js`,
-`scripts/ga4-*.js`, `scripts/gcp-*.js`, `.github/workflows/google-apply.yml`. Delete
-`google-roles.yml` and `ga4-bigquery-sync.yml`. Steps for scripts not yet written are added as those
-items land, so this item ships with the four that exist.
+**5. One workflow — done for the five scripts that exist.** `.github/workflows/google-apply.yml`
+runs inventory, enable-apis, roles-apply, billing-assert and bigquery-sync, plan on pull request and
+apply on push to main, replacing `google-roles.yml` and `ga4-bigquery-sync.yml`. The ga4-sync,
+oauth-assert and youtube-check steps join it as items 7, 12 and 13 land.
 
 **6. `google/analytics.toml` in the shape above.** Carry across account `1035014`, property
 `523400333` with its three streams and its `[key_events]`, and the ci property with
