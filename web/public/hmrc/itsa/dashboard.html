@@ -379,6 +379,10 @@
         const yearTokens = businesses.length * TOKENS_PER_BUSINESS_YEAR + FINAL_DECLARATION_TOKENS;
         costLine.textContent = `This year costs ${yearTokens} tokens for the ${businesses.length} business${businesses.length === 1 ? "" : "es"} HMRC listed: ${TOKENS_PER_BUSINESS_YEAR} per business for the quarterly updates, plus ${FINAL_DECLARATION_TOKENS} for the final declaration.`;
 
+        // usage.html carries the same figures beside the running total it already shows (D6),
+        // so they travel together rather than being computed twice.
+        sessionStorage.setItem("itsaYearTokenCost", JSON.stringify({ yearTokens, businessCount: businesses.length }));
+
         list.querySelectorAll('input[name="pickedBusiness"]').forEach((radio) => {
           radio.addEventListener("change", (event) => {
             const picked = { businessId: event.target.value, typeOfBusiness: event.target.dataset.typeOfBusiness };
