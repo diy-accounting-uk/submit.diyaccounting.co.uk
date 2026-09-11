@@ -57,6 +57,21 @@ it nine tests fail on a missing file that has nothing to do with the change.
   roles or something to act on. Do not post anything identifying to a public issue.
   **Source**: issue #181. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   `aws sso login --sso-session diyaccounting`.
+- [ ] **B116. No ITSA journey has ever run end to end.** All five ITSA behaviour suites skip on
+  every push. `deploy.yml`'s `params` job computes `skipTestScenarios=${X:-true}`, so an empty
+  dispatch input means true, and every scenario suite is gated off. The VAT suites run because they
+  are not scenario tests; the ITSA ones are. So business details, obligations, the self-employment
+  period, and both UK property suites have never executed against a deployed environment — while
+  ITSA is the strategic bet and phase 2 now has sixteen tracks shipped.
+
+  This is a default that keeps deploys fast, not a bug, so do not flip it. Run them deliberately
+  against a standing ci set instead, one suite at a time, and fix what they find. The two property
+  suites are the ones never run at all; the other three have not run since the gate was introduced.
+  Expect the first run to fail on selectors or ids rather than on the handlers — the property suites
+  were written against the source without ever executing.
+
+  **Source**: deploy run 34571638567's job list. **Owner**: Claude Code, after the operator
+  dispatches the first run. **Model**: Sonnet.
 - [ ] **B11.T17 to T22 and T15. ITSA phase 2, the rest of the spine.** T11 to T16 shipped in
   PR #180, including a new `HmrcItsaStack` because `HmrcStack` hit CloudFormation's 500-resource
   ceiling. The remaining tracks run in `PLAN_ITSA_PHASE_2.md`'s own dependency order, which is not
