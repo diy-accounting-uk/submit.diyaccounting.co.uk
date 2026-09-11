@@ -850,7 +850,6 @@ jobs:
           delete_stack_in_region "${DEPLOYMENT}-app-CompaniesHouseStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-AccountStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-BillingStack" eu-west-2
-          delete_stack_in_region "${DEPLOYMENT}-app-BooksStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-DiyaGlStack" eu-west-2
 
           echo "=== Stack deletion complete ==="

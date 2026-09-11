@@ -67,7 +67,8 @@ on:
       - 'package-lock.json'
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
-      - '.github/actions/get-names'
+      - '.github/actions/get-names/**'
+      - '.github/actions/lookup-resources/**'
       - '.github/workflows/*.yml'
       - '.prettierignore'
       - '.prettierrc'
@@ -154,6 +155,53 @@ jobs:
             -ignore 'SC2207' \
             -ignore 'bool value cannot be assigned' \
             .github/workflows/*.yml
+
+  lint-js:
+    name: 'eslint'
+    runs-on: ubuntu-24.04
+    # Gates JavaScript files this change ADDS, and reports the repository total without failing on
+    # it. Linting everything would be red on every run until a backlog of pre-existing findings is
+    # cleared, and a check that is always red teaches everyone to ignore red, the way an alarm that
+    # fires every night does. Gating modified files instead would force reformatting lines the
+    # change never touched, which CLAUDE.md forbids. A new file has no such history, so it is the
+    # one place the gate can bite without arguing with either rule.
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Report the repository-wide finding count
+        run: |
+          total=$(npx eslint . --format unix 2>/dev/null | grep -cE '^[^ ]+:[0-9]+:[0-9]+' || true)
+          echo "eslint reports ${total} finding(s) across the repository." >> "$GITHUB_STEP_SUMMARY"
+          echo "This step never fails; the gate below covers the files this change touches." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Lint the JavaScript this change adds
+        run: |
+          base=$(git merge-base origin/${{ github.event.repository.default_branch }} HEAD || true)
+          if [ -z "$base" ]; then
+            echo "No merge base against the default branch; nothing to gate." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          added=$(git diff --name-only --diff-filter=A "$base" HEAD -- '*.js' '*.mjs' '*.cjs')
+          if [ -z "$added" ]; then
+            echo "This change adds no JavaScript file, so there is nothing to gate." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "Linting $(echo "$added" | wc -l | tr -d ' ') newly added file(s):" >> "$GITHUB_STEP_SUMMARY"
+          echo "$added" >> "$GITHUB_STEP_SUMMARY"
+          echo "$added" | xargs npx eslint
 
   params:
     runs-on: ubuntu-24.04

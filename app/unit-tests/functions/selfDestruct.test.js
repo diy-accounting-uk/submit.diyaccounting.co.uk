@@ -3,6 +3,8 @@
 
 // app/unit-tests/functions/selfDestruct.test.js
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -179,6 +181,7 @@ describe("functions/infra/selfDestruct", () => {
       API_STACK_NAME: "api",
       AUTH_STACK_NAME: "auth",
       HMRC_STACK_NAME: "hmrc",
+      HMRC_ITSA_STACK_NAME: "hmrc-itsa",
       COMPANIES_HOUSE_STACK_NAME: "companies-house",
       BILLING_STACK_NAME: "billing",
       DIYA_GL_STACK_NAME: "diya-gl",
@@ -251,6 +254,7 @@ describe("functions/infra/selfDestruct", () => {
       "edge",
       "auth",
       "hmrc",
+      "hmrc-itsa",
       "companies-house",
       "billing",
       "diya-gl",
@@ -279,6 +283,7 @@ describe("functions/infra/selfDestruct", () => {
       "edge",
       "auth",
       "hmrc",
+      "hmrc-itsa",
       "companies-house",
       "billing",
       "diya-gl",
@@ -302,5 +307,60 @@ describe("functions/infra/selfDestruct", () => {
     expect(errorSpy).not.toHaveBeenCalled();
 
     delete process.env.EDGE_ORIGIN_BUCKET;
+  });
+
+  it("reads every *_STACK_NAME the CDK stack sets on the Lambda, so a stack added to one side is never missed on the other", () => {
+    // The deletion list in selfDestruct.js and the environment variables SelfDestructStack.java
+    // configures on the Lambda are two hand-maintained copies of the same set of app stacks. The
+    // HmrcItsaStack bug (added to CDK, never added to the deletion list) is exactly a mismatch
+    // between these two copies, so compare them directly against each other rather than against a
+    // third hardcoded list in this test, which would just be a third copy to fall out of sync.
+    const testDir = fileURLToPath(new URL(".", import.meta.url));
+    const selfDestructJsSource = readFileSync(`${testDir}/../../functions/infra/selfDestruct.js`, "utf8");
+    const selfDestructStackJavaSource = readFileSync(
+      `${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java`,
+      "utf8",
+    );
+
+    const stackNamesReadByLambda = new Set(
+      [...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]),
+    );
+    const stackNamesSetByCdk = new Set(
+      [...selfDestructStackJavaSource.matchAll(/putIfNotNull\(selfDestructLambdaEnv, "(\w*STACK_NAME)"/g)].map(
+        (m) => m[1],
+      ),
+    );
+
+    expect(stackNamesReadByLambda.size).toBeGreaterThan(0);
+    expect(stackNamesSetByCdk.size).toBeGreaterThan(0);
+    expect([...stackNamesReadByLambda].sort()).toEqual([...stackNamesSetByCdk].sort());
+  });
+
+  it("covers every application stack, so a new stack is never left out of both sides at once", () => {
+    // Comparing the Lambda and the CDK stack to each other passes when a stack is missing from
+    // both, which is how a newly added stack would slip through. SubmitApplication is where an
+    // application stack comes into existence, so bind the deletion list to that instead.
+    const testDir = fileURLToPath(new URL(".", import.meta.url));
+    const applicationSource = readFileSync(
+      `${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`,
+      "utf8",
+    );
+    const selfDestructJsSource = readFileSync(`${testDir}/../../functions/infra/selfDestruct.js`, "utf8");
+
+    const envVarNameFor = (stackClassName) =>
+      `${stackClassName
+        .replace(/Stack$/, "")
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .toUpperCase()}_STACK_NAME`;
+
+    const stacksCreated = new Set(
+      [...applicationSource.matchAll(/new (\w+Stack)\(/g)].map((m) => envVarNameFor(m[1])),
+    );
+    const stackNamesReadByLambda = new Set(
+      [...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]),
+    );
+
+    expect(stacksCreated.size).toBeGreaterThan(0);
+    expect([...stacksCreated].sort()).toEqual([...stackNamesReadByLambda].sort());
   });
 });
