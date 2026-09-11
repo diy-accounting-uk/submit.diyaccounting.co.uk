@@ -225,17 +225,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
-- [ ] **O39. Two attribution rules contradict each other; pick one.**
-  `REPORT_IDENTITY_AUDIT.md` recommendation 5 wants one canonical `Co-Authored-By` trailer in all
-  six `CLAUDE.md` files, because fourteen forms in the history is one of the signals behind the May
-  2026 suspension (`_developers/archive/PLAN_FLAGGED.md`). But the trailer is not set by any
-  `CLAUDE.md` today: it arrives per session from the harness, which names the model that did the
-  work and says it replaces any earlier attribution guidance. Every commit in batches 17 and 18
-  carries `Claude Opus 5 (1M context)` for that reason. So the two rules want different things:
-  one form that never varies, against a form that says which model wrote the code. Decide which
-  matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
-  per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
-  finding. **Owner**: Operator. **Model**: none.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
