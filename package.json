@@ -465,6 +465,7 @@
   "homepage": "https://submit.diyaccounting.co.uk/",
   "overrides": {
     "fast-xml-parser": "^5.7.0",
+    "typescript": "6.0.3",
     "@microsoft/eslint-formatter-sarif": {
       "eslint": "$eslint"
     },

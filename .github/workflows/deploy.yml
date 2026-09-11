@@ -119,9 +119,16 @@ on:
       - 'Dockerfile'
       - 'LICENSE'
       - 'package.json'
+      - 'package-lock.json'
       - 'pom.xml'
       - 'web/public/submit.catalogue.toml'
+      - '.github/actions/**'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/deploy-cdk-stack.yml'
+      - '.github/workflows/destroy-prod.yml'
+      - '.github/workflows/generate-pass.yml'
+      - '.github/workflows/probe-test.yml'
+      - '.github/workflows/test.yml'
   schedule:
     - cron: '11 4 * * *'
 
