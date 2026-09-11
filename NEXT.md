@@ -43,14 +43,25 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B114. The prod analytics nightly failed.** Alarm issue #182, raised 02:27 UTC on
-  2026-09-11: `prod-env-analytics-nightly-failed` went OK to ALARM on deployment prod-49fd9b3. This
-  is the run B52x was waiting for — the first nightly since the raw export's lake grants reached
-  prod — so its first real outing failed. Read the state machine's execution and the
-  `/aws/vendedlogs/states/prod-env-analytics-nightly` log group, find which step failed, and fix it.
-  If the raw export step is the one that failed, B52x stays blocked on the next nightly after the
-  fix. **Source**: issue #182. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  `aws sso login --sso-session diyaccounting`.
+- [ ] **B114. A failed view creation leaves the deploy green and the view missing.** The prod
+  analytics nightly has failed every night since 2026-09-10 (issue #182) on
+  `TABLE_NOT_FOUND: v_returning_submitters_quarterly`. `BusinessViews.java` registers 24 views;
+  both `prod_env_analytics` and `ci_env_analytics` hold 23, the same one missing from each, so it
+  is deterministic rather than transient. The view is not broken: its SQL file, its registration
+  and its test all exist, and its SELECT runs against prod today.
+
+  The cause is structural. Each view is created by an `AwsCustomResource` whose call is
+  `Athena.startQueryExecution`, which returns as soon as the query is submitted and never polls for
+  the terminal state. CloudFormation marks the resource successful the instant the query starts, so
+  a `CREATE VIEW` that fails afterwards leaves the stack green and the view absent — for any view,
+  in any environment, with no signal. This one surfaced only because the nightly selects from it.
+
+  Fix: make a failed query fail the deploy, surfacing Athena's `StateChangeReason`. The physical
+  resource id is fixed per view, so `onUpdate` fires on the next stack update, which is what should
+  finally create the missing view. **Source**: execution
+  `0d6aa364-24d8-4337-be9e-b10cbc035be1`; catalog counts, 2026-09-11. **Owner**: Claude Code.
+  **Model**: Sonnet.
+
 - [ ] **B115. Unauthorized API calls in prod.** Alarm issue #181, raised 02:17 UTC on 2026-09-11:
   `prod-env-cis-unauthorized-api-calls`. Establish what called what and was refused, from CloudTrail
   over the alarm's window, before deciding whether it is a benign denied call from one of our own
