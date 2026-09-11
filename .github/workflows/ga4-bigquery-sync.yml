@@ -24,7 +24,7 @@ on:
       - 'main'
     paths:
       - 'analytics/bigquery/**'
-      - 'analytics/ga4-bigquery.toml'
+      - 'google/bigquery.toml'
       - 'scripts/ga4-bigquery-sync.js'
       - '.github/workflows/ga4-bigquery-sync.yml'
 

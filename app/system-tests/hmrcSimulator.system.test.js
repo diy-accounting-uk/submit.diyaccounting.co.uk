@@ -432,6 +432,69 @@ describe("HTTP Simulator", () => {
     });
   });
 
+  describe("ITSA Self-Employment Cumulative", () => {
+    const validBody = () => ({
+      periodDates: { periodStartDate: "2025-04-06", periodEndDate: "2025-07-05" },
+      periodIncome: { turnover: 0, other: 0 },
+      periodExpenses: { costOfGoods: 100 },
+    });
+
+    it("should create or amend the year's running total with a 204 and no body", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.5.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+
+      expect(response.status).toBe(204);
+    });
+
+    it("should retrieve the running total", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        headers: { "Accept": "application/vnd.hmrc.5.0+json", "Authorization": "Bearer test-token" },
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.periodIncome).toBeDefined();
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/invalid-nino/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should respect Gov-Test-Scenario header for MISSING_SUBMISSION_DATES", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "MISSING_SUBMISSION_DATES" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_MISSING_SUBMISSION_DATES");
+    });
+
+    it("should respect Gov-Test-Scenario header for NOT_FOUND on retrieve", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        headers: { "Gov-Test-Scenario": "NOT_FOUND" },
+      });
+      expect(response.status).toBe(404);
+      const data = await response.json();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
+    });
+  });
+
   describe("ITSA UK Property Period", () => {
     const validBody = () => ({
       fromDate: "2024-04-06",
@@ -525,6 +588,78 @@ describe("HTTP Simulator", () => {
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(Array.isArray(data.periods)).toBe(true);
+    });
+  });
+
+  describe("ITSA UK Property Cumulative", () => {
+    const validBody = () => ({
+      fromDate: "2025-04-06",
+      toDate: "2025-07-05",
+      ukProperty: {
+        income: { periodAmount: 0 },
+        expenses: { repairsAndMaintenance: 100 },
+      },
+    });
+
+    it("should create or amend the year's running total with a 204 and no body", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/vnd.hmrc.6.0+json",
+          "Authorization": "Bearer test-token",
+        },
+        body: JSON.stringify(validBody()),
+      });
+
+      expect(response.status).toBe(204);
+    });
+
+    it("should return 400 for an invalid NINO", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/invalid-nino/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("FORMAT_NINO");
+    });
+
+    it("should return 400 when ukProperty carries neither income nor expenses", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromDate: "2025-04-06", toDate: "2025-07-05" }),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED");
+    });
+
+    it("should respect Gov-Test-Scenario header for MISSING_SUBMISSION_DATES", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Gov-Test-Scenario": "MISSING_SUBMISSION_DATES" },
+        body: JSON.stringify(validBody()),
+      });
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.code).toBe("RULE_MISSING_SUBMISSION_DATES");
+    });
+
+    it("should retrieve a period summary when a scenario is given", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/cumulative/2025-26`, {
+        headers: { "Gov-Test-Scenario": "UK_PROPERTY_FULL_EXPENSES" },
+      });
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.ukProperty).toBeDefined();
+    });
+
+    it("should default the retrieve to not-found when no scenario is given", async () => {
+      const response = await fetch(`${baseUrl}/individuals/business/property/uk/AB123456C/XAIS12345678910/cumulative/2025-26`);
+      expect(response.status).toBe(404);
     });
   });
 

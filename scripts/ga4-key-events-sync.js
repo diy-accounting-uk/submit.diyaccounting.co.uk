@@ -5,7 +5,7 @@
 // scripts/ga4-key-events-sync.js
 //
 // Idempotent key-event setup for the shared "DIY Accounting" GA4 property (523400333, see
-// google-analytics.toml). Reads the [key_events] table there — one GA4 event name per
+// google/analytics.toml). Reads the [key_events] table there — one GA4 event name per
 // conversion the one-stop dashboard tracks (subscribe, submit, donate, download) — and marks
 // each event name as a key event through the Analytics Admin API, unless it is marked already.
 // Two of the four names can share one underlying GA4 event (e.g. "purchase" fires for both a
@@ -32,7 +32,7 @@ const DEFAULT_COUNTING_METHOD = "ONCE_PER_EVENT";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const GOOGLE_ANALYTICS_TOML_PATH = join(__dirname, "..", "google-analytics.toml");
+const GOOGLE_ANALYTICS_TOML_PATH = join(__dirname, "..", "google", "analytics.toml");
 
 export function parseArgs(argv) {
   const opts = { apply: false };
@@ -47,7 +47,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Read the property id and the desired key events out of google-analytics.toml.
+ * Read the property id and the desired key events out of google/analytics.toml.
  *
  * @param {string} [tomlPath]
  * @returns {{propertyId: string, keyEvents: Record<string, string>}}
@@ -56,11 +56,11 @@ export function readGa4Config(tomlPath = GOOGLE_ANALYTICS_TOML_PATH) {
   const parsed = parseToml(readFileSync(tomlPath, "utf-8"));
   const propertyId = parsed.account?.property_id;
   if (!propertyId) {
-    throw new Error(`google-analytics.toml has no [account] property_id (read from ${tomlPath})`);
+    throw new Error(`analytics.toml has no [account] property_id (read from ${tomlPath})`);
   }
   const keyEvents = parsed.key_events || {};
   if (Object.keys(keyEvents).length === 0) {
-    throw new Error(`google-analytics.toml has no [key_events] entries (read from ${tomlPath})`);
+    throw new Error(`analytics.toml has no [key_events] entries (read from ${tomlPath})`);
   }
   return { propertyId, keyEvents };
 }
@@ -87,7 +87,7 @@ export function groupByEventName(keyEvents) {
  * network-free so it can be unit tested with fixtures.
  *
  * @param {object} input
- * @param {Record<string, string>} input.keyEvents - label -> GA4 event name, from google-analytics.toml
+ * @param {Record<string, string>} input.keyEvents - label -> GA4 event name, from google/analytics.toml
  * @param {Array<{name: string, eventName: string}>} [input.existingKeyEvents] - the property's current key events
  * @returns {Array<{eventName: string, labels: string[], action: "noop"|"create", existingName?: string}>}
  */

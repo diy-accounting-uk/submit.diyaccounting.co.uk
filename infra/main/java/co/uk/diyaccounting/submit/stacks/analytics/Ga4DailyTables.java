@@ -15,7 +15,7 @@ import software.constructs.Construct;
 
 /**
  * Glue tables over the lake's copy of the four one-stop-dashboard aggregate tables {@code
- * analytics/ga4-bigquery.toml} maintains in BigQuery's {@code ga4_daily} dataset, which {@code
+ * google/bigquery.toml} maintains in BigQuery's {@code ga4_daily} dataset, which {@code
  * app/functions/analytics/ga4DailyPull.js} writes nightly to {@code
  * curated/ga4_daily/<table>/dt=YYYY-MM-DD/data.json.gz}: {@code sessions_by_host_source_daily},
  * {@code funnel_steps_daily}, {@code key_events_daily} and {@code downloads_by_product_daily}.

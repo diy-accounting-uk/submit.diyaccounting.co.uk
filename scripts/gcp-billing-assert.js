@@ -9,11 +9,11 @@
  * valued-context-507200-m9 is empty before it is deleted.
  *
  * Usage:
- *   node scripts/gcp-billing-assert.js --dry-run
  *   node scripts/gcp-billing-assert.js
+ *   node scripts/gcp-billing-assert.js --apply
  *
  * Options:
- *   --dry-run                      Report only; make no changes
+ *   --apply                        Make the changes; without it, report only
  *   --billing-project <id>         Project whose billing account holds the budget
  *                                  (default: diyaccounting-ga4)
  *   --stray-project <id>           Project to inspect and, if empty, delete
@@ -84,7 +84,7 @@ const DEFAULT_STRAY_PROJECT_ID = "valued-context-507200-m9";
  */
 export function parseArgs(argv) {
   const opts = {
-    dryRun: false,
+    apply: false,
     billingProjectId: DEFAULT_BILLING_PROJECT_ID,
     strayProjectId: DEFAULT_STRAY_PROJECT_ID,
     budgetAmount: DEFAULT_BUDGET_AMOUNT,
@@ -94,8 +94,8 @@ export function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
-      case "--dry-run":
-        opts.dryRun = true;
+      case "--apply":
+        opts.apply = true;
         break;
       case "--billing-project":
         opts.billingProjectId = argv[++i];
@@ -361,7 +361,7 @@ async function assertBudget(accessToken, opts) {
     console.log(
       `No budget exists. Would create "${opts.budgetDisplayName}" for ${opts.budgetAmount} ${opts.budgetCurrencyCode}/month with 50/90/100% alerts.`,
     );
-    if (!opts.dryRun) {
+    if (opts.apply) {
       const body = buildBudgetCreateBody({
         displayName: opts.budgetDisplayName,
         amount: opts.budgetAmount,
@@ -378,7 +378,7 @@ async function assertBudget(accessToken, opts) {
         .map((p) => `${p * 100}%`)
         .join(", ")} alert threshold(s).`,
     );
-    if (!opts.dryRun) {
+    if (opts.apply) {
       const merged = buildBudgetPatchBody({
         existingThresholdRules: decision.targetBudget.thresholdRules || [],
         missingThresholds: decision.missingThresholds,
@@ -402,7 +402,7 @@ async function assertStrayProjectEmpty(accessToken, opts) {
 
   const safeToDelete = isProjectSafeToDelete(inventory);
 
-  if (opts.dryRun) {
+  if (!opts.apply) {
     console.log(
       safeToDelete
         ? `Dry run: ${opts.strayProjectId} is empty and would be deleted.`
@@ -422,7 +422,7 @@ async function assertStrayProjectEmpty(accessToken, opts) {
 export async function main() {
   const opts = parseArgs(process.argv.slice(2));
 
-  console.log(`GCP billing tidy-up: ${opts.dryRun ? "DRY RUN" : "APPLY"}`);
+  console.log(`GCP billing tidy-up: ${opts.apply ? "APPLY" : "DRY RUN"}`);
   console.log(`  Billing-holder project: ${opts.billingProjectId}`);
   console.log(`  Stray project:          ${opts.strayProjectId}`);
   console.log("");

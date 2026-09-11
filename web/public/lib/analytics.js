@@ -21,7 +21,7 @@ try {
   console.warn("Failed to read analytics consent from localStorage:", error);
 }
 
-// The three hosts sharing GA4 property 523400333 (google-analytics.toml), so a visit that
+// The three hosts sharing GA4 property 523400333 (google/analytics.toml), so a visit that
 // starts on one and continues on another stays one session instead of two. Kept in step with
 // that file by web/unit-tests/analytics.test.js.
 const GA4_LINKER_DOMAINS = ["diyaccounting.co.uk", "spreadsheets.diyaccounting.co.uk", "submit.diyaccounting.co.uk"];

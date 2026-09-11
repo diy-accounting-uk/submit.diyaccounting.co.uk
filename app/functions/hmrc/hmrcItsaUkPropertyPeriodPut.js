@@ -28,7 +28,8 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
+import { buildUkPropertyCumulativeRequestBody } from "./hmrcItsaUkPropertyPeriodPost.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
@@ -171,8 +172,19 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { nino, businessId, taxYear, submissionId, ukFhlProperty, ukNonFhlProperty, runFraudPreventionHeaderValidation } =
-    parsedBody || {};
+  const {
+    nino,
+    businessId,
+    taxYear,
+    submissionId,
+    fromDate,
+    toDate,
+    ukFhlProperty,
+    ukNonFhlProperty,
+    income,
+    expenses,
+    runFraudPreventionHeaderValidation,
+  } = parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
@@ -183,7 +195,21 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
   if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
-  if (!submissionId) errorMessages.push("Missing submissionId parameter from body");
+  // The dated model addresses the period being amended by its submissionId, in the path. The
+  // cumulative model has no separate amend - it PUTs a corrected running total to the same
+  // resource the create used - so there is no submissionId to require, but a quarterly
+  // resubmission's dates follow the same both-or-neither rule the create uses.
+  const submissionModel = taxYear && isValidTaxYear(taxYear) ? resolveItsaSubmissionModel(taxYear) : "dated";
+
+  if (submissionModel === "cumulative") {
+    if (Boolean(fromDate) !== Boolean(toDate)) {
+      errorMessages.push("fromDate and toDate must both be present or both be absent");
+    }
+    if (fromDate && !isValidIsoDate(fromDate)) errorMessages.push("Invalid fromDate format - must be YYYY-MM-DD");
+    if (toDate && !isValidIsoDate(toDate)) errorMessages.push("Invalid toDate format - must be YYYY-MM-DD");
+  } else {
+    if (!submissionId) errorMessages.push("Missing submissionId parameter from body");
+  }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -200,8 +226,12 @@ export function extractAndValidateParameters(event, errorMessages) {
     businessId,
     taxYear,
     submissionId,
+    fromDate,
+    toDate,
     ukFhlProperty: ukFhlProperty || {},
     ukNonFhlProperty: ukNonFhlProperty || {},
+    income: income || {},
+    expenses: expenses || {},
     hmrcAccount,
     runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
   };
@@ -245,8 +275,20 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { nino, businessId, taxYear, submissionId, ukFhlProperty, ukNonFhlProperty, hmrcAccount, runFraudPreventionHeaderValidation } =
-    extractAndValidateParameters(event, errorMessages);
+  const {
+    nino,
+    businessId,
+    taxYear,
+    submissionId,
+    fromDate,
+    toDate,
+    ukFhlProperty,
+    ukNonFhlProperty,
+    income,
+    expenses,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation,
+  } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { ...govClientHeaders };
 
@@ -288,8 +330,12 @@ export async function ingestHandler(event) {
     businessId,
     taxYear,
     submissionId,
+    fromDate,
+    toDate,
     ukFhlProperty,
     ukNonFhlProperty,
+    income,
+    expenses,
     hmrcAccessToken,
     govClientHeaders,
     testScenario: govTestScenarioHeader,
@@ -367,8 +413,12 @@ export async function ingestHandler(event) {
           payload.taxYear,
           payload.submissionId,
           {
+            fromDate: payload.fromDate,
+            toDate: payload.toDate,
             ukFhlProperty: payload.ukFhlProperty,
             ukNonFhlProperty: payload.ukNonFhlProperty,
+            income: payload.income,
+            expenses: payload.expenses,
           },
           payload.hmrcAccessToken,
           payload.govClientHeaders,
@@ -394,12 +444,12 @@ export async function ingestHandler(event) {
           return resultData;
         }
 
-        // The period is already identified by the taxYear/submissionId in the request path, so
-        // the receipt id uses the caller's submissionId rather than anything HMRC's 204
-        // response carries.
-        if (payload.userSub && payload.submissionId) {
+        // The dated amend identifies the period by the caller's own submissionId; the
+        // cumulative amend has none, so the receipt keys on the tax year instead.
+        const receiptKey = payload.submissionId || payload.taxYear;
+        if (payload.userSub && receiptKey) {
           const timestamp = new Date().toISOString();
-          const receiptId = `${timestamp}-${payload.submissionId}`;
+          const receiptId = `${timestamp}-${receiptKey}`;
           await putReceipt(payload.userSub, receiptId, periodSummary, resolveActorClass());
           resultData.receiptId = receiptId;
         }
@@ -524,8 +574,12 @@ export async function workerHandler(event) {
         payload.taxYear,
         payload.submissionId,
         {
+          fromDate: payload.fromDate,
+          toDate: payload.toDate,
           ukFhlProperty: payload.ukFhlProperty,
           ukNonFhlProperty: payload.ukNonFhlProperty,
+          income: payload.income,
+          expenses: payload.expenses,
         },
         payload.hmrcAccessToken,
         payload.govClientHeaders,
@@ -563,9 +617,10 @@ export async function workerHandler(event) {
         continue;
       }
 
-      if (userSub && payload.submissionId) {
+      const receiptKey = payload.submissionId || payload.taxYear;
+      if (userSub && receiptKey) {
         const timestamp = new Date().toISOString();
-        const receiptId = `${timestamp}-${payload.submissionId}`;
+        const receiptId = `${timestamp}-${receiptKey}`;
         await putReceipt(userSub, receiptId, periodSummary, resolveActorClass());
         result.receiptId = receiptId;
       }
@@ -667,12 +722,21 @@ export async function amendUkPropertyPeriod(
     });
   }
 
-  const hmrcRequestBody = buildAmendUkPropertyPeriodRequestBody(periodDetails);
+  // The dated model amends the resource identified by taxYear/submissionId in the path,
+  // sending only what changed. The cumulative model has no separate amend: it PUTs a
+  // corrected running total to the same resource the create used, in the same full-body shape
+  // buildUkPropertyCumulativeRequestBody builds for a create.
+  const submissionModel = resolveItsaSubmissionModel(taxYear);
+  const hmrcRequestBody =
+    submissionModel === "cumulative" ? buildUkPropertyCumulativeRequestBody(periodDetails) : buildAmendUkPropertyPeriodRequestBody(periodDetails);
 
   // hmrcHttpPut, like hmrcHttpPost, does not prepend the HMRC base URI itself - the caller
   // builds the full URL.
   const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}/${submissionId}`;
+  const hmrcRequestUrl =
+    submissionModel === "cumulative"
+      ? `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/cumulative/${taxYear}`
+      : `${hmrcBase}/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}/${submissionId}`;
   let hmrcResponse = {};
   let hmrcResponseBody;
   /* v8 ignore start */
@@ -715,5 +779,9 @@ export async function amendUkPropertyPeriod(
     summary: "ITSA UK property period summary amended",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, hmrcResponseBody, periodSummary: hmrcResponseBody, hmrcRequestUrl };
+  // The dated amend passes HMRC's response body through unchanged, as it always has. The
+  // cumulative amend answers 204 with nothing, so its periodSummary carries the model instead
+  // of an empty body - the receipt still needs something to store.
+  const periodSummary = submissionModel === "cumulative" ? { model: submissionModel, ...(hmrcResponseBody || {}) } : hmrcResponseBody;
+  return { hmrcResponse, hmrcResponseBody, periodSummary, hmrcRequestUrl };
 }

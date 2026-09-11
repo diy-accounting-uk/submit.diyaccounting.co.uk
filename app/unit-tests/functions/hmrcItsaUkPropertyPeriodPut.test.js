@@ -198,3 +198,79 @@ describe("hmrcItsaUkPropertyPeriodPut ingestHandler", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });
+
+const VALID_CUMULATIVE_TAX_YEAR = "2025-26";
+
+describe("hmrcItsaUkPropertyPeriodPut ingestHandler - cumulative tax year", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
+    vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+  });
+
+  test("calls HMRC with PUT on the cumulative endpoint and does not require a submissionId", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildAmendBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        submissionId: undefined,
+        ukNonFhlProperty: undefined,
+        income: { periodAmount: 0 },
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodPutHandler(event);
+
+    const calledUrl = mockFetch.mock.calls[0][0];
+    const calledInit = mockFetch.mock.calls[0][1];
+    expect(calledInit.method).toBe("PUT");
+    expect(calledUrl).toContain(`/individuals/business/property/uk/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ model: "cumulative" });
+  });
+
+  test("a zero the caller entered survives into the body, a field never answered is omitted", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildAmendBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        submissionId: undefined,
+        ukNonFhlProperty: undefined,
+        income: { periodAmount: 0 },
+        expenses: {},
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcItsaUkPropertyPeriodPutHandler(event);
+
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.ukProperty.income).toEqual({ periodAmount: 0 });
+    expect(sentBody.ukProperty).not.toHaveProperty("expenses");
+  });
+
+  test("rejects a toDate sent without a fromDate", async () => {
+    const event = buildHmrcEvent({
+      body: buildAmendBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        submissionId: undefined,
+        ukNonFhlProperty: undefined,
+        toDate: "2025-07-05",
+        income: { periodAmount: 500 },
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodPutHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("fromDate and toDate must both be present or both be absent");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});

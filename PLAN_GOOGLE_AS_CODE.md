@@ -271,30 +271,23 @@ only then push. Every existing resource should read as "already exists" before a
 Each item is small enough to land on its own. Items 1 and 2 are prerequisites for the rest; after
 those, 3 to 6 and 12 to 14 can go in parallel.
 
-**1. Read-only inventory of everything Google.** Add `scripts/google-inventory.js`, printing:
-enabled services on `diyaccounting-ga4`, the project IAM policy, the billing account's budgets, the
-GA4 accounts, properties (including trashed), data streams, key events and BigQuery links, the
-service account's keys with their creation dates, the IAP brand, and the BigQuery datasets and data
-transfer configs. Reuse `scripts/lib/googleAuth.js`. Add `"google:inventory"` to package.json.
-Verify by running it with the prod key and checking it names property `523400333`, the ci property,
-`ga4_daily` and four transfer configs.
+**1. Read-only inventory of everything Google — done.** `scripts/google-inventory.js` reads enabled
+services on `diyaccounting-ga4`, the project IAM policy, the billing account's budgets, the GA4
+accounts, properties (including trashed), data streams, key events and BigQuery links, the service
+account's keys with their creation dates, the IAP brand, and the BigQuery datasets and data transfer
+configs, through `scripts/lib/googleAuth.js`. Run with `npm run google:inventory`. Unrun so far: no
+Google credentials were available in the session that wrote it. First real run should name property
+`523400333`, the ci property, `ga4_daily` and four transfer configs.
 
-**2. One flag convention across the Google scripts.** `google-roles-apply.js`, `gcp-enable-apis.js`
-and `gcp-billing-assert.js` take `--dry-run`; `ga4-bigquery-sync.js` and `ga4-key-events-sync.js`
-take `--apply`. Move all five to plan-by-default with `--apply`. Update the calls in
-`.github/workflows/google-roles.yml`, and the tests in `app/unit-tests/scripts/googleRolesApply.test.js`,
-`gcpEnableApis.test.js` and `gcp-billing-assert.test.js`. Verify with `npm run test:unit`.
+**2. One flag convention across the Google scripts — done.** All five scripts plan by default and
+only write with `--apply`.
 
-**3. Create `google/` and move the three existing files.** `git mv analytics/google-roles.toml
-google/project.toml`, `git mv analytics/ga4-bigquery.toml google/bigquery.toml`, `git mv
-google-analytics.toml google/analytics.toml`. Update the readers: `scripts/google-roles-apply.js:188`,
-`scripts/ga4-bigquery-sync.js:33`, `scripts/ga4-key-events-sync.js:35`, and
-`web/unit-tests/analytics.test.js:146`. Update the path filters in `.github/workflows/google-roles.yml`
-and `.github/workflows/ga4-bigquery-sync.yml`. Update the comments that name the old paths in
-`web/public/lib/analytics.js`, `app/functions/analytics/ga4DailyPull.js`,
-`infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java` and
-`.../stacks/analytics/Ga4DailyTables.java`, and the row in `REPORT_REPOSITORY_CONTENTS.md`. Verify
-with `npm run test:unit` and `./mvnw clean verify`.
+**3. Create `google/` and move the three existing files — done for the files this repo's Google
+agent owns.** `google/project.toml`, `google/bigquery.toml` and `google/analytics.toml` exist and
+every reader this agent owns points at them. Five readers outside that ownership still name the old
+paths: `web/public/lib/analytics.js`, `app/functions/analytics/ga4DailyPull.js`,
+`infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java`,
+`.../stacks/analytics/Ga4DailyTables.java`, and the row in `REPORT_REPOSITORY_CONTENTS.md`.
 
 **4. Fold the API list and the budget into `google/project.toml`.** Add an `[apis] services = [...]`
 array carrying the eight services now hardcoded in `gcp-enable-apis.js`, and a `[budget]` table with

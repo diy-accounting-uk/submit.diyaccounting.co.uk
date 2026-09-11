@@ -85,6 +85,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 import {
   ingestHandler as hmrcItsaUkPropertyPeriodPostHandler,
   buildUkPropertyPeriodRequestBody,
+  buildUkPropertyCumulativeRequestBody,
 } from "@app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 import { hashSub } from "@app/services/subHasher.js";
 
@@ -155,6 +156,46 @@ describe("buildUkPropertyPeriodRequestBody", () => {
   test("returns just fromDate and toDate when neither property type carries anything", () => {
     const body = buildUkPropertyPeriodRequestBody({ fromDate: "2024-04-06", toDate: "2024-07-05" });
     expect(body).toEqual({ fromDate: "2024-04-06", toDate: "2024-07-05" });
+  });
+});
+
+describe("buildUkPropertyCumulativeRequestBody", () => {
+  test("wraps income and expenses in ukProperty, at the top level dates sit alongside it", () => {
+    const body = buildUkPropertyCumulativeRequestBody({
+      fromDate: "2025-04-06",
+      toDate: "2025-07-05",
+      income: { periodAmount: 1000, otherIncome: 0 },
+      expenses: { repairsAndMaintenance: 100 },
+    });
+    expect(body).toEqual({
+      fromDate: "2025-04-06",
+      toDate: "2025-07-05",
+      ukProperty: {
+        income: { periodAmount: 1000, otherIncome: 0 },
+        expenses: { repairsAndMaintenance: 100 },
+      },
+    });
+  });
+
+  test("omits fromDate/toDate entirely when neither is supplied", () => {
+    const body = buildUkPropertyCumulativeRequestBody({ income: { periodAmount: 1000 } });
+    expect(body).not.toHaveProperty("fromDate");
+    expect(body).not.toHaveProperty("toDate");
+  });
+
+  test("a zero the caller entered survives, a field never answered is omitted", () => {
+    const body = buildUkPropertyCumulativeRequestBody({ income: { periodAmount: 0 }, expenses: {} });
+    expect(body.ukProperty.income).toEqual({ periodAmount: 0 });
+    expect(body.ukProperty).not.toHaveProperty("expenses");
+  });
+
+  test("nests rentARoom under income and expenses only when the caller entered it", () => {
+    const body = buildUkPropertyCumulativeRequestBody({
+      income: { periodAmount: 100, rentARoom: { rentsReceived: 40 } },
+      expenses: { repairsAndMaintenance: 20, rentARoom: { amountClaimed: 10 } },
+    });
+    expect(body.ukProperty.income.rentARoom).toEqual({ rentsReceived: 40 });
+    expect(body.ukProperty.expenses.rentARoom).toEqual({ amountClaimed: 10 });
   });
 });
 
@@ -248,9 +289,8 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
     expect((await hmrcItsaUkPropertyPeriodPostHandler(badTo)).statusCode).toBe(400);
   });
 
-  test("returns 200 with the submissionId on success", async () => {
-    const periodSummary = { submissionId: "4557ecb5-fd32-48cc-81f5-e6acd1099f3c" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+  test("returns 200 with the model and the submissionId on success", async () => {
+    mockHmrcSuccess(mockFetch, { submissionId: "4557ecb5-fd32-48cc-81f5-e6acd1099f3c" });
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
@@ -258,7 +298,7 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
     });
     const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body)).toEqual(periodSummary);
+    expect(JSON.parse(response.body)).toEqual({ model: "dated", submissionId: "4557ecb5-fd32-48cc-81f5-e6acd1099f3c" });
   });
 
   test("calls HMRC with the v6.0 Accept header at the typed uk-property path with taxYear", async () => {
@@ -349,6 +389,88 @@ describe("hmrcItsaUkPropertyPeriodPost ingestHandler", () => {
   });
 });
 
+const VALID_CUMULATIVE_TAX_YEAR = "2025-26";
+
+describe("hmrcItsaUkPropertyPeriodPost ingestHandler - cumulative tax year", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
+    vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      return {};
+    });
+  });
+
+  test("calls HMRC with PUT on the cumulative endpoint and answers 200 with the model, no submissionId", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        fromDate: undefined,
+        toDate: undefined,
+        ukNonFhlProperty: undefined,
+        income: { periodAmount: 0 },
+        expenses: { repairsAndMaintenance: 100 },
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
+
+    expect(mockFetch).toHaveBeenCalled();
+    const calledUrl = mockFetch.mock.calls[0][0];
+    const calledInit = mockFetch.mock.calls[0][1];
+    expect(calledInit.method).toBe("PUT");
+    expect(calledUrl).toContain(`/individuals/business/property/uk/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ model: "cumulative" });
+  });
+
+  test("a zero the caller entered survives into the body, a field never answered is omitted", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        fromDate: undefined,
+        toDate: undefined,
+        ukNonFhlProperty: undefined,
+        income: { periodAmount: 0 },
+        expenses: {},
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcItsaUkPropertyPeriodPostHandler(event);
+
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.ukProperty.income).toEqual({ periodAmount: 0 });
+    expect(sentBody.ukProperty).not.toHaveProperty("expenses");
+    expect(sentBody).not.toHaveProperty("fromDate");
+  });
+
+  test("rejects a fromDate sent without a toDate", async () => {
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        toDate: undefined,
+        ukNonFhlProperty: undefined,
+        income: { periodAmount: 500 },
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("fromDate and toDate must both be present or both be absent");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+});
+
 import { workerHandler as hmrcItsaUkPropertyPeriodPostWorker } from "@app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 
 describe("hmrcItsaUkPropertyPeriodPost worker", () => {
@@ -358,8 +480,7 @@ describe("hmrcItsaUkPropertyPeriodPost worker", () => {
   });
 
   test("successfully processes SQS message and marks as completed", async () => {
-    const periodSummary = { submissionId: "s-1" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+    mockHmrcSuccess(mockFetch, { submissionId: "s-1" });
 
     const event = {
       Records: [
@@ -393,6 +514,6 @@ describe("hmrcItsaUkPropertyPeriodPost worker", () => {
     expect(updateCalls.length).toBeGreaterThan(0);
     const completedCall = updateCalls.find((call) => call[0].input.ExpressionAttributeValues[":status"] === "completed");
     expect(completedCall).toBeDefined();
-    expect(completedCall[0].input.ExpressionAttributeValues[":data"].periodSummary).toEqual(periodSummary);
+    expect(completedCall[0].input.ExpressionAttributeValues[":data"].periodSummary).toEqual({ model: "dated", submissionId: "s-1" });
   });
 });

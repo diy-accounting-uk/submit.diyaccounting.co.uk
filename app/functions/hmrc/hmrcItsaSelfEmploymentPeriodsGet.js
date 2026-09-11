@@ -28,7 +28,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidTaxYear } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
@@ -68,6 +68,15 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   if (!taxYear) errorMessages.push("Missing taxYear parameter");
   if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+
+  // HMRC's cumulative model has no list operation - a tax year holds one running total, not a
+  // set of submissions to enumerate. A cumulative year's page reads that single total from the
+  // retrieve endpoint (hmrcItsaSelfEmploymentPeriodGet.js) instead of calling this one.
+  if (taxYear && isValidTaxYear(taxYear) && resolveItsaSubmissionModel(taxYear) === "cumulative") {
+    errorMessages.push(
+      "This tax year has no list of period summaries to retrieve - it holds one running total. Use the single retrieve endpoint instead.",
+    );
+  }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";

@@ -159,10 +159,14 @@ describe("buildSelfEmploymentPeriodRequestBody", () => {
 const VALID_NINO = "AB123456C";
 const VALID_BUSINESS_ID = "XAIS12345678910";
 
+const VALID_DATED_TAX_YEAR = "2023-24";
+const VALID_CUMULATIVE_TAX_YEAR = "2025-26";
+
 function buildPeriodBody(overrides = {}) {
   return {
     nino: VALID_NINO,
     businessId: VALID_BUSINESS_ID,
+    taxYear: VALID_DATED_TAX_YEAR,
     periodStartDate: "2024-04-06",
     periodEndDate: "2024-07-05",
     periodIncome: { turnover: 1000, other: 0 },
@@ -259,9 +263,8 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     expect((await hmrcItsaSelfEmploymentPeriodPostHandler(badEnd)).statusCode).toBe(400);
   });
 
-  test("returns 200 with the periodId on success", async () => {
-    const periodSummary = { periodId: "2024-04-06_2024-07-05" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+  test("returns 200 with the model and the periodId on success", async () => {
+    mockHmrcSuccess(mockFetch, { periodId: "2024-04-06_2024-07-05" });
 
     const event = buildHmrcEvent({
       body: buildPeriodBody(),
@@ -269,7 +272,86 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body)).toEqual(periodSummary);
+    expect(JSON.parse(response.body)).toEqual({ model: "dated", periodId: "2024-04-06_2024-07-05" });
+  });
+
+  test("returns 400 when taxYear is missing or malformed", async () => {
+    const missing = buildHmrcEvent({
+      body: buildPeriodBody({ taxYear: undefined }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    expect((await hmrcItsaSelfEmploymentPeriodPostHandler(missing)).statusCode).toBe(400);
+
+    const malformed = buildHmrcEvent({
+      body: buildPeriodBody({ taxYear: "2024" }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    expect((await hmrcItsaSelfEmploymentPeriodPostHandler(malformed)).statusCode).toBe(400);
+  });
+
+  test("cumulative year: calls HMRC with PUT on the cumulative endpoint and answers 204 with the model, no periodId", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+
+    expect(mockFetch).toHaveBeenCalled();
+    const calledUrl = mockFetch.mock.calls[0][0];
+    const calledInit = mockFetch.mock.calls[0][1];
+    expect(calledInit.method).toBe("PUT");
+    expect(calledUrl).toContain(`/individuals/business/self-employment/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual({ model: "cumulative" });
+  });
+
+  test("cumulative year: a zero the caller entered survives into the body, a field never answered is omitted", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        periodStartDate: undefined,
+        periodEndDate: undefined,
+        periodIncome: { turnover: 0 },
+        periodExpenses: {},
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.periodIncome).toEqual({ turnover: 0 });
+    expect(sentBody.periodIncome).not.toHaveProperty("other");
+    expect(sentBody).not.toHaveProperty("periodExpenses");
+    expect(sentBody).not.toHaveProperty("periodDates");
+  });
+
+  test("cumulative year: rejects a periodStartDate sent without a periodEndDate", async () => {
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR, periodEndDate: undefined }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("periodStartDate and periodEndDate must both be present or both be absent");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("cumulative year: an annual obligation with no dates at all is accepted", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({ taxYear: VALID_CUMULATIVE_TAX_YEAR, periodStartDate: undefined, periodEndDate: undefined }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+    expect(response.statusCode).toBe(200);
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody).not.toHaveProperty("periodDates");
   });
 
   test("calls HMRC with the v5.0 Accept header", async () => {
@@ -439,8 +521,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
   });
 
   test("returns 200 when processing completes synchronously (large x-wait-time-ms)", async () => {
-    const periodSummary = { periodId: "2024-04-06_2024-07-05" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+    mockHmrcSuccess(mockFetch, { periodId: "2024-04-06_2024-07-05" });
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
@@ -462,7 +543,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(response.body)).toEqual(periodSummary);
+    expect(JSON.parse(response.body)).toEqual({ model: "dated", periodId: "2024-04-06_2024-07-05" });
   });
 });
 
@@ -475,8 +556,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost worker", () => {
   });
 
   test("successfully processes SQS message and marks as completed", async () => {
-    const periodSummary = { periodId: "2024-04-06_2024-07-05" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+    mockHmrcSuccess(mockFetch, { periodId: "2024-04-06_2024-07-05" });
 
     const event = {
       Records: [
@@ -487,6 +567,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost worker", () => {
             payload: {
               nino: VALID_NINO,
               businessId: VALID_BUSINESS_ID,
+              taxYear: VALID_DATED_TAX_YEAR,
               periodStartDate: "2024-04-06",
               periodEndDate: "2024-07-05",
               periodIncome: {},
@@ -510,6 +591,9 @@ describe("hmrcItsaSelfEmploymentPeriodPost worker", () => {
     expect(updateCalls.length).toBeGreaterThan(0);
     const completedCall = updateCalls.find((call) => call[0].input.ExpressionAttributeValues[":status"] === "completed");
     expect(completedCall).toBeDefined();
-    expect(completedCall[0].input.ExpressionAttributeValues[":data"].periodSummary).toEqual(periodSummary);
+    expect(completedCall[0].input.ExpressionAttributeValues[":data"].periodSummary).toEqual({
+      model: "dated",
+      periodId: "2024-04-06_2024-07-05",
+    });
   });
 });

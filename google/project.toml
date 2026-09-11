@@ -19,7 +19,7 @@
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
 # GA4 Analytics Admin API access bindings (accounts/*/accessBindings). Account 1035014 is
-# "DIY Accounting" (see google-analytics.toml), holding property 523400333 (live, what
+# "DIY Accounting" (see google/analytics.toml), holding property 523400333 (live, what
 # ga4ReportPull.js queries) and the trashed property 395628828. A binding at account level
 # covers every property under the account, which is what was granted: admin on the account,
 # not a binding scoped to one property.

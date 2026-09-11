@@ -56,6 +56,18 @@ public class CrossAccountBackupVaultStack extends Stack {
          */
         List<String> sourceBackupRoleArns();
 
+        /**
+         * ARN of ci's deployment role, e.g. arn:aws:iam::367191799875:role/submit-ci-deployment-role.
+         *
+         * <p>This is the identity that actually calls the AWS Backup restore APIs: GitHub Actions
+         * assumes it via OIDC before {@code restore-drill.yml} runs, so it is the principal the vault
+         * access policy must grant restore access to. {@code ci-env-backup-role} is a different
+         * principal entirely - it is the service role AWS Backup itself uses while performing the
+         * restore (passed as {@code --iam-role-arn} on {@code start-restore-job}), and its trust
+         * policy admits only {@code backup.amazonaws.com}, so no caller can assume it.
+         */
+        String ciDeploymentRoleArn();
+
         static ImmutableCrossAccountBackupVaultStackProps.Builder builder() {
             return ImmutableCrossAccountBackupVaultStackProps.builder();
         }
@@ -67,28 +79,15 @@ public class CrossAccountBackupVaultStack extends Stack {
         List<ArnPrincipal> sourceBackupRoles =
                 props.sourceBackupRoleArns().stream().map(ArnPrincipal::new).toList();
 
-        // The restore drill runs in submit-ci and restores under this role, the only one of the
-        // source backup roles that ever needs to read back out of the vault rather than just copy
-        // into it. Copy-in and restore are different access levels, so this stays its own principal
-        // rather than folding into sourceBackupRoles.
-        //
-        // This principal cannot actually be assumed by anything that calls it: ci-env-backup-role's
-        // trust policy only allows backup.amazonaws.com to assume it (confirmed by reading the role
-        // directly), so no CLI session or GitHub Actions job can authenticate as it. The identity
-        // that actually runs restore-drill.yml's `aws backup` commands is ci's deployment role
-        // (the GitHub variable SUBMIT_DEPLOY_ROLE_ARN resolves to it), and this stack has no way to
-        // receive that ARN today: CrossAccountBackupVaultStackProps only carries sourceBackupRoleArns
-        // (the backup-service roles that copy in) and vaultName. Granting the restore actions to the
-        // right principal needs a new prop here, populated by the caller from a new context key or
-        // env var, and threaded through the CDK app that builds this stack and the workflow that
-        // deploys it.
-        String ciRestoreRoleArn = props.sourceBackupRoleArns().stream()
-                .filter(arn -> arn.endsWith(":role/ci-env-backup-role"))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No ci-env-backup-role ARN found in sourceBackupRoleArns; the restore drill "
-                                + "has no role to grant read/restore access on the vault to."));
-        ArnPrincipal ciRestoreRolePrincipal = new ArnPrincipal(ciRestoreRoleArn);
+        // The restore drill runs in submit-ci as ci's deployment role (GitHub Actions assumes it via
+        // OIDC, the GitHub variable SUBMIT_DEPLOY_ROLE_ARN resolves to it) and that is the only
+        // principal that ever needs to read back out of the vault rather than just copy into it.
+        // Copy-in and restore are different access levels, so this stays its own principal rather
+        // than folding into sourceBackupRoles. ci-env-backup-role is a different role again - AWS
+        // Backup's own execution role for the restore, passed as --iam-role-arn on
+        // start-restore-job - and it is not granted anything here because its trust policy admits
+        // only backup.amazonaws.com, so no caller could use a grant made to it anyway.
+        ArnPrincipal ciRestoreRolePrincipal = new ArnPrincipal(props.ciDeploymentRoleArn());
 
         // ============================================================================
         // KMS key encrypting recovery points at rest in this account

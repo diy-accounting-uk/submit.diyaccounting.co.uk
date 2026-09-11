@@ -16,12 +16,12 @@ import {
 const SERVICE_ACCOUNT = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
 
 describe("parseArgs", () => {
-  test("defaults to not a dry run", () => {
-    expect(parseArgs([])).toEqual({ dryRun: false });
+  test("defaults to plan mode", () => {
+    expect(parseArgs([])).toEqual({ apply: false });
   });
 
-  test("recognises --dry-run", () => {
-    expect(parseArgs(["--dry-run"])).toEqual({ dryRun: true });
+  test("recognises --apply", () => {
+    expect(parseArgs(["--apply"])).toEqual({ apply: true });
   });
 
   test("rejects an unknown argument", () => {

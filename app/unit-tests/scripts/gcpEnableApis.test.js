@@ -5,11 +5,11 @@ import { describe, it, expect } from "vitest";
 import { parseArgs, planEnables, REQUIRED_SERVICES, DEFAULT_PROJECT } from "../../../scripts/gcp-enable-apis.js";
 
 describe("gcp-enable-apis parseArgs", () => {
-  it("defaults to the GA4 project and a real run", () => {
-    expect(parseArgs([])).toEqual({ dryRun: false, project: DEFAULT_PROJECT });
+  it("defaults to the GA4 project and plan mode", () => {
+    expect(parseArgs([])).toEqual({ apply: false, project: DEFAULT_PROJECT });
   });
-  it("reads --dry-run and --project", () => {
-    expect(parseArgs(["--dry-run", "--project", "other"])).toEqual({ dryRun: true, project: "other" });
+  it("reads --apply and --project", () => {
+    expect(parseArgs(["--apply", "--project", "other"])).toEqual({ apply: true, project: "other" });
   });
   it("rejects an unknown argument", () => {
     expect(() => parseArgs(["--nope"])).toThrow(/Unknown argument/);

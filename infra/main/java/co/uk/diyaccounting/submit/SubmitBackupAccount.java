@@ -54,6 +54,17 @@ public class SubmitBackupAccount {
                     + "nothing can copy into is not worth deploying.");
         }
 
+        var ciDeploymentRoleArn = envOr(
+                "CI_DEPLOYMENT_ROLE_ARN",
+                KindCdk.getContextValueString(app, "ciDeploymentRoleArn", ""),
+                "(from ciDeploymentRoleArn in cdk.json)");
+        if (ciDeploymentRoleArn == null || ciDeploymentRoleArn.isBlank()) {
+            throw new IllegalStateException("No ci deployment role ARN configured. Set CI_DEPLOYMENT_ROLE_ARN or "
+                    + "ciDeploymentRoleArn in cdk.json to ci's deployment role, the identity that calls the AWS "
+                    + "Backup restore APIs. The restore drill has no principal to grant restore access to "
+                    + "without it.");
+        }
+
         this.crossAccountBackupVaultStack = new CrossAccountBackupVaultStack(
                 app,
                 "backup-CrossAccountBackupVaultStack",
@@ -61,6 +72,7 @@ public class SubmitBackupAccount {
                         .env(primaryEnv)
                         .vaultName(vaultName)
                         .sourceBackupRoleArns(sourceBackupRoleArns)
+                        .ciDeploymentRoleArn(ciDeploymentRoleArn)
                         .build());
 
         var githubRepository = envOr(
