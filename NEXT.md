@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5b2cff1** (the merge of PR #185), nine stacks, live since 18:1x UTC
-on 2026-09-11. Its `destroy-previous` retired prod-0dae63b, and no spare set stands: prod-c78fb84
-and prod-49fd9b3 are both gone. Exactly one prod set is standing for the first time in weeks, so
-any second set appearing without a deploy behind it is a leak, not a leftover.
+**Prod runs deployment prod-c065053** (the merge of PR #187), nine stacks, live since 21:42 UTC on
+2026-09-11. One set stands and no spare bills. ci runs `ci-mainb28b`, nine stacks from 22:39, with
+no `SelfDestructStack`, so it survives until `destroy-ci.yml`'s 02:34 UTC sweep rather than two
+hours after creation. `ci-claud5589` is down to a single orphaned `HmrcItsaStack` predating B120's
+fix; the same sweep takes it.
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -29,6 +30,25 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
+
+- [ ] **B116x. Re-run the ITSA suites against a ci set that outlives them.**
+  `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
+  run 34651928296), the first time any ITSA journey has executed against a deployed environment.
+  What it proved: the backend works. All three scenarios reached HMRC's sandbox and returned `200`
+  with real data — self-employment `XBIS12345678901` trading as "Company X", uk-property
+  `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention headers validated
+  `200 VALID_HEADERS`. The async lifecycle completed correctly each time: marked `processing`,
+  HMRC answered, marked `completed`, `200` returned to the browser with the payload.
+  Why it still failed: the deployment was destroyed underneath the running test.
+  `ci-claud63b8-app-OpsStack` was deleted at 22:03:16, two seconds after the third HMRC response,
+  and the remaining eight stacks went at 22:17. The set was created at 19:39 with a two-hour
+  self-destruct, so it was already twenty minutes past its window when the suite was dispatched.
+  The browser `403`s and the S3 `AccessDenied` page in `test-failed-2.png` are the web tier
+  disappearing. No page defect is implicated and none should be assumed.
+  So the suite has still never completed a clean run. Deploy a ci set, check its remaining life
+  before dispatching, then run all five suites against it while it is comfortably inside its
+  window. **Source**: probe-test run 34651928296; CloudFormation deletion times for
+  `ci-claud63b8`. **Owner**: Claude Code. **Model**: Sonnet.
 
 **Both API route prefixes are permanent.** Operator decision, 2026-09-10, live on prod: an
 unauthenticated call to `/api/v1/books` and to `/api/v1/diya-gl` each returns 401, which is the
@@ -42,36 +62,35 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
-- [ ] **B120. The self-destruct leaves an HmrcItsaStack behind on every ci set.** `ci-clauddb3b`,
-  `ci-claudd608` and now `ci-claud5589` each have every app stack in `DELETE_COMPLETE` except
-  `{deployment}-app-HmrcItsaStack`, which still stands in `CREATE_COMPLETE`. Three orphans is every
-  ci set there has been today, one per deploy. The `destroy-ci.yml` sweep of 19:04 UTC then removed
-  two of the three, so the orphan is bounded, not permanent: it survives from the self-destruct
-  until the next sweep on the `34 2,4,6,8,10,12 * * *` UTC cron, which is minutes to about eight
-  hours of an idle stack. The sweep tidying up on a delay is why nobody noticed. ci has no working
-  environment at all now: `/submit/ci/last-known-good-deployment` still names `ci-claud5589`, whose
-  other eight stacks went at 18:06. Anything needing a ci set — B17v.1's two videos, B116's ITSA
-  suites, B34.7's filing suites — has to deploy one first. The deletions fall
-  about two hours after each set's creation, which is `SelfDestructStack` firing rather than
-  `destroy-ci.yml`'s cron, and both destroy workflows do list `HmrcItsaStack` in their phase 4.
-  So the omission is in the self-destruct path's own stack list, not the workflows'. One leftover
-  stack accrues per swept ci deploy and nothing removes it. Start at
-  `infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java` and the Lambda it
-  deploys; the two standing sets are the test. **Source**: `cloudformation list-stacks` on
-  submit-ci, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B121. `deploy.yml` ignores `package-lock.json`, and nothing runs eslint.** Two paths-filter
-  holes found while verifying PR #186's lockfile bump. First: `deploy.yml`'s push paths list `package.json` but not
-  `package-lock.json`, so a lockfile-only change never triggers a deploy — and a lockfile bump can
-  move shipped runtime code, as PR #186's `qs` bump does through `express` into the Lambda bundle.
-  `test.yml` lists both, which is why the tests ran and no deploy did. The #186 merge demonstrated
-  it on main: commit `2a4c4044` fired `test`, CodeQL and `sbom`, and no deploy of any kind, so the
-  `qs` patch sits on main and prod keeps the old one until some unrelated change deploys. Second: `eslint.config.js`
-  appears in `test.yml`'s paths, but no workflow anywhere calls `npm run linting`, so the lint
-  crash below has never been seen by CI. `npm run linting` currently dies in `ts-api-utils` 2.5.0
-  reading a TypeScript internal that `typescript` 7.0.2 no longer exposes; two TypeScript versions
-  sit in the tree because `eslint-plugin-sonarjs` pins 6.0.3. Fix the filter and the resolution,
-  then make eslint run somewhere. **Source**: PR #186's verification, 2026-09-11. **Owner**: Claude
-  Code. **Model**: Sonnet.
+- [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
+  no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
+  unrestricted and lets any signed-in caller through. The gap covers the whole ITSA surface, not
+  just the newer endpoints, so the entire ITSA journey is currently free while VAT is gated.
+  **Operator decision, 2026-09-11: submissions cost, reads free.** Anything that submits to HMRC
+  costs one token like a VAT return — quarterly updates, annual submissions, losses and claims,
+  tax liability adjustments, final declaration. Anything that only reads is free: business details,
+  obligations, calculations. That matches the existing VAT rule and introduces no new pricing
+  concept.
+  Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
+  submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
+  agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
+  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
+  policy with "cross-account sharing restrictions" (403). A vault access policy takes
+  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
+  statement cannot deploy. The organisation setting is not implicated;
+  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
+  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
+  the recovery point from the backup vault to a vault in the source account and restores it there,
+  which is AWS's documented cross-account restore path and the route a real recovery would take. It
+  costs one copy per drill and writes into the source account.
+  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
+  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
+  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
+  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
@@ -110,23 +129,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
-  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
-  policy with "cross-account sharing restrictions" (403). A vault access policy takes
-  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
-  statement cannot deploy. The organisation setting is not implicated;
-  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
-
-  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
-  the recovery point from the backup vault to a vault in the source account and restores it there,
-  which is AWS's documented cross-account restore path and the route a real recovery would take. It
-  costs one copy per drill and writes into the source account.
-
-  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
-  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
-  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
-  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
-  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **O34. Subscribe the HMRC sandbox application to five ITSA APIs.** The sandbox year's
   first run stopped on its first call: `DELETE .../self-assessment-test-support/vendor-state`
   answered `403 RESOURCE_FORBIDDEN`, "The application is not subscribed to the API which it is
@@ -166,12 +168,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D17. **Owner**: Operator. **Model**: none.
-- [ ] **O40. Create the five `origin:*` labels.** B87 applies them from the creating paths already,
-  through the raw `gh api .../labels` endpoint rather than `gh pr create --label`, so a missing
-  label does not fail anything — but until they exist with real descriptions and colours they carry
-  no meaning to a reader. The five commands are in B87's report and the classes are
-  `REPORT_IDENTITY_AUDIT.md` section 3's. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 6.
-  **Owner**: Operator. **Model**: none.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -233,41 +229,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
   matters more and where the answer lives, since a rule written into `CLAUDE.md` loses to the
   per-session instruction anyway. **Source**: `REPORT_IDENTITY_AUDIT.md` recommendation 5; B87's
   finding. **Owner**: Operator. **Model**: none.
-- [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
-  no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
-  unrestricted and lets any signed-in caller through. The gap covers the whole ITSA surface, not
-  just the newer endpoints, so the entire ITSA journey is currently free while VAT is gated.
-
-  **Operator decision, 2026-09-11: submissions cost, reads free.** Anything that submits to HMRC
-  costs one token like a VAT return — quarterly updates, annual submissions, losses and claims,
-  tax liability adjustments, final declaration. Anything that only reads is free: business details,
-  obligations, calculations. That matches the existing VAT rule and introduces no new pricing
-  concept.
-
-  Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
-  submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
-  agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B116x. Re-run the ITSA suites against a ci set that outlives them.**
-  `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
-  run 34651928296), the first time any ITSA journey has executed against a deployed environment.
-
-  What it proved: the backend works. All three scenarios reached HMRC's sandbox and returned `200`
-  with real data — self-employment `XBIS12345678901` trading as "Company X", uk-property
-  `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention headers validated
-  `200 VALID_HEADERS`. The async lifecycle completed correctly each time: marked `processing`,
-  HMRC answered, marked `completed`, `200` returned to the browser with the payload.
-
-  Why it still failed: the deployment was destroyed underneath the running test.
-  `ci-claud63b8-app-OpsStack` was deleted at 22:03:16, two seconds after the third HMRC response,
-  and the remaining eight stacks went at 22:17. The set was created at 19:39 with a two-hour
-  self-destruct, so it was already twenty minutes past its window when the suite was dispatched.
-  The browser `403`s and the S3 `AccessDenied` page in `test-failed-2.png` are the web tier
-  disappearing. No page defect is implicated and none should be assumed.
-
-  So the suite has still never completed a clean run. Deploy a ci set, check its remaining life
-  before dispatching, then run all five suites against it while it is comfortably inside its
-  window. **Source**: probe-test run 34651928296; CloudFormation deletion times for
-  `ci-claud63b8`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
