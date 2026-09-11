@@ -6,7 +6,8 @@
 //
 // Reads analytics/google-roles.toml, lists the live GA4 Analytics Admin API access bindings
 // and GCP Resource Manager IAM bindings for the principals named in that file, diffs them
-// against what the file declares, and applies the difference. Read-only with --dry-run.
+// against what the file declares, and applies the difference. Read-only unless --apply is
+// given.
 //
 // The diff only ever touches a principal (a GA4 "user" or a GCP IAM "member") that appears in
 // the toml file, and only for the account or project that entry names. A binding held by some
@@ -15,8 +16,8 @@
 // entry: deleting the entry stops the script from managing that grant, it does not revoke it.
 //
 // Usage:
-//   node scripts/google-roles-apply.js --dry-run
 //   node scripts/google-roles-apply.js
+//   node scripts/google-roles-apply.js --apply
 //
 // Credentials: GA4_SERVICE_ACCOUNT_JSON (raw key JSON, for local runs) or
 // GA4_SERVICE_ACCOUNT_ARN (an AWS Secrets Manager ARN), the same precedence and secret
@@ -37,10 +38,10 @@ const RESOURCE_MANAGER_API_BASE = "https://cloudresourcemanager.googleapis.com/v
 const SCOPES = ["https://www.googleapis.com/auth/analytics.manage.users", "https://www.googleapis.com/auth/cloud-platform"];
 
 export function parseArgs(argv) {
-  const opts = { dryRun: false };
+  const opts = { apply: false };
   for (const arg of argv) {
-    if (arg === "--dry-run") {
-      opts.dryRun = true;
+    if (arg === "--apply") {
+      opts.apply = true;
     } else {
       throw new Error(`Unknown argument: ${arg}`);
     }
@@ -313,7 +314,7 @@ export async function main() {
   const config = loadConfigFromRoot();
   const authClient = await getAuthClient();
 
-  console.log(`Google roles${opts.dryRun ? " (dry run)" : ""} for ${config.serviceAccountEmail}\n`);
+  console.log(`Google roles${opts.apply ? "" : " (dry run)"} for ${config.serviceAccountEmail}\n`);
 
   let anyChange = false;
 
@@ -328,7 +329,7 @@ export async function main() {
     anyChange = true;
     console.log(`GA4 account ${accountId}:`);
     printGa4Diff(accountId, diff);
-    if (!opts.dryRun) {
+    if (opts.apply) {
       for (const binding of diff.toCreate) {
         await createGa4AccessBinding(authClient, accountId, binding);
       }
@@ -349,7 +350,7 @@ export async function main() {
     anyChange = true;
     console.log(`GCP project ${projectId}:`);
     printGcpDiff(projectId, diff);
-    if (!opts.dryRun) {
+    if (opts.apply) {
       const nextBindings = applyGcpBindingChanges(policy.bindings, diff.toAdd, diff.toRemove);
       await setProjectIamPolicy(authClient, projectId, { etag: policy.etag, bindings: nextBindings });
     }
@@ -357,7 +358,7 @@ export async function main() {
 
   if (!anyChange) {
     console.log("\nNo changes.");
-  } else if (opts.dryRun) {
+  } else if (!opts.apply) {
     console.log("\nDry run: no changes applied.");
   } else {
     console.log("\nChanges applied.");

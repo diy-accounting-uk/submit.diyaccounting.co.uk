@@ -19,17 +19,17 @@ import {
 } from "../../../scripts/gcp-billing-assert.js";
 
 describe("parseArgs", () => {
-  test("defaults to apply mode against diyaccounting-ga4 and the known stray project", () => {
+  test("defaults to plan mode against diyaccounting-ga4 and the known stray project", () => {
     const opts = parseArgs([]);
-    expect(opts.dryRun).toBe(false);
+    expect(opts.apply).toBe(false);
     expect(opts.billingProjectId).toBe("diyaccounting-ga4");
     expect(opts.strayProjectId).toBe("valued-context-507200-m9");
     expect(opts.budgetAmount).toBe("10");
     expect(opts.budgetCurrencyCode).toBe("GBP");
   });
 
-  test("--dry-run sets dryRun true", () => {
-    expect(parseArgs(["--dry-run"]).dryRun).toBe(true);
+  test("--apply sets apply true", () => {
+    expect(parseArgs(["--apply"]).apply).toBe(true);
   });
 
   test("overrides project ids, amount and currency", () => {
