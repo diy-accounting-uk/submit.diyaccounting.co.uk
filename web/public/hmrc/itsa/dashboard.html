@@ -40,6 +40,9 @@
         margin: 0 0 0.75em 0;
         color: #555;
       }
+      .dashboard-step .applicability {
+        font-style: italic;
+      }
       .dashboard-divider {
         display: flex;
         align-items: center;
@@ -52,6 +55,21 @@
         content: "";
         flex: 1;
         border-top: 1px solid #ccc;
+      }
+      .business-picker-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        margin: var(--spacing-sm) 0;
+      }
+      .business-picker-option {
+        display: flex;
+        align-items: baseline;
+        gap: 0.5em;
+      }
+      .business-picker-option label {
+        font-weight: normal;
+        display: inline;
       }
     </style>
   </head>
@@ -90,13 +108,49 @@
     <main id="mainContent">
       <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
 
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
       <div class="form-container">
         <p>
           Making Tax Digital for Income Tax replaces the annual Self Assessment return with a running record: self-employed people and
           landlords send HMRC a summary of income and expenses every quarter instead of once a year. This preview runs against HMRC's
           sandbox in every environment except production.
         </p>
+      </div>
 
+      <!-- Business picker -->
+      <div id="businessPickerContainer" class="form-container">
+        <h2>Pick a Business</h2>
+        <p class="hint">
+          The steps below link to the file family the picked business uses - self-employment or property - because HMRC's
+          endpoints, field names and even the quarterly model differ between them.
+        </p>
+        <form id="businessPickerForm">
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              placeholder="e.g., AB123456C"
+              maxlength="9"
+              spellcheck="false"
+              autocapitalize="characters"
+            />
+          </div>
+          <button type="submit" id="findBusinessesBtn" class="btn">Find My Businesses</button>
+        </form>
+        <div id="businessPickerResults" style="display: none">
+          <div id="businessPickerList" class="business-picker-list"></div>
+          <p id="yearTokenCost" class="hint"></p>
+        </div>
+      </div>
+
+      <div class="form-container">
         <div class="dashboard-steps">
           <div class="dashboard-step">
             <h2>1. Business Details</h2>
@@ -107,34 +161,42 @@
           </div>
           <div class="dashboard-step">
             <h2>2. Obligations</h2>
-            <p>Check which quarterly updates are open, due, or already sent for a business.</p>
+            <p>Check which quarterly updates are open, due, or already sent, grouped by business.</p>
             <a href="obligations.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to Obligations</a>
           </div>
           <div class="dashboard-step">
             <h2>3. File a Quarterly Update</h2>
-            <p>Send a self-employment period summary of income and expenses to HMRC.</p>
-            <a href="selfEmploymentPeriod.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <p>Send a period summary of income and expenses to HMRC for the picked business.</p>
+            <a href="selfEmploymentPeriod.html" id="step3Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to File a Quarterly Update</a
             >
           </div>
           <div class="dashboard-step">
             <h2>4. Period Summaries</h2>
-            <p>List the quarterly updates already filed for a self-employment business.</p>
-            <a href="selfEmploymentPeriods.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <p>List the quarterly updates already filed for the picked business.</p>
+            <a href="selfEmploymentPeriods.html" id="step4Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Period Summaries</a
             >
           </div>
           <div class="dashboard-step">
             <h2>5. View a Period Summary</h2>
             <p>Retrieve one filed quarterly update by tax year and period ID.</p>
-            <a href="selfEmploymentPeriodView.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <a
+              href="selfEmploymentPeriodView.html"
+              id="step5Link"
+              class="btn"
+              style="display: inline-block; width: auto; text-decoration: none"
               >Go to View a Period Summary</a
             >
           </div>
           <div class="dashboard-step">
             <h2>6. Amend a Period Summary</h2>
             <p>Correct the income and expenses on a quarterly update already filed with HMRC.</p>
-            <a href="selfEmploymentPeriodAmend.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <a
+              href="selfEmploymentPeriodAmend.html"
+              id="step6Link"
+              class="btn"
+              style="display: inline-block; width: auto; text-decoration: none"
               >Go to Amend a Period Summary</a
             >
           </div>
@@ -143,26 +205,48 @@
 
           <div class="dashboard-step">
             <h2>7. Annual Submission</h2>
-            <p>Load the year's annual submission for a business, enter adjustments and allowances, and save them to HMRC.</p>
-            <a href="annualSubmission.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <p>Load the year's annual submission for the picked business, enter adjustments and allowances, and save them to HMRC.</p>
+            <a href="annualSubmission.html" id="step7Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Annual Submission</a
             >
           </div>
           <div class="dashboard-step">
             <h2>8. Year-End Adjustments</h2>
             <p>Trigger the year-end summary, read the net profit HMRC computed, and change a figure if it is wrong.</p>
-            <a href="adjustments.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to Adjustments</a>
+            <a href="adjustments.html" id="step8Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Adjustments</a
+            >
           </div>
           <div class="dashboard-step">
-            <h2>9. Tax Calculation</h2>
-            <p>Trigger a calculation and see what the tax year owes.</p>
+            <h2>9. Losses and Claims</h2>
+            <p class="applicability">
+              Applies if the picked business made a loss this year, or carries one from an earlier year. Every business's loss
+              carries forward the same way; a sole trade can also carry sideways or back.
+            </p>
+            <a href="lossesAndClaims.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Losses and Claims</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2>10. Tax Liability Adjustments</h2>
+            <p class="applicability">
+              Applies only if a carry-back claim was made in Losses and Claims. This is the second half of that claim - it tells
+              HMRC what the carry-back saves.
+            </p>
+            <a href="taxLiabilityAdjustments.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+              >Go to Tax Liability Adjustments</a
+            >
+          </div>
+          <div class="dashboard-step">
+            <h2>11. Tax Calculation</h2>
+            <p>Trigger a calculation and see what the tax year owes, with one row per business.</p>
             <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Tax Calculation</a
             >
           </div>
           <div class="dashboard-step">
-            <h2>10. Final Declaration</h2>
-            <p>Read the calculation again, confirm it is complete and correct, and file the return.</p>
+            <h2>12. Final Declaration</h2>
+            <p>Read the calculation again, confirm it is complete and correct for every business, and file the return.</p>
             <a href="finalDeclaration.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Final Declaration</a
             >
@@ -193,13 +277,29 @@
     </footer>
 
     <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script>
+      // The picked business travels as a businessId/typeOfBusiness pair, stored under this
+      // sessionStorage key, so every page a numbered step links to can read the same pick
+      // without the customer re-selecting it. Nothing here is guessed - the type always comes
+      // from what HMRC's own Business Details answer said for that businessId.
+      const PICKED_BUSINESS_KEY = "itsaPickedBusiness";
+
+      // A quarterly update, its amendment and the final declaration are the only writes that
+      // spend a token (D6/D8 in the plan). One quarterly update costs 1 token, HMRC issues four
+      // obligations a year per business, and one final declaration covers the whole return
+      // regardless of how many businesses it carries.
+      const TOKENS_PER_BUSINESS_YEAR = 4;
+      const FINAL_DECLARATION_TOKENS = 1;
+
       function initializePage() {
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
@@ -209,10 +309,191 @@
             syntheticIndicator.classList.add("visible");
           }
         }
+
+        // Restore a business picked earlier in this session, so returning to the dashboard
+        // does not lose the pick or reset every step link back to self-employment.
+        const stored = readPickedBusiness();
+        if (stored) {
+          applyPickedBusinessToLinks(stored);
+        }
       }
+
+      function readPickedBusiness() {
+        try {
+          return JSON.parse(sessionStorage.getItem(PICKED_BUSINESS_KEY) || "null");
+        } catch {
+          return null;
+        }
+      }
+
+      // The dated and cumulative self-employment models share one page family; the property
+      // models share their own. There is no third family - "self-employment" routes one way,
+      // every other HMRC business type routes the other.
+      function applyPickedBusinessToLinks(business) {
+        const isProperty = business && business.typeOfBusiness !== "self-employment";
+        document.getElementById("step3Link").href = isProperty ? "ukPropertyPeriod.html" : "selfEmploymentPeriod.html";
+        document.getElementById("step4Link").href = isProperty ? "ukPropertyPeriods.html" : "selfEmploymentPeriods.html";
+        document.getElementById("step5Link").href = isProperty ? "ukPropertyPeriodView.html" : "selfEmploymentPeriodView.html";
+        document.getElementById("step6Link").href = isProperty ? "ukPropertyPeriodAmend.html" : "selfEmploymentPeriodAmend.html";
+        document.getElementById("step7Link").href = isProperty ? "ukPropertyAnnualSubmission.html" : "annualSubmission.html";
+        document.getElementById("step8Link").href = isProperty ? "ukPropertyAdjustments.html" : "adjustments.html";
+      }
+
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // The year's token cost is counted from the businesses HMRC listed, before the customer
+      // spends anything: each business's four quarterly updates, plus one final declaration for
+      // the whole return. The annual submission, the adjustable summary, losses and claims and
+      // tax liability adjustments are all free (D1/D8), so they add nothing here.
+      function displayBusinessPicker(businesses) {
+        const list = document.getElementById("businessPickerList");
+        const costLine = document.getElementById("yearTokenCost");
+
+        if (!businesses || businesses.length === 0) {
+          list.innerHTML = '<p class="no-data">No businesses found for the specified National Insurance number.</p>';
+          costLine.textContent = "";
+          document.getElementById("businessPickerResults").style.display = "block";
+          return;
+        }
+
+        const stored = readPickedBusiness();
+        list.innerHTML = businesses
+          .map((business, index) => {
+            const checked = stored && stored.businessId === business.businessId ? "checked" : index === 0 && !stored ? "checked" : "";
+            const label = `${escapeHtml(business.tradingName || business.typeOfBusiness)} (${escapeHtml(business.typeOfBusiness)}, ${escapeHtml(business.businessId)})`;
+            return `
+              <div class="business-picker-option">
+                <input type="radio" name="pickedBusiness" id="business-${index}" value="${escapeHtml(business.businessId)}"
+                  data-type-of-business="${escapeHtml(business.typeOfBusiness)}" ${checked} />
+                <label for="business-${index}">${label}</label>
+              </div>
+            `;
+          })
+          .join("");
+
+        const yearTokens = businesses.length * TOKENS_PER_BUSINESS_YEAR + FINAL_DECLARATION_TOKENS;
+        costLine.textContent = `This year costs ${yearTokens} tokens for the ${businesses.length} business${businesses.length === 1 ? "" : "es"} HMRC listed: ${TOKENS_PER_BUSINESS_YEAR} per business for the quarterly updates, plus ${FINAL_DECLARATION_TOKENS} for the final declaration.`;
+
+        list.querySelectorAll('input[name="pickedBusiness"]').forEach((radio) => {
+          radio.addEventListener("change", (event) => {
+            const picked = { businessId: event.target.value, typeOfBusiness: event.target.dataset.typeOfBusiness };
+            sessionStorage.setItem(PICKED_BUSINESS_KEY, JSON.stringify(picked));
+            applyPickedBusinessToLinks(picked);
+          });
+        });
+
+        // Persist the pre-checked default (first business, or the one already stored) so the
+        // step links are correct even before the customer touches a radio button.
+        const preChecked = list.querySelector('input[name="pickedBusiness"]:checked');
+        if (preChecked) {
+          const picked = { businessId: preChecked.value, typeOfBusiness: preChecked.dataset.typeOfBusiness };
+          sessionStorage.setItem(PICKED_BUSINESS_KEY, JSON.stringify(picked));
+          applyPickedBusinessToLinks(picked);
+        }
+
+        document.getElementById("businessPickerResults").style.display = "block";
+      }
+
+      async function runFindBusinesses(nino, accessToken) {
+        const govClientHeaders = await getGovClientHeaders();
+        return await getBusinessDetails(nino, accessToken, govClientHeaders, false, null);
+      }
+
+      async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          showLoading();
+          showStatus("Initiating HMRC authentication...", "info");
+          const state = generateRandomState();
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          sessionStorage.setItem("currentActivity", `${location.pathname}`);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+          return;
+        }
+        await run(accessToken);
+      }
+
+      async function handleFindBusinessesSubmission(event) {
+        event.preventDefault();
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+
+        if (!nino) {
+          showStatus("Please enter a National Insurance number.", "error");
+          return;
+        }
+
+        await ensureAuthorizedThen("pendingDashboardBusinessPickerRequest", { nino }, async (accessToken) => {
+          try {
+            showLoading();
+            hideStatus();
+            showStatus("Finding your businesses...", "info");
+            const result = await runFindBusinesses(nino, accessToken);
+            displayBusinessPicker(result.listOfBusinesses || []);
+            hideStatus();
+          } catch (error) {
+            showStatus(`Failed to find your businesses: ${error.message}`, "error");
+          } finally {
+            hideLoading();
+          }
+        });
+      }
+
+      async function continueAfterOAuth() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pending = JSON.parse(sessionStorage.getItem("pendingDashboardBusinessPickerRequest") || "null");
+          if (!pending) return;
+
+          document.getElementById("nino").value = pending.nino;
+          showLoading();
+          showStatus("Finding your businesses...", "info");
+          const result = await runFindBusinesses(pending.nino, accessToken);
+          displayBusinessPicker(result.listOfBusinesses || []);
+          hideStatus();
+          sessionStorage.removeItem("pendingDashboardBusinessPickerRequest");
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          showStatus(`Failed: ${error.message}`, "error");
+          sessionStorage.removeItem("pendingDashboardBusinessPickerRequest");
+          sessionStorage.removeItem("hmrcAccessToken");
+          sessionStorage.removeItem("hmrcTokenScope");
+          sessionStorage.removeItem("oauth_state");
+          sessionStorage.removeItem("currentActivity");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function handleOAuthCallback() {
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        if (accessToken) continueAfterOAuth();
+      }
+
+      document.getElementById("businessPickerForm").addEventListener("submit", handleFindBusinessesSubmission);
+
+      document.getElementById("nino").addEventListener("input", function (e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
 
       document.addEventListener("DOMContentLoaded", function () {
         initializePage();
+        handleOAuthCallback();
       });
     </script>
   </body>

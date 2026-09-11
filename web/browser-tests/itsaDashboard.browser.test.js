@@ -64,7 +64,13 @@ test.describe("ITSA Dashboard", () => {
     await delay(200);
   }
 
-  test("links to the ten ITSA pages in the order a user follows them", async ({ page }) => {
+  // Twelve steps, not ten: T15 adds Losses and Claims and Tax Liability Adjustments as their
+  // own numbered steps between the property/self-employment year-end pages and the tax
+  // calculation, matching the year-end sequence the plan requires (annual submission,
+  // adjustable summary, losses and claims, tax liability adjustments, calculation, final
+  // declaration). Nothing merges into an existing step - a customer with a loss must see the
+  // claim step, not guess that it lives inside Year-End Adjustments.
+  test("links to the twelve ITSA pages in the order a user follows them", async ({ page }) => {
     page.on("pageerror", (err) => {
       console.log("[PAGE_ERROR]", err?.message || String(err));
     });
@@ -73,7 +79,7 @@ test.describe("ITSA Dashboard", () => {
     await loadDashboard(page);
 
     const links = page.locator(".dashboard-step a.btn");
-    await expect(links).toHaveCount(10);
+    await expect(links).toHaveCount(12);
     await expect(links.nth(0)).toHaveAttribute("href", "businessDetails.html");
     await expect(links.nth(1)).toHaveAttribute("href", "obligations.html");
     await expect(links.nth(2)).toHaveAttribute("href", "selfEmploymentPeriod.html");
@@ -82,8 +88,25 @@ test.describe("ITSA Dashboard", () => {
     await expect(links.nth(5)).toHaveAttribute("href", "selfEmploymentPeriodAmend.html");
     await expect(links.nth(6)).toHaveAttribute("href", "annualSubmission.html");
     await expect(links.nth(7)).toHaveAttribute("href", "adjustments.html");
-    await expect(links.nth(8)).toHaveAttribute("href", "taxCalculation.html");
-    await expect(links.nth(9)).toHaveAttribute("href", "finalDeclaration.html");
+    await expect(links.nth(8)).toHaveAttribute("href", "lossesAndClaims.html");
+    await expect(links.nth(9)).toHaveAttribute("href", "taxLiabilityAdjustments.html");
+    await expect(links.nth(10)).toHaveAttribute("href", "taxCalculation.html");
+    await expect(links.nth(11)).toHaveAttribute("href", "finalDeclaration.html");
+  });
+
+  // Losses and Claims and Tax Liability Adjustments stay on the page even when they do not
+  // apply to every customer - only their wording says when they matter - so a customer with a
+  // loss can never land on a dashboard that walked past the claim.
+  test("shows the losses and claims and tax liability adjustments steps as applicable-or-not, never hidden", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const lossesStep = page.locator(".dashboard-step", { has: page.locator('a[href="lossesAndClaims.html"]') });
+    const adjustmentsStep = page.locator(".dashboard-step", { has: page.locator('a[href="taxLiabilityAdjustments.html"]') });
+    await expect(lossesStep).toBeVisible();
+    await expect(adjustmentsStep).toBeVisible();
+    await expect(lossesStep.locator(".applicability")).toContainText("Applies if");
+    await expect(adjustmentsStep.locator(".applicability")).toContainText("Applies only if");
   });
 
   test("puts a divider between the in-year and year-end halves", async ({ page }) => {
@@ -139,5 +162,73 @@ test.describe("ITSA Dashboard", () => {
 
     expect(page.url()).toContain("selfEmploymentPeriod.html");
     await expect(page.locator("h1")).toHaveText("File a Quarterly Update");
+  });
+
+  // A sole trade and a rental is nine tokens for the year (D6): four quarterly updates each,
+  // plus one final declaration for the whole return - never one declaration per business.
+  test("names nine tokens for the year when the picker holds a sole trade and a rental", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await page.evaluate(() => {
+      window.displayBusinessPicker([
+        { businessId: "XAIS12345678901", typeOfBusiness: "self-employment", tradingName: "A Sole Trade" },
+        { businessId: "XAIS12345678902", typeOfBusiness: "uk-property", tradingName: "A Rental" },
+      ]);
+    });
+
+    await expect(page.locator("#businessPickerResults")).toBeVisible();
+    await expect(page.locator("#businessPickerList input[type=radio]")).toHaveCount(2);
+    await expect(page.locator("#yearTokenCost")).toContainText("9 tokens");
+    await expect(page.locator("#yearTokenCost")).toContainText("2 businesses");
+  });
+
+  test("routes the quarterly-update-family step links to self-employment pages by default", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await page.evaluate(() => {
+      window.displayBusinessPicker([{ businessId: "XAIS12345678901", typeOfBusiness: "self-employment", tradingName: "A Sole Trade" }]);
+    });
+
+    await expect(page.locator("#step3Link")).toHaveAttribute("href", "selfEmploymentPeriod.html");
+    await expect(page.locator("#step4Link")).toHaveAttribute("href", "selfEmploymentPeriods.html");
+    await expect(page.locator("#step5Link")).toHaveAttribute("href", "selfEmploymentPeriodView.html");
+    await expect(page.locator("#step6Link")).toHaveAttribute("href", "selfEmploymentPeriodAmend.html");
+    await expect(page.locator("#step7Link")).toHaveAttribute("href", "annualSubmission.html");
+    await expect(page.locator("#step8Link")).toHaveAttribute("href", "adjustments.html");
+  });
+
+  test("routes the quarterly-update-family step links to property pages once a property business is picked", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await page.evaluate(() => {
+      window.displayBusinessPicker([
+        { businessId: "XAIS12345678901", typeOfBusiness: "self-employment", tradingName: "A Sole Trade" },
+        { businessId: "XAIS12345678902", typeOfBusiness: "uk-property", tradingName: "A Rental" },
+      ]);
+    });
+
+    await page.locator("#businessPickerList input[type=radio]").nth(1).check();
+
+    await expect(page.locator("#step3Link")).toHaveAttribute("href", "ukPropertyPeriod.html");
+    await expect(page.locator("#step4Link")).toHaveAttribute("href", "ukPropertyPeriods.html");
+    await expect(page.locator("#step5Link")).toHaveAttribute("href", "ukPropertyPeriodView.html");
+    await expect(page.locator("#step6Link")).toHaveAttribute("href", "ukPropertyPeriodAmend.html");
+    await expect(page.locator("#step7Link")).toHaveAttribute("href", "ukPropertyAnnualSubmission.html");
+    await expect(page.locator("#step8Link")).toHaveAttribute("href", "ukPropertyAdjustments.html");
+  });
+
+  test("shows no businesses found for an empty picker result", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await page.evaluate(() => {
+      window.displayBusinessPicker([]);
+    });
+
+    await expect(page.locator("#businessPickerResults")).toBeVisible();
+    await expect(page.locator("#businessPickerList")).toContainText("No businesses found");
   });
 });
