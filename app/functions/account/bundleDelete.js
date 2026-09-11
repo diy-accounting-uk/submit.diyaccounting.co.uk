@@ -4,7 +4,7 @@
 // app/functions/account/bundleDelete.js
 
 import { validateEnv } from "../../lib/env.js";
-import { context, createLogger } from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   parseRequestBody,
@@ -23,6 +23,7 @@ import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncReques
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/bundleDelete.js" });
 
@@ -189,55 +190,16 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
-  await initializeSalt();
-  validateEnv(["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"]);
-
-  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
-
-  for (const record of event.Records || []) {
-    let userId;
-    let requestId;
-    let traceparent;
-    let correlationId;
-    try {
-      const body = JSON.parse(record.body);
-      userId = body.userId;
-      requestId = body.requestId;
-      traceparent = body.traceparent;
-      correlationId = body.correlationId;
-      const { bundleToRemove, removeAll } = body.payload;
-
-      if (!userId || !requestId) {
-        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
-        continue;
-      }
-
-      if (!context.getStore()) {
-        context.enterWith(new Map());
-      }
-      context.set("requestId", requestId);
-      context.set("traceparent", traceparent);
-      context.set("correlationId", correlationId);
-      context.set("userId", userId);
-
-      logger.info({ message: "Processing SQS message", userId, requestId, messageId: record.messageId });
-
+  return processSqsRecords(event, {
+    requiredEnv: ["BUNDLE_DYNAMODB_TABLE_NAME", "ASYNC_REQUESTS_DYNAMODB_TABLE_NAME"],
+    logger,
+    errorPolicy: "rethrow",
+    userContextKey: "userId",
+    processRecord: async ({ bundleToRemove, removeAll }, { userId, requestId }) => {
       await deleteUserBundle(userId, bundleToRemove, removeAll, requestId);
-
       logger.info({ message: "Successfully processed SQS message", requestId });
-    } catch (error) {
-      logger.error({
-        message: "Error processing SQS message",
-        error: error.message,
-        stack: error.stack,
-        messageId: record.messageId,
-        userId,
-        requestId,
-      });
-      // Re-throw to trigger SQS retry/DLQ
-      throw error;
-    }
-  }
+    },
+  });
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
