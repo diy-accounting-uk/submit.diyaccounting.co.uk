@@ -66,7 +66,9 @@ it nine tests fail on a missing file that has nothing to do with the change.
   holes found while verifying B119. First: `deploy.yml`'s push paths list `package.json` but not
   `package-lock.json`, so a lockfile-only change never triggers a deploy — and a lockfile bump can
   move shipped runtime code, as B119's `qs` does through `express` into the Lambda bundle.
-  `test.yml` lists both, which is why the tests ran and no deploy did. Second: `eslint.config.js`
+  `test.yml` lists both, which is why the tests ran and no deploy did. The #186 merge demonstrated
+  it on main: commit `2a4c4044` fired `test`, CodeQL and `sbom`, and no deploy of any kind, so the
+  `qs` patch sits on main and prod keeps the old one until some unrelated change deploys. Second: `eslint.config.js`
   appears in `test.yml`'s paths, but no workflow anywhere calls `npm run linting`, so the lint
   crash below has never been seen by CI. `npm run linting` currently dies in `ts-api-utils` 2.5.0
   reading a TypeScript internal that `typescript` 7.0.2 no longer exposes; two TypeScript versions
