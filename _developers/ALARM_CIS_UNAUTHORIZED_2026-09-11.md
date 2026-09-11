@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+
 # Alarm: prod-env-cis-unauthorized-api-calls, 2026-09-11 02:17 UTC (issue #181)
 
 ## What the metric filter matches
