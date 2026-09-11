@@ -46,17 +46,44 @@ import http from "node:http";
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "url";
+import TOML from "@iarna/toml";
 import { OAuth2Client } from "google-auth-library";
 import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
+export const CONFIG_PATH = "google/youtube.toml";
 
 export const OAUTH_SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"];
 
-export const CLIENT_SECRET_NAME = "prod/submit/youtube/oauth_client";
-export const REFRESH_TOKEN_SECRET_NAME = "prod/submit/youtube/refresh_token";
+/**
+ * Parse google/youtube.toml's content.
+ *
+ * @param {string} tomlString
+ * @returns {{channelHandle: string, quotaProject: string, clientSecretName: string, refreshTokenSecretName: string}}
+ */
+export function parseConfig(tomlString) {
+  const parsed = TOML.parse(tomlString);
+  const channelHandle = parsed.channel?.handle;
+  const quotaProject = parsed.channel?.quota_project;
+  const clientSecretName = parsed.secrets?.oauth_client;
+  const refreshTokenSecretName = parsed.secrets?.refresh_token;
+  if (!channelHandle || !quotaProject || !clientSecretName || !refreshTokenSecretName) {
+    throw new Error("youtube.toml is missing [channel].handle, [channel].quota_project, [secrets].oauth_client or [secrets].refresh_token");
+  }
+  return { channelHandle, quotaProject, clientSecretName, refreshTokenSecretName };
+}
 
-export const DEFAULT_QUOTA_PROJECT = "diyaccounting-ga4";
+export function loadConfigFromRoot() {
+  const filePath = path.join(process.cwd(), CONFIG_PATH);
+  return parseConfig(fs.readFileSync(filePath, "utf-8"));
+}
+
+const config = loadConfigFromRoot();
+
+export const CHANNEL_HANDLE = config.channelHandle;
+export const CLIENT_SECRET_NAME = config.clientSecretName;
+export const REFRESH_TOKEN_SECRET_NAME = config.refreshTokenSecretName;
+export const DEFAULT_QUOTA_PROJECT = config.quotaProject;
 
 const CHANNELS_ENDPOINT = "https://www.googleapis.com/youtube/v3/channels";
 const VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
@@ -310,7 +337,14 @@ export async function obtainAccessToken({
   return token;
 }
 
-export async function fetchOwnChannelTitle({ accessToken, quotaProject, fetchImpl = fetch }) {
+/**
+ * Look up the signed-in account's own channel: its title and its handle (returned by the API
+ * as `customUrl`, e.g. "@DIYAccountingSubmit").
+ *
+ * @param {{accessToken: string, quotaProject: string, fetchImpl?: typeof fetch}} input
+ * @returns {Promise<{title: string, handle: string|null}>}
+ */
+export async function fetchOwnChannel({ accessToken, quotaProject, fetchImpl = fetch }) {
   const response = await fetchImpl(`${CHANNELS_ENDPOINT}?part=snippet&mine=true`, {
     headers: { Authorization: `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
   });
@@ -322,7 +356,24 @@ export async function fetchOwnChannelTitle({ accessToken, quotaProject, fetchImp
   if (!channel) {
     throw new Error("The signed-in account has no YouTube channel linked to it.");
   }
-  return channel.snippet.title;
+  return { title: channel.snippet.title, handle: channel.snippet.customUrl ?? null };
+}
+
+/**
+ * Compare the signed-in channel's handle against the one declared in google/youtube.toml.
+ * Pure, so it is unit tested; the network call that produces `channel` is not.
+ *
+ * @param {{handle: string|null}} channel
+ * @param {string} expectedHandle
+ * @throws {Error} when the stored refresh token resolves to a different channel
+ */
+export function assertChannelHandleMatches(channel, expectedHandle) {
+  if (channel.handle !== expectedHandle) {
+    throw new Error(
+      `The stored refresh token resolves to channel handle "${channel.handle ?? "(none)"}", but google/youtube.toml declares "${expectedHandle}". ` +
+        `Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run --check again to re-consent as the right account.`,
+    );
+  }
 }
 
 async function initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType, fetchImpl }) {
@@ -428,8 +479,9 @@ export async function main() {
   const accessToken = await obtainAccessToken({ clientFile });
 
   if (check) {
-    const title = await fetchOwnChannelTitle({ accessToken, quotaProject });
-    console.log(`Signed in as channel: ${title}`);
+    const channel = await fetchOwnChannel({ accessToken, quotaProject });
+    assertChannelHandleMatches(channel, CHANNEL_HANDLE);
+    console.log(`Signed in as channel: ${channel.title} (${channel.handle})`);
     return;
   }
 

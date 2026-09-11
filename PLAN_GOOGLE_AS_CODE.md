@@ -352,11 +352,14 @@ environment's Cognito identity provider, the YouTube client id against
 `prod/submit/youtube/oauth_client`, and the granted scopes against the file. Fail on any mismatch.
 Add the step to `google-apply.yml`.
 
-**13. `google/youtube.toml` and a credential check on a schedule.** Record the channel handle, the
-channel id, the quota project (`diyaccounting-ga4`), and the two secret names. Point
-`scripts/youtube-upload.js` at the file for its `CLIENT_SECRET_NAME`, `REFRESH_TOKEN_SECRET_NAME` and
-`DEFAULT_QUOTA_PROJECT` constants. Add a weekly scheduled job running `--check` and failing when the
-stored refresh token no longer resolves to the declared channel.
+**13. `google/youtube.toml` and a credential check on a schedule — done.** No numeric channel id
+recorded: the YouTube Data API resolves a channel from the signed-in account itself (`channels?
+part=snippet&mine=true`, already what `--check` called), so the file records the handle
+(`@DIYAccountingSubmit`) and `--check` compares it against the live `snippet.customUrl` instead of
+needing an id nobody had looked up. `scripts/youtube-upload.js` reads `CLIENT_SECRET_NAME`,
+`REFRESH_TOKEN_SECRET_NAME` and `DEFAULT_QUOTA_PROJECT` from the file.
+`.github/workflows/youtube-check.yml` runs `--check` weekly (Monday 06:00 UTC) and on demand, and
+fails the run when the resolved handle no longer matches.
 
 **14. Record the design in the repository contents report.** Add the `google/` directory and
 `google-apply.yml` to `REPORT_REPOSITORY_CONTENTS.md`, and remove the rows for the files and

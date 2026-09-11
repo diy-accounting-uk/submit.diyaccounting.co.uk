@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The YouTube channel scripts/youtube-upload.js uploads to, as code.
+#
+# No numeric channel id is recorded here: the YouTube Data API resolves a channel by handle
+# directly (channels?forHandle=...), so scripts/youtube-upload.js --check can compare the
+# signed-in account's own channel against this handle without one. If that ever needs to
+# change, `npm run google:inventory` reads the signed-in channel's id and handle from the live
+# API.
+
+[channel]
+handle = "@DIYAccountingSubmit"
+
+# The YouTube Data API bills quota to this Google Cloud project (every request carries an
+# x-goog-user-project header naming it), overridable locally with GOOGLE_CLOUD_QUOTA_PROJECT.
+quota_project = "diyaccounting-ga4"
+
+# AWS Secrets Manager secrets holding the OAuth client (id + secret, downloaded once from the
+# Google Cloud console — see videos/PUBLISH.md) and the refresh token consent produces.
+[secrets]
+oauth_client = "prod/submit/youtube/oauth_client"
+refresh_token = "prod/submit/youtube/refresh_token"
