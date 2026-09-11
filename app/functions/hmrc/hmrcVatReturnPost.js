@@ -3,7 +3,7 @@
 
 // app/functions/hmrcVatReturnPost.js
 
-import { createLogger, context } from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -17,7 +17,7 @@ import {
   serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
-import { isRetryableError } from "../../lib/sqsWorkerHelper.js";
+import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -732,56 +732,19 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
-  await initializeSalt();
-  validateEnv([
-    "HMRC_BASE_URI",
-    "RECEIPTS_DYNAMODB_TABLE_NAME",
-    "BUNDLE_DYNAMODB_TABLE_NAME",
-    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
-  ]);
-
   const asyncRequestsTableName = process.env.HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME;
 
-  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
-
-  for (const record of event.Records || []) {
-    let userSub;
-    let requestId;
-    // trace: 5
-    let traceparent;
-    let correlationId;
-    try {
-      let body;
-      try {
-        body = JSON.parse(record.body);
-      } catch (parseError) {
-        throw new Error(`Failed to parse SQS message body: ${parseError.message}`);
-      }
-      userSub = body.userId;
-      requestId = body.requestId;
-      // trace: 6
-      traceparent = body.traceparent;
-      correlationId = body.correlationId;
-      const payload = body.payload;
-
-      if (!userSub || !requestId) {
-        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
-        continue;
-      }
-
-      if (!context.getStore()) {
-        context.enterWith(new Map());
-      }
-      context.set("requestId", requestId);
-      // trace: 7
-      context.set("traceparent", traceparent);
-      context.set("correlationId", correlationId);
-      context.set("userSub", userSub);
-
-      logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
-
-      // trace: 8
+  return processSqsRecords(event, {
+    requiredEnv: [
+      "HMRC_BASE_URI",
+      "RECEIPTS_DYNAMODB_TABLE_NAME",
+      "BUNDLE_DYNAMODB_TABLE_NAME",
+      "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+      "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
+    ],
+    logger,
+    errorPolicy: "classify",
+    processRecord: async (payload, { userId: userSub, requestId }) => {
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.vatReturnData,
@@ -824,7 +787,7 @@ export async function workerHandler(event) {
           userSub,
           result,
         });
-        continue;
+        return;
       }
 
       const formBundleNumber = receipt?.formBundleNumber ?? receipt?.formBundle;
@@ -844,51 +807,21 @@ export async function workerHandler(event) {
       });
 
       logger.info({ message: "Successfully processed SQS message", requestId });
-    } catch (error) {
-      // If we couldn't parse the body or extract IDs, re-throw so SQS retries or sends to DLQ
-      // rather than silently dropping the record.
-      const isParseOrIdError = error.message.includes("Failed to parse SQS message body") ||
-                               error.message.includes("SQS record missing userId or requestId");
-      if (isParseOrIdError) {
-        logger.error({
-          message: "Re-throwing parse or ID extraction error for SQS redelivery",
-          error: error.message,
-          messageId: record.messageId,
-        });
-        throw error;
-      }
-
-      const isRetryable = isRetryableError(error);
-
-      if (isRetryable) {
-        logger.warn({ message: "Transient error in worker, re-throwing for SQS retry", error: error.message, requestId });
-        throw error;
-      }
-
-      logger.error({
-        message: "Terminal error processing SQS message",
-        error: error.message,
-        stack: error.stack,
-        messageId: record.messageId,
-        userSub,
-        requestId,
-      });
+    },
+    onTerminalError: async (error, { userId: userSub, requestId }) => {
       await recordSubmissionFailure({
         failure: "internal-error",
         summary: "VAT return failed in the background worker",
         userSub,
       });
-      if (userSub && requestId) {
-        await asyncApiServices.error({
-          asyncRequestsTableName,
-          requestId,
-          userSub,
-          error,
-        });
-      }
-      // Do not re-throw terminal errors to avoid infinite SQS retry loops
-    }
-  }
+      await asyncApiServices.error({
+        asyncRequestsTableName,
+        requestId,
+        userSub,
+        error,
+      });
+    },
+  });
 }
 
 
