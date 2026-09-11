@@ -182,13 +182,29 @@ runs:
         set -euo pipefail
         echo "Looking up API Gateway from custom domain: ${DEPLOYMENT_DOMAIN}"
 
-        HTTP_API_ID=$(aws apigatewayv2 get-api-mappings \
-          --domain-name "${DEPLOYMENT_DOMAIN}" \
-          --query 'Items[0].ApiId' \
-          --output text 2>/dev/null || echo "")
+        # Retried for the same reason the Cognito lookups above are: the mapping is created by the
+        # deploy api job moments earlier and can take a little while to be visible here. A single
+        # attempt fails the EdgeStack deploy on a race, and every behaviour test after it then fails
+        # against a deployment that has no edge.
+        API_MAPPING_MAX_ATTEMPTS=10
+        API_MAPPING_SLEEP_SECONDS=10
+        HTTP_API_ID=""
+        for ATTEMPT in $(seq 1 "${API_MAPPING_MAX_ATTEMPTS}"); do
+          HTTP_API_ID=$(aws apigatewayv2 get-api-mappings \
+            --domain-name "${DEPLOYMENT_DOMAIN}" \
+            --query 'Items[0].ApiId' \
+            --output text 2>/dev/null || echo "")
+          if [ -n "$HTTP_API_ID" ] && [ "$HTTP_API_ID" != "None" ]; then
+            break
+          fi
+          if [ "${ATTEMPT}" -lt "${API_MAPPING_MAX_ATTEMPTS}" ]; then
+            echo "  No mapping for ${DEPLOYMENT_DOMAIN} yet (attempt ${ATTEMPT}/${API_MAPPING_MAX_ATTEMPTS}); the api deploy may still be publishing it. Retrying in ${API_MAPPING_SLEEP_SECONDS}s."
+            sleep "${API_MAPPING_SLEEP_SECONDS}"
+          fi
+        done
 
         if [ -z "$HTTP_API_ID" ] || [ "$HTTP_API_ID" = "None" ]; then
-          echo "ERROR: No API Gateway mapping found for domain ${DEPLOYMENT_DOMAIN}" >&2
+          echo "ERROR: No API Gateway mapping found for domain ${DEPLOYMENT_DOMAIN} after ${API_MAPPING_MAX_ATTEMPTS} attempts." >&2
           exit 1
         fi
         echo "Found HTTP API ID: ${HTTP_API_ID}"
