@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-49fd9b3** (the merge of PR #179). Its `destroy-previous` retired
-prod-f0787f7, which is the fixed destroy working in anger: the refusal passed, the stack-count
-check found stacks, and the right set went. One spare still stands at $46.88/month, prod-c78fb84,
-six stacks from the deploy that died at `deploy api`. B102 is live now, so destroying it by name is
-safe: `gh workflow run destroy-prod.yml -f deployment-name=prod-c78fb84`.
+**Prod runs deployment prod-5b2cff1** (the merge of PR #185), nine stacks, live since 18:1x UTC
+on 2026-09-11. Its `destroy-previous` retired prod-0dae63b, and no spare set stands: prod-c78fb84
+and prod-49fd9b3 are both gone. Exactly one prod set is standing for the first time in weeks, so
+any second set appearing without a deploy behind it is a leak, not a leftover.
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -53,6 +52,27 @@ it nine tests fail on a missing file that has nothing to do with the change.
   that fires nightly on our own missing grants is how a real unauthorized call gets ignored.
   **Source**: issue #181; CloudTrail `prod-env-cloud-trail`, 2026-09-11. **Owner**: Claude Code.
   **Model**: Sonnet.
+- [ ] **B120. The self-destruct leaves an HmrcItsaStack behind on every ci set.** `ci-claudd608`
+  and `ci-clauddb3b` each have every app stack in `DELETE_COMPLETE` except
+  `{deployment}-app-HmrcItsaStack`, which still stands in `CREATE_COMPLETE`. The deletions fall
+  about two hours after each set's creation, which is `SelfDestructStack` firing rather than
+  `destroy-ci.yml`'s cron, and both destroy workflows do list `HmrcItsaStack` in their phase 4.
+  So the omission is in the self-destruct path's own stack list, not the workflows'. One leftover
+  stack accrues per swept ci deploy and nothing removes it. Start at
+  `infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java` and the Lambda it
+  deploys; the two standing sets are the test. **Source**: `cloudformation list-stacks` on
+  submit-ci, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B121. `deploy.yml` ignores `package-lock.json`, and nothing runs eslint.** Two paths-filter
+  holes found while verifying B119. First: `deploy.yml`'s push paths list `package.json` but not
+  `package-lock.json`, so a lockfile-only change never triggers a deploy — and a lockfile bump can
+  move shipped runtime code, as B119's `qs` does through `express` into the Lambda bundle.
+  `test.yml` lists both, which is why the tests ran and no deploy did. Second: `eslint.config.js`
+  appears in `test.yml`'s paths, but no workflow anywhere calls `npm run linting`, so the lint
+  crash below has never been seen by CI. `npm run linting` currently dies in `ts-api-utils` 2.5.0
+  reading a TypeScript internal that `typescript` 7.0.2 no longer exposes; two TypeScript versions
+  sit in the tree because `eslint-plugin-sonarjs` pins 6.0.3. Fix the filter and the resolution,
+  then make eslint run somewhere. **Source**: B119's verification, 2026-09-11. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B119. Three dependabot alerts, all fixed by a lockfile bump.** GitHub reports one high and
   one moderate on the default branch; `npm audit` finds a third. All three are transitive and
   `npm audit fix` resolves every one as a patch bump with nothing added or removed: `qs`
