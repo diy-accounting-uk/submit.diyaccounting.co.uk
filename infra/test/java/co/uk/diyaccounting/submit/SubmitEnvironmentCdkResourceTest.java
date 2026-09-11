@@ -431,6 +431,14 @@ class SubmitEnvironmentCdkResourceTest {
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0")));
 
+        Map<String, Object> listInferenceProfilesStatement = statements.stream()
+                .filter(s -> "ListTriageModelProfiles".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Allow", listInferenceProfilesStatement.get("Effect"));
+        assertEquals(List.of("bedrock:ListInferenceProfiles"), actionsOf(listInferenceProfilesStatement));
+        assertEquals("*", listInferenceProfilesStatement.get("Resource"));
+
         Map<String, Object> subscribeMarketplaceStatement = statements.stream()
                 .filter(s -> "SubscribeMarketplaceModel".equals(s.get("Sid")))
                 .findFirst()
