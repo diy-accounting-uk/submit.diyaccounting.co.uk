@@ -335,4 +335,32 @@ describe("functions/infra/selfDestruct", () => {
     expect(stackNamesSetByCdk.size).toBeGreaterThan(0);
     expect([...stackNamesReadByLambda].sort()).toEqual([...stackNamesSetByCdk].sort());
   });
+
+  it("covers every application stack, so a new stack is never left out of both sides at once", () => {
+    // Comparing the Lambda and the CDK stack to each other passes when a stack is missing from
+    // both, which is how a newly added stack would slip through. SubmitApplication is where an
+    // application stack comes into existence, so bind the deletion list to that instead.
+    const testDir = fileURLToPath(new URL(".", import.meta.url));
+    const applicationSource = readFileSync(
+      `${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`,
+      "utf8",
+    );
+    const selfDestructJsSource = readFileSync(`${testDir}/../../functions/infra/selfDestruct.js`, "utf8");
+
+    const envVarNameFor = (stackClassName) =>
+      `${stackClassName
+        .replace(/Stack$/, "")
+        .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
+        .toUpperCase()}_STACK_NAME`;
+
+    const stacksCreated = new Set(
+      [...applicationSource.matchAll(/new (\w+Stack)\(/g)].map((m) => envVarNameFor(m[1])),
+    );
+    const stackNamesReadByLambda = new Set(
+      [...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]),
+    );
+
+    expect(stacksCreated.size).toBeGreaterThan(0);
+    expect([...stacksCreated].sort()).toEqual([...stackNamesReadByLambda].sort());
+  });
 });
