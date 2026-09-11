@@ -11,10 +11,15 @@ description: Catalogue worktrees, branches, uncommitted work, PRs and review thr
 Gather the whole picture, show it, merge only what is unambiguously ready, and hand the result to
 `/watch`.
 
-**This skill merges pull requests, which `CLAUDE.md` otherwise forbids.** That prohibition holds
-everywhere else; invoking this skill is the operator granting the exception, and it extends no
-further than a PR that passes every gate below. It never pushes to `main` directly, never deletes an
-origin branch, and never rewrites history.
+**This skill is the only path by which Claude merges a pull request.** `CLAUDE.md` forbids a bare
+`gh pr merge` anywhere else, however green the checks look, because the gates below are the point: a
+merge is the one action in this repository that a later commit cannot undo. Nothing merges here that
+has not passed all of them. The skill never pushes to `main` directly, never deletes an origin
+branch, and never rewrites history.
+
+That also means a gate you cannot satisfy is a stop, not an obstacle to route around. If a PR is
+ready in every way except one the skill cannot check, say so and leave it to the operator rather
+than merging it by hand outside the skill.
 
 ## Dry-run mode
 
