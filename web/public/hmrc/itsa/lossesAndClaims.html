@@ -255,14 +255,6 @@
 
         updateDeveloperSectionVisibility();
         window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
-
-        ["broughtForwardLosses", "currentYearLosses", "previousYearsLosses", "currentYearGeneralIncome"].forEach((id) => {
-          document.getElementById(id).addEventListener("input", updateClaimSummary);
-        });
-        ["previousYearGeneralIncome", "earlyYearLosses", "terminalLosses"].forEach((id) => {
-          document.getElementById(id).addEventListener("input", updateClaimSummary);
-        });
-        document.getElementById("applyFirst").addEventListener("change", updateClaimSummary);
       }
 
       // Carry-back is refused server-side for anything but a sole trade (the sandbox's
@@ -560,6 +552,14 @@
       document.getElementById("itsaLossesLoadForm").addEventListener("submit", handleLoadFormSubmission);
       document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
       document.getElementById("typeOfBusiness").addEventListener("change", updateCarryBackVisibility);
+
+      ["broughtForwardLosses", "currentYearLosses", "previousYearsLosses", "currentYearGeneralIncome"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", updateClaimSummary);
+      });
+      ["previousYearGeneralIncome", "earlyYearLosses", "terminalLosses"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", updateClaimSummary);
+      });
+      document.getElementById("applyFirst").addEventListener("change", updateClaimSummary);
 
       document.getElementById("newSearchBtn")?.addEventListener("click", () => {
         document.getElementById("lossesResults").style.display = "none";
