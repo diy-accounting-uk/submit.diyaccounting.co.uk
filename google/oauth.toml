@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# The Google OAuth clients this repo depends on, as code. Google publishes no general API for
+# reading back a client's own configuration (id, redirect URIs) on the Google Auth Platform —
+# only IAP's brand/client resources, which produce clients this repo can't use (see
+# PLAN_GOOGLE_AS_CODE.md, "What stays manual"). scripts/google-oauth-assert.js therefore checks
+# what a live API actually exposes: each client's project brand, the sign-in client id against
+# Cognito's own copy of it, and the scopes actually granted to the YouTube client's stored
+# refresh token. redirect_uris and application_type below are a maintained record, not something
+# the script can independently verify — a console change there would go undetected until it
+# broke a real sign-in or upload.
+
+# The client behind Cognito's "Sign in with Google" identity provider. One client, shared by
+# every environment; each environment registers its own redirect URI against it and holds its
+# own client secret.
+[[client]]
+purpose = "sign_in"
+id = "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com"
+application_type = "web"
+scopes = ["email", "openid", "profile"]
+redirect_uris = [
+  "https://ci-auth.diyaccounting.co.uk/oauth2/idpresponse",
+  "https://prod-auth.diyaccounting.co.uk/oauth2/idpresponse",
+]
+
+  # Where each environment keeps its own copy of the client id, to compare against the one
+  # above. secret holds the client *secret*, never read by this script; identity_stack is the
+  # CloudFormation stack (infra/main/java/.../IdentityStack.java) whose UserPoolId and
+  # CognitoGoogleIdpId outputs locate the live Google identity provider on that environment's
+  # user pool.
+  [client.environment.ci]
+  secret = "ci/submit/google/client_secret"
+  identity_stack = "ci-env-IdentityStack"
+
+  [client.environment.prod]
+  secret = "prod/submit/google/client_secret"
+  identity_stack = "prod-env-IdentityStack"
+
+# The Desktop app client scripts/youtube-upload.js authenticates as. No id recorded yet: it has
+# never been read back out of Secrets Manager into this file (the script that created it only
+# ever writes there — see scripts/youtube-upload.js's header). Once read once — for instance
+# from `aws secretsmanager get-secret-value --secret-id prod/submit/youtube/oauth_client` — add
+# it here as `id = "..."` and scripts/google-oauth-assert.js starts checking it against the
+# secret on every run, catching a client swapped in Secrets Manager without this file changing.
+[[client]]
+purpose = "youtube_upload"
+application_type = "desktop"
+scopes = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"]
+secret = "prod/submit/youtube/oauth_client"
+
+  # The Google Auth Platform brand (OAuth consent screen) this client's project carries,
+  # confirmed from the walk-through in videos/PUBLISH.md. support_email isn't recorded: no
+  # literal address for it exists anywhere in this repo, only "the operator's own support
+  # email" as a console-time instruction, and this script won't assert against a guessed one.
+  [client.brand]
+  app_name = "DIY Accounting Submit"
+  audience = "external"

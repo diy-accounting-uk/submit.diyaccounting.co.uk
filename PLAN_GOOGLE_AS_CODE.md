@@ -346,11 +346,16 @@ that reads them. When the Lambdas work, delete the service account key, delete b
 the `ga4/service_account` row from `secrets-rotation.toml`, and delete `scripts/gcp-key-rotate.js`
 and its scheduled workflow.
 
-**12. `google/oauth.toml` and `scripts/google-oauth-assert.js`.** Record both clients as described
-above. Assert the brand through the IAP brands endpoint, the sign-in client id against each
-environment's Cognito identity provider, the YouTube client id against
-`prod/submit/youtube/oauth_client`, and the granted scopes against the file. Fail on any mismatch.
-Add the step to `google-apply.yml`.
+**12. `google/oauth.toml` and `scripts/google-oauth-assert.js` — done, narrower than drafted.**
+Both clients are recorded. The brand check runs (project number read off the client id itself,
+so nothing extra to record), and the sign-in client id is checked against each environment's live
+Cognito identity provider (`{env}-env-IdentityStack`'s `UserPoolId` and `CognitoGoogleIdpId`
+outputs). The YouTube client id and the granted-scopes check are wired but the file carries no
+`id` for that client yet — nobody has read it back out of Secrets Manager into this file, and nothing
+in this session could. `redirect_uris` and `application_type` stay a maintained record only: no
+Google API reads a non-IAP client's own configuration back, the same wall the plan's own "what
+stays manual" section already names for creating one. Added to `google-apply.yml`, after
+bigquery-sync.
 
 **13. `google/youtube.toml` and a credential check on a schedule — done.** No numeric channel id
 recorded: the YouTube Data API resolves a channel from the signed-in account itself (`channels?

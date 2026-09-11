@@ -20,7 +20,8 @@ email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
 # Google APIs the analytics scripts and the YouTube quota project need enabled on the GA4
 # project, applied by scripts/gcp-enable-apis.js. Service Usage itself is enabled on every
-# project by default and is what enables the rest.
+# project by default and is what enables the rest. iap.googleapis.com is here for its brands
+# resource (scripts/google-oauth-assert.js), not for Identity-Aware Proxy itself.
 [apis]
 services = [
   "serviceusage.googleapis.com",
@@ -31,6 +32,7 @@ services = [
   "bigquery.googleapis.com",
   "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
+  "iap.googleapis.com",
 ]
 
 # The billing budget scripts/gcp-billing-assert.js reuses (it was created by hand on the

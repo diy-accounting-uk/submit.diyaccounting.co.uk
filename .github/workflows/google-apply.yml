@@ -92,8 +92,8 @@ jobs:
           GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
       # Steps run in dependency order: APIs, then IAM roles, then billing, then GA4, then the
-      # GA4-in-BigQuery dataset. A step for a script not yet written (the OAuth assertion, the
-      # YouTube credential check) joins this list once its own work item lands.
+      # GA4-in-BigQuery dataset, then the OAuth clients. The YouTube credential check runs on
+      # its own schedule (.github/workflows/youtube-check.yml), not here.
 
       - name: Read-only inventory
         env:
@@ -151,12 +151,19 @@ jobs:
             node scripts/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
           fi
 
+      # Read-only: checks google/oauth.toml against Cognito, Secrets Manager and the Google
+      # Auth Platform brand, the same on a pull request and on a push. Nothing to apply.
+      - name: Run google-oauth-assert
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: node scripts/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# Google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log; do
+          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
