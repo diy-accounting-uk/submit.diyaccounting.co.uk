@@ -326,4 +326,23 @@ describe("hmrcVatObligationGet worker", () => {
     expect(completedCall).toBeDefined();
     expect(completedCall[0].input.ExpressionAttributeValues[":data"].obligations).toEqual(obligations);
   });
+
+  test("a record whose body is not JSON is re-thrown for SQS redelivery instead of being silently dropped", async () => {
+    const unparseable = { messageId: "msg-unparseable", body: "not json" };
+
+    let caught;
+    try {
+      await hmrcVatObligationGetWorker({ Records: [unparseable] });
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toBeDefined();
+    expect(caught.message).toContain("Failed to parse SQS message body");
+
+    expect(mockFetch).not.toHaveBeenCalled();
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    const updateCalls = mockSend.mock.calls.filter((call) => call[0] instanceof lib.UpdateCommand);
+    expect(updateCalls).toHaveLength(0);
+  });
 });
