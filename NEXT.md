@@ -243,28 +243,27 @@ it nine tests fail on a missing file that has nothing to do with the change.
   This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
   on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
   2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
-- [ ] **B116x. ITSA's first end-to-end run: the handlers work, the page does not.**
+- [ ] **B116x. Re-run the ITSA suites against a ci set that outlives them.**
   `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
   run 34651928296), the first time any ITSA journey has executed against a deployed environment.
 
-  The backend is sound, and that is the finding worth keeping. All three scenarios reached HMRC's
-  sandbox and came back `200` with real data: self-employment `XBIS12345678901` trading as
-  "Company X", uk-property `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention
-  headers validated `200 VALID_HEADERS`. The async lifecycle is correct end to end — marked
-  `processing`, HMRC answered, marked `completed`, `200` returned to the browser with the payload,
-  three times over. O34 is not implicated: nothing was refused for a missing subscription.
+  What it proved: the backend works. All three scenarios reached HMRC's sandbox and returned `200`
+  with real data — self-employment `XBIS12345678901` trading as "Company X", uk-property
+  `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention headers validated
+  `200 VALID_HEADERS`. The async lifecycle completed correctly each time: marked `processing`,
+  HMRC answered, marked `completed`, `200` returned to the browser with the payload.
 
-  The suite still failed. The page never rendered the results the API had already delivered, so
-  `page.waitForSelector` timed out after 60s on "Business Details results". A `403` on some
-  unidentified resource appears in the browser console just before each request, and after the
-  OAuth return the page logs "No pending business details request found". So the defect is in the
-  page or in the suite's selectors, exactly where B116 predicted it would be, and not in the
-  handlers.
+  Why it still failed: the deployment was destroyed underneath the running test.
+  `ci-claud63b8-app-OpsStack` was deleted at 22:03:16, two seconds after the third HMRC response,
+  and the remaining eight stacks went at 22:17. The set was created at 19:39 with a two-hour
+  self-destruct, so it was already twenty minutes past its window when the suite was dispatched.
+  The browser `403`s and the S3 `AccessDenied` page in `test-failed-2.png` are the web tier
+  disappearing. No page defect is implicated and none should be assumed.
 
-  Next: identify the 403's URL, then decide whether the page fails to bind the completed result or
-  the test waits on the wrong id. Run the other four suites after that — they were never reached.
-  **Source**: probe-test run 34651928296; `/aws/lambda/ci-claud63b8-app-hmrc-itsa-business-details-get`.
-  **Owner**: Claude Code. **Model**: Sonnet.
+  So the suite has still never completed a clean run. Deploy a ci set, check its remaining life
+  before dispatching, then run all five suites against it while it is comfortably inside its
+  window. **Source**: probe-test run 34651928296; CloudFormation deletion times for
+  `ci-claud63b8`. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
