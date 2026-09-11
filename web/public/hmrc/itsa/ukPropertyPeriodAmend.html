@@ -93,19 +93,32 @@
               <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
             </div>
 
-            <div class="form-group">
+            <div id="submissionIdGroup" class="form-group">
               <label for="submissionId">Submission ID</label>
               <p id="submissionId-hint" class="hint">From the Period Summaries list.</p>
               <input type="text" id="submissionId" name="submissionId" required aria-describedby="submissionId-hint" />
             </div>
 
-            <div class="form-group">
+            <div id="loadCurrentTotalGroup" class="form-group" style="display: none">
+              <button type="button" id="loadCurrentTotalBtn" class="secondary-button">Load current total from HMRC</button>
+              <p class="hint">
+                This tax year reports one running total rather than a set of submissions to amend. Load it before editing it
+                to the new total.
+              </p>
+            </div>
+
+            <div id="propertyTypeGroup" class="form-group">
               <label for="propertyType">Property type</label>
               <select id="propertyType" name="propertyType">
                 <option value="ukNonFhlProperty">UK property</option>
                 <option value="ukFhlProperty">UK furnished holiday letting</option>
               </select>
             </div>
+
+            <p id="cumulativeMoneyNote" class="hint" style="display: none">
+              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just
+              this quarter.
+            </p>
 
             <div class="form-group">
               <label for="periodAmount">Rental income</label>
@@ -190,6 +203,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
@@ -197,6 +211,43 @@
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script>
+      // In a cumulative year (2025-26 onwards) there is no submissionId to address - the PUT
+      // amends the year's one running total - furnished holiday lettings no longer exist as a
+      // property type, and there is a current total worth loading first. Below the boundary
+      // every field behaves as it always has.
+      function updateSubmissionModelUI() {
+        const taxYearValue = document.getElementById("taxYear").value.trim();
+        const submissionIdGroup = document.getElementById("submissionIdGroup");
+        const submissionIdInput = document.getElementById("submissionId");
+        const propertyTypeGroup = document.getElementById("propertyTypeGroup");
+        const cumulativeMoneyNote = document.getElementById("cumulativeMoneyNote");
+        const periodAmountHint = document.getElementById("periodAmount-hint");
+        const loadCurrentTotalGroup = document.getElementById("loadCurrentTotalGroup");
+
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYearValue) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYearValue) === "cumulative";
+
+        submissionIdGroup.style.display = isCumulative ? "none" : "block";
+        submissionIdInput.required = !isCumulative;
+        propertyTypeGroup.style.display = isCumulative ? "none" : "block";
+
+        cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
+        ["periodAmount", "otherIncome", "repairsAndMaintenance", "otherExpenses"].forEach((fieldId) => {
+          const label = document.querySelector(`label[for="${fieldId}"]`);
+          if (!label) return;
+          const baseText = label.dataset.baseLabel || label.textContent;
+          label.dataset.baseLabel = baseText;
+          label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
+        });
+        periodAmountHint.textContent = isCumulative
+          ? "The corrected total rent and other income for the tax year so far."
+          : "The corrected rent and other income received for this period.";
+
+        loadCurrentTotalGroup.style.display = isCumulative ? "block" : "none";
+      }
+
       function hideSearchCriteria() {
         const container = document.getElementById("searchCriteriaContainer");
         const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
@@ -257,12 +308,155 @@
 
       function handleOAuthCallback() {
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
-        if (accessToken) {
+        if (!accessToken) return;
+        if (sessionStorage.getItem("pendingUkPropertyLoadTotalRequest")) {
+          continueLoadCurrentTotal();
+        } else {
           continuePeriodAmend();
         }
       }
 
+      // Fetches the cumulative model's single running total for the tax year, the starting
+      // point a customer edits to reach the new total, rather than a blank amend form.
+      async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
+        const params = new URLSearchParams({ nino, businessId, taxYear });
+        const govClientHeaders = await getGovClientHeaders();
+
+        const requestHeaders = {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          ...govClientHeaders,
+        };
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        if (hmrcAccount) {
+          requestHeaders["hmrcAccount"] = hmrcAccount;
+        }
+
+        const response = await window.authorizedFetch(`/api/v1/hmrc/itsa/uk-property/period?${params}`, {
+          method: "GET",
+          headers: {
+            ...requestHeaders,
+            "x-wait-time-ms": "0",
+          },
+          pollPendingMessage: "Still processing...",
+          pollSuccessMessage: "Current total loaded.",
+          pollErrorMessage: "Failed to load the current total.",
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          const error = new Error(result.message || "Failed to load the current total");
+          error.status = response.status;
+          throw error;
+        }
+        return result;
+      }
+
+      function applyCurrentTotal(periodSummary) {
+        const property = periodSummary?.ukProperty || {};
+        const income = property.income || {};
+        const expenses = property.expenses || {};
+        if (income.periodAmount !== undefined) document.getElementById("periodAmount").value = income.periodAmount;
+        if (income.otherIncome !== undefined) document.getElementById("otherIncome").value = income.otherIncome;
+        if (expenses.repairsAndMaintenance !== undefined) document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
+        if (expenses.other !== undefined) document.getElementById("otherExpenses").value = expenses.other;
+        showStatus("Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
+      }
+
+      async function continueLoadCurrentTotal() {
+        try {
+          const accessToken = sessionStorage.getItem("hmrcAccessToken");
+          const pendingRequest = JSON.parse(sessionStorage.getItem("pendingUkPropertyLoadTotalRequest") || "null");
+          if (!pendingRequest) return;
+
+          showLoading();
+          hideStatus();
+
+          const result = await fetchCurrentTotal(pendingRequest.nino, pendingRequest.businessId, pendingRequest.taxYear, accessToken);
+          applyCurrentTotal(result);
+
+          sessionStorage.removeItem("currentActivity");
+          sessionStorage.removeItem("pendingUkPropertyLoadTotalRequest");
+          sessionStorage.removeItem("oauth_state");
+        } catch (error) {
+          if (error.status === 404) {
+            showStatus("HMRC has no total on file yet for this tax year.", "info");
+          } else if (error.status === 401) {
+            sessionStorage.removeItem("hmrcAccessToken");
+            sessionStorage.removeItem("hmrcTokenScope");
+            showStatus("Access token expired. Please try loading the total again.", "error");
+          } else {
+            showStatus(`Failed to load the current total: ${error.message}`, "error");
+          }
+          sessionStorage.removeItem("pendingUkPropertyLoadTotalRequest");
+          sessionStorage.removeItem("oauth_state");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function handleLoadCurrentTotal() {
+        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const businessId = document.getElementById("businessId").value.trim();
+        const taxYear = document.getElementById("taxYear").value.trim();
+
+        if (!nino || !businessId || !taxYear) {
+          showStatus("Enter the National Insurance number, business ID and tax year first.", "error");
+          return;
+        }
+
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
+
+        if (!scopeSufficient) {
+          if (accessToken && window.hmrcScopeCheck) window.hmrcScopeCheck.clearHmrcToken();
+          try {
+            showLoading();
+            showStatus("Initiating HMRC authentication...", "info");
+
+            const state = generateRandomState();
+            sessionStorage.setItem("oauth_state", state);
+            sessionStorage.setItem("pendingUkPropertyLoadTotalRequest", JSON.stringify({ nino, businessId, taxYear }));
+            sessionStorage.setItem("currentActivity", `${location.pathname}`);
+
+            const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "read:self-assessment";
+            const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+            const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+
+            showStatus(`Redirecting to HMRC for authentication at ${authResponseUrl}...`, "info");
+            try {
+              window.__correlation?.prepareRedirect?.();
+            } catch {}
+            window.location.href = authResponseUrl;
+          } catch (error) {
+            showStatus(`Authentication failed: ${error.message}`, "error");
+            hideLoading();
+          }
+        } else {
+          try {
+            showLoading();
+            hideStatus();
+            const result = await fetchCurrentTotal(nino, businessId, taxYear, accessToken);
+            applyCurrentTotal(result);
+          } catch (error) {
+            if (error.status === 404) {
+              showStatus("HMRC has no total on file yet for this tax year.", "info");
+            } else {
+              showStatus(`Failed to load the current total: ${error.message}`, "error");
+            }
+          } finally {
+            hideLoading();
+          }
+        }
+      }
+
       function readAmendData(source) {
+        const taxYear = (source.taxYear || "").trim();
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
+
         const income = {};
         if (source.periodAmount !== "" && source.periodAmount !== undefined) income.periodAmount = Number(source.periodAmount);
         if (source.otherIncome !== "" && source.otherIncome !== undefined) income.otherIncome = Number(source.otherIncome);
@@ -275,10 +469,19 @@
         const amendData = {
           nino: (source.nino || "").trim().toUpperCase(),
           businessId: (source.businessId || "").trim(),
-          taxYear: (source.taxYear || "").trim(),
-          submissionId: (source.submissionId || "").trim(),
+          taxYear,
+          submissionId: (source.submissionId || "").trim() || undefined,
         };
-        amendData[source.propertyType] = { income, expenses };
+
+        // Furnished holiday lettings ended 5 April 2025, so the cumulative model (2025-26
+        // onwards) carries one flat income/expenses pair rather than the dated model's
+        // ukFhlProperty/ukNonFhlProperty split by the customer's chosen property type.
+        if (isCumulative) {
+          amendData.income = income;
+          amendData.expenses = expenses;
+        } else {
+          amendData[source.propertyType] = { income, expenses };
+        }
         return amendData;
       }
 
@@ -381,8 +584,18 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!amendData.nino || !amendData.businessId || !amendData.taxYear || !amendData.submissionId) {
-          showStatus("Please fill in the National Insurance number, business ID, tax year and submission ID.", "error");
+        if (!amendData.nino || !amendData.businessId || !amendData.taxYear) {
+          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
+          return;
+        }
+
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(amendData.taxYear) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(amendData.taxYear) === "cumulative";
+
+        if (!isCumulative && !amendData.submissionId) {
+          showStatus("Please fill in the submission ID.", "error");
           return;
         }
 
@@ -470,10 +683,15 @@
         e.target.value = e.target.value.toUpperCase();
       });
 
+      document.getElementById("taxYear").addEventListener("input", updateSubmissionModelUI);
+
+      document.getElementById("loadCurrentTotalBtn")?.addEventListener("click", handleLoadCurrentTotal);
+
       document.getElementById("itsaUkPropertyPeriodAmendForm").addEventListener("submit", handleFormSubmission);
 
       document.addEventListener("DOMContentLoaded", function () {
         initializePage();
+        updateSubmissionModelUI();
         handleOAuthCallback();
       });
     </script>

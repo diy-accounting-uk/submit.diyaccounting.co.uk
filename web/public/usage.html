@@ -66,6 +66,8 @@
           <button type="button" id="refreshUsageBtn" class="btn" style="min-width: 140px">Refresh</button>
         </div>
 
+        <div id="itsaYearCostSummary" style="display: none; margin-top: 1em; text-align: left" class="hint"></div>
+
         <div style="margin-top: 2em; text-align: left">
           <h3>Token Sources</h3>
           <table id="tokenSourcesTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
@@ -467,10 +469,31 @@
         renderBrowserStorage();
       });
 
+      // Mirrors the dashboard's own "This year costs N tokens" line (D6), read from the same
+      // sessionStorage key the dashboard's business picker writes, so the figure only ever gets
+      // computed in one place. Absent when the customer has not used the ITSA business picker
+      // this session - not every visitor to this page has.
+      function renderItsaYearCostSummary() {
+        const summaryEl = document.getElementById("itsaYearCostSummary");
+        let stored = null;
+        try {
+          stored = JSON.parse(sessionStorage.getItem("itsaYearTokenCost") || "null");
+        } catch (e) {
+          stored = null;
+        }
+        if (!stored || !stored.yearTokens) {
+          summaryEl.style.display = "none";
+          return;
+        }
+        summaryEl.textContent = `Your ITSA year costs ${stored.yearTokens} tokens for the ${stored.businessCount} business${stored.businessCount === 1 ? "" : "es"} you picked on the dashboard.`;
+        summaryEl.style.display = "block";
+      }
+
       function initPage() {
         checkAuthStatus();
         loadUsage();
         renderBrowserStorage();
+        renderItsaYearCostSummary();
       }
 
       if (window.__submitReady__) {

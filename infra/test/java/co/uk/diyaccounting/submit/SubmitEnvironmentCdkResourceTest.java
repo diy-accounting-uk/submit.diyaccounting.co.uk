@@ -85,8 +85,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 87);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 40);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 99);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 46);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -430,6 +430,14 @@ class SubmitEnvironmentCdkResourceTest {
                 "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 "arn:aws:bedrock:*:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0")));
+
+        Map<String, Object> listInferenceProfilesStatement = statements.stream()
+                .filter(s -> "ListTriageModelProfiles".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Allow", listInferenceProfilesStatement.get("Effect"));
+        assertEquals(List.of("bedrock:ListInferenceProfiles"), actionsOf(listInferenceProfilesStatement));
+        assertEquals("*", listInferenceProfilesStatement.get("Resource"));
 
         Map<String, Object> subscribeMarketplaceStatement = statements.stream()
                 .filter(s -> "SubscribeMarketplaceModel".equals(s.get("Sid")))

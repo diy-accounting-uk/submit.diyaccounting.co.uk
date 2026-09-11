@@ -70,6 +70,30 @@ public class HmrcItsaStack extends Stack {
     public Function hmrcItsaBsasUkPropertyAdjustPostLambda;
     public ILogGroup hmrcItsaBsasUkPropertyAdjustPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcItsaLossesAndClaimsGetLambdaProps;
+    public Function hmrcItsaLossesAndClaimsGetLambda;
+    public ILogGroup hmrcItsaLossesAndClaimsGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaLossesAndClaimsPutLambdaProps;
+    public Function hmrcItsaLossesAndClaimsPutLambda;
+    public ILogGroup hmrcItsaLossesAndClaimsPutLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaLossesAndClaimsDeleteLambdaProps;
+    public Function hmrcItsaLossesAndClaimsDeleteLambda;
+    public ILogGroup hmrcItsaLossesAndClaimsDeleteLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaTaxLiabilityAdjustmentsGetLambdaProps;
+    public Function hmrcItsaTaxLiabilityAdjustmentsGetLambda;
+    public ILogGroup hmrcItsaTaxLiabilityAdjustmentsGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaTaxLiabilityAdjustmentsPutLambdaProps;
+    public Function hmrcItsaTaxLiabilityAdjustmentsPutLambda;
+    public ILogGroup hmrcItsaTaxLiabilityAdjustmentsPutLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaProps;
+    public Function hmrcItsaTaxLiabilityAdjustmentsDeleteLambda;
+    public ILogGroup hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -182,6 +206,42 @@ public class HmrcItsaStack extends Stack {
                 this,
                 "ImportedHmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA losses and claims GET async request table
+        ITable hmrcItsaLossesAndClaimsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaLossesAndClaimsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA losses and claims PUT async request table
+        ITable hmrcItsaLossesAndClaimsPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaLossesAndClaimsPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA losses and claims DELETE async request table
+        ITable hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaLossesAndClaimsDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA tax liability adjustments GET async request table
+        ITable hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA tax liability adjustments PUT async request table
+        ITable hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA tax liability adjustments DELETE async request table
+        ITable hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName);
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
@@ -825,6 +885,493 @@ public class HmrcItsaStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaBsasUkPropertyAdjustPostLambda.getFunctionName());
 
+        // ITSA losses and claims GET (retrieve)
+        var itsaLossesAndClaimsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaLossesAndClaimsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaLossesAndClaimsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaCustomAuthorizer)
+                        .environment(itsaLossesAndClaimsGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaLossesAndClaimsGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaLossesAndClaimsGetLambdaProps = hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaLossesAndClaimsGetLambda = hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaLossesAndClaimsGetLambdaLogGroup = hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaLossesAndClaimsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA losses and claims retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaLossesAndClaimsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaHandler);
+
+        // Grant the ITSA losses and claims retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(this.hmrcItsaLossesAndClaimsGetLambda, hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaLossesAndClaimsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaLossesAndClaimsGetLambda.getFunctionName());
+
+        // ITSA losses and claims PUT (create and amend)
+        var itsaLossesAndClaimsPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_LOSSES_AND_CLAIMS_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaLossesAndClaimsPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaLossesAndClaimsPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaCustomAuthorizer)
+                        .environment(itsaLossesAndClaimsPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaLossesAndClaimsPutLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaLossesAndClaimsPutLambdaProps = hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaLossesAndClaimsPutLambda = hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaLossesAndClaimsPutLambdaLogGroup = hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaLossesAndClaimsPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA losses and claims submission with ingestHandler %s and worker %s",
+                this.hmrcItsaLossesAndClaimsPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaHandler);
+
+        // Grant the ITSA losses and claims submission Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(this.hmrcItsaLossesAndClaimsPutLambda, hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaLossesAndClaimsPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaLossesAndClaimsPutLambda.getFunctionName());
+
+        // ITSA losses and claims DELETE
+        var itsaLossesAndClaimsDeleteLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaCustomAuthorizer)
+                        .environment(itsaLossesAndClaimsDeleteLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaLossesAndClaimsDeleteLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaLossesAndClaimsDeleteLambdaProps = hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.apiProps;
+        this.hmrcItsaLossesAndClaimsDeleteLambda = hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaLossesAndClaimsDeleteLambdaLogGroup = hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaLossesAndClaimsDeleteLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA losses and claims deletion with ingestHandler %s and worker %s",
+                this.hmrcItsaLossesAndClaimsDeleteLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaHandler,
+                props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaHandler);
+
+        // Grant the ITSA losses and claims deletion Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(this.hmrcItsaLossesAndClaimsDeleteLambda, hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaLossesAndClaimsDeleteLambda.getFunctionName());
+
+        // ITSA tax liability adjustments GET (retrieve)
+        var itsaTaxLiabilityAdjustmentsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetLambdaCustomAuthorizer)
+                        .environment(itsaTaxLiabilityAdjustmentsGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaTaxLiabilityAdjustmentsGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaProps = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambda = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaLogGroup = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA tax liability adjustments retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaTaxLiabilityAdjustmentsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaHandler);
+
+        // Grant the ITSA tax liability adjustments retrieval Lambda and its worker permission to access DynamoDB
+        // Bundles Table
+        List.of(
+                        this.hmrcItsaTaxLiabilityAdjustmentsGetLambda,
+                        hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaTaxLiabilityAdjustmentsGetLambda.getFunctionName());
+
+        // ITSA tax liability adjustments PUT (create and amend)
+        var itsaTaxLiabilityAdjustmentsPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutLambdaCustomAuthorizer)
+                        .environment(itsaTaxLiabilityAdjustmentsPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaTaxLiabilityAdjustmentsPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaProps = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambda = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaLogGroup = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA tax liability adjustments submission with ingestHandler %s and worker %s",
+                this.hmrcItsaTaxLiabilityAdjustmentsPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaHandler);
+
+        // Grant the ITSA tax liability adjustments submission Lambda and its worker permission to access DynamoDB
+        // Bundles Table
+        List.of(
+                        this.hmrcItsaTaxLiabilityAdjustmentsPutLambda,
+                        hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaTaxLiabilityAdjustmentsPutLambda.getFunctionName());
+
+        // ITSA tax liability adjustments DELETE
+        var itsaTaxLiabilityAdjustmentsDeleteLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_DELETE_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaCustomAuthorizer)
+                        .environment(itsaTaxLiabilityAdjustmentsDeleteLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaTaxLiabilityAdjustmentsDeleteLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaProps =
+                hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.apiProps;
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda = hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaLogGroup =
+                hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA tax liability adjustments deletion with ingestHandler %s and worker %s",
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler,
+                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaHandler);
+
+        // Grant the ITSA tax liability adjustments deletion Lambda and its worker permission to access DynamoDB
+        // Bundles Table
+        List.of(
+                        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda,
+                        hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda.getFunctionName());
+
         Lambda.stackHealthAlarm(
                 this,
                 props.resourceNamePrefix(),
@@ -837,7 +1384,13 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyAnnualGetLambdaUrlOrigin,
                         hmrcItsaUkPropertyAnnualPutLambdaUrlOrigin,
                         hmrcItsaBsasUkPropertyGetLambdaUrlOrigin,
-                        hmrcItsaBsasUkPropertyAdjustPostLambdaUrlOrigin));
+                        hmrcItsaBsasUkPropertyAdjustPostLambdaUrlOrigin,
+                        hmrcItsaLossesAndClaimsGetLambdaUrlOrigin,
+                        hmrcItsaLossesAndClaimsPutLambdaUrlOrigin,
+                        hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin,
+                        hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin,
+                        hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin,
+                        hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin));
 
         infof("HmrcItsaStack %s created successfully for %s", id, props.deploymentName());
     }

@@ -860,6 +860,15 @@ public class ObservabilityStack extends Stack {
                                 .formatted(this.getAccount())))
                 .build());
 
+        // ListInferenceProfiles is how the triage agent resolves the model it then invokes above,
+        // and Bedrock gives it no ARN to scope to (it takes no resource identifier at all) — the
+        // wildcard resource here is that action's only form, not an oversight.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ListTriageModelProfiles")
+                .actions(List.of("bedrock:ListInferenceProfiles"))
+                .resources(List.of("*"))
+                .build());
+
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ApplyOutputGuardrail")
                 .actions(List.of("bedrock:ApplyGuardrail"))

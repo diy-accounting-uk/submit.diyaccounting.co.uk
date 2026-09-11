@@ -1159,6 +1159,219 @@ export async function postFinalDeclaration(
   return responseJson;
 }
 
+/**
+ * Retrieve a business's losses and claims for a tax year from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing losses and claims
+ */
+export async function getLossesAndClaims(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/losses-and-claims?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve losses and claims. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Create or amend a business's losses and claims for a tax year with HMRC.
+ * @param {object} lossesDetails - { nino, businessId, taxYear, typeOfBusiness, losses, claims, suspendTemporalValidations }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putLossesAndClaims(
+  lossesDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/losses-and-claims";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: lossesDetails.nino,
+    businessId: lossesDetails.businessId,
+    taxYear: lossesDetails.taxYear,
+    typeOfBusiness: lossesDetails.typeOfBusiness,
+    runFraudPreventionHeaderValidation,
+    losses: lossesDetails.losses,
+    claims: lossesDetails.claims,
+    suspendTemporalValidations: lossesDetails.suspendTemporalValidations,
+  });
+
+  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to save losses and claims. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve a person's tax liability adjustments for a tax year from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing carryBackLossesDecrease and taxRefundedOrSetOff
+ */
+export async function getTaxLiabilityAdjustments(
+  nino,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/tax-liability-adjustments?${params}`;
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+
+  const response = await authorizedFetch(url, { method: "GET", headers });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to retrieve tax liability adjustments. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
+/**
+ * Create or amend a person's tax liability adjustments for a tax year with HMRC.
+ * @param {object} adjustmentsDetails - { nino, taxYear, carryBackLossesDecrease, suspendTemporalValidations }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putTaxLiabilityAdjustments(
+  adjustmentsDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const url = "/api/v1/hmrc/itsa/tax-liability-adjustments";
+
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario) headers["Gov-Test-Scenario"] = testScenario;
+
+  const body = JSON.stringify({
+    nino: adjustmentsDetails.nino,
+    taxYear: adjustmentsDetails.taxYear,
+    runFraudPreventionHeaderValidation,
+    carryBackLossesDecrease: adjustmentsDetails.carryBackLossesDecrease,
+    suspendTemporalValidations: adjustmentsDetails.suspendTemporalValidations,
+  });
+
+  const response = await authorizedFetch(url, { method: "PUT", headers, body });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage ||
+        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    const message = `Failed to save tax liability adjustments. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
+    console.error(message);
+    throw new Error(message);
+  }
+  return responseJson;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.submitVat = submitVat;
@@ -1180,4 +1393,8 @@ if (typeof window !== "undefined") {
   window.triggerCalculation = triggerCalculation;
   window.getCalculation = getCalculation;
   window.postFinalDeclaration = postFinalDeclaration;
+  window.getLossesAndClaims = getLossesAndClaims;
+  window.putLossesAndClaims = putLossesAndClaims;
+  window.getTaxLiabilityAdjustments = getTaxLiabilityAdjustments;
+  window.putTaxLiabilityAdjustments = putTaxLiabilityAdjustments;
 }

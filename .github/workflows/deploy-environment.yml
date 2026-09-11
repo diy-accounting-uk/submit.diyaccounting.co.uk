@@ -68,6 +68,9 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/BillingWebhookStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/**'
+      # The view SQL is read into the stack at synth by BusinessViews.loadResourceText, so a
+      # change to a .sql file changes the deployed view and has to redeploy the stack.
+      - 'infra/main/resources/analytics/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStack.java'

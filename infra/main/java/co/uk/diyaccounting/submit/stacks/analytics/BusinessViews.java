@@ -5,24 +5,36 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
-import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.CustomResource;
+import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
-import software.amazon.awscdk.customresources.AwsCustomResource;
-import software.amazon.awscdk.customresources.AwsSdkCall;
-import software.amazon.awscdk.customresources.PhysicalResourceId;
+import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.athena.CfnNamedQuery;
 import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.Policy;
+import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
+import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.lambda.Architecture;
+import software.amazon.awscdk.services.lambda.Code;
+import software.amazon.awscdk.services.lambda.Function;
+import software.amazon.awscdk.services.lambda.Runtime;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.IBucket;
+import software.amazon.awscdk.services.s3.assets.AssetOptions;
 import software.constructs.Construct;
 
 /**
@@ -30,10 +42,19 @@ import software.constructs.Construct;
  * by {@code activity_events_all} and/or the {@code dynamo_*} and {@code stripe_*} catalog
  * tables, never the raw sources directly.
  *
- * <p>Created the same way {@code AnalyticsStack} creates {@code activity_events_all}: SQL lives
- * in the repo, and a one-shot {@link AwsCustomResource} runs {@code CREATE OR REPLACE VIEW} at
- * deploy time so a redeploy is idempotent. A {@link CfnNamedQuery} per view keeps the same SQL
- * one click away in the console.
+ * <p>SQL lives in the repo, and one shared {@link Provider}-backed {@link CustomResource} per view
+ * runs {@code CREATE OR REPLACE VIEW} at deploy time so a redeploy is idempotent. A {@link
+ * CfnNamedQuery} per view keeps the same SQL one click away in the console.
+ *
+ * <p>Unlike {@code AnalyticsStack}'s own view ({@code activity_events_all}, created with a plain
+ * {@code AwsCustomResource} around {@code Athena.startQueryExecution}), the resource here waits
+ * for the query to actually finish. {@code startQueryExecution} returns as soon as the query is
+ * submitted, not once it completes, so an {@code AwsCustomResource} around it alone marks
+ * CloudFormation successful the instant the query starts — a {@code CREATE OR REPLACE VIEW} that
+ * fails afterwards leaves the stack green and the view silently missing from the catalog. See
+ * {@code app/functions/analytics/createView.mjs} for the onEvent/isComplete handler pair that
+ * polls {@code GetQueryExecution} to a terminal state and fails loudly, carrying Athena's {@code
+ * StateChangeReason}, on anything but {@code SUCCEEDED}.
  *
  * <p>The caller owns ordering: every view resource here must depend on the Glue database, the
  * Athena workgroup and the catalog tables it reads from — see the class Javadoc on {@link
@@ -147,14 +168,14 @@ public class BusinessViews extends Construct {
                     List.of("v_cost_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
-    public final List<AwsCustomResource> viewResources = new ArrayList<>();
+    public final List<CustomResource> viewResources = new ArrayList<>();
 
     /**
-     * Every view's {@link AwsCustomResource}, by {@link ViewDefinition#name()}, so a caller can
-     * add an edge onto the one view that actually reads a table it owns rather than every view
+     * Every view's {@link CustomResource}, by {@link ViewDefinition#name()}, so a caller can add
+     * an edge onto the one view that actually reads a table it owns rather than every view
      * unconditionally.
      */
-    public final Map<String, AwsCustomResource> viewResourcesByName = new java.util.LinkedHashMap<>();
+    public final Map<String, CustomResource> viewResourcesByName = new java.util.LinkedHashMap<>();
 
     @Value.Immutable
     public interface BusinessViewsProps {
@@ -182,18 +203,25 @@ public class BusinessViews extends Construct {
         var catalogArn = glueCatalogArn(stack.getRegion(), stack.getAccount());
         var databaseArn = glueDatabaseArn(stack.getRegion(), stack.getAccount(), props.glueDatabaseName());
 
-        // Every view here runs on the stack's one shared AwsCustomResource provider role, and IAM
-        // caps the total size of a role's inline policies at 10240 bytes. A per-view policy repeats
-        // the same Athena, Glue and S3 statements once per view and walks that budget down until a
-        // deploy fails, so the whole family is granted once: the union of every table each view
-        // reads and writes, depended on by each view resource.
-        var providerRole = KindCdk.ensureAwsCustomResourceProviderRole(stack);
-        var viewGrant = KindCdk.grantToAwsCustomResourceProvider(
-                stack,
-                List.of(
+        // One onEvent/isComplete Lambda pair, shared by every view's CustomResource below, mirrors
+        // KindCdk.ensurePitrProvider's shape: a Provider polls isComplete instead of trusting an
+        // AwsSdkCall's immediate return, which is what lets a failed CREATE OR REPLACE VIEW fail
+        // the deployment instead of vanishing into a query that nobody waited for. Built once here
+        // rather than per-view, so its role and policy are granted once regardless of view count —
+        // the same IAM-inline-policy-budget reasoning that used to require a shared grant per view
+        // now needs no per-view policy at all.
+        var athenaViewProviderRole = Role.Builder.create(this, "AthenaViewCreatorRole")
+                .assumedBy(new ServicePrincipal("lambda.amazonaws.com"))
+                .managedPolicies(
+                        List.of(ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")))
+                .build();
+
+        var athenaViewProviderPolicy = Policy.Builder.create(this, "AthenaViewCreatorPolicy")
+                .document(PolicyDocument.Builder.create().minimize(true).build())
+                .statements(List.of(
                         PolicyStatement.Builder.create()
                                 .effect(Effect.ALLOW)
-                                .actions(List.of("athena:StartQueryExecution"))
+                                .actions(List.of("athena:StartQueryExecution", "athena:GetQueryExecution"))
                                 .resources(List.of(workGroupArn))
                                 .build(),
                         PolicyStatement.Builder.create()
@@ -217,13 +245,77 @@ public class BusinessViews extends Construct {
                                 .resources(List.of(
                                         props.resultsBucket().getBucketArn(),
                                         props.resultsBucket().getBucketArn() + "/*"))
-                                .build()));
+                                .build()))
+                .build();
+        athenaViewProviderPolicy.attachToRole(athenaViewProviderRole);
 
-        // Two AwsCustomResources with no Fn::GetAtt between them carry no implicit
-        // CloudFormation ordering, so a view that reads a sibling view (e.g.
-        // v_purchase_reconciliation_daily reading v_ga4_funnel_daily) needs an explicit
-        // dependency edge, added below once both resources exist. VIEWS is declared with every
-        // dependency earlier in the list than its dependent, so a single forward pass suffices.
+        var createViewAssetDir = createViewAssetPath();
+
+        var onEventLogGroup = LogGroup.Builder.create(this, "AthenaViewCreatorOnEventLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-AthenaViewCreatorOnEvent")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        var onEventFunction = Function.Builder.create(this, "AthenaViewCreatorOnEvent")
+                .runtime(Runtime.NODEJS_24_X)
+                .architecture(Architecture.ARM_64)
+                .handler("createView.onEvent")
+                .code(Code.fromAsset(
+                        createViewAssetDir,
+                        AssetOptions.builder()
+                                .exclude(List.of("*", "!createView.mjs"))
+                                .build()))
+                .timeout(Duration.seconds(30))
+                .role(athenaViewProviderRole)
+                .logGroup(onEventLogGroup)
+                .build();
+        // Function references the role by Ref/GetAtt, which orders it after the role, but the
+        // inline policy is a separate resource attached to that role — without this edge, the
+        // function could run before the policy attaches, the same race the old single AwsCustomResource
+        // grant guarded against.
+        onEventFunction.getNode().addDependency(athenaViewProviderPolicy);
+
+        var isCompleteLogGroup = LogGroup.Builder.create(this, "AthenaViewCreatorIsCompleteLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-AthenaViewCreatorIsComplete")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        var isCompleteFunction = Function.Builder.create(this, "AthenaViewCreatorIsComplete")
+                .runtime(Runtime.NODEJS_24_X)
+                .architecture(Architecture.ARM_64)
+                .handler("createView.isComplete")
+                .code(Code.fromAsset(
+                        createViewAssetDir,
+                        AssetOptions.builder()
+                                .exclude(List.of("*", "!createView.mjs"))
+                                .build()))
+                .timeout(Duration.seconds(30))
+                .role(athenaViewProviderRole)
+                .logGroup(isCompleteLogGroup)
+                .build();
+        isCompleteFunction.getNode().addDependency(athenaViewProviderPolicy);
+
+        var frameworkLogGroup = LogGroup.Builder.create(this, "AthenaViewCreatorFrameworkLogGroup")
+                .logGroupName("/aws/lambda/" + stack.getStackName() + "-AthenaViewCreatorFramework")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+
+        var athenaViewProvider = Provider.Builder.create(this, "AthenaViewCreatorProvider")
+                .onEventHandler(onEventFunction)
+                .isCompleteHandler(isCompleteFunction)
+                .queryInterval(Duration.seconds(5))
+                .totalTimeout(Duration.minutes(5))
+                .logGroup(frameworkLogGroup)
+                .build();
+
+        // Two CustomResources with no Fn::GetAtt between them carry no implicit CloudFormation
+        // ordering, so a view that reads a sibling view (e.g. v_purchase_reconciliation_daily
+        // reading v_ga4_funnel_daily) needs an explicit dependency edge, added below once both
+        // resources exist. VIEWS is declared with every dependency earlier in the list than its
+        // dependent, so a single forward pass suffices.
         for (ViewDefinition view : VIEWS) {
             var sql = loadResourceText("analytics/views/" + view.name() + ".sql");
             var queryName = view.name().replace('_', '-');
@@ -239,28 +331,25 @@ public class BusinessViews extends Construct {
                     .build();
             this.namedQueries.add(namedQuery);
 
-            var createViewCall = AwsSdkCall.builder()
-                    .service("Athena")
-                    .action("startQueryExecution")
-                    .parameters(Map.of(
-                            "QueryString",
+            // A new construct id (not the old AwsCustomResource's "-CreateView") on purpose: the
+            // resource type changes from Custom::AWS to Custom::AthenaView, which CloudFormation
+            // cannot update in place under the same logical id. This id names a fresh logical
+            // resource, so the next deploy removes the old one (a no-op: it never had an onDelete)
+            // and creates this one from scratch, running a real Create event that actually waits
+            // for the query to finish rather than trusting an Update that may never have run.
+            var viewResource = CustomResource.Builder.create(this, view.name() + "-View")
+                    .serviceToken(athenaViewProvider.getServiceToken())
+                    .resourceType("Custom::AthenaView")
+                    .properties(Map.of(
+                            "ViewName",
+                            view.name(),
+                            "Sql",
                             sql,
-                            "QueryExecutionContext",
-                            Map.of("Database", props.glueDatabaseName()),
+                            "Database",
+                            props.glueDatabaseName(),
                             "WorkGroup",
                             props.athenaWorkGroupName()))
-                    .physicalResourceId(PhysicalResourceId.of(view.name() + "-view"))
                     .build();
-
-            var viewResource = AwsCustomResource.Builder.create(this, view.name() + "-CreateView")
-                    .onCreate(createViewCall)
-                    .onUpdate(createViewCall)
-                    .role(providerRole)
-                    .logGroup(KindCdk.ensureAwsCustomResourceProviderLogGroup(stack))
-                    .build();
-            // AwsCustomResource adds this edge itself when it builds its own policy; the shared
-            // policy has to be depended on explicitly or a view could run before its grant lands.
-            viewResource.getNode().addDependency(viewGrant);
             this.viewResources.add(viewResource);
             this.viewResourcesByName.put(view.name(), viewResource);
 
@@ -276,24 +365,20 @@ public class BusinessViews extends Construct {
     }
 
     /**
-     * The Glue catalog, the database, and every table any view reads or writes: each view's own
-     * table plus the tables named in its {@code readTables}, de-duplicated because several views
-     * read the same source and one view reads another view's table.
+     * The Glue catalog, the database, and every table in it.
+     *
+     * <p>Not an enumeration of each view's {@code readTables}: creating a view makes Athena analyse
+     * the stored views it reads, which in turn needs read access to the tables <em>those</em> views
+     * read, transitively. {@code readTables} records direct dependencies only, so an enumerated
+     * grant denies a legitimate read one hop further down — {@code v_login_to_submission_funnel}
+     * reads {@code activity_events_all}, which reads {@code activity_events}, which the enumeration
+     * never named. The grant is already scoped to this database and already carries CreateTable and
+     * UpdateTable on it, so reading every table in the same database adds no privilege worth the
+     * fragility of keeping a transitive list by hand.
      */
     private static List<String> allTableResources(
             String region, String account, String databaseName, String catalogArn, String databaseArn) {
-        var all = new ArrayList<String>();
-        all.add(catalogArn);
-        all.add(databaseArn);
-        var tableNames = new LinkedHashSet<String>();
-        for (ViewDefinition view : VIEWS) {
-            tableNames.add(view.name());
-            tableNames.addAll(view.readTables());
-        }
-        for (String tableName : tableNames) {
-            all.add(glueTableArn(region, account, databaseName, tableName));
-        }
-        return all;
+        return List.of(catalogArn, databaseArn, glueTableArn(region, account, databaseName, "*"));
     }
 
     private static String glueTableArn(String region, String account, String databaseName, String tableName) {
@@ -310,6 +395,22 @@ public class BusinessViews extends Construct {
 
     private static String athenaWorkGroupArn(String region, String account, String workGroupName) {
         return "arn:aws:athena:%s:%s:workgroup/%s".formatted(region, account, workGroupName);
+    }
+
+    /**
+     * Resolves the createView Lambda's source directory from either the project root (Maven test)
+     * or a CDK app subdirectory such as {@code cdk-environment/} (cdk synth), matching the
+     * resolution {@code KindCdk.ensurePitrProvider} uses for {@code ensurePitr.mjs}.
+     *
+     * @return The absolute path to {@code app/functions/analytics}
+     */
+    private static String createViewAssetPath() {
+        var relativePath = "app/functions/analytics";
+        var assetDir = Paths.get(relativePath).toAbsolutePath().normalize();
+        if (!assetDir.toFile().isDirectory()) {
+            assetDir = Paths.get("../" + relativePath).toAbsolutePath().normalize();
+        }
+        return assetDir.toString();
     }
 
     private static String loadResourceText(String resourcePath) {

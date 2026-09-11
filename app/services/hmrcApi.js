@@ -510,6 +510,10 @@ export async function hmrcHttpPut(hmrcRequestUrl, hmrcRequestHeaders, govClientH
   return hmrcHttpWriteRequest("PUT", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
 }
 
+export async function hmrcHttpDelete(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, auditForUserSub) {
+  return hmrcHttpWriteRequest("DELETE", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, undefined, auditForUserSub);
+}
+
 async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
   const httpRequestTimeoutMillis = 295000;

@@ -129,4 +129,70 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await expect(page.locator("#continueToFinalDeclaration")).toBeVisible();
     await expect(page.locator("#continueToFinalDeclarationLink")).toHaveAttribute("href", /calculationId=calc-1/);
   });
+
+  // A customer with one business sees one row; a mixed customer sees one row per business, so
+  // the loss they claimed on Losses and Claims is visible actually being used.
+  test("renders one businessProfitAndLoss row per business, with the loss figures each carries", async ({ page }) => {
+    await loadPage(page);
+
+    await page.evaluate(() => {
+      window.displayCalculation(
+        {
+          metadata: { calculationId: "calc-2", calculationType: "in-year" },
+          calculation: {
+            taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+            allowancesAndDeductions: {},
+            businessProfitAndLoss: [
+              {
+                incomeSourceId: "XAIS12345678901",
+                incomeSourceType: "self-employment",
+                incomeSourceName: "A Sole Trade",
+                taxableProfit: 0,
+                totalBroughtForwardIncomeTaxLosses: 500,
+                broughtForwardIncomeTaxLossesUsed: 500,
+                adjustedIncomeTaxLoss: 0,
+                taxableProfitAfterIncomeTaxLossesDeduction: 0,
+              },
+              {
+                incomeSourceId: "XAIS12345678902",
+                incomeSourceType: "uk-property",
+                incomeSourceName: "A Rental",
+                taxableProfit: 1200,
+              },
+            ],
+          },
+          messages: { errors: [], warnings: [], info: [] },
+        },
+        "AB123456C",
+        "2023-24",
+      );
+    });
+
+    const table = page.locator("#businessProfitAndLossTable");
+    await expect(table.locator("tbody tr")).toHaveCount(2);
+    await expect(table).toContainText("A Sole Trade");
+    await expect(table).toContainText("A Rental");
+    await expect(table).toContainText("500");
+  });
+
+  test("renders nothing for the business table when the calculation carries no businesses", async ({ page }) => {
+    await loadPage(page);
+
+    await page.evaluate(() => {
+      window.displayCalculation(
+        {
+          metadata: { calculationId: "calc-3", calculationType: "in-year" },
+          calculation: {
+            taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+            allowancesAndDeductions: {},
+          },
+          messages: { errors: [], warnings: [], info: [] },
+        },
+        "AB123456C",
+        "2023-24",
+      );
+    });
+
+    await expect(page.locator("#businessProfitAndLossTable table")).toHaveCount(0);
+  });
 });
