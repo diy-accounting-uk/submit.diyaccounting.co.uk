@@ -78,7 +78,10 @@ it nine tests fail on a missing file that has nothing to do with the change.
   accounts filing and a fresh one for ITSA (business details through the quarterly update),
   both against a ci set since neither activity goes to prod, each described on screen and in
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
+  `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
+  on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
+  because the workflow toggles Cognito native auth around each run. `videos/publish.json` gets its
+  three entries once all three artifacts are checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
@@ -240,21 +243,28 @@ it nine tests fail on a missing file that has nothing to do with the change.
   This is a pricing decision first and a catalogue edit second, so it needs the operator's answer
   on the activities the plan does not already name. **Source**: the CDK spine agent's finding,
   2026-09-11. **Owner**: Operator to price, then Claude Code. **Model**: Sonnet.
-- [ ] **B116. No ITSA journey has ever run end to end.** All five ITSA behaviour suites skip on
-  every push. `deploy.yml`'s `params` job computes `skipTestScenarios=${X:-true}`, so an empty
-  dispatch input means true, and every scenario suite is gated off. The VAT suites run because they
-  are not scenario tests; the ITSA ones are. So business details, obligations, the self-employment
-  period, and both UK property suites have never executed against a deployed environment — while
-  ITSA is the strategic bet and phase 2 now has sixteen tracks shipped.
+- [ ] **B116x. ITSA's first end-to-end run: the handlers work, the page does not.**
+  `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
+  run 34651928296), the first time any ITSA journey has executed against a deployed environment.
 
-  This is a default that keeps deploys fast, not a bug, so do not flip it. Run them deliberately
-  against a standing ci set instead, one suite at a time, and fix what they find. The two property
-  suites are the ones never run at all; the other three have not run since the gate was introduced.
-  Expect the first run to fail on selectors or ids rather than on the handlers — the property suites
-  were written against the source without ever executing.
+  The backend is sound, and that is the finding worth keeping. All three scenarios reached HMRC's
+  sandbox and came back `200` with real data: self-employment `XBIS12345678901` trading as
+  "Company X", uk-property `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention
+  headers validated `200 VALID_HEADERS`. The async lifecycle is correct end to end — marked
+  `processing`, HMRC answered, marked `completed`, `200` returned to the browser with the payload,
+  three times over. O34 is not implicated: nothing was refused for a missing subscription.
 
-  **Source**: deploy run 34571638567's job list. **Owner**: Operator to dispatch the first suite,
-  then Claude Code. **Model**: Sonnet.
+  The suite still failed. The page never rendered the results the API had already delivered, so
+  `page.waitForSelector` timed out after 60s on "Business Details results". A `403` on some
+  unidentified resource appears in the browser console just before each request, and after the
+  OAuth return the page logs "No pending business details request found". So the defect is in the
+  page or in the suite's selectors, exactly where B116 predicted it would be, and not in the
+  handlers.
+
+  Next: identify the 403's URL, then decide whether the page fails to bind the completed result or
+  the test waits on the wrong id. Run the other four suites after that — they were never reached.
+  **Source**: probe-test run 34651928296; `/aws/lambda/ci-claud63b8-app-hmrc-itsa-business-details-get`.
+  **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
