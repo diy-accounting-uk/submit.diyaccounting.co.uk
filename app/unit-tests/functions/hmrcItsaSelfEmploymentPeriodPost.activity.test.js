@@ -72,6 +72,7 @@ function buildPeriodBody(overrides = {}) {
   return {
     nino: VALID_NINO,
     businessId: VALID_BUSINESS_ID,
+    taxYear: "2023-24",
     periodStartDate: "2024-04-06",
     periodEndDate: "2024-07-05",
     periodIncome: { turnover: 1000, other: 0 },
@@ -163,16 +164,15 @@ describe("hmrcItsaSelfEmploymentPeriodPost token charge, receipt and failure rep
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(1);
   });
 
-  test("a successful filing stores a receipt keyed on HMRC's periodId, carrying what HMRC returned", async () => {
-    const periodSummary = { periodId: "2024-04-06_2024-07-05" };
-    mockHmrcSuccess(mockFetch, periodSummary);
+  test("a successful filing stores a receipt keyed on HMRC's periodId, carrying the model and periodId", async () => {
+    mockHmrcSuccess(mockFetch, { periodId: "2024-04-06_2024-07-05" });
 
     await hmrcItsaSelfEmploymentPeriodPostHandler(buildInitialSubmissionEvent());
 
     const receipts = await storedReceiptItems();
     expect(receipts).toHaveLength(1);
     expect(receipts[0].receiptId.endsWith("-2024-04-06_2024-07-05")).toBe(true);
-    expect(receipts[0].receipt).toEqual(periodSummary);
+    expect(receipts[0].receipt).toEqual({ model: "dated", periodId: "2024-04-06_2024-07-05" });
     expect(receipts[0].actor).toBe("customer");
     expect(receipts[0].hashedSub).toBeDefined();
     expect(receipts[0].ttl).toBeDefined();

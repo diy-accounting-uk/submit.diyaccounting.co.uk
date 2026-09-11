@@ -271,6 +271,18 @@ describe("hmrcItsaSelfEmploymentPeriodsGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual(periods);
   });
+
+  test("returns 400 for a cumulative tax year - there is no list of period summaries to retrieve", async () => {
+    const event = buildHmrcEvent({
+      queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: "2025-26" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcItsaSelfEmploymentPeriodsGetHandler(event);
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("running total");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
 });
 
 import { workerHandler as hmrcItsaSelfEmploymentPeriodsGetWorker } from "@app/functions/hmrc/hmrcItsaSelfEmploymentPeriodsGet.js";

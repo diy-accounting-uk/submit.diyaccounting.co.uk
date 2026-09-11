@@ -20,6 +20,7 @@ import {
   UnauthorizedTokenError,
   validateHmrcAccessToken,
   hmrcHttpPost,
+  hmrcHttpPut,
   extractHmrcAccessTokenFromLambdaEvent,
   generateHmrcErrorResponseWithRetryAdvice,
   http400BadRequestFromHmrcResponse,
@@ -28,7 +29,7 @@ import {
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidNino, isValidIsoDate } from "../../lib/hmrcValidation.js";
+import { isValidNino, isValidIsoDate, isValidTaxYear, resolveItsaSubmissionModel } from "../../lib/hmrcValidation.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
@@ -105,20 +106,32 @@ function buildMoneySection(section) {
 }
 
 /**
- * Build the Self Employment Business v5.0 "Create a Self-Employment Period Summary" request
- * body. periodDates is always required; periodIncome, periodExpenses and
- * periodDisallowableExpenses are each included only when the caller entered a value for at
- * least one of their fields.
+ * Build the Self Employment Business v5.0 period summary request body, shared by the dated
+ * create (POST .../period) and the cumulative create-or-amend (PUT .../cumulative/{taxYear}).
+ *
+ * periodDates is present only when the caller supplied both periodStartDate and periodEndDate.
+ * The dated model always supplies both (HMRC identifies the period by its dates). The
+ * cumulative model supplies both only when the customer picked a quarterly obligation; an
+ * annual or latent obligation carries none, and HMRC rejects a request that sends dates it did
+ * not ask for.
+ *
+ * periodIncome, periodExpenses and periodDisallowableExpenses are each included only when the
+ * caller entered a value for at least one of their fields - and within an included section,
+ * every field the caller answered survives into the body exactly as answered, including a
+ * zero. Only a field the caller never answered is left out. HMRC's cumulative model requires
+ * this: a business with no income so far still sends `turnover: 0`, never an omitted turnover.
  * @param {Object} periodDetails - periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses
  * @returns {Object} the HMRC request body
  */
 export function buildSelfEmploymentPeriodRequestBody(periodDetails) {
-  const hmrcRequestBody = {
-    periodDates: {
+  const hmrcRequestBody = {};
+
+  if (periodDetails.periodStartDate && periodDetails.periodEndDate) {
+    hmrcRequestBody.periodDates = {
       periodStartDate: periodDetails.periodStartDate,
       periodEndDate: periodDetails.periodEndDate,
-    },
-  };
+    };
+  }
 
   const periodIncome = buildMoneySection(periodDetails.periodIncome);
   if (periodIncome) hmrcRequestBody.periodIncome = periodIncome;
@@ -171,6 +184,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   const {
     nino,
     businessId,
+    taxYear,
     periodStartDate,
     periodEndDate,
     periodIncome,
@@ -185,11 +199,29 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (!businessId) errorMessages.push("Missing businessId parameter from body");
   if (businessId && !BUSINESS_ID_PATTERN.test(businessId)) errorMessages.push("Invalid businessId format");
 
-  if (!periodStartDate) errorMessages.push("Missing periodStartDate parameter from body");
-  if (periodStartDate && !isValidIsoDate(periodStartDate)) errorMessages.push("Invalid periodStartDate format - must be YYYY-MM-DD");
+  if (!taxYear) errorMessages.push("Missing taxYear parameter from body");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
-  if (!periodEndDate) errorMessages.push("Missing periodEndDate parameter from body");
-  if (periodEndDate && !isValidIsoDate(periodEndDate)) errorMessages.push("Invalid periodEndDate format - must be YYYY-MM-DD");
+  // Which model the tax year resolves to decides whether periodStartDate/periodEndDate are
+  // required. The dated model (2024-25 and earlier) always identifies the period by its
+  // dates. The cumulative model (2025-26 and later) carries dates only for a quarterly
+  // obligation - an annual or latent one carries none - so both are optional there, but one
+  // without the other is never valid.
+  const submissionModel = taxYear && isValidTaxYear(taxYear) ? resolveItsaSubmissionModel(taxYear) : "dated";
+
+  if (submissionModel === "cumulative") {
+    if (Boolean(periodStartDate) !== Boolean(periodEndDate)) {
+      errorMessages.push("periodStartDate and periodEndDate must both be present or both be absent");
+    }
+    if (periodStartDate && !isValidIsoDate(periodStartDate)) errorMessages.push("Invalid periodStartDate format - must be YYYY-MM-DD");
+    if (periodEndDate && !isValidIsoDate(periodEndDate)) errorMessages.push("Invalid periodEndDate format - must be YYYY-MM-DD");
+  } else {
+    if (!periodStartDate) errorMessages.push("Missing periodStartDate parameter from body");
+    if (periodStartDate && !isValidIsoDate(periodStartDate)) errorMessages.push("Invalid periodStartDate format - must be YYYY-MM-DD");
+
+    if (!periodEndDate) errorMessages.push("Missing periodEndDate parameter from body");
+    if (periodEndDate && !isValidIsoDate(periodEndDate)) errorMessages.push("Invalid periodEndDate format - must be YYYY-MM-DD");
+  }
 
   // Extract HMRC account (synthetic/live) from header hmrcAccount
   const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
@@ -204,6 +236,7 @@ export function extractAndValidateParameters(event, errorMessages) {
   return {
     nino,
     businessId,
+    taxYear,
     periodStartDate,
     periodEndDate,
     // Pass through whatever the caller sent for income, expenses and disallowable expenses
@@ -265,6 +298,7 @@ export async function ingestHandler(event) {
   const {
     nino,
     businessId,
+    taxYear,
     periodStartDate,
     periodEndDate,
     periodIncome,
@@ -312,6 +346,7 @@ export async function ingestHandler(event) {
   const payload = {
     nino,
     businessId,
+    taxYear,
     periodStartDate,
     periodEndDate,
     periodIncome,
@@ -390,6 +425,7 @@ export async function ingestHandler(event) {
         const { periodSummary, hmrcResponse, hmrcResponseBody } = await createSelfEmploymentPeriod(
           payload.nino,
           payload.businessId,
+          payload.taxYear,
           {
             periodStartDate: payload.periodStartDate,
             periodEndDate: payload.periodEndDate,
@@ -421,10 +457,13 @@ export async function ingestHandler(event) {
           return resultData;
         }
 
-        const periodId = periodSummary?.periodId;
-        if (payload.userSub && periodId) {
+        // The dated create answers a periodId to key the receipt on; the cumulative
+        // create-or-amend answers nothing (204), so the receipt keys on the tax year instead.
+        // Either way a successful write gets a receipt.
+        const receiptKey = periodSummary?.periodId || payload.taxYear;
+        if (payload.userSub && receiptKey) {
           const timestamp = new Date().toISOString();
-          const receiptId = `${timestamp}-${periodId}`;
+          const receiptId = `${timestamp}-${receiptKey}`;
           await putReceipt(payload.userSub, receiptId, periodSummary, resolveActorClass());
           resultData.receiptId = receiptId;
         }
@@ -546,6 +585,7 @@ export async function workerHandler(event) {
       const { periodSummary, hmrcResponse, hmrcResponseBody } = await createSelfEmploymentPeriod(
         payload.nino,
         payload.businessId,
+        payload.taxYear,
         {
           periodStartDate: payload.periodStartDate,
           periodEndDate: payload.periodEndDate,
@@ -589,10 +629,10 @@ export async function workerHandler(event) {
         continue;
       }
 
-      const periodId = periodSummary?.periodId;
-      if (userSub && periodId) {
+      const receiptKey = periodSummary?.periodId || payload.taxYear;
+      if (userSub && receiptKey) {
         const timestamp = new Date().toISOString();
-        const receiptId = `${timestamp}-${periodId}`;
+        const receiptId = `${timestamp}-${receiptKey}`;
         await putReceipt(userSub, receiptId, periodSummary, resolveActorClass());
         result.receiptId = receiptId;
       }
@@ -665,6 +705,7 @@ function isRetryableError(error) {
 export async function createSelfEmploymentPeriod(
   nino,
   businessId,
+  taxYear,
   periodDetails,
   hmrcAccessToken,
   govClientHeaders,
@@ -692,12 +733,21 @@ export async function createSelfEmploymentPeriod(
     });
   }
 
+  // The tax year decides which HMRC operation this create actually is. 2024-25 and earlier
+  // dates the period and POSTs it as a new resource, answering 200 with a periodId. 2025-26
+  // and later has no separate create: it PUTs the year's running total to the cumulative
+  // resource, creating it if this is the first submission and amending it otherwise, and
+  // answers 204 with nothing. Same body builder either way - only the dates it carries differ.
+  const submissionModel = resolveItsaSubmissionModel(taxYear);
   const hmrcRequestBody = buildSelfEmploymentPeriodRequestBody(periodDetails);
 
-  // hmrcHttpPost, unlike hmrcHttpGet, does not prepend the HMRC base URI itself - the
-  // caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.
+  // hmrcHttpPost/hmrcHttpPut, unlike hmrcHttpGet, do not prepend the HMRC base URI themselves -
+  // the caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.
   const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
-  const hmrcRequestUrl = `${hmrcBase}/individuals/business/self-employment/${nino}/${businessId}/period`;
+  const hmrcRequestUrl =
+    submissionModel === "cumulative"
+      ? `${hmrcBase}/individuals/business/self-employment/${nino}/${businessId}/cumulative/${taxYear}`
+      : `${hmrcBase}/individuals/business/self-employment/${nino}/${businessId}/period`;
   let hmrcResponse = {};
   let hmrcResponseBody;
   /* v8 ignore start */
@@ -720,7 +770,8 @@ export async function createSelfEmploymentPeriod(
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
+    const hmrcHttpVerb = submissionModel === "cumulative" ? hmrcHttpPut : hmrcHttpPost;
+    const httpResult = await hmrcHttpVerb(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;
   }
@@ -740,5 +791,8 @@ export async function createSelfEmploymentPeriod(
     summary: "ITSA self-employment quarterly update filed",
     userSub: auditForUserSub,
   });
-  return { hmrcResponse, hmrcResponseBody, periodSummary: hmrcResponseBody, hmrcRequestUrl };
+  // Our own response says which model was used and carries the periodId only when HMRC gave
+  // one - the dated create does, the cumulative create-or-amend's 204 does not.
+  const periodSummary = { model: submissionModel, ...(hmrcResponseBody?.periodId ? { periodId: hmrcResponseBody.periodId } : {}) };
+  return { hmrcResponse, hmrcResponseBody, periodSummary, hmrcRequestUrl };
 }
