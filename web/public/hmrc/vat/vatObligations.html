@@ -25,33 +25,9 @@
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
-      <div class="header-nav">
-        <div class="header-left">
-          <a href="../../" title="Home" class="home-link">
-            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-            </svg>
-          </a>
-          <a href="../../about.html" title="About & Help" class="info-link">
-            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-            </svg>
-          </a>
-        </div>
-        <div class="auth-section">
-          <span class="entitlement-status">Activity: unrestricted</span>
-          <span class="login-status">Not logged in</span>
-          <a href="../../auth/login.html" class="login-link">Log in</a>
-        </div>
-      </div>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>VAT Obligations</h1>
       <p class="subtitle">Retrieve VAT obligations from HMRC</p>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="../../">Activities</a>
-        <a href="../../hmrc/receipt/receipts.html">Receipts</a>
-        <a href="../../bundles.html">Bundles</a>
-        <a href="../../spreadsheets.html">Spreadsheets</a>
-      </nav>
     </header>
 
     <main id="mainContent">
@@ -196,27 +172,9 @@
       </div>
     </main>
 
-    <footer>
-      <div class="footer-left">
-        <a href="#" id="viewSourceLink" style="display: none">view source</a>
-        <a id="latestTestsLink" style="display: inline" target="_blank" href="tests/index.html">tests</a>
-        <a id="apiDocsLink" style="display: inline" target="_blank" href="../../docs/api/index.html"> api </a>
-      </div>
-      <div class="footer-content">
-        <div class="footer-center">
-          <p>&copy; 2006-2026 DIY Accounting Limited</p>
-          <p>
-            Free to use.
-            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
-            under the
-            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
-              >PolyForm Internal Use License</a
-            >.
-          </p>
-        </div>
-      </div>
-    </footer>
+    <footer data-footer="activity"></footer>
 
+    <script src="../../widgets/page-chrome.js"></script>
     <script src="../../lib/env-loader.js"></script>
     <script src="../../lib/auth-url-builder.js"></script>
     <script src="../../lib/test-data-generator.js"></script>

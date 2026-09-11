@@ -208,7 +208,7 @@ would remove the need for every handler to import the adaptor module and wrap th
 
 ---
 
-## 7. HTML Header/Navigation Duplication (client-side widget approach)
+## 7. HTML Header/Navigation Duplication (client-side widget approach) — done
 
 **What**: 32 HTML files in `web/public/` contain an identical header block (~25 lines each)
 and footer block (~16 lines each). When the nav changes, all files must be updated.
