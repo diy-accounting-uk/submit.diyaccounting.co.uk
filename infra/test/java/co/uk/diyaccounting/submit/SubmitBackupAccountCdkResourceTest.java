@@ -21,6 +21,7 @@ class SubmitBackupAccountCdkResourceTest {
 
     private static final String PROD_BACKUP_ROLE = "arn:aws:iam::972912397388:role/prod-env-backup-role";
     private static final String CI_BACKUP_ROLE = "arn:aws:iam::367191799875:role/ci-env-backup-role";
+    private static final String CI_DEPLOYMENT_ROLE = "arn:aws:iam::367191799875:role/submit-ci-deployment-role";
 
     private static Template synthVaultStack() {
         App app = new App();
@@ -34,6 +35,7 @@ class SubmitBackupAccountCdkResourceTest {
                                 .build())
                         .vaultName("submit-cross-account-vault")
                         .sourceBackupRoleArns(List.of(PROD_BACKUP_ROLE, CI_BACKUP_ROLE))
+                        .ciDeploymentRoleArn(CI_DEPLOYMENT_ROLE)
                         .build());
         return Template.fromStack(stack);
     }
@@ -78,7 +80,7 @@ class SubmitBackupAccountCdkResourceTest {
     }
 
     @Test
-    void ciBackupRoleMayListDescribeAndStartRestoresFromTheVault() {
+    void ciDeploymentRoleMayListDescribeAndStartRestoresFromTheVault() {
         Template template = synthVaultStack();
 
         template.hasResourceProperties(
@@ -93,7 +95,7 @@ class SubmitBackupAccountCdkResourceTest {
                                         "Effect",
                                         "Allow",
                                         "Principal",
-                                        Map.of("AWS", CI_BACKUP_ROLE),
+                                        Map.of("AWS", CI_DEPLOYMENT_ROLE),
                                         "Action",
                                         List.of(
                                                 "backup:ListRecoveryPointsByBackupVault",
@@ -113,13 +115,34 @@ class SubmitBackupAccountCdkResourceTest {
                                         "Effect",
                                         "Allow",
                                         "Principal",
-                                        Map.of("AWS", CI_BACKUP_ROLE),
+                                        Map.of("AWS", CI_DEPLOYMENT_ROLE),
                                         "Action",
                                         List.of(
                                                 "kms:Decrypt",
                                                 "kms:DescribeKey",
                                                 "kms:GenerateDataKey",
                                                 "kms:CreateGrant"))))))))));
+    }
+
+    @Test
+    void copyInRoleIsStillJustTheBackupServiceRoleNotTheDeploymentRole() {
+        Template template = synthVaultStack();
+
+        template.hasResourceProperties(
+                "AWS::Backup::BackupVault",
+                Match.objectLike(Map.of(
+                        "AccessPolicy",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Sid",
+                                        "AllowCrossAccountCopy",
+                                        "Effect",
+                                        "Allow",
+                                        "Principal",
+                                        Map.of("AWS", List.of(PROD_BACKUP_ROLE, CI_BACKUP_ROLE)),
+                                        "Action",
+                                        "backup:CopyIntoBackupVault")))))))));
     }
 
     private static Template synthAccessStack() {
