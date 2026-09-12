@@ -36,6 +36,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B132. Every branch push this session had its deploy cancelled, and I cannot say by what.**
+  Three branches, same shape. `claude/ops-cf-vacate-race`: `deploy` 34692059976 and
+  `deploy environment` 34692059872 both cancelled within seconds of the push, and `identity-guard`
+  34692076128 cancelled too. `claude/lint-findings`: `deploy` 34692919287 and `deploy environment`
+  34692919247, both cancelled at 12:11:2x-12:11:32 — two different workflows, two different
+  concurrency groups, eleven seconds apart. Earlier, `main`'s `deploy` of `926e783d` was cancelled,
+  which was a genuine supersession by the `15112f1f` merge.
+  What is established: no workflow in this repository calls `gh run cancel`; `identity-guard` has
+  no concurrency group at all, so nothing in CI could have cancelled that one; both deploy
+  workflows set `cancel-in-progress: false`. On the lint-findings `deploy`, `wait for environment
+  deploy` ran 12:10:03 to 12:11:21 and was cancelled, then the run followed at 12:11:32.
+  Two candidates. **A person or another session**: `antonycc` hand-dispatched
+  `deploy` 34692141909 for `ops-cf-vacate-race` at 11:51:49, so something outside this session was
+  acting on these branches. **The group dropping a queued run**: with `cancel-in-progress: false`
+  GitHub keeps only the latest queued run per group and drops the older, and
+  `deploy-environment.yml`'s group is `deploy-environment-ci` — shared by every ci branch, with no
+  `wait-for-ci-deploys` guard. `deploy.yml`'s own concurrency comment describes exactly this hazard
+  and says that guard is why it does not use a shared group; `deploy-environment.yml` has the
+  hazard and no guard.
+  The API does not expose who cancelled a run. The organisation audit log does, and that is
+  operator-side, so settle it there first rather than guessing. If it is the shared group, give
+  `deploy-environment.yml` the same wait-and-queue treatment `deploy.yml` has.
+  **Source**: runs 34692059872, 34692059976, 34692076128, 34692919247, 34692919287.
+  **Owner**: Claude Code, after the operator reads the audit log. **Model**: Sonnet.
+
 - [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
   Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
   cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
