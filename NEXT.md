@@ -132,6 +132,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
   `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U.
   **Owner**: Claude Code. **Model**: Sonnet.
+  **Done on `claude/b28-board`.** `alarm-triage.yml` emits the three trailers in its commit and its
+  PR body; `agentic-lib-code.yml`'s brief now covers the PR body as well as the commit, and a
+  post-run step labels any PR it opened `origin:unattended-agent`. `agentic-lib-board.yml` was
+  already correct and opens no PR or issue; `agentic-lib-pr.yml` composes neither, so neither rule
+  reaches it. Closes on merge.
 
 
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
@@ -146,6 +151,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
   but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+  **Code complete on `claude/b28-board`.** `http403ForbiddenFromHmrcResponse` now returns
+  `http403ForbiddenResponse`; the 20 GET handlers and the 16 write handlers all reach that one
+  function. A new `hmrcErrorMessage` helper in `web/public/widgets/status-messages.js` reads
+  `error.responseBody.message` (or `errors[0].message`), used at 27 call sites across 15 ITSA and VAT
+  pages, which previously showed `result.message` and never HMRC's own text. 489 unit tests pass.
+  Remaining: prove a real 403 on a deployed set, since the handlers include live VAT endpoints, and
+  the pages' 403 path had never been exercised.
 
 
 - [ ] **B126. Document that a ci redeploy needs an explicit deployment-name.**
@@ -157,10 +169,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Operator decision, 2026-09-12: leave the derivation and the destroy step alone.** Passing an
   explicit `deployment-name` to `deploy.yml` is the intended process for a redeploy, and the ci TTL
   is configurable for a longer window.
-  So this row is documentation only: state in `CLAUDE.md` that a second deploy of the same branch
-  requires `-f deployment-name=<unique>`, and why — without it the set is destroyed and the failure
-  presents as several stack jobs failing rather than as a name collision. **Source**: deploy run
-  34672307283. **Owner**: Claude Code. **Model**: Haiku.
+  **Documented on `claude/b28-board`**, and the mechanism in this row's own evidence was wrong.
+  `deploy.yml`'s `destroy previous` job is gated `environment-name == 'prod'` and never runs for ci.
+  What tears a ci set down on a redeploy is that deployment's own `SelfDestructStack`, whose timer
+  anchors to the stack's first `CreationTime` and is not reset by the redeploy, so the original
+  timer can fire against the stacks the second deploy is updating. `CLAUDE.md` now says that and
+  gives the explicit-name dispatch. Closes on merge. **Source**: deploy run 34672307283;
+  `deploy.yml:3060`. **Owner**: Claude Code. **Model**: Haiku.
 
 
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
