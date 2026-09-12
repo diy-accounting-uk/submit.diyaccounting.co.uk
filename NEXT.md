@@ -37,6 +37,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
+  `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
+  cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
+  environment is selected and `vars.SUBMIT_ACTIONS_ROLE_ARN` — an environment-scoped variable —
+  resolves to nothing. `configure-aws-credentials` then fails with "Could not load credentials from
+  any providers", and the run shows a failed job. Seen on run 34691378970, the `main` deploy of
+  `926e783d` superseded by the `15112f1f` merge fourteen minutes later; it was cancelled at `wait
+  for environment deploy`, before `deploy api`, so nothing was part-applied.
+  The job's own comment says the row is written "regardless of how the run ended so a failed deploy
+  counts towards the failure rate rather than leaving a silent gap". That is right for a failure and
+  wrong for a supersession: a run cancelled because a newer commit arrived is not a deployment
+  failure, and it cannot write a row anyway without an environment. So skip the job when the run was
+  cancelled, or when `names` produced no environment name, and keep it running for a genuine
+  failure. Check whether the DORA panels already counted cancellations as failures before this.
+  **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
+
 - [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
   before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
   `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
