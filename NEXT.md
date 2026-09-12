@@ -264,26 +264,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
 
 
-- [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
-  reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
-  secret in ci or prod; no Lambda role is granted it. `PLAN_PASSES_V2.md` still has "Add
-  `EMAIL_HASH_SECRET` to Secrets Manager and wire to Lambdas" unchecked, so the call has always
-  failed in a deployed environment and the warn-and-carry-on path hid it. Passes now fetch the
-  secret only when a pass carries an email restriction, so the failure surfaces on those passes
-  alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
-  the secret material is an AWS write and a decision about the value, so the operator settles it,
-  then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
-  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-  **In flight on PR #191.** Both secrets now exist: `ci/submit/email-hash-secret` and
-  `prod/submit/email-hash-secret`, created 2026-09-12 11:00 BST with independent 48-byte random
-  values. The grant is on `claude/ops-email-hash-grant`: a new `EmailHashSecretHelper` mirroring
-  `SubHashSaltHelper`, applied to the four pass Lambdas that reach `passService.js` — `passGet`,
-  `passPost`, `passAdminPost`, `passGeneratePost`. `passMyPassesGet` is excluded because it does not
-  use `passService`. `./mvnw clean verify` passes, 220 tests. `test`, `identity-guard`, `CodeQL` and
-  `verify-commit-signatures` are green; `deploy` and `deploy environment` are running. Remaining:
-  the merge, then redeem an email-restricted pass on ci to prove the fetch works.
-
-## Human and machine
+- [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
+  in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
+  48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
+  reach `passService.js` — `passGet`, `passPost`, `passAdminPost`, `passGeneratePost` (PR #191,
+  merged as `926e783d`). `passMyPassesGet` is excluded because it does not use `passService`.
+  `initializeEmailHashSecret()` had never succeeded in any deployed environment, and the
+  warn-and-carry-on path hid it, so nothing has yet exercised the working path. Remaining: create
+  and redeem an email-restricted pass against ci and confirm the secret is fetched rather than
+  warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
+  **Model**: Haiku.
 
 - [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
   (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
