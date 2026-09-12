@@ -162,8 +162,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   dispatch a second run against a deliberately unfinished first and check the resume judgement and
   the `Resumed-From:` chain.
   Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
-  **O42 is done**: `AUTO_MERGE_TOKEN` and `AGENT_TOKEN` are set as repository secrets. So this row
-  is ready, in the order above. **Source**: `.github/workflows/agentic-lib-*.yml`.
+  **O42 is done** and the first dispatch already failed, which is what this row exists to find.
+  Run 34716604299, `agentic-lib-board.yml` with `write-back=false`, died at step 5
+  "Configure AWS role via GitHub OIDC": "Credentials could not be loaded". Cause: all three
+  workflows read `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` from a job that declares no
+  `environment:`, and that variable exists only on the `ci` and `prod` environments, never at
+  repository level. So it resolves to empty and the action has no role to assume. `alarm-triage.yml`
+  gets this right with `environment: ${{ needs.triage.outputs.environment-name }}`; these three
+  copied the step and not the environment. Same root cause as B130.
+  `agentic-lib-board.yml` needs more than an `environment:` line: its Part 4 reads **both** accounts,
+  so one environment cannot serve it. Decide between two jobs keyed by environment, a second assume
+  into the other account, and repo-level role ARNs for both. Also ask, per workflow, whether it
+  needs AWS at all — `/auto-merge` reads GitHub and nothing else, so `agentic-lib-pr.yml`'s OIDC
+  step may simply be surplus.
+  **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet.
 
 
