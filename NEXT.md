@@ -16,12 +16,14 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-15112f1**, nine stacks, live since the #192 merge deploy set the
-pointer at about 12:48 UTC; the apex answers 200. `prod-e6d3045` stands as the spare, nine stacks,
-because that deploy's `destroy previous` job was cancelled. `prod-40b194e` is gone. ci runs
-`ci-claudc83b`, ten stacks from 11:23. `ci-claudd44f` stands with ten stacks from 10:38.
-`ci-mainb28b` still stands with eight stacks from 2026-09-11 22:39, overdue since 00:39 and
-untouched by five `34 2,4,6,8,10,12` UTC sweeps.
+**Prod runs deployment prod-4918a0d**, nine stacks, live since the #194 merge deploy at about
+13:00 UTC; the apex answers 200, and every merge up to `4918a0d0` is on prod. `prod-e6d3045` stands
+as the spare, nine stacks, left behind when the #192 deploy's `destroy previous` job was cancelled:
+`gh workflow run destroy-prod.yml -f deployment-name=prod-e6d3045` removes it. `prod-15112f1` and
+`prod-40b194e` are gone. ci ran `ci-claudc83b` (ten stacks from 11:23), `ci-claudd44f` (ten from
+10:38) and `ci-mainb28b` (eight from 2026-09-11 22:39, overdue since 00:39 and untouched by five
+`34 2,4,6,8,10,12` UTC sweeps) when last read at 12:15 UTC. The SSO token has since expired, so a
+fresh reading needs `aws sso login --sso-session diyaccounting`.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
