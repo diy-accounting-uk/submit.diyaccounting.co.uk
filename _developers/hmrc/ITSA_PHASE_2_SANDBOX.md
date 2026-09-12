@@ -59,10 +59,13 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 
 | Phase | Call | Expected |
 |---|---|---|
-| Reset | `DELETE .../vendor-state` (first run) or `POST .../checkpoints/{id}/restore` (later runs) | `204`/`404`, or `200`/`201`/`204` |
-| Reset | `POST .../vendor-state/checkpoints` (first run only) | `201` with a checkpoint id |
-| Setup | `POST .../test-support/business/{nino}` | `201` with `businessId` |
-| Setup | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
+| Reset (later runs) | `POST .../checkpoints/{id}/restore` | `200`/`201`/`204`, reusing the saved `businessId` |
+| Reset (first run) | `DELETE .../vendor-state` | `204`/`404` |
+| Setup (first run) | `POST .../test-support/business/{nino}` | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
+| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
+| Verify | `GET .../individuals/business/details/{nino}/list` | `200` |
+| Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}` | `200` |
 | Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period` | `200`/`201`, once per open obligation HMRC returned |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
