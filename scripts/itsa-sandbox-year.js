@@ -220,6 +220,7 @@ export function buildTestBusinessRequestBody() {
     tradingType: "Other business",
     tradingName: "ITSA Sandbox Year Test Trade",
     businessAddressLineOne: "1 Test Street",
+    businessAddressPostcode: "AA1 1AA",
     businessAddressCountryCode: "GB",
   };
 }
@@ -381,26 +382,34 @@ async function main() {
   const hmrcHeaders = (apiVersion, testScenario) =>
     buildHmrcHeaders(accessToken, govClientHeaders, testScenario, randomUUID(), undefined, randomUUID(), apiVersion);
 
-  // Phase 3: reset the test user's stateful sandbox data. First run ever: wipe everything and
-  // save a checkpoint of that clean state. Every later run: restore that checkpoint, which
-  // undoes whatever the previous run created, so the business and ITSA status below always
-  // start from the same baseline.
+  // Phase 3: reset the test user's stateful sandbox data and get a business ready to file
+  // against. The checkpoint-create call answers 404 MATCHING_RESOURCE_NOT_FOUND against a NINO
+  // with no test-support data yet, so a checkpoint can only be taken after the business and
+  // ITSA status exist, not before. First run ever: wipe everything, create the business and
+  // status, then checkpoint that as the baseline. Every later run: restore that checkpoint,
+  // which brings back the same business with everything filed against it since undone, rather
+  // than creating a second business.
   let checkpointId = null;
+  let businessId = null;
+  let checkpointState = null;
   try {
-    checkpointId = readFileSync(checkpointFile, "utf8").trim() || null;
+    checkpointState = JSON.parse(readFileSync(checkpointFile, "utf8"));
   } catch {
-    checkpointId = null;
+    checkpointState = null;
   }
 
-  if (checkpointId) {
+  if (checkpointState?.checkpointId && checkpointState?.businessId) {
     await callHmrc({
       step: "vendor-state-restore",
       method: "POST",
-      url: `${sandboxBase}/individuals/self-assessment-test-support/vendor-state/checkpoints/${checkpointId}/restore`,
+      url: `${sandboxBase}/individuals/self-assessment-test-support/vendor-state/checkpoints/${checkpointState.checkpointId}/restore`,
       headers: hmrcHeaders("1.0"),
       okStatuses: [200, 201, 204],
       nino,
     });
+    checkpointId = checkpointState.checkpointId;
+    businessId = checkpointState.businessId;
+    record("vendor-state-restored", { checkpointId, businessId });
   } else {
     await callHmrc({
       step: "vendor-state-delete",
@@ -410,41 +419,41 @@ async function main() {
       okStatuses: [204, 404],
       nino,
     });
+
+    const businessCreated = await callHmrc({
+      step: "test-support-create-business",
+      method: "POST",
+      url: `${sandboxBase}/individuals/self-assessment-test-support/business/${nino}`,
+      headers: hmrcHeaders("1.0"),
+      body: buildTestBusinessRequestBody(),
+      okStatuses: [200, 201],
+      nino,
+    });
+    businessId = businessCreated.body.businessId;
+    if (!businessId) throw new Error(`Create business response carried no businessId: ${JSON.stringify(businessCreated.body)}`);
+
+    await callHmrc({
+      step: "test-support-set-itsa-status",
+      method: "POST",
+      url: `${sandboxBase}/individuals/self-assessment-test-support/itsa-status/${nino}/${taxYear}`,
+      headers: hmrcHeaders("1.0"),
+      body: buildItsaStatusRequestBody(),
+      okStatuses: [200, 204],
+      nino,
+    });
+
     const created = await callHmrc({
       step: "vendor-state-checkpoint-create",
       method: "POST",
-      url: `${sandboxBase}/individuals/self-assessment-test-support/vendor-state/checkpoints`,
+      url: `${sandboxBase}/individuals/self-assessment-test-support/vendor-state/checkpoints?nino=${nino}`,
       headers: hmrcHeaders("1.0"),
       okStatuses: [200, 201],
       nino,
     });
     checkpointId = extractCheckpointId(created.body);
-    writeFileSync(checkpointFile, checkpointId);
-    record("vendor-state-checkpoint-saved", { checkpointId, checkpointFile });
+    writeFileSync(checkpointFile, JSON.stringify({ checkpointId, businessId }));
+    record("vendor-state-checkpoint-saved", { checkpointId, businessId, checkpointFile });
   }
-
-  // Phase 4: create the self-employment business and set its ITSA status for the tax year.
-  const businessCreated = await callHmrc({
-    step: "test-support-create-business",
-    method: "POST",
-    url: `${sandboxBase}/individuals/self-assessment-test-support/business/${nino}`,
-    headers: hmrcHeaders("1.0"),
-    body: buildTestBusinessRequestBody(),
-    okStatuses: [200, 201],
-    nino,
-  });
-  const businessId = businessCreated.body.businessId;
-  if (!businessId) throw new Error(`Create business response carried no businessId: ${JSON.stringify(businessCreated.body)}`);
-
-  await callHmrc({
-    step: "test-support-set-itsa-status",
-    method: "POST",
-    url: `${sandboxBase}/individuals/self-assessment-test-support/itsa-status/${nino}/${taxYear}`,
-    headers: hmrcHeaders("1.0"),
-    body: buildItsaStatusRequestBody(),
-    okStatuses: [200, 204],
-    nino,
-  });
 
   await callHmrc({
     step: "business-details-list",
