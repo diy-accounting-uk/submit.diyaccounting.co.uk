@@ -389,6 +389,35 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human and machine
 
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
+  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
+  GitHub environment secret), read the real acknowledgement and poll responses, settle the
+  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
+  correct the envelope and iXBRL where the sandbox's own validation differs from the public
+  schemas, record what the sandbox returned in the simulator, then add `prod` to the
+  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
+  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
+  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
+  `ci/submit/companies-house/presenter_id` and `presenter_code`.
+  The email settles three things the code had left open, and the code already has a place for each:
+  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
+  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
+  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
+  (`:138`); and **submission numbers must be unique and incremental**, which
+  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
+  (`:280`), keyed apart from real request ids.
+  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
+  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
+  hardcoding them, because the live service wants the opposite of the test service on both. Do not
+  let a re-run reset the submission counter — the test service rejects a repeated or lower number
+  outright, and a rejection costs a round trip through their reviewer.
+  Then the human half: Neal at `xml@companieshouse.gov.uk` reviews the submissions once told they
+  exist, so the row finishes with an email naming what was submitted.
+  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11.
+  **Owner**: Claude Code, then Operator. **Model**: Sonnet.
+
+
+
 - [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
   (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
   make: create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and write and put
@@ -434,19 +463,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `default` bundle, with the live Companies House filing client. A real filing changes a real
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
-  **Owner**: Operator. **Model**: none.
-
-
-- [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
-  team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
-  once they have the presenter's name, contact name, address, email address and telephone
-  number, and then issue the test presenter credentials to use in every test submission; the
-  specification they pointed at is the public TIS set the build already follows. Reply with
-  the five details (DIY Accounting Limited; Antony Cartwright; the registered office, 37
-  Sutherland Avenue, Leeds, LS8 1BY; antony@diyaccounting.co.uk; the telephone number). When
-  the credentials arrive, put them on the GitHub `ci` environment as the secrets
-  `COMPANIES_HOUSE_PRESENTER_ID` and `COMPANIES_HOUSE_PRESENTER_CODE` and tell Claude Code,
-  which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b.
   **Owner**: Operator. **Model**: none.
 
 
@@ -536,17 +552,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17.
-
-
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
-  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
-  GitHub environment secret), read the real acknowledgement and poll responses, settle the
-  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, record what the sandbox returned in the simulator, then add `prod` to the
-  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
-  34b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
 
 
 
