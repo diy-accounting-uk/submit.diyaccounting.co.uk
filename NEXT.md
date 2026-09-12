@@ -94,8 +94,8 @@ it nine tests fail on a missing file that has nothing to do with the change.
 - [ ] **B123. One attribution for unattended runs, distinct from a session at a terminal.** The
   identity audit's class U is "a model started by a schedule or an event, with nobody watching",
   and it needs to be readable from a commit or a comment without opening the run. Three model-run
-  workflows exist or are proposed — `alarm-triage.yml`, and `auto-merge.yml` and `do-next.yml` on
-  PR #189 — and they do not agree.
+  workflows exist or are proposed — `alarm-triage.yml`, and `auto-merge.yml`, `do-next.yml` and
+  `board.yml` on PR #189 — and they do not agree.
 
   Settle and write into the workspace `CLAUDE.md` beside the terminal convention: unattended runs
   keep `Co-Authored-By: Claude <noreply@anthropic.com>` and `Claude-Model:` unchanged, because
@@ -105,16 +105,27 @@ it nine tests fail on a missing file that has nothing to do with the change.
   `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
   `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U; PR #189.
   **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B124. Prove `do-next.yml` by dispatch.** On PR #189, `workflow_dispatch` only. It needs no
-  token: it pushes nothing and runs with a read-only `GITHUB_TOKEN`, which is why its allow-list
-  omits push, merge and PR creation entirely. So this is a test, not a setup.
+- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All on PR #189,
+  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
 
-  Dispatch it with a 10 minute budget and read what comes back: did it pick the simplest ready task
-  rather than the most interesting one; did it notice whether `main` was green; did `work.patch`
-  apply cleanly; is `CHANGES.md` specific enough that a different agent could take the next step
-  from it alone. Then dispatch a second run against a deliberately unfinished first one and check
-  the resume decision and the `Resumed-From:` chain. Only uncomment the schedule once a run has
-  produced a patch worth applying. **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
+  **`board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
+  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
+  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
+  check the reluctance actually holds: a second run minutes later should say the board is already
+  true and commit nothing.
+
+  **`auto-merge.yml` next**, `dry-run=true`, after O42. Its tables must match a
+  `/auto-merge-dry-run` here. Only then a live run against one PR.
+
+  **`do-next.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
+  ready task rather than the most interesting; did it check whether `main` was green first; if it
+  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
+  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
+  dispatch a second run against a deliberately unfinished first and check the resume judgement and
+  the `Resumed-From:` chain.
+
+  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
+  **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
@@ -153,20 +164,23 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
-- [ ] **O42. Create the merge token, then auto-merge can run itself.** `auto-merge.yml` on PR #189
-  refuses to start without the repository secret `AUTO_MERGE_TOKEN`, and the refusal is the point:
-  a merge performed with `GITHUB_TOKEN` does not trigger `on: push` workflows, so the post-merge
-  deploy of `main` would silently never fire and the merge would reach nothing.
+- [ ] **O42. Create the two agent tokens.** PR #189 adds three workflows that run Claude Code
+  unattended, and each refuses to start without its token. The split is the safety property:
+  `AUTO_MERGE_TOKEN` can merge but not write code, `AGENT_TOKEN` can push a `claude/*` branch, open
+  a PR and commit `NEXT.md` but cannot merge or touch `main`. **An agent that writes code cannot
+  approve its own work into main.**
 
-  Prefer a GitHub App installation token over a PAT — rotatable, scoped to this repository, and the
-  merge then reads as the app rather than as you. That is `diya-ops` from O38, so doing O38 first
-  makes this a configuration step rather than a second credential to track. A fine-grained PAT with
-  contents:write and pull-requests:write works if you would rather not wait.
+  `GITHUB_TOKEN` can be neither. A merge made with it does not trigger `on: push` workflows, so the
+  post-merge deploy would silently never fire; a branch pushed with it triggers no checks, so the
+  PR would sit with nothing having run against it.
 
-  Set it as the secret, then Claude Code dispatches the workflow with `dry-run=true` and compares
-  its tables against a `/auto-merge-dry-run` in the terminal: same PRs, same gates, same verdicts,
-  or the skill is being read differently in CI. Only then a live run, and only then the commented
-  triggers. **Source**: PR #189. **Owner**: Operator, then Claude Code. **Model**: none.
+  These are O38's two apps — `diya-ops` for merges, `diya-agent` for authored work — so doing O38
+  first makes this configuration rather than two more credentials to track. Fine-grained PATs work
+  if you would rather not wait: contents and pull-requests write for both, issues write for
+  `AGENT_TOKEN`.
+
+  Then Claude Code proves each by dispatch (B124). **Source**: PR #189. **Owner**: Operator, then
+  Claude Code. **Model**: none.
 - [ ] **O34. Subscribe the HMRC sandbox application to six ITSA APIs.** Two runs have now stopped
   on the same 403, "The application is not subscribed to the API which it is attempting to invoke":
   the sandbox year's first call to `DELETE .../self-assessment-test-support/vendor-state`, and
