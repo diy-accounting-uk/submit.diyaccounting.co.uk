@@ -39,6 +39,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
+  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
+  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
+  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
+  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
+  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
+  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
+  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
+  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
+  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
+  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
+  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
   `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
   for that distribution to finish deploying. In deploy run 34687925996 the distribution was
@@ -358,6 +372,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the workflows. **Source**: `.github/workflows/agentic-lib-*.yml`. **Owner**: Operator, then Claude
   Code. **Model**: none.
 
+
+- [ ] **B129. Decide whether deleting an ITSA loss claim or adjustment costs a token.**
+  `hmrcItsaLossesAndClaimsDelete` and `hmrcItsaTaxLiabilityAdjustmentsDelete` now charge one token,
+  under `self-employed-year-end`, because a DELETE to HMRC is a write and the catalogue prices the
+  page rather than the verb. The other reading is that a correction should be free: a customer who
+  files a wrong claim then removes it pays twice for one net submission, and the delete sends no new
+  figures to HMRC.
+  Two named alternatives. **Keep them charged**: pricing follows the page, one rule, nothing to
+  explain in the catalogue. **Make them free**: deletes move to `self-employed-read`, or to a third
+  activity at `tokenCost = 0`, and the catalogue grows a distinction between submitting and undoing.
+  Nothing else in the product prices an undo today, so there is no precedent either way.
+  **Source**: B117's wiring pass, 2026-09-12. **Owner**: Operator. **Model**: none.
 
 - [ ] **O43. Subscribe the sandbox application to the Self Assessment Individual Details (MTD)
   API.** One Developer Hub action, no command. The ITSA sandbox year stops at
