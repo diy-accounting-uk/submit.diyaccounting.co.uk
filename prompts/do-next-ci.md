@@ -162,8 +162,8 @@ resuming the same patch would duplicate it.
 
 ## Attribution
 
-Use the repository's convention with the unattended-agent marker on every commit, because this is a
-machine run and not a person at a terminal:
+Use the repository's convention with the unattended-agent marker on every commit and in the body of
+any pull request you open, because this is a machine run and not a person at a terminal:
 
 ```
 Co-Authored-By: Claude <noreply@anthropic.com>
