@@ -276,7 +276,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to retrieve obligations");
+          const error = new Error(hmrcErrorMessage(result, "Failed to retrieve obligations"));
           error.status = response.status;
           throw error;
         }
