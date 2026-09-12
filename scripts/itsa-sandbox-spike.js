@@ -34,12 +34,12 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
-import { chromium } from "playwright";
 import dotenv from "dotenv";
 
 import { buildFraudHeaders, detectVendorPublicIp } from "../app/lib/buildFraudHeaders.js";
 import { initializeSalt } from "../app/services/subHasher.js";
 import { buildHmrcHeaders } from "../app/services/hmrcApi.js";
+import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorizationCode.js";
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
 
 const SCENARIOS = ["N/A - DEFAULT", "PROPERTY", "FOREIGN_PROPERTY", "BUSINESS_AND_PROPERTY", "UNSPECIFIED", "NOT_FOUND", "STATEFUL"];
@@ -84,92 +84,6 @@ function requireEnv(name) {
  * Drive the sandbox authorisation pages until the browser is sent to the
  * redirect uri, and return the authorisation code from that redirect.
  */
-async function getAuthorizationCode({ authorizeUrl, redirectUri, userId, password, outDir, headful }) {
-  const browser = await chromium.launch({ headless: !headful });
-  const page = await browser.newPage();
-  const visited = [];
-  const documentResponses = [];
-  let redirectUrl = null;
-  page.on("response", (response) => {
-    if (response.request().resourceType() === "document") {
-      documentResponses.push(`${response.status()} ${response.url().split("?")[0]}`);
-    }
-  });
-  // Nothing serves the redirect uri here, so read the code off the request itself.
-  page.on("request", (request) => {
-    if (request.url().startsWith(redirectUri)) redirectUrl = request.url();
-  });
-  page.on("requestfailed", (request) => {
-    if (request.resourceType() === "document") {
-      documentResponses.push(`FAILED ${request.failure()?.errorText} ${request.url().split("?")[0]}`);
-    }
-  });
-
-  await page.route(`${redirectUri}*`, (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<p>spike</p>" }));
-
-  try {
-    await page.goto(authorizeUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-    for (let step = 0; step < 12; step += 1) {
-      // A sign-in click lands on a chain of redirects, so the url settles before the dom does.
-      await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
-      const url = page.url();
-      visited.push(url.split("?")[0]);
-
-      if (redirectUrl) {
-        const params = new URL(redirectUrl).searchParams;
-        const error = params.get("error");
-        if (error) {
-          throw new Error(`Authorisation refused: ${error} ${params.get("error_description") || ""}`);
-        }
-        const code = params.get("code");
-        if (!code) throw new Error("Redirect carried no authorisation code");
-        return { code, visited, documentResponses };
-      }
-
-      const signInField = page.locator("#userId, input[name='userId']").first();
-      if (await signInField.count()) {
-        await signInField.fill(userId);
-        await page.locator("#password, input[name='password']").first().fill(password);
-        await Promise.all([
-          page.waitForLoadState("domcontentloaded", { timeout: 60000 }),
-          page.locator("button[type=submit], input[type=submit]").first().click(),
-        ]);
-        continue;
-      }
-
-      const candidates = [
-        "#signIn",
-        "#continue",
-        "button[type=submit]",
-        "input[type=submit]",
-        "a[role=button].govuk-button",
-        "a.govuk-button",
-      ];
-      let clicked = false;
-      for (const selector of candidates) {
-        const control = page.locator(selector).first();
-        if (!(await control.count())) continue;
-        await Promise.all([page.waitForLoadState("domcontentloaded", { timeout: 60000 }), control.click()]);
-        clicked = true;
-        break;
-      }
-      if (clicked) continue;
-
-      await page.screenshot({ path: `${outDir}/stuck-${step}.png`, fullPage: true });
-      writeFileSync(`${outDir}/stuck-${step}.html`, await page.content());
-      const counts = {};
-      for (const selector of candidates) counts[selector] = await page.locator(selector).count();
-      throw new Error(
-        `No action found on ${url.split("?")[0]} counts=${JSON.stringify(counts)} documents=${JSON.stringify(documentResponses)} (screenshot in ${outDir})`,
-      );
-    }
-
-    throw new Error("Authorisation flow did not reach the redirect uri within 12 steps");
-  } finally {
-    await browser.close();
-  }
-}
 
 /** Headers a browser would send us, which buildFraudHeaders turns into Gov-Client-* values. */
 function buildSyntheticEvent(clientPublicIp) {
@@ -247,6 +161,7 @@ async function main() {
     password: testUser.password,
     outDir,
     headful: process.env.ITSA_SPIKE_HEADFUL === "true",
+    label: "spike",
   });
   record("authorization-code-received", { pagesVisited: visited, codeLength: code.length });
 

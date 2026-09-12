@@ -230,6 +230,12 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
     await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
       typeOfBusiness: "uk-property",
       taxYear: "2023-24",
+      // User-restricted endpoints: the token is obtained as this user, through HMRC's authorize
+      // page, so the run needs the credentials it just minted.
+      userId: testUsername,
+      password: testPassword,
+      redirectUri: `${baseUrl}/activities/submitVatCallback.html`,
+      outDir: screenshotPath,
     });
 
     const repoRoot = path.resolve(process.cwd());

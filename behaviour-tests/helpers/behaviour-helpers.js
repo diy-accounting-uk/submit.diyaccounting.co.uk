@@ -18,6 +18,8 @@ import { gotoWithRetries } from "./gotoWithRetries.js";
 import fs from "node:fs";
 import path from "node:path";
 import net from "node:net";
+import { randomUUID } from "node:crypto";
+import { getAuthorizationCode, buildAuthorizeUrl } from "../../scripts/lib/hmrcAuthorizationCode.js";
 import { createLogger, sanitiseString, sanitiseData } from "../../app/lib/logger.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
@@ -1157,6 +1159,9 @@ export function buildTestSupportBusinessBody(typeOfBusiness) {
  * Create a business the run owns, through HMRC's Self Assessment Test Support API, and set an ITSA
  * status for the tax year so the business has obligations to file against.
  *
+ * Needs the test user's own credentials, not just the client's: these endpoints are
+ * user-restricted, so this walks HMRC's authorize page as that user to get a token.
+ *
  * Why a suite needs this rather than `Gov-Test-Scenario`: a scenario returns a canned business that
  * every run shares, so its period summaries and annual submissions are whatever the last run left
  * behind. Filing into it fails with "Period summary overlaps with any of the existing period
@@ -1170,19 +1175,45 @@ export async function createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, nin
   const taxYear = options.taxYear;
   const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
 
+  // The Test Support endpoints are user-restricted: they act on behalf of the test user, so a
+  // client-credentials token is refused with 401 INVALID_CREDENTIALS. The only way to a user token
+  // is HMRC's authorize page, which is a sign-in journey, so a browser walks it - exactly as
+  // scripts/itsa-sandbox-year.js does for the sandbox year run.
+  const { userId, password, redirectUri, outDir } = options;
+  if (!userId || !password) {
+    throw new Error("[HMRC Test Business] The test user's userId and password are required for a user-restricted token");
+  }
+  const authorizeUrl = buildAuthorizeUrl({
+    sandboxBase: baseUrl,
+    clientId: hmrcClientId,
+    redirectUri,
+    scope: "read:self-assessment write:self-assessment",
+    state: randomUUID(),
+  });
+  const { code } = await getAuthorizationCode({
+    authorizeUrl,
+    redirectUri,
+    userId,
+    password,
+    outDir,
+    label: "behaviour-test-business",
+  });
+
   const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: hmrcClientId,
       client_secret: hmrcClientSecret,
-      grant_type: "client_credentials",
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      code,
     }).toString(),
   });
   const tokenBody = await tokenResponse.json().catch(() => ({}));
   if (!tokenResponse.ok || !tokenBody.access_token) {
     const detail = tokenBody?.error_description || tokenBody?.error || JSON.stringify(tokenBody);
-    throw new Error(`[HMRC Test Business] Failed to obtain access token: ${tokenResponse.status} - ${detail}`);
+    throw new Error(`[HMRC Test Business] Failed to exchange the authorisation code: ${tokenResponse.status} - ${detail}`);
   }
 
   const headers = {
