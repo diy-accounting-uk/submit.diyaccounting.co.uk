@@ -245,6 +245,20 @@ When implementing features that require infrastructure validation:
    - Compare `.env.proxy` vs `.env.ci` settings
    - Look for infrastructure state issues in deployment logs
 
+### A redeploy of the same branch needs an explicit deployment name
+
+`.github/actions/get-names/action.yml` derives a ci deployment name from a hash of the **branch
+name**, not the commit, so every deploy of the same branch resolves to the same name and updates
+the same live stacks. That deployment's `SelfDestructStack` timer is anchored to its first
+`CreationTime` and is not reset by the redeploy, so it can still fire against those stacks while
+or after the redeploy runs. The failure then presents as several `deploy.yml` stack jobs failing,
+not as a name collision.
+
+For an intentional second deploy of a branch, pass an explicit name:
+```bash
+gh workflow run deploy.yml -f deployment-name=<unique>
+```
+
 ### Iteration Strategy
 
 - **Success path**: Local tests pass → Push → Deployment succeeds → AWS tests pass → Done
