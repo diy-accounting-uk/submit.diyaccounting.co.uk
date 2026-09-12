@@ -268,7 +268,7 @@
               showSearchCriteria();
               return;
             }
-            throw new Error(result.message || "Failed to retrieve business details");
+            throw new Error(hmrcErrorMessage(result, "Failed to retrieve business details"));
           }
 
           displayBusinesses(result.listOfBusinesses || []);
@@ -390,7 +390,7 @@
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }
-              throw new Error(result.message || "Failed to retrieve business details");
+              throw new Error(hmrcErrorMessage(result, "Failed to retrieve business details"));
             }
 
             displayBusinesses(result.listOfBusinesses || []);

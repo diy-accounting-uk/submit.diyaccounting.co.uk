@@ -294,7 +294,44 @@ describe("services/hmrcApi", () => {
     });
   });
 
+  describe("http403ForbiddenFromHmrcResponse", () => {
+    it("returns a real 403, not a 400, when HMRC rejects the request as forbidden", async () => {
+      const { http403ForbiddenFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = {
+        status: 403,
+        data: { code: "NOT_SUBSCRIBED", message: "The application is not subscribed to the API" },
+      };
+
+      const response = http403ForbiddenFromHmrcResponse("access-token-123", hmrcResponse, {});
+
+      expect(response.statusCode).toBe(403);
+    });
+
+    it("carries HMRC's own explanation in the response body's responseBody field", async () => {
+      const { http403ForbiddenFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = {
+        status: 403,
+        data: { code: "NOT_SUBSCRIBED", message: "The application is not subscribed to the API" },
+      };
+
+      const response = http403ForbiddenFromHmrcResponse("access-token-123", hmrcResponse, {});
+
+      const body = JSON.parse(response.body);
+      expect(body.responseBody).toEqual(hmrcResponse.data);
+      expect(body.responseBody.message).toBe("The application is not subscribed to the API");
+    });
+  });
+
   describe("http400BadRequestFromHmrcResponse", () => {
+    it("still returns a real 400 when HMRC's response status is 400", async () => {
+      const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = { status: 400, data: { code: "INVALID_VRN", message: "Bad VRN" } };
+
+      const response = http400BadRequestFromHmrcResponse(undefined, hmrcResponse, {});
+
+      expect(response.statusCode).toBe(400);
+    });
+
     it("forwards HMRC's own message and paths for an error code with no curated mapping", async () => {
       const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
       const hmrcResponse = {

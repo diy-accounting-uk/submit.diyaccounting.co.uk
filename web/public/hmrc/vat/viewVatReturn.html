@@ -341,7 +341,7 @@
               showStatus("Access token expired. Please re-authenticate.", "error");
               return;
             }
-            throw new Error(result.message || "Failed to retrieve VAT return");
+            throw new Error(hmrcErrorMessage(result, "Failed to retrieve VAT return"));
           }
 
           // Display results - add period dates for display
@@ -501,7 +501,7 @@
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }
-              throw new Error(result.message || "Failed to retrieve VAT return");
+              throw new Error(hmrcErrorMessage(result, "Failed to retrieve VAT return"));
             }
 
             // Display results - add period dates for display

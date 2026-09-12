@@ -247,7 +247,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to retrieve the period summary");
+          const error = new Error(hmrcErrorMessage(result, "Failed to retrieve the period summary"));
           error.status = response.status;
           throw error;
         }
