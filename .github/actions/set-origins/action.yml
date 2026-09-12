@@ -81,27 +81,60 @@ runs:
         #  --target-distribution-id "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" \
         #  --alias "${SET_ORIGINS_APEX_DOMAIN?}" || true
 
-        # Query for a distribution with alias matching SET_ORIGINS_APEX_DOMAIN and remove all the aliases from that distribution of there are any.
-        echo "Checking for existing CloudFront distribution with alias: ${SET_ORIGINS_APEX_DOMAIN?}"
-        EXISTING_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${SET_ORIGINS_APEX_DOMAIN?}')].Id | [0]" \
-            --output text)
-        if [ -n "$EXISTING_DISTRIBUTION_ID" ] && [ "$EXISTING_DISTRIBUTION_ID" != "None" ] && [ "$EXISTING_DISTRIBUTION_ID" != "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" ]; then
-          echo "Found existing CloudFront distribution [${EXISTING_DISTRIBUTION_ID?}] with alias [${SET_ORIGINS_APEX_DOMAIN?}], removing aliases from that distribution to make way for distribution [${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}]."
-          EXISTING_ETAG=$(aws cloudfront get-distribution-config \
+        # Runs "$@" (an AWS CLI call targeting EXISTING_DISTRIBUTION_ID) without letting
+        # its failure trip `set -e`. Prints stdout and returns 0 on success. If the
+        # call failed because EXISTING_DISTRIBUTION_ID no longer exists — it races its
+        # own scheduled self-destruct, which can delete it mid-vacate — logs that and
+        # returns 2. Any other failure prints the error to stderr and returns 1.
+        run_against_existing_distribution() {
+          local out rc
+          set +e
+          out=$("$@" 2>&1)
+          rc=$?
+          set -e
+          if [ $rc -eq 0 ]; then
+            printf '%s' "$out"
+            return 0
+          fi
+          if printf '%s' "$out" | grep -q "NoSuchDistribution"; then
+            echo "Existing CloudFront distribution [${EXISTING_DISTRIBUTION_ID}] no longer exists (NoSuchDistribution); alias already vacated, continuing." >&2
+            return 2
+          fi
+          printf '%s\n' "$out" >&2
+          return 1
+        }
+
+        # Removes the apex alias from EXISTING_DISTRIBUTION_ID so distribution
+        # SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID can take it. Every step here races the
+        # same window as the list-distributions lookup that found it: the old
+        # distribution can be deleted between that lookup and any call below. Returns 0
+        # whether the alias was actively removed or the distribution had already gone;
+        # returns 1 only on a real AWS error.
+        vacate_existing_distribution() {
+          local rc
+
+          EXISTING_ETAG=$(run_against_existing_distribution aws cloudfront get-distribution-config \
             --id "${EXISTING_DISTRIBUTION_ID?}" \
             --query 'ETag' \
-            --output text)
-          aws cloudfront get-distribution-config \
-              --id "${EXISTING_DISTRIBUTION_ID?}" \
-              --query 'DistributionConfig' \
-              --output json > /tmp/existing-cf-config.json
+            --output text) && rc=0 || rc=$?
+          [ $rc -eq 2 ] && return 0
+          [ $rc -ne 0 ] && return 1
+
+          EXISTING_CONFIG_JSON=$(run_against_existing_distribution aws cloudfront get-distribution-config \
+            --id "${EXISTING_DISTRIBUTION_ID?}" \
+            --query 'DistributionConfig' \
+            --output json) && rc=0 || rc=$?
+          [ $rc -eq 2 ] && return 0
+          [ $rc -ne 0 ] && return 1
+          printf '%s' "$EXISTING_CONFIG_JSON" > /tmp/existing-cf-config.json
 
           # Get the value of the OriginFor tag on the existing distribution to restore it after updating
-          ORIGIN_FOR_TAG_VALUE=$(aws cloudfront list-tags-for-resource \
+          ORIGIN_FOR_TAG_VALUE=$(run_against_existing_distribution aws cloudfront list-tags-for-resource \
             --resource "arn:aws:cloudfront::${SET_ORIGINS_AWS_ACCOUNT_ID?}:distribution/${EXISTING_DISTRIBUTION_ID?}" \
             --query "Tags.Items[?Key=='OriginFor'].Value | [0]" \
-            --output text)
+            --output text) && rc=0 || rc=$?
+          [ $rc -eq 2 ] && return 0
+          [ $rc -ne 0 ] && return 1
 
           EXISTING_DEPLOYMENT_NAME=
           if [ "$ORIGIN_FOR_TAG_VALUE" != "None" ] && [ -n "$ORIGIN_FOR_TAG_VALUE" ] && [ "$ORIGIN_FOR_TAG_VALUE" != "$SET_ORIGINS_APEX_DOMAIN" ]; then
@@ -111,14 +144,32 @@ runs:
           else
             jq '.Aliases = {Quantity: 0, Items: []}' /tmp/existing-cf-config.json > /tmp/existing-cf-config.updated.json
           fi
+
           echo "Updating CloudFront distribution [${EXISTING_DISTRIBUTION_ID?}] matching etag [${EXISTING_ETAG?}] to remove aliases of [${SET_ORIGINS_APEX_DOMAIN?}]"
-          aws cloudfront update-distribution \
+          run_against_existing_distribution aws cloudfront update-distribution \
             --id "${EXISTING_DISTRIBUTION_ID?}" \
             --if-match "${EXISTING_ETAG?}" \
-            --distribution-config file:///tmp/existing-cf-config.updated.json
+            --distribution-config file:///tmp/existing-cf-config.updated.json && rc=0 || rc=$?
+          [ $rc -eq 2 ] && return 0
+          [ $rc -ne 0 ] && return 1
+
           echo "Waiting for CloudFront distribution [${EXISTING_DISTRIBUTION_ID?}] to deploy updated aliases..."
-          aws cloudfront wait distribution-deployed --id "${EXISTING_DISTRIBUTION_ID?}"
+          run_against_existing_distribution aws cloudfront wait distribution-deployed --id "${EXISTING_DISTRIBUTION_ID?}" && rc=0 || rc=$?
+          [ $rc -eq 2 ] && return 0
+          [ $rc -ne 0 ] && return 1
+
           echo "Removed aliases from existing CloudFront distribution [${EXISTING_DISTRIBUTION_ID?}]."
+          return 0
+        }
+
+        # Query for a distribution with alias matching SET_ORIGINS_APEX_DOMAIN and remove all the aliases from that distribution of there are any.
+        echo "Checking for existing CloudFront distribution with alias: ${SET_ORIGINS_APEX_DOMAIN?}"
+        EXISTING_DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${SET_ORIGINS_APEX_DOMAIN?}')].Id | [0]" \
+            --output text)
+        if [ -n "$EXISTING_DISTRIBUTION_ID" ] && [ "$EXISTING_DISTRIBUTION_ID" != "None" ] && [ "$EXISTING_DISTRIBUTION_ID" != "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" ]; then
+          echo "Found existing CloudFront distribution [${EXISTING_DISTRIBUTION_ID?}] with alias [${SET_ORIGINS_APEX_DOMAIN?}], removing aliases from that distribution to make way for distribution [${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}]."
+          vacate_existing_distribution || exit 1
         elif [ -n "$EXISTING_DISTRIBUTION_ID" ] && [ "$EXISTING_DISTRIBUTION_ID" != "None" ] && [ "$EXISTING_DISTRIBUTION_ID" == "${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}" ]; then
           echo "Found existing CloudFront distribution ${EXISTING_DISTRIBUTION_ID?} with alias ${SET_ORIGINS_APEX_DOMAIN?}, and it is already target for distribution ${SET_ORIGINS_CLOUDFRONT_DISTRIBUTION_ID?}."
           exit 0
