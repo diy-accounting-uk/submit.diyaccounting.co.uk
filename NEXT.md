@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-40b194e**, nine stacks. `prod-e6d3045` from the #190 merge stands with
-nine stacks while its `deploy` run is still in progress, so the live pointer has not moved to it
-yet; once it does, `prod-40b194e` is the spare and costs $35.28 a month until
-`destroy-prod.yml -f deployment-name=prod-40b194e` runs. ci runs `ci-annual1`, ten stacks from
+**Prod runs deployment prod-e6d3045**, nine stacks, live since its `deploy` run completed at
+11:4x UTC on 2026-09-12. `prod-40b194e` is now the spare and costs $35.28 a month until the
+operator runs `gh workflow run destroy-prod.yml -f deployment-name=prod-40b194e`. ci runs `ci-annual1`, ten stacks from
 08:56, self-destruct about 10:56. `ci-mainb28b` still stands with nine stacks, twelve hours past
 its own window and untouched by four `34 2,4,6,8,10,12` UTC sweeps, so the sweep's own selection
 needs looking at.
@@ -40,14 +39,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
-  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
-  call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
-  run can go further than its first call. Work through whatever the sandbox answers
-  next and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -59,6 +50,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   because the workflow toggles Cognito native auth around each run. `videos/publish.json` gets its
   three entries once all three artifacts are checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
+  **The two missing scene scripts are on `claude/b28-board`**: `videos/file-micro-entity-accounts.json`
+  and `videos/itsa-quarterly-update.json`, both saying on screen that they are sandbox previews, and
+  `video-capture.yml`'s `script` choice list now offers them — a script absent from that list cannot
+  be dispatched however valid the file is. The ITSA one supersedes `itsa-business-details`, whose
+  `publish.json` entry goes when the new capture is checked.
+  Two things the scripts could not settle. The quarterly-update script stops with the form filled
+  except `businessId`: a `businessId` only exists after HMRC answers Business Details at run time,
+  and the scene-script format has no way to carry a value from one scene into a later scene's input,
+  so filling it would mean inventing one. And `itsa-business-details.json` may no longer pass at all
+  — it clicks the Self Assessment activity then awaits `#itsaBusinessDetailsForm`, but the
+  `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
+  `#businessPickerForm`. Check that on the next capture rather than assuming.
 
 
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
@@ -333,6 +336,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Code. **Model**: none.
 
 
+- [ ] **O43. Subscribe the sandbox application to the Self Assessment Individual Details (MTD)
+  API.** One Developer Hub action, no command. The ITSA sandbox year stops at
+  `GET individuals/person/itsa-status/{nino}/{taxYear}` with `403 RESOURCE_FORBIDDEN` because the
+  sandbox application (client id ending `v4tV`) is not subscribed to that API. It is the endpoint
+  `app/functions/hmrc/hmrcItsaStatusGet.js` calls, and it was missing from the runbook's
+  subscription list, so the earlier subscription pass did not cover it. Add it on
+  developer.service.hmrc.gov.uk and tell Claude Code, which resumes B11.T7r from call 7.
+  **Source**: the sandbox run of 2026-09-12. **Owner**: Operator. **Model**: none.
+
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -369,6 +381,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
+  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
+  before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
+  `nino` query parameter and 404s on a NINO with no test-support data, so the checkpoint is taken
+  after the business and the ITSA status rather than before, and a restore reuses the saved
+  `businessId` instead of creating a second business; a GB self-employment business needs
+  `businessAddressPostcode`. The run then reaches
+  `GET individuals/person/itsa-status/{nino}/{taxYear}` and gets `403 RESOURCE_FORBIDDEN`.
+  That endpoint is on the **Self Assessment Individual Details (MTD)** API, which the sandbox
+  application is not subscribed to and which the runbook's subscription list never named.
+  Resume from call 7 once O43 lands. **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of
+  2026-09-12. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O43.
 
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
