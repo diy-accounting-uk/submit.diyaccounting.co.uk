@@ -9,6 +9,7 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -213,6 +214,46 @@ export async function ingestHandler(event) {
   let persistedRequest = null;
   if (!isInitialRequest) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
+  }
+
+  // Token enforcement: consume 1 token for the deletion (a write to HMRC, like the submission
+  // that created it) - initial request only. Priced under self-employed-year-end, like the
+  // other year-end writes.
+  if (isInitialRequest) {
+    const activityId = "self-employed-year-end";
+    try {
+      const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+      const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
+      const catalog = loadCatalogFromRoot();
+      const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
+      if (!tokenResult.consumed) {
+        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+        await recordSubmissionFailure({
+          failure: "tokens-exhausted",
+          summary: "ITSA tax liability adjustments deletion blocked: submission allowance used up",
+          userSub,
+        });
+        return http403ForbiddenResponse({
+          request,
+          headers: responseHeaders,
+          message: "Token limit reached",
+          error: { reason: "tokens_exhausted", tokensRemaining: 0 },
+        });
+      }
+      logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
+    } catch (error) {
+      logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
+      await recordSubmissionFailure({
+        failure: "internal-error",
+        summary: "ITSA tax liability adjustments deletion failed while checking the submission allowance",
+        userSub,
+      });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Token enforcement failed",
+      });
+    }
   }
 
   logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
