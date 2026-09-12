@@ -17,13 +17,14 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4918a0d**, nine stacks, live since the #194 merge deploy at about
-13:00 UTC; the apex answers 200, and every merge up to `4918a0d0` is on prod. `prod-e6d3045` stands
-as the spare, nine stacks, left behind when the #192 deploy's `destroy previous` job was cancelled:
-`gh workflow run destroy-prod.yml -f deployment-name=prod-e6d3045` removes it. `prod-15112f1` and
-`prod-40b194e` are gone. ci ran `ci-claudc83b` (ten stacks from 11:23), `ci-claudd44f` (ten from
-10:38) and `ci-mainb28b` (eight from 2026-09-11 22:39, overdue since 00:39 and untouched by five
-`34 2,4,6,8,10,12` UTC sweeps) when last read at 12:15 UTC. The SSO token has since expired, so a
-fresh reading needs `aws sso login --sso-session diyaccounting`.
+13:00 UTC; the apex answers 200. `prod-e6d3045` stands as the spare, nine stacks, left behind when
+the #192 deploy's `destroy previous` job was cancelled:
+`gh workflow run destroy-prod.yml -f deployment-name=prod-e6d3045` removes it.
+**No ci deployment exists.** All three sets have gone — `ci-claudc83b`, `ci-claudd44f` and the
+long-overdue `ci-mainb28b` — and `/submit/ci/last-known-good-deployment` reads `None`. Three ready
+rows need a ci set before they can run: B73's email-restricted pass, B71.S3e's remaining sync and
+verification steps, and B34.6b's sandbox filing. Each needs a `deploy.yml` run against ci first,
+and cool-down holds that.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
@@ -98,11 +99,13 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
-  `prod-env-cost-focus-copy-errors` has been in ALARM since 2026-09-10 03:46 BST — "The nightly
-  FOCUS export copy failed at least once in 24 hours" — and no issue was raised for it, so
-  `alarm-triage.yml` did not fire either. The Lambda's own log says why:
-  `prod-env-cost-focus-copy-role` "is not authorized to perform: s3:ListBucket on resource:
-  arn:aws:s3:::diy-accounting-cost-focus-887764105431".
+  **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
+  2026-09-10 03:46 BST and `ci-env-cost-focus-copy-errors` since **2026-09-09 03:46 BST**, a day
+  earlier — "The nightly FOCUS export copy failed at least once in 24 hours". No issue was raised
+  for either, so `alarm-triage.yml` did not fire for either. Both Lambdas' logs say the same thing:
+  `prod-env-cost-focus-copy-role` and `ci-env-cost-focus-copy-role` are each "not authorized to
+  perform: s3:ListBucket" on `arn:aws:s3:::diy-accounting-cost-focus-887764105431`. One cause, two
+  environments, and the fix applies to both.
   `CostExportStack.java:155` grants that account `s3:ListBucket` on the bucket in the bucket's own
   resource policy, under an `s3:prefix` condition. A cross-account read needs both sides, so the
   theory is that the Lambda's role carries no matching identity policy — the same omission B52x hit,
