@@ -14,20 +14,46 @@ whole budget on the work and none on the record has produced nothing this pipeli
 
 Run id: `${RUN_ID}`. Run url: `${RUN_URL}`.
 
-## You push nothing. Ever.
+## Finished work becomes a PR. Unfinished work becomes a patch.
 
-No `git push`, no `gh pr create`, no merge, no write to any remote. Commit locally if it helps you
-think, but the runner is discarded. **Your entire output is three files in `${OUT_DIR}`**, and they
-are uploaded as artifacts:
+There are exactly two ways this run can end, and you choose between them by one question: **is the
+work complete and verified?**
+
+**Complete and verified** — push a branch and open a pull request, as a terminal session would.
+Branch naming follows `CLAUDE.md`: `claude/<ns>-<topic>`, where `<ns>` is the area (`ltd`, `itsa`,
+`vat`, `ops`, `cdk`, `docs`). Check `git ls-remote --heads origin` first and pick a name nobody is
+using. The PR body says what the task was, what you changed, what you ran, and what you did not do.
+
+**Not complete, out of time, or nothing suitable to start** — push nothing at all. No branch, no
+PR, no commit on any remote. Write the patch and the handover instead, and they are uploaded as
+artifacts:
 
 | File | What it must contain |
 |---|---|
-| `work.patch` | `git diff` of everything you changed, uncommitted or committed. Empty is allowed and honest. |
+| `work.patch` | `git diff` of everything you changed. Empty is allowed and honest. |
 | `CHANGES.md` | The handover. Shape defined below. |
 | `notes/` | Optional. Logs, command output, anything a later agent would otherwise have to rediscover. |
 
-This is deliberate. Half-finished work pushed as commits litters the history and half-finished
-issues litter the board. A patch file costs nothing if abandoned and is trivially resumed if good.
+The split is the whole point. A finished task should land like any other work, reviewable as a PR.
+Half-finished work must not: pushed as commits it litters the history, and raised as a PR it
+litters the review queue with something nobody can judge. A patch file costs nothing if abandoned
+and is trivially resumed if it was on a useful track.
+
+**Never push a partial branch "so it is not lost".** It is not lost — it is in the patch.
+
+### What "complete and verified" means
+
+All four, or it is a patch:
+
+- the task's own finish line is reached, not merely approached;
+- the change's blast radius passed: the unit, system or browser tests it reaches, or
+  `./mvnw clean verify` for `infra/`, run by you in this run, with the output in `notes/`;
+- nothing in the repository is left broken that was not broken before;
+- you can describe the change in a PR body without the words "partial", "first step", "WIP" or
+  "remaining work". If you need them, it is a patch.
+
+A verification you did not run does not count, however confident you are. If the suite would blow
+the time budget, that alone makes this a patch, not a PR.
 
 ## Step 1 — is main stable?
 
@@ -124,16 +150,20 @@ someone who has never seen this task can take it.>
 <yes/no and why. Be honest: telling the next run not to bother is as valuable as telling it to.>
 ```
 
-Then write the patch:
+Write the patch in both cases — it costs nothing and it is the record of what this run produced:
 
 ```
 git add -A && git diff --cached > ${OUT_DIR}/work.patch
 ```
 
+If you opened a pull request, say so at the top of `CHANGES.md` with its number and branch, and set
+**Would I resume this?** to no, because the work has landed somewhere reviewable and a later run
+resuming the same patch would duplicate it.
+
 ## Attribution
 
-If you commit locally, use the repository's convention with the unattended-agent marker, because
-this is a scheduled machine run and not a person at a terminal:
+Use the repository's convention with the unattended-agent marker on every commit, because this is a
+machine run and not a person at a terminal:
 
 ```
 Co-Authored-By: Claude <noreply@anthropic.com>
