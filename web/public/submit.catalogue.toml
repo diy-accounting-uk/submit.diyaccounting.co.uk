@@ -360,24 +360,43 @@ bundles = ["resident-itsa", "resident-pro"]
 tokenCost = 1
 metered = true
 # tokenCost covers the writes that spend a token: a quarterly update, its amendment, and the
-# final declaration. The free year-end writes are the "self-employed-year-end" activity below,
-# not this one, so a page's own activity tells the truth about what it costs.
-paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html", "hmrc/itsa/ukPropertyPeriodAmend.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
+# final declaration. The read-only pages (business details, obligations, calculations, and the
+# period lists/views) are the free "self-employed-read" activity below. The annual submission,
+# its adjustments, losses and claims, and tax liability adjustments are "self-employed-year-end",
+# which also spends a token. A page's own activity tells the truth about what it costs.
+# The catch-all API regex stays on this activity so every ITSA API call is gated to
+# resident-itsa/resident-pro regardless of which page-level activity governs the calling page.
+paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriodAmend.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
-# self-employed-year-end: the free writes that finish or correct a self-employment tax year
+# self-employed-read: the free ITSA reads — business details, obligations, calculations, and
+# the self-employment/UK property period lists and views
 # Unlocked by: the same bundles as self-employed
 # Payment: None
-# The annual submission and the adjustable summary work inside a year the quarterly updates
-# and final declaration already charged for, so saving or correcting them again costs nothing.
+# display: never - reached from the self-employed dashboard, not its own home page entry
+[[activities]]
+id = "self-employed-read"
+name = "Self Assessment reads (HMRC)"
+display = "never"
+bundles = ["resident-itsa", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html"]
+hmrcScopesRequired = ["read:self-assessment"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+# self-employed-year-end: the writes that finish or correct a self-employment tax year
+# Unlocked by: the same bundles as self-employed
+# Payment: 1 token, like a VAT return — the annual submission, its adjustments, losses and
+# claims, and tax liability adjustments all submit to HMRC.
 [[activities]]
 id = "self-employed-year-end"
 name = "Self Assessment year-end submissions (HMRC)"
 display = "never"
 # display: never - reached from the self-employed dashboard, not its own home page entry
 bundles = ["resident-itsa", "resident-pro"]
-tokenCost = 0
+tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html", "hmrc/itsa/lossesAndClaims.html", "hmrc/itsa/taxLiabilityAdjustments.html"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]

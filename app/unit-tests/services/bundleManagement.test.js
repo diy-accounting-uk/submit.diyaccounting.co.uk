@@ -257,6 +257,80 @@ describe("bundleEnforcement.js", () => {
       await enforceBundles(event);
     });
 
+    // B117: the catalogue has no entry-per-endpoint check anywhere else, so this is the only
+    // place that proves enforceBundles() actually refuses a caller with no ITSA bundle for
+    // every submitting ITSA activity (quarterly updates, annual submissions, losses and claims,
+    // tax liability adjustments, final declaration) - not just that the catalogue parses.
+    describe("ITSA submitting activities refuse an ungated caller", () => {
+      const submittingItsaPaths = [
+        "/api/v1/hmrc/itsa/self-employment/period",
+        "/api/v1/hmrc/itsa/uk-property/period",
+        "/api/v1/hmrc/itsa/self-employment/annual",
+        "/api/v1/hmrc/itsa/uk-property/annual",
+        "/api/v1/hmrc/itsa/losses-and-claims",
+        "/api/v1/hmrc/itsa/tax-liability-adjustments",
+        "/api/v1/hmrc/itsa/bsas/self-employment/adjust",
+        "/api/v1/hmrc/itsa/bsas/uk-property/adjust",
+        "/api/v1/hmrc/itsa/final-declaration",
+      ];
+
+      test.each(submittingItsaPaths)("refuses %s for a caller with no resident-itsa/resident-pro bundle", async (urlPath) => {
+        process.env.ENVIRONMENT_NAME = "ci";
+        const token = makeJWT("user-without-itsa-bundle");
+        const authorizerContext = {
+          "sub": "user-without-itsa-bundle",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        const event = buildEvent(token, authorizerContext, urlPath);
+
+        // A bundle that grants nothing ITSA-related must not open the ITSA surface.
+        getUserBundles.mockResolvedValue([{ bundleId: "resident-vat", expiry: new Date().toISOString() }]);
+
+        await expect(enforceBundles(event)).rejects.toMatchObject({
+          name: "BundleEntitlementError",
+          details: { code: "BUNDLE_FORBIDDEN" },
+        });
+      });
+
+      test.each(submittingItsaPaths)("allows %s for a caller with the resident-itsa bundle", async (urlPath) => {
+        process.env.ENVIRONMENT_NAME = "ci";
+        const token = makeJWT("user-with-itsa-bundle");
+        const authorizerContext = {
+          "sub": "user-with-itsa-bundle",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        const event = buildEvent(token, authorizerContext, urlPath);
+
+        getUserBundles.mockResolvedValue([{ bundleId: "resident-itsa", expiry: new Date().toISOString() }]);
+
+        // Should not throw
+        await enforceBundles(event);
+      });
+
+      test("refuses an ITSA read path for a caller with no resident-itsa/resident-pro bundle too - free means no token, not no bundle", async () => {
+        process.env.ENVIRONMENT_NAME = "ci";
+        const token = makeJWT("user-without-itsa-bundle-read");
+        const authorizerContext = {
+          "sub": "user-without-itsa-bundle-read",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/itsa/business/details");
+
+        getUserBundles.mockResolvedValue([]);
+
+        await expect(enforceBundles(event)).rejects.toMatchObject({
+          name: "BundleEntitlementError",
+          details: { code: "BUNDLE_FORBIDDEN" },
+        });
+      });
+    });
+
     test("should extract user info from authorizer context", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const authorizerContext = {
