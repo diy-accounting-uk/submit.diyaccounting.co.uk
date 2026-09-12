@@ -16,11 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-c065053** (the merge of PR #187), nine stacks, live since 21:42 UTC on
-2026-09-11. One set stands and no spare bills. ci runs `ci-mainb28b`, nine stacks from 22:39, with
-no `SelfDestructStack`, so it survives until `destroy-ci.yml`'s 02:34 UTC sweep rather than two
-hours after creation. `ci-claud5589` is down to a single orphaned `HmrcItsaStack` predating B120's
-fix; the same sweep takes it.
+**Prod ran deployment prod-c065053** as of the 2026-09-11 21:42 UTC deploy; the #190 merge of
+2026-09-12 is deploying and its set is not yet confirmed live — the SSO token expired during the
+board render of 09:45 UTC, so re-read `/submit/prod/last-known-good-deployment` before relying on
+this line. ci runs `ci-annual1`, ten stacks from 08:55, self-destruct about 10:56. `ci-mainb28b`
+still stands with nine stacks eleven hours past its own window, which the `34 2,4,6,8,10,12` UTC
+sweep has not removed.
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -30,6 +31,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
+
+## Ready: Claude Code
 
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
