@@ -146,6 +146,28 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
 
 
+- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
+  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
+  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
+  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
+  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
+  check the reluctance actually holds: a second run minutes later should say the board is already
+  true and commit nothing.
+  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
+  `/auto-merge-dry-run` here. Only then a live run against one PR.
+  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
+  ready task rather than the most interesting; did it check whether `main` was green first; if it
+  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
+  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
+  dispatch a second run against a deliberately unfinished first and check the resume judgement and
+  the `Resumed-From:` chain.
+  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
+  **O42 is done**: `AUTO_MERGE_TOKEN` and `AGENT_TOKEN` are set as repository secrets. So this row
+  is ready, in the order above. **Source**: `.github/workflows/agentic-lib-*.yml`.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
+
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -416,21 +438,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   D17. **Owner**: Operator. **Model**: none.
 
 
-- [ ] **O42. Create two fine-grained PATs for the agentic-lib workflows.** Each of the three
-  refuses to start without its token. The split is the safety property: `AUTO_MERGE_TOKEN` merges
-  but does not write code, `AGENT_TOKEN` pushes a `claude/*` branch, opens a PR and commits
-  `NEXT.md` but cannot merge or touch `main`. `GITHUB_TOKEN` can be neither: a merge with it does
-  not trigger `on: push`, so the prod deploy would never fire, and a branch pushed with it triggers
-  no checks.
-  **Operator decision, 2026-09-12: fine-grained PATs now, not waiting for O38's apps.** Both scoped
-  to this repository: contents and pull-requests write for both, plus issues write for
-  `AGENT_TOKEN`. Set them as repository secrets `AUTO_MERGE_TOKEN` and `AGENT_TOKEN`.
-  They are yours personally and carry no separate identity, which is what O38 exists to fix, so
-  swapping them for `diya-ops` and `diya-agent` when O38 lands stays worth doing. Then B124 proves
-  the workflows. **Source**: `.github/workflows/agentic-lib-*.yml`. **Owner**: Operator, then Claude
-  Code. **Model**: none.
-
-
 - [ ] **B129. Decide whether deleting an ITSA loss claim or adjustment costs a token.**
   `hmrcItsaLossesAndClaimsDelete` and `hmrcItsaTaxLiabilityAdjustmentsDelete` now charge one token,
   under `self-employed-year-end`, because a DELETE to HMRC is a write and the catalogue prices the
@@ -520,27 +527,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   schemas, record what the sandbox returned in the simulator, then add `prod` to the
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
   34b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
-
-
-
-- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
-  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
-  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
-  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
-  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
-  check the reluctance actually holds: a second run minutes later should say the board is already
-  true and commit nothing.
-  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
-  `/auto-merge-dry-run` here. Only then a live run against one PR.
-  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
-  ready task rather than the most interesting; did it check whether `main` was green first; if it
-  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
-  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
-  dispatch a second run against a deliberately unfinished first and check the resume judgement and
-  the `Resumed-From:` chain.
-  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
-  **Source**: `.github/workflows/agentic-lib-*.yml`. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O42.
 
 
 
