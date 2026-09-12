@@ -42,47 +42,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
-- [ ] **B134. `Gov-Client-Multi-Factor` has never been sent reliably, and HMRC will not accept
-  that.** O28 is answered, in `REPORT_HMRC_HEADER_ADVISORIES.md`: every monthly advisory HMRC has
-  raised, in every month, is this one header missing. Every other header reads Correct in every
-  month. Per month missing: April 11 of 18, May 2 of 16, June no traffic, July 0 of 9, August 18 of
-  21, September 4 of 11 to the 9th. We are required by law to send correct header data, so a header
-  that is absent on most requests is a compliance failure, not a cosmetic one.
-  The header is written to `sessionStorage.mfaMetadata` by the inline script in
-  `web/public/auth/loginWithCognitoCallback.html` and read by `hmrc-service.js`. Google federated
-  gives `type=OTHER`; Cognito native with TOTP gives `type=TOTP` from the Pre Token Generation
-  Lambda's `custom:mfa_method`; Cognito native with password only gives nothing. **Operator
-  decision: mandate MFA.** Telling HMRC the header is uncollectable was tried and HMRC pushed back,
-  so that route is closed.
-  **Do the investigation first, because it decides what to build.** The prod async-requests table
-  (`HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME`) holds `govClientHeaders` per request, 75
-  requests between 2026-04-01 and 2026-09-09 — a trivial read-only scan. Project
-  `Gov-Client-User-IDs` (it carries the raw Cognito sub), whether `Gov-Client-Multi-Factor` is
-  present, its `type=`, and the timestamp; then group by sub. A sub that **never** carries it is a
-  password-only native user, fixed only by mandatory MFA. A sub that carries it **sometimes** is the
-  `sessionStorage` lifetime problem — the value is written once at the login callback and lost when
-  the tab closes, so a customer returning on a refresh token sends nothing even with TOTP enrolled,
-  and mandatory MFA would not fix them. Report the split before building either fix. Count distinct
-  `Gov-Client-Device-ID` per sub in the same scan; it answers the device-id question below.
-  Then, in order: **build the header server-side**, because the claim is already in the token and
-  `customAuthorizer.js` already hands `buildFraudHeaders.js` a context carrying `sub` — carry
-  `mfa_method` and the auth time through the same context and build the header there, keeping its
-  shape `type=<TOTP|OTHER>&timestamp=<iso>&unique-reference=<ref>`, with a `logger.warn` when it
-  cannot be built, matching the other `HMRC REQUIRED HEADER MISSING:` lines. Its absence is silent
-  today, which is why this took screenshots to find. **Then switch the pool to MFA required**:
-  `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`, one word to change, but every existing
-  native-auth customer then meets a TOTP enrolment screen at their next sign-in — do not ship that
-  before the operator has walked the enrolment path as a new customer meets it. Federated Google
-  users are unaffected. **And persist the device id**: `hmrc-service.js:174` generates
-  `crypto.randomUUID()` per request with no persistence. HMRC report it Correct because they check
-  presence and format, but the spec wants a stored UUID that does not expire. Spec conformance, not
-  an advisory fix.
-  Two lines of enquiry are closed: CI generates no production HMRC traffic (June ran 30 scheduled
-  deploys and 30 test runs against zero production requests; April ran no CI and recorded 18), and
-  `data/compliance/fraud-prevention-headers/` is empty because B22's launchd agent has never run.
-  **Source**: `REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures. **Owner**: Claude
-  Code, then Operator for the enrolment walk-through. **Model**: Sonnet.
-
 - [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
   (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
   deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
@@ -97,6 +56,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   both succeeded today), so a hand dispatch races the cron for the same set. Say in the workflow
   which one is authoritative. **Source**: run 34691690046, job 103547976202.
   **Owner**: Claude Code. **Model**: Haiku.
+
+
 
 - [ ] **B132. Every branch push this session had its deploy cancelled, and I cannot say by what.**
   Three branches, same shape. `claude/ops-cf-vacate-race`: `deploy` 34692059976 and
@@ -123,6 +84,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: runs 34692059872, 34692059976, 34692076128, 34692919247, 34692919287.
   **Owner**: Claude Code, after the operator reads the audit log. **Model**: Sonnet.
 
+
+
 - [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
   Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
   cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
@@ -137,6 +100,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   that is knowingly blocked — exempt it by name with the blocking item cited, or accept a red main
   until O41x. Do not silence the check generally.
   **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
+
+
 
 - [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
   **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
@@ -156,6 +121,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 
 
+
+
 - [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
   `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
   cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
@@ -171,6 +138,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   cancelled, or when `names` produced no environment name, and keep it running for a genuine
   failure. Check whether the DORA panels already counted cancellations as failures before this.
   **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
+
+
 
 
 - [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
@@ -190,6 +159,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
   `get-api-mappings` and `delete-domain-name` against it with no equivalent classification.
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
+
+
 
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
@@ -231,6 +202,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -259,6 +232,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
   before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
@@ -275,6 +250,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
   **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
   **Model**: Sonnet.
+
+
 
 
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
@@ -301,6 +278,90 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+
+- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request.** Every monthly advisory HMRC has
+  raised, in every month, is this one header missing; every other header reads Correct throughout.
+  Missing per month: April 11 of 18, May 2 of 16, June no traffic, July 0 of 9, August 18 of 21,
+  September 4 of 11 to the 9th. Sending correct header data is a legal requirement, so this is a
+  compliance failure rather than a cosmetic one. **Operator decision: mandate MFA.** Telling HMRC
+  the header is uncollectable was tried and HMRC pushed back, so that route is closed.
+  The evidence, the reasoning and the ranked options are in `../REPORT_HMRC_HEADER_ADVISORIES.md`
+  at the workspace root, with the Developer Hub captures in `../hmrc-header-advisories/`. Read it
+  before starting: it carries the staging argument this row summarises, and section 10 is where
+  HMRC's pushback wording goes.
+  Why it varies: the header is written to `sessionStorage.mfaMetadata` by the inline script in
+  `web/public/auth/loginWithCognitoCallback.html` and read by `hmrc-service.js`. Google federated
+  gives `type=OTHER`; Cognito native with TOTP gives `type=TOTP` from the Pre Token Generation
+  Lambda's `custom:mfa_method`; Cognito native with password only gives nothing.
+  **Step 1, the scan, decides the rest — do not build before reporting it.** The prod async-requests
+  table (`HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME`) holds `govClientHeaders` per request, 75
+  requests between 2026-04-01 and 2026-09-09; a read-only scan, no approval needed. Project
+  `Gov-Client-User-IDs` (it carries the raw Cognito sub), whether `Gov-Client-Multi-Factor` is
+  present, its `type=`, and the timestamp, then group by sub. A sub that **never** carries it is a
+  password-only native user, reachable only by step 3. A sub that carries it **sometimes** is the
+  `sessionStorage` lifetime problem — written once at the login callback, lost when the tab closes,
+  so a customer returning on a refresh token sends nothing even with TOTP enrolled. Count distinct
+  `Gov-Client-Device-ID` per sub in the same pass; it answers B134.
+  **Step 2, two ways, and the scan says which.** *2a, `localStorage`:* a three-line change that
+  fixes the "sometimes" cohort with no server change, and the value stays honest because the
+  timestamp is `auth_time` from the ID token and every genuine re-sign-in re-runs the callback. If
+  it ships, **three sites move together** — the write in `loginWithCognitoCallback.html`, that
+  file's final `else` branch removal, and the sign-out removal at
+  `web/public/widgets/auth-status.js:255` — plus the same in `loginWithMockCallback.html`. Moving
+  the write alone gives two real defects: a customer who disables TOTP keeps a false entry, and user
+  B inherits user A's MFA event on a shared browser. It covers only browsers where the callback has
+  run once, and leaves the value client-writable. *2b, server-side:* the destination.
+  `customAuthorizer.js` already hands `buildFraudHeaders.js` a flat context it reads `sub` from, so
+  carry `mfa_method` and the auth time through the same context and build the header there, keeping
+  its shape `type=<TOTP|OTHER>&timestamp=<iso>&unique-reference=<ref>`. Add a `logger.warn` when it
+  cannot be built, matching the other `HMRC REQUIRED HEADER MISSING:` lines — its absence is silent
+  today, which is why this took screenshots to find. A token claim cannot be forged; browser storage
+  can.
+  **Step 3, the pool.** `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`. Required is one word, but
+  every existing native-auth customer then meets a TOTP enrolment screen at their next sign-in.
+  Propose it as a PR and describe that screen; do not ship it before the operator has walked the
+  enrolment path end to end as a new customer meets it. Federated Google users are unaffected.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures; B22's first run.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
+
+
+- [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
+  `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
+  device id changes each time. HMRC report it Correct because their check tests presence and format
+  rather than persistence, but the spec asks for a UUID stored on the device that does not expire.
+  Store it in a first-party cookie or `localStorage`: generate once, reuse, regenerate only when
+  absent. O28's scan counts distinct device ids per sub, which says how visible this is in real
+  traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
+  **Owner**: Claude Code. **Model**: Haiku.
+
+
+
+- [ ] **B136. The monthly fraud-header check has never run.**
+  `data/compliance/fraud-prevention-headers/` is empty. B22 shipped a monthly check whose launchd
+  agent was supposed to write a file there each month, and no file exists, so the check has produced
+  nothing since it landed and nobody noticed until the advisories were read by hand. Find out
+  whether the agent was ever loaded, whether `scripts/fraud-header-email-check.js` runs today, and
+  decide where it should run: a launchd agent on one laptop is invisible when it fails, and a
+  scheduled workflow is not. Settle at the same time whether
+  `data/compliance/fraud-prevention-headers/*.json` is tracked or gitignored — that was never
+  decided and the directory is currently tracked and empty.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`'s closed lines of enquiry. **Owner**: Claude
+  Code. **Model**: Sonnet.
+
+
+
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
+  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet.
+
+
+
 - [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
   before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
   `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
@@ -314,6 +375,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
   count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
   **Owner**: Claude Code. **Model**: Sonnet.
+
+
 
 
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
@@ -334,6 +397,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
   `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
   `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
@@ -346,6 +411,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
   but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+
+
 
 
 
@@ -382,6 +449,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
   backup selection. The books stay where they are until the rest runs.
@@ -407,6 +476,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   waits behind ci's step 6, as the runbook orders it.
   Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
   bucket through CDK, never a raw `aws s3` delete.
+
+
 
 
 
