@@ -248,13 +248,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
   so none of this blocks anything today.
-  **214 down to 52, on PR #194.** The total was exactly right and its composition was not:
+  **214 down to 52, merged as `4918a0d0`.** The total was exactly right and its composition was not:
   `prettier/prettier` is 130, not 156; the 156 auto-fixable are 130 prettier plus 25 `no-var` plus 1
   `one-var`; and `no-var` + `no-empty` is 32 of the 84 non-prettier findings, not all of them.
   Fixed: the 130 formatting findings as one commit, then the 25 `no-var` in
   `widgets/page-chrome.js` and the 7 empty catches in `widgets/pass-redeemer.js`, each now saying
   why the failure is ignorable rather than swallowing it.
-  Also fixed there: CI's total step ran `npx eslint . --format unix 2>/dev/null | ... || true`, and
+  Also fixed: CI's total step ran `npx eslint . --format unix 2>/dev/null | ... || true`, and
   `--format unix` needs `eslint-formatter-unix`, which ESLint dropped from core in v9 and this repo
   does not depend on. So the step exited 2 on every run and reported "0 finding(s)" every time. It
   now uses `--format json` and branches on the exit code.
