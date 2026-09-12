@@ -118,8 +118,10 @@ export async function ingestHandler(event) {
   errorMessages = errorMessages.concat(govClientErrorMessages || []);
 
   // Extract and validate parameters
-  const { nino, businessId, taxYear, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } =
-    extractAndValidateParameters(event, errorMessages);
+  const { nino, businessId, taxYear, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(
+    event,
+    errorMessages,
+  );
 
   const responseHeaders = { ...govClientHeaders };
 

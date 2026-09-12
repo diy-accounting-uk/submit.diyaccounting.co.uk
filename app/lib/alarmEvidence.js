@@ -125,13 +125,10 @@ export const EVIDENCE_RULES = [
     match: (ctx) => ctx.namespace === "Submit/Security",
     build: (ctx) => {
       const prefixes = [`/aws/cloudtrail/${ctx.env}-env-cloud-trail`];
-      const isCustomerTableMetric =
-        ctx.metricName === "DynamoDbCustomerTableScan" || ctx.metricName === "DynamoDbCustomerTableGetItem";
+      const isCustomerTableMetric = ctx.metricName === "DynamoDbCustomerTableScan" || ctx.metricName === "DynamoDbCustomerTableGetItem";
       return {
         logGroupNamePrefixes: prefixes,
-        tableNames: isCustomerTableMetric
-          ? CUSTOMER_TABLE_SUFFIXES.map((suffix) => `${ctx.env}-env-${suffix}`)
-          : [],
+        tableNames: isCustomerTableMetric ? CUSTOMER_TABLE_SUFFIXES.map((suffix) => `${ctx.env}-env-${suffix}`) : [],
         insightsQuery: cloudTrailInsightsQuery(prefixes, CLOUDTRAIL_EVENT_NAMES[ctx.metricName]),
       };
     },

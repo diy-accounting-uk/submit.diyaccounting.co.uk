@@ -102,17 +102,11 @@ export function buildBsasAdjustRequestBody(adjustDetails) {
   const hasZeroAdjustments = adjustDetails.zeroAdjustments === true;
 
   if (hasZeroAdjustments && hasAdjustments) {
-    throw new BsasAdjustValidationError(
-      "RULE_BOTH_ADJUSTMENTS_SUPPLIED",
-      "Both adjustments and zero adjustments must not be present",
-    );
+    throw new BsasAdjustValidationError("RULE_BOTH_ADJUSTMENTS_SUPPLIED", "Both adjustments and zero adjustments must not be present");
   }
 
   if (!hasZeroAdjustments && !hasAdjustments) {
-    throw new BsasAdjustValidationError(
-      "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
-      "An empty or non-matching body was submitted",
-    );
+    throw new BsasAdjustValidationError("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", "An empty or non-matching body was submitted");
   }
 
   if (hasZeroAdjustments) {

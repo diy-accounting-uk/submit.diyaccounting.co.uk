@@ -139,9 +139,7 @@ export async function writeHighWaterMark(value) {
  */
 export function datesInWindow(startExclusive, endInclusive) {
   const dates = [];
-  const cursor = new Date(
-    Date.UTC(startExclusive.getUTCFullYear(), startExclusive.getUTCMonth(), startExclusive.getUTCDate()),
-  );
+  const cursor = new Date(Date.UTC(startExclusive.getUTCFullYear(), startExclusive.getUTCMonth(), startExclusive.getUTCDate()));
   const endDate = new Date(Date.UTC(endInclusive.getUTCFullYear(), endInclusive.getUTCMonth(), endInclusive.getUTCDate()));
   while (cursor <= endDate) {
     dates.push(cursor.toISOString().slice(0, 10));

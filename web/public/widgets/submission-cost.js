@@ -60,7 +60,9 @@
 
   function findActivity(catalog, pagePath) {
     if (!catalog?.activities) return null;
-    const normalizedPath = String(pagePath || "").replace(/^\//, "").split("?")[0];
+    const normalizedPath = String(pagePath || "")
+      .replace(/^\//, "")
+      .split("?")[0];
 
     for (const activity of catalog.activities) {
       const paths = activity.paths || (activity.path ? [activity.path] : []);

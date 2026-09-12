@@ -824,7 +824,6 @@ export async function workerHandler(event) {
   });
 }
 
-
 // Service adaptor for aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 // trace: 9
 export async function submitVat(

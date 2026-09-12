@@ -31,9 +31,7 @@ async function describeAlarmNamesByPrefix(cloudWatchClient, prefix) {
   const alarmNames = [];
   let nextToken;
   do {
-    const page = await cloudWatchClient.send(
-      new DescribeAlarmsCommand({ AlarmNamePrefix: prefix, NextToken: nextToken }),
-    );
+    const page = await cloudWatchClient.send(new DescribeAlarmsCommand({ AlarmNamePrefix: prefix, NextToken: nextToken }));
     for (const alarm of page.MetricAlarms ?? []) alarmNames.push(alarm.AlarmName);
     for (const alarm of page.CompositeAlarms ?? []) alarmNames.push(alarm.AlarmName);
     nextToken = page.NextToken;

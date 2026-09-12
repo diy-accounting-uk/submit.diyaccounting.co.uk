@@ -107,10 +107,7 @@ export function buildBsasUkPropertyAdjustRequestBody(adjustDetails) {
   }
 
   if (!hasZeroAdjustments && !hasAdjustments) {
-    throw new BsasUkPropertyAdjustValidationError(
-      "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
-      "An empty or non-matching body was submitted",
-    );
+    throw new BsasUkPropertyAdjustValidationError("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", "An empty or non-matching body was submitted");
   }
 
   if (hasZeroAdjustments) {
@@ -132,8 +129,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { nino, calculationId, taxYear, income, expenses, zeroAdjustments, runFraudPreventionHeaderValidation } =
-    parsedBody || {};
+  const { nino, calculationId, taxYear, income, expenses, zeroAdjustments, runFraudPreventionHeaderValidation } = parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");

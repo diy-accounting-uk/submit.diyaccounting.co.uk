@@ -28,12 +28,9 @@ function parseTimestampMs(value) {
 }
 
 export function resolveAlarmWindow({ reasonData, timestamp, periodSeconds }) {
-  const fallbackPeriodSeconds =
-    typeof periodSeconds === "number" && periodSeconds > 0 ? periodSeconds : 300;
+  const fallbackPeriodSeconds = typeof periodSeconds === "number" && periodSeconds > 0 ? periodSeconds : 300;
   const resolvedPeriodSeconds =
-    reasonData && typeof reasonData.period === "number" && reasonData.period > 0
-      ? reasonData.period
-      : fallbackPeriodSeconds;
+    reasonData && typeof reasonData.period === "number" && reasonData.period > 0 ? reasonData.period : fallbackPeriodSeconds;
 
   const datapoints = Array.isArray(reasonData?.evaluatedDatapoints) ? reasonData.evaluatedDatapoints : [];
   const evaluatedPeriods = datapoints.length > 0 ? datapoints.length : 1;

@@ -69,8 +69,5 @@ export function allElements(node, tagName) {
  * @returns {string}
  */
 export function escapeXmlText(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

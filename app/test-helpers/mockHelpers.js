@@ -83,7 +83,8 @@ export function setupTestEnv(customEnv = {}) {
     HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-losses-and-claims-delete-async-requests-table",
     HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-tax-liability-adjustments-get-async-requests-table",
     HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-tax-liability-adjustments-put-async-requests-table",
-    HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_DELETE_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-tax-liability-adjustments-delete-async-requests-table",
+    HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_DELETE_ASYNC_REQUESTS_TABLE_NAME:
+      "test-hmrc-itsa-tax-liability-adjustments-delete-async-requests-table",
     SQS_QUEUE_URL: "https://sqs.eu-west-2.amazonaws.com/123456789012/test-queue",
     DIY_SUBMIT_BASE_URL: "https://test.diyaccounting.co.uk",
     COGNITO_CLIENT_ID: "test-cognito-client-id",

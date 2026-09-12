@@ -101,8 +101,7 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { nino, taxYear, calculationId, calculationType, totalIncomeTaxAndNicsDue, runFraudPreventionHeaderValidation } =
-    parsedBody || {};
+  const { nino, taxYear, calculationId, calculationType, totalIncomeTaxAndNicsDue, runFraudPreventionHeaderValidation } = parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");

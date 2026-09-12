@@ -138,9 +138,7 @@ export async function enforceBundles(event, options = {}) {
   }
 
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const environmentRestrictedActivity = matchedActivities.find(
-    (activity) => !isActivityListedInEnvironment(activity, environmentName),
-  );
+  const environmentRestrictedActivity = matchedActivities.find((activity) => !isActivityListedInEnvironment(activity, environmentName));
   if (environmentRestrictedActivity) {
     const errorDetails = {
       code: "ACTIVITY_ENVIRONMENT_RESTRICTED",

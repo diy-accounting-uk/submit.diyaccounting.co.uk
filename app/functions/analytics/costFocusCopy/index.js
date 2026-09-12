@@ -104,8 +104,6 @@ export async function handler(event) {
     copied += 1;
   }
 
-  console.log(
-    JSON.stringify({ message: "Copied FOCUS export objects into the analytics lake", copied, partition }),
-  );
+  console.log(JSON.stringify({ message: "Copied FOCUS export objects into the analytics lake", copied, partition }));
   return { copied, partition };
 }

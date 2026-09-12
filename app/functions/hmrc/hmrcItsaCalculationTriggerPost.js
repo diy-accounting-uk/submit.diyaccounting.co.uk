@@ -44,7 +44,6 @@ const DEFAULT_WAIT_MS = 0;
 // Individual Calculations v8.0 - the API version this endpoint requires.
 const HMRC_API_VERSION = "8.0";
 
-
 // The three calculationType values the trigger path accepts. HMRC's own scope narrows this
 // further by tax year (intent-to-amend only applies from 2025-26), but that rule belongs to
 // HMRC's business validation, not to a format check made before the request is ever sent.
@@ -576,7 +575,12 @@ export async function triggerAndAwaitItsaCalculation(
     );
     const notReady = !getResult.hmrcResponse.ok && getResult.hmrcResponse.status === 404;
     if (!notReady) break;
-    logger.info({ message: "Calculation not finished yet, retrying", calculationId, attempt, maxAttempts: CALCULATION_RETRIEVE_MAX_ATTEMPTS });
+    logger.info({
+      message: "Calculation not finished yet, retrying",
+      calculationId,
+      attempt,
+      maxAttempts: CALCULATION_RETRIEVE_MAX_ATTEMPTS,
+    });
     if (attempt < CALCULATION_RETRIEVE_MAX_ATTEMPTS) await sleep(CALCULATION_RETRIEVE_RETRY_DELAY_MS);
   }
 

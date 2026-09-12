@@ -244,8 +244,18 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
-  const { nino, businessId, taxYear, fromDate, toDate, ukFhlProperty, ukNonFhlProperty, income, expenses, runFraudPreventionHeaderValidation } =
-    parsedBody || {};
+  const {
+    nino,
+    businessId,
+    taxYear,
+    fromDate,
+    toDate,
+    ukFhlProperty,
+    ukNonFhlProperty,
+    income,
+    expenses,
+    runFraudPreventionHeaderValidation,
+  } = parsedBody || {};
 
   if (!nino) errorMessages.push("Missing nino parameter from body");
   if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
@@ -799,7 +809,9 @@ export async function createUkPropertyPeriod(
   // answering 204 with nothing.
   const submissionModel = resolveItsaSubmissionModel(taxYear);
   const hmrcRequestBody =
-    submissionModel === "cumulative" ? buildUkPropertyCumulativeRequestBody(periodDetails) : buildUkPropertyPeriodRequestBody(periodDetails);
+    submissionModel === "cumulative"
+      ? buildUkPropertyCumulativeRequestBody(periodDetails)
+      : buildUkPropertyPeriodRequestBody(periodDetails);
 
   // hmrcHttpPost/hmrcHttpPut, unlike hmrcHttpGet, do not prepend the HMRC base URI themselves -
   // the caller builds the full URL, the way hmrcVatReturnPost.js's submitVat does.

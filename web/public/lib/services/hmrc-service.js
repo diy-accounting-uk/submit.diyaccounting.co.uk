@@ -309,8 +309,7 @@ export async function submitVat(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -359,8 +358,7 @@ export async function getBusinessDetails(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -416,8 +414,7 @@ export async function getObligations(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -477,8 +474,7 @@ export async function postSelfEmploymentPeriod(
     // customer re-authorizes instead of retrying with the same token.
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -529,8 +525,7 @@ export async function getSelfEmploymentAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -585,8 +580,7 @@ export async function putSelfEmploymentAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -640,8 +634,7 @@ export async function triggerBsas(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -692,8 +685,7 @@ export async function getBsasSelfEmployment(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -749,8 +741,7 @@ export async function adjustBsasSelfEmployment(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -801,8 +792,7 @@ export async function getUkPropertyAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -856,8 +846,7 @@ export async function putUkPropertyAnnual(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -908,8 +897,7 @@ export async function getBsasUkProperty(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -964,8 +952,7 @@ export async function adjustBsasUkProperty(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1026,8 +1013,7 @@ export async function triggerCalculation(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1078,8 +1064,7 @@ export async function getCalculation(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1134,8 +1119,7 @@ export async function postFinalDeclaration(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1196,8 +1180,7 @@ export async function getLossesAndClaims(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1253,8 +1236,7 @@ export async function putLossesAndClaims(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1303,8 +1285,7 @@ export async function getTaxLiabilityAdjustments(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();
@@ -1357,8 +1338,7 @@ export async function putTaxLiabilityAdjustments(
   if (!response.ok) {
     if (responseJson?.reason === "hmrc_scope_insufficient") {
       const message =
-        responseJson.userMessage ||
-        "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
       console.warn(message);
       if (typeof window !== "undefined" && window.hmrcScopeCheck) {
         window.hmrcScopeCheck.clearHmrcToken();

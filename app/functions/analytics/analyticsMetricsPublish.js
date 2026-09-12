@@ -105,8 +105,7 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "operations",
     dimension: null,
-    sql: (day) =>
-      `SELECT operations FROM v_business_activity_daily WHERE day = DATE '${day}' AND activity = 'hmrc-token-exchanged'`,
+    sql: (day) => `SELECT operations FROM v_business_activity_daily WHERE day = DATE '${day}' AND activity = 'hmrc-token-exchanged'`,
   },
   {
     // Moved from the operations dashboard's "Bundle Operations" widget, which summed

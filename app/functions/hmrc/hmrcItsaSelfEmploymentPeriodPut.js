@@ -709,7 +709,9 @@ export async function amendSelfEmploymentPeriod(
   // buildSelfEmploymentPeriodRequestBody builds for a create.
   const submissionModel = resolveItsaSubmissionModel(taxYear);
   const hmrcRequestBody =
-    submissionModel === "cumulative" ? buildSelfEmploymentPeriodRequestBody(periodDetails) : buildAmendSelfEmploymentPeriodRequestBody(periodDetails);
+    submissionModel === "cumulative"
+      ? buildSelfEmploymentPeriodRequestBody(periodDetails)
+      : buildAmendSelfEmploymentPeriodRequestBody(periodDetails);
 
   // hmrcHttpPut, like hmrcHttpPost, does not prepend the HMRC base URI itself - the caller
   // builds the full URL.

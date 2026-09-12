@@ -141,10 +141,7 @@ function buildClaimsSection(claims, typeOfBusiness) {
   const carryBack = buildMoneySection(claims.carryBack);
   if (carryBack) {
     if (typeOfBusiness && typeOfBusiness !== "self-employment") {
-      throw new LossesAndClaimsValidationError(
-        "CARRY_BACK_CLAIM",
-        "A carry-back claim cannot be made against a property business",
-      );
+      throw new LossesAndClaimsValidationError("CARRY_BACK_CLAIM", "A carry-back claim cannot be made against a property business");
     }
     hmrcClaims.carryBack = carryBack;
   }

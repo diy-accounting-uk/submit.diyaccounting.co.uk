@@ -269,7 +269,15 @@ export async function grantBundle(
   requestId = null,
   { skipCapCheck = false, grantQualifiers, viaPass = false } = {},
 ) {
-  logger.info({ message: "grantBundle entry", userId, requestedBundle: requestBody.bundleId, requestId, skipCapCheck, grantQualifiers, viaPass });
+  logger.info({
+    message: "grantBundle entry",
+    userId,
+    requestedBundle: requestBody.bundleId,
+    requestId,
+    skipCapCheck,
+    grantQualifiers,
+    viaPass,
+  });
 
   const requestedBundle = requestBody.bundleId;
   const qualifiers = requestBody.qualifiers || {};

@@ -371,7 +371,6 @@ export async function workerHandler(event) {
   });
 }
 
-
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatObligations(
   vrn,

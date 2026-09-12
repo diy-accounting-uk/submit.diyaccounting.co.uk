@@ -56,7 +56,9 @@ export function getCatalogBundleById(catalog, bundleId) {
 // resident-pro: allocation "on-pass-on-subscription" — both sell through Stripe Checkout).
 export function getStripeSubscriptionBundles(catalog) {
   if (!catalog?.bundles) return [];
-  return catalog.bundles.filter((b) => Number.isFinite(b.stripePriceAmount) && typeof b.stripeCurrency === "string" && typeof b.stripeInterval === "string");
+  return catalog.bundles.filter(
+    (b) => Number.isFinite(b.stripePriceAmount) && typeof b.stripeCurrency === "string" && typeof b.stripeInterval === "string",
+  );
 }
 
 export function loadPassTypesFromRoot() {
