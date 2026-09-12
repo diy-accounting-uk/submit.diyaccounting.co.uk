@@ -91,6 +91,30 @@ it nine tests fail on a missing file that has nothing to do with the change.
   redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
   **Owner**: Claude Code. **Model**: Sonnet.
 
+- [ ] **B123. One attribution for unattended runs, distinct from a session at a terminal.** The
+  identity audit's class U is "a model started by a schedule or an event, with nobody watching",
+  and it needs to be readable from a commit or a comment without opening the run. Three model-run
+  workflows exist or are proposed — `alarm-triage.yml`, and `auto-merge.yml` and `do-next.yml` on
+  PR #189 — and they do not agree.
+
+  Settle and write into the workspace `CLAUDE.md` beside the terminal convention: unattended runs
+  keep `Co-Authored-By: Claude <noreply@anthropic.com>` and `Claude-Model:` unchanged, because
+  identity and provenance do not depend on who started the run, and replace `Claude-Session:` with
+  `Claude-Run: <run url>`, because there is no interactive session and a reader needs to tell a run
+  nobody watched from one a person drove. Then make all three workflows emit it, and check the
+  `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
+  `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U; PR #189.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B124. Prove `do-next.yml` by dispatch.** On PR #189, `workflow_dispatch` only. It needs no
+  token: it pushes nothing and runs with a read-only `GITHUB_TOKEN`, which is why its allow-list
+  omits push, merge and PR creation entirely. So this is a test, not a setup.
+
+  Dispatch it with a 10 minute budget and read what comes back: did it pick the simplest ready task
+  rather than the most interesting one; did it notice whether `main` was green; did `work.patch`
+  apply cleanly; is `CHANGES.md` specific enough that a different agent could take the next step
+  from it alone. Then dispatch a second run against a deliberately unfinished first one and check
+  the resume decision and the `Resumed-From:` chain. Only uncomment the schedule once a run has
+  produced a patch worth applying. **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
@@ -129,6 +153,20 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: operator
 
+- [ ] **O42. Create the merge token, then auto-merge can run itself.** `auto-merge.yml` on PR #189
+  refuses to start without the repository secret `AUTO_MERGE_TOKEN`, and the refusal is the point:
+  a merge performed with `GITHUB_TOKEN` does not trigger `on: push` workflows, so the post-merge
+  deploy of `main` would silently never fire and the merge would reach nothing.
+
+  Prefer a GitHub App installation token over a PAT — rotatable, scoped to this repository, and the
+  merge then reads as the app rather than as you. That is `diya-ops` from O38, so doing O38 first
+  makes this a configuration step rather than a second credential to track. A fine-grained PAT with
+  contents:write and pull-requests:write works if you would rather not wait.
+
+  Set it as the secret, then Claude Code dispatches the workflow with `dry-run=true` and compares
+  its tables against a `/auto-merge-dry-run` in the terminal: same PRs, same gates, same verdicts,
+  or the skill is being read differently in CI. Only then a live run, and only then the commented
+  triggers. **Source**: PR #189. **Owner**: Operator, then Claude Code. **Model**: none.
 - [ ] **O34. Subscribe the HMRC sandbox application to six ITSA APIs.** Two runs have now stopped
   on the same 403, "The application is not subscribed to the API which it is attempting to invoke":
   the sandbox year's first call to `DELETE .../self-assessment-test-support/vendor-state`, and
