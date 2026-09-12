@@ -54,7 +54,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   creates a property business belonging to the run's own minted test user, with no period summaries
   and no annual submission, so each suite sets up the state it then exercises and any valid quarter
   is free. That also retires the hardcoded dates and the `PROPERTY` scenario that PR #188 added as
-  a stepping stone. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
+  a stepping stone.
+
+  **This is an extension, not a new integration.** `scripts/itsa-sandbox-year.js` already calls
+  `mtd-sa-test-support-api/1.0` to create a business, with `typeOfBusiness: "self-employment"`, and
+  `app/unit-tests/scripts/itsa-sandbox-year.test.js` already asserts the request body carries every
+  field that endpoint requires. Extending it to `uk-property` and having both suites mint their own
+  business is the work. It is also why the three passing suites pass: the self-employment path had
+  this thinking applied already. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
   **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
