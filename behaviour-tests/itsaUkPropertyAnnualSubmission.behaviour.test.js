@@ -292,7 +292,10 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   await submitItsaUkPropertyAnnualLoadForm(page, screenshotPath);
   await verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath);
 
-  await fillInItsaUkPropertyAnnualEdits(page, { balancingCharge: 250, allowanceType: "propertyIncome", propertyIncomeAllowance: 1000 }, screenshotPath);
+  // The annual submission this page loads is canned and already carries a private use adjustment,
+  // and HMRC rejects a property income allowance alongside one. Itemised is the branch that is
+  // valid against the data the sandbox actually returns.
+  await fillInItsaUkPropertyAnnualEdits(page, { balancingCharge: 250, allowanceType: "itemised" }, screenshotPath);
   await submitItsaUkPropertyAnnualSaveForm(page, screenshotPath);
   await verifyItsaUkPropertyAnnualSaveResults(page, screenshotPath);
 
