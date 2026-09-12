@@ -116,16 +116,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   waiter failed at 10:56:16 with `NoSuchDistribution`, the step died under `set -e`, and all
   thirteen `probe test / behaviour test *-ci` jobs failed behind it. Any ci set reaching its TTL
   while another branch deploys hits this, so it will recur.
-  **PR #193** makes every call against the old distribution treat `NoSuchDistribution` as
-  already-vacated and skip the rest of the block, while the waiter on our own target distribution
-  stays strict and any other AWS error still fails the step. It was written on `claude/b28-board`
-  but #192 merged head `ce33fd7a` before it was pushed, so it is on its own branch. Verified only
+  **Merged as `ef3aac19`** (PR #193): every call against the old distribution treats
+  `NoSuchDistribution` as already-vacated and skips the rest of the block, while the waiter on our
+  own target distribution stays strict and any other AWS error still fails the step. Verified only
   by a scratch harness with `aws` mocked and by actionlint; **no real run has exercised it**,
-  because reproducing it means timing a deploy against a self-destruct.
-  Remaining: confirm on a real run that a ci set expiring mid-deploy no longer fails the deploy, and
-  decide the second window the same agent found — `.github/actions/set-origins/action.yml:365-370`,
-  where `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
-  `get-api-mappings` and `delete-domain-name` against it, with no equivalent classification.
+  because reproducing it means timing a deploy against a self-destruct. All that is left of this
+  row: confirm on a real run that a ci set expiring mid-deploy no longer fails the deploy, and
+  decide the second window at `.github/actions/set-origins/action.yml:365-370`, where
+  `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
+  `get-api-mappings` and `delete-domain-name` against it with no equivalent classification.
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
 
 
