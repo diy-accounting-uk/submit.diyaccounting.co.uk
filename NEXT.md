@@ -322,10 +322,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   every existing native-auth customer then meets a TOTP enrolment screen at their next sign-in.
   Propose it as a PR and describe that screen; do not ship it before the operator has walked the
   enrolment path end to end as a new customer meets it. Federated Google users are unaffected.
-  The seven Developer Hub captures stay at the workspace root in `../hmrc-header-advisories/` and
-  are deliberately not in this repository: it is public, and they carry the production application
-  id, the operator's name and HMRC's assessment of our compliance. Versioning them needs a private
-  home first.
+  The seven Developer Hub captures live at the workspace root in `../hmrc-header-advisories/`,
+  beside `../REPORT_HMRC_HEADER_ADVISORIES.md`, and stay there: this repository is public and the
+  captures carry the production application id, the operator's name and HMRC's assessment of our
+  compliance. The workspace root is the private side of the boundary, so anything of that kind
+  belongs there and not here.
   **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures; B22's first run.
   **Owner**: Claude Code. **Model**: Sonnet.
 
