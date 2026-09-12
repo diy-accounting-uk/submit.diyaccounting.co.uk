@@ -1,0 +1,235 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: do next
+
+run-name: "do next (${{ inputs.minutes || '10' }} min budget)"
+
+# One unattended agent, one small task, a hard time budget.
+#
+# Finished work lands as a branch and a pull request, like any other work. Unfinished work - out of
+# time, or nothing suitable to start - lands as a patch file and a written handover in the run's
+# artifacts, and pushes nothing at all. The split is the design: a completed task should be
+# reviewable, and a half-finished one must not litter the history with no-op commits or the review
+# queue with something nobody can judge. A later run reads the artifacts of earlier incomplete runs
+# and decides for itself whether any is worth resuming, so a task too big for one budget can still
+# finish across a chain of them - and each run records what it resumed, so the chain is visible.
+#
+# Schedule is deliberately absent for this first drop. Prove it by hand first.
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: 'Working budget in minutes (the agent stops and writes its handover at this point)'
+        type: string
+        required: true
+        default: '10'
+      resume-from:
+        description: 'Run id to resume (blank = let the agent decide from the last 7 days)'
+        type: string
+        required: false
+      task-hint:
+        description: 'Optional nudge toward a board item. Blank = the agent picks the simplest ready task.'
+        type: string
+        required: false
+  # schedule:
+  #   # Once the hand-run version has proven itself. Off the hour, and sparse: each run is a model
+  #   # run, and the board is not a queue that needs draining every fifteen minutes.
+  #   - cron: '43 */4 * * *'
+
+# One at a time. Two unattended agents picking "the simplest ready task" at the same moment pick
+# the same one and produce two patches for one item.
+concurrency:
+  group: do-next
+  cancel-in-progress: false
+
+permissions:
+  id-token: write # OIDC for Bedrock
+  contents: read
+  actions: read # to list and download the artifacts of earlier runs
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  CLAUDE_CODE_VERSION: '2.0.30'
+  OUT_DIR: '/tmp/do-next-out'
+
+jobs:
+  do-next:
+    name: 'do next'
+    runs-on: ubuntu-24.04
+    # The agent's own budget plus room for setup, the handover write-up and artifact upload. The
+    # agent is told to stop at `minutes`; this is the backstop if it does not.
+    timeout-minutes: 30
+    steps:
+      - name: Require an agent token
+        env:
+          AGENT_TOKEN: ${{ secrets.AGENT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AGENT_TOKEN}" ]; then
+            echo "::error::AGENT_TOKEN is not set. A finished task is pushed as a branch and raised"
+            echo "::error::as a PR, and GITHUB_TOKEN's push would not trigger the branch's checks,"
+            echo "::error::so the PR would sit with nothing having run against it."
+            exit 1
+          fi
+          echo "Agent token present."
+
+      # This agent reads NEXT.md, CLAUDE.md and the skills to decide what to do; those must be the
+      # merged versions, not anything a branch proposes.
+      # Read from the default branch, and keep credentials: a finished task is pushed as a branch
+      # from this checkout. The branch is always new and always `claude/*`; main is protected by
+      # the deny rule on the agent's tools.
+      - name: Checkout the default branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_TOKEN || github.token }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Install Claude Code
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      # Pull down what earlier incomplete runs left behind, so the agent can read them as files
+      # rather than spending its budget on API calls. It still decides which, if any, to resume.
+      - name: Collect the artifacts of recent incomplete runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESUME_FROM: ${{ inputs.resume-from }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}/prior"
+          since=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-7d +%Y-%m-%dT%H:%M:%SZ)
+          if [ -n "${RESUME_FROM}" ]; then
+            ids="${RESUME_FROM}"
+          else
+            ids=$(gh run list --workflow do-next.yml --limit 40 \
+                    --json databaseId,conclusion,createdAt \
+                    --jq "[.[] | select(.createdAt > \"$since\") | select(.conclusion != \"success\" and .conclusion != null)] | .[0:6] | .[].databaseId")
+          fi
+          echo "candidate runs: ${ids:-none}"
+          for id in ${ids}; do
+            gh run download "$id" --dir "${OUT_DIR}/prior/$id" 2>/dev/null \
+              && echo "  downloaded $id" \
+              || echo "  $id had no artifacts"
+          done
+          find "${OUT_DIR}/prior" -name CHANGES.md | head -20
+
+      - name: Run the agent
+        id: run
+        env:
+          CLAUDE_CODE_USE_BEDROCK: '1'
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+          ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+          CLAUDE_CODE_MAX_OUTPUT_TOKENS: '16384'
+          DISABLE_TELEMETRY: '1'
+          DISABLE_ERROR_REPORTING: '1'
+          DISABLE_AUTOUPDATER: '1'
+          # Can push a branch and open a pull request; cannot merge one. Merging is /auto-merge's
+          # job and lives behind a different token, so an agent that writes code cannot also
+          # approve its own work into main.
+          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          TASK_HINT: ${{ inputs.task-hint }}
+        run: |
+          set -o pipefail
+          mkdir -p "${OUT_DIR}/notes"
+          MINUTES='${{ inputs.minutes }}'
+          export DEADLINE_UTC=$(date -u -d "+${MINUTES} minutes" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+                                || date -u -v+${MINUTES}M +%Y-%m-%dT%H:%M:%SZ)
+          export RUN_ID RUN_URL OUT_DIR
+          echo "deadline: ${DEADLINE_UTC}"
+
+          PROMPT=$(envsubst < prompts/do-next-ci.md)
+          if [ -n "${TASK_HINT}" ]; then
+            PROMPT="${PROMPT}
+
+          ## Operator hint for this run
+
+          ${TASK_HINT}
+
+          Treat this as a steer toward a task, not as permission to skip the checks above. If main
+          is red, main still wins. If the hinted task is blocked, owned by the operator, or already
+          has a branch on origin, say so and pick by the normal rule instead."
+          fi
+
+          # It may branch, push and open a PR. It may not merge, and it may not push to main:
+          # `git push origin main` is refused by the deny rule below, and no merge tool is granted
+          # at all. The allow-list is the enforcement; the brief is only the reasoning.
+          claude -p "$PROMPT" \
+            --max-turns 80 \
+            --output-format json \
+            --permission-mode default \
+            --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(gh pr merge:*),Bash(gh workflow run:*)" \
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git checkout -b:*),Bash(git push origin claude/:*),Bash(gh pr create:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(mkdir:*)" \
+            2>&1 | tee "${OUT_DIR}/claude-output.json"
+
+      # Whatever the agent did or failed to do, capture the diff. A run that produced nothing still
+      # produces an empty patch and a handover explaining why, which is a usable result.
+      - name: Capture the patch
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          git add -A 2>/dev/null || true
+          git diff --cached > "${OUT_DIR}/work.patch" 2>/dev/null || : > "${OUT_DIR}/work.patch"
+          echo "patch bytes: $(wc -c < "${OUT_DIR}/work.patch")"
+          if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
+            {
+              echo "# do-next run ${{ github.run_id }}"
+              echo
+              echo "- **Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              echo "- **Resumed-From**: unknown — the agent did not write a handover"
+              echo
+              echo "The agent produced no CHANGES.md. It ran out of budget, was cut off, or failed"
+              echo "before writing one. The patch beside this file is whatever it had changed."
+              echo "Treat this run as unresumable unless the patch itself reads as a coherent start."
+            } > "${OUT_DIR}/CHANGES.md"
+          fi
+
+      - name: Summarise
+        if: always()
+        run: |
+          set -euo pipefail
+          { echo "## do next"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "${OUT_DIR}/CHANGES.md" ]; then cat "${OUT_DIR}/CHANGES.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "Patch: $(wc -c < "${OUT_DIR}/work.patch") bytes." >> "$GITHUB_STEP_SUMMARY"
+          # A run that opened a PR has landed its work; the patch is then only a record.
+          if grep -qiE '^- \*\*(PR|Pull request)\*\*:' "${OUT_DIR}/CHANGES.md" 2>/dev/null; then
+            echo "This run opened a pull request - the patch above is a record, not work to resume." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the handover
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: do-next-${{ github.run_id }}
+          path: |
+            ${{ env.OUT_DIR }}/work.patch
+            ${{ env.OUT_DIR }}/CHANGES.md
+            ${{ env.OUT_DIR }}/claude-output.json
+            ${{ env.OUT_DIR }}/notes
+          if-no-files-found: warn
+          retention-days: 14
