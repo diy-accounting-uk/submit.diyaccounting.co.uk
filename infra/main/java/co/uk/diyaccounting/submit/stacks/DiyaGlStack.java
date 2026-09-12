@@ -82,7 +82,7 @@ public class DiyaGlStack extends Stack {
 
         String baseImageTag();
 
-        String booksBucketName();
+        String diyaGlBucketName();
 
         String booksAllowedOrigins();
 
@@ -98,9 +98,9 @@ public class DiyaGlStack extends Stack {
     public DiyaGlStack(Construct scope, String id, StackProps stackProps, DiyaGlStackProps props) {
         super(scope, id, stackProps);
 
-        String booksBucketArn = "arn:aws:s3:::" + props.booksBucketName();
-        String booksObjectsArnPattern = booksBucketArn + "/users/*/books/*";
-        String booksMetadataArnPattern = booksBucketArn + "/users/*/books/*/metadata.json";
+        String diyaGlBucketArn = "arn:aws:s3:::" + props.diyaGlBucketName();
+        String booksObjectsArnPattern = diyaGlBucketArn + "/users/*/books/*";
+        String booksMetadataArnPattern = diyaGlBucketArn + "/users/*/books/*/metadata.json";
 
         // Lookup existing DynamoDB Bundles Table, for the put Lambda's entitlement check
         ITable bundlesTable = Table.fromTableName(
@@ -114,7 +114,7 @@ public class DiyaGlStack extends Stack {
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         var commonEnv = new PopulatedMap<String, String>()
-                .with("DIYA_GL_BUCKET_NAME", props.booksBucketName())
+                .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins());
 
@@ -152,7 +152,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlListGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
-                .resources(List.of(booksBucketArn))
+                .resources(List.of(diyaGlBucketArn))
                 .build());
         this.diyaGlListGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -209,7 +209,7 @@ public class DiyaGlStack extends Stack {
         // DIYA-GL PUT Lambda (books JWT auth)
         // ============================================================================
         var diyaGlPutLambdaEnv = new PopulatedMap<String, String>()
-                .with("DIYA_GL_BUCKET_NAME", props.booksBucketName())
+                .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins())
                 .with("DIYA_GL_MAX_BYTES", "2097152")
@@ -254,7 +254,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
-                .resources(List.of(booksBucketArn))
+                .resources(List.of(diyaGlBucketArn))
                 .build());
         bundlesTable.grant(this.diyaGlPutLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlPutLambda, region, account, props.envName());
@@ -294,7 +294,7 @@ public class DiyaGlStack extends Stack {
         this.diyaGlDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
-                .resources(List.of(booksBucketArn))
+                .resources(List.of(diyaGlBucketArn))
                 .build());
         this.diyaGlDeleteLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)

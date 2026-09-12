@@ -297,7 +297,7 @@
               showSearchCriteria(); // Show form on error
               return;
             }
-            throw new Error(result.message || "Failed to retrieve penalties");
+            throw new Error(hmrcErrorMessage(result, "Failed to retrieve penalties"));
           }
 
           // Display results
@@ -446,7 +446,7 @@
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }
-              throw new Error(result.message || "Failed to retrieve penalties");
+              throw new Error(hmrcErrorMessage(result, "Failed to retrieve penalties"));
             }
 
             // Display results

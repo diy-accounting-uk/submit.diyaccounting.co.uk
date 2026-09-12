@@ -87,6 +87,30 @@
     if (submitBtn) submitBtn.disabled = false;
   }
 
+  // Pull HMRC's own explanation out of an error response body, instead of the generic
+  // message an unmapped HMRC error code otherwise collapses to. HMRC error bodies carry
+  // either a top-level { message } or a { errors: [{ message }, ...] } list.
+  function extractHmrcReason(responseBody) {
+    if (!responseBody) return null;
+    if (typeof responseBody.message === "string" && responseBody.message) {
+      return responseBody.message;
+    }
+    if (Array.isArray(responseBody.errors) && responseBody.errors.length > 0) {
+      const firstMessage = responseBody.errors[0] && responseBody.errors[0].message;
+      if (typeof firstMessage === "string" && firstMessage) {
+        return firstMessage;
+      }
+    }
+    return null;
+  }
+
+  // Build the message to show for a failed API response: HMRC's own reason from
+  // result.responseBody when present, otherwise the endpoint's own message, otherwise
+  // the caller-supplied fallback.
+  function hmrcErrorMessage(result, fallback) {
+    return extractHmrcReason(result && result.responseBody) || (result && result.message) || fallback;
+  }
+
   // Public API
   const api = {
     show,
@@ -97,10 +121,14 @@
     showError: (m, o) => show(m, "error", { ...(o || {}), autoHide: false }),
     showLoading,
     hideLoading,
+    hmrcErrorMessage,
   };
 
   // Attach as namespaced helper
   window.StatusMessages = window.StatusMessages || api;
+  if (typeof window.hmrcErrorMessage !== "function") {
+    window.hmrcErrorMessage = hmrcErrorMessage;
+  }
 
   // Provide global function shims if not already defined, to ease migration
   if (typeof window.showStatus !== "function") {

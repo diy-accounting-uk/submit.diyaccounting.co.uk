@@ -715,7 +715,7 @@ export function http403ForbiddenFromHmrcResponse(hmrcAccessToken, hmrcResponse, 
     }
   }
 
-  return http400BadRequestResponse({
+  return http403ForbiddenResponse({
     hmrcAccessTokenData,
     headers: { ...govClientHeaders },
     message,

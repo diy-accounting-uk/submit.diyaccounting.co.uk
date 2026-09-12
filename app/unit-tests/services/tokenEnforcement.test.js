@@ -140,10 +140,22 @@ describe("tokenEnforcement", () => {
       expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
     });
 
-    it("charges nothing for self-employed-year-end against the real catalogue - the annual submission and adjustable summary", async () => {
+    it("charges a token for self-employed-year-end against the real catalogue - the annual submission, adjustments, losses and claims, and tax liability adjustments all submit to HMRC", async () => {
       const catalog = loadCatalogFromRoot();
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
 
       const result = await consumeTokenForActivity("user-1", "self-employed-year-end", catalog);
+
+      expect(result.consumed).toBe(true);
+      expect(result.cost).toBe(1);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+    });
+
+    it("charges nothing for self-employed-read against the real catalogue - business details, obligations and calculations only read", async () => {
+      const catalog = loadCatalogFromRoot();
+
+      const result = await consumeTokenForActivity("user-1", "self-employed-read", catalog);
 
       expect(result.consumed).toBe(true);
       expect(result.cost).toBe(0);

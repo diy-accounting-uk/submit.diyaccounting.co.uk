@@ -123,6 +123,8 @@ jobs:
       ALARM_WINDOW: ${{ needs.triage.outputs.window }}
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+      RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
     steps:
       # The triage role is created by the environment's CDK deploy and its ARN is set on the
       # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
@@ -217,7 +219,7 @@ jobs:
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'
           AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
           ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
           CLAUDE_CODE_MAX_OUTPUT_TOKENS: '8192'
           DISABLE_TELEMETRY: '1'
@@ -317,12 +319,21 @@ jobs:
           git apply triage-change.patch
           rm triage-change.patch
           git add -A
+          # Unattended-run attribution: Co-Authored-By and Claude-Model are the same trailers a
+          # terminal session writes; Claude-Run replaces Claude-Session because nobody is watching
+          # this run (see CLAUDE.md, "Commit attribution"). printf, not a quoted multi-line
+          # string, so the trailer lines land at column 0 rather than inheriting this script's
+          # indentation.
+          COMMIT_MSG=$(printf 'Alarm triage for #%s: %s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+            "$ISSUE_NUMBER" "$ALARM_NAME" "$MODEL_ID" "$RUN_URL")
           git -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com' \
-            commit -m "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}"
+            commit -m "$COMMIT_MSG"
           git push origin "$BRANCH"
+          PR_BODY=$(printf 'Draft from the alarm-triage workflow for #%s. Not reviewed by a human. Closes nothing.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+            "$ISSUE_NUMBER" "$MODEL_ID" "$RUN_URL")
           PR_URL=$(gh pr create --draft --base main --head "$BRANCH" \
             --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \
-            --body "Draft from the alarm-triage workflow for #${ISSUE_NUMBER}. Not reviewed by a human. Closes nothing.")
+            --body "$PR_BODY")
           echo "url=${PR_URL}" | tee -a "$GITHUB_OUTPUT"
           # origin:unattended-agent says a model ran this with nobody watching. Adding a label
           # through this endpoint, rather than gh pr create's own --label flag, creates the label
