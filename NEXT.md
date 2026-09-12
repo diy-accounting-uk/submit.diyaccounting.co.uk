@@ -64,9 +64,27 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
      `auth-url-builder.js` and the sandbox script both strip it; the helper did not. Fixed in
      `c767df13`.
 
-  **Where it stands.** All four are fixed and pushed. No run has yet exercised the whole chain —
-  own business, user token, valid redirect — because each earlier run died at an earlier layer. A ci
-  deploy and both suites are queued behind it.
+  5. *An address on a property business.* `RULE_UNEXPECTED_BUSINESS_ADDRESS`: HMRC rejects a field
+     it did not ask for rather than ignoring it, so the property body is `typeOfBusiness` alone.
+     Fixed in `65d7d38b`, and the run that found it proved the authorize walk, the code exchange
+     and the user token all work.
+  6. *The sandbox's two APIs do not share state.* With all of the above fixed, the business was
+     created — `XKIS86090688028`, owned by that run's test user, ITSA status set — and the page's
+     business-details read then returned `XBIS12345678901`, the canned self-employment fixture the
+     sandbox returns for every nino. **HMRC's sandbox Business Details API serves canned data and
+     never reflects what the Test Support API creates.** So a suite cannot discover its own business
+     through the page. The suites now file against the id returned at creation; the business-details
+     visit stays as journey coverage. `readFirstUkPropertyBusinessId` is removed, unused. `9e1dd28f`.
+
+  **Where it stands, and the question that matters.** All six are fixed and pushed. What no run has
+  yet answered: **does the Property Business API honour a Test-Support-created businessId?**
+
+  - If it does, owning the data works and this approach is right.
+  - If it answers "business not found", that API is canned too, and owning the data is not reachable
+    through these endpoints at all. The original `Period summary overlaps` would then have been a
+    fixed canned response rather than real state, and the suites need a different strategy — asserting
+    against known canned responses rather than trying to control state. That would also change what
+    B11.T7r can expect from the sandbox year.
 
   **If this needs picking up cold.** The diagnosis that mattered each time came from evidence, not
   reasoning: HMRC's response body in the Lambda log, and `stuck-0.html` in the run's artifacts,
