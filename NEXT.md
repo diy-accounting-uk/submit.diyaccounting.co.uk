@@ -58,11 +58,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   waiter failed at 10:56:16 with `NoSuchDistribution`, the step died under `set -e`, and all
   thirteen `probe test / behaviour test *-ci` jobs failed behind it. Any ci set reaching its TTL
   while another branch deploys hits this, so it will recur.
-  `claude/b28-board` makes every call against the old distribution treat `NoSuchDistribution` as
+  **PR #193** makes every call against the old distribution treat `NoSuchDistribution` as
   already-vacated and skip the rest of the block, while the waiter on our own target distribution
-  stays strict and any other AWS error still fails the step. Verified only by a scratch harness
-  with `aws` mocked and by actionlint; **no real run has exercised it**, because reproducing it
-  means timing a deploy against a self-destruct.
+  stays strict and any other AWS error still fails the step. It was written on `claude/b28-board`
+  but #192 merged head `ce33fd7a` before it was pushed, so it is on its own branch. Verified only
+  by a scratch harness with `aws` mocked and by actionlint; **no real run has exercised it**,
+  because reproducing it means timing a deploy against a self-destruct.
   Remaining: confirm on a real run that a ci set expiring mid-deploy no longer fails the deploy, and
   decide the second window the same agent found — `.github/actions/set-origins/action.yml:365-370`,
   where `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
@@ -79,11 +80,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
   because the workflow toggles Cognito native auth around each run. All three prod captures have now
   succeeded: `view-liabilities` (run 34651931632), `view-payments` (34689643435) and
-  `view-penalties` (34689889022). Remaining: the two ci captures, which need PR #192 because
-  `video-capture.yml`'s `script` choice list only learns the new scripts there, then check all five
+  `view-penalties` (34689889022). Remaining: the two ci captures, then check all five
   artifacts and write `videos/publish.json`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
-  **The two missing scene scripts are on `claude/b28-board`**: `videos/file-micro-entity-accounts.json`
+  **The two missing scene scripts are merged**: `videos/file-micro-entity-accounts.json`
   and `videos/itsa-quarterly-update.json`, both saying on screen that they are sandbox previews, and
   `video-capture.yml`'s `script` choice list now offers them — a script absent from that list cannot
   be dispatched however valid the file is. The ITSA one supersedes `itsa-business-details`, whose
@@ -120,36 +120,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the notebook's data path and count the fields.
 
 
-- [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
-  no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
-  unrestricted and lets any signed-in caller through. The gap covers the whole ITSA surface, not
-  just the newer endpoints, so the entire ITSA journey is currently free while VAT is gated.
-  **Operator decision, 2026-09-11: submissions cost, reads free.** Anything that submits to HMRC
-  costs one token like a VAT return — quarterly updates, annual submissions, losses and claims,
-  tax liability adjustments, final declaration. Anything that only reads is free: business details,
-  obligations, calculations. That matches the existing VAT rule and introduces no new pricing
-  concept.
-  Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
-  submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
-  agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
-  **The premise was wrong, and the pricing is fixed on `claude/b28-board`.** ITSA was never
-  unrestricted: the `self-employed` activity and its `^/api/v1/hmrc/itsa.*` catch-all have gated
-  every ITSA path to `resident-itsa` and `resident-pro` since commit `88764fca`. The actual gap was
-  pricing — reads charged a token, and the year-end writes charged nothing. Reads now sit in a new
-  `self-employed-read` activity at `tokenCost = 0`; `self-employed-year-end` moves to 1;
-  `enforceBundles()` is proved to refuse an ungated caller on all nine submitting API paths and to
-  admit `resident-itsa`.
-  The six year-end handlers now charge what they advertise: `hmrcItsaSelfEmploymentAnnualPut`,
-  `hmrcItsaUkPropertyAnnualPut`, `hmrcItsaLossesAndClaimsPut`, `hmrcItsaLossesAndClaimsDelete`,
-  `hmrcItsaTaxLiabilityAdjustmentsPut` and `hmrcItsaTaxLiabilityAdjustmentsDelete` call
-  `consumeTokenForActivity` under `self-employed-year-end` on the initial request. Both DELETEs
-  charge: a delete of a loss claim or an adjustment is a write to HMRC, and the catalogue prices
-  the page rather than the verb. Closes on merge of PR #192.
-  One behaviour to confirm rather than assume, now on twelve handlers rather than six: the charge
-  lands **before** the HMRC call and a failed submission is not refunded. That is pre-existing and
-  was copied, not decided. If a failure should refund, say so and it becomes its own row.
-
-
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
   `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
   policy with "cross-account sharing restrictions" (403). A vault access policy takes
@@ -167,21 +137,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code. **Model**: Sonnet.
 
 
-- [ ] **B123. One attribution for unattended runs, distinct from a session at a terminal.** The
-  identity audit's class U is "a model started by a schedule or an event, with nobody watching",
-  and it needs to be readable from a commit or a comment without opening the run. Four model-run
-  workflows are on main — `alarm-triage.yml`, `agentic-lib-pr.yml`, `agentic-lib-code.yml` and
-  `agentic-lib-board.yml` — and they do not agree.
-  Settle and write into the workspace `CLAUDE.md` beside the terminal convention: unattended runs
-  keep `Co-Authored-By: Claude <noreply@anthropic.com>` and `Claude-Model:` unchanged, because
-  identity and provenance do not depend on who started the run, and replace `Claude-Session:` with
-  `Claude-Run: <run url>`, because there is no interactive session and a reader needs to tell a run
-  nobody watched from one a person drove. Then make all four workflows emit it, and check the
-  `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
-  `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
   `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
   `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
@@ -196,25 +151,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
 
 
-- [ ] **B126. Document that a ci redeploy needs an explicit deployment-name.**
-  `.github/actions/get-names/action.yml:112` computes `ci-${CLEANED:0:5}${REF_HASH}` where
-  `REF_HASH` hashes the **branch name**, not the commit, so a branch resolves to the same deployment
-  name on every deploy. A second deploy of a branch updates the live set in place and
-  `deploy.yml`'s `destroy previous` then tears down what it just deployed. Observed in run
-  34672307283: stacks `UPDATE_COMPLETE`, `OpsStack` `DELETE_COMPLETE`, five stack jobs failed.
-  **Operator decision, 2026-09-12: leave the derivation and the destroy step alone.** Passing an
-  explicit `deployment-name` to `deploy.yml` is the intended process for a redeploy, and the ci TTL
-  is configurable for a longer window.
-  So this row is documentation only: state in `CLAUDE.md` that a second deploy of the same branch
-  requires `-f deployment-name=<unique>`, and why — without it the set is destroyed and the failure
-  presents as several stack jobs failing rather than as a name collision. **Source**: deploy run
-  34672307283. **Owner**: Claude Code. **Model**: Haiku.
-
-
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
   so none of this blocks anything today.
+  **In flight on `claude/lint-sweep`**, branched off batch 28 so the formatting pass does not fight
+  it. Two findings already: the primary checkout's `node_modules` had `typescript` 7.0.2 against a
+  pinned 6.0.3, which crashes `ts-api-utils` and so `eslint` — a clean `npm ci` in the worktree
+  gives 6.0.3 and a working linter. And CI's own total step runs
+  `npx eslint . --format unix 2>/dev/null | grep -c ... || true`, so a crashed eslint reports zero
+  findings and the job stays green; the 214 figure is unconfirmed until the worktree's run reports
+  its own totals.
   **Operator decision, 2026-09-11: fix all 214.** Take the formatting pass as its own commit
   touching no logic, then the `no-var` and `no-empty` fixes as a second. The second half changes
   real code in pages covered only by the behaviour suites, so it needs those suites run against a
@@ -239,13 +186,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
   reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
   NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
-  **Code half done on `claude/b28-board`, ci step 1 run.** PR #180 created the new bucket but left
+  **Code merged in #192, ci step 1 run.** PR #180 created the new bucket but left
   every DIYA-GL Lambda's `DIYA_GL_BUCKET_NAME` pointed at the old one; that is closed, and
   `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` holds the six AWS steps per environment with both
   gates. ci step 1 copied 6 objects from `ci-env-books-367191799875` to
   `ci-env-diya-gl-367191799875`; both buckets now hold 6. prod starts at 16 objects / 146,299 B and
   waits behind ci's step 6, as the runbook orders it.
-  Next, after PR #192 deploys: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
+  Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
   bucket through CDK, never a raw `aws s3` delete.
 
 
