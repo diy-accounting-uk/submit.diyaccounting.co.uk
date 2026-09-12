@@ -31,8 +31,10 @@ sits. `human-only` is work no session can do: an external registration, a consol
 API, a filing against the operator's own company, an email from their address, a decision between
 named alternatives. A row whose only human step is merging its PR is machine-only; that is the
 standing workflow, not an action the row needs. Within a section, items run by backlog tier, an
-alarm or a pipeline failure counting as tier 1, then the untiered. Operator items
-are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
+alarm or a pipeline failure counting as tier 1, then the untiered. Human items
+are briefed for Claude Cowork at the workspace root: `../BRIEF_OPERATOR_TASKS_2026-09-12.md`
+carries O42, O37, O16, O33, O36, O38 and the four queued behind machine work (B80b, O32, B17v.2,
+B11.T10); `../BRIEF_OPERATOR_TASKS_2026-09-09.md` carries O17, O21 and O23.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 
@@ -76,10 +78,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
   execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
-  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
-  the first success after the 2026-09-10 and 2026-09-11 failures, and
-  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
-  the notebook's data path and count the fields.
+  **Counted, on `claude/b28-board`.** The 02:15 UTC nightly of 2026-09-12 succeeded (execution
+  `0d6aa4b5-a4d8-4337-be9e-b10cbc035be1`, 02:15:16 to 02:20:28 UTC) and wrote 21 CSVs and 8 JSONs
+  under `exports/prod/2026-09-11/`. `_developers/EXPORT_ANALYSIS_2026-09-11.md` holds the per-field
+  non-empty counts. What the counts found, and the remainder of this row: `v_compliance_status.csv`
+  and `v_subscription_renewals_daily.csv` are headers with no rows, every one of the eight objective
+  JSONs has an empty `target`, and `median_lead_time_seconds` is missing from four rows across
+  operator-effort and retention. Decide per field whether the view is wrong, the source is empty or
+  the target was never set, and fix what is wrong.
 
 
 - [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
