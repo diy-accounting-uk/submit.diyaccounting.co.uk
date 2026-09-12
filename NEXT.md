@@ -17,9 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4918a0d**, nine stacks, live since the #194 merge deploy at about
-13:00 UTC; the apex answers 200. `prod-e6d3045` stands as the spare, nine stacks, left behind when
-the #192 deploy's `destroy previous` job was cancelled:
-`gh workflow run destroy-prod.yml -f deployment-name=prod-e6d3045` removes it.
+13:00 UTC; the apex answers 200. It is the only prod set: `prod-e6d3045` was destroyed by
+run 34717906698 at about 20:5x UTC, so nothing spare is being paid for.
 **No ci deployment exists.** All three sets have gone — `ci-claudc83b`, `ci-claudd44f` and the
 long-overdue `ci-mainb28b` — and `/submit/ci/last-known-good-deployment` reads `None`. Three ready
 rows need a ci set before they can run: B73's email-restricted pass, B71.S3e's remaining sync and
