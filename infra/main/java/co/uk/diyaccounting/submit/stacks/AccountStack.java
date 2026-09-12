@@ -18,6 +18,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -714,6 +715,7 @@ public class AccountStack extends Stack {
         passesTable.grant(this.passGetLambda, "dynamodb:GetItem");
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.passGetLambda, region, account, props.envName());
+        EmailHashSecretHelper.grantEmailHashSecretAccess(this.passGetLambda, region, account, props.envName());
         this.passGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -761,6 +763,7 @@ public class AccountStack extends Stack {
         bundlesTable.grant(this.passPostLambda, "dynamodb:Query", "dynamodb:PutItem", "dynamodb:DeleteItem");
         bundleCapacityTable.grant(this.passPostLambda, "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passPostLambda, region, account, props.envName());
+        EmailHashSecretHelper.grantEmailHashSecretAccess(this.passPostLambda, region, account, props.envName());
         this.passPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -803,6 +806,7 @@ public class AccountStack extends Stack {
         passesTable.grant(this.passAdminPostLambda, "dynamodb:PutItem");
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.passAdminPostLambda, region, account, props.envName());
+        EmailHashSecretHelper.grantEmailHashSecretAccess(this.passAdminPostLambda, region, account, props.envName());
         this.passAdminPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
@@ -850,6 +854,7 @@ public class AccountStack extends Stack {
         // Generating a pass spends one of the issuer's tokens: read the bundle, then record the spend.
         bundlesTable.grant(this.passGeneratePostLambda, "dynamodb:Query", "dynamodb:UpdateItem");
         SubHashSaltHelper.grantSaltAccess(this.passGeneratePostLambda, region, account, props.envName());
+        EmailHashSecretHelper.grantEmailHashSecretAccess(this.passGeneratePostLambda, region, account, props.envName());
         this.passGeneratePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
