@@ -16,12 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod ran deployment prod-c065053** as of the 2026-09-11 21:42 UTC deploy; the #190 merge of
-2026-09-12 is deploying and its set is not yet confirmed live — the SSO token expired during the
-board render of 09:45 UTC, so re-read `/submit/prod/last-known-good-deployment` before relying on
-this line. ci runs `ci-annual1`, ten stacks from 08:55, self-destruct about 10:56. `ci-mainb28b`
-still stands with nine stacks eleven hours past its own window, which the `34 2,4,6,8,10,12` UTC
-sweep has not removed.
+**Prod runs deployment prod-40b194e**, nine stacks. `prod-e6d3045` from the #190 merge stands with
+seven stacks while its `deploy` run is still in progress, so the live pointer has not moved to it
+yet. ci runs `ci-annual1`, ten stacks from 08:55, self-destruct about 10:56. `ci-mainb28b` still
+stands with nine stacks, now eleven hours past its own window and untouched by four
+`34 2,4,6,8,10,12` UTC sweeps.
 
 The board runs in four sections, in this order: in flight; ready, Claude Code; ready, operator;
 blocked (either owner, the blocker named). Within a section, items run by backlog tier, an
@@ -352,8 +351,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   entries, so a field that never fills is found now rather than in three months. Proof the run
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
-  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku. Blocked on the next 02:15 UTC
-  nightly of 2026-09-12. The missing view that failed every previous run now exists in prod.
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
+
+  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
+  the first success after the 2026-09-10 and 2026-09-11 failures, and
+  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
+  the notebook's data path and count the fields.
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
   stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
@@ -374,7 +377,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   alone; an email-restricted pass can still be neither created nor redeemed anywhere. Creating
   the secret material is an AWS write and a decision about the value, so the operator settles it,
   then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
-  2026-09-09. **Owner**: Operator, then Claude Code. **Model**: Haiku for the grant.
+  2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
+
+  **In flight.** Both secrets now exist: `ci/submit/email-hash-secret` and
+  `prod/submit/email-hash-secret`, created 2026-09-12 11:00 BST with independent 48-byte random
+  values. The grant is written on `claude/ops-email-hash-grant`: a new `EmailHashSecretHelper`
+  mirroring `SubHashSaltHelper`, applied to the four pass Lambdas that reach `passService.js` —
+  `passGet`, `passPost`, `passAdminPost`, `passGeneratePost`. `passMyPassesGet` is excluded because
+  it does not use `passService`. `./mvnw clean verify` passes, 220 tests. Remaining: push and raise
+  the PR.
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
