@@ -100,6 +100,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
   submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
   agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
+  **The premise was wrong, and the pricing is fixed on `claude/b28-board`.** ITSA was never
+  unrestricted: the `self-employed` activity and its `^/api/v1/hmrc/itsa.*` catch-all have gated
+  every ITSA path to `resident-itsa` and `resident-pro` since commit `88764fca`. The actual gap was
+  pricing — reads charged a token, and the year-end writes charged nothing. Reads now sit in a new
+  `self-employed-read` activity at `tokenCost = 0`; `self-employed-year-end` moves to 1;
+  `enforceBundles()` is proved to refuse an ungated caller on all nine submitting API paths and to
+  admit `resident-itsa`.
+  Remaining, in flight: six year-end handlers declare the new price and charge nothing —
+  `hmrcItsaSelfEmploymentAnnualPut`, `hmrcItsaUkPropertyAnnualPut`, `hmrcItsaLossesAndClaimsPut`,
+  `hmrcItsaLossesAndClaimsDelete`, `hmrcItsaTaxLiabilityAdjustmentsPut`,
+  `hmrcItsaTaxLiabilityAdjustmentsDelete` never call `consumeTokenForActivity`, so a page says a
+  submission costs a token and it is free. Wiring the charge is this row's remainder.
 
 
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
