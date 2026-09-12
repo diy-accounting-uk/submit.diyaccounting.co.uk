@@ -16,12 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-e6d3045**, nine stacks, live since its `deploy` run completed at
-11:4x UTC on 2026-09-12. `prod-40b194e` is now the spare and costs $35.28 a month until the
-operator runs `gh workflow run destroy-prod.yml -f deployment-name=prod-40b194e`. ci runs `ci-annual1`, ten stacks from
-08:56, self-destruct about 10:56. `ci-mainb28b` still stands with nine stacks, twelve hours past
-its own window and untouched by four `34 2,4,6,8,10,12` UTC sweeps, so the sweep's own selection
-needs looking at.
+**Prod runs deployment prod-e6d3045**, nine stacks, and carries no spare: `prod-40b194e` has been
+destroyed. ci runs `ci-claudc83b`, ten stacks from 11:23, self-destruct about 13:23. `ci-claudd44f`
+stands with ten stacks from 10:38. `ci-mainb28b` still stands with eight stacks from 2026-09-11
+22:39, overdue since 00:39 and untouched by five `34 2,4,6,8,10,12` UTC sweeps, so the sweep's own
+selection needs looking at.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
@@ -36,6 +35,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## Machine-only
+
+- [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
+  `prod-env-cost-focus-copy-errors` has been in ALARM since 2026-09-10 03:46 BST — "The nightly
+  FOCUS export copy failed at least once in 24 hours" — and no issue was raised for it, so
+  `alarm-triage.yml` did not fire either. The Lambda's own log says why:
+  `prod-env-cost-focus-copy-role` "is not authorized to perform: s3:ListBucket on resource:
+  arn:aws:s3:::diy-accounting-cost-focus-887764105431".
+  `CostExportStack.java:155` grants that account `s3:ListBucket` on the bucket in the bucket's own
+  resource policy, under an `s3:prefix` condition. A cross-account read needs both sides, so the
+  theory is that the Lambda's role carries no matching identity policy — the same omission B52x hit,
+  where `prod-env-raw-export-publish` had `PutObject` and neither `GetObject` nor `ListBucket` until
+  2026-09-10 18:14. Confirm which side is missing before changing either, then check whether the
+  `s3:prefix` condition matches the prefix the Lambda actually lists. Also find out why no alarm
+  issue exists after two days. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
+  2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 - [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
   `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
@@ -53,19 +68,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   failure. Check whether the DORA panels already counted cancellations as failures before this.
   **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
 
-- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
-  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
-  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
-  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
-  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
-  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
-  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
-  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
-  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
-  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
-  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
-  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
-  **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
   `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
@@ -85,6 +87,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   where `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
   `get-api-mappings` and `delete-domain-name` against it, with no equivalent classification.
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
@@ -113,6 +116,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `#businessPickerForm`. Check that on the next capture rather than assuming.
 
 
+
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
   the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
   `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
@@ -136,6 +140,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the notebook's data path and count the fields.
 
 
+
+- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
+  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
+  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
+  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
+  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
+  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
+  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
+  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
+  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
+  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
+  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
+  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
+
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
   `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
   policy with "cross-account sharing restrictions" (403). A vault access policy takes
@@ -153,6 +173,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code. **Model**: Sonnet.
 
 
+
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
   `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
   `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
@@ -165,6 +186,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
   but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
@@ -183,6 +205,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   real code in pages covered only by the behaviour suites, so it needs those suites run against a
   deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
   Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
+
 
 
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
@@ -212,12 +235,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   bucket through CDK, never a raw `aws s3` delete.
 
 
+
 - [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
   first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
   advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
+
 
 
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
@@ -230,6 +255,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   and redeem an email-restricted pass against ci and confirm the secret is fetched rather than
   warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
   **Model**: Haiku.
+
+## Human and machine
 
 - [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
   (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
@@ -386,6 +413,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Resume from call 7 once O43 lands. **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of
   2026-09-12. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O43.
 
+
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
@@ -404,14 +432,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   and on `PLAN_SUBMISSION_MCP.md` M1.
 
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
-  B11.T22.
-
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
@@ -425,6 +445,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Blocked on O17.
 
 
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
   GitHub environment secret), read the real acknowledgement and poll responses, settle the
@@ -434,17 +455,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
   34b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
 
-
-- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
-  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
-  **Model**: none. Blocked on B17v.1.
-
-
-- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
-  capture runs, upload them unlisted with `video-publish`, then the operator runs
-  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
-  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
-  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
 
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
@@ -467,6 +477,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Blocked on O42.
 
 
+
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
   stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
@@ -480,12 +491,37 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   grant at all, and today's dispatch proved the current design does not deploy.
 
 
+
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on the brand package existing, now planned in the spreadsheets repository's
   `PLAN_DIYACCOUNTING_BRAND.md`.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
+  B11.T22.
+
+
+
+- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
+  capture runs, upload them unlisted with `video-publish`, then the operator runs
+  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
+  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
+  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+
+
+
+- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
+  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
+  **Model**: none. Blocked on B17v.1.
+
+
 
 ## Discipline
 
