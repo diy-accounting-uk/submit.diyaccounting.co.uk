@@ -11,6 +11,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   createHmrcTestUser,
+  createHmrcTestBusiness,
   getEnvVarAndLog,
   isSyntheticMode,
   runLocalDynamoDb,
@@ -222,6 +223,15 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
       throw new Error("HMRC test user creation did not return a nino for the mtd-income-tax service");
     }
 
+    // A business this run owns. Gov-Test-Scenario returns a canned one every run shares, so its
+    // annual submission carries whatever adjustments the last run left behind - which is why this
+    // suite failed with "Property income allowance must not be present alongside a private use
+    // adjustment" against data it never set. This one starts empty.
+    await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
+      typeOfBusiness: "uk-property",
+      taxYear: "2023-24",
+    });
+
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
 
@@ -257,9 +267,9 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /* ***************************************** */
 
   await initItsaBusinessDetails(page, screenshotPath);
-  // A freshly minted HMRC sandbox test user owns no uk-property business, so a plain Business Details
-  // read returns nothing to file against. PROPERTY is the sandbox's own scenario for returning one.
-  const businessDetailsQuery = { hmrcNino: testNino, testScenario: "PROPERTY", runFraudPreventionHeaderValidation };
+  // The uk-property business created for this test user above is what this read returns, so the
+  // businessId below belongs to this run and carries no submissions it did not make.
+  const businessDetailsQuery = { hmrcNino: testNino, runFraudPreventionHeaderValidation };
   await fillInItsaBusinessDetails(page, businessDetailsQuery, screenshotPath);
   await submitItsaBusinessDetailsForm(page, screenshotPath);
 

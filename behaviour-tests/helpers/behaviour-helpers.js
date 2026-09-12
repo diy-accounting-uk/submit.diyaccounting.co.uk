@@ -1132,3 +1132,100 @@ export function getFreeTcpPort() {
     });
   });
 }
+
+/**
+ * The test-support "create a business" request body.
+ *
+ * A self-employment business carries a trade; a property one does not, and HMRC rejects the trade
+ * fields on a property business rather than ignoring them. `scripts/itsa-sandbox-year.js` builds
+ * the self-employment shape for the sandbox year run; this is the same endpoint from the
+ * behaviour tests, for the business a single suite needs to own.
+ */
+export function buildTestSupportBusinessBody(typeOfBusiness) {
+  const common = {
+    typeOfBusiness,
+    businessAddressLineOne: "1 Test Street",
+    businessAddressCountryCode: "GB",
+  };
+  if (typeOfBusiness === "self-employment") {
+    return { ...common, tradingType: "Other business", tradingName: "Behaviour Test Trade" };
+  }
+  return common;
+}
+
+/**
+ * Create a business the run owns, through HMRC's Self Assessment Test Support API, and set an ITSA
+ * status for the tax year so the business has obligations to file against.
+ *
+ * Why a suite needs this rather than `Gov-Test-Scenario`: a scenario returns a canned business that
+ * every run shares, so its period summaries and annual submissions are whatever the last run left
+ * behind. Filing into it fails with "Period summary overlaps with any of the existing period
+ * summaries" once anyone has filed that quarter, and an annual submission inherits adjustments the
+ * suite never set. A business created for this run's own minted test user starts empty.
+ *
+ * Returns the businessId.
+ */
+export async function createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, nino, options = {}) {
+  const typeOfBusiness = options.typeOfBusiness || "uk-property";
+  const taxYear = options.taxYear;
+  const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+
+  const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: hmrcClientId,
+      client_secret: hmrcClientSecret,
+      grant_type: "client_credentials",
+    }).toString(),
+  });
+  const tokenBody = await tokenResponse.json().catch(() => ({}));
+  if (!tokenResponse.ok || !tokenBody.access_token) {
+    const detail = tokenBody?.error_description || tokenBody?.error || JSON.stringify(tokenBody);
+    throw new Error(`[HMRC Test Business] Failed to obtain access token: ${tokenResponse.status} - ${detail}`);
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${tokenBody.access_token}`,
+  };
+
+  const body = buildTestSupportBusinessBody(typeOfBusiness);
+  logger.info({ message: "[HMRC Test Business] Creating a business for this run", nino, typeOfBusiness });
+
+  const created = await fetch(`${baseUrl}/individuals/self-assessment-test-support/business/${nino}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const createdBody = await created.json().catch(() => ({}));
+  if (!created.ok) {
+    throw new Error(
+      `[HMRC Test Business] Create business failed: ${created.status} ${created.statusText} - ${JSON.stringify(createdBody)}`,
+    );
+  }
+  const businessId = createdBody.businessId;
+  if (!businessId) {
+    throw new Error(`[HMRC Test Business] Create business response carried no businessId: ${JSON.stringify(createdBody)}`);
+  }
+
+  // Without an ITSA status for the year there are no obligations, and a period summary has nothing
+  // to attach to. The sandbox year script sets one for the same reason.
+  if (taxYear) {
+    const status = await fetch(`${baseUrl}/individuals/self-assessment-test-support/itsa-status/${nino}/${taxYear}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        itsaStatusDetails: [{ status: "MTD Mandated", statusReason: "Sign up - return available", submittedOn: new Date().toISOString() }],
+      }),
+    });
+    if (!status.ok) {
+      const statusBody = await status.text().catch(() => "");
+      throw new Error(`[HMRC Test Business] Set ITSA status failed: ${status.status} ${status.statusText} - ${statusBody}`);
+    }
+  }
+
+  logger.info({ message: "[HMRC Test Business] Created", nino, typeOfBusiness, businessId, taxYear: taxYear || "not set" });
+  return businessId;
+}
