@@ -30,10 +30,10 @@
 (function () {
   "use strict";
 
-  var HOME_ICON_PATH = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
-  var INFO_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
+  const HOME_ICON_PATH = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
+  const INFO_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
 
-  var NAV_LINKS = [
+  const NAV_LINKS = [
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
     { label: "Bundles", target: "bundles.html" },
@@ -49,11 +49,11 @@
   // from the URL, which would break under file:// (the pathname there is the
   // full disk path, not just the path below web/public).
   function computeRootPrefix() {
-    var scriptEl = findOwnScript();
-    var src = scriptEl && scriptEl.getAttribute("src");
-    var marker = "widgets/page-chrome.js";
+    const scriptEl = findOwnScript();
+    const src = scriptEl && scriptEl.getAttribute("src");
+    const marker = "widgets/page-chrome.js";
     if (!src) return "";
-    var idx = src.indexOf(marker);
+    const idx = src.indexOf(marker);
     return idx === -1 ? "" : src.slice(0, idx);
   }
 
@@ -65,7 +65,7 @@
   }
 
   function buildHeaderNavHtml(rootPrefix) {
-    var homeHref = rootPrefix === "" ? "./" : rootPrefix;
+    const homeHref = rootPrefix === "" ? "./" : rootPrefix;
     return (
       '<div class="header-nav">' +
       '<div class="header-left">' +
@@ -96,20 +96,20 @@
   }
 
   function buildNavHtml(rootPrefix, pathname) {
-    var homeHref = rootPrefix === "" ? "./" : rootPrefix;
-    var links = NAV_LINKS.map(function (link) {
-      var href = link.target === "" ? homeHref : rootPrefix + link.target;
-      var active = isActiveTarget(link.target, pathname) ? ' class="active"' : "";
+    const homeHref = rootPrefix === "" ? "./" : rootPrefix;
+    const links = NAV_LINKS.map(function (link) {
+      const href = link.target === "" ? homeHref : rootPrefix + link.target;
+      const active = isActiveTarget(link.target, pathname) ? ' class="active"' : "";
       return '<a href="' + href + '"' + active + ">" + link.label + "</a>";
     });
     return '<nav class="main-nav" aria-label="Main navigation">' + links.join("") + "</nav>";
   }
 
   function buildFooterHtml(rootPrefix, variant) {
-    var showLegal = variant === "full";
-    var boxed = variant === "full" || variant === "activity-boxed";
+    const showLegal = variant === "full";
+    const boxed = variant === "full" || variant === "activity-boxed";
 
-    var devLinks =
+    const devLinks =
       '<a href="#" id="viewSourceLink" style="display: none">view source</a>' +
       '<a id="latestTestsLink" style="display: inline" target="_blank" href="' +
       rootPrefix +
@@ -118,7 +118,7 @@
       rootPrefix +
       'docs/api/index.html"> api </a>';
 
-    var legalLinks = showLegal
+    const legalLinks = showLegal
       ? '<a href="' +
         rootPrefix +
         'privacy.html">privacy</a>' +
@@ -130,7 +130,7 @@
         'accessibility.html">accessibility</a>'
       : "";
 
-    var center =
+    const center =
       '<div class="footer-center">' +
       "<p>&copy; 2006-2026 DIY Accounting Limited</p>" +
       "<p>Free to use. " +
@@ -157,11 +157,11 @@
   }
 
   function renderHeader(header, rootPrefix) {
-    var pathname = window.location.pathname;
-    var navHtml = buildNavHtml(rootPrefix, pathname);
-    var headerNavHtml = buildHeaderNavHtml(rootPrefix);
+    const pathname = window.location.pathname;
+    const navHtml = buildNavHtml(rootPrefix, pathname);
+    const headerNavHtml = buildHeaderNavHtml(rootPrefix);
 
-    var fallback = header.querySelector(".chrome-fallback");
+    const fallback = header.querySelector(".chrome-fallback");
     if (fallback) fallback.remove();
 
     header.insertAdjacentHTML("afterbegin", headerNavHtml);
@@ -169,14 +169,14 @@
   }
 
   function renderFooter(footer, rootPrefix) {
-    var variant = footer.getAttribute("data-footer") || "full";
+    const variant = footer.getAttribute("data-footer") || "full";
     footer.innerHTML = buildFooterHtml(rootPrefix, variant);
   }
 
   function renderPageChrome() {
-    var header = document.querySelector("header");
-    var footer = document.querySelector("footer");
-    var rootPrefix = computeRootPrefix();
+    const header = document.querySelector("header");
+    const footer = document.querySelector("footer");
+    const rootPrefix = computeRootPrefix();
 
     // Each render is independent: a mistake building one must not cost the
     // other, and either failing must leave that element's existing static
