@@ -45,7 +45,6 @@ const DEFAULT_WAIT_MS = 0;
 // different version from every other ITSA endpoint in this batch.
 const HMRC_API_VERSION = "2.0";
 
-
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -485,7 +484,15 @@ export async function getItsaStatus(
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, testScenario, hmrcAccount, hmrcQueryParams, auditForUserSub);
+    hmrcResponse = await hmrcHttpGet(
+      hmrcRequestUrl,
+      hmrcRequestHeaders,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount,
+      hmrcQueryParams,
+      auditForUserSub,
+    );
   }
 
   if (!hmrcResponse.ok) {

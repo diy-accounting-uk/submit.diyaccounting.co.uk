@@ -82,9 +82,7 @@ export async function readLatestSnapshot() {
   const { GetObjectCommand } = await import("@aws-sdk/client-s3");
 
   try {
-    const response = await client.send(
-      new GetObjectCommand({ Bucket: bucket, Key: `snapshots/${envName}/latest.json` }),
-    );
+    const response = await client.send(new GetObjectCommand({ Bucket: bucket, Key: `snapshots/${envName}/latest.json` }));
     const body = await response.Body.transformToString("utf8");
     return JSON.parse(body);
   } catch (error) {

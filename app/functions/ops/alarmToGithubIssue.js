@@ -152,9 +152,7 @@ export async function resolveDeploymentSlug({ alarmName, env }) {
 export async function resolveCompositeChildFunctionNames({ region, alarmName }) {
   try {
     const cloudwatchClient = new CloudWatchClient({ region });
-    const result = await cloudwatchClient.send(
-      new DescribeAlarmsCommand({ AlarmNames: [alarmName], AlarmTypes: ["CompositeAlarm"] }),
-    );
+    const result = await cloudwatchClient.send(new DescribeAlarmsCommand({ AlarmNames: [alarmName], AlarmTypes: ["CompositeAlarm"] }));
     const alarmRule = result.CompositeAlarms?.[0]?.AlarmRule;
     return extractCompositeChildFunctionNames(alarmRule);
   } catch (error) {

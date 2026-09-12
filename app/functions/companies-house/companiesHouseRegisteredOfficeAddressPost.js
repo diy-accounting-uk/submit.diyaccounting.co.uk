@@ -30,15 +30,7 @@ import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseRegisteredOfficeAddressPost.js" });
 
-const VALID_COUNTRIES = new Set([
-  "England",
-  "Wales",
-  "Scotland",
-  "Northern Ireland",
-  "Great Britain",
-  "United Kingdom",
-  "Not specified",
-]);
+const VALID_COUNTRIES = new Set(["England", "Wales", "Scotland", "Northern Ireland", "Great Britain", "United Kingdom", "Not specified"]);
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */

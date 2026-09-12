@@ -370,7 +370,11 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Initiating new processing", requestId });
       const processor = async (payload) => {
-        const { vatReturn, hmrcResponse, periodKey: usedPeriodKey } = await getVatReturnWithSyntheticFallback(
+        const {
+          vatReturn,
+          hmrcResponse,
+          periodKey: usedPeriodKey,
+        } = await getVatReturnWithSyntheticFallback(
           payload.vrn,
           [payload.periodKey, ...(payload.syntheticFallbackPeriodKeys || [])],
           payload.hmrcAccessToken,
@@ -515,7 +519,6 @@ export async function workerHandler(event) {
     },
   });
 }
-
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getVatReturn(

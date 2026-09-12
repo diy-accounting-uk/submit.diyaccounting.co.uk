@@ -127,11 +127,9 @@ export async function ingestHandler(event) {
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
 export async function getRegisteredEmailEligibility(accessToken, companyNumber) {
-  const chResponse = await companiesHouseFilingRequest(
-    "GET",
-    `/registered-email-address/company/${companyNumber}/eligibility`,
-    { accessToken },
-  );
+  const chResponse = await companiesHouseFilingRequest("GET", `/registered-email-address/company/${companyNumber}/eligibility`, {
+    accessToken,
+  });
 
   if (!chResponse.ok) {
     logger.warn({ message: "Companies House registered email eligibility check failed", companyNumber, status: chResponse.status });

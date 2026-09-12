@@ -210,9 +210,7 @@ export async function handler(event = {}) {
   const tableName = `events_${tableDateSuffix}`;
   const [tableExists] = await bigQuery.dataset(datasetId).table(tableName).exists();
   if (!tableExists) {
-    throw new Error(
-      `GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`,
-    );
+    throw new Error(`GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`);
   }
 
   const [job] = await bigQuery.createQueryJob({

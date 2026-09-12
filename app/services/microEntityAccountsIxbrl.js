@@ -229,7 +229,9 @@ function assembleBalanceSheetFacts({ contextRef, entityIdentifierXml, periodXml,
   const netAssets = totalAssetsLessCurrentLiabilities - figures.creditorsAfterOneYear;
 
   if (Math.round(netAssets) !== Math.round(figures.capitalAndReserves)) {
-    throw new Error(`Capital and reserves (${figures.capitalAndReserves}) does not equal net assets (${netAssets}) for context ${contextRef}`);
+    throw new Error(
+      `Capital and reserves (${figures.capitalAndReserves}) does not equal net assets (${netAssets}) for context ${contextRef}`,
+    );
   }
 
   facts.push(renderMonetaryFact("netCurrentAssetsLiabilities", contextRef, unitRef, netCurrentAssets));
@@ -303,11 +305,15 @@ export function buildMicroEntityAccounts(input) {
 
   const facts = [];
 
-  facts.push(`<ix:nonNumeric name="${qname(CONCEPTS.companiesHouseRegisteredNumber)}" contextRef="${refs.current}">${escapeXmlText(input.companyNumber)}</ix:nonNumeric>`);
+  facts.push(
+    `<ix:nonNumeric name="${qname(CONCEPTS.companiesHouseRegisteredNumber)}" contextRef="${refs.current}">${escapeXmlText(input.companyNumber)}</ix:nonNumeric>`,
+  );
   facts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityCurrentLegalOrRegisteredName)}" contextRef="${refs.current}">${escapeXmlText(input.companyName)}</ix:nonNumeric>`,
   );
-  facts.push(`<ix:nonNumeric name="${qname(CONCEPTS.balanceSheetDate)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`);
+  facts.push(
+    `<ix:nonNumeric name="${qname(CONCEPTS.balanceSheetDate)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
+  );
   // Companies House's validator requires this fact in the same current-period context as the
   // balance sheet date, not a bespoke one keyed to the approval date's own value.
   facts.push(
@@ -319,8 +325,12 @@ export function buildMicroEntityAccounts(input) {
   facts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
   );
-  facts.push(`<ix:nonNumeric name="${qname(CONCEPTS.startDateForPeriodCoveredByReport)}" contextRef="${refs.periodStartInstant}">${input.periodStart}</ix:nonNumeric>`);
-  facts.push(`<ix:nonNumeric name="${qname(CONCEPTS.endDateForPeriodCoveredByReport)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`);
+  facts.push(
+    `<ix:nonNumeric name="${qname(CONCEPTS.startDateForPeriodCoveredByReport)}" contextRef="${refs.periodStartInstant}">${input.periodStart}</ix:nonNumeric>`,
+  );
+  facts.push(
+    `<ix:nonNumeric name="${qname(CONCEPTS.endDateForPeriodCoveredByReport)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
+  );
   // EntityTradingStatus is reported at its default member (trading) with no dimension: a
   // dimension at its default value must not be reported.
   facts.push(renderFixedFact("entityTradingStatus", refs.current));

@@ -537,7 +537,15 @@ export async function getItsaObligations(
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, testScenario, hmrcAccount, hmrcQueryParams, auditForUserSub);
+    hmrcResponse = await hmrcHttpGet(
+      hmrcRequestUrl,
+      hmrcRequestHeaders,
+      govClientHeaders,
+      testScenario,
+      hmrcAccount,
+      hmrcQueryParams,
+      auditForUserSub,
+    );
   }
 
   if (!hmrcResponse.ok) {

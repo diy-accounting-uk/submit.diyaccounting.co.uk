@@ -342,9 +342,7 @@ export async function registerPartitions(config) {
     return { registered: 0 };
   }
 
-  const table = await glueClient.send(
-    new GetTableCommand({ DatabaseName: config.databaseName, Name: config.tableName }),
-  );
+  const table = await glueClient.send(new GetTableCommand({ DatabaseName: config.databaseName, Name: config.tableName }));
   const storageDescriptor = table.Table?.StorageDescriptor;
   if (!storageDescriptor) {
     throw new Error(`Glue table ${config.tableName} has no StorageDescriptor to copy for new partitions`);

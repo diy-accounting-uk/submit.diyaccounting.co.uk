@@ -85,13 +85,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
     trimmedCompanyAuthCode = typeof companyAuthCode === "string" ? companyAuthCode.trim() : "";
-    if (
-      trimmedCompanyAuthCode.length < MIN_COMPANY_AUTH_CODE_LENGTH ||
-      trimmedCompanyAuthCode.length > MAX_COMPANY_AUTH_CODE_LENGTH
-    ) {
-      errorMessages.push(
-        `Invalid companyAuthCode - must be ${MIN_COMPANY_AUTH_CODE_LENGTH} to ${MAX_COMPANY_AUTH_CODE_LENGTH} characters`,
-      );
+    if (trimmedCompanyAuthCode.length < MIN_COMPANY_AUTH_CODE_LENGTH || trimmedCompanyAuthCode.length > MAX_COMPANY_AUTH_CODE_LENGTH) {
+      errorMessages.push(`Invalid companyAuthCode - must be ${MIN_COMPANY_AUTH_CODE_LENGTH} to ${MAX_COMPANY_AUTH_CODE_LENGTH} characters`);
     }
   }
 
@@ -109,7 +104,12 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
 
   const numericAverageEmployees = Number(averageEmployees);
-  if (averageEmployees === undefined || averageEmployees === null || !Number.isFinite(numericAverageEmployees) || numericAverageEmployees < 0) {
+  if (
+    averageEmployees === undefined ||
+    averageEmployees === null ||
+    !Number.isFinite(numericAverageEmployees) ||
+    numericAverageEmployees < 0
+  ) {
     errorMessages.push("Invalid or missing averageEmployees - must be a non-negative number");
   }
 

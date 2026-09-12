@@ -199,7 +199,14 @@ export function buildAccountsSubmission({
  * @param {boolean} [input.gatewayTest]
  * @returns {string} the envelope XML
  */
-export function buildStatusRequest({ presenterId, presenterCode, submissionNumber, companyNumber, transactionId = String(Date.now()), gatewayTest = false }) {
+export function buildStatusRequest({
+  presenterId,
+  presenterCode,
+  submissionNumber,
+  companyNumber,
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
   const identifierXml = submissionNumber
     ? `<SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>`
     : `<CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>`;
@@ -276,15 +283,16 @@ export async function allocateSubmissionNumber() {
     throw new Error("Missing required environment variable COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME");
   }
 
-  const result = await executeDynamoDbCommand((module) =>
-    new module.UpdateCommand({
-      TableName: tableName,
-      Key: SUBMISSION_NUMBER_COUNTER_KEY,
-      UpdateExpression: "ADD #value :increment",
-      ExpressionAttributeNames: { "#value": "value" },
-      ExpressionAttributeValues: { ":increment": 1 },
-      ReturnValues: "UPDATED_NEW",
-    }),
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: SUBMISSION_NUMBER_COUNTER_KEY,
+        UpdateExpression: "ADD #value :increment",
+        ExpressionAttributeNames: { "#value": "value" },
+        ExpressionAttributeValues: { ":increment": 1 },
+        ReturnValues: "UPDATED_NEW",
+      }),
   );
 
   return result.Attributes.value.toString(36).toUpperCase().padStart(6, "0");

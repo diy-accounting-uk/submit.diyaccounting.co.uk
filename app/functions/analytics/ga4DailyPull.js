@@ -24,12 +24,7 @@ const logger = createLogger({ source: "app/functions/analytics/ga4DailyPull.js" 
 
 // Matches google/bigquery.toml's [dataset] and each [[queries]] destination_table.
 const GA4_DAILY_DATASET_ID = "ga4_daily";
-const TABLES = [
-  "sessions_by_host_source_daily",
-  "funnel_steps_daily",
-  "key_events_daily",
-  "downloads_by_product_daily",
-];
+const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
 
 let cachedS3Client = null;
 

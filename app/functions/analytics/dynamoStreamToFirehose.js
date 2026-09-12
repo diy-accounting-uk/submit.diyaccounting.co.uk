@@ -167,9 +167,7 @@ export function buildRow(tableKind, record) {
   const oldImage = record.dynamodb?.OldImage ? unmarshall(record.dynamodb.OldImage) : null;
   const approximateCreationDateTime = record.dynamodb?.ApproximateCreationDateTime;
   const changeTs =
-    typeof approximateCreationDateTime === "number"
-      ? toParquetTimestamp(new Date(approximateCreationDateTime * 1000).toISOString())
-      : null;
+    typeof approximateCreationDateTime === "number" ? toParquetTimestamp(new Date(approximateCreationDateTime * 1000).toISOString()) : null;
 
   return {
     change_ts: changeTs,

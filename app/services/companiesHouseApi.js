@@ -60,10 +60,10 @@ export async function resolveApiKey() {
 export function buildCompaniesHouseHeaders(apiKey) {
   const basicAuth = Buffer.from(`${apiKey}:`).toString("base64");
   return {
-    "Authorization": `Basic ${basicAuth}`,
-    "Accept": "application/json",
+    Authorization: `Basic ${basicAuth}`,
+    Accept: "application/json",
     ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("traceparent") ? { "traceparent": context.get("traceparent") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     ...(context.get("correlationId") ? { "x-correlationid": context.get("correlationId") } : {}),
   };
 }

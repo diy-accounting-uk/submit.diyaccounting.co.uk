@@ -51,7 +51,10 @@
         link.textContent = "Go to Bundles";
         last.appendChild(link);
       }
-    } catch {}
+    } catch {
+      // Cosmetic only: the status message above already reported the error
+      // without this link.
+    }
   }
 
   async function refreshEntitlement() {
@@ -59,20 +62,27 @@
       if (window.requestCache && typeof window.requestCache.invalidate === "function") {
         window.requestCache.invalidate("/api/v1/bundle");
       }
-    } catch {}
+    } catch {
+      // Best-effort: a stale cache entry self-corrects on its next natural fetch.
+    }
     try {
       const userInfoJson = localStorage.getItem("userInfo");
       const userId = userInfoJson && JSON.parse(userInfoJson)?.sub;
       if (userId && window.bundleCache && typeof window.bundleCache.clearBundles === "function") {
         await window.bundleCache.clearBundles(userId);
       }
-    } catch {}
+    } catch {
+      // Best-effort: a stale bundle cache entry self-corrects on its next natural fetch.
+    }
     window.dispatchEvent(new CustomEvent("bundle-changed"));
     try {
       if (window.EntitlementStatus && typeof window.EntitlementStatus.update === "function") {
         await window.EntitlementStatus.update();
       }
-    } catch {}
+    } catch {
+      // Best-effort: the entitlement banner keeps showing its prior state, which the
+      // success message already reported as changed.
+    }
   }
 
   async function redeemCode(code) {
@@ -98,7 +108,11 @@
           "passValidation",
           JSON.stringify({ code, bundleId: body.bundleId, valid: true, testPass: body.testPass || false }),
         );
-      } catch {}
+      } catch {
+        // sessionStorage can be unavailable (private browsing); redemption already
+        // succeeded server-side, so the user can just re-enter the same code on the
+        // Bundles page to see it reflected there.
+      }
       removePassFromUrl();
       if (typeof window.showStatus === "function") {
         window.showStatus("Pass valid! This bundle needs a subscription — continue on the Bundles page to finish.", "info");
@@ -111,7 +125,10 @@
       if (body.testPass) {
         try {
           sessionStorage.setItem("hmrcAccount", "synthetic");
-        } catch {}
+        } catch {
+          // sessionStorage can be unavailable (private browsing); subsequent HMRC
+          // calls then go untagged as synthetic, which only affects test routing.
+        }
       }
       await refreshEntitlement();
       if (typeof window.showStatus === "function") {
@@ -134,7 +151,10 @@
       try {
         sessionStorage.setItem("pendingPass", code);
         sessionStorage.setItem("postLoginRedirect", window.location.pathname + window.location.search);
-      } catch {}
+      } catch {
+        // sessionStorage can be unavailable (private browsing); login then lands on
+        // the default page instead of back here, so the user re-opens the pass link.
+      }
       if (typeof window.showStatus === "function") {
         window.showStatus("Log in to redeem your pass.", "info");
       }

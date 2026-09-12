@@ -123,11 +123,7 @@ app.use((req, res, next) => {
 });
 
 // Basic CORS middleware (mostly for local tools and OPTIONS where needed)
-const LOCAL_DEV_ORIGINS = [
-  "https://local.submit.diyaccounting.co.uk:3443",
-  "http://localhost:3000",
-  "http://localhost:8080",
-];
+const LOCAL_DEV_ORIGINS = ["https://local.submit.diyaccounting.co.uk:3443", "http://localhost:3000", "http://localhost:8080"];
 app.use((req, res, next) => {
   // Allow only known local dev origins, not every origin a caller sends.
   const origin = req.headers.origin;
@@ -406,10 +402,7 @@ if (__runDirect) {
     .catch((err) => logger.warn(`Vendor public IP detection failed: ${err.message}`));
   if (process.env.TEST_SERVER_TLS === "run") {
     // certbot's standard lineage location on a developer machine; CI overrides with explicit paths.
-    const certLineageDir = path.join(
-      os.homedir(),
-      ".local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk",
-    );
+    const certLineageDir = path.join(os.homedir(), ".local/share/diyaccounting-local-tls/config/live/local.submit.diyaccounting.co.uk");
     const certPath = process.env.TEST_SERVER_TLS_CERT || path.join(certLineageDir, "fullchain.pem");
     const keyPath = process.env.TEST_SERVER_TLS_KEY || path.join(certLineageDir, "privkey.pem");
     const httpsPort = process.env.TEST_SERVER_HTTPS_PORT;

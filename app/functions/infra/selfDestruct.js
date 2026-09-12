@@ -209,8 +209,7 @@ export async function ingestHandler(event, context) {
 }
 
 async function deleteLeftoverLogGroups(deploymentName) {
-  const { CloudWatchLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand } =
-    await import("@aws-sdk/client-cloudwatch-logs");
+  const { CloudWatchLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand } = await import("@aws-sdk/client-cloudwatch-logs");
   const logGroupNamePrefix = `/aws/lambda/${deploymentName}-`;
   const deleted = [];
   for (const region of ["eu-west-2", "us-east-1"]) {

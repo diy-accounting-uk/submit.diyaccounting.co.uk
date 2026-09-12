@@ -120,12 +120,7 @@ export const OBJECTIVES = [
   {
     objective: "Operator effort",
     views: ["v_operator_interventions_daily", "v_dora_runs_daily"],
-    levers: [
-      "Every automation row on the board",
-      "The triage chain",
-      "The inbox and board skills",
-      "The operator brief",
-    ],
+    levers: ["Every automation row on the board", "The triage chain", "The inbox and board skills", "The operator brief"],
   },
   {
     objective: "Compliance",
@@ -347,16 +342,11 @@ export async function handler(event = {}) {
       levers,
       openExperiments: [],
     };
-    const fileName = `${objective.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}.json`;
-    await putExportObject(
-      s3Client,
-      bucket,
-      env,
-      targetDate,
-      fileName,
-      JSON.stringify(objectiveJson, null, 2),
-      "application/json",
-    );
+    const fileName = `${objective
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")}.json`;
+    await putExportObject(s3Client, bucket, env, targetDate, fileName, JSON.stringify(objectiveJson, null, 2), "application/json");
   }
 
   logger.info({

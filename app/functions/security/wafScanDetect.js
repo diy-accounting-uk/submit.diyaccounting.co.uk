@@ -88,9 +88,7 @@ export async function handler(event) {
   const deployment = process.env.DEPLOYMENT_NAME ?? process.env.ENVIRONMENT_NAME ?? "unknown";
 
   const payload = decodeSubscriptionPayload(event.awslogs.data);
-  const parsed = (payload.logEvents ?? [])
-    .map((logEvent) => parseWafLogRecord(logEvent.message))
-    .filter((record) => record !== null);
+  const parsed = (payload.logEvents ?? []).map((logEvent) => parseWafLogRecord(logEvent.message)).filter((record) => record !== null);
   const deduped = dedupeByIpAndUri(parsed);
 
   for (const record of deduped) {

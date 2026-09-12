@@ -219,7 +219,10 @@ function parseRow(fields, header, rowNumber) {
   }
 
   if (byName.finalised !== "true") {
-    reject("NOT_FINALISED", `Row ${rowNumber}: "finalised" must be "true" (HMRC only accepts a finalised declaration), got "${byName.finalised}"`);
+    reject(
+      "NOT_FINALISED",
+      `Row ${rowNumber}: "finalised" must be "true" (HMRC only accepts a finalised declaration), got "${byName.finalised}"`,
+    );
   }
 
   return {

@@ -22,13 +22,13 @@
 // health is the plain Lambda-errors alarm on this function.
 
 import { SecurityHubClient, GetFindingsCommand } from "@aws-sdk/client-securityhub";
-import { GuardDutyClient, ListDetectorsCommand, ListFindingsCommand, GetFindingsCommand as GetGuardDutyFindingsCommand } from "@aws-sdk/client-guardduty";
 import {
-  CloudWatchLogsClient,
-  DescribeLogGroupsCommand,
-  StartQueryCommand,
-  GetQueryResultsCommand,
-} from "@aws-sdk/client-cloudwatch-logs";
+  GuardDutyClient,
+  ListDetectorsCommand,
+  ListFindingsCommand,
+  GetFindingsCommand as GetGuardDutyFindingsCommand,
+} from "@aws-sdk/client-guardduty";
+import { CloudWatchLogsClient, DescribeLogGroupsCommand, StartQueryCommand, GetQueryResultsCommand } from "@aws-sdk/client-cloudwatch-logs";
 import { SecretsManagerClient, GetSecretValueCommand, DescribeSecretCommand } from "@aws-sdk/client-secrets-manager";
 import { CloudWatchClient, PutMetricDataCommand } from "@aws-sdk/client-cloudwatch";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -184,9 +184,7 @@ export async function fetchGuardDutyFindings(client, dateStr) {
       );
       const findingIds = listResponse.FindingIds || [];
       if (findingIds.length > 0) {
-        const getResponse = await client.send(
-          new GetGuardDutyFindingsCommand({ DetectorId: detectorId, FindingIds: findingIds }),
-        );
+        const getResponse = await client.send(new GetGuardDutyFindingsCommand({ DetectorId: detectorId, FindingIds: findingIds }));
         for (const finding of getResponse.Findings || []) {
           rows.push(mapGuardDutyFinding(finding, dateStr));
         }
@@ -215,16 +213,13 @@ async function fetchOpenGithubAlerts(fetchImpl, token, repo, endpointPath) {
   const alerts = [];
   let page = 1;
   for (;;) {
-    const response = await fetchImpl(
-      `https://api.github.com/repos/${repo}/${endpointPath}?state=open&per_page=100&page=${page}`,
-      {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
+    const response = await fetchImpl(`https://api.github.com/repos/${repo}/${endpointPath}?state=open&per_page=100&page=${page}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
       },
-    );
+    });
     if (!response.ok) {
       throw new Error(`GitHub API error fetching ${endpointPath}: ${response.status} ${await response.text()}`);
     }
@@ -374,9 +369,7 @@ async function listWafLogGroups(client, envName) {
   const names = [];
   let nextToken;
   do {
-    const response = await client.send(
-      new DescribeLogGroupsCommand({ logGroupNamePrefix: `aws-waf-logs-${envName}-`, nextToken }),
-    );
+    const response = await client.send(new DescribeLogGroupsCommand({ logGroupNamePrefix: `aws-waf-logs-${envName}-`, nextToken }));
     for (const group of response.logGroups || []) {
       if (group.logGroupName) names.push(group.logGroupName);
     }

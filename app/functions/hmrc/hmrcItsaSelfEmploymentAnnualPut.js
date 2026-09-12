@@ -136,7 +136,8 @@ function buildAllowancesSection(allowances) {
   const hasEnhancedStructuredBuildingAllowance =
     Array.isArray(enhancedStructuredBuildingAllowance) && enhancedStructuredBuildingAllowance.length > 0;
   const hasItemisedAllowance = Boolean(itemisedMoney) || hasStructuredBuildingAllowance || hasEnhancedStructuredBuildingAllowance;
-  const hasTradingIncomeAllowance = tradingIncomeAllowance !== undefined && tradingIncomeAllowance !== null && tradingIncomeAllowance !== "";
+  const hasTradingIncomeAllowance =
+    tradingIncomeAllowance !== undefined && tradingIncomeAllowance !== null && tradingIncomeAllowance !== "";
 
   if (hasTradingIncomeAllowance && hasItemisedAllowance) {
     throw new AnnualSubmissionValidationError(
@@ -189,10 +190,7 @@ export function buildAnnualSubmissionRequestBody(annualDetails) {
   if (nonFinancials) hmrcRequestBody.nonFinancials = nonFinancials;
 
   if (Object.keys(hmrcRequestBody).length === 0) {
-    throw new AnnualSubmissionValidationError(
-      "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
-      "An empty or non-matching body was submitted",
-    );
+    throw new AnnualSubmissionValidationError("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", "An empty or non-matching body was submitted");
   }
 
   return hmrcRequestBody;

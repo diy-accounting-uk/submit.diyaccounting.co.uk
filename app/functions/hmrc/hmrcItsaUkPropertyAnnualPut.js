@@ -166,8 +166,7 @@ function buildAdjustmentsSection(adjustments) {
 function buildAllowancesSection(allowances) {
   if (!allowances || typeof allowances !== "object") return undefined;
 
-  const { propertyIncomeAllowance, structuredBuildingAllowance, enhancedStructuredBuildingAllowance, ...itemised } =
-    allowances;
+  const { propertyIncomeAllowance, structuredBuildingAllowance, enhancedStructuredBuildingAllowance, ...itemised } = allowances;
 
   const itemisedMoney = buildMoneySection(itemised);
   const hasStructuredBuildingAllowance = Array.isArray(structuredBuildingAllowance) && structuredBuildingAllowance.length > 0;

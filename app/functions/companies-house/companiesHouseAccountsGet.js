@@ -8,7 +8,13 @@
 // the existing receipts page.
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, buildValidationError, http500ServerErrorResponse, getHeader } from "../../lib/httpResponseHelper.js";
+import {
+  extractRequest,
+  http200OkResponse,
+  buildValidationError,
+  http500ServerErrorResponse,
+  getHeader,
+} from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";

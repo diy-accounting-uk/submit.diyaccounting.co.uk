@@ -78,11 +78,11 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
   const baseUrl = getFilingBaseUrl();
   const requestUrl = `${baseUrl}${path}`;
   const headers = {
-    "Authorization": `Bearer ${accessToken}`,
-    "Accept": "application/json",
+    Authorization: `Bearer ${accessToken}`,
+    Accept: "application/json",
     ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     ...(context.get("requestId") ? { "x-request-id": context.get("requestId") } : {}),
-    ...(context.get("traceparent") ? { "traceparent": context.get("traceparent") } : {}),
+    ...(context.get("traceparent") ? { traceparent: context.get("traceparent") } : {}),
     ...(context.get("correlationId") ? { "x-correlationid": context.get("correlationId") } : {}),
   };
 
