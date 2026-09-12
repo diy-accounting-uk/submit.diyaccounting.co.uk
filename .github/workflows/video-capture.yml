@@ -39,6 +39,8 @@ on:
           - 'view-penalties'
           - 'submit-return'
           - 'itsa-business-details'
+          - 'itsa-quarterly-update'
+          - 'file-micro-entity-accounts'
         default: 'tour'
       environment-name:
         type: choice
