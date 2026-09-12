@@ -126,6 +126,27 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
   Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
   **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B125. A 403 from HMRC reaches the caller as a 400, across twenty handlers.**
+  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js` ends with
+  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` carefully
+  map `status === 403` to that function and every one of them emits 400, so a configuration problem
+  on our side — an unsubscribed HMRC API, a token missing a scope — is reported to the caller as
+  "your request was malformed".
+
+  Found on 2026-09-11 when `itsaUkPropertyAnnualGet` logged HMRC's `403` and answered `400`
+  (probe-test run 34658969922). The 400's body does carry HMRC's own explanation in
+  `error.responseBody`, so the information survives the API; the page throws it away and shows
+  "An unexpected error occurred", which is how a precise, actionable cause became a shrug on screen.
+
+  Two decisions, and the first is the operator's because it changes shipped behaviour: return a
+  real 403, or keep 400 and rename the function to say what it does. Twenty handlers includes live
+  VAT endpoints on prod, so a status change needs the web error handling checked with it — the
+  pages special-case 401 and nothing else, which suggests 403 is safe, but that is worth proving
+  rather than assuming. The second is ours either way: surface `error.responseBody` on the page
+  instead of a generic message.
+
+  **Source**: probe-test run 34658969922; `app/services/hmrcApi.js:682-724`. **Owner**: Operator to
+  choose the status, then Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
