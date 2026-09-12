@@ -48,12 +48,12 @@ indistinguishable from not having looked.
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
 combined row). Columns:
 
-| # | Item | Tier | State | Status | GH issue |
+| # | Item | Tier | State | Needs | Status | GH issue |
 
-Rows run in board order: in-flight tasks, ready Claude Code tasks, ready operator tasks,
-blocked tasks (either owner). Within a group, rows run by tier, an alarm or a pipeline
-failure counting as tier 1 whether or not a backlog row carries it, then the untiered;
-equal tiers keep `NEXT.md`'s order. Never group rows by backlog number.
+Rows run in board order: **machine-only, then human and machine, then human-only, then
+blocked**. Within a group, rows run by tier, an alarm or a pipeline failure counting as
+tier 1 whether or not a backlog row carries it, then the untiered; equal tiers keep
+`NEXT.md`'s order. Never group rows by backlog number.
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
@@ -67,6 +67,18 @@ equal tiers keep `NEXT.md`'s order. Never group rows by backlog number.
   prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
   prerequisite item, or a decision not yet made). Operator-owned work that could
   start today is `ready`, not `blocked`.
+- `Needs`: exactly one of `machine-only`, `human and machine`, `human-only` — what it
+  takes to carry the row to completion, not who happens to own it now. `human-only` is
+  work no session can do: an external registration, a console action with no API, a
+  filing against the operator's own company, an email from their address, a decision
+  between named alternatives. `human and machine` needs both, and `Status` says which
+  half is whose. Everything else is `machine-only`, including a row whose only human
+  step is merging the PR — that is the standing workflow, not an action the row needs.
+
+  Judge this from the work, not from the row's **Owner** line. A row that says "hand the
+  list to Claude Code" because reading the operator's mail was assumed to be theirs is
+  `machine-only` once the mail mirror is local. Say so after the lists when a
+  classification contradicts the row's own owner.
 - `Status`: an annotation, not a paragraph — one clause, 12 words or fewer, current
   as of this render. Date-gated items name the date; blocked items name the blocker;
   in-flight items name the current step only. The full narrative lives in `NEXT.md`,
@@ -163,13 +175,15 @@ the end) gets a note in `Action`: rename before its next push.
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
 - **Keep `NEXT.md` in board order.** Its open items sit under four headings in this
-  sequence: `## In flight`, `## Ready: Claude Code`, `## Ready: operator`, `## Blocked`
-  (either owner, each entry naming its blocker). Within a heading, items run by tier
+  sequence: `## Machine-only`, `## Human and machine`, `## Human-only`, `## Blocked`
+  (each blocked entry naming its blocker, and ordered inside that section by the same
+  three classes). The heading is where the classification lives, so a row carries no
+  separate tag and cannot drift from its section. Within a heading, items run by tier
   exactly as Part 1's rows do: tier 1 first, alarms and pipeline failures counting as
   tier 1, the untiered last, equal tiers in their existing order. Before rendering, move
-  any item whose owner, state or tier position no longer matches (an operator item whose
-  blocker landed moves up to `Ready: operator`; a Claude Code item that gained a blocker
-  moves down to `Blocked`; a new alarm or pipeline item goes to the top of its section).
+  any item whose class, state or tier position no longer matches (a row whose human half
+  is done moves up to `## Machine-only`; a row that gained a blocker moves down to
+  `## Blocked`; a new alarm or pipeline item goes to the top of its section).
   That move is part of the write-back below.
 - **Every alarm family has a home on `NEXT.md`.** A family whose action is `close as stale`
   or `close as superseded` joins the operator item that lists issues to close (create it if
@@ -192,9 +206,12 @@ the end) gets a note in `Action`: rename before its next push.
   ! gh run rerun <run-id> --failed
   ```
   Never describe such a command in prose alone or abbreviate it.
-- **Write the statuses back.** The explanatory status lives in `NEXT.md`, not just in
-  the rendering: after rendering, update any `NEXT.md` item whose entry no longer
-  matches the status you just printed (same facts, prose fitted to the entry), commit
-  the `NEXT.md`-only change to `main` (the docs exception allows a direct push) and
-  push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
+- **Write the statuses and the sequencing back.** The explanatory status lives in
+  `NEXT.md`, not just in the rendering: after rendering, update any `NEXT.md` item whose
+  entry no longer matches the status you just printed (same facts, prose fitted to the
+  entry), **and move every row whose class changed into its correct section, so the file
+  carries the same machine-only / human and machine / human-only / blocked sequence the
+  table just printed.** A render that shows one order while the file holds another is the
+  failure this rule exists to prevent. Commit the `NEXT.md`-only change to `main` (the
+  docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
   tier tables stay as they are.
