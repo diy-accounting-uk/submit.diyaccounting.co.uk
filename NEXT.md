@@ -42,6 +42,47 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B134. `Gov-Client-Multi-Factor` has never been sent reliably, and HMRC will not accept
+  that.** O28 is answered, in `REPORT_HMRC_HEADER_ADVISORIES.md`: every monthly advisory HMRC has
+  raised, in every month, is this one header missing. Every other header reads Correct in every
+  month. Per month missing: April 11 of 18, May 2 of 16, June no traffic, July 0 of 9, August 18 of
+  21, September 4 of 11 to the 9th. We are required by law to send correct header data, so a header
+  that is absent on most requests is a compliance failure, not a cosmetic one.
+  The header is written to `sessionStorage.mfaMetadata` by the inline script in
+  `web/public/auth/loginWithCognitoCallback.html` and read by `hmrc-service.js`. Google federated
+  gives `type=OTHER`; Cognito native with TOTP gives `type=TOTP` from the Pre Token Generation
+  Lambda's `custom:mfa_method`; Cognito native with password only gives nothing. **Operator
+  decision: mandate MFA.** Telling HMRC the header is uncollectable was tried and HMRC pushed back,
+  so that route is closed.
+  **Do the investigation first, because it decides what to build.** The prod async-requests table
+  (`HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME`) holds `govClientHeaders` per request, 75
+  requests between 2026-04-01 and 2026-09-09 — a trivial read-only scan. Project
+  `Gov-Client-User-IDs` (it carries the raw Cognito sub), whether `Gov-Client-Multi-Factor` is
+  present, its `type=`, and the timestamp; then group by sub. A sub that **never** carries it is a
+  password-only native user, fixed only by mandatory MFA. A sub that carries it **sometimes** is the
+  `sessionStorage` lifetime problem — the value is written once at the login callback and lost when
+  the tab closes, so a customer returning on a refresh token sends nothing even with TOTP enrolled,
+  and mandatory MFA would not fix them. Report the split before building either fix. Count distinct
+  `Gov-Client-Device-ID` per sub in the same scan; it answers the device-id question below.
+  Then, in order: **build the header server-side**, because the claim is already in the token and
+  `customAuthorizer.js` already hands `buildFraudHeaders.js` a context carrying `sub` — carry
+  `mfa_method` and the auth time through the same context and build the header there, keeping its
+  shape `type=<TOTP|OTHER>&timestamp=<iso>&unique-reference=<ref>`, with a `logger.warn` when it
+  cannot be built, matching the other `HMRC REQUIRED HEADER MISSING:` lines. Its absence is silent
+  today, which is why this took screenshots to find. **Then switch the pool to MFA required**:
+  `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`, one word to change, but every existing
+  native-auth customer then meets a TOTP enrolment screen at their next sign-in — do not ship that
+  before the operator has walked the enrolment path as a new customer meets it. Federated Google
+  users are unaffected. **And persist the device id**: `hmrc-service.js:174` generates
+  `crypto.randomUUID()` per request with no persistence. HMRC report it Correct because they check
+  presence and format, but the spec wants a stored UUID that does not expire. Spec conformance, not
+  an advisory fix.
+  Two lines of enquiry are closed: CI generates no production HMRC traffic (June ran 30 scheduled
+  deploys and 30 test runs against zero production requests; April ran no CI and recorded 18), and
+  `data/compliance/fraud-prevention-headers/` is empty because B22's launchd agent has never run.
+  **Source**: `REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures. **Owner**: Claude
+  Code, then Operator for the enrolment walk-through. **Model**: Sonnet.
+
 - [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
   (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
   deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
@@ -369,15 +410,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
-- [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
-  first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
-  advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
-  prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
-  to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
-  is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
-
-
-
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
@@ -390,6 +422,27 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Model**: Haiku.
 
 ## Human and machine
+
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
+  points send customers to this repository's issues today, and all three move:
+  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
+  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
+  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
+  and `:93`).
+  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
+  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
+  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
+  would move alarm and security-lake issues too, which is not what this asks. Give the support path
+  its own configuration point and leave the others alone.
+  Cross-repository prerequisites, which is the human half: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
+  needs issues enabled and a `support.md` issue template matching this repository's
+  `.github/ISSUE_TEMPLATE/support.md`, or the `?template=` parameter silently falls back to a blank
+  issue. The token the support Lambda uses must also be able to write issues there — today it is
+  scoped to this repository. Say which token, because O38's `diya-ops` app is the intended long-term
+  answer and a PAT would be the interim one.
+  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
+  **Source**: operator request, 2026-09-12. **Owner**: Claude Code, with the operator for the
+  spreadsheets repository's settings and the token. **Model**: Sonnet.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
