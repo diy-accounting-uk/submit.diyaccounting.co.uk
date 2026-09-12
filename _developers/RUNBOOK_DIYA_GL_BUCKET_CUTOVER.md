@@ -117,8 +117,8 @@ match) — no `copy:` lines in `/tmp/ci-diya-gl-resync.log` for that final run.
 Object counts match:
 
 ```bash
-aws --profile submit-ci s3api list-objects-v2 --bucket ci-env-books-367191799875 --query 'KeyCount'
-aws --profile submit-ci s3api list-objects-v2 --bucket ci-env-diya-gl-367191799875 --query 'KeyCount'
+aws --profile submit-ci s3api list-objects-v2 --bucket ci-env-books-367191799875 --query 'length(Contents)'
+aws --profile submit-ci s3api list-objects-v2 --bucket ci-env-diya-gl-367191799875 --query 'length(Contents)'
 ```
 
 Pass: both numbers are equal.
@@ -237,8 +237,8 @@ Pass: same as ci's step 3 — the final run's log has no `copy:` lines.
 ### Step 4 — verify a read
 
 ```bash
-aws --profile submit-prod s3api list-objects-v2 --bucket prod-env-books-972912397388 --query 'KeyCount'
-aws --profile submit-prod s3api list-objects-v2 --bucket prod-env-diya-gl-972912397388 --query 'KeyCount'
+aws --profile submit-prod s3api list-objects-v2 --bucket prod-env-books-972912397388 --query 'length(Contents)'
+aws --profile submit-prod s3api list-objects-v2 --bucket prod-env-diya-gl-972912397388 --query 'length(Contents)'
 ```
 
 Pass: both numbers are equal.
