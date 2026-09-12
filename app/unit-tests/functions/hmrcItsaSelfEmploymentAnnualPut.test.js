@@ -293,6 +293,17 @@ describe("hmrcItsaSelfEmploymentAnnualPut ingestHandler", () => {
   });
 
   test("returns 202 when x-wait-time-ms=0 (async initiation)", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+      }
+      if (cmd instanceof lib.UpdateCommand) {
+        return { Attributes: { bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 1 } };
+      }
+      return {};
+    });
+
     const event = buildAnnualEvent({ headers: { "x-wait-time-ms": "0", "x-initial-request": "true" } });
     const response = await hmrcItsaSelfEmploymentAnnualPutHandler(event);
     expect(response.statusCode).toBe(202);
@@ -302,6 +313,16 @@ describe("hmrcItsaSelfEmploymentAnnualPut ingestHandler", () => {
 
   test("returns 200 when processing completes synchronously (large x-wait-time-ms)", async () => {
     mockHmrcSuccess(mockFetch, {});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+      }
+      if (cmd instanceof lib.UpdateCommand) {
+        return { Attributes: { bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 1 } };
+      }
+      return {};
+    });
 
     const event = buildAnnualEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
     const response = await hmrcItsaSelfEmploymentAnnualPutHandler(event);
