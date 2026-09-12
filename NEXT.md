@@ -31,69 +31,49 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B116x. The UK property suites: four layers cleared, waiting on a run to confirm.** All five
-  ITSA suites have run against a deployed environment. Business details, obligations and the
-  self-employment period pass. The two UK property suites are the remainder, and every failure so
-  far has been in the suites' own setup rather than in the product.
+- [ ] **B116x. Four of five ITSA suites pass; the fifth needs its product fix deployed.**
+  `itsaUkPropertyPeriodBehaviour` **passes** as of 2026-09-12 03:59 UTC (run 34671689420) — the
+  first UK property ITSA suite ever to. It files a real quarterly update: `POST
+  /individuals/business/property/uk/{nino}/{businessId}/period/2024-25` answered `201` with a
+  submissionId, and a receipt was persisted. Business details, obligations and the self-employment
+  period also pass. Only `itsaUkPropertyAnnualSubmissionBehaviour` remains.
 
-  Work in progress on `claude/itsa-property-own-data`, **PR #190, draft**. The branch also carries
-  the `agentic-lib-*` workflow rename, which is unrelated, complete, and could be split out to land
-  on its own.
+  Work is on `claude/itsa-property-own-data`, **PR #190, draft**, which also carries the unrelated
+  and complete `agentic-lib-*` workflow rename.
 
-  **What each attempt found, in order.** Each fix was necessary and each exposed the next layer:
+  **Nine layers, each fix revealing the next.** The suites were written against the source and never
+  executed, so every assumption in them was untested:
 
-  1. *Canned fixture.* The suites read business details with `Gov-Test-Scenario: PROPERTY`, which
-     returns `XPIS12345678901` — a business every run shares and none can reset. The period suite
-     got `Period summary overlaps with any of the existing period summaries` for a quarter it never
-     filed; the annual suite got `Property income allowance must not be present alongside a private
-     use adjustment` against an adjustment it never set. Making the dates dynamic only moves the
-     collision, so the suites must own their data.
-  2. *Wrong token class.* Creating a business through the Self Assessment Test Support API with a
-     client-credentials token returns `401 INVALID_CREDENTIALS`. Those endpoints are
-     user-restricted: they act on behalf of the test user. Minting a user is application-restricted;
-     acting as one is not.
-  3. *No shared way to get a user token.* The only route is HMRC's authorize page, which is a
-     sign-in journey, so a browser walks it. `getAuthorizationCode` did that privately and
-     identically in `itsa-sandbox-year.js` and `itsa-sandbox-spike.js`. It now lives once in
-     `scripts/lib/hmrcAuthorizationCode.js`, imported by both and by the behaviour helpers; 181
-     lines of duplication removed.
-  4. *Trailing slash.* `DIY_SUBMIT_BASE_URL` ends with `/`, so the redirect became
-     `…co.uk//activities/submitVatCallback.html` and HMRC answered
-     `{"error":"invalid_request","error_description":"redirect_uri is invalid"}` on the authorize
-     page — which is why no sign-in form rendered and the browser found nothing to click. The app's
-     `auth-url-builder.js` and the sandbox script both strip it; the helper did not. Fixed in
-     `c767df13`.
+  1. Canned shared fixture — `Gov-Test-Scenario: PROPERTY` returns a business every run shares.
+  2. Client-credentials token on a user-restricted API — `401 INVALID_CREDENTIALS`.
+  3. No shared way to get a user token — `getAuthorizationCode` was duplicated privately in two
+     scripts; now `scripts/lib/hmrcAuthorizationCode.js`, 181 lines of duplication removed.
+  4. `DIY_SUBMIT_BASE_URL` ends in `/`, so the redirect double-slashed — `redirect_uri is invalid`.
+  5. An address on a property business — `RULE_UNEXPECTED_BUSINESS_ADDRESS`; property takes none.
+  6. **Business Details serves canned data** and never reflects a Test-Support-created business, so
+     the suites file against the id returned at creation rather than reading it from the page.
+  7. Creating a period summary answers **201**, not the 200 the assertion counted.
+  8. A property income allowance cannot sit alongside the private use adjustment the canned annual
+     submission carries; itemised is the valid branch.
+  9. **A product bug**: `ukPropertyAnnualSubmission.html` forwarded the retrieve's `Gov-Test-Scenario`
+     to the save, and create/amend answers `The supplied Gov-Test-Scenario is not valid`. A save from
+     that page could never have succeeded in the sandbox. Fixed in `134b63c2`.
 
-  5. *An address on a property business.* `RULE_UNEXPECTED_BUSINESS_ADDRESS`: HMRC rejects a field
-     it did not ask for rather than ignoring it, so the property body is `typeOfBusiness` alone.
-     Fixed in `65d7d38b`, and the run that found it proved the authorize walk, the code exchange
-     and the user token all work.
-  6. *The sandbox's two APIs do not share state.* With all of the above fixed, the business was
-     created — `XKIS86090688028`, owned by that run's test user, ITSA status set — and the page's
-     business-details read then returned `XBIS12345678901`, the canned self-employment fixture the
-     sandbox returns for every nino. **HMRC's sandbox Business Details API serves canned data and
-     never reflects what the Test Support API creates.** So a suite cannot discover its own business
-     through the page. The suites now file against the id returned at creation; the business-details
-     visit stays as journey coverage. `readFirstUkPropertyBusinessId` is removed, unused. `9e1dd28f`.
+  **What is left.** Layer 9 is in a deployed page, unlike layers 1-8 which live in test code the
+  runner executes directly, so it needs a ci deploy before the suite can see it. The branch deploy
+  of 04:31 UTC (run 34672307283) failed: it resolved to the same deployment name as the live set,
+  `ci-claudb894`, and raced that set's teardown — most stacks read `UPDATE_COMPLETE` while `OpsStack`
+  reads `DELETE_COMPLETE`. Whether a deploy can reuse a live deployment name safely is its own
+  question and is not an ITSA one; treat it separately before re-running.
 
-  **Where it stands, and the question that matters.** All six are fixed and pushed. What no run has
-  yet answered: **does the Property Business API honour a Test-Support-created businessId?**
+  So: deploy the branch to a clean ci set, run `itsaUkPropertyAnnualSubmissionBehaviour`, and re-run
+  `itsaUkPropertyPeriodBehaviour` to confirm the page change did not disturb it.
 
-  - If it does, owning the data works and this approach is right.
-  - If it answers "business not found", that API is canned too, and owning the data is not reachable
-    through these endpoints at all. The original `Period summary overlaps` would then have been a
-    fixed canned response rather than real state, and the suites need a different strategy — asserting
-    against known canned responses rather than trying to control state. That would also change what
-    B11.T7r can expect from the sandbox year.
-
-  **If this needs picking up cold.** The diagnosis that mattered each time came from evidence, not
-  reasoning: HMRC's response body in the Lambda log, and `stuck-0.html` in the run's artifacts,
-  which is the DOM of the page the browser gave up on and carries HMRC's own error JSON. Two wrong
-  guesses about layer 4 — the client id, then the redirect registration — were both settled in
-  seconds by that file. Read it before theorising.
-
-  **Source**: probe-test runs 34664148418, 34664489822, 34665803906, 34666873698. **Owner**: Claude
-  Code. **Model**: Sonnet.
+  **If picking this up cold**, the evidence is in two places and settles arguments in seconds:
+  HMRC's response body in the Lambda log, and `stuck-0.html` in the run artifacts, which is the DOM
+  of the page the browser gave up on. Two wrong guesses about layer 4 were both settled by that file
+  after theorising failed. **Source**: probe-test runs 34664148418, 34665803906, 34669925776,
+  34670749108, 34671689420, 34671926725. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
   call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
