@@ -47,8 +47,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
   on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
-  because the workflow toggles Cognito native auth around each run. `videos/publish.json` gets its
-  three entries once all three artifacts are checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
+  because the workflow toggles Cognito native auth around each run. `view-payments` captured successfully
+  against prod at 12:0x UTC on 2026-09-12 (run 34689643435) and `view-penalties` is running
+  (34689889022). `videos/publish.json` gets its three entries once all three artifacts are
+  checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
   **The two missing scene scripts are on `claude/b28-board`**: `videos/file-micro-entity-accounts.json`
   and `videos/itsa-quarterly-update.json`, both saying on screen that they are sandbox previews, and
@@ -110,11 +112,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `self-employed-read` activity at `tokenCost = 0`; `self-employed-year-end` moves to 1;
   `enforceBundles()` is proved to refuse an ungated caller on all nine submitting API paths and to
   admit `resident-itsa`.
-  Remaining, in flight: six year-end handlers declare the new price and charge nothing —
-  `hmrcItsaSelfEmploymentAnnualPut`, `hmrcItsaUkPropertyAnnualPut`, `hmrcItsaLossesAndClaimsPut`,
-  `hmrcItsaLossesAndClaimsDelete`, `hmrcItsaTaxLiabilityAdjustmentsPut`,
-  `hmrcItsaTaxLiabilityAdjustmentsDelete` never call `consumeTokenForActivity`, so a page says a
-  submission costs a token and it is free. Wiring the charge is this row's remainder.
+  The six year-end handlers now charge what they advertise: `hmrcItsaSelfEmploymentAnnualPut`,
+  `hmrcItsaUkPropertyAnnualPut`, `hmrcItsaLossesAndClaimsPut`, `hmrcItsaLossesAndClaimsDelete`,
+  `hmrcItsaTaxLiabilityAdjustmentsPut` and `hmrcItsaTaxLiabilityAdjustmentsDelete` call
+  `consumeTokenForActivity` under `self-employed-year-end` on the initial request. Both DELETEs
+  charge: a delete of a loss claim or an adjustment is a write to HMRC, and the catalogue prices
+  the page rather than the verb. Closes on merge of PR #192.
+  One behaviour to confirm rather than assume, now on twelve handlers rather than six: the charge
+  lands **before** the HMRC call and a failed submission is not refunded. That is pre-existing and
+  was copied, not decided. If a failure should refund, say so and it becomes its own row.
 
 
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
@@ -221,6 +227,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
   reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
   NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
+  **Code half done on `claude/b28-board`, ci step 1 run.** PR #180 created the new bucket but left
+  every DIYA-GL Lambda's `DIYA_GL_BUCKET_NAME` pointed at the old one; that is closed, and
+  `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` holds the six AWS steps per environment with both
+  gates. ci step 1 copied 6 objects from `ci-env-books-367191799875` to
+  `ci-env-diya-gl-367191799875`; both buckets now hold 6. prod starts at 16 objects / 146,299 B and
+  waits behind ci's step 6, as the runbook orders it.
+  Next, after PR #192 deploys: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
+  bucket through CDK, never a raw `aws s3` delete.
 
 
 - [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
