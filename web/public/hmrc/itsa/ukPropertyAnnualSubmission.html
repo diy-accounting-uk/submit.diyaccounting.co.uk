@@ -313,9 +313,12 @@
         );
       }
 
-      async function saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+      async function saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await putUkPropertyAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        // The scenario above exists for the retrieve, whose sandbox default is not-found. Create
+        // and amend does not accept those values and answers "The supplied Gov-Test-Scenario is
+        // not valid", so a save that forwarded it could never succeed.
+        return await putUkPropertyAnnual(annualDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation);
       }
 
       async function continueAfterOAuth() {
@@ -348,7 +351,6 @@
             showStatus("Saving annual submission...", "info");
             await saveAnnualSubmission(
               pendingSave.annualDetails,
-              pendingSave.testScenario,
               pendingSave.runFraudPreventionHeaderValidation,
               accessToken,
             );
@@ -460,7 +462,7 @@
               showLoading();
               hideStatus();
               showStatus("Saving annual submission...", "info");
-              await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              await saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, accessToken);
               document.getElementById("annualEditForm").style.display = "none";
               document.getElementById("annualSubmissionResults").style.display = "block";
               hideStatus();

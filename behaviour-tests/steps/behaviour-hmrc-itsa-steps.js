@@ -802,13 +802,20 @@ export async function fillInItsaUkPropertyAnnualEdits(page, annualEdits = {}, sc
     if (balancingCharge !== undefined) {
       await loggedFill(page, "#balancingCharge", String(balancingCharge), "Entering balancing charge", { screenshotPath });
     }
-    if (allowanceType === "propertyIncome") {
-      await page.locator("#allowanceTypePropertyIncome").check();
-      if (propertyIncomeAllowance !== undefined) {
-        await loggedFill(page, "#propertyIncomeAllowance", String(propertyIncomeAllowance), "Entering property income allowance", {
-          screenshotPath,
-        });
-      }
+    // The page offers three, and they are not interchangeable: the property income allowance is an
+    // alternative to claiming real costs, so HMRC rejects it alongside a private use adjustment.
+    const allowanceRadios = {
+      propertyIncome: "#allowanceTypePropertyIncome",
+      itemised: "#allowanceTypeItemised",
+      none: "#allowanceTypeNone",
+    };
+    if (allowanceType && allowanceRadios[allowanceType]) {
+      await page.locator(allowanceRadios[allowanceType]).check();
+    }
+    if (allowanceType === "propertyIncome" && propertyIncomeAllowance !== undefined) {
+      await loggedFill(page, "#propertyIncomeAllowance", String(propertyIncomeAllowance), "Entering property income allowance", {
+        screenshotPath,
+      });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-uk-property-annual-edits-filled.png` });
   });

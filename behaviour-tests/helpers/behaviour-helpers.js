@@ -18,6 +18,8 @@ import { gotoWithRetries } from "./gotoWithRetries.js";
 import fs from "node:fs";
 import path from "node:path";
 import net from "node:net";
+import { randomUUID } from "node:crypto";
+import { getAuthorizationCode, buildAuthorizeUrl } from "../../scripts/lib/hmrcAuthorizationCode.js";
 import { createLogger, sanitiseString, sanitiseData } from "../../app/lib/logger.js";
 
 const logger = createLogger({ source: "behaviour-tests/helpers/behaviour-helpers.js" });
@@ -1131,4 +1133,134 @@ export function getFreeTcpPort() {
       probe.close(() => resolve(port));
     });
   });
+}
+
+/**
+ * The test-support "create a business" request body.
+ *
+ * A self-employment business carries a trade; a property one does not, and HMRC rejects the trade
+ * fields on a property business rather than ignoring them. `scripts/itsa-sandbox-year.js` builds
+ * the self-employment shape for the sandbox year run; this is the same endpoint from the
+ * behaviour tests, for the business a single suite needs to own.
+ */
+export function buildTestSupportBusinessBody(typeOfBusiness) {
+  // A self-employment business carries a trade and an address. A property business carries
+  // neither: HMRC answers RULE_UNEXPECTED_BUSINESS_ADDRESS for an address it did not ask for,
+  // rather than ignoring it, so the property body is the type alone.
+  if (typeOfBusiness === "self-employment") {
+    return {
+      typeOfBusiness,
+      tradingType: "Other business",
+      tradingName: "Behaviour Test Trade",
+      businessAddressLineOne: "1 Test Street",
+      businessAddressCountryCode: "GB",
+    };
+  }
+  return { typeOfBusiness };
+}
+
+/**
+ * Create a business the run owns, through HMRC's Self Assessment Test Support API, and set an ITSA
+ * status for the tax year so the business has obligations to file against.
+ *
+ * Needs the test user's own credentials, not just the client's: these endpoints are
+ * user-restricted, so this walks HMRC's authorize page as that user to get a token.
+ *
+ * Why a suite needs this rather than `Gov-Test-Scenario`: a scenario returns a canned business that
+ * every run shares, so its period summaries and annual submissions are whatever the last run left
+ * behind. Filing into it fails with "Period summary overlaps with any of the existing period
+ * summaries" once anyone has filed that quarter, and an annual submission inherits adjustments the
+ * suite never set. A business created for this run's own minted test user starts empty.
+ *
+ * Returns the businessId.
+ */
+export async function createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, nino, options = {}) {
+  const typeOfBusiness = options.typeOfBusiness || "uk-property";
+  const taxYear = options.taxYear;
+  const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+
+  // The Test Support endpoints are user-restricted: they act on behalf of the test user, so a
+  // client-credentials token is refused with 401 INVALID_CREDENTIALS. The only way to a user token
+  // is HMRC's authorize page, which is a sign-in journey, so a browser walks it - exactly as
+  // scripts/itsa-sandbox-year.js does for the sandbox year run.
+  const { userId, password, redirectUri, outDir } = options;
+  if (!userId || !password) {
+    throw new Error("[HMRC Test Business] The test user's userId and password are required for a user-restricted token");
+  }
+  const authorizeUrl = buildAuthorizeUrl({
+    sandboxBase: baseUrl,
+    clientId: hmrcClientId,
+    redirectUri,
+    scope: "read:self-assessment write:self-assessment",
+    state: randomUUID(),
+  });
+  const { code } = await getAuthorizationCode({
+    authorizeUrl,
+    redirectUri,
+    userId,
+    password,
+    outDir,
+    label: "behaviour-test-business",
+  });
+
+  const tokenResponse = await fetch(`${baseUrl}/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: hmrcClientId,
+      client_secret: hmrcClientSecret,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+      code,
+    }).toString(),
+  });
+  const tokenBody = await tokenResponse.json().catch(() => ({}));
+  if (!tokenResponse.ok || !tokenBody.access_token) {
+    const detail = tokenBody?.error_description || tokenBody?.error || JSON.stringify(tokenBody);
+    throw new Error(`[HMRC Test Business] Failed to exchange the authorisation code: ${tokenResponse.status} - ${detail}`);
+  }
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/vnd.hmrc.1.0+json",
+    "Authorization": `Bearer ${tokenBody.access_token}`,
+  };
+
+  const body = buildTestSupportBusinessBody(typeOfBusiness);
+  logger.info({ message: "[HMRC Test Business] Creating a business for this run", nino, typeOfBusiness });
+
+  const created = await fetch(`${baseUrl}/individuals/self-assessment-test-support/business/${nino}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const createdBody = await created.json().catch(() => ({}));
+  if (!created.ok) {
+    throw new Error(
+      `[HMRC Test Business] Create business failed: ${created.status} ${created.statusText} - ${JSON.stringify(createdBody)}`,
+    );
+  }
+  const businessId = createdBody.businessId;
+  if (!businessId) {
+    throw new Error(`[HMRC Test Business] Create business response carried no businessId: ${JSON.stringify(createdBody)}`);
+  }
+
+  // Without an ITSA status for the year there are no obligations, and a period summary has nothing
+  // to attach to. The sandbox year script sets one for the same reason.
+  if (taxYear) {
+    const status = await fetch(`${baseUrl}/individuals/self-assessment-test-support/itsa-status/${nino}/${taxYear}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        itsaStatusDetails: [{ status: "MTD Mandated", statusReason: "Sign up - return available", submittedOn: new Date().toISOString() }],
+      }),
+    });
+    if (!status.ok) {
+      const statusBody = await status.text().catch(() => "");
+      throw new Error(`[HMRC Test Business] Set ITSA status failed: ${status.status} ${status.statusText} - ${statusBody}`);
+    }
+  }
+
+  logger.info({ message: "[HMRC Test Business] Created", nino, typeOfBusiness, businessId, taxYear: taxYear || "not set" });
+  return businessId;
 }

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-name: auto merge
+name: agentic-lib-pr
 
 run-name: "auto merge${{ inputs.pr-number && format(' #{0}', inputs.pr-number) || ' (all open PRs)' }}${{ inputs.dry-run == 'false' && '' || ' [dry run]' }}"
 
@@ -52,7 +52,7 @@ on:
 # the concurrency group drops one and that PR's code reaches nothing. cancel-in-progress is what
 # turns a burst of workflow_run completions into a single evaluation.
 concurrency:
-  group: auto-merge-${{ inputs.pr-number || 'all' }}
+  group: agentic-lib-pr-${{ inputs.pr-number || 'all' }}
   cancel-in-progress: true
 
 permissions:
@@ -196,7 +196,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: auto-merge-output
+          name: agentic-lib-pr-output
           path: /tmp/auto-merge.json
           if-no-files-found: warn
           retention-days: 14

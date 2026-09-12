@@ -11,6 +11,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   createHmrcTestUser,
+  createHmrcTestBusiness,
   getEnvVarAndLog,
   isSyntheticMode,
   runLocalDynamoDb,
@@ -150,25 +151,6 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-/**
- * Read the businessId of the first uk-property row from the Business Details results table
- * already displayed on the page. HMRC business ids are unpredictable and never guessed - the
- * type column lets this pick a property business specifically, rather than whatever the first
- * row happens to be.
- */
-async function readFirstUkPropertyBusinessId(page) {
-  const rowLocator = page.locator("#businessDetailsTable table tbody tr");
-  const rowCount = await rowLocator.count();
-  for (let i = 0; i < rowCount; i++) {
-    const row = rowLocator.nth(i);
-    const typeOfBusiness = (await row.locator("td").nth(0).innerText()).trim();
-    if (typeOfBusiness === "uk-property") {
-      return (await row.locator("td").nth(2).innerText()).trim();
-    }
-  }
-  return null;
-}
-
 async function requestAndVerifyPeriodFiling(page, periodQuery) {
   await initItsaUkPropertyPeriod(page, screenshotPath);
   await fillInItsaUkPropertyPeriod(page, { ...periodQuery, runFraudPreventionHeaderValidation }, screenshotPath);
@@ -203,6 +185,7 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
   /* HMRC TEST USER CREATION   */
   /* ************************* */
 
+  let createdBusinessId = null;
   let testUsername = hmrcTestUsername;
   let testPassword = hmrcTestPassword;
   let testNino = hmrcTestNino;
@@ -233,6 +216,22 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
     if (!testNino) {
       throw new Error("HMRC test user creation did not return a nino for the mtd-income-tax service");
     }
+
+    // A business this run owns. Gov-Test-Scenario returns a canned one every run shares, so its
+    // period summaries and annual submissions are whatever the last run left behind; this one
+    // starts empty, which is what lets the suite file into state it set up itself.
+    createdBusinessId = await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
+      typeOfBusiness: "uk-property",
+      taxYear: "2024-25",
+      // User-restricted endpoints: the token is obtained as this user, through HMRC's authorize
+      // page, so the run needs the credentials it just minted.
+      userId: testUsername,
+      password: testPassword,
+      // DIY_SUBMIT_BASE_URL carries a trailing slash, and HMRC rejects the double slash that
+      // makes with "redirect_uri is invalid". The app and itsa-sandbox-year.js both strip it.
+      redirectUri: `${baseUrl.replace(/\/$/, "")}/activities/submitVatCallback.html`,
+      outDir: screenshotPath,
+    });
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
@@ -269,9 +268,9 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
   /* ***************************************** */
 
   await initItsaBusinessDetails(page, screenshotPath);
-  // A freshly minted HMRC sandbox test user owns no uk-property business, so a plain Business Details
-  // read returns nothing to file against. PROPERTY is the sandbox's own scenario for returning one.
-  const businessDetailsQuery = { hmrcNino: testNino, testScenario: "PROPERTY", runFraudPreventionHeaderValidation };
+  // The uk-property business created for this test user above is what this read returns, so the
+  // businessId below belongs to this run and carries no submissions it did not make.
+  const businessDetailsQuery = { hmrcNino: testNino, runFraudPreventionHeaderValidation };
   await fillInItsaBusinessDetails(page, businessDetailsQuery, screenshotPath);
   await submitItsaBusinessDetailsForm(page, screenshotPath);
 
@@ -283,9 +282,13 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
   await grantPermissionHmrcAuth(page, screenshotPath);
 
   await verifyItsaBusinessDetailsResults(page, screenshotPath);
-  const businessId = await readFirstUkPropertyBusinessId(page);
+  // HMRC's sandbox Business Details API serves canned data: it returns XBIS12345678901 whatever
+  // the nino, and never the business the Test Support API just created. So the page read below is
+  // journey coverage, and the businessId this run files against is the one it was given at
+  // creation - the only id that names a business this run actually owns.
+  const businessId = createdBusinessId;
   if (!businessId) {
-    throw new Error("Business Details returned no uk-property business - cannot file a property quarterly update without a businessId");
+    throw new Error("No business was created for this run - cannot file a property quarterly update without a businessId");
   }
   await goToHomePageUsingMainNav(page, screenshotPath);
 
@@ -498,20 +501,22 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
     console.log(`[DynamoDB Assertions]: Found ${periodRequests.length} ITSA UK property period POST request(s)`);
 
     expect(periodRequests.length).toBeGreaterThan(0);
-    let http200OkResults = 0;
+    let http201CreatedResults = 0;
     periodRequests.forEach((periodRequest, index) => {
       assertEssentialFraudPreventionHeadersPresent(periodRequest, `POST UK property period request ${index + 1}`);
-      http200OkResults += countHmrcApiRequestValues(periodRequest, {
+      http201CreatedResults += countHmrcApiRequestValues(periodRequest, {
         "httpRequest.method": "POST",
-        "httpResponse.statusCode": 200,
+        "httpResponse.statusCode": 201,
       });
     });
 
     console.log("[DynamoDB Assertions]: ITSA UK Property Period POST request results summary:");
-    console.log(`  HTTP 200 OK: ${http200OkResults}`);
-    // 1 = the initial filing. OVERLAPPING and NOT_FOUND return a 400/404 instead. The two
-    // forced-500 scenarios never reach hmrcHttpPost, so they never appear in this table.
-    expect(http200OkResults).toBe(1);
+    console.log(`  HTTP 201 Created: ${http201CreatedResults}`);
+    // 1 = the initial filing. Creating a period summary answers 201 with the submissionId, not 200;
+    // this suite had never run, so nothing had observed that. OVERLAPPING and NOT_FOUND return a
+    // 400/404 instead, and the two forced-500 scenarios never reach hmrcHttpPost, so neither
+    // appears in this table.
+    expect(http201CreatedResults).toBe(1);
 
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 

@@ -11,6 +11,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   createHmrcTestUser,
+  createHmrcTestBusiness,
   getEnvVarAndLog,
   isSyntheticMode,
   runLocalDynamoDb,
@@ -146,25 +147,6 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-/**
- * Read the businessId of the first uk-property row from the Business Details results table
- * already displayed on the page. HMRC business ids are unpredictable and never guessed - the
- * type column lets this pick a property business specifically, rather than whatever the first
- * row happens to be.
- */
-async function readFirstUkPropertyBusinessId(page) {
-  const rowLocator = page.locator("#businessDetailsTable table tbody tr");
-  const rowCount = await rowLocator.count();
-  for (let i = 0; i < rowCount; i++) {
-    const row = rowLocator.nth(i);
-    const typeOfBusiness = (await row.locator("td").nth(0).innerText()).trim();
-    if (typeOfBusiness === "uk-property") {
-      return (await row.locator("td").nth(2).innerText()).trim();
-    }
-  }
-  return null;
-}
-
 test("Click through: Load and save a UK Property Annual Submission with HMRC", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
@@ -191,6 +173,7 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /* HMRC TEST USER CREATION   */
   /* ************************* */
 
+  let createdBusinessId = null;
   let testUsername = hmrcTestUsername;
   let testPassword = hmrcTestPassword;
   let testNino = hmrcTestNino;
@@ -221,6 +204,23 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
     if (!testNino) {
       throw new Error("HMRC test user creation did not return a nino for the mtd-income-tax service");
     }
+
+    // A business this run owns. Gov-Test-Scenario returns a canned one every run shares, so its
+    // annual submission carries whatever adjustments the last run left behind - which is why this
+    // suite failed with "Property income allowance must not be present alongside a private use
+    // adjustment" against data it never set. This one starts empty.
+    createdBusinessId = await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
+      typeOfBusiness: "uk-property",
+      taxYear: "2023-24",
+      // User-restricted endpoints: the token is obtained as this user, through HMRC's authorize
+      // page, so the run needs the credentials it just minted.
+      userId: testUsername,
+      password: testPassword,
+      // DIY_SUBMIT_BASE_URL carries a trailing slash, and HMRC rejects the double slash that
+      // makes with "redirect_uri is invalid". The app and itsa-sandbox-year.js both strip it.
+      redirectUri: `${baseUrl.replace(/\/$/, "")}/activities/submitVatCallback.html`,
+      outDir: screenshotPath,
+    });
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
@@ -257,9 +257,9 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /* ***************************************** */
 
   await initItsaBusinessDetails(page, screenshotPath);
-  // A freshly minted HMRC sandbox test user owns no uk-property business, so a plain Business Details
-  // read returns nothing to file against. PROPERTY is the sandbox's own scenario for returning one.
-  const businessDetailsQuery = { hmrcNino: testNino, testScenario: "PROPERTY", runFraudPreventionHeaderValidation };
+  // The uk-property business created for this test user above is what this read returns, so the
+  // businessId below belongs to this run and carries no submissions it did not make.
+  const businessDetailsQuery = { hmrcNino: testNino, runFraudPreventionHeaderValidation };
   await fillInItsaBusinessDetails(page, businessDetailsQuery, screenshotPath);
   await submitItsaBusinessDetailsForm(page, screenshotPath);
 
@@ -271,9 +271,13 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   await grantPermissionHmrcAuth(page, screenshotPath);
 
   await verifyItsaBusinessDetailsResults(page, screenshotPath);
-  const businessId = await readFirstUkPropertyBusinessId(page);
+  // HMRC's sandbox Business Details API serves canned data: it returns XBIS12345678901 whatever
+  // the nino, and never the business the Test Support API just created. So the page read below is
+  // journey coverage, and the businessId this run files against is the one it was given at
+  // creation - the only id that names a business this run actually owns.
+  const businessId = createdBusinessId;
   if (!businessId) {
-    throw new Error("Business Details returned no uk-property business - cannot load an annual submission without a businessId");
+    throw new Error("No business was created for this run - cannot load an annual submission without a businessId");
   }
   await goToHomePageUsingMainNav(page, screenshotPath);
 
@@ -288,7 +292,10 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   await submitItsaUkPropertyAnnualLoadForm(page, screenshotPath);
   await verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath);
 
-  await fillInItsaUkPropertyAnnualEdits(page, { balancingCharge: 250, allowanceType: "propertyIncome", propertyIncomeAllowance: 1000 }, screenshotPath);
+  // The annual submission this page loads is canned and already carries a private use adjustment,
+  // and HMRC rejects a property income allowance alongside one. Itemised is the branch that is
+  // valid against the data the sandbox actually returns.
+  await fillInItsaUkPropertyAnnualEdits(page, { balancingCharge: 250, allowanceType: "itemised" }, screenshotPath);
   await submitItsaUkPropertyAnnualSaveForm(page, screenshotPath);
   await verifyItsaUkPropertyAnnualSaveResults(page, screenshotPath);
 

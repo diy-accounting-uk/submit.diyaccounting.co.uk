@@ -78,7 +78,7 @@ run that concluded success.
 Look for earlier runs of this same workflow that did not complete cleanly in the last seven days:
 
 ```
-gh run list --workflow do-next.yml --limit 40 --json databaseId,status,conclusion,createdAt,displayTitle
+gh run list --workflow agentic-lib-code.yml --limit 40 --json databaseId,status,conclusion,createdAt,displayTitle
 gh run download <id> --dir ${OUT_DIR}/prior/<id>    # for the interesting ones
 ```
 
