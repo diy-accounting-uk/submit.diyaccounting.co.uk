@@ -423,27 +423,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human and machine
 
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
-  points send customers to this repository's issues today, and all three move:
-  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
-  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
-  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
-  and `:93`).
-  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
-  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
-  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
-  would move alarm and security-lake issues too, which is not what this asks. Give the support path
-  its own configuration point and leave the others alone.
-  Cross-repository prerequisites, which is the human half: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
-  needs issues enabled and a `support.md` issue template matching this repository's
-  `.github/ISSUE_TEMPLATE/support.md`, or the `?template=` parameter silently falls back to a blank
-  issue. The token the support Lambda uses must also be able to write issues there — today it is
-  scoped to this repository. Say which token, because O38's `diya-ops` app is the intended long-term
-  answer and a PAT would be the interim one.
-  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
-  **Source**: operator request, 2026-09-12. **Owner**: Claude Code, with the operator for the
-  spreadsheets repository's settings and the token. **Model**: Sonnet.
-
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
   GitHub environment secret), read the real acknowledgement and poll responses, settle the
@@ -472,6 +451,27 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Owner**: Claude Code, then Operator. **Model**: Sonnet.
 
 
+
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
+  points send customers to this repository's issues today, and all three move:
+  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
+  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
+  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
+  and `:93`).
+  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
+  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
+  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
+  would move alarm and security-lake issues too, which is not what this asks. Give the support path
+  its own configuration point and leave the others alone.
+  Cross-repository prerequisites, which is the human half: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
+  needs issues enabled and a `support.md` issue template matching this repository's
+  `.github/ISSUE_TEMPLATE/support.md`, or the `?template=` parameter silently falls back to a blank
+  issue. The token the support Lambda uses must also be able to write issues there — today it is
+  scoped to this repository. Say which token, because O38's `diya-ops` app is the intended long-term
+  answer and a PAT would be the interim one.
+  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
+  **Source**: operator request, 2026-09-12. **Owner**: Claude Code, with the operator for the
+  spreadsheets repository's settings and the token. **Model**: Sonnet.
 
 - [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
   (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
