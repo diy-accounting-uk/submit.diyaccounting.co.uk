@@ -36,9 +36,9 @@ Both print at the end of the run and are written into the transcript.
   the same three fields.
 - The sandbox application (client id ending `v4tV`) subscribed, on the HMRC Developer Hub, to
   every API this script calls: Self Assessment Test Support, Obligations, Self Employment
-  Business, Business Source Adjustable Summary, and Individual Calculations, alongside the
-  Business Details subscription the phase 1 spike already proved. Only the Developer Hub
-  account holder can add a subscription; a script cannot.
+  Business, Business Source Adjustable Summary, Individual Calculations and Self Assessment
+  Individual Details, alongside the Business Details subscription the phase 1 spike already
+  proved. Only the Developer Hub account holder can add a subscription; a script cannot.
 
 ## The command
 
@@ -59,10 +59,13 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 
 | Phase | Call | Expected |
 |---|---|---|
-| Reset | `DELETE .../vendor-state` (first run) or `POST .../checkpoints/{id}/restore` (later runs) | `204`/`404`, or `200`/`201`/`204` |
-| Reset | `POST .../vendor-state/checkpoints` (first run only) | `201` with a checkpoint id |
-| Setup | `POST .../test-support/business/{nino}` | `201` with `businessId` |
-| Setup | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
+| Reset (later runs) | `POST .../checkpoints/{id}/restore` | `200`/`201`/`204`, reusing the saved `businessId` |
+| Reset (first run) | `DELETE .../vendor-state` | `204`/`404` |
+| Setup (first run) | `POST .../test-support/business/{nino}` | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
+| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
+| Verify | `GET .../individuals/business/details/{nino}/list` | `200` |
+| Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}` | `200` |
 | Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period` | `200`/`201`, once per open obligation HMRC returned |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
@@ -94,11 +97,14 @@ real run either confirms the guess or tells you which field name to add.
 
 ## Idempotency
 
-The script is safe to run repeatedly. The first run ever wipes the test user's sandbox data
-with `DELETE .../vendor-state` and saves a checkpoint of that clean state to
-`${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`. Every later run restores that checkpoint before
-creating a fresh business, which undoes whatever the previous run left behind. Delete the
-checkpoint file to force a fresh wipe-and-checkpoint on the next run.
+The script is safe to run repeatedly. A checkpoint can only be taken of a NINO that already has
+test-support data, so the first run ever wipes the test user's sandbox data with `DELETE
+.../vendor-state`, creates the business and sets its ITSA status, and only then checkpoints that
+as the baseline, saving `{checkpointId, businessId}` to
+`${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`. Every later run restores that checkpoint and reuses
+the same `businessId` rather than creating a second business, which undoes whatever the previous
+run filed against it since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
+the next run.
 
 ## Assumptions taken from the plan's open questions
 
@@ -128,17 +134,30 @@ Two more choices are this script's own test data, not the plan's:
 
 ## Run record
 
-The first real run against the sandbox, with a freshly created `mtd-income-tax` test user,
-reached the first live call and stopped there:
+With the application subscribed to Self Assessment Test Support, Obligations, Self Employment
+Business, Business Source Adjustable Summary and Individual Calculations, a run got past the
+first call and uncovered two script defects, both fixed:
+
+- The checkpoint-create call answered `400 FORMAT_NINO` with no `nino` query parameter, and
+  `404 MATCHING_RESOURCE_NOT_FOUND` once the parameter was added, because a checkpoint can only
+  be taken of a NINO that already has test-support data - HMRC's resolved OpenAPI for
+  `mtd-sa-test-support-api/1.0` documents `nino` as a required query parameter on `POST
+  .../vendor-state/checkpoints`, and its 404 example reads "No records were found for the passed
+  NINO to create a checkpoint." The script now creates the business and sets its ITSA status
+  first, then checkpoints that as the baseline; a restore run reuses the same `businessId`
+  instead of creating a second business.
+- The test-support "create a business" call answered `400 MISSING_POSTCODE`. HMRC's schema for
+  that endpoint marks `businessAddressPostcode` mandatory for a self-employment business whose
+  `businessAddressCountryCode` is `"GB"`. The script now sends one.
+
+With both fixed, the run reached `GET .../individuals/person/itsa-status/{nino}/{taxYear}` and
+stopped:
 
 ```
-DELETE .../individuals/self-assessment-test-support/vendor-state?nino=... -> 403
+GET .../individuals/person/itsa-status/*******4A/2023-24 -> 403
 {"code":"RESOURCE_FORBIDDEN","message":"The application is not subscribed to the API which it is attempting to invoke"}
 ```
 
-The application (client id ending `v4tV`) is not subscribed, on the Developer Hub, to the Self
-Assessment Test Support API. The phase 1 spike only proved Business Details and the fraud
-header validator; every other API this script calls - Self Assessment Test Support, Obligations,
-Self Employment Business, Business Source Adjustable Summary, Individual Calculations - is
-untested against the sandbox and may need the same subscription added. The Developer Hub account
-holder needs to add these subscriptions before a run can get past the first reset call.
+That call (`app/functions/hmrc/hmrcItsaStatusGet.js`) is on the Self Assessment Individual
+Details (MTD) API, v2.0 - a subscription not in the list above. The Developer Hub account holder
+needs to add it before a run can get past this call.
