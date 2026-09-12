@@ -1144,15 +1144,19 @@ export function getFreeTcpPort() {
  * behaviour tests, for the business a single suite needs to own.
  */
 export function buildTestSupportBusinessBody(typeOfBusiness) {
-  const common = {
-    typeOfBusiness,
-    businessAddressLineOne: "1 Test Street",
-    businessAddressCountryCode: "GB",
-  };
+  // A self-employment business carries a trade and an address. A property business carries
+  // neither: HMRC answers RULE_UNEXPECTED_BUSINESS_ADDRESS for an address it did not ask for,
+  // rather than ignoring it, so the property body is the type alone.
   if (typeOfBusiness === "self-employment") {
-    return { ...common, tradingType: "Other business", tradingName: "Behaviour Test Trade" };
+    return {
+      typeOfBusiness,
+      tradingType: "Other business",
+      tradingName: "Behaviour Test Trade",
+      businessAddressLineOne: "1 Test Street",
+      businessAddressCountryCode: "GB",
+    };
   }
-  return common;
+  return { typeOfBusiness };
 }
 
 /**
