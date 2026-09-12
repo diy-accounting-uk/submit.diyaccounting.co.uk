@@ -16,19 +16,28 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-10)
+## Live status (updated 2026-09-12)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
-truthfully on its own. Operator-only steps are briefed for Claude Cowork in
-`../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
+truthfully on its own. Human-only steps are briefed for Claude Cowork at the workspace root:
+`../BRIEF_OPERATOR_TASKS_2026-09-12.md` is current, `../BRIEF_OPERATOR_TASKS_2026-09-09.md` carries
+O17, O21 and O23.
 
-- **Four batches merged on 2026-09-10**: PR #175 and #176 (the DIYA-GL stack, client and toggle
-  renames, the alarm-origin verifier, the automated-comment disclosure, the support form's rate
-  limit and quoting, the identity guard, the free ITSA year-end activity, the cost export's column
-  casing and bucket region, the Bedrock budget filter, the CIS filter fixes and the raw export's
-  lake grants); PR #177 (the deploy ordering, the destroy hardening for both environments, the
-  DIYA-GL API routes, the deployment role audit); PR #178 (both API route prefixes made permanent,
-  and the environment deploy's paths guard). Prod runs prod-f0787f7.
+**The session is in cool-down since 2026-09-12T20:21:54Z**: no new rows except degradations, and
+nothing is dispatched until the operator lifts it.
+
+- **Four merges on 2026-09-12**: PR #191 (the email hash secret's grant to the four pass Lambdas);
+  PR #192, batch 28 (ITSA reads free and submissions charged, a real 403 carrying HMRC's reason,
+  `Claude-Run` on the unattended workflows, the DIYA-GL bucket cutover's code half, two walkthrough
+  scene scripts, the raw export's field counts); PR #193 (the apex-alias vacate tolerating a ci set
+  that expires mid-deploy); PR #194 (214 eslint findings down to 52, and the eslint gate that had
+  reported zero on every run since it was added). Prod runs prod-4918a0d, with prod-e6d3045 left
+  standing as a spare.
+- **Five pipeline defects are open** and none is a code regression: B127 merged but unproven on a
+  real run, B130 (a superseded deploy reports a failed DORA job), B131 (keepalive red on two
+  never-fired schedules), B132 (deploys cancelled with no established cause), B133 (destroy-prod
+  fails when the set is already gone). B30v is a prod alarm firing since 2026-09-10 with no issue
+  raised.
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
