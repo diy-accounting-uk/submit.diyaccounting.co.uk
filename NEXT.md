@@ -17,10 +17,12 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-40b194e**, nine stacks. `prod-e6d3045` from the #190 merge stands with
-seven stacks while its `deploy` run is still in progress, so the live pointer has not moved to it
-yet. ci runs `ci-annual1`, ten stacks from 08:55, self-destruct about 10:56. `ci-mainb28b` still
-stands with nine stacks, now eleven hours past its own window and untouched by four
-`34 2,4,6,8,10,12` UTC sweeps.
+nine stacks while its `deploy` run is still in progress, so the live pointer has not moved to it
+yet; once it does, `prod-40b194e` is the spare and costs $35.28 a month until
+`destroy-prod.yml -f deployment-name=prod-40b194e` runs. ci runs `ci-annual1`, ten stacks from
+08:56, self-destruct about 10:56. `ci-mainb28b` still stands with nine stacks, twelve hours past
+its own window and untouched by four `34 2,4,6,8,10,12` UTC sweeps, so the sweep's own selection
+needs looking at.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
@@ -35,6 +37,27 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## Machine-only
+
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
+  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
+  call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
+  run can go further than its first call. Work through whatever the sandbox answers
+  next and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
+
+- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
+  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
+  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
+  accounts filing and a fresh one for ITSA (business details through the quarterly update),
+  both against a ci set since neither activity goes to prod, each described on screen and in
+  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
+  `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
+  on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
+  because the workflow toggles Cognito native auth around each run. `videos/publish.json` gets its
+  three entries once all three artifacts are checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
+  Code. **Model**: Sonnet.
+
 
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
   the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
@@ -58,12 +81,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
   the notebook's data path and count the fields.
 
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
-  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
-  call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
-  run can go further than its first call. Work through whatever the sandbox answers
-  next and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
-  **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
   no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
@@ -77,6 +94,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Add the entries, then confirm `enforceBundles()` actually refuses an ungated caller for each
   submitting activity — the hole existed because nothing tested it. **Source**: the CDK spine
   agent's finding, 2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
   `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
@@ -94,19 +112,21 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
   **Owner**: Claude Code. **Model**: Sonnet.
 
+
 - [ ] **B123. One attribution for unattended runs, distinct from a session at a terminal.** The
   identity audit's class U is "a model started by a schedule or an event, with nobody watching",
-  and it needs to be readable from a commit or a comment without opening the run. Three model-run
-  workflows exist or are proposed — `alarm-triage.yml`, and `auto-merge.yml`, `do-next.yml` and
-  `board.yml` on PR #189 — and they do not agree.
+  and it needs to be readable from a commit or a comment without opening the run. Four model-run
+  workflows are on main — `alarm-triage.yml`, `agentic-lib-pr.yml`, `agentic-lib-code.yml` and
+  `agentic-lib-board.yml` — and they do not agree.
   Settle and write into the workspace `CLAUDE.md` beside the terminal convention: unattended runs
   keep `Co-Authored-By: Claude <noreply@anthropic.com>` and `Claude-Model:` unchanged, because
   identity and provenance do not depend on who started the run, and replace `Claude-Session:` with
   `Claude-Run: <run url>`, because there is no interactive session and a reader needs to tell a run
-  nobody watched from one a person drove. Then make all three workflows emit it, and check the
+  nobody watched from one a person drove. Then make all four workflows emit it, and check the
   `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
-  `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U; PR #189.
+  `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U.
   **Owner**: Claude Code. **Model**: Sonnet.
+
 
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
   `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
@@ -120,6 +140,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
   but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 - [ ] **B126. Document that a ci redeploy needs an explicit deployment-name.**
   `.github/actions/get-names/action.yml:112` computes `ci-${CLEANED:0:5}${REF_HASH}` where
@@ -135,6 +156,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   presents as several stack jobs failing rather than as a name collision. **Source**: deploy run
   34672307283. **Owner**: Claude Code. **Model**: Haiku.
 
+
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
@@ -145,17 +167,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
   Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
 
-- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
-  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
-  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
-  accounts filing and a fresh one for ITSA (business details through the quarterly update),
-  both against a ci set since neither activity goes to prod, each described on screen and in
-  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
-  on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
-  because the workflow toggles Cognito native auth around each run. `videos/publish.json` gets its
-  three entries once all three artifacts are checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
-  Code. **Model**: Sonnet.
 
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
@@ -175,12 +186,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
   NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
 
+
 - [ ] **O28. Read HMRC's August fraud-prevention-header advisories.** The new monthly check's
   first dry run over the mail mirror found HMRC's 2026-09-02 email reporting August 2026 with
   advisories to review. Open it (from noreply@tax.service.gov.uk, subject "Improve fraud
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
+
 
 - [ ] **B73. The email hash secret has never existed in any account.** `initializeEmailHashSecret()`
   reads `${env}/submit/email-hash-secret`, and `aws secretsmanager list-secrets` shows no such
@@ -192,13 +205,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the secret material is an AWS write and a decision about the value, so the operator settles it,
   then the grant goes in beside the salt's in `AccountStack.java`. **Source**: ci `pass-post` log,
   2026-09-09. **Owner**: Claude Code. **Model**: Haiku.
-  **In flight.** Both secrets now exist: `ci/submit/email-hash-secret` and
+  **In flight on PR #191.** Both secrets now exist: `ci/submit/email-hash-secret` and
   `prod/submit/email-hash-secret`, created 2026-09-12 11:00 BST with independent 48-byte random
-  values. The grant is written on `claude/ops-email-hash-grant`: a new `EmailHashSecretHelper`
-  mirroring `SubHashSaltHelper`, applied to the four pass Lambdas that reach `passService.js` —
-  `passGet`, `passPost`, `passAdminPost`, `passGeneratePost`. `passMyPassesGet` is excluded because
-  it does not use `passService`. `./mvnw clean verify` passes, 220 tests. Remaining: push and raise
-  the PR.
+  values. The grant is on `claude/ops-email-hash-grant`: a new `EmailHashSecretHelper` mirroring
+  `SubHashSaltHelper`, applied to the four pass Lambdas that reach `passService.js` — `passGet`,
+  `passPost`, `passAdminPost`, `passGeneratePost`. `passMyPassesGet` is excluded because it does not
+  use `passService`. `./mvnw clean verify` passes, 220 tests. `test`, `identity-guard`, `CodeQL` and
+  `verify-commit-signatures` are green; `deploy` and `deploy environment` are running. Remaining:
+  the merge, then redeem an email-restricted pass on ci to prove the fetch works.
 
 ## Human and machine
 
@@ -233,19 +247,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
-- [ ] **O42. Create two fine-grained PATs for the agentic-lib workflows.** Each of the three
-  refuses to start without its token. The split is the safety property: `AUTO_MERGE_TOKEN` merges
-  but does not write code, `AGENT_TOKEN` pushes a `claude/*` branch, opens a PR and commits
-  `NEXT.md` but cannot merge or touch `main`. `GITHUB_TOKEN` can be neither: a merge with it does
-  not trigger `on: push`, so the prod deploy would never fire, and a branch pushed with it triggers
-  no checks.
-  **Operator decision, 2026-09-12: fine-grained PATs now, not waiting for O38's apps.** Both scoped
-  to this repository: contents and pull-requests write for both, plus issues write for
-  `AGENT_TOKEN`. Set them as repository secrets `AUTO_MERGE_TOKEN` and `AGENT_TOKEN`.
-  They are yours personally and carry no separate identity, which is what O38 exists to fix, so
-  swapping them for `diya-ops` and `diya-agent` when O38 lands stays worth doing. Then B124 proves
-  the workflows. **Source**: PR #189. **Owner**: Operator, then Claude Code. **Model**: none.
-
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -254,12 +255,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
   REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
 
+
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
   company's register, so this is the operator's own company and sign-in. Tell Claude Code how
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
   **Owner**: Operator. **Model**: none.
+
 
 - [ ] **O16 / B34b. Activate the XML Gateway test presenter account.** Companies House's XML
   team (Ioan, xml@companieshouse.gov.uk) replied on 2026-09-07: they activate a test account
@@ -273,12 +276,29 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   which starts B34.6b. Nothing blocks the reply itself; chase on 2026-09-21 if silent. **Source**: BACKLOG 34b.
   **Owner**: Operator. **Model**: none.
 
+
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D17. **Owner**: Operator. **Model**: none.
+
+
+- [ ] **O42. Create two fine-grained PATs for the agentic-lib workflows.** Each of the three
+  refuses to start without its token. The split is the safety property: `AUTO_MERGE_TOKEN` merges
+  but does not write code, `AGENT_TOKEN` pushes a `claude/*` branch, opens a PR and commits
+  `NEXT.md` but cannot merge or touch `main`. `GITHUB_TOKEN` can be neither: a merge with it does
+  not trigger `on: push`, so the prod deploy would never fire, and a branch pushed with it triggers
+  no checks.
+  **Operator decision, 2026-09-12: fine-grained PATs now, not waiting for O38's apps.** Both scoped
+  to this repository: contents and pull-requests write for both, plus issues write for
+  `AGENT_TOKEN`. Set them as repository secrets `AUTO_MERGE_TOKEN` and `AGENT_TOKEN`.
+  They are yours personally and carry no separate identity, which is what O38 exists to fix, so
+  swapping them for `diya-ops` and `diya-agent` when O38 lands stays worth doing. Then B124 proves
+  the workflows. **Source**: `.github/workflows/agentic-lib-*.yml`. **Owner**: Operator, then Claude
+  Code. **Model**: none.
+
 
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
@@ -294,6 +314,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
   **Model**: none.
 
+
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
   `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
@@ -308,30 +329,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
   none.
 
+
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
 ## Blocked
-
-- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All on PR #189,
-  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
-  **`board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
-  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
-  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
-  check the reluctance actually holds: a second run minutes later should say the board is already
-  true and commit nothing.
-  **`auto-merge.yml` next**, `dry-run=true`, after O42. Its tables must match a
-  `/auto-merge-dry-run` here. Only then a live run against one PR.
-  **`do-next.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
-  ready task rather than the most interesting; did it check whether `main` was green first; if it
-  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
-  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
-  dispatch a second run against a deliberately unfinished first and check the resume judgement and
-  the `Resumed-From:` chain.
-  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
-  **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
@@ -350,6 +354,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1.
 
+
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
   questionnaires, and the two draft emails for the operator to send. One application now covers
@@ -357,6 +362,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
   **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
   B11.T22.
+
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
@@ -369,6 +375,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17.
 
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
   GitHub environment secret), read the real acknowledgement and poll responses, settle the
@@ -378,15 +385,38 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **Source**: BACKLOG
   34b. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O16.
 
+
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
+
 
 - [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
   capture runs, upload them unlisted with `video-publish`, then the operator runs
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+
+
+- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
+  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
+  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
+  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
+  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
+  check the reluctance actually holds: a second run minutes later should say the board is already
+  true and commit nothing.
+  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
+  `/auto-merge-dry-run` here. Only then a live run against one PR.
+  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
+  ready task rather than the most interesting; did it check whether `main` was green first; if it
+  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
+  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
+  dispatch a second run against a deliberately unfinished first and check the resume judgement and
+  the `Resumed-From:` chain.
+  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
+  **Source**: `.github/workflows/agentic-lib-*.yml`. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O42.
+
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
@@ -399,6 +429,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   drill and settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code.
   **Model**: Sonnet. Blocked on O41x: the drill cannot run until the vault accepts a restore
   grant at all, and today's dispatch proved the current design does not deploy.
+
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
