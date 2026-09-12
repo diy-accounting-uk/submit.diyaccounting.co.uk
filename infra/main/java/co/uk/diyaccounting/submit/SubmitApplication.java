@@ -481,7 +481,7 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .booksBucketName(sharedNames.booksBucketName)
+                        .diyaGlBucketName(sharedNames.diyaGlBucketName)
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .build());
 
