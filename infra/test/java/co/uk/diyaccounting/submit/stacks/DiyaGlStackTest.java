@@ -20,7 +20,7 @@ import software.amazon.awscdk.assertions.Template;
 
 class DiyaGlStackTest {
 
-    private static final String BOOKS_BUCKET_NAME = "docs-env-books-111111111111";
+    private static final String DIYA_GL_BUCKET_NAME = "docs-env-diya-gl-111111111111";
     private static final String BOOKS_ALLOWED_ORIGINS =
             "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
 
@@ -43,7 +43,7 @@ class DiyaGlStackTest {
                         .cloudTrailEnabled("false")
                         .sharedNames(sharedNames)
                         .baseImageTag("latest")
-                        .booksBucketName(BOOKS_BUCKET_NAME)
+                        .diyaGlBucketName(DIYA_GL_BUCKET_NAME)
                         .booksAllowedOrigins(BOOKS_ALLOWED_ORIGINS)
                         .build());
     }
@@ -83,7 +83,7 @@ class DiyaGlStackTest {
                             Match.objectLike(Map.of(
                                     "Variables",
                                     Match.objectLike(Map.of(
-                                            "DIYA_GL_BUCKET_NAME", BOOKS_BUCKET_NAME,
+                                            "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
                                             "ENVIRONMENT_NAME", "docs",
                                             "DIYA_GL_ALLOWED_ORIGINS", BOOKS_ALLOWED_ORIGINS)))))));
         }

@@ -334,7 +334,9 @@ service needs when the answer is unambiguously a customer.
 1. Add the new bucket to `DataStack` beside the old one, and its ARN to the backup selection beside
    the old one. Deploy. No data moves; both buckets now exist and both are backed up.
 2. `aws s3 sync` the old bucket to the new.
-3. Point the DIYA-GL Lambdas at the new bucket and deploy.
+3. Point the DIYA-GL Lambdas at the new bucket and deploy. The code is done (`SubmitApplication`
+   wires `DiyaGlStack` from `sharedNames.diyaGlBucketName`, commit `cd2436cb`); what remains is the
+   deploy.
 4. **Re-run the sync after that deploy completes, and keep re-running it until it copies nothing.**
    This is the step the sequence cannot skip. Between step 2 and the moment step 3's deploy finishes
    the app is still writing to the old bucket, and a deploy takes tens of minutes; anything saved in
@@ -345,8 +347,11 @@ service needs when the answer is unambiguously a customer.
 6. Take one on-demand backup of the new bucket and confirm the recovery point exists.
 7. Only then remove the old bucket from `DataStack`, which empties and deletes it.
 
-Steps 2, 4 and 6 are AWS writes against prod data and the operator approves each before it runs.
-Step 7 is irreversible and waits on step 5 and step 6 both having passed, not on either alone.
+Steps 2, 4 and 6 are AWS writes against prod data. The operator has decided the row runs
+unattended, with the sequence itself as the safety mechanism rather than a per-step prompt: step 4
+must copy nothing before the cutover is believed, and step 7 waits on step 5 and step 6 both having
+passed, not on either alone. `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` is the copy-pasteable
+form of steps 2-7.
 
 A dual-write in the application would close step 4's window without a repeated sync. It is not
 chosen here: it needs code on the write path for a migration that runs once, and repeating the sync
