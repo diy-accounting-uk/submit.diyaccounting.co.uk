@@ -309,7 +309,7 @@
               showSearchCriteria(); // Show form on error
               return;
             }
-            throw new Error(result.message || "Failed to retrieve payments");
+            throw new Error(hmrcErrorMessage(result, "Failed to retrieve payments"));
           }
 
           // Display results
@@ -464,7 +464,7 @@
                 showStatus("Access token expired. Please try again.", "error");
                 return;
               }
-              throw new Error(result.message || "Failed to retrieve payments");
+              throw new Error(hmrcErrorMessage(result, "Failed to retrieve payments"));
             }
 
             // Display results

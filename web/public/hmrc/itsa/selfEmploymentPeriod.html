@@ -346,7 +346,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to load the current total");
+          const error = new Error(hmrcErrorMessage(result, "Failed to load the current total"));
           error.status = response.status;
           throw error;
         }
@@ -500,7 +500,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to file the quarterly update");
+          const error = new Error(hmrcErrorMessage(result, "Failed to file the quarterly update"));
           error.status = response.status;
           error.reason = result.reason;
           throw error;

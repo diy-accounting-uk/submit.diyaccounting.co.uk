@@ -250,7 +250,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to retrieve period summaries");
+          const error = new Error(hmrcErrorMessage(result, "Failed to retrieve period summaries"));
           error.status = response.status;
           throw error;
         }
@@ -289,7 +289,7 @@
 
         const result = await response.json();
         if (!response.ok) {
-          const error = new Error(result.message || "Failed to retrieve the current total");
+          const error = new Error(hmrcErrorMessage(result, "Failed to retrieve the current total"));
           error.status = response.status;
           throw error;
         }
