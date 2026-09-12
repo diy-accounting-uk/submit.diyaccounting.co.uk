@@ -31,37 +31,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B116x. Re-run the ITSA suites against a ci set that outlives them.**
-  `itsaBusinessDetailsBehaviour` ran against `ci-claud63b8` at 22:02 UTC on 2026-09-11 (probe-test
-  run 34651928296), the first time any ITSA journey has executed against a deployed environment.
-  What it proved: the backend works. All three scenarios reached HMRC's sandbox and returned `200`
-  with real data — self-employment `XBIS12345678901` trading as "Company X", uk-property
-  `XPIS12345678901`, foreign-property `XFIS12345678901`. Fraud prevention headers validated
-  `200 VALID_HEADERS`. The async lifecycle completed correctly each time: marked `processing`,
-  HMRC answered, marked `completed`, `200` returned to the browser with the payload.
-  Why it still failed: the deployment was destroyed underneath the running test.
-  `ci-claud63b8-app-OpsStack` was deleted at 22:03:16, two seconds after the third HMRC response,
-  and the remaining eight stacks went at 22:17. The set was created at 19:39 with a two-hour
-  self-destruct, so it was already twenty minutes past its window when the suite was dispatched.
-  The browser `403`s and the S3 `AccessDenied` page in `test-failed-2.png` are the web tier
-  disappearing. No page defect is implicated and none should be assumed.
-  So the suite has still never completed a clean run. Deploy a ci set, check its remaining life
-  before dispatching, then run all five suites against it while it is comfortably inside its
-  window. **Source**: probe-test run 34651928296; CloudFormation deletion times for
-  `ci-claud63b8`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B116x. The UK property suites need test data they own.** All five ITSA suites have now run
+  against a deployed environment. Business details, obligations and the self-employment period
+  pass. The two UK property suites reach HMRC's business logic and are rejected by it, which is a
+  far better place than they have ever been — the handlers, the async lifecycle, the fraud headers,
+  the subscription and the write path are all proven by these runs.
 
-**Both API route prefixes are permanent.** Operator decision, 2026-09-10, live on prod: an
-unauthenticated call to `/api/v1/books` and to `/api/v1/diya-gl` each returns 401, which is the
-authoriser rejecting a caller on a route that exists. The spreadsheets repository changes nothing,
-now or ever, and their NM-5 is not needed. B71.S3e, the bucket, is the last naming row and is
-internal.
+  What rejects them, on 2026-09-12 against `ci-mainb28b` (runs 34664148418 and 34664489822):
 
-A worktree agent runs `npm run bundle` before any unit, system or browser suite:
-`web/public/submit.bundle.js` is gitignored, `pretest` fires only for bare `npm test`, and without
-it nine tests fail on a missing file that has nothing to do with the change.
+  - **Period**: `Period summary overlaps with any of the existing period summaries`. The suite files
+    a hardcoded `2023-04-06` to `2023-07-05`, and the business it files against is the canned one
+    `Gov-Test-Scenario: PROPERTY` returns, `XPIS12345678901`. That fixture is shared by every run,
+    ours and everyone else's, so the first run to file a quarter wins and every later one overlaps.
+  - **Annual**: `Property income allowance must not be present alongside a private use adjustment`.
+    The suite sets an allowance of 1000 on a submission the same canned fixture already populated.
 
-## Ready: Claude Code
+  One root cause: the suites operate on shared HMRC fixture data whose contents they do not control,
+  so they can neither know what is already filed nor put it back. Making the period dates dynamic
+  only moves the collision.
 
+  The fix is to own the data. The Self Assessment Test Support API — subscribed on 2026-09-11 —
+  creates a property business belonging to the run's own minted test user, with no period summaries
+  and no annual submission, so each suite sets up the state it then exercises and any valid quarter
+  is free. That also retires the hardcoded dates and the `PROPERTY` scenario that PR #188 added as
+  a stepping stone. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
   call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
