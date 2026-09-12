@@ -501,20 +501,22 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
     console.log(`[DynamoDB Assertions]: Found ${periodRequests.length} ITSA UK property period POST request(s)`);
 
     expect(periodRequests.length).toBeGreaterThan(0);
-    let http200OkResults = 0;
+    let http201CreatedResults = 0;
     periodRequests.forEach((periodRequest, index) => {
       assertEssentialFraudPreventionHeadersPresent(periodRequest, `POST UK property period request ${index + 1}`);
-      http200OkResults += countHmrcApiRequestValues(periodRequest, {
+      http201CreatedResults += countHmrcApiRequestValues(periodRequest, {
         "httpRequest.method": "POST",
-        "httpResponse.statusCode": 200,
+        "httpResponse.statusCode": 201,
       });
     });
 
     console.log("[DynamoDB Assertions]: ITSA UK Property Period POST request results summary:");
-    console.log(`  HTTP 200 OK: ${http200OkResults}`);
-    // 1 = the initial filing. OVERLAPPING and NOT_FOUND return a 400/404 instead. The two
-    // forced-500 scenarios never reach hmrcHttpPost, so they never appear in this table.
-    expect(http200OkResults).toBe(1);
+    console.log(`  HTTP 201 Created: ${http201CreatedResults}`);
+    // 1 = the initial filing. Creating a period summary answers 201 with the submissionId, not 200;
+    // this suite had never run, so nothing had observed that. OVERLAPPING and NOT_FOUND return a
+    // 400/404 instead, and the two forced-500 scenarios never reach hmrcHttpPost, so neither
+    // appears in this table.
+    expect(http201CreatedResults).toBe(1);
 
     await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
 
