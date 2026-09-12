@@ -31,10 +31,8 @@ sits. `human-only` is work no session can do: an external registration, a consol
 API, a filing against the operator's own company, an email from their address, a decision between
 named alternatives. A row whose only human step is merging its PR is machine-only; that is the
 standing workflow, not an action the row needs. Within a section, items run by backlog tier, an
-alarm or a pipeline failure counting as tier 1, then the untiered. Human items
-are briefed for Claude Cowork at the workspace root: `../BRIEF_OPERATOR_TASKS_2026-09-12.md`
-carries O42, O37, O16, O33, O36, O38 and the four queued behind machine work (B80b, O32, B17v.2,
-B11.T10); `../BRIEF_OPERATOR_TASKS_2026-09-09.md` carries O17, O21 and O23.
+alarm or a pipeline failure counting as tier 1, then the untiered. Operator items
+are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 
@@ -78,14 +76,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
   showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
   execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
-  **Counted, on `claude/b28-board`.** The 02:15 UTC nightly of 2026-09-12 succeeded (execution
-  `0d6aa4b5-a4d8-4337-be9e-b10cbc035be1`, 02:15:16 to 02:20:28 UTC) and wrote 21 CSVs and 8 JSONs
-  under `exports/prod/2026-09-11/`. `_developers/EXPORT_ANALYSIS_2026-09-11.md` holds the per-field
-  non-empty counts. What the counts found, and the remainder of this row: `v_compliance_status.csv`
-  and `v_subscription_renewals_daily.csv` are headers with no rows, every one of the eight objective
-  JSONs has an empty `target`, and `median_lead_time_seconds` is missing from four rows across
-  operator-effort and retention. Decide per field whether the view is wrong, the source is empty or
-  the target was never set, and fix what is wrong.
+  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
+  the first success after the 2026-09-10 and 2026-09-11 failures, and
+  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
+  the notebook's data path and count the fields.
 
 
 - [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
@@ -132,11 +126,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `origin:unattended-agent` label is applied by each path that opens a PR or an issue — today only
   `alarm-triage.yml` applies it. **Source**: `REPORT_IDENTITY_AUDIT.md` section 3 class U.
   **Owner**: Claude Code. **Model**: Sonnet.
-  **Done on `claude/b28-board`.** `alarm-triage.yml` emits the three trailers in its commit and its
-  PR body; `agentic-lib-code.yml`'s brief now covers the PR body as well as the commit, and a
-  post-run step labels any PR it opened `origin:unattended-agent`. `agentic-lib-board.yml` was
-  already correct and opens no PR or issue; `agentic-lib-pr.yml` composes neither, so neither rule
-  reaches it. Closes on merge.
 
 
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
@@ -151,13 +140,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
   but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
-  **Code complete on `claude/b28-board`.** `http403ForbiddenFromHmrcResponse` now returns
-  `http403ForbiddenResponse`; the 20 GET handlers and the 16 write handlers all reach that one
-  function. A new `hmrcErrorMessage` helper in `web/public/widgets/status-messages.js` reads
-  `error.responseBody.message` (or `errors[0].message`), used at 27 call sites across 15 ITSA and VAT
-  pages, which previously showed `result.message` and never HMRC's own text. 489 unit tests pass.
-  Remaining: prove a real 403 on a deployed set, since the handlers include live VAT endpoints, and
-  the pages' 403 path had never been exercised.
 
 
 - [ ] **B126. Document that a ci redeploy needs an explicit deployment-name.**
@@ -169,13 +151,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Operator decision, 2026-09-12: leave the derivation and the destroy step alone.** Passing an
   explicit `deployment-name` to `deploy.yml` is the intended process for a redeploy, and the ci TTL
   is configurable for a longer window.
-  **Documented on `claude/b28-board`**, and the mechanism in this row's own evidence was wrong.
-  `deploy.yml`'s `destroy previous` job is gated `environment-name == 'prod'` and never runs for ci.
-  What tears a ci set down on a redeploy is that deployment's own `SelfDestructStack`, whose timer
-  anchors to the stack's first `CreationTime` and is not reset by the redeploy, so the original
-  timer can fire against the stacks the second deploy is updating. `CLAUDE.md` now says that and
-  gives the explicit-name dispatch. Closes on merge. **Source**: deploy run 34672307283;
-  `deploy.yml:3060`. **Owner**: Claude Code. **Model**: Haiku.
+  So this row is documentation only: state in `CLAUDE.md` that a second deploy of the same branch
+  requires `-f deployment-name=<unique>`, and why — without it the set is destroyed and the failure
+  presents as several stack jobs failing rather than as a name collision. **Source**: deploy run
+  34672307283. **Owner**: Claude Code. **Model**: Haiku.
 
 
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
