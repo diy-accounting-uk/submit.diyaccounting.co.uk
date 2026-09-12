@@ -56,12 +56,21 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   is free. That also retires the hardcoded dates and the `PROPERTY` scenario that PR #188 added as
   a stepping stone.
 
-  **This is an extension, not a new integration.** `scripts/itsa-sandbox-year.js` already calls
-  `mtd-sa-test-support-api/1.0` to create a business, with `typeOfBusiness: "self-employment"`, and
-  `app/unit-tests/scripts/itsa-sandbox-year.test.js` already asserts the request body carries every
-  field that endpoint requires. Extending it to `uk-property` and having both suites mint their own
-  business is the work. It is also why the three passing suites pass: the self-employment path had
-  this thinking applied already. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
+  **Draft PR #190 has the shape and gets the authentication wrong.** It adds
+  `createHmrcTestBusiness` to the behaviour helpers, creates a `uk-property` business per suite and
+  drops the `PROPERTY` scenario — and fails with `401 INVALID_CREDENTIALS`, because the Self
+  Assessment Test Support endpoints are **user-restricted**. A client-credentials token mints a test
+  user but cannot act on that user's behalf.
+
+  `scripts/itsa-sandbox-year.js` gets a user token by driving a headless browser through HMRC's
+  authorize page as the test user and exchanging the code. Its `getAuthorizationCode` is private and
+  **duplicated in `itsa-sandbox-spike.js`**, so the way to finish this is to lift that into a shared
+  helper and have the suites obtain a user token before the browser journey — which removes the
+  duplication as well. The alternative, reading the token out of `sessionStorage` after the page's
+  own OAuth, is less code but forces the business to be created mid-journey, so the suite has to be
+  resequenced around it.
+
+  The ITSA-status call in the same helper is user-restricted too and has the same problem. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
   **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
