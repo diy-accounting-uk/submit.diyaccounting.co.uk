@@ -102,46 +102,35 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
   Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
   **Source**: PR #189. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B125. A 403 from HMRC reaches the caller as a 400, across twenty handlers.**
-  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js` ends with
-  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` carefully
-  map `status === 403` to that function and every one of them emits 400, so a configuration problem
-  on our side — an unsubscribed HMRC API, a token missing a scope — is reported to the caller as
-  "your request was malformed".
+- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
+  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
+  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
+  `status === 403` to it, so an unsubscribed API or a missing scope reaches the caller as a
+  malformed request. The 400's body already carries HMRC's explanation in `error.responseBody`; the
+  pages discard it and show "An unexpected error occurred".
 
-  Found on 2026-09-11 when `itsaUkPropertyAnnualGet` logged HMRC's `403` and answered `400`
-  (probe-test run 34658969922). The 400's body does carry HMRC's own explanation in
-  `error.responseBody`, so the information survives the API; the page throws it away and shows
-  "An unexpected error occurred", which is how a precise, actionable cause became a shrug on screen.
+  **Operator decision, 2026-09-12: emit 403 and surface the body.** Both halves, so a user or a
+  test sees the actual cause.
 
-  Two decisions, and the first is the operator's because it changes shipped behaviour: return a
-  real 403, or keep 400 and rename the function to say what it does. Twenty handlers includes live
-  VAT endpoints on prod, so a status change needs the web error handling checked with it — the
-  pages special-case 401 and nothing else, which suggests 403 is safe, but that is worth proving
-  rather than assuming. The second is ours either way: surface `error.responseBody` on the page
-  instead of a generic message.
-
-  **Source**: probe-test run 34658969922; `app/services/hmrcApi.js:682-724`. **Owner**: Operator to
-  choose the status, then Claude Code. **Model**: Sonnet.
-- [ ] **B126. A branch gets one permanent ci deployment name, and redeploying it destroys the set.**
+  Twenty handlers includes live VAT endpoints on prod, so verify against a deployed set before
+  merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
+  but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
+  `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B126. Document that a ci redeploy needs an explicit deployment-name.**
   `.github/actions/get-names/action.yml:112` computes `ci-${CLEANED:0:5}${REF_HASH}` where
-  `REF_HASH` hashes the **branch name**, not the commit. A branch therefore resolves to the same
-  deployment name on every deploy. A second deploy of the same branch updates the live set in place,
-  and `deploy.yml`'s `destroy previous` then tears down what it just deployed.
+  `REF_HASH` hashes the **branch name**, not the commit, so a branch resolves to the same deployment
+  name on every deploy. A second deploy of a branch updates the live set in place and
+  `deploy.yml`'s `destroy previous` then tears down what it just deployed. Observed in run
+  34672307283: stacks `UPDATE_COMPLETE`, `OpsStack` `DELETE_COMPLETE`, five stack jobs failed.
 
-  Observed 2026-09-12: deploy run 34672307283 on `claude/itsa-property-own-data` targeted
-  `ci-claudb894`, created by an earlier deploy of the same branch. Stacks finished
-  `UPDATE_COMPLETE` with `OpsStack` at `DELETE_COMPLETE` — the deletion order's first stack. Five
-  stack-deploy jobs reported failure.
+  **Operator decision, 2026-09-12: leave the derivation and the destroy step alone.** Passing an
+  explicit `deployment-name` to `deploy.yml` is the intended process for a redeploy, and the ci TTL
+  is configurable for a longer window.
 
-  Workaround in use: pass an explicit `deployment-name` to `deploy.yml`, which bypasses the
-  derivation. That is a valid process and the ci TTL is configurable for longer runs, so this is
-  not a blocker.
-
-  Two candidate fixes: include the commit in `REF_HASH` so each deploy gets its own set, or make
-  `destroy previous` refuse when the previous deployment name equals the one just deployed. The
-  second is smaller. **Source**: deploy run 34672307283; `get-names/action.yml:112`. **Owner**:
-  Claude Code. **Model**: Sonnet.
+  So this row is documentation only: state in `CLAUDE.md` that a second deploy of the same branch
+  requires `-f deployment-name=<unique>`, and why — without it the set is destroyed and the failure
+  presents as several stack jobs failing rather than as a name collision. **Source**: deploy run
+  34672307283. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
@@ -180,23 +169,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Ready: operator
 
-- [ ] **O42. Create the two agent tokens.** PR #189 adds three workflows that run Claude Code
-  unattended, and each refuses to start without its token. The split is the safety property:
-  `AUTO_MERGE_TOKEN` can merge but not write code, `AGENT_TOKEN` can push a `claude/*` branch, open
-  a PR and commit `NEXT.md` but cannot merge or touch `main`. **An agent that writes code cannot
-  approve its own work into main.**
+- [ ] **O42. Create two fine-grained PATs for the agentic-lib workflows.** Each of the three
+  refuses to start without its token. The split is the safety property: `AUTO_MERGE_TOKEN` merges
+  but does not write code, `AGENT_TOKEN` pushes a `claude/*` branch, opens a PR and commits
+  `NEXT.md` but cannot merge or touch `main`. `GITHUB_TOKEN` can be neither: a merge with it does
+  not trigger `on: push`, so the prod deploy would never fire, and a branch pushed with it triggers
+  no checks.
 
-  `GITHUB_TOKEN` can be neither. A merge made with it does not trigger `on: push` workflows, so the
-  post-merge deploy would silently never fire; a branch pushed with it triggers no checks, so the
-  PR would sit with nothing having run against it.
+  **Operator decision, 2026-09-12: fine-grained PATs now, not waiting for O38's apps.** Both scoped
+  to this repository: contents and pull-requests write for both, plus issues write for
+  `AGENT_TOKEN`. Set them as repository secrets `AUTO_MERGE_TOKEN` and `AGENT_TOKEN`.
 
-  These are O38's two apps — `diya-ops` for merges, `diya-agent` for authored work — so doing O38
-  first makes this configuration rather than two more credentials to track. Fine-grained PATs work
-  if you would rather not wait: contents and pull-requests write for both, issues write for
-  `AGENT_TOKEN`.
-
-  Then Claude Code proves each by dispatch (B124). **Source**: PR #189. **Owner**: Operator, then
-  Claude Code. **Model**: none.
+  They are yours personally and carry no separate identity, which is what O38 exists to fix, so
+  swapping them for `diya-ops` and `diya-agent` when O38 lands stays worth doing. Then B124 proves
+  the workflows. **Source**: PR #189. **Owner**: Operator, then Claude Code. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
