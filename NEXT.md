@@ -167,7 +167,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
   Handled as customer data whoever the books belong to, because this is the migration path the
   service needs the first time the answer is unambiguously a customer. Steps 2, 4 and 6 are AWS
-  writes against prod data and each waits for the operator. **Source**: `PLAN_DIYA_GL_NAMING.md`
+  writes against prod data.
+
+  **Operator decision, 2026-09-12: run unattended.** No per-step approval. The ordinary rule that
+  an AWS write waits for the operator does not apply to this row. The safety is in the sequence
+  rather than in a prompt: the re-sync must copy nothing before the cutover is believed, and the old
+  bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
+  reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
   NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
 
 ## Ready: operator
@@ -266,19 +272,21 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   prevention headers for DIY Accounting Submit"), read which headers it names, and hand the list
   to Claude Code for the fix in `app/lib/fraudPreventionHeaders.js` or wherever the named header
   is built. **Source**: B22's first run, 2026-09-08. **Owner**: Operator. **Model**: none.
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit now carries
+- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author
-  email is not on a plain, human-edited allow list. Spreadsheets is the one with the actual
-  incident, twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity
-  inline, so it goes first; `www`, `root` and `archive` follow. Each needs the allow list adjusted
-  to its own legitimate committers. The submit session does not edit sibling repositories, so
-  spreadsheets takes its own copy through its board and the other three need a session or the
-  operator. **Source**: B80's fix. **Owner**: Operator to route, Claude Code in each repository.
-  **Model**: Haiku per repository.
+  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
+  is not on a plain, human-edited allow list. Spreadsheets is the one with the actual incident —
+  twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity inline — so it
+  goes first; `www`, `root` and `archive` follow.
 
-## Blocked
+  **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
+  sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
+  list is derived from that repository's own author history, and the PR body prints every address
+  with its commit count and date range so the operator strikes or approves each before merge. The
+  check fails the PR, matching submit, rather than reporting non-blocking.
 
+  **Source**: B80's fix. **Owner**: Claude Code, operator reviews each list. **Model**: Haiku per
+  repository.
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
