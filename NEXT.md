@@ -178,6 +178,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   into the other account, and repo-level role ARNs for both. Also ask, per workflow, whether it
   needs AWS at all — `/auto-merge` reads GitHub and nothing else, so `agentic-lib-pr.yml`'s OIDC
   step may simply be surplus.
+  **Halted by the operator, 2026-09-12 20:2x UTC**, during cool-down. The agent fixing the
+  credential wiring was stopped while still reading; nothing was committed and no worktree was
+  left behind. Its one finding, kept so it is not rediscovered: the `/auto-merge` skill contains no
+  AWS reference at all, so `agentic-lib-pr.yml`'s OIDC step is surplus and should be deleted rather
+  than given an environment. Do not dispatch this row again until the operator says so.
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet.
 
