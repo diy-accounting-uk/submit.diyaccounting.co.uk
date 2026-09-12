@@ -39,6 +39,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
+  `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
+  for that distribution to finish deploying. In deploy run 34687925996 the distribution was
+  `E3GFQF1I7VAW46`, belonging to `ci-annual1`, whose self-destruct fired at about 10:56 UTC; the
+  waiter failed at 10:56:16 with `NoSuchDistribution`, the step died under `set -e`, and all
+  thirteen `probe test / behaviour test *-ci` jobs failed behind it. Any ci set reaching its TTL
+  while another branch deploys hits this, so it will recur.
+  `claude/b28-board` makes every call against the old distribution treat `NoSuchDistribution` as
+  already-vacated and skip the rest of the block, while the waiter on our own target distribution
+  stays strict and any other AWS error still fails the step. Verified only by a scratch harness
+  with `aws` mocked and by actionlint; **no real run has exercised it**, because reproducing it
+  means timing a deploy against a self-destruct.
+  Remaining: confirm on a real run that a ci set expiring mid-deploy no longer fails the deploy, and
+  decide the second window the same agent found — `.github/actions/set-origins/action.yml:365-370`,
+  where `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
+  `get-api-mappings` and `delete-domain-name` against it, with no equivalent classification.
+  **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -47,10 +65,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
   `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
   on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
-  because the workflow toggles Cognito native auth around each run. `view-payments` captured successfully
-  against prod at 12:0x UTC on 2026-09-12 (run 34689643435) and `view-penalties` is running
-  (34689889022). `videos/publish.json` gets its three entries once all three artifacts are
-  checked. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
+  because the workflow toggles Cognito native auth around each run. All three prod captures have now
+  succeeded: `view-liabilities` (run 34651931632), `view-payments` (34689643435) and
+  `view-penalties` (34689889022). Remaining: the two ci captures, which need PR #192 because
+  `video-capture.yml`'s `script` choice list only learns the new scripts there, then check all five
+  artifacts and write `videos/publish.json`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
   Code. **Model**: Sonnet.
   **The two missing scene scripts are on `claude/b28-board`**: `videos/file-micro-entity-accounts.json`
   and `videos/itsa-quarterly-update.json`, both saying on screen that they are sandbox previews, and
