@@ -185,6 +185,29 @@ jobs:
             --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git checkout -b:*),Bash(git push origin claude/:*),Bash(gh pr create:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(mkdir:*)" \
             2>&1 | tee "${OUT_DIR}/claude-output.json"
 
+      # origin:unattended-agent says a model ran this with nobody watching. Applied here, outside
+      # the agent's own tool calls, so it lands whether or not the agent remembered to ask for it.
+      # Uses the "add labels" endpoint rather than `gh pr create --label`, which requires the
+      # label to already exist: this endpoint creates it on first use (see alarm-triage.yml,
+      # REPORT_IDENTITY_AUDIT.md section 8 recommendation 6).
+      - name: Label any PR this run opened
+        if: always() && steps.run.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH=$(git branch --show-current)
+          if [ -z "${BRANCH}" ] || [ "${BRANCH}" = "main" ]; then
+            echo "no claude/* branch checked out, nothing to label"
+            exit 0
+          fi
+          PR_NUMBER=$(gh pr list --head "${BRANCH}" --json number --jq '.[0].number' || true)
+          if [ -z "${PR_NUMBER}" ]; then
+            echo "no PR found for branch ${BRANCH}, nothing to label"
+            exit 0
+          fi
+          gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/labels" -f "labels[]=origin:unattended-agent"
+
       # Whatever the agent did or failed to do, capture the diff. A run that produced nothing still
       # produces an empty patch and a handover explaining why, which is a usable result.
       - name: Capture the patch
