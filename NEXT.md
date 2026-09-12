@@ -31,49 +31,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B116x. Four of five ITSA suites pass; the fifth needs its product fix deployed.**
-  `itsaUkPropertyPeriodBehaviour` **passes** as of 2026-09-12 03:59 UTC (run 34671689420) — the
-  first UK property ITSA suite ever to. It files a real quarterly update: `POST
-  /individuals/business/property/uk/{nino}/{businessId}/period/2024-25` answered `201` with a
-  submissionId, and a receipt was persisted. Business details, obligations and the self-employment
-  period also pass. Only `itsaUkPropertyAnnualSubmissionBehaviour` remains.
-
-  Work is on `claude/itsa-property-own-data`, **PR #190, draft**, which also carries the unrelated
-  and complete `agentic-lib-*` workflow rename.
-
-  **Nine layers, each fix revealing the next.** The suites were written against the source and never
-  executed, so every assumption in them was untested:
-
-  1. Canned shared fixture — `Gov-Test-Scenario: PROPERTY` returns a business every run shares.
-  2. Client-credentials token on a user-restricted API — `401 INVALID_CREDENTIALS`.
-  3. No shared way to get a user token — `getAuthorizationCode` was duplicated privately in two
-     scripts; now `scripts/lib/hmrcAuthorizationCode.js`, 181 lines of duplication removed.
-  4. `DIY_SUBMIT_BASE_URL` ends in `/`, so the redirect double-slashed — `redirect_uri is invalid`.
-  5. An address on a property business — `RULE_UNEXPECTED_BUSINESS_ADDRESS`; property takes none.
-  6. **Business Details serves canned data** and never reflects a Test-Support-created business, so
-     the suites file against the id returned at creation rather than reading it from the page.
-  7. Creating a period summary answers **201**, not the 200 the assertion counted.
-  8. A property income allowance cannot sit alongside the private use adjustment the canned annual
-     submission carries; itemised is the valid branch.
-  9. **A product bug**: `ukPropertyAnnualSubmission.html` forwarded the retrieve's `Gov-Test-Scenario`
-     to the save, and create/amend answers `The supplied Gov-Test-Scenario is not valid`. A save from
-     that page could never have succeeded in the sandbox. Fixed in `134b63c2`.
-
-  **What is left.** Layer 9 is in a deployed page, unlike layers 1-8 which live in test code the
-  runner executes directly, so it needs a ci deploy before the suite can see it. The branch deploy
-  of 04:31 UTC (run 34672307283) failed: it resolved to the same deployment name as the live set,
-  `ci-claudb894`, and raced that set's teardown — most stacks read `UPDATE_COMPLETE` while `OpsStack`
-  reads `DELETE_COMPLETE`. Whether a deploy can reuse a live deployment name safely is its own
-  question and is not an ITSA one; treat it separately before re-running.
-
-  So: deploy the branch to a clean ci set, run `itsaUkPropertyAnnualSubmissionBehaviour`, and re-run
-  `itsaUkPropertyPeriodBehaviour` to confirm the page change did not disturb it.
-
-  **If picking this up cold**, the evidence is in two places and settles arguments in seconds:
-  HMRC's response body in the Lambda log, and `stuck-0.html` in the run artifacts, which is the DOM
-  of the page the browser gave up on. Two wrong guesses about layer 4 were both settled by that file
-  after theorising failed. **Source**: probe-test runs 34664148418, 34665803906, 34669925776,
-  34670749108, 34671689420, 34671926725. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
   call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
@@ -166,6 +123,25 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
   **Source**: probe-test run 34658969922; `app/services/hmrcApi.js:682-724`. **Owner**: Operator to
   choose the status, then Claude Code. **Model**: Sonnet.
+- [ ] **B126. A branch gets one permanent ci deployment name, and redeploying it destroys the set.**
+  `.github/actions/get-names/action.yml:112` computes `ci-${CLEANED:0:5}${REF_HASH}` where
+  `REF_HASH` hashes the **branch name**, not the commit. A branch therefore resolves to the same
+  deployment name on every deploy. A second deploy of the same branch updates the live set in place,
+  and `deploy.yml`'s `destroy previous` then tears down what it just deployed.
+
+  Observed 2026-09-12: deploy run 34672307283 on `claude/itsa-property-own-data` targeted
+  `ci-claudb894`, created by an earlier deploy of the same branch. Stacks finished
+  `UPDATE_COMPLETE` with `OpsStack` at `DELETE_COMPLETE` — the deletion order's first stack. Five
+  stack-deploy jobs reported failure.
+
+  Workaround in use: pass an explicit `deployment-name` to `deploy.yml`, which bypasses the
+  derivation. That is a valid process and the ci TTL is configurable for longer runs, so this is
+  not a blocker.
+
+  Two candidate fixes: include the commit in `REF_HASH` so each deploy gets its own set, or make
+  `destroy previous` refuse when the previous deployment name equals the one just deployed. The
+  second is smaller. **Source**: deploy run 34672307283; `get-names/action.yml:112`. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
   `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
