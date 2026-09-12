@@ -147,25 +147,6 @@ test.afterEach(async ({ page }, testInfo) => {
   appendTraceparentTxt(outputDir, testInfo, observedTraceparent);
 });
 
-/**
- * Read the businessId of the first uk-property row from the Business Details results table
- * already displayed on the page. HMRC business ids are unpredictable and never guessed - the
- * type column lets this pick a property business specifically, rather than whatever the first
- * row happens to be.
- */
-async function readFirstUkPropertyBusinessId(page) {
-  const rowLocator = page.locator("#businessDetailsTable table tbody tr");
-  const rowCount = await rowLocator.count();
-  for (let i = 0; i < rowCount; i++) {
-    const row = rowLocator.nth(i);
-    const typeOfBusiness = (await row.locator("td").nth(0).innerText()).trim();
-    if (typeOfBusiness === "uk-property") {
-      return (await row.locator("td").nth(2).innerText()).trim();
-    }
-  }
-  return null;
-}
-
 test("Click through: Load and save a UK Property Annual Submission with HMRC", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
@@ -192,6 +173,7 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /* HMRC TEST USER CREATION   */
   /* ************************* */
 
+  let createdBusinessId = null;
   let testUsername = hmrcTestUsername;
   let testPassword = hmrcTestPassword;
   let testNino = hmrcTestNino;
@@ -227,7 +209,7 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
     // annual submission carries whatever adjustments the last run left behind - which is why this
     // suite failed with "Property income allowance must not be present alongside a private use
     // adjustment" against data it never set. This one starts empty.
-    await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
+    createdBusinessId = await createHmrcTestBusiness(hmrcClientId, hmrcClientSecret, testNino, {
       typeOfBusiness: "uk-property",
       taxYear: "2023-24",
       // User-restricted endpoints: the token is obtained as this user, through HMRC's authorize
@@ -289,9 +271,13 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   await grantPermissionHmrcAuth(page, screenshotPath);
 
   await verifyItsaBusinessDetailsResults(page, screenshotPath);
-  const businessId = await readFirstUkPropertyBusinessId(page);
+  // HMRC's sandbox Business Details API serves canned data: it returns XBIS12345678901 whatever
+  // the nino, and never the business the Test Support API just created. So the page read below is
+  // journey coverage, and the businessId this run files against is the one it was given at
+  // creation - the only id that names a business this run actually owns.
+  const businessId = createdBusinessId;
   if (!businessId) {
-    throw new Error("Business Details returned no uk-property business - cannot load an annual submission without a businessId");
+    throw new Error("No business was created for this run - cannot load an annual submission without a businessId");
   }
   await goToHomePageUsingMainNav(page, screenshotPath);
 
