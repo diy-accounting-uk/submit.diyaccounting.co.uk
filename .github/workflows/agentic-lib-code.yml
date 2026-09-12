@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-name: do next
+name: agentic-lib-code
 
 run-name: "do next (${{ inputs.minutes || '10' }} min budget)"
 
@@ -40,7 +40,7 @@ on:
 # One at a time. Two unattended agents picking "the simplest ready task" at the same moment pick
 # the same one and produce two patches for one item.
 concurrency:
-  group: do-next
+  group: agentic-lib-code
   cancel-in-progress: false
 
 permissions:
@@ -122,7 +122,7 @@ jobs:
           if [ -n "${RESUME_FROM}" ]; then
             ids="${RESUME_FROM}"
           else
-            ids=$(gh run list --workflow do-next.yml --limit 40 \
+            ids=$(gh run list --workflow agentic-lib-code.yml --limit 40 \
                     --json databaseId,conclusion,createdAt \
                     --jq "[.[] | select(.createdAt > \"$since\") | select(.conclusion != \"success\" and .conclusion != null)] | .[0:6] | .[].databaseId")
           fi
@@ -225,7 +225,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: do-next-${{ github.run_id }}
+          name: agentic-lib-code-${{ github.run_id }}
           path: |
             ${{ env.OUT_DIR }}/work.patch
             ${{ env.OUT_DIR }}/CHANGES.md

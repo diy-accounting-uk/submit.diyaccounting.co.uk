@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-name: board
+name: agentic-lib-board
 
 run-name: "board${{ inputs.write-back == 'false' && ' (render only)' || '' }}"
 
@@ -35,7 +35,7 @@ on:
   #   - cron: '52 7,19 * * *'
 
 concurrency:
-  group: board
+  group: agentic-lib-board
   cancel-in-progress: false
 
 permissions:
@@ -188,7 +188,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: board-${{ github.run_id }}
+          name: agentic-lib-board-${{ github.run_id }}
           path: /tmp/board.json
           if-no-files-found: warn
           retention-days: 14
