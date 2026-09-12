@@ -62,6 +62,13 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Ready: Claude Code
 
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
+  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
+  call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
+  run can go further than its first call. Work through whatever the sandbox answers
+  next and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B117. Gate the ITSA endpoints in the catalogue.** `web/public/submit.catalogue.toml` has
   no entries for the ITSA activities, so `bundleManagement.js`'s `enforceBundles()` treats them as
   unrestricted and lets any signed-in caller through. The gap covers the whole ITSA surface, not
@@ -202,22 +209,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
   Then Claude Code proves each by dispatch (B124). **Source**: PR #189. **Owner**: Operator, then
   Claude Code. **Model**: none.
-- [ ] **O34. Subscribe the HMRC sandbox application to six ITSA APIs.** Two runs have now stopped
-  on the same 403, "The application is not subscribed to the API which it is attempting to invoke":
-  the sandbox year's first call to `DELETE .../self-assessment-test-support/vendor-state`, and
-  `POST /individuals/business/property/...` in `itsaUkPropertyPeriodBehaviour` at 23:38 UTC on
-  2026-09-11 (probe-test run 34658626362).
-
-  On the HMRC Developer Hub, open the sandbox application with client id
-  `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` and subscribe it to Self Assessment Test Support, Obligations,
-  Self Employment Business, **Property Business**, Business Source Adjustable Summary and
-  Individual Calculations. Property Business is the one this row did not previously name, and it is
-  what the UK property suites need. Only the Developer Hub account holder can do this; no stored
-  credential in `.env*` or Secrets Manager reaches it.
-
-  Unblocks B11.T7r's run and the two UK property suites. **Source**:
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record; probe-test run 34658626362's Lambda log.
-  **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -311,11 +302,6 @@ it nine tests fail on a missing file that has nothing to do with the change.
 
 ## Blocked
 
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
-  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
-  call with `403 RESOURCE_FORBIDDEN`. Re-run it after O34, work through whatever the sandbox
-  answers next, and record the run in the runbook. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on O34.
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
   package, and an import control on `annualSubmission.html` that fills the form from a book.
