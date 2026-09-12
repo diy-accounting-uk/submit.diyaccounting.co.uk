@@ -257,7 +257,10 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /* ***************************************** */
 
   await initItsaBusinessDetails(page, screenshotPath);
-  await fillInItsaBusinessDetails(page, { hmrcNino: testNino, runFraudPreventionHeaderValidation }, screenshotPath);
+  // A freshly minted HMRC sandbox test user owns no uk-property business, so a plain Business Details
+  // read returns nothing to file against. PROPERTY is the sandbox's own scenario for returning one.
+  const businessDetailsQuery = { hmrcNino: testNino, testScenario: "PROPERTY", runFraudPreventionHeaderValidation };
+  await fillInItsaBusinessDetails(page, businessDetailsQuery, screenshotPath);
   await submitItsaBusinessDetailsForm(page, screenshotPath);
 
   await acceptCookiesHmrc(page, screenshotPath);
