@@ -31,47 +31,51 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B116x. The UK property suites need test data they own.** All five ITSA suites have now run
-  against a deployed environment. Business details, obligations and the self-employment period
-  pass. The two UK property suites reach HMRC's business logic and are rejected by it, which is a
-  far better place than they have ever been — the handlers, the async lifecycle, the fraud headers,
-  the subscription and the write path are all proven by these runs.
+- [ ] **B116x. The UK property suites: four layers cleared, waiting on a run to confirm.** All five
+  ITSA suites have run against a deployed environment. Business details, obligations and the
+  self-employment period pass. The two UK property suites are the remainder, and every failure so
+  far has been in the suites' own setup rather than in the product.
 
-  What rejects them, on 2026-09-12 against `ci-mainb28b` (runs 34664148418 and 34664489822):
+  Work in progress on `claude/itsa-property-own-data`, **PR #190, draft**. The branch also carries
+  the `agentic-lib-*` workflow rename, which is unrelated, complete, and could be split out to land
+  on its own.
 
-  - **Period**: `Period summary overlaps with any of the existing period summaries`. The suite files
-    a hardcoded `2023-04-06` to `2023-07-05`, and the business it files against is the canned one
-    `Gov-Test-Scenario: PROPERTY` returns, `XPIS12345678901`. That fixture is shared by every run,
-    ours and everyone else's, so the first run to file a quarter wins and every later one overlaps.
-  - **Annual**: `Property income allowance must not be present alongside a private use adjustment`.
-    The suite sets an allowance of 1000 on a submission the same canned fixture already populated.
+  **What each attempt found, in order.** Each fix was necessary and each exposed the next layer:
 
-  One root cause: the suites operate on shared HMRC fixture data whose contents they do not control,
-  so they can neither know what is already filed nor put it back. Making the period dates dynamic
-  only moves the collision.
+  1. *Canned fixture.* The suites read business details with `Gov-Test-Scenario: PROPERTY`, which
+     returns `XPIS12345678901` — a business every run shares and none can reset. The period suite
+     got `Period summary overlaps with any of the existing period summaries` for a quarter it never
+     filed; the annual suite got `Property income allowance must not be present alongside a private
+     use adjustment` against an adjustment it never set. Making the dates dynamic only moves the
+     collision, so the suites must own their data.
+  2. *Wrong token class.* Creating a business through the Self Assessment Test Support API with a
+     client-credentials token returns `401 INVALID_CREDENTIALS`. Those endpoints are
+     user-restricted: they act on behalf of the test user. Minting a user is application-restricted;
+     acting as one is not.
+  3. *No shared way to get a user token.* The only route is HMRC's authorize page, which is a
+     sign-in journey, so a browser walks it. `getAuthorizationCode` did that privately and
+     identically in `itsa-sandbox-year.js` and `itsa-sandbox-spike.js`. It now lives once in
+     `scripts/lib/hmrcAuthorizationCode.js`, imported by both and by the behaviour helpers; 181
+     lines of duplication removed.
+  4. *Trailing slash.* `DIY_SUBMIT_BASE_URL` ends with `/`, so the redirect became
+     `…co.uk//activities/submitVatCallback.html` and HMRC answered
+     `{"error":"invalid_request","error_description":"redirect_uri is invalid"}` on the authorize
+     page — which is why no sign-in form rendered and the browser found nothing to click. The app's
+     `auth-url-builder.js` and the sandbox script both strip it; the helper did not. Fixed in
+     `c767df13`.
 
-  The fix is to own the data. The Self Assessment Test Support API — subscribed on 2026-09-11 —
-  creates a property business belonging to the run's own minted test user, with no period summaries
-  and no annual submission, so each suite sets up the state it then exercises and any valid quarter
-  is free. That also retires the hardcoded dates and the `PROPERTY` scenario that PR #188 added as
-  a stepping stone.
+  **Where it stands.** All four are fixed and pushed. No run has yet exercised the whole chain —
+  own business, user token, valid redirect — because each earlier run died at an earlier layer. A ci
+  deploy and both suites are queued behind it.
 
-  **Draft PR #190 has the shape and gets the authentication wrong.** It adds
-  `createHmrcTestBusiness` to the behaviour helpers, creates a `uk-property` business per suite and
-  drops the `PROPERTY` scenario — and fails with `401 INVALID_CREDENTIALS`, because the Self
-  Assessment Test Support endpoints are **user-restricted**. A client-credentials token mints a test
-  user but cannot act on that user's behalf.
+  **If this needs picking up cold.** The diagnosis that mattered each time came from evidence, not
+  reasoning: HMRC's response body in the Lambda log, and `stuck-0.html` in the run's artifacts,
+  which is the DOM of the page the browser gave up on and carries HMRC's own error JSON. Two wrong
+  guesses about layer 4 — the client id, then the redirect registration — were both settled in
+  seconds by that file. Read it before theorising.
 
-  `scripts/itsa-sandbox-year.js` gets a user token by driving a headless browser through HMRC's
-  authorize page as the test user and exchanging the code. Its `getAuthorizationCode` is private and
-  **duplicated in `itsa-sandbox-spike.js`**, so the way to finish this is to lift that into a shared
-  helper and have the suites obtain a user token before the browser journey — which removes the
-  duplication as well. The alternative, reading the token out of `sessionStorage` after the page's
-  own OAuth, is less code but forces the business to be created mid-journey, so the suite has to be
-  resequenced around it.
-
-  The ITSA-status call in the same helper is user-restricted too and has the same problem. **Source**: probe-test runs 34664148418 and 34664489822. **Owner**: Claude Code.
-  **Model**: Sonnet.
+  **Source**: probe-test runs 34664148418, 34664489822, 34665803906, 34666873698. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main; the first run stopped on its first
   call with `403 RESOURCE_FORBIDDEN`, which was the subscription and is now fixed. Every ITSA API the app calls is now subscribed in the sandbox application, so the
