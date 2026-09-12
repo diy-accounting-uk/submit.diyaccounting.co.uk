@@ -174,6 +174,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 
 
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
+  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
+  before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
+  `nino` query parameter and 404s on a NINO with no test-support data, so the checkpoint is taken
+  after the business and the ITSA status rather than before, and a restore reuses the saved
+  `businessId` instead of creating a second business; a GB self-employment business needs
+  `businessAddressPostcode`. The run then reaches
+  `GET individuals/person/itsa-status/{nino}/{taxYear}` and gets `403 RESOURCE_FORBIDDEN`.
+  That endpoint is on the **Self Assessment Individual Details (MTD)** API, which the sandbox
+  application is not subscribed to and which the runbook's subscription list never named.
+  **O43 is done**: the sandbox application now carries Self Assessment Individual Details (MTD)
+  2.0 (Beta). So resume from call 7 — `GET individuals/person/itsa-status/{nino}/{taxYear}` — and
+  work through whatever HMRC answers next. The run needs the HMRC sandbox client id and secret from
+  Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
+  **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
+  **Model**: Sonnet.
+
+
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
   the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
   `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
@@ -425,15 +443,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Nothing else in the product prices an undo today, so there is no precedent either way.
   **Source**: B117's wiring pass, 2026-09-12. **Owner**: Operator. **Model**: none.
 
-- [ ] **O43. Subscribe the sandbox application to the Self Assessment Individual Details (MTD)
-  API.** One Developer Hub action, no command. The ITSA sandbox year stops at
-  `GET individuals/person/itsa-status/{nino}/{taxYear}` with `403 RESOURCE_FORBIDDEN` because the
-  sandbox application (client id ending `v4tV`) is not subscribed to that API. It is the endpoint
-  `app/functions/hmrc/hmrcItsaStatusGet.js` calls, and it was missing from the runbook's
-  subscription list, so the earlier subscription pass did not cover it. Add it on
-  developer.service.hmrc.gov.uk and tell Claude Code, which resumes B11.T7r from call 7.
-  **Source**: the sandbox run of 2026-09-12. **Owner**: Operator. **Model**: none.
-
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -470,20 +479,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
 ## Blocked
-
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
-  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
-  before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
-  `nino` query parameter and 404s on a NINO with no test-support data, so the checkpoint is taken
-  after the business and the ITSA status rather than before, and a restore reuses the saved
-  `businessId` instead of creating a second business; a GB self-employment business needs
-  `businessAddressPostcode`. The run then reaches
-  `GET individuals/person/itsa-status/{nino}/{taxYear}` and gets `403 RESOURCE_FORBIDDEN`.
-  That endpoint is on the **Self Assessment Individual Details (MTD)** API, which the sandbox
-  application is not subscribed to and which the runbook's subscription list never named.
-  Resume from call 7 once O43 lands. **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of
-  2026-09-12. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O43.
-
 
 - [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
   MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
