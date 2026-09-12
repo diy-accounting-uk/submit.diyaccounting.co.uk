@@ -234,7 +234,9 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
       // page, so the run needs the credentials it just minted.
       userId: testUsername,
       password: testPassword,
-      redirectUri: `${baseUrl}/activities/submitVatCallback.html`,
+      // DIY_SUBMIT_BASE_URL carries a trailing slash, and HMRC rejects the double slash that
+      // makes with "redirect_uri is invalid". The app and itsa-sandbox-year.js both strip it.
+      redirectUri: `${baseUrl.replace(/\/$/, "")}/activities/submitVatCallback.html`,
       outDir: screenshotPath,
     });
 
