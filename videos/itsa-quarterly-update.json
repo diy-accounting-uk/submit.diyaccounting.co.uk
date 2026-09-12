@@ -1,0 +1,240 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-quarterly-update",
+  "title": "From business details to a quarterly update with HMRC",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax: sign in, take out Resident ITSA, ask HMRC which businesses and quarterly obligations sit against a National Insurance number, then open the form a quarterly update is filed on.",
+  "auth": "user",
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 1,
+  "fps": 60,
+
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 3000,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing."
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use."
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your filings in one place."
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident ITSA",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run."
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident ITSA",
+          "testPass": true,
+          "caption": "Resident ITSA opens the Self Assessment activities."
+        },
+        { "action": "hold", "ms": 700 },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Activities" },
+          "caption": "Every activity starts from the home page."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "business-details",
+      "chapter": "Which businesses?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "expectsNavigation": true,
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard."
+        },
+        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the National Insurance number HMRC asks for."
+        },
+        {
+          "action": "click",
+          "target": "#findBusinessesBtn",
+          "caption": "Ask HMRC which businesses it holds against that number."
+        },
+        {
+          "action": "hmrcAuthorise",
+          "caption": "Sign in to HMRC and say yes once.",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#businessPickerResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with every business behind this Self Assessment."
+        },
+        {
+          "action": "point",
+          "target": "#businessPickerList",
+          "caption": "Each business carries an ID. Every later filing needs it.",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 1500 },
+        { "action": "still", "name": "itsa-businesses" },
+        { "action": "hold", "ms": 1000 }
+      ]
+    },
+    {
+      "id": "obligations",
+      "chapter": "What's due?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Go to Obligations" },
+          "caption": "Obligations groups the open and fulfilled quarters by business."
+        },
+        { "action": "await", "until": "#itsaObligationsForm", "label": "Opening the obligations form" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "The same National Insurance number, every business."
+        },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "The read:self-assessment access from before still counts."
+        },
+        {
+          "action": "await",
+          "until": "#obligationsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with each quarter's due date and status."
+        },
+        { "action": "scroll", "target": "#obligationsTable" },
+        { "action": "hold", "ms": 1000 },
+        {
+          "action": "point",
+          "target": "#obligationsTable",
+          "caption": "Open means a quarterly update is still owed.",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2000 },
+        { "action": "still", "name": "itsa-obligations" },
+        { "action": "hold", "ms": 1000 }
+      ]
+    },
+    {
+      "id": "quarterly-update-form",
+      "chapter": "File a quarterly update",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/dashboard.html",
+          "waitFor": "#businessPickerForm",
+          "caption": "Back to the dashboard to open the filing form."
+        },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Go to File a Quarterly Update" },
+          "caption": "This is the form an open quarter is filed on."
+        },
+        { "action": "await", "until": "#itsaSelfEmploymentPeriodForm", "label": "Opening the quarterly update form" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "The National Insurance number carries over."
+        },
+        {
+          "action": "point",
+          "target": "#businessId",
+          "caption": "The business ID from a moment ago goes here.",
+          "dwellMs": 600
+        },
+        {
+          "action": "fill",
+          "target": "#taxYear",
+          "value": "2024-25",
+          "caption": "Then the tax year this quarter falls in."
+        },
+        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
+        {
+          "action": "fill",
+          "target": "#turnover",
+          "value": "1000",
+          "caption": "And the quarter's income and expenses."
+        },
+        { "action": "hold", "ms": 1500 },
+        { "action": "still", "name": "itsa-quarterly-update-form" },
+        { "action": "hold", "ms": 1500 }
+      ]
+    }
+  ]
+}
