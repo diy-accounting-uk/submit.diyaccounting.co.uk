@@ -196,32 +196,21 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through annual submission, BSAS, calculation, final declaration and the losses and adjustments
   calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
-  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
-  GitHub environment secret), read the real acknowledgement and poll responses, settle the
-  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, record what the sandbox returned in the simulator, then add `prod` to the
-  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
-  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
-  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
-  `ci/submit/companies-house/presenter_id` and `presenter_code`.
-  The email settles three things the code had left open, and the code already has a place for each:
-  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
-  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
-  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
-  (`:138`); and **submission numbers must be unique and incremental**, which
-  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
-  (`:280`), keyed apart from real request ids.
-  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
-  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
-  hardcoding them, because the live service wants the opposite of the test service on both. Do not
-  let a re-run reset the submission counter — the test service rejects a repeated or lower number
-  outright, and a rejection costs a round trip through their reviewer.
-  Needs a ci set to file from. The email telling Companies House what was submitted is O44.
-  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** The code half is on
+  `claude/b29-board` (d8f17ec0): `COMPANIES_HOUSE_GATEWAY_TEST` ("true" on ci, "false"
+  elsewhere) and `COMPANIES_HOUSE_PACKAGE_REFERENCE` ("0012" on ci, unset elsewhere so a live
+  filing fails `validateEnv()` rather than going out blank) reach both accounts Lambdas from
+  `CompaniesHouseStack.java`; the poll carries the flag too. Left, against the ci set the batch
+  deploys, with the test presenter credentials already on ci: submit one FRS 105 set, settle the
+  `Authority` element (the checked-in `FormSubmission-v2-11.xsd` wants a bare `DateSigned` after
+  `FormHeader`; the worked example wraps it in `Authority/Designation`; the builder follows the
+  example), confirm `parseGatewayResponse()` parses the real acknowledgement and
+  `GetSubmissionStatus` shapes, capture what the sandbox returned as fixtures under
+  `fixtures/companies-house-xmlgw/` and align the simulator, check the counter table exists in the
+  deployment before the first submission, then add `prod` to the `file-micro-entity-accounts`
+  activity and `resident-ltd`'s listing. The live package reference is still unknown. O44 tells
+  Companies House what was submitted. **Source**: BACKLOG 34b; the XML team's email of
+  2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
   (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
   `companiesHouseRegisteredEmailAddressPost.js`, `diff` resolved from PATH in
