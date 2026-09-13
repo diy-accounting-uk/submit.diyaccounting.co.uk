@@ -161,18 +161,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   applied. The receiving trigger is homebrew-diya-gl PR #2; the sending step is spreadsheets PR
   #110, which fails the publish until O36's `HOMEBREW_DISPATCH_TOKEN` exists. Merge #2 first,
   #110 after O36. **Owner**: Operator merges; Claude Code if either PR goes red. **Model**: Sonnet.
-- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** **Operator decision,
-  2026-09-13: make them free.** `hmrcItsaLossesAndClaimsDelete.js:225` and
-  `hmrcItsaTaxLiabilityAdjustmentsDelete.js:223` charge one token under `self-employed-year-end`;
-  a customer who files a wrong claim then removes it pays twice for one net submission, and the
-  delete sends no new figures to HMRC. `self-employed-read` cannot take them: it carries
-  `read:self-assessment` only and a DELETE needs the write scope. So add a third activity in
-  `web/public/submit.catalogue.toml` at `tokenCost = 0` with both scopes, on the same bundles and
-  `display = "never"`, point both handlers at it, and update the two `.activity.test.js` files and
-  `productCatalog.test.js` to prove the count is unchanged after a delete. Nothing else in the
-  product prices an undo, so this is the first submit-versus-undo distinction the catalogue
-  carries. **Source**: B117's wiring pass, 2026-09-12. **Owner**: Claude Code. **Model**: Haiku.
-
+- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** On `claude/b29-board`
+  (8714e811): `self-employed-year-end-delete` at `tokenCost = 0`, both delete handlers on it.
+  Closes when the batch merges. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
   `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
   was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
@@ -240,20 +231,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
   **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
-  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
-  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
-  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
-  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
-  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
-  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
-  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
-  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
-  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
-  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
-  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **B128. A failed HMRC submission must not cost a token.** On `claude/b29-board`
+  (0fab6c3c): `hasTokensForActivity` gates before HMRC without decrementing;
+  `chargeTokenOnSuccess` decrements once, in each handler's shared adaptor, only after HMRC
+  answers ok; a test per handler proves no charge on 4xx or 5xx. Chosen over refund-on-failure
+  because a crash between the HMRC call and the write then under-counts rather than overcharges.
+  Left: the charge failing after HMRC accepted is logged as `Token charge failed after HMRC
+  success` and swallowed, so put a metric filter and alarm on that line, or it is a silent
+  giveaway. **Source**: B117's wiring pass. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
