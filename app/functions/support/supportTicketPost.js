@@ -84,10 +84,10 @@ async function getGitHubToken() {
  */
 async function createGitHubIssue({ title, body, labels }) {
   const githubToken = await getGitHubToken();
-  const githubRepo = process.env.GITHUB_REPO;
+  const githubRepo = process.env.SUPPORT_GITHUB_REPO;
 
   if (!githubRepo) {
-    throw new Error("GITHUB_REPO environment variable is required");
+    throw new Error("SUPPORT_GITHUB_REPO environment variable is required");
   }
 
   const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
@@ -215,7 +215,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export async function ingestHandler(event) {
-  validateEnv(["GITHUB_TOKEN_SECRET_ARN", "GITHUB_REPO"]);
+  validateEnv(["GITHUB_TOKEN_SECRET_ARN", "SUPPORT_GITHUB_REPO"]);
 
   const { request, requestId } = extractRequest(event);
 

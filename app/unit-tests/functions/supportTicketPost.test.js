@@ -157,7 +157,7 @@ describe("supportTicketPost", () => {
       vi.clearAllMocks();
       process.env = { ...originalEnv };
       process.env.GITHUB_TOKEN_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/github/token";
-      process.env.GITHUB_REPO = "diy-accounting-uk/submit.diyaccounting.co.uk";
+      process.env.SUPPORT_GITHUB_REPO = "diy-accounting-uk/spreadsheets.diyaccounting.co.uk";
       process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token" });
       mockIncrementRateCounter.mockResolvedValue(1);
@@ -220,6 +220,24 @@ describe("supportTicketPost", () => {
 
       const [, options] = global.fetch.mock.calls[0];
       expect(JSON.parse(options.body).body).toContain("Raised automatically by an automated pipeline.");
+    });
+
+    test("returns a logged 500, not a silent 200, when the token cannot write to the target repository", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: () => Promise.resolve("Not Found"),
+      });
+
+      const response = await ingestHandler(
+        requestEvent(
+          { subject: "Can't log in", description: "It just spins", category: "connection" },
+          { "x-forwarded-for": "203.0.113.5" },
+        ),
+      );
+
+      expect(response.statusCode).toBe(500);
+      expect(JSON.parse(response.body).message).toBe("Failed to create support ticket");
     });
 
     test("still enforces the existing size caps alongside the rate limit", async () => {
