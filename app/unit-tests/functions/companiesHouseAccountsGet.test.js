@@ -121,7 +121,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
   test("polls the gateway and returns PENDING while the submission is unresolved", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
     });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
@@ -138,7 +138,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
     });
     await companiesHouseAccountsGetHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
@@ -147,7 +147,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
   test("writes a receipt and returns ACCEPT when the gateway accepts the filing", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],
-      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
     });
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
@@ -167,7 +167,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
         {
           statusCode: "REJECT",
           submissionNumber: "00001A",
-          companyNumber: "06846849",
+          companyNumber: "00000001",
           rejections: [{ rejectCode: "9999", description: "iXBRL validation failed", instanceNumber: "1" }],
         },
       ],

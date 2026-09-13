@@ -20,6 +20,7 @@ import {
   verifyFilingAccepted,
   verifyFilingRejected,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
+import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -40,9 +41,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
-// The simulator's canned company fixture (see app/http-simulator/scenarios/companies.js).
-const companyNumber = "06846849";
-const companyName = "DIY ACCOUNTING LIMITED";
+const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
 
 function balancedYear({ fixedAssets, currentAssets, creditorsWithinOneYear, calledUpShareCapital, profitAndLossAccount }) {
   const creditorsAfterOneYear = 0;

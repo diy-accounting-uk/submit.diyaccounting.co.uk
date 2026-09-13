@@ -21,6 +21,7 @@ import {
   putResource,
   closeTransaction,
   advanceProcessingFilings,
+  NO_REGISTERED_EMAIL_COMPANY_NUMBER,
 } from "../scenarios/filings.js";
 
 function requireBearerAuthorization(req, res) {
@@ -220,7 +221,7 @@ export function apiEndpoint(app) {
     if (transaction.status === "closed") {
       return res.status(403).json({ errors: [{ error: "transaction-closed", type: "ch:service" }] });
     }
-    if (transaction.company_number === "00000001") {
+    if (transaction.company_number === NO_REGISTERED_EMAIL_COMPANY_NUMBER) {
       return res.status(403).json({ errors: [{ error: "no-registered-email-address-exists", type: "ch:service" }] });
     }
     if (hasResource(id, "registered-email-address")) {

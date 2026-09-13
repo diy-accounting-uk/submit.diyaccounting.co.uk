@@ -74,9 +74,9 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let mockFetch;
 
-const DIY_ACCOUNTING_PROFILE = {
-  company_number: "06846849",
-  company_name: "DIY ACCOUNTING LIMITED",
+const EXAMPLE_COMPANY_PROFILE = {
+  company_number: "00000001",
+  company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
   company_status: "active",
   type: "ltd",
   date_of_creation: "2009-04-16",
@@ -156,23 +156,23 @@ describe("companiesHouseCompanyGet ingestHandler", () => {
   });
 
   test("returns the company profile for a valid company number", async () => {
-    mockCompaniesHouseSuccess(mockFetch, DIY_ACCOUNTING_PROFILE);
-    const response = await companiesHouseCompanyGetHandler(eventForCompanyNumber("06846849"));
+    mockCompaniesHouseSuccess(mockFetch, EXAMPLE_COMPANY_PROFILE);
+    const response = await companiesHouseCompanyGetHandler(eventForCompanyNumber("00000001"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.companyName).toBe("DIY ACCOUNTING LIMITED");
-    expect(body.companyNumber).toBe("06846849");
+    expect(body.companyName).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
+    expect(body.companyNumber).toBe("00000001");
   });
 
   test("left-pads a short numeric company number to eight digits", async () => {
-    mockCompaniesHouseSuccess(mockFetch, DIY_ACCOUNTING_PROFILE);
-    await companiesHouseCompanyGetHandler(eventForCompanyNumber("6846849"));
+    mockCompaniesHouseSuccess(mockFetch, EXAMPLE_COMPANY_PROFILE);
+    await companiesHouseCompanyGetHandler(eventForCompanyNumber("1"));
     const requestedUrl = mockFetch.mock.calls[0][0];
-    expect(requestedUrl).toContain("/company/06846849");
+    expect(requestedUrl).toContain("/company/00000001");
   });
 
   test("accepts a company number with a jurisdiction prefix", async () => {
-    mockCompaniesHouseSuccess(mockFetch, { ...DIY_ACCOUNTING_PROFILE, company_number: "SC000000" });
+    mockCompaniesHouseSuccess(mockFetch, { ...EXAMPLE_COMPANY_PROFILE, company_number: "SC000000" });
     const response = await companiesHouseCompanyGetHandler(eventForCompanyNumber("SC000000"));
     expect(response.statusCode).toBe(200);
     const requestedUrl = mockFetch.mock.calls[0][0];
@@ -201,14 +201,14 @@ describe("companiesHouseCompanyGet ingestHandler", () => {
   });
 
   test("maps the accounts and confirmation statement due dates into the response", async () => {
-    mockCompaniesHouseSuccess(mockFetch, DIY_ACCOUNTING_PROFILE);
-    const response = await companiesHouseCompanyGetHandler(eventForCompanyNumber("06846849"));
+    mockCompaniesHouseSuccess(mockFetch, EXAMPLE_COMPANY_PROFILE);
+    const response = await companiesHouseCompanyGetHandler(eventForCompanyNumber("00000001"));
     const body = parseResponseBody(response);
     expect(body.accountsNextDue).toBe("2027-01-31");
     expect(body.accountsNextPeriodEnd).toBe("2026-04-30");
     expect(body.confirmationStatementNextDue).toBe("2027-04-30");
     expect(body.confirmationStatementNextMadeUpTo).toBe("2026-04-16");
     expect(body.sicCodes).toEqual(["62012"]);
-    expect(body.registeredOfficeAddress).toEqual(DIY_ACCOUNTING_PROFILE.registered_office_address);
+    expect(body.registeredOfficeAddress).toEqual(EXAMPLE_COMPANY_PROFILE.registered_office_address);
   });
 });

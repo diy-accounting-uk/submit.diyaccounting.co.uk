@@ -72,8 +72,8 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildAccountsBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
-    companyName: "DIY ACCOUNTING LIMITED",
+    companyNumber: "00000001",
+    companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
     balanceSheet: {
@@ -150,7 +150,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   test("passes the balance sheet through to the generator without a company authentication code", async () => {
     await companiesHouseAccountsPreviewPostHandler(buildEvent());
     const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
-    expect(input.companyNumber).toBe("06846849");
+    expect(input.companyNumber).toBe("00000001");
     expect(input.balanceSheet.current.fixedAssets).toBe(1000);
     expect(input.companyAuthCode).toBeUndefined();
   });

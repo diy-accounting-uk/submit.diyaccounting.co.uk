@@ -142,12 +142,12 @@ describe("companiesHouseFilingApi", () => {
 
       await companiesHouseFilingRequest("POST", "/transactions", {
         accessToken: "user-token",
-        body: { company_number: "06846849" },
+        body: { company_number: "00000001" },
       });
 
       const [, requestInit] = mockFetch.mock.calls[0];
       expect(requestInit.headers["Content-Type"]).toBe("application/json");
-      expect(JSON.parse(requestInit.body)).toEqual({ company_number: "06846849" });
+      expect(JSON.parse(requestInit.body)).toEqual({ company_number: "00000001" });
     });
   });
 

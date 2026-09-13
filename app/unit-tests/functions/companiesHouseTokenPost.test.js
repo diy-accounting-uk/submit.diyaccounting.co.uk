@@ -78,8 +78,6 @@ describe("companiesHouseTokenPost ingestHandler", () => {
           refresh_token: "a-companies-house-refresh-token",
           expires_in: 3600,
           token_type: "Bearer",
-          scope:
-            "https://identity.company-information.service.gov.uk/user/profile.read https://api.company-information.service.gov.uk/company/06846849/registered-office-address.update",
         }),
       headers: fakeHeaders({}),
     });
@@ -92,7 +90,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     expect(body.accessToken).toBe("a-companies-house-access-token");
     expect(body.expiresIn).toBe(3600);
     expect(body.tokenType).toBe("Bearer");
-    expect(body.scope).toContain("registered-office-address.update");
+    expect(body.scope).toBeUndefined();
     expect(body.refreshToken).toBeUndefined();
     expect(body.refresh_token).toBeUndefined();
   });
@@ -101,7 +99,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ access_token: "a-token", expires_in: 3600, token_type: "Bearer", scope: "" }),
+      json: () => Promise.resolve({ access_token: "a-token", expires_in: 3600, token_type: "Bearer" }),
       headers: fakeHeaders({}),
     });
 
@@ -204,7 +202,7 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ access_token: "a-token", expires_in: 3600, token_type: "Bearer", scope: "" }),
+      json: () => Promise.resolve({ access_token: "a-token", expires_in: 3600, token_type: "Bearer" }),
       headers: fakeHeaders({}),
     });
 

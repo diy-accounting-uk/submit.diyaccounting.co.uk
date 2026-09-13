@@ -71,7 +71,7 @@ The shared client. Mirrors the shape of `app/services/hmrcApi.js` at about a ten
   and the response status, and returns `{ ok, status, data, headers }`. It writes nothing to DynamoDB.
 - `isValidCompanyNumber(value)` uppercases, left-pads a purely numeric value to eight digits with
   zeros, and tests `/^[A-Z0-9]{8}$/`. Export the normalised value alongside the boolean so callers do
-  not re-implement the padding. `6846849` becomes `06846849`; `SC123456` and `OC301234` pass unchanged.
+  not re-implement the padding. `1` becomes `00000001`; `SC123456` and `OC301234` pass unchanged.
 - `httpResponseFromCompaniesHouseResponse(request, chResponse, responseHeaders)` maps upstream status
   to our response: 404 to `http404NotFoundResponse`, 429 to `http429TooManyRequestsResponse` (see
   below), 401 and 403 to `http500ServerErrorResponse` with the message "Companies House rejected our
@@ -142,9 +142,9 @@ The fixtures. Three companies, chosen so every branch of the page has data.
 
 | Company number | Name | Status | Purpose |
 | --- | --- | --- | --- |
-| `06846849` | DIY ACCOUNTING LIMITED | active | The real company. Same number the behaviour test uses against the live API, so the simulator and live journeys assert the same name. |
+| `00000001` | SIMULATOR EXAMPLE COMPANY LIMITED | active | The company number Companies House's filing API guide uses in its scope examples; not on the live register. The simulator lane's fixture; the live lanes look up DIY Accounting Limited itself. |
 | `SC000000` | SIMULATOR TEST COMPANY (SCOTLAND) LIMITED | active | Proves the non-numeric company-number prefix path and a Scottish jurisdiction. |
-| `00000001` | SIMULATOR DISSOLVED COMPANY LIMITED | dissolved | Drives the non-active status rendering. |
+| `00000002` | SIMULATOR DISSOLVED COMPANY LIMITED | dissolved | Drives the non-active status rendering. |
 
 Reserved numbers with no company record:
 
@@ -156,7 +156,7 @@ Each fixture carries the full upstream profile shape: `company_name`, `company_n
 (`address_line_1`, `locality`, `postal_code`, `country`), `sic_codes`, `accounts.next_accounts.due_on`,
 `accounts.next_accounts.period_end_on`, and `confirmation_statement.next_due`. Give the two simulator
 companies dates far in the future so a fixture never expires into a failing assertion. Give
-`06846849` its real registered office and SIC codes.
+`00000001` an invented Cardiff address and SIC codes.
 
 Export `searchCompanies(query, itemsPerPage, startIndex)` and `getCompany(companyNumber)` so the route
 file holds no data.
@@ -200,7 +200,7 @@ header and nav, same footer, same script tags in the same order, minus `hmrc-sco
 Search view:
 
 - An input `#companyQuery` with a label, a hint ("Company name or the 8-character company number, for
-  example DIY Accounting or 06846849"), and a submit button `#searchBtn`.
+  example Example Company or 00000001"), and a submit button `#searchBtn`.
 - Submit calls `searchCompanies` from the service module, shows `#loadingSpinner` while it runs, and
   renders `#searchResults` as a table with columns Company, Number, Status, Incorporated, Address. Each
   row's company name is a button that opens the profile view.
@@ -390,7 +390,7 @@ Model on `app/system-tests/hmrcSimulator.system.test.js`. Start the simulator, p
 
 - search returns the fixture company for a name fragment
 - search paginates with start index and items per page
-- profile returns DIY Accounting Limited for 06846849
+- profile returns the example company for 00000001
 - profile returns 404 for an unknown company number
 - profile returns 429 with Retry-After for the throttled fixture number
 - the simulator rejects a request with no Authorization header
@@ -412,7 +412,7 @@ Model on `behaviour-tests/getVatObligations.behaviour.test.js`, minus every HMRC
 (`goToHmrcAuth`, `fillInHmrcAuth`, `grantPermissionHmrcAuth`, `submitHmrcAuth`, `acceptCookiesHmrc`),
 minus `createHmrcTestUser`, and minus the fraud-header DynamoDB assertions. The journey is: consent to
 data collection, go to the home page, log in, confirm the Company Lookup button is present, open it,
-search for "DIY Accounting", confirm DIY ACCOUNTING LIMITED appears with number 06846849, open the
+search for the lane's fixture company, confirm it appears with its number, open the
 profile, confirm the name and an active status render, take a screenshot at each step into
 `target/behaviour-test-results/screenshots/companies-house-behaviour-test`.
 
@@ -420,8 +420,8 @@ Put the reusable steps in a new `behaviour-tests/steps/behaviour-companies-house
 `goToCompanySearch`, `fillInCompanySearch`, `submitCompanySearch`, `verifyCompanySearchResults`,
 `openCompanyProfile`, `verifyCompanyProfile`.
 
-Company 06846849 is the fixture in both lanes. The simulator serves it from
-`app/http-simulator/scenarios/companies.js`; the ci and prod lanes fetch it from the live API. The
+The simulator lane's fixture is company 00000001 from `app/http-simulator/scenarios/companies.js`;
+the proxy, ci and prod lanes look up DIY Accounting Limited on the live API. The
 assertions check the company name and number, not the incorporation date or the address, so a change
 at Companies House does not break the test.
 
@@ -482,8 +482,8 @@ two calls per run, leaves the limit far out of reach.
 1. `npm test` passes, including the two new unit test files and the new system test file.
 2. `npm run test:browser` passes, including `companySearch.browser.test.js`.
 3. `./mvnw clean verify` passes with `CompaniesHouseStack.java` in the build.
-4. `npm run test:companiesHouseBehaviour-simulator` passes with no network access, finding DIY
-   ACCOUNTING LIMITED against the simulator fixture.
+4. `npm run test:companiesHouseBehaviour-simulator` passes with no network access, finding the
+   example company against the simulator fixture.
 5. `npm run test:companiesHouseBehaviour-ci` passes against the deployed CI environment, finding DIY
    ACCOUNTING LIMITED, company 06846849, against the live Companies House API.
 6. `GET /api/v1/companies-house/search?q=diy` returns JSON, never HTML, for a signed-in user, and 403
@@ -493,6 +493,6 @@ two calls per run, leaves the limit far out of reach.
 8. Grepping `app/functions/companies-house/` and `app/services/companiesHouseApi.js` for `Gov-`,
    `fraud`, `hmrc` and `putHmrcApiRequest` returns nothing.
 9. The deployed API Gateway has both routes, and `curl` against the deployed path parameter route
-   `/api/v1/companies-house/company/06846849` returns the same body shape as the local Express route.
+   `/api/v1/companies-house/company/{companyNumber}` returns the same body shape as the local Express route.
 10. `ci/submit/companies-house/api_key` and `prod/submit/companies-house/api_key` both report OK from
     the "manage secrets" check action, and no key appears in any committed file.

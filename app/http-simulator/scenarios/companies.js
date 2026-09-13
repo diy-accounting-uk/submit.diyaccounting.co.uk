@@ -2,22 +2,25 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/http-simulator/scenarios/companies.js
-// Fixture companies for the Companies House simulator. Dates for the two invented
-// companies sit far in the future so a fixture never expires into a failing assertion.
+// Fixture companies for the Companies House simulator. All three are invented. 00000001 is the
+// company number Companies House's own filing API guide uses in its scope examples
+// (developer-specs.company-information.service.gov.uk, "Manipulate Company Data (API Filing)"),
+// and it is not on the live register. Dates sit far in the future so a fixture never expires
+// into a failing assertion.
 
 const companies = {
-  "06846849": {
-    company_name: "DIY ACCOUNTING LIMITED",
-    company_number: "06846849",
+  "00000001": {
+    company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
+    company_number: "00000001",
     company_status: "active",
     type: "ltd",
     date_of_creation: "2009-04-16",
     jurisdiction: "england-wales",
     registered_office_address: {
-      address_line_1: "The Old Rectory",
-      locality: "Pulham Market",
-      postal_code: "IP21 4XW",
-      country: "United Kingdom",
+      address_line_1: "1 Example Street",
+      locality: "Cardiff",
+      postal_code: "CF14 3UZ",
+      country: "Wales",
     },
     sic_codes: ["62012", "69201"],
     accounts: {
@@ -56,9 +59,9 @@ const companies = {
       next_made_up_to: "2099-09-16",
     },
   },
-  "00000001": {
+  "00000002": {
     company_name: "SIMULATOR DISSOLVED COMPANY LIMITED",
-    company_number: "00000001",
+    company_number: "00000002",
     company_status: "dissolved",
     type: "ltd",
     date_of_creation: "1990-01-01",

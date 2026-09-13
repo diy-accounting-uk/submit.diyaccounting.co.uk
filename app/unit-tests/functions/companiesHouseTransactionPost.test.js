@@ -70,8 +70,8 @@ let mockFetch;
 const OPEN_TRANSACTION_RESPONSE = {
   id: "017100005912",
   status: "open",
-  company_number: "06846849",
-  company_name: "DIY ACCOUNTING LIMITED",
+  company_number: "00000001",
+  company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
   links: { self: "/transactions/017100005912" },
 };
 
@@ -137,14 +137,14 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("opens a transaction and maps the response", async () => {
     mockChSuccess(mockFetch, 201, OPEN_TRANSACTION_RESPONSE);
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change of registered office address" } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
     );
     expect(response.statusCode).toBe(201);
     const body = parseResponseBody(response);
     expect(body.transactionId).toBe("017100005912");
     expect(body.status).toBe("open");
-    expect(body.companyNumber).toBe("06846849");
-    expect(body.companyName).toBe("DIY ACCOUNTING LIMITED");
+    expect(body.companyNumber).toBe("00000001");
+    expect(body.companyName).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
     expect(body.links).toEqual(OPEN_TRANSACTION_RESPONSE.links);
 
     const [requestedUrl, requestInit] = mockFetch.mock.calls[0];
@@ -152,7 +152,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
     expect(requestInit.method).toBe("POST");
     expect(requestInit.headers.Authorization).toBe("Bearer test-ch-access-token");
     expect(JSON.parse(requestInit.body)).toEqual({
-      company_number: "06846849",
+      company_number: "00000001",
       description: "Change of registered office address",
     });
   });
@@ -161,7 +161,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
     mockChSuccess(mockFetch, 201, OPEN_TRANSACTION_RESPONSE);
     await companiesHouseTransactionPostHandler(
       buildEvent({
-        body: { companyNumber: "06846849", description: "Change of registered office address", reference: "case-42" },
+        body: { companyNumber: "00000001", description: "Change of registered office address", reference: "case-42" },
       }),
     );
     const [, requestInit] = mockFetch.mock.calls[0];
@@ -177,7 +177,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   });
 
   test("rejects a missing description with 400", async () => {
-    const response = await companiesHouseTransactionPostHandler(buildEvent({ body: { companyNumber: "06846849" } }));
+    const response = await companiesHouseTransactionPostHandler(buildEvent({ body: { companyNumber: "00000001" } }));
     expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
     expect(body.message).toContain("Missing description");
@@ -185,7 +185,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
 
   test("rejects a description over 200 characters with 400", async () => {
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "x".repeat(201) } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "x".repeat(201) } }),
     );
     expect(response.statusCode).toBe(400);
     const body = parseResponseBody(response);
@@ -195,7 +195,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("returns 401 when no Companies House access token is present", async () => {
     const response = await companiesHouseTransactionPostHandler(
       buildEvent({
-        body: { companyNumber: "06846849", description: "Change of registered office address" },
+        body: { companyNumber: "00000001", description: "Change of registered office address" },
         headers: { Authorization: "" },
       }),
     );
@@ -208,7 +208,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("maps a 401 from Companies House to our 401", async () => {
     mockChError(mockFetch, 401, { errors: [{ error: "invalid-token", type: "ch:service" }] });
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change of registered office address" } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
     );
     expect(response.statusCode).toBe(401);
   });
@@ -216,7 +216,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("maps a 429 from Companies House with Retry-After", async () => {
     mockChError(mockFetch, 429, { error: "rate-limited" }, { "retry-after": "300" });
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change of registered office address" } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
     );
     expect(response.statusCode).toBe(429);
     expect(response.headers["Retry-After"]).toBe("300");
@@ -225,14 +225,14 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("maps an unexpected status from Companies House to 500", async () => {
     mockChError(mockFetch, 503, { error: "service-unavailable" });
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change of registered office address" } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
     );
     expect(response.statusCode).toBe(500);
   });
 
   test("returns 401 when the Authorization Bearer token for Cognito is missing entirely", async () => {
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change" }, authorizer: {} }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change" }, authorizer: {} }),
     );
     expect(response.statusCode).toBe(401);
     expect(mockFetch).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe("companiesHouseTransactionPost ingestHandler", () => {
   test("returns 403 when the environment does not list the matched activity", async () => {
     process.env.ENVIRONMENT_NAME = "not-a-listed-environment";
     const response = await companiesHouseTransactionPostHandler(
-      buildEvent({ body: { companyNumber: "06846849", description: "Change of registered office address" } }),
+      buildEvent({ body: { companyNumber: "00000001", description: "Change of registered office address" } }),
     );
     expect(response.statusCode).toBe(403);
     expect(mockFetch).not.toHaveBeenCalled();

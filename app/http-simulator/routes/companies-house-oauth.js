@@ -162,12 +162,13 @@ export function apiEndpoint(app) {
         });
       }
 
+      // The documented accessToken resource: access_token, refresh_token, expires_in and
+      // token_type. No scope field - the real identity service does not echo one back.
       return res.json({
         access_token: `mock-companies-house-access-token-${randomUUID()}`,
         refresh_token: `mock-companies-house-refresh-token-${randomUUID()}`,
         expires_in: 3600,
         token_type: "Bearer",
-        scope: codeData.scope || "",
       });
     }
 

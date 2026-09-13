@@ -87,8 +87,8 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 function buildAccountsBody(overrides = {}) {
   return {
-    companyNumber: "06846849",
-    companyName: "DIY ACCOUNTING LIMITED",
+    companyNumber: "00000001",
+    companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
     companyAuthCode: "AB12CD",
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
@@ -172,15 +172,15 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
     expect(mockBuildMicroEntityAccounts).toHaveBeenCalledTimes(1);
     const [generatorInput] = mockBuildMicroEntityAccounts.mock.calls[0];
-    expect(generatorInput.companyNumber).toBe("06846849");
+    expect(generatorInput.companyNumber).toBe("00000001");
 
     expect(mockBuildAccountsSubmission).toHaveBeenCalledTimes(1);
     const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
     expect(submissionArgs).toMatchObject({
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
-      companyNumber: "06846849",
-      companyName: "DIY ACCOUNTING LIMITED",
+      companyNumber: "00000001",
+      companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
       companyAuthenticationCode: "AB12CD",
       submissionNumber: "00001A",
       dateSigned: "2026-01-15",

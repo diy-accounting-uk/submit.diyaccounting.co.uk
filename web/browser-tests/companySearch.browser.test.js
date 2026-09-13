@@ -11,33 +11,33 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-const DIY_ACCOUNTING_RESULT = {
+const EXAMPLE_COMPANY_RESULT = {
   totalResults: 1,
   itemsPerPage: 20,
   startIndex: 0,
   items: [
     {
-      companyNumber: "06846849",
-      title: "DIY ACCOUNTING LIMITED",
+      companyNumber: "00000001",
+      title: "SIMULATOR EXAMPLE COMPANY LIMITED",
       companyStatus: "active",
       companyType: "ltd",
       dateOfCreation: "2009-04-16",
-      addressSnippet: "The Old Rectory, Pulham Market, IP21 4XW",
+      addressSnippet: "1 Example Street, Cardiff, CF14 3UZ",
     },
   ],
 };
 
-const DIY_ACCOUNTING_PROFILE = {
-  companyNumber: "06846849",
-  companyName: "DIY ACCOUNTING LIMITED",
+const EXAMPLE_COMPANY_PROFILE = {
+  companyNumber: "00000001",
+  companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
   companyStatus: "active",
   companyType: "ltd",
   dateOfCreation: "2009-04-16",
   jurisdiction: "england-wales",
   registeredOfficeAddress: {
-    address_line_1: "The Old Rectory",
-    locality: "Pulham Market",
-    postal_code: "IP21 4XW",
+    address_line_1: "1 Example Street",
+    locality: "Cardiff",
+    postal_code: "CF14 3UZ",
     country: "United Kingdom",
   },
   sicCodes: ["62012"],
@@ -59,7 +59,7 @@ test.describe("Company Lookup page", () => {
     });
   }
 
-  async function setupRoutes(page, { searchResult = DIY_ACCOUNTING_RESULT, profile = DIY_ACCOUNTING_PROFILE, searchError = null } = {}) {
+  async function setupRoutes(page, { searchResult = EXAMPLE_COMPANY_RESULT, profile = EXAMPLE_COMPANY_PROFILE, searchError = null } = {}) {
     await page.addInitScript(
       ({ searchResultArg, profileArg, searchErrorArg }) => {
         window.showStatus = window.showStatus || (() => {});
@@ -106,13 +106,13 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "DIY Accounting");
+    await page.fill("#companyQuery", "Simulator Example");
     await page.click("#searchBtn");
     await delay(200);
 
     await expect(page.locator("#searchResultsContainer")).toBeVisible();
-    await expect(page.locator("#searchResults")).toContainText("DIY ACCOUNTING LIMITED");
-    await expect(page.locator("#searchResults")).toContainText("06846849");
+    await expect(page.locator("#searchResults")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
+    await expect(page.locator("#searchResults")).toContainText("00000001");
   });
 
   test("shows a message when no companies match", async ({ page }) => {
@@ -132,7 +132,7 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "DIY Accounting");
+    await page.fill("#companyQuery", "Simulator Example");
     await page.click("#searchBtn");
     await delay(200);
 
@@ -140,7 +140,7 @@ test.describe("Company Lookup page", () => {
     await delay(200);
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("DIY ACCOUNTING LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
     await expect(page.locator("#companyProfile")).toContainText("active");
   });
 
@@ -149,23 +149,23 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page);
     await loadPage(page);
 
-    await page.fill("#companyQuery", "DIY Accounting");
+    await page.fill("#companyQuery", "Simulator Example");
     await page.click("#searchBtn");
     await delay(200);
 
     await page.click("#searchResults button");
     await delay(200);
 
-    expect(page.url()).toContain("companyNumber=06846849");
+    expect(page.url()).toContain("companyNumber=00000001");
   });
 
   test("opens the profile view directly when the URL carries a company number", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
-    await loadPage(page, "companyNumber=06846849");
+    await loadPage(page, "companyNumber=00000001");
 
     await expect(page.locator("#profileView")).toBeVisible();
-    await expect(page.locator("#companyProfile")).toContainText("DIY ACCOUNTING LIMITED");
+    await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
   });
 
   test("shows a retry message with the wait time when the API reports a rate limit", async ({ page }) => {
@@ -173,7 +173,7 @@ test.describe("Company Lookup page", () => {
     await setupRoutes(page, { searchError: { message: "Companies House is rate limiting our lookups", status: 429, retryAfterSeconds: 300 } });
     await loadPage(page);
 
-    await page.fill("#companyQuery", "DIY Accounting");
+    await page.fill("#companyQuery", "Simulator Example");
     await page.click("#searchBtn");
     await delay(200);
 

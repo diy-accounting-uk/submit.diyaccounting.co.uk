@@ -31,7 +31,7 @@ describe("System: Companies House Filing Simulator", () => {
       { method: "PUT", path: "/transactions/does-not-matter" },
       { method: "POST", path: "/transactions/does-not-matter/registered-office-address" },
       { method: "POST", path: "/transactions/does-not-matter/registered-email-address" },
-      { method: "GET", path: "/registered-email-address/company/06846849/eligibility" },
+      { method: "GET", path: "/registered-email-address/company/00000001/eligibility" },
     ];
 
     for (const route of routes) {
@@ -47,18 +47,18 @@ describe("System: Companies House Filing Simulator", () => {
   });
 
   it("reads the registered office address for the fixture company, matching the read-only lookup", async () => {
-    const response = await fetch(`${simulator.baseUrl}/company/06846849/registered-office-address`, {
+    const response = await fetch(`${simulator.baseUrl}/company/00000001/registered-office-address`, {
       headers: { Authorization: "Basic dGVzdDo=" },
     });
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.locality).toBe("Pulham Market");
-    expect(body.postal_code).toBe("IP21 4XW");
+    expect(body.locality).toBe("Cardiff");
+    expect(body.postal_code).toBe("CF14 3UZ");
     expect(body.etag).toBeTruthy();
   });
 
   it("returns COMPANY_VALID_FOR_SERVICE eligibility by default", async () => {
-    const response = await fetch(`${simulator.baseUrl}/registered-email-address/company/06846849/eligibility`, {
+    const response = await fetch(`${simulator.baseUrl}/registered-email-address/company/00000001/eligibility`, {
       headers: AUTH_HEADERS,
     });
     expect(response.status).toBe(200);
@@ -67,7 +67,7 @@ describe("System: Companies House Filing Simulator", () => {
   });
 
   it("returns INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS for the reserved company number", async () => {
-    const response = await fetch(`${simulator.baseUrl}/registered-email-address/company/00000001/eligibility`, {
+    const response = await fetch(`${simulator.baseUrl}/registered-email-address/company/00000003/eligibility`, {
       headers: AUTH_HEADERS,
     });
     expect(response.status).toBe(200);
@@ -79,7 +79,7 @@ describe("System: Companies House Filing Simulator", () => {
     const openResponse = await fetch(`${simulator.baseUrl}/transactions`, {
       method: "POST",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ company_number: "06846849", description: "Change of registered office address" }),
+      body: JSON.stringify({ company_number: "00000001", description: "Change of registered office address" }),
     });
     expect(openResponse.status).toBe(201);
     const transaction = await openResponse.json();
@@ -95,7 +95,7 @@ describe("System: Companies House Filing Simulator", () => {
         country: "England",
         postal_code: "LS12 3AB",
         accept_appropriate_office_address_statement: true,
-        reference_etag: "diy-accounting-simulator-etag-1",
+        reference_etag: "simulator-etag-00000001",
       }),
     });
     expect(resourceResponse.status).toBe(201);
@@ -110,7 +110,7 @@ describe("System: Companies House Filing Simulator", () => {
         country: "England",
         postal_code: "LS12 3AB",
         accept_appropriate_office_address_statement: true,
-        reference_etag: "diy-accounting-simulator-etag-1",
+        reference_etag: "simulator-etag-00000001",
       }),
     });
     expect(duplicateResourceResponse.status).toBe(409);
@@ -151,7 +151,7 @@ describe("System: Companies House Filing Simulator", () => {
     const openResponse = await fetch(`${simulator.baseUrl}/transactions`, {
       method: "POST",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ company_number: "06846849", description: "Change of registered office address" }),
+      body: JSON.stringify({ company_number: "00000001", description: "Change of registered office address" }),
     });
     const transaction = await openResponse.json();
 
@@ -165,7 +165,7 @@ describe("System: Companies House Filing Simulator", () => {
         country: "England",
         // postal_code deliberately omitted
         accept_appropriate_office_address_statement: true,
-        reference_etag: "diy-accounting-simulator-etag-1",
+        reference_etag: "simulator-etag-00000001",
       }),
     });
     expect(response.status).toBe(400);
@@ -177,7 +177,7 @@ describe("System: Companies House Filing Simulator", () => {
     const openResponse = await fetch(`${simulator.baseUrl}/transactions`, {
       method: "POST",
       headers: AUTH_HEADERS,
-      body: JSON.stringify({ company_number: "06846849", description: "Change of registered email address" }),
+      body: JSON.stringify({ company_number: "00000001", description: "Change of registered email address" }),
     });
     const transaction = await openResponse.json();
 

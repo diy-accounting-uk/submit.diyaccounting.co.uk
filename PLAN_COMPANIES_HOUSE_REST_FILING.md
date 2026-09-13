@@ -84,7 +84,7 @@ guide states this directly. Do not build sandbox hostnames into scope strings.
    requested scope names a company number. The user grants permission and comes back to our
    callback page with a `code`.
 6. The callback page checks `state`, exchanges the code through
-   `POST /api/v1/companies-house/token`, stores the access token, the granted scope and the expiry,
+   `POST /api/v1/companies-house/token`, stores the access token, the requested scope and the expiry,
    and returns to the form page.
 7. The form page opens a transaction: `POST /api/v1/companies-house/transaction` with the company
    number and a description. It gets a transaction id back.
@@ -170,9 +170,10 @@ of view. We do not handle the auth code ourselves and must never ask for it.
 ### State handling
 
 Mirror the HMRC pages exactly. Before redirecting, the page generates a random state, writes it to
-`sessionStorage` under `ch_oauth_state`, and writes the pending form and the return path under
-`companiesHousePendingFiling` and `currentActivity`. The callback page compares the returned
-`state` with the stored one, refuses to continue on a mismatch, and clears the key on success.
+`sessionStorage` under `ch_oauth_state`, the scope it is requesting under `ch_oauth_scope`, and
+the pending form and the return path under `companiesHousePendingFiling` and `currentActivity`.
+The callback page compares the returned `state` with the stored one, refuses to continue on a
+mismatch, and clears both keys on success.
 
 ### Token exchange
 
@@ -208,9 +209,10 @@ tab's lifetime:
 | Key | Contents |
 |---|---|
 | `companiesHouseAccessToken` | the access token |
-| `companiesHouseTokenScope` | the granted scope string, so a page can tell whether the token covers this company and this resource |
+| `companiesHouseTokenScope` | the scope string the page requested before the redirect, so a page can tell whether the token covers this company and this resource. The token response itself names no scope |
 | `companiesHouseTokenExpiresAt` | `Date.now() + expires_in * 1000` |
 | `ch_oauth_state` | the state value, removed once checked |
+| `ch_oauth_scope` | the scope the page requested, moved to `companiesHouseTokenScope` once the code is exchanged |
 | `companiesHousePendingFiling` | the form the user filled in before the redirect |
 
 The browser does not store the refresh token, and no Lambda persists one. The HMRC flow does the
@@ -219,7 +221,7 @@ Companies House token expires, or its scope does not match the company the user 
 starts the authorise redirect again. That is one round trip and it keeps a long-lived credential
 out of the browser and out of our database.
 
-`companiesHouseTokenScope` decides reuse. A token granted for company `06846849` and
+`companiesHouseTokenScope` decides reuse. A token granted for company `00000001` and
 `registered-office-address.update` is not reusable for a different company or for the email filing.
 The check is a plain string comparison against the scope string the page is about to request.
 
@@ -268,7 +270,7 @@ the browser calls them with `fetchWithIdToken`.
   House token exists.
 - Request body: `{ "code": "..." }`
 - Calls: `POST {COMPANIES_HOUSE_IDENTITY_BASE_URI}/oauth2/token` with the form fields above.
-- Response 200: `{ "accessToken", "expiresIn", "tokenType", "scope" }`. Do not return the refresh
+- Response 200: `{ "accessToken", "expiresIn", "tokenType" }`. Do not return the refresh
   token. Nothing consumes it and returning it puts a long-lived credential in the browser for no
   reason.
 - Errors: missing `code` gives 400 through `buildValidationError`. A non-2xx from Companies House
@@ -283,7 +285,7 @@ The client secret is cached in module scope across warm starts, the way
 ### 2. `companiesHouseTransactionPost.js`
 
 - Route: `POST /api/v1/companies-house/transaction`
-- Request body: `{ "companyNumber": "06846849", "description": "Change of registered office address", "reference": "..." }`. `reference` is optional.
+- Request body: `{ "companyNumber": "00000001", "description": "Change of registered office address", "reference": "..." }`. `reference` is optional.
 - Validation: `companyNumber` through the existing `isValidCompanyNumber`. `description` must be
   present and at most 200 characters.
 - Calls: `POST {COMPANIES_HOUSE_FILING_BASE_URI}/transactions` with
@@ -671,7 +673,7 @@ Give the simulator two deliberate unhappy paths, because the behaviour tests sho
 
 - Company number `00000422` answers `422` on close, with an `errors` array naming
   `$.postal_code`. That proves the validation-error rendering.
-- Company number `00000001` answers `INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS` on the eligibility
+- Company number `00000003` answers `INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS` on the eligibility
   route. That proves the eligibility stop.
 
 Closing a transaction sets `status: "closed"`, `closed_at`, and a `filings` object with one entry

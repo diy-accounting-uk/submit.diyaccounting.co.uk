@@ -99,8 +99,8 @@ const SEARCH_RESULTS = {
   start_index: 0,
   items: [
     {
-      company_number: "06846849",
-      title: "DIY ACCOUNTING LIMITED",
+      company_number: "00000001",
+      title: "SIMULATOR EXAMPLE COMPANY LIMITED",
       company_status: "active",
       company_type: "ltd",
       date_of_creation: "2009-04-16",
@@ -167,7 +167,7 @@ describe("companiesHouseSearchGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.items).toHaveLength(1);
-    expect(body.items[0].companyNumber).toBe("06846849");
+    expect(body.items[0].companyNumber).toBe("00000001");
   });
 
   test("maps snake_case upstream fields to camelCase response fields", async () => {
@@ -177,8 +177,8 @@ describe("companiesHouseSearchGet ingestHandler", () => {
     const response = await companiesHouseSearchGetHandler(event);
     const body = parseResponseBody(response);
     expect(body.items[0]).toEqual({
-      companyNumber: "06846849",
-      title: "DIY ACCOUNTING LIMITED",
+      companyNumber: "00000001",
+      title: "SIMULATOR EXAMPLE COMPANY LIMITED",
       companyStatus: "active",
       companyType: "ltd",
       dateOfCreation: "2009-04-16",
