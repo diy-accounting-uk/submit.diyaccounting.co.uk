@@ -18,6 +18,12 @@ const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" }
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
 
+// A second verifier, for the ID token sent alongside the access token in X-Id-Token (see
+// hmrc-service.js's getGovClientHeaders). The access token authorizes the request; the ID token
+// is only ever used to read custom:mfa_method and identities for the O28 Gov-Client-Multi-Factor
+// build below, so its verification failing never denies a request on its own.
+let idTokenVerifier = null;
+
 // Cache the Cognito client across Lambda invocations, same pattern as the JWT verifier.
 let cognitoClient = null;
 
@@ -50,6 +56,82 @@ function getVerifier() {
     });
   }
   return verifier;
+}
+
+function getIdTokenVerifier() {
+  if (!idTokenVerifier) {
+    const userPoolId = process.env.COGNITO_USER_POOL_ID;
+    const clientId = process.env.COGNITO_USER_POOL_CLIENT_ID;
+
+    if (!userPoolId || !clientId) {
+      throw new Error("Missing COGNITO_USER_POOL_ID or COGNITO_USER_POOL_CLIENT_ID environment variables");
+    }
+
+    idTokenVerifier = CognitoJwtVerifier.create({
+      userPoolId: userPoolId,
+      tokenUse: "id",
+      clientId: clientId,
+    });
+  }
+  return idTokenVerifier;
+}
+
+/**
+ * True when a verified ID token's `identities` claim shows a federated sign-in (e.g. Google).
+ * Cognito carries this claim as a JSON string, not a native array.
+ *
+ * @param {object} idPayload - verified ID token payload
+ * @returns {boolean}
+ */
+function hasFederatedIdentity(idPayload) {
+  const raw = idPayload?.identities;
+  if (!raw) return false;
+  if (Array.isArray(raw)) return raw.length > 0;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) && parsed.length > 0;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Verify the caller's ID token, when sent, and extract the O28 fraud-prevention MFA signal from
+ * its claims: custom:mfa_method (set by the Pre Token Generation trigger for TOTP users) and
+ * identities (set by Cognito for federated sign-ins). Best-effort -- a missing or unverifiable ID
+ * token, or a sub that doesn't match the already-verified access token, leaves the request
+ * authorized on the access token alone and simply carries no MFA context forward, rather than
+ * denying it.
+ *
+ * @param {object} headers - the request's headers
+ * @param {string} accessTokenSub - the sub already verified from the access token
+ * @returns {Promise<{mfaMethod?: string, federated?: boolean, authTime?: string}>}
+ */
+export async function extractMfaContext(headers, accessTokenSub) {
+  const idToken = getHeader(headers, "x-id-token");
+  if (!idToken) return {};
+
+  let idPayload;
+  try {
+    idPayload = await getIdTokenVerifier().verify(idToken);
+  } catch (error) {
+    logger.warn({ message: "ID token verification failed; no server-built Gov-Client-Multi-Factor for this request", error: error.message });
+    return {};
+  }
+
+  if (idPayload.sub !== accessTokenSub) {
+    logger.warn({ message: "ID token sub does not match the verified access token's sub; ignoring its claims" });
+    return {};
+  }
+
+  return {
+    mfaMethod: idPayload["custom:mfa_method"],
+    federated: hasFederatedIdentity(idPayload),
+    authTime: idPayload.auth_time !== undefined ? String(idPayload.auth_time) : undefined,
+  };
 }
 
 // Lambda authorizer ingestHandler
@@ -110,8 +192,12 @@ export async function ingestHandler(event) {
       return denyPolicyDocument(routeArn);
     }
 
+    // O28: read the MFA signal off the ID token sent in X-Id-Token, if any, to build
+    // Gov-Client-Multi-Factor server-side in buildFraudHeaders.js.
+    const mfaContext = await extractMfaContext(headers, payload.sub);
+
     // Generate allow policy with JWT claims in context
-    return generateAllowPolicy(routeArn, payload);
+    return generateAllowPolicy(routeArn, payload, mfaContext);
   } catch (error) {
     logger.error({
       message: "Authorization failed",
@@ -124,7 +210,7 @@ export async function ingestHandler(event) {
 }
 
 // Generate IAM policy to allow access
-function generateAllowPolicy(routeArn, jwtPayload) {
+function generateAllowPolicy(routeArn, jwtPayload, mfaContext = {}) {
   // Extract API Gateway ARN components and create a wildcard policy
   // routeArn format: arn:aws:execute-api:region:account-id:api-id/stage/method/resource
   // We need to allow access to the specific route
@@ -190,9 +276,14 @@ function generateAllowPolicy(routeArn, jwtPayload) {
       email: jwtPayload.email || "",
       scope: jwtPayload.scope || "",
       token_use: jwtPayload.token_use || "access",
-      auth_time: String(jwtPayload.auth_time || ""),
+      // Prefer the ID token's auth_time (the O28 MFA build's source of truth) over the access
+      // token's own copy of the same claim, falling back to it when there was no ID token.
+      auth_time: String(mfaContext.authTime || jwtPayload.auth_time || ""),
       iat: String(jwtPayload.iat || ""),
       exp: String(jwtPayload.exp || ""),
+      // O28: Gov-Client-Multi-Factor inputs, read from the verified ID token above.
+      mfa_method: mfaContext.mfaMethod || "",
+      mfa_federated: mfaContext.federated ? "true" : "false",
     },
   };
 }

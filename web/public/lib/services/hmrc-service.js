@@ -200,7 +200,10 @@ export async function getGovClientHeaders() {
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
   const govClientDeviceIDHeader = getOrCreateDeviceId();
 
-  // Gov-Client-Multi-Factor: Extract from sessionStorage if MFA was detected during login
+  // Gov-Client-Multi-Factor: Extract from sessionStorage if MFA was detected during login.
+  // This is the fallback the server-built header (customAuthorizer.js + buildFraudHeaders.js,
+  // from the verified ID token) uses when it has nothing -- the server value wins whenever it's
+  // present.
   let govClientMultiFactorHeader;
   try {
     const mfaMetadata = sessionStorage.getItem("mfaMetadata");
@@ -210,6 +213,16 @@ export async function getGovClientHeaders() {
     }
   } catch (err) {
     console.warn("Failed to read MFA metadata from sessionStorage:", err);
+  }
+
+  // X-Id-Token: carries the Cognito ID token to the custom authorizer alongside the access
+  // token in X-Authorization, so it can verify the caller's custom:mfa_method and identities
+  // claims and build Gov-Client-Multi-Factor server-side. Not itself a Gov-Client-* header.
+  let govIdTokenHeader;
+  try {
+    govIdTokenHeader = localStorage.getItem("cognitoIdToken") || undefined;
+  } catch (err) {
+    console.warn("Failed to read the Cognito ID token from localStorage:", err);
   }
 
   const govClientPublicIPTimestampHeader = new Date().toISOString();
@@ -254,6 +267,9 @@ export async function getGovClientHeaders() {
   };
   if (govClientMultiFactorHeader) {
     headers["Gov-Client-Multi-Factor"] = govClientMultiFactorHeader;
+  }
+  if (govIdTokenHeader) {
+    headers["X-Id-Token"] = govIdTokenHeader;
   }
 
   return headers;
