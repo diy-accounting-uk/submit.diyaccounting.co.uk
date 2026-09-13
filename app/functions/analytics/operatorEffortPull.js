@@ -114,8 +114,9 @@ export function parseNextLink(response) {
   if (!link) return null;
   const match = link.split(",").find((part) => part.includes('rel="next"'));
   if (!match) return null;
-  const urlMatch = match.match(/<([^>]+)>/);
-  return urlMatch ? urlMatch[1] : null;
+  const start = match.indexOf("<");
+  const end = match.indexOf(">", start + 1);
+  return start !== -1 && end !== -1 ? match.slice(start + 1, end) : null;
 }
 
 async function getJsonPage(url, token) {
