@@ -2947,7 +2947,11 @@ jobs:
   # panels: one row per deploy run, written regardless of how the run ended so a failed deploy
   # counts towards the failure rate rather than leaving a silent gap.
   record-dora:
-    if: always()
+    # A run superseded by a newer commit is cancelled at the concurrency group, taking `names`
+    # down with it, so `environment-name` is empty and `configure-aws-credentials` fails with no
+    # role to assume. That is a supersession, not a deployment failure, so skip rather than let
+    # the run show a failed job for it; a genuine failure still has an environment name and runs.
+    if: ${{ !cancelled() && needs.names.outputs.environment-name != '' }}
     name: 'record DORA row'
     needs:
       - names
