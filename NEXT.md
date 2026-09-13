@@ -87,32 +87,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `prod-env-books-972912397388` (in flight at 18:1x UTC). Left: confirm both buckets are gone and
   the runbook's ci/prod tables read as done, then close. **Source**: `PLAN_DIYA_GL_NAMING.md`
   NM-S3. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
-  pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
-  pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
-  accounts filing and a fresh one for ITSA (business details through the quarterly update),
-  both against a ci set since neither activity goes to prod, each described on screen and in
-  its `publish.json` entry as a sandbox preview. The ITSA recording replaces the 2026-09-07
-  `itsa-business-details` one. The `view-liabilities` capture against prod succeeded at 22:04 UTC
-  on 2026-09-11 (video-capture run 34651931632); payments and penalties are next, one at a time
-  because the workflow toggles Cognito native auth around each run. All three prod captures have now
-  succeeded: `view-liabilities` (run 34651931632), `view-payments` (34689643435) and
-  `view-penalties` (34689889022). Remaining: the two ci captures, then check all five
-  artifacts and write `videos/publish.json`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude
-  Code. **Model**: Sonnet.
-  **The two missing scene scripts are merged**: `videos/file-micro-entity-accounts.json`
-  and `videos/itsa-quarterly-update.json`, both saying on screen that they are sandbox previews, and
-  `video-capture.yml`'s `script` choice list now offers them — a script absent from that list cannot
-  be dispatched however valid the file is. The ITSA one supersedes `itsa-business-details`, whose
-  `publish.json` entry goes when the new capture is checked.
-  Two things the scripts could not settle. The quarterly-update script stops with the form filled
-  except `businessId`: a `businessId` only exists after HMRC answers Business Details at run time,
-  and the scene-script format has no way to carry a value from one scene into a later scene's input,
-  so filling it would mean inventing one. And `itsa-business-details.json` may no longer pass at all
-  — it clicks the Self Assessment activity then awaits `#itsaBusinessDetailsForm`, but the
-  `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
-  `#businessPickerForm`. Check that on the next capture rather than assuming.
-
+- [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
+  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
+  `itsa-quarterly-update` is recording against `ci-b29w2` (run 34774550386, dispatched 18:35 UTC).
+  `file-micro-entity-accounts` submits a filing in its last scene, so it waits for PR #200's ci
+  set — on today's code the gateway rejects the envelope and the result view would show the error.
+  Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
+  `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
+  script stops with the form filled except `businessId` (only known at run time), and
+  `itsa-business-details.json` may no longer pass since the activity's first page is
+  `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B131. keepalive red on main until its next run.** The fix is on main (#198: age
   allowance, `restore-drill.yml` exempted by name until O41x, youtube-check at 06:46 Monday).
   Closes when the next scheduled keepalive on `main` (weekly, about 2026-09-19) is green, or
@@ -152,13 +136,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through annual submission, BSAS, calculation, final declaration and the losses and adjustments
   calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Two deployment gaps found
-  by the first two passes are on main (#198): `happy-dom` was a devDependency the Lambda image
-  omitted, so all three accounts Lambdas crashed at cold start; and the submit and poll Lambdas
-  never received `COMPANIES_HOUSE_PRESENTER_ID_ARN` / `_CODE_ARN`. The preview works on
-  `ci-b29w2`. The third pass is filing now: submission 000002 (a failed attempt took 000001),
-  the `Authority` element settled by the real response, `parseGatewayResponse()` against the real
-  shapes, fixtures captured, simulator aligned; then `prod` on the activity and `resident-ltd`'s
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** The gateway answered on
+  2026-09-13: submissions 000002 and 000003 (presenter E0000052288, company 06846849, 18:19 UTC)
+  were both rejected with error 9999 "No element 'Authority' in class
+  CompaniesHouse::Filing::Accounts" — `FormSubmission-v2-11.xsd` has no `Authority`; the worked
+  example that had it is against v2-5. PR #200 makes the builder emit a bare `DateSigned`, teaches
+  the simulator the real rejection, and keeps the real `GovTalkErrors` fields as a fixture. Both
+  deployment gaps the earlier passes found are on main (#198). Left: file once from PR #200's ci
+  set (the next number is 000004; every number is used forever, so not before that deploy), read
+  the real acknowledgement and status responses, capture them as fixtures and align
+  `parseGatewayResponse()` and the simulator; then `prod` on the activity and `resident-ltd`'s
   listing, and O44. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
   (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
