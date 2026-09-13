@@ -150,6 +150,14 @@ public class AccountStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
+        // The support-ticket path's own repository, separate from githubRepo() above: that value
+        // also feeds IngestionStack and SecurityLakeStack, so it must not move. Support requests
+        // go to the spreadsheets repository's issues instead of this one.
+        @Value.Default
+        default String supportGithubRepo() {
+            return "diy-accounting-uk/spreadsheets.diyaccounting.co.uk";
+        }
+
         @Value.Default
         default boolean feedbackEngagementEnabled() {
             return true;
@@ -552,7 +560,7 @@ public class AccountStack extends Stack {
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                     .with("GITHUB_TOKEN_SECRET_ARN", supportTicketGithubTokenSecretArn)
-                    .with("GITHUB_REPO", props.githubRepo())
+                    .with("SUPPORT_GITHUB_REPO", props.supportGithubRepo())
                     .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
             var supportTicketPostApiLambda = new ApiLambda(
                     this,
