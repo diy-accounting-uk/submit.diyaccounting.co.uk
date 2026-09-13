@@ -23,9 +23,6 @@ truthfully on its own. Human-only steps are briefed for Claude Cowork at the wor
 `../BRIEF_OPERATOR_TASKS_2026-09-12.md` is current, `../BRIEF_OPERATOR_TASKS_2026-09-09.md` carries
 O17, O21 and O23.
 
-**The session is in cool-down since 2026-09-12T20:21:54Z**: no new rows except degradations, and
-nothing is dispatched until the operator lifts it.
-
 - **Four merges on 2026-09-12**: PR #191 (the email hash secret's grant to the four pass Lambdas);
   PR #192, batch 28 (ITSA reads free and submissions charged, a real 403 carrying HMRC's reason,
   `Claude-Run` on the unattended workflows, the DIYA-GL bucket cutover's code half, two walkthrough

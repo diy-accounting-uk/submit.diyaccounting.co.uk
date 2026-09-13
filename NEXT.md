@@ -38,9 +38,6 @@ are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the 
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 
-**COOL-DOWN is on since 2026-09-12T20:21:54Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 ## Machine-only
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
