@@ -40,17 +40,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
-  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
-  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
-  account's stack has not been deployed since before that grant landed (O41). What is proven
-  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
-  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
-  three of its last four runs, most recently restoring 4826 receipt items against a live source of
-  4832. Ready now: post that comment on #11, so the issue carries the copy-side proof and names O41x
-  as what the drill waits on. The remainder, after O41x lands: run `restore-drill.yml` and settle
-  the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
-
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
@@ -574,6 +563,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+
+- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
+  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
+  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
+  account's stack has not been deployed since before that grant landed (O41). What is proven
+  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
+  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
+  three of its last four runs, most recently restoring 4826 receipt items against a live source of
+  4832. That comment is posted (issuecomment-5653323425, 2026-09-13). Left: run `restore-drill.yml` and
+  settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O41x.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
