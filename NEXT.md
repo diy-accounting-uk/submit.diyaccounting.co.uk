@@ -63,22 +63,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   is unfed or the view's predicate excludes every row, and fix the feed or the view. Say whether
   the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
   plan row D16. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
-  `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
-  cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
-  environment is selected and `vars.SUBMIT_ACTIONS_ROLE_ARN` — an environment-scoped variable —
-  resolves to nothing. `configure-aws-credentials` then fails with "Could not load credentials from
-  any providers", and the run shows a failed job. Seen on run 34691378970, the `main` deploy of
-  `926e783d` superseded by the `15112f1f` merge fourteen minutes later; it was cancelled at `wait
-  for environment deploy`, before `deploy api`, so nothing was part-applied.
-  The job's own comment says the row is written "regardless of how the run ended so a failed deploy
-  counts towards the failure rate rather than leaving a silent gap". That is right for a failure and
-  wrong for a supersession: a run cancelled because a newer commit arrived is not a deployment
-  failure, and it cannot write a row anyway without an environment. So skip the job when the run was
-  cancelled, or when `names` produced no environment name, and keep it running for a genuine
-  failure. Check whether the DORA panels already counted cancellations as failures before this.
-  **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
-
+- [ ] **B130. A superseded deploy reports a failed job.** On `claude/b29-board` (44f35d1b):
+  `record-dora` skips when the run was cancelled or `names` produced no environment. Closes when
+  the batch merges. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
   **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
   2026-09-10 03:46 BST and `ci-env-cost-focus-copy-errors` since **2026-09-09 03:46 BST**, a day
@@ -98,23 +85,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   be the gap. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
   2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
-  (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
-  deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
-  (`destroy-prod.yml:733`) with "Refusing to report success: [prod-40b194e] matches no stacks in
-  eu-west-2 or us-east-1". It deleted nothing: the set had already gone while it waited. The check
-  cannot tell "you named a set that never existed" from "the set is already destroyed", and only
-  the first deserves a failure.
-  Fix: succeed when the named set has no stacks and the last-known-good pointer does not name it —
-  that is the requested end state. Keep failing when the name is unrecognised. Re-reading the
-  pointer after the wait, rather than before, is the cheap version.
-  Worth settling at the same time: destroy-prod also runs on a schedule (#293 07:51 and #295 12:48
-  both succeeded today), so a hand dispatch races the cron for the same set. Say in the workflow
-  which one is authoritative. Second instance: run 34755825044, dispatched 2026-09-13 11:58 for
-  `prod-4918a0d` after the deploy's `destroy previous` job had already removed it, failed the same
-  way. **Source**: runs 34691690046 (job 103547976202) and 34755825044.
-  **Owner**: Claude Code. **Model**: Haiku.
-
+- [ ] **B133. destroy-prod reports failure when the set is already gone.** On `claude/b29-board`
+  (79fbe839): a name with no live stacks succeeds when CloudFormation holds a `DELETE_COMPLETE`
+  record for it and the pointer does not name it; fails with neither. Closes when the batch
+  merges. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
   `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
   device id changes each time. HMRC report it Correct because their check tests presence and format
@@ -124,37 +98,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Claude Code. **Model**: Haiku.
 
-- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
-  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
-  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
-  `status === 403` to it, so an unsubscribed API or a missing scope reaches the caller as a
-  malformed request. The 400's body already carries HMRC's explanation in `error.responseBody`; the
-  pages discard it and show "An unexpected error occurred".
-  **Operator decision, 2026-09-12: emit 403 and surface the body.** Both halves, so a user or a
-  test sees the actual cause.
-  **Merged as `e93bb2ea` in #192** and on prod since prod-7fbea34. Left: show on that set that a
-  403 reaches the page with HMRC's reason. The pages special-case 401 only, which suggests 403
-  falls through their generic error path, but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
-  `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
-  `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
-  for that distribution to finish deploying. In deploy run 34687925996 the distribution was
-  `E3GFQF1I7VAW46`, belonging to `ci-annual1`, whose self-destruct fired at about 10:56 UTC; the
-  waiter failed at 10:56:16 with `NoSuchDistribution`, the step died under `set -e`, and all
-  thirteen `probe test / behaviour test *-ci` jobs failed behind it. Any ci set reaching its TTL
-  while another branch deploys hits this, so it will recur.
-  **Merged as `ef3aac19`** (PR #193): every call against the old distribution treats
-  `NoSuchDistribution` as already-vacated and skips the rest of the block, while the waiter on our
-  own target distribution stays strict and any other AWS error still fails the step. Verified only
-  by a scratch harness with `aws` mocked and by actionlint; **no real run has exercised it**,
-  because reproducing it means timing a deploy against a self-destruct. The real-run proof arrives
-  on its own the next time a ci set expires mid-deploy. The one action left: decide the second
-  window at `.github/actions/set-origins/action.yml:365-370`, where
-  `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
-  `get-api-mappings` and `delete-domain-name` against it with no equivalent classification.
-  **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.** Proven: `e93bb2ea` already
+  routed every page through `hmrcErrorMessage()`, and `web/browser-tests/vatObligations.error403.browser.test.js`
+  on `claude/b29-board` (5d99f40c) shows the banner carries HMRC's text. Closes when the batch
+  merges. Adjacent: `http404NotFoundFromHmrcResponse` (`app/services/hmrcApi.js:726`) still
+  returns a 400 for an HMRC 404 — the same mislabel; fix it the same way. **Owner**: Claude Code.
+  **Model**: Haiku.
+- [ ] **B127. The apex-alias vacate races any expiring ci set.** On `claude/b29-board` (a97d3e36):
+  the API Gateway window at `set-origins/action.yml` classifies a `NotFoundException` on the old
+  domain as already-vacated, the same as ef3aac19 did for CloudFront. Closes when the batch merges;
+  the real-run proof arrives when a ci set next expires mid-deploy. **Owner**: Claude Code.
+  **Model**: Sonnet.
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
   backup selection. The books stay where they are until the rest runs.
@@ -207,53 +161,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
   `#businessPickerForm`. Check that on the next capture rather than assuming.
 
-- [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
-  Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
-  cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
-  yet". `main` stays red until both are settled.
-  `youtube-check.yml` is a false failure: it was added on 2026-09-11 with cron `0 6 * * 1`, so its
-  first Monday slot is 2026-09-14 and it cannot have fired yet. The cadence check has no allowance
-  for a workflow younger than its own cadence. Fix that, and while there move the cron off the top
-  of the hour, which is the lesson BACKLOG 47 recorded when the `compliance` and `stack-drift` crons
-  fired five hours late and were moved to 06:06 and 06:36.
-  `restore-drill.yml` is a true failure with no fix here: it has never run and cannot until O41x
-  lands, which B25c already records. So decide what keepalive should do about a scheduled workflow
-  that is knowingly blocked — exempt it by name with the blocking item cited, or accept a red main
-  until O41x. Do not silence the check generally.
-  **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
-  points send customers to this repository's issues today, and all three move:
-  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
-  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
-  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
-  and `:93`).
-  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
-  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
-  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
-  would move alarm and security-lake issues too, which is not what this asks. Give the support path
-  its own configuration point and leave the others alone.
-  Cross-repository prerequisites, both ours: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
-  needs issues enabled (`gh repo edit --enable-issues`) and a `support.md` issue template matching
-  this repository's `.github/ISSUE_TEMPLATE/support.md`, landed there by PR from a worktree, or the
-  `?template=` parameter silently falls back to a blank issue. The two page links and the template
-  can ship before the Lambda; the Lambda's repository switch waits on O45's token.
-  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
-  **Source**: operator request, 2026-09-12. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.**
-  `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the detail and the exact commands. Two writes: apply the
-  ruleset (deletion and non_fast_forward on the default branch, the same shape all five siblings
-  carry, which still allows the bot's fast-forward pushes) with
-  `gh api --method POST repos/diy-accounting-uk/homebrew-diya-gl/rulesets --input ruleset.json`;
-  and make the two workflow edits, swapping the hourly poll for a `repository_dispatch` fired by
-  the npm publish step in the spreadsheets repository, each by PR from a worktree. The dispatch
-  only works once O36's `HOMEBREW_DISPATCH_TOKEN` exists, so land the ruleset and the receiving
-  trigger first and the sending step last. The poll turned out to be cheaper than it looked — 12
-  scheduled runs in the repository's first 61 hours, not one an hour, because GitHub delays
-  schedules — but it still polls a registry that could just tell it. **Source**: B81's report.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **B131. keepalive fails on main.** On `claude/b29-board` (ab63bcca): a workflow younger than
+  its cadence is not a miss (age from the workflows API `created_at`), `restore-drill.yml` is
+  exempted by name until O41x, and `youtube-check.yml` runs at 06:46 Monday. Left: the next
+  scheduled keepalive on `main` (weekly, about 2026-09-19) green. **Owner**: Claude Code.
+  **Model**: Sonnet.
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** On
+  `claude/b29-board` (bc0096d1): the two page links and the Lambda's `SUPPORT_GITHUB_REPO` (its
+  own prop, `GITHUB_REPO` untouched); the template is spreadsheets PR #109, issues are already
+  enabled there. Left: #109 merges; the Lambda posts there only once O45's token is on the
+  environments. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.** Ruleset 23169518 is
+  applied. The receiving trigger is homebrew-diya-gl PR #2; the sending step is spreadsheets PR
+  #110, which fails the publish until O36's `HOMEBREW_DISPATCH_TOKEN` exists. Merge #2 first,
+  #110 after O36. **Owner**: Operator merges; Claude Code if either PR goes red. **Model**: Sonnet.
 - [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** **Operator decision,
   2026-09-13: make them free.** `hmrcItsaLossesAndClaimsDelete.js:225` and
   `hmrcItsaTaxLiabilityAdjustmentsDelete.js:223` charge one token under `self-employed-year-end`;
