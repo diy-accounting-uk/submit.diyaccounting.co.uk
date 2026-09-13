@@ -53,9 +53,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   is unfed or the view's predicate excludes every row, and fix the feed or the view. Say whether
   the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
   plan row D16. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B130. A superseded deploy reports a failed job.** On `claude/b29-board` (44f35d1b):
-  `record-dora` skips when the run was cancelled or `names` produced no environment. Closes when
-  the batch merges. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B30v. alarm-triage's budget guard swallowed a real alarm.** The grant is on
   `claude/b29-board` (7d44b687): the copy role had no identity-side allow on the FOCUS bucket;
   both environments' alarms clear on the next nightly after the batch deploys. What the
@@ -67,50 +64,29 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   issue saying so and why, and count only runs that actually triaged towards the budget, so a
   burst of skips does not extend the outage. **Source**: run 34430781962; issue #173. **Owner**:
   Claude Code. **Model**: Sonnet.
-- [ ] **B133. destroy-prod reports failure when the set is already gone.** On `claude/b29-board`
-  (79fbe839): a name with no live stacks succeeds when CloudFormation holds a `DELETE_COMPLETE`
-  record for it and the pointer does not name it; fails with neither. Closes when the batch
-  merges. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B134. Persist `Gov-Client-Device-ID`.** On `claude/b29-board` (2389f27f):
-  `localStorage.hmrcDeviceId`, generated once, never regenerated while present, not cleared at
-  sign-out. Closes when the batch merges. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.** Proven: `e93bb2ea` already
-  routed every page through `hmrcErrorMessage()`, and `web/browser-tests/vatObligations.error403.browser.test.js`
-  on `claude/b29-board` (5d99f40c) shows the banner carries HMRC's text. Closes when the batch
-  merges. Adjacent: `http404NotFoundFromHmrcResponse` (`app/services/hmrcApi.js:726`) still
-  returns a 400 for an HMRC 404 — the same mislabel; fix it the same way. **Owner**: Claude Code.
-  **Model**: Haiku.
-- [ ] **B127. The apex-alias vacate races any expiring ci set.** On `claude/b29-board` (a97d3e36):
-  the API Gateway window at `set-origins/action.yml` classifies a `NotFoundException` on the old
-  domain as already-vacated, the same as ef3aac19 did for CloudFront. Closes when the batch merges;
-  the real-run proof arrives when a ci set next expires mid-deploy. **Owner**: Claude Code.
-  **Model**: Sonnet.
-- [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
-  `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
-  backup selection. The books stay where they are until the rest runs.
-  The sequence is in `PLAN_DIYA_GL_NAMING.md`: sync, cut the DIYA-GL Lambdas over and deploy,
-  **re-sync until it copies nothing** — the step that cannot be skipped, because the app writes to
-  the old bucket for the tens of minutes the deploy takes — verify a read, confirm an on-demand
-  backup recovery point, then remove the old bucket. The old bucket goes only after the verified
-  read and the recovery point, both.
-  Handled as customer data whoever the books belong to, because this is the migration path the
-  service needs the first time the answer is unambiguously a customer. Steps 2, 4 and 6 are AWS
-  writes against prod data.
-  **Operator decision, 2026-09-12: run unattended.** No per-step approval. The ordinary rule that
-  an AWS write waits for the operator does not apply to this row. The safety is in the sequence
-  rather than in a prompt: the re-sync must copy nothing before the cutover is believed, and the old
-  bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
-  reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
-  NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
-  **Code merged in #192, ci step 1 run.** PR #180 created the new bucket but left
-  every DIYA-GL Lambda's `DIYA_GL_BUCKET_NAME` pointed at the old one; that is closed, and
-  `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` holds the six AWS steps per environment with both
-  gates. ci step 1 copied 6 objects from `ci-env-books-367191799875` to
-  `ci-env-diya-gl-367191799875`; both buckets now hold 6. prod starts at 16 objects / 146,299 B and
-  waits behind ci's step 6, as the runbook orders it.
-  Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
-  bucket through CDK, never a raw `aws s3` delete.
-
+- [ ] **B125. An HMRC 404 reaches the caller as a 400.** The 403 half is done (`e93bb2ea`, browser
+  test in #198). `http404NotFoundFromHmrcResponse` at `app/services/hmrcApi.js:726` still ends in
+  `http400BadRequestResponse`, the same mislabel; the page shows HMRC's text either way, so only
+  the status code is wrong. Fix it the same way, with the unit test. **Source**: B125's proof.
+  **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B127. The apex-alias vacate races any expiring ci set.** Both windows are closed on main
+  (ef3aac19 for CloudFront, a97d3e36 in #198 for API Gateway). Left: one real run showing a ci
+  set expiring mid-deploy no longer fails the deploy; it arrives on its own. Also seen today,
+  same family: three ci deploys at once contend for the ci apex alias (`CNAMEAlreadyExists` on
+  PR #199's set-origins at 15:29 UTC while two b29 sets deployed) and rotate one shared Cognito
+  test user underneath each other (passRedemption's TOTP challenge never appeared on run
+  34763080213). Either serialise ci deploys in `deploy.yml`'s concurrency group or give each
+  deployment its own test user. **Source**: runs 34762675812, 34763080213. **Owner**: Claude
+  Code. **Model**: Sonnet.
+- [ ] **B71.S3e. Migrate the books bucket, step 7.** Steps 1 to 6 ran for ci and prod on
+  2026-09-13: every gate passed (re-sync copied nothing at 6=6 and 16=16, sampled keys
+  byte-identical, on-demand recovery points `…-20260913154546-fe807d32` (ci) and
+  `…-20260913162119-c019ab1e` (prod) COMPLETED), and the old bucket left `DataStack`, the backup
+  selection and `SubmitSharedNames` in #198. ci's environment deploy removed
+  `ci-env-books-367191799875`; main's environment deploy of `e8237145` removes
+  `prod-env-books-972912397388` (in flight at 18:1x UTC). Left: confirm both buckets are gone and
+  the runbook's ci/prod tables read as done, then close. **Source**: `PLAN_DIYA_GL_NAMING.md`
+  NM-S3. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
   pattern: `videos/*.json`, `auth: "user"`, `site-video-capture`), one for the micro-entity
@@ -137,23 +113,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
   `#businessPickerForm`. Check that on the next capture rather than assuming.
 
-- [ ] **B131. keepalive fails on main.** On `claude/b29-board` (ab63bcca): a workflow younger than
-  its cadence is not a miss (age from the workflows API `created_at`), `restore-drill.yml` is
-  exempted by name until O41x, and `youtube-check.yml` runs at 06:46 Monday. Left: the next
-  scheduled keepalive on `main` (weekly, about 2026-09-19) green. **Owner**: Claude Code.
-  **Model**: Sonnet.
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** On
-  `claude/b29-board` (bc0096d1): the two page links and the Lambda's `SUPPORT_GITHUB_REPO` (its
-  own prop, `GITHUB_REPO` untouched); the template is spreadsheets PR #109, issues are already
-  enabled there. Left: #109 merges; the Lambda posts there only once O45's token is on the
+- [ ] **B131. keepalive red on main until its next run.** The fix is on main (#198: age
+  allowance, `restore-drill.yml` exempted by name until O41x, youtube-check at 06:46 Monday).
+  Closes when the next scheduled keepalive on `main` (weekly, about 2026-09-19) is green, or
+  sooner by dispatch:
+  ```
+  ! gh workflow run keepalive.yml
+  ```
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
+  links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). Left: spreadsheets PR #109
+  (the template) merges, and the Lambda posts there only once O45's token is on the
   environments. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.** Ruleset 23169518 is
-  applied. The receiving trigger is homebrew-diya-gl PR #2; the sending step is spreadsheets PR
-  #110, which fails the publish until O36's `HOMEBREW_DISPATCH_TOKEN` exists. Merge #2 first,
-  #110 after O36. **Owner**: Operator merges; Claude Code if either PR goes red. **Model**: Sonnet.
-- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** On `claude/b29-board`
-  (8714e811): `self-employed-year-end-delete` at `tokenCost = 0`, both delete handlers on it.
-  Closes when the batch merges. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied. Left: homebrew-diya-gl
+  PR #2 merges first; spreadsheets PR #110 merges after O36's `HOMEBREW_DISPATCH_TOKEN` exists
+  (its step fails the publish until then). **Owner**: Operator merges; Claude Code if either goes
+  red. **Model**: Sonnet.
 - [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
   `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
   was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
@@ -177,21 +152,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through annual submission, BSAS, calculation, final declaration and the losses and adjustments
   calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** The code half is on
-  `claude/b29-board` (d8f17ec0): `COMPANIES_HOUSE_GATEWAY_TEST` ("true" on ci, "false"
-  elsewhere) and `COMPANIES_HOUSE_PACKAGE_REFERENCE` ("0012" on ci, unset elsewhere so a live
-  filing fails `validateEnv()` rather than going out blank) reach both accounts Lambdas from
-  `CompaniesHouseStack.java`; the poll carries the flag too. Left, against the ci set the batch
-  deploys, with the test presenter credentials already on ci: submit one FRS 105 set, settle the
-  `Authority` element (the checked-in `FormSubmission-v2-11.xsd` wants a bare `DateSigned` after
-  `FormHeader`; the worked example wraps it in `Authority/Designation`; the builder follows the
-  example), confirm `parseGatewayResponse()` parses the real acknowledgement and
-  `GetSubmissionStatus` shapes, capture what the sandbox returned as fixtures under
-  `fixtures/companies-house-xmlgw/` and align the simulator, check the counter table exists in the
-  deployment before the first submission, then add `prod` to the `file-micro-entity-accounts`
-  activity and `resident-ltd`'s listing. The live package reference is still unknown. O44 tells
-  Companies House what was submitted. **Source**: BACKLOG 34b; the XML team's email of
-  2026-09-11. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Two deployment gaps found
+  by the first two passes are on main (#198): `happy-dom` was a devDependency the Lambda image
+  omitted, so all three accounts Lambdas crashed at cold start; and the submit and poll Lambdas
+  never received `COMPANIES_HOUSE_PRESENTER_ID_ARN` / `_CODE_ARN`. The preview works on
+  `ci-b29w2`. The third pass is filing now: submission 000002 (a failed attempt took 000001),
+  the `Authority` element settled by the real response, `parseGatewayResponse()` against the real
+  shapes, fixtures captured, simulator aligned; then `prod` on the activity and `resident-ltd`'s
+  listing, and O44. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
   (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
   `companiesHouseRegisteredEmailAddressPost.js`, `diff` resolved from PATH in
@@ -205,21 +173,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `promise/always-return` at `web/public/lib/analytics.js:100`. Re-count after the batch merges —
   the token and accounts-filing tracks touched those files — and clear what is left.
   **Source**: batch 27's lint job. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **O41x. Redeploy the backup account, then run the drill.** On `claude/b29-board`
-  (e60b504d to 68817c6b): the refused restore grant is gone from the vault policy; a
-  `backup-copy-role` in the backup account copies a recovery point into `ci-env-primary-vault`
-  (a copy job resolves `SourceBackupVaultName` in the calling account, so it starts from the backup
-  account, not ci); ci's vault and key accept that role; `restore-drill.yml` copies then restores
-  under ci's own role and cleans up both. Left, after the batch merges: dispatch
-  `setup-backup-account.yml` and check the vault policy deploys, then the environment deploy for
-  ci's new grants, then one `restore-drill.yml` run — which is B25c's proof and keepalive's
-  exemption coming off. **Source**: run 34638032553. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B128. A failed HMRC submission must not cost a token.** On `claude/b29-board`
-  (0fab6c3c): `hasTokensForActivity` gates before HMRC without decrementing;
-  `chargeTokenOnSuccess` decrements once, in each handler's shared adaptor, only after HMRC
-  answers ok; a test per handler proves no charge on 4xx or 5xx. Chosen over refund-on-failure
-  because a crash between the HMRC call and the write then under-counts rather than overcharges.
-  Left: the charge failing after HMRC accepted is logged as `Token charge failed after HMRC
+- [ ] **O41x. Redeploy the backup account, then run the drill.** The code is on main (#198).
+  Left, in order: dispatch `setup-backup-account.yml` and check the vault policy deploys; confirm
+  main's environment deploy of `e8237145` gave ci's vault and key the copy-role grants; run
+  `restore-drill.yml` once — B25c's proof and keepalive's exemption coming off.
+  **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B128. Alarm on the unpaid-charge log line.** The charge-after-success change is on main
+  (#198). A charge failing after HMRC accepted is logged as `Token charge failed after HMRC
   success` and swallowed, so put a metric filter and alarm on that line, or it is a silent
   giveaway. **Source**: B117's wiring pass. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
@@ -240,7 +200,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
-  Step 2b is on `claude/b29-board` (b0e3d2be): the browser sends its Cognito ID token as
+  Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
   `X-Id-Token`, `customAuthorizer.js` verifies it against the access token's `sub` and passes
   `custom:mfa_method`, the federated flag and `auth_time` to `buildFraudHeaders.js`, which builds
   the header (TOTP for an enrolled native user, OTHER for federated Google) and warns
