@@ -56,18 +56,6 @@ public class CrossAccountBackupVaultStack extends Stack {
          */
         List<String> sourceBackupRoleArns();
 
-        /**
-         * ARN of ci's deployment role, e.g. arn:aws:iam::367191799875:role/submit-ci-deployment-role.
-         *
-         * <p>This is the identity that actually calls the AWS Backup restore APIs: GitHub Actions
-         * assumes it via OIDC before {@code restore-drill.yml} runs, so it is the principal the vault
-         * access policy must grant restore access to. {@code ci-env-backup-role} is a different
-         * principal entirely - it is the service role AWS Backup itself uses while performing the
-         * restore (passed as {@code --iam-role-arn} on {@code start-restore-job}), and its trust
-         * policy admits only {@code backup.amazonaws.com}, so no caller can assume it.
-         */
-        String ciDeploymentRoleArn();
-
         static ImmutableCrossAccountBackupVaultStackProps.Builder builder() {
             return ImmutableCrossAccountBackupVaultStackProps.builder();
         }
@@ -79,15 +67,13 @@ public class CrossAccountBackupVaultStack extends Stack {
         List<ArnPrincipal> sourceBackupRoles =
                 props.sourceBackupRoleArns().stream().map(ArnPrincipal::new).toList();
 
-        // The restore drill runs in submit-ci as ci's deployment role (GitHub Actions assumes it via
-        // OIDC, the GitHub variable SUBMIT_DEPLOY_ROLE_ARN resolves to it) and that is the only
-        // principal that ever needs to read back out of the vault rather than just copy into it.
-        // Copy-in and restore are different access levels, so this stays its own principal rather
-        // than folding into sourceBackupRoles. ci-env-backup-role is a different role again - AWS
-        // Backup's own execution role for the restore, passed as --iam-role-arn on
-        // start-restore-job - and it is not granted anything here because its trust policy admits
-        // only backup.amazonaws.com, so no caller could use a grant made to it anyway.
-        ArnPrincipal ciRestoreRolePrincipal = new ArnPrincipal(props.ciDeploymentRoleArn());
+        // A vault access policy only ever grants backup:CopyIntoBackupVault cross-account - AWS
+        // Backup rejects any other cross-account action on it as a "cross-account sharing
+        // restrictions" error, restore included. So nothing that reads back out of this vault can
+        // be granted here. The restore drill instead copies a recovery point out of this vault
+        // under a role in this account (backup-copy-role, BackupAccountAccessStack) into a vault
+        // in the source account, and restores it there. That copy-back is the grant ci's own
+        // BackupStack adds on its vault and KMS key, not a grant this vault makes about itself.
 
         // ============================================================================
         // KMS key encrypting recovery points at rest in this account
@@ -118,17 +104,6 @@ public class CrossAccountBackupVaultStack extends Stack {
                 .resources(List.of("*"))
                 .build());
 
-        // A restore job runs under the ci restore role and reads recovery points still encrypted
-        // under this account's key, so it needs its own decrypt grant on the key, separate from the
-        // encrypt-side grant above that every source backup role gets for copying in.
-        this.vaultEncryptionKey.addToResourcePolicy(PolicyStatement.Builder.create()
-                .sid("AllowCiRestoreRoleToDecrypt")
-                .effect(Effect.ALLOW)
-                .principals(List.of(ciRestoreRolePrincipal))
-                .actions(List.of("kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey", "kms:CreateGrant"))
-                .resources(List.of("*"))
-                .build());
-
         // ============================================================================
         // Cross-account vault
         // ============================================================================
@@ -140,21 +115,6 @@ public class CrossAccountBackupVaultStack extends Stack {
                                 .effect(Effect.ALLOW)
                                 .principals(List.copyOf(sourceBackupRoles))
                                 .actions(List.of("backup:CopyIntoBackupVault"))
-                                .resources(List.of("*"))
-                                .build(),
-                        // The restore drill in submit-ci looks up and restores prod's recovery
-                        // points from here, so this one role also needs to read the vault's
-                        // catalogue and start a restore, on top of the copy-in every source role
-                        // gets above.
-                        PolicyStatement.Builder.create()
-                                .sid("AllowCiRestoreRoleToRestore")
-                                .effect(Effect.ALLOW)
-                                .principals(List.of(ciRestoreRolePrincipal))
-                                .actions(List.of(
-                                        "backup:ListRecoveryPointsByBackupVault",
-                                        "backup:DescribeRecoveryPoint",
-                                        "backup:GetRecoveryPointRestoreMetadata",
-                                        "backup:StartRestoreJob"))
                                 .resources(List.of("*"))
                                 .build(),
                         // Copy-in is the only thing a deployment account may do here. Even an

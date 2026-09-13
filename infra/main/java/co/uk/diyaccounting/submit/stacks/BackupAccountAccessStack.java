@@ -36,15 +36,32 @@ import software.constructs.Construct;
  *
  * <p>The workflow assumes {@code backup-github-actions-role} and chains to
  * {@code backup-deployment-role}, matching every other account in the organisation.
+ * {@code backup-deployment-role} also drives the restore drill's copy-back leg: it calls
+ * {@code StartCopyJob} and passes {@code backup-copy-role}, the service role that reads this
+ * account's vault and writes into ci's, since AWS Backup requires the copy to start from the
+ * account that owns the source vault.
  */
 public class BackupAccountAccessStack extends Stack {
 
     public static final String GITHUB_OIDC_HOST = "token.actions.githubusercontent.com";
     public static final String GITHUB_OIDC_THUMBPRINT = "6938fd4d98bab03faadb97b34396831e3780aea1";
 
+    /**
+     * ci's account, region and primary vault. AWS Backup resolves {@code SourceBackupVaultName}
+     * against the calling account, so a copy job whose source is this account's own vault must be
+     * started from here, with the destination named as a full ARN in ci.
+     */
+    private static final String CI_ACCOUNT_ID = "367191799875";
+
+    private static final String CI_REGION = "eu-west-2";
+
+    private static final String CI_PRIMARY_VAULT_ARN =
+            "arn:aws:backup:" + CI_REGION + ":" + CI_ACCOUNT_ID + ":backup-vault:ci-env-primary-vault";
+
     public Role githubActionsRole;
     public Role deploymentRole;
     public Role restoreRole;
+    public Role copyRole;
 
     @Value.Immutable
     public interface BackupAccountAccessStackProps extends StackProps {
@@ -184,6 +201,83 @@ public class BackupAccountAccessStack extends Stack {
                 .conditions(Map.of("StringEquals", Map.of("iam:PassedToService", "backup.amazonaws.com")))
                 .build());
 
+        // ============================================================================
+        // Copy-back path: the restore drill's source vault lives here, so the copy that
+        // rebuilds a recovery point in ci has to start from this account
+        // ============================================================================
+
+        // AWS Backup resolves StartCopyJob's SourceBackupVaultName against the caller's own
+        // account - a name cannot reach into another account's vault - so the source vault for
+        // this copy (submit-cross-account-vault) has to be read by a role that lives here, not by
+        // ci's deployment role. This mirrors restoreRole above: a service role AWS Backup assumes
+        // to do the work, passed as --iam-role-arn, distinct from the deploymentRole that calls
+        // the API.
+        this.copyRole = Role.Builder.create(this, "CopyRole")
+                .roleName("backup-copy-role")
+                .description("Used by AWS Backup to copy a recovery point from this account's vault into ci's")
+                .assumedBy(new ServicePrincipal("backup.amazonaws.com"))
+                .build();
+
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("CopyFromCrossAccountVault")
+                .effect(Effect.ALLOW)
+                .actions(List.of("backup:CopyFromBackupVault"))
+                .resources(List.of(String.format(
+                        "arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
+                .build());
+
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("CopyIntoCiVault")
+                .effect(Effect.ALLOW)
+                .actions(List.of("backup:CopyIntoBackupVault"))
+                .resources(List.of(CI_PRIMARY_VAULT_ARN))
+                .build());
+
+        // Reads the recovery point out of this account's own vault, still encrypted under
+        // vaultEncryptionKeyArn - the same key restoreRole decrypts above, for the same reason.
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("DecryptSourceVaultForCopy")
+                .effect(Effect.ALLOW)
+                .actions(List.of("kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey", "kms:CreateGrant"))
+                .resources(List.of(props.vaultEncryptionKeyArn()))
+                .build());
+
+        // Re-encrypts the copy under ci's own backup key once it lands there. The key is created
+        // by ci's BackupStack and its id is not known here, so this names every key in ci's
+        // account and region rather than "*" everywhere - the same trade
+        // CrossAccountBackupVaultStack's own AllowSourceAccountBackupRolesToEncrypt makes for the
+        // reverse direction. ci's key resource policy is the grant that actually narrows this to
+        // the one key that exists.
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("EncryptIntoCiVaultKey")
+                .effect(Effect.ALLOW)
+                .actions(List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"))
+                .resources(List.of(String.format("arn:aws:kms:%s:%s:key/*", CI_REGION, CI_ACCOUNT_ID)))
+                .build());
+
+        this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("StartCopyJobFromCrossAccountVault")
+                .effect(Effect.ALLOW)
+                .actions(List.of("backup:StartCopyJob"))
+                .resources(List.of(String.format(
+                        "arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
+                .build());
+
+        this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("PollCopyJobsForRestoreDrill")
+                .effect(Effect.ALLOW)
+                .actions(List.of("backup:DescribeCopyJob", "backup:ListCopyJobs"))
+                .resources(List.of("*"))
+                .build());
+
+        this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("PassCopyRoleToBackup")
+                .effect(Effect.ALLOW)
+                .actions(List.of("iam:PassRole"))
+                .resources(List.of(this.copyRole.getRoleArn()))
+                .conditions(Map.of("StringEquals", Map.of("iam:PassedToService", "backup.amazonaws.com")))
+                .build());
+
         // ListTables has no resource-level permissions in DynamoDB's action reference, so it stays
         // on "*"; the restore test only ever needs it to sanity-check a run, not to enumerate tables.
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()
@@ -216,6 +310,7 @@ public class BackupAccountAccessStack extends Stack {
         cfnOutput(this, "GitHubActionsRoleArn", this.githubActionsRole.getRoleArn());
         cfnOutput(this, "DeploymentRoleArn", this.deploymentRole.getRoleArn());
         cfnOutput(this, "RestoreRoleArn", this.restoreRole.getRoleArn());
+        cfnOutput(this, "CopyRoleArn", this.copyRole.getRoleArn());
 
         infof(
                 "BackupAccountAccessStack created roles for %s in account %s",

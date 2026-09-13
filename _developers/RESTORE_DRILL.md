@@ -3,23 +3,25 @@
 
 # Restore drill
 
-`.github/workflows/restore-drill.yml` restores prod's DynamoDB tables from the
-cross-account backup vault into ci, to prove the backups outside the account are
-actually usable, not just present.
+`.github/workflows/restore-drill.yml` copies prod's DynamoDB recovery points out of the
+cross-account backup vault into ci, then restores them there, to prove the backups
+outside the account are actually usable, not just present.
 
 ## What it covers
 
 - All five critical tables: receipts, bundles, hmrc-api-requests, passes, subscriptions.
-- Restores from `submit-cross-account-vault` in the backup account (914216784828), not
-  from ci's or prod's own local vault. That is the point: prove the copy that lives
-  outside both deployment accounts can rebuild working data.
-- Restores each table's newest recovery point into `ci-restore-<table>`, scans the
-  restored table, and compares the item count against the recovery point.
+- Copies each table's newest recovery point from `submit-cross-account-vault` in the
+  backup account (914216784828) into ci's own vault (`ci-env-primary-vault`), then
+  restores that copy into `ci-restore-<table>`. That is the point: prove the copy that
+  lives outside both deployment accounts can rebuild working data, by actually pulling
+  it back out and using it, rather than restoring in place.
+- Scans each restored table and compares the item count against the recovery point.
 - For `bundles`, also checks that the salt item (`system#config` / `salt-v2`) came back,
   since the app cannot hash user subs without it.
-- Times each table's restore and reports it, so a real recovery has a duration to plan
-  against.
-- Deletes every table it created, whether the run passed or failed.
+- Times each table's copy and restore and reports it, so a real recovery has a duration
+  to plan against.
+- Deletes every table and every copied recovery point it created, whether the run passed
+  or failed, so the drill does not accumulate cost.
 
 ## What it does not cover
 
@@ -33,38 +35,36 @@ actually usable, not just present.
   of a non-empty backup; it would not catch a restore that came back with the right
   count but corrupted values.
 
-## Why it has never passed
+## Why the copy runs from the backup account
 
-The workflow authenticates as ci's deployment role
-(`submit-ci-deployment-role`, via `SUBMIT_DEPLOY_ROLE_ARN`). AWS Backup vault access
-policies grant permissions to one named IAM principal, and that principal has to be
-the one actually calling the API. The cross-account vault's policy named
-`ci-env-backup-role` for restore, but `ci-env-backup-role` can only be assumed by the
-`backup.amazonaws.com` service — nothing can authenticate as it from a CLI or GitHub
-Actions job. So the first AWS Backup call in the drill (listing recovery points in
-the vault) had no working grant to run under, regardless of which permissions the
-policy listed.
+A backup vault access policy can only ever grant `backup:CopyIntoBackupVault`
+cross-account; AWS Backup rejects any other cross-account action on it, restore
+included. So the cross-account vault cannot grant ci's deployment role permission to
+read recovery points back out of it directly.
 
-`CrossAccountBackupVaultStack.java` now grants the restore actions to
-`submit-ci-deployment-role` directly, passed in as `ciDeploymentRoleArn`
-(`cdk-backup/cdk.json`). What remains is deploying that stack: dispatch
-`setup-backup-account.yml` with `dry-run: false` against the backup account, then run
-the drill.
+AWS Backup's own documented route around this is to copy the recovery point into the
+account that needs it, then restore locally there. `StartCopyJob`'s source vault is
+resolved against the calling account, so that copy has to start from the backup
+account, under `backup-copy-role` (`BackupAccountAccessStack.java`) - not from ci.
+`backup-deployment-role` calls `StartCopyJob` and passes `backup-copy-role`, which
+holds the decrypt grant on the backup account's own key and the encrypt grant on ci's
+key (added to `BackupStack.java`, ci only). Once the copy lands in `ci-env-primary-vault`,
+the restore into `ci-restore-<table>` is an ordinary same-account restore under
+`ci-env-backup-role`, the role ci's own nightly backups already use.
 
 ## What already proves restorability
 
-`.github/workflows/restore-test.yml` runs monthly and has passed on its last three
-runs. Its second leg authenticates directly into the backup account (a same-account
-restore relative to the vault, which sidesteps the principal problem above) and
-restores `prod-env-receipts` there. The 2026-09-01 run restored 4826 items against a
-live source of 4832 — real prod data, genuinely restorable from the cross-account
-vault. It only covers one table and restores inside the backup account, not ci.
+`.github/workflows/restore-test.yml` runs monthly and restores `prod-env-receipts`
+inside the backup account - a same-account restore relative to the vault, so it never
+hit the cross-account restriction above. It only covers one table and restores inside
+the backup account, not ci.
 
 ## How to run it
 
 `workflow_dispatch` on `restore-drill.yml`, or wait for its monthly schedule. Running
-it performs AWS writes (creates and deletes real DynamoDB tables in ci) and needs the
-same approval any AWS write does.
+it performs AWS writes in two accounts: a recovery point copied into and deleted from
+`ci-env-primary-vault`, and real DynamoDB tables created and deleted, both in ci. It
+needs the same approval any AWS write does.
 
 ## How to read the result
 

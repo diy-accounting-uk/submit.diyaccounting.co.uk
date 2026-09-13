@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import co.uk.diyaccounting.submit.stacks.BackupAccountAccessStack;
@@ -15,13 +16,13 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Match;
+import software.amazon.awscdk.assertions.Matcher;
 import software.amazon.awscdk.assertions.Template;
 
 class SubmitBackupAccountCdkResourceTest {
 
     private static final String PROD_BACKUP_ROLE = "arn:aws:iam::972912397388:role/prod-env-backup-role";
     private static final String CI_BACKUP_ROLE = "arn:aws:iam::367191799875:role/ci-env-backup-role";
-    private static final String CI_DEPLOYMENT_ROLE = "arn:aws:iam::367191799875:role/submit-ci-deployment-role";
 
     private static Template synthVaultStack() {
         App app = new App();
@@ -35,7 +36,6 @@ class SubmitBackupAccountCdkResourceTest {
                                 .build())
                         .vaultName("submit-cross-account-vault")
                         .sourceBackupRoleArns(List.of(PROD_BACKUP_ROLE, CI_BACKUP_ROLE))
-                        .ciDeploymentRoleArn(CI_DEPLOYMENT_ROLE)
                         .build());
         return Template.fromStack(stack);
     }
@@ -80,48 +80,26 @@ class SubmitBackupAccountCdkResourceTest {
     }
 
     @Test
-    void ciDeploymentRoleMayListDescribeAndStartRestoresFromTheVault() {
+    @SuppressWarnings("unchecked")
+    void vaultGrantsOnlyCopyInAndTheDenyGuard() {
         Template template = synthVaultStack();
 
+        List<Matcher> expectedStatements = List.of(
+                Match.objectLike(Map.of("Sid", "AllowCrossAccountCopy")),
+                Match.objectLike(Map.of("Sid", "DenyDeleteFromOutsideBackupAccount")));
         template.hasResourceProperties(
                 "AWS::Backup::BackupVault",
                 Match.objectLike(Map.of(
                         "AccessPolicy",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid",
-                                        "AllowCiRestoreRoleToRestore",
-                                        "Effect",
-                                        "Allow",
-                                        "Principal",
-                                        Map.of("AWS", CI_DEPLOYMENT_ROLE),
-                                        "Action",
-                                        List.of(
-                                                "backup:ListRecoveryPointsByBackupVault",
-                                                "backup:DescribeRecoveryPoint",
-                                                "backup:GetRecoveryPointRestoreMetadata",
-                                                "backup:StartRestoreJob"))))))))));
+                        Match.objectLike(Map.of("Statement", Match.arrayWith(expectedStatements))))));
 
-        template.hasResourceProperties(
-                "AWS::KMS::Key",
-                Match.objectLike(Map.of(
-                        "KeyPolicy",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid",
-                                        "AllowCiRestoreRoleToDecrypt",
-                                        "Effect",
-                                        "Allow",
-                                        "Principal",
-                                        Map.of("AWS", CI_DEPLOYMENT_ROLE),
-                                        "Action",
-                                        List.of(
-                                                "kms:Decrypt",
-                                                "kms:DescribeKey",
-                                                "kms:GenerateDataKey",
-                                                "kms:CreateGrant"))))))))));
+        var vault = (Map<String, Object>)
+                template.findResources("AWS::Backup::BackupVault").values().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("expected the cross-account vault"));
+        var accessPolicy = (Map<String, Object>) ((Map<String, Object>) vault.get("Properties")).get("AccessPolicy");
+        var statements = (List<Object>) accessPolicy.get("Statement");
+        assertEquals(2, statements.size());
     }
 
     @Test

@@ -28,8 +28,10 @@ import software.amazon.awscdk.services.backup.IBackupVault;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.iam.ArnPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -52,6 +54,13 @@ import software.constructs.Construct;
  * - S3 bucket for DynamoDB exports
  */
 public class BackupStack extends Stack {
+
+    /**
+     * The service role the restore drill uses to copy a recovery point out of the backup account
+     * (914216784828, BackupAccountAccessStack) into ci's own vault. Only ci grants it anything -
+     * the drill never touches prod's vault or data directly.
+     */
+    private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
 
     public BackupVault primaryVault;
     public BackupPlan backupPlan;
@@ -166,6 +175,12 @@ public class BackupStack extends Stack {
                         .build()))
                 .build();
 
+        // The restore drill's copy-back leg writes into ci's own vault under a role that lives in
+        // the backup account (backup-copy-role never exists in prod, and the drill never restores
+        // into prod). AWS Backup resolves a copy job's source vault against the calling account,
+        // so that role - not ci's deployment role - has to be the one both accounts grant.
+        boolean isCi = "ci".equals(props.envName());
+
         // ============================================================================
         // Primary Backup Vault (local to deployment account - no cross-region)
         // ============================================================================
@@ -184,7 +199,33 @@ public class BackupStack extends Stack {
                         BackupVaultEvents.COPY_JOB_FAILED,
                         BackupVaultEvents.RESTORE_JOB_FAILED)));
 
+        if (isCi) {
+            vaultBuilder.accessPolicy(PolicyDocument.Builder.create()
+                    .statements(List.of(PolicyStatement.Builder.create()
+                            .sid("AllowBackupAccountCopyRoleToCopyIn")
+                            .effect(Effect.ALLOW)
+                            .principals(List.of(new ArnPrincipal(RESTORE_DRILL_COPY_ROLE_ARN)))
+                            .actions(List.of("backup:CopyIntoBackupVault"))
+                            .resources(List.of("*"))
+                            .build()))
+                    .build());
+        }
+
         this.primaryVault = vaultBuilder.build();
+
+        if (isCi) {
+            // The copy job re-encrypts the recovery point under this key once it lands here, so
+            // the backup account's copy role needs to use it from outside the account that owns
+            // it - the same shape as UseBackupAccountKeyForCopies below, for the copy running the
+            // other way.
+            this.backupKmsKey.addToResourcePolicy(PolicyStatement.Builder.create()
+                    .sid("AllowBackupAccountCopyRoleToEncrypt")
+                    .effect(Effect.ALLOW)
+                    .principals(List.of(new ArnPrincipal(RESTORE_DRILL_COPY_ROLE_ARN)))
+                    .actions(List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"))
+                    .resources(List.of("*"))
+                    .build());
+        }
 
         // ============================================================================
         // IAM Role for AWS Backup

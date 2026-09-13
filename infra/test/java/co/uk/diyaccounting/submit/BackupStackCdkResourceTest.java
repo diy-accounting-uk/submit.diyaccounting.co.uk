@@ -172,4 +172,88 @@ class BackupStackCdkResourceTest {
         return Match.objectLike(
                 Map.of("Fn::Join", Match.arrayWith(List.of(Match.arrayWith(List.of(":table/" + tableName))))));
     }
+
+    private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
+
+    private static Template synthCiBackupStack() {
+        App app = new App();
+        var nameProps = new SubmitSharedNames.SubmitSharedNamesProps();
+        nameProps.envName = "ci";
+        nameProps.deploymentName = "ci";
+        nameProps.hostedZoneName = "diyaccounting.co.uk";
+        nameProps.subDomainName = "submit";
+        nameProps.regionName = "eu-west-2";
+        nameProps.awsAccount = "367191799875";
+        var sharedNames = new SubmitSharedNames(nameProps);
+
+        var stack = new BackupStack(
+                app,
+                sharedNames.backupStackId,
+                BackupStack.BackupStackProps.builder()
+                        .env(Environment.builder()
+                                .account("367191799875")
+                                .region("eu-west-2")
+                                .build())
+                        .crossRegionReferences(false)
+                        .envName("ci")
+                        .deploymentName("ci")
+                        .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                        .cloudTrailEnabled("false")
+                        .sharedNames(sharedNames)
+                        .crossAccountBackupVaultArn(Optional.of(CROSS_ACCOUNT_VAULT_ARN))
+                        .build());
+        return Template.fromStack(stack);
+    }
+
+    @Test
+    void ciGrantsTheBackupAccountCopyRoleIntoItsOwnVaultAndKey() {
+        Template template = synthCiBackupStack();
+
+        Matcher copyInStatement = Match.objectLike(Map.of(
+                "Sid",
+                "AllowBackupAccountCopyRoleToCopyIn",
+                "Effect",
+                "Allow",
+                "Principal",
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                "Action",
+                "backup:CopyIntoBackupVault"));
+        template.hasResourceProperties(
+                "AWS::Backup::BackupVault",
+                Match.objectLike(Map.of(
+                        "BackupVaultName",
+                        "ci-env-primary-vault",
+                        "AccessPolicy",
+                        Match.objectLike(
+                                Map.of("Statement", Match.arrayWith(List.of(copyInStatement)))))));
+
+        Matcher encryptStatement = Match.objectLike(Map.of(
+                "Sid",
+                "AllowBackupAccountCopyRoleToEncrypt",
+                "Effect",
+                "Allow",
+                "Principal",
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                "Action",
+                List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant")));
+        template.hasResourceProperties(
+                "AWS::KMS::Key",
+                Match.objectLike(Map.of(
+                        "KeyPolicy",
+                        Match.objectLike(
+                                Map.of("Statement", Match.arrayWith(List.of(encryptStatement)))))));
+    }
+
+    @Test
+    void prodGrantsTheBackupAccountCopyRoleNothing() {
+        Template template = synthBackupStack(Optional.of(CROSS_ACCOUNT_VAULT_ARN));
+
+        template.hasResourceProperties(
+                "AWS::Backup::BackupVault",
+                Match.objectLike(Map.of("BackupVaultName", "prod-env-primary-vault")));
+        template.resourcePropertiesCountIs(
+                "AWS::Backup::BackupVault",
+                Match.objectLike(Map.of("AccessPolicy", Match.anyValue())),
+                0);
+    }
 }
