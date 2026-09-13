@@ -24,6 +24,13 @@ concurrency:
   # 'deploy-prod' to serialise against it, which is the exact deadlock above. That step is skipped
   # when this run IS deploy.yml's own 'destroy-previous' call (called-from-deploy: true) — waiting
   # there would be waiting on this run's own parent.
+  #
+  # Neither the schedule (below) nor a hand `workflow_dispatch` is authoritative over the other:
+  # both are direct triggers of this workflow, so both share this group, and cancel-in-progress:
+  # false means a second one queues behind the first rather than racing or cancelling it. If they
+  # end up naming the same set, the one that runs second now finds no stacks left and reports
+  # success rather than failing — see 'Confirm the deployment has stacks to destroy' below — so
+  # which of the two ran first decides nothing that needs deciding here.
   group: destroy-prod
   cancel-in-progress: false
 
@@ -723,13 +730,28 @@ jobs:
           fi
           echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
 
-      # A destroy that matches no stacks must not report success: that reads exactly like a
-      # destroy that worked, when in fact the caller named a deployment that was never live in
-      # this account (or already gone). This step, like the refusal above it, has no explicit
-      # `if:` guard, so it only runs when the refusal step succeeded — the default `success()`
-      # every step carries unless overridden. Every step below this one that must not run past a
-      # failed refusal checks `steps.confirm-stacks.outcome == 'success'`, which is true only when
-      # both this step and the refusal before it succeeded.
+      # A destroy that matches no stacks must not always report success: that reads exactly like a
+      # destroy that worked. Two things reach here with zero live stacks, and only one deserves a
+      # failure. A set this run raced and lost — most often against deploy.yml's own
+      # 'destroy-previous' job, which removes the deployment it just cut over from as soon as the
+      # new set is live, regardless of what else named the same set (run 34691690046: dispatched
+      # for prod-40b194e, waited 68 minutes for the 15112f1f deploy above, which destroyed
+      # prod-40b194e itself while this run waited; run 34755825044: dispatched for prod-4918a0d
+      # after deploy.yml had already removed it) — already reached the requested end state and
+      # should succeed. A name that was never a real deployment (a typo, or invented) should still
+      # fail. The two are indistinguishable by live stacks alone, but CloudFormation keeps a
+      # DELETE_COMPLETE record of a stack for 90 days after it goes, so a deployment that existed
+      # and was destroyed leaves that trail; one that never existed leaves nothing in either
+      # status. That is the only signal available from inside this job — there is no separate
+      # ledger of every deployment name ever dispatched — so it is the rule here: no live stacks
+      # and no DELETE_COMPLETE trail is unrecognised and fails; no live stacks with a
+      # DELETE_COMPLETE trail, and the name is not last-known-good (re-read fresh here, after the
+      # wait above, alongside the refusal step's own read moments earlier), is already vacated and
+      # succeeds. This step, like the refusal above it, has no explicit `if:` guard, so it only
+      # runs when the refusal step succeeded — the default `success()` every step carries unless
+      # overridden. Every step below this one that must not run past a failed refusal checks
+      # `steps.confirm-stacks.outcome == 'success'`, which is true only when both this step and
+      # the refusal before it succeeded.
       - name: Confirm the deployment has stacks to destroy
         id: confirm-stacks
         shell: bash
@@ -744,11 +766,31 @@ jobs:
             echo "Found $REGION_COUNT stack(s) for [$DEPLOYMENT] in $REGION"
             STACK_COUNT=$((STACK_COUNT + REGION_COUNT))
           done
-          if [ "$STACK_COUNT" -eq 0 ]; then
-            echo "Refusing to report success: [$DEPLOYMENT] matches no stacks in eu-west-2 or us-east-1"
-            exit 1
+          if [ "$STACK_COUNT" -gt 0 ]; then
+            echo "[$DEPLOYMENT] matches $STACK_COUNT stack(s); proceeding"
+            exit 0
           fi
-          echo "[$DEPLOYMENT] matches $STACK_COUNT stack(s); proceeding"
+
+          DELETED_COUNT=0
+          for REGION in eu-west-2 us-east-1; do
+            REGION_DELETED=$(aws cloudformation list-stacks --region "$REGION" \
+              --stack-status-filter DELETE_COMPLETE \
+              --query "length(StackSummaries[?starts_with(StackName, '${DEPLOYMENT}-')])" --output text 2>/dev/null || echo "0")
+            echo "Found $REGION_DELETED already-deleted stack(s) for [$DEPLOYMENT] in $REGION"
+            DELETED_COUNT=$((DELETED_COUNT + REGION_DELETED))
+          done
+
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter \
+            --name "/submit/prod/last-known-good-deployment" \
+            --query "Parameter.Value" --output text 2>/dev/null || echo "")
+
+          if [ "$DELETED_COUNT" -gt 0 ] && [ "$DEPLOYMENT" != "$LAST_KNOWN_GOOD" ]; then
+            echo "[$DEPLOYMENT] matches no live stacks, but $DELETED_COUNT already-deleted stack(s) exist and it is not last-known-good [$LAST_KNOWN_GOOD]: already vacated, reporting success"
+            exit 0
+          fi
+
+          echo "Refusing to report success: [$DEPLOYMENT] matches no live stacks, no DELETE_COMPLETE history, or is still last-known-good [$LAST_KNOWN_GOOD]"
+          exit 1
 
       - name: Node dependencies
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
