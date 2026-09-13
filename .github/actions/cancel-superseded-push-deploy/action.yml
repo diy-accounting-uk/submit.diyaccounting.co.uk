@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: 'Cancel superseded push-triggered deploy'
+description: >
+  When a workflow_dispatch run of deploy.yml names an explicit deployment-name, it is about to
+  deploy the same commit a push-triggered run of deploy.yml may already be mid-way through. Left
+  alone the two run together and contend for the same ci apex alias and Cognito lane user (see
+  B140). This cancels any push-triggered deploy.yml run of the same head sha that has not yet
+  started a stack job, and leaves alone any run whose own stack deploy is already in progress or
+  finished.
+inputs:
+  github-token:
+    description: 'Token with actions:write, used to list and cancel other workflow runs'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Cancel any superseded push-triggered run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        CURRENT_SHA: ${{ github.sha }}
+        CURRENT_RUN_ID: ${{ github.run_id }}
+      # The github.action_path expression expands to the runner's host path, which a container
+      # job cannot see. GITHUB_WORKSPACE is the checkout's path wherever the step runs.
+      run: node "${GITHUB_WORKSPACE}/.github/actions/cancel-superseded-push-deploy/cancel-superseded-push-deploy.mjs"

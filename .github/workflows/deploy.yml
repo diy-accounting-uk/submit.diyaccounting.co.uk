@@ -232,6 +232,31 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
+  # A workflow_dispatch naming an explicit deployment-name is about to deploy this same commit,
+  # so any push-triggered run of deploy.yml for the same github.sha would otherwise run alongside
+  # it and the two contend for the same ci apex alias and Cognito lane user (B140; the coordinator
+  # cancelled this by hand three times on 2026-09-13). Runs only for that dispatch shape: a plain
+  # push or a dispatch with no deployment-name leaves every other run alone. See
+  # cancel-superseded-push-deploy.mjs for why a run whose own stack deploy has already started is
+  # never touched.
+  cancel-superseded-push-deploy:
+    name: 'cancel superseded push-triggered deploy'
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Cancel any push-triggered run of this commit that hasn't started a stack job
+        uses: './.github/actions/cancel-superseded-push-deploy'
+        with:
+          github-token: ${{ github.token }}
+
   # Restores app-after-environment ordering on purpose (see the concurrency block's comment for
   # the regression this fixes: B94, caused by removing an ordering nobody had written down when
   # B90 split deploy.yml and deploy-environment.yml's concurrency groups).
