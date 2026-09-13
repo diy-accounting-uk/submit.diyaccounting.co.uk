@@ -69,6 +69,7 @@ convenience — gitignored, recreate with `ln -s` if missing.
 - `.claude/skills/stripe-catalogue-sync/SKILL.md` — sync Stripe products and prices from the bundle catalogue, test then live, and land the price ids
 - `.claude/skills/site-video-capture/SKILL.md` — record a video of the real site from a scene script (`videos/*.json`)
 - `.claude/skills/video-publish/SKILL.md` — publish the recordings to the YouTube channel: fetch them from their capture runs, check them, upload unlisted with the stored credentials, flip public; carries the once-per-project console walk-through
+- `.claude/skills/session-report/SKILL.md` — write the session's report (`REPORT_SESSION_<id>_<date>.md`) from measured figures: what landed, what made it efficient, where it lost time or money, one board row per loss; invoke as `/session-report`
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
 
 ## Permission Handling
