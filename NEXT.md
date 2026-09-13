@@ -41,24 +41,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B139. The live registered-email filing loops back to the company-number step.** Cause
-  found and fixed on `claude/ltd-filing-loop` (8cf51462, off `main`, not pushed): the Companies
-  House token response carries no `scope` field (its documented fields are `access_token`,
-  `expires_in`, `refresh_token`, `token_type`), so `filingCallback.html` never wrote
-  `companiesHouseTokenScope`, and `hasUsableToken()` on the filing page compared the requested
-  scope against `null` and silently showed the company-number view again. The simulator echoed
-  the scope back, which is why every local and ci run passed. Prod evidence: two
-  `POST /api/v1/companies-house/token` 200s at 13:41:55 and 13:42:25 UTC on 2026-09-13, both 144
-  bytes against a 165-byte scope string, both from `filingCallback.html`; no filing Lambda was
-  ever called. Fix: the filing pages record the requested scope before redirecting, the callback
-  reads it back and treats a missing scope or non-numeric `expiresIn` as a failed exchange shown
-  on the page, the simulator answers in the documented shape, and a browser test drives both
-  filing pages through authorise, callback and resume against a scope-less token. Second commit
-  (206b9995): 06846849 replaced as example data by `00000001`, the number in Companies House's own
-  filing API guide; the legal pages, README and the live-lane lookup fixture keep it as identity.
-  Ships alone by the operator's choice: PR #199, its ci set `ci-clauda813` deploying. Then the
-  prod deploy and O21's retry. **Source**: operator report, 2026-09-13. **Owner**: Claude Code.
-  **Model**: Sonnet.
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
@@ -365,10 +347,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
-  company's register, so this is the operator's own company and sign-in. First attempt on
-  2026-09-13 looped at the authorise callback (B139). Try again once B139 is on prod; a receipt
+  company's register, so this is the operator's own company and sign-in. The first attempt on
+  2026-09-13 looped at the authorise callback: Companies House's token response carries no `scope`
+  field and the callback compared against it. Fixed in PR #199, merged as `4e15028e` at about
+  15:55 UTC; main's deploy carries it to prod in about 40 minutes. Try again after that; a receipt
   or an error message is enough. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
-  Blocked on B139.
+  Blocked on main's deploy of `4e15028e` reaching prod.
 
 
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
