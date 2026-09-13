@@ -158,23 +158,28 @@ After a verified merge: update local `main`, remove the branch's worktree, and d
 branch with `git branch -d` — never `-D`, which hides the case where the branch was not merged after
 all. **Never delete an origin branch**; list it for the operator instead.
 
-**Then rebase every other open PR's branch onto the new `main`**, so the next candidate is tested
-against what is actually on `main` and its own merge takes the head it was checked on. For each
-remaining open PR, in the order they will merge:
+**Then look at the other open PRs, and leave them alone unless they need a rebase.** A rebase
+restarts the branch's whole deploy, and several at once contend for the ci apex alias and the
+shared test users; `main`'s own deploy is the integration proof and rolls the apex back when a
+probe fails. For each remaining open PR, in the order they will merge:
 
-1. Skip it, and say so in Part 7, if its branch has uncommitted work in a worktree, is ahead of
-   origin, or has a deploy run in flight (`gh run list --branch <headRef>` shows `in_progress` or
-   `queued` for any deploy workflow) — a force-push under a running deploy is the same hazard as a
-   push under one.
-2. In its worktree (or a fresh `git worktree add` if it has none), `git fetch origin` and
-   `git rebase origin/main`. A conflict aborts the rebase (`git rebase --abort`) and is reported in
-   Part 7 as work for a sub-agent; never resolve it inside this skill.
-3. `git push --force-with-lease origin <headRef>`. The lease refuses the push if the branch moved
-   underneath; that too is reported, never forced.
+1. Read `mergeable` again and intersect its changed files with the merged PR's
+   (`git diff --name-only origin/main~1..origin/main` against `git diff --name-only
+   origin/main...origin/<headRef>`). Empty intersection and not `CONFLICTING`: it merges as it
+   stands on its next turn, no rebase. Record `left as is` in Part 6.
+2. Conflicting, or overlapping files: rebase locally first. In its worktree (or a fresh
+   `git worktree add`), `git fetch origin && git rebase origin/main`, then run the change's blast
+   radius there. A conflict aborts the rebase (`git rebase --abort`) and is reported in Part 7 as
+   work for a sub-agent; never resolve it inside this skill.
+3. Push the rebase with `git push --force-with-lease origin <headRef>` only when no deploy run on
+   that branch is in flight (`gh run list --branch <headRef>` shows nothing `in_progress` or
+   `queued` for a deploy workflow); otherwise leave the local rebase in place and report it as
+   pending the branch's deploy. The lease refuses the push if the branch moved underneath; that
+   too is reported, never forced.
 
-The rebased branch's checks and deploy start again on the new head, so the next merge waits for
-them: this serialises the queue, which is the point. Record each rebase in Part 6 as its action.
-In dry-run mode print the three commands per branch and mark the row **would rebase**.
+Skip any branch with uncommitted work in a worktree or commits ahead of origin, and say so in
+Part 7. In dry-run mode print the commands per branch and mark the row **would rebase** or
+**left as is**.
 
 ## Part 6 — the result table
 
@@ -184,8 +189,8 @@ One row per PR touched this run, including any just merged.
 |---|---|---|---|---|---|
 
 `Check result` is exactly `ready` or `blocking`, and when blocking it names the gate. The last column
-is the action taken, or recommended when nothing was taken. A branch rebased onto the new `main`
-after another PR merged shows `rebased onto <sha>` here, or `rebase skipped: <reason>`. End the table with a summary row giving
+is the action taken, or recommended when nothing was taken. A remaining open PR shows `left as is`,
+`rebased onto <sha>`, `rebase pending: deploy in flight`, or `rebase skipped: <reason>` here. End the table with a summary row giving
 the overall action for the run.
 
 ## Part 7 — next actions

@@ -175,12 +175,17 @@ Merge each workstream as its notification arrives. Do not hold them for the end.
 
 - **A sub-agent's "done" is not proof.** Run `git status --short` in its worktree before anything
   else. Uncommitted work is real and you get one look at it.
-- `git merge --no-ff` into the batch worktree, with a message naming the item.
+- `git merge --squash <agent-branch>` into the batch worktree, then one commit naming the item:
+  one commit per task on the batch, the agent's fixing commits folded into the task they fix.
+  Keep the agent's commit message body where it explains the why.
 - Run that change's blast radius on the merged tree, not the agent's own report.
 - Update `NEXT.md` on `main` in the same breath: mark the item code complete, and remove it only
   once its checks pass. A bug the agent surfaced is that item's remainder, not a new item, unless
   it is genuinely separate work — then say so explicitly rather than deciding quietly.
-- Remove the worktree and delete its branch as the merge lands, not in a later sweep.
+- Remove the worktree and delete its branch as the merge lands, not in a later sweep. After a
+  squash `git branch -d` refuses, because it cannot see the squash; prove the content landed
+  (`git diff <agent-branch> <batch> -- $(git diff --name-only <batch>...<agent-branch>)` is empty)
+  and then `git branch -D` it — the one place `-D` is right, and only after that diff.
 
 **Editing `NEXT.md` is where rows get lost.** Never replace the slice between two markers unless
 you have checked they are adjacent — an edit that removes what it did not name is invisible until
@@ -189,6 +194,11 @@ someone counts the rows. Split on the row boundary, filter by row key, and rejoi
 ## Pushing
 
 **Push once per wave, not once per workstream.** Gather what has landed and push it together.
+
+When a named `deploy.yml` dispatch already covers the branch's head, cancel the push-triggered
+deploy of the same head in its first minute (before any stack job): two deploys of one head are
+pure cost and contention. A local sync with `main` costs nothing and can happen any time; only the
+push waits.
 
 Before any push, check **every** deploy workflow for that branch — this repo has `deploy`,
 `deploy environment` and `deploy-app`, and checking only the one you were watching is how you push
@@ -225,7 +235,9 @@ only variable.
 
 ## Merging the PR
 
-The operator merges. Before they do, **compare the PR's head with the branch tip**: a merge takes
+The batch merges to `main` with `--merge`, never squash, so the one-commit-per-task history the
+squash step built stays readable on `main`. `/auto-merge` is the path. Before it runs, **compare
+the PR's head with the branch tip**: a merge takes
 the head it was opened or last updated against, and anything pushed after that is left behind. A
 batch has lost commits that way twice.
 

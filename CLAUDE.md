@@ -81,6 +81,9 @@ See `../CLAUDE.md` for full rules. Common permissions for submit work: git opera
 See `../CLAUDE.md` for full rules. You may create branches, commit, push, open PRs. You may NOT push
 to main, delete branches, or rewrite history.
 
+Merge strategy — squash at the worktree, `--merge` to `main`, rebase only on a conflict or an
+overlap, one deploy per head — is in `../CLAUDE.md` under Git Workflow.
+
 **Merging a PR happens only through `/auto-merge`**, which is the single sanctioned path and merges
 nothing that has not passed every gate it defines. A bare `gh pr merge` outside that skill is
 forbidden however green the checks look. `/auto-merge-dry-run` shows what would merge and changes
