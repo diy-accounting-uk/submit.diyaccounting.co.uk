@@ -80,6 +80,40 @@ class CompaniesHouseStackTest {
                         .build());
     }
 
+    // Only envName varies here: everything else matches synthCompaniesHouseStack()'s defaults, so
+    // this isolates what changes in the accounts Lambdas' environment between deployment
+    // environments.
+    private static CompaniesHouseStack synthCompaniesHouseStackForEnv(String envName) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        return new CompaniesHouseStack(
+                app,
+                "TestCompaniesHouseStack",
+                CompaniesHouseStack.CompaniesHouseStackProps.builder()
+                        .env(Environment.builder()
+                                .account("111111111111")
+                                .region("eu-west-2")
+                                .build())
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(envName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled("false")
+                        .sharedNames(sharedNames)
+                        .baseImageTag("latest")
+                        .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseApiKeyArn("")
+                        .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
+                        .companiesHouseClientId("test-companies-house-client-id")
+                        .companiesHouseClientSecretArn("")
+                        .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
+                        .companiesHousePresenterIdArn(PRESENTER_ID_ARN)
+                        .companiesHousePresenterCodeArn(PRESENTER_CODE_ARN)
+                        .build());
+    }
+
     // A blank identity base URI and client id is the real state before the operator has
     // registered the developer-hub application (and always the state for prod today, per the
     // ci-only gate) - the token Lambda must still synth cleanly in that state, and so must the
@@ -581,6 +615,68 @@ class CompaniesHouseStackTest {
             assertFalse(
                     env.containsKey("COMPANIES_HOUSE_XMLGW_URI"),
                     "COMPANIES_HOUSE_XMLGW_URI must not be set when the gateway URI is blank");
+        }
+    }
+
+    @Test
+    void ciEnablesGatewayTestAndSetsThePackageReferenceOnSubmitAndPollOnly() {
+        CompaniesHouseStack stack = synthCompaniesHouseStackForEnv("ci");
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertEquals("true", env.get("COMPANIES_HOUSE_GATEWAY_TEST"));
+        }
+
+        var postFunctions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of("FunctionName", stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName())));
+        assertEquals("0012", environmentVariablesOf(postFunctions).get("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
+
+        // The poll route has no PackageReference field to carry - only the submission does.
+        var getFunctions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of("FunctionName", stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())));
+        assertFalse(environmentVariablesOf(getFunctions).containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
+
+        // Preview never reaches the gateway, so it carries neither.
+        var previewFunctions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "FunctionName",
+                                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName())));
+        var previewEnv = environmentVariablesOf(previewFunctions);
+        assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_GATEWAY_TEST"));
+        assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
+    }
+
+    @Test
+    void everyOtherEnvironmentLeavesGatewayTestOffAndThePackageReferenceUnset() {
+        CompaniesHouseStack stack = synthCompaniesHouseStackForEnv("prod");
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertEquals("false", env.get("COMPANIES_HOUSE_GATEWAY_TEST"));
+            assertFalse(
+                    env.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"),
+                    "the live package reference is not yet known, so it must stay unset rather than submit blank");
         }
     }
 

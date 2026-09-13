@@ -37,6 +37,15 @@ import software.constructs.Construct;
  */
 public class CompaniesHouseStack extends Stack {
 
+    // The XML Gateway's test service and its live service want the opposite of each other on
+    // both the GatewayTest flag and the accounts submission's package reference. ci is the only
+    // deployment environment that talks to the test service; the reference below is the one
+    // Companies House's XML team issued for it. The live reference is not yet known, so it stays
+    // unset for every other environment - the accounts Lambda's own validateEnv() then fails the
+    // deployment's first filing attempt loudly rather than let one go out with a blank one.
+    private static final String XML_GATEWAY_TEST_ENV_NAME = "ci";
+    private static final String XML_GATEWAY_TEST_PACKAGE_REFERENCE = "0012";
+
     public AbstractApiLambdaProps companiesHouseSearchGetLambdaProps;
     public Function companiesHouseSearchGetLambda;
     public ILogGroup companiesHouseSearchGetLambdaLogGroup;
@@ -653,7 +662,12 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseAccountsPostLambdaEnv = accountsFilingLambdaEnv(props)
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
-                        companiesHouseAccountsAsyncRequestsTable.getTableName());
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
+        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+            companiesHouseAccountsPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+        }
         var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -692,7 +706,8 @@ public class CompaniesHouseStack extends Stack {
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
-                        companiesHouseAccountsAsyncRequestsTable.getTableName());
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
         var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -892,6 +907,13 @@ public class CompaniesHouseStack extends Stack {
             env.with("COMPANIES_HOUSE_XMLGW_URI", props.companiesHouseXmlGatewayUri());
         }
         return env;
+    }
+
+    // Submit and poll both set GatewayTest on every envelope they send while deployed to ci, the
+    // only environment that talks to the XML Gateway's test service; every other environment
+    // reaches the live gateway and must not set it.
+    private static String accountsGatewayTestFlag(CompaniesHouseStackProps props) {
+        return XML_GATEWAY_TEST_ENV_NAME.equals(props.envName()) ? "true" : "false";
     }
 
     // Only the submit and poll Lambdas call grantCompaniesHousePresenterSecretsAccess: the preview
