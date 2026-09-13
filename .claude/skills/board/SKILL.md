@@ -52,7 +52,9 @@ combined row). Columns:
 
 Rows run in board order: **machine-only, then human and machine, then human-only, then
 blocked**. Within a group, rows run by tier, an alarm or a pipeline failure counting as
-tier 1 whether or not a backlog row carries it, then the untiered; equal tiers keep
+tier 1 whether or not a backlog row carries it, then the untiered; within a tier, the rows
+that can start run by the size of the change, fewest files first, read from the `~n files`
+count in `Status` (a row without a count follows the counted ones); equal sizes keep
 `NEXT.md`'s order. Never group rows by backlog number.
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
@@ -180,7 +182,8 @@ the end) gets a note in `Action`: rename before its next push.
   three classes). The heading is where the classification lives, so a row carries no
   separate tag and cannot drift from its section. Within a heading, items run by tier
   exactly as Part 1's rows do: tier 1 first, alarms and pipeline failures counting as
-  tier 1, the untiered last, equal tiers in their existing order. Before rendering, move
+  tier 1, the untiered last, within a tier by size (fewest files first), equal sizes in
+  their existing order. Before rendering, move
   any item whose class, state or tier position no longer matches (a row whose human half
   is done moves up to `## Machine-only`; a row that gained a blocker moves down to
   `## Blocked`; a new alarm or pipeline item goes to the top of its section).
