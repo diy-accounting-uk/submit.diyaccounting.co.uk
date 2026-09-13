@@ -84,7 +84,7 @@ guide states this directly. Do not build sandbox hostnames into scope strings.
    requested scope names a company number. The user grants permission and comes back to our
    callback page with a `code`.
 6. The callback page checks `state`, exchanges the code through
-   `POST /api/v1/companies-house/token`, stores the access token, the granted scope and the expiry,
+   `POST /api/v1/companies-house/token`, stores the access token, the requested scope and the expiry,
    and returns to the form page.
 7. The form page opens a transaction: `POST /api/v1/companies-house/transaction` with the company
    number and a description. It gets a transaction id back.
@@ -170,9 +170,10 @@ of view. We do not handle the auth code ourselves and must never ask for it.
 ### State handling
 
 Mirror the HMRC pages exactly. Before redirecting, the page generates a random state, writes it to
-`sessionStorage` under `ch_oauth_state`, and writes the pending form and the return path under
-`companiesHousePendingFiling` and `currentActivity`. The callback page compares the returned
-`state` with the stored one, refuses to continue on a mismatch, and clears the key on success.
+`sessionStorage` under `ch_oauth_state`, the scope it is requesting under `ch_oauth_scope`, and
+the pending form and the return path under `companiesHousePendingFiling` and `currentActivity`.
+The callback page compares the returned `state` with the stored one, refuses to continue on a
+mismatch, and clears both keys on success.
 
 ### Token exchange
 
@@ -208,9 +209,10 @@ tab's lifetime:
 | Key | Contents |
 |---|---|
 | `companiesHouseAccessToken` | the access token |
-| `companiesHouseTokenScope` | the granted scope string, so a page can tell whether the token covers this company and this resource |
+| `companiesHouseTokenScope` | the scope string the page requested before the redirect, so a page can tell whether the token covers this company and this resource. The token response itself names no scope |
 | `companiesHouseTokenExpiresAt` | `Date.now() + expires_in * 1000` |
 | `ch_oauth_state` | the state value, removed once checked |
+| `ch_oauth_scope` | the scope the page requested, moved to `companiesHouseTokenScope` once the code is exchanged |
 | `companiesHousePendingFiling` | the form the user filled in before the redirect |
 
 The browser does not store the refresh token, and no Lambda persists one. The HMRC flow does the
@@ -268,7 +270,7 @@ the browser calls them with `fetchWithIdToken`.
   House token exists.
 - Request body: `{ "code": "..." }`
 - Calls: `POST {COMPANIES_HOUSE_IDENTITY_BASE_URI}/oauth2/token` with the form fields above.
-- Response 200: `{ "accessToken", "expiresIn", "tokenType", "scope" }`. Do not return the refresh
+- Response 200: `{ "accessToken", "expiresIn", "tokenType" }`. Do not return the refresh
   token. Nothing consumes it and returning it puts a long-lived credential in the browser for no
   reason.
 - Errors: missing `code` gives 400 through `buildValidationError`. A non-2xx from Companies House

@@ -310,6 +310,9 @@
       function redirectToAuthorise(scope) {
         const state = window.generateRandomState();
         sessionStorage.setItem("ch_oauth_state", state);
+        // The Companies House token response carries no scope field, so the callback records
+        // the scope this page asked for as the scope the token was granted for.
+        sessionStorage.setItem("ch_oauth_scope", scope);
         sessionStorage.setItem("currentActivity", location.pathname);
         savePendingFiling();
         window.authUrlBuilder.buildCompaniesHouseAuthUrl(state, scope).then((authUrl) => {

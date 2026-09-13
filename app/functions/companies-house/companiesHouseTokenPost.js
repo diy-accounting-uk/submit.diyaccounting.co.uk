@@ -129,7 +129,8 @@ export async function ingestHandler(event) {
   });
 
   // Never return the refresh token: nothing in the browser consumes it, and holding it there
-  // would put a long-lived credential where none is needed.
+  // would put a long-lived credential where none is needed. The Companies House token response
+  // has no scope field; the browser records the scope it requested.
   return http200OkResponse({
     request,
     headers: { ...responseHeaders },
@@ -137,7 +138,6 @@ export async function ingestHandler(event) {
       accessToken: chResponse.data.access_token,
       expiresIn: chResponse.data.expires_in,
       tokenType: chResponse.data.token_type,
-      scope: chResponse.data.scope,
     },
   });
 }
