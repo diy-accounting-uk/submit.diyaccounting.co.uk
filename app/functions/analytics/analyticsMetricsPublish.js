@@ -15,8 +15,6 @@ import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/analytics/analyticsMetricsPublish.js" });
 
-const SECONDS_PER_DAY = 24 * 60 * 60;
-
 // Namespace the dashboard reads from and the Lambda's IAM policy scopes PutMetricData to via a
 // cloudwatch:namespace condition. Fixed rather than read from the environment: the CDK grant and
 // this literal have to match exactly, and a per-environment namespace was never asked for.
