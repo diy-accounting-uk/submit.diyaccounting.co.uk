@@ -423,6 +423,60 @@ jobs:
           # `env` context, only github/inputs/matrix/needs/strategy/vars. A step's `run:` can,
           # so the delay travels out of here alongside the start time it was used to compute.
           echo "SELF_DESTRUCT_DELAY_HOURS=${{ env.SELF_DESTRUCT_DELAY_HOURS }}" >> $GITHUB_OUTPUT
+          # Carried out so the refusal check below (a separate step, for a focused diff) can
+          # tell "redeploy of an existing stack" from "this deployment's first deploy" without
+          # re-running the same describe-stacks call.
+          if [ -n "$EXISTING_CREATION_TIME" ] && [ "$EXISTING_CREATION_TIME" != "None" ]; then
+            echo "EXISTING_STACK_FOUND=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "EXISTING_STACK_FOUND=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # B127: ci-claud20c8 was created 19:37 UTC 2026-09-13 with the 2-hour default; the branch
+      # was rebased and pushed; the self-destruct fired 21:37 while the redeploy was recreating
+      # ApiStack, and the run failed with "Function not found ...custom-authorizer". Re-anchoring
+      # the schedule on every redeploy (so it always moves forward) was rejected on purpose: the
+      # anchor-to-CreationTime design immediately above exists specifically so a branch under
+      # active development still self-destructs on schedule instead of never — see that step's
+      # own comment. Refusing the redeploy here keeps that guarantee and stops it from landing
+      # mid-stack-recreation instead: it fails before push-images, mvn-package or any stack job
+      # runs, so nothing is left half-deployed.
+      #
+      # The EventBridge cron this reproduces is SelfDestructStack's own hourExpression logic
+      # (24 % delayHours == 0: fires every delayHours hours on the hour that divides evenly from
+      # the anchor's hour; otherwise once daily at the anchor's hour) — see SelfDestructStack.java.
+      # Only checked for a genuine redeploy of an existing stack: a first deploy's own first fire
+      # is always a full selfDestructDelayHours away, which the default (2h) and every documented
+      # use of this input clears easily.
+      - name: Refuse the redeploy if this deployment's next self-destruct fire is imminent
+        if: ${{ steps.deployment-config.outputs.environment-name != 'prod' && steps.self-destruct-start.outputs.EXISTING_STACK_FOUND == 'true' }}
+        shell: bash
+        run: |
+          DELAY_HOURS=${{ env.SELF_DESTRUCT_DELAY_HOURS }}
+          START_EPOCH=$(date -u -d "${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}" +%s)
+          NOW_EPOCH=$(date -u +%s)
+          if [ $((24 % DELAY_HOURS)) -eq 0 ]; then
+            PERIOD_SECONDS=$((DELAY_HOURS * 3600))
+          else
+            # SelfDestructStack.java falls back to a single fixed hour (fires once daily) when
+            # delayHours doesn't divide 24 evenly.
+            PERIOD_SECONDS=$((24 * 3600))
+          fi
+          if [ "$NOW_EPOCH" -le "$START_EPOCH" ]; then
+            NEXT_FIRE_EPOCH=$START_EPOCH
+          else
+            ELAPSED=$((NOW_EPOCH - START_EPOCH))
+            PERIODS_ELAPSED=$(((ELAPSED + PERIOD_SECONDS - 1) / PERIOD_SECONDS))
+            NEXT_FIRE_EPOCH=$((START_EPOCH + PERIODS_ELAPSED * PERIOD_SECONDS))
+          fi
+          SECONDS_UNTIL_FIRE=$((NEXT_FIRE_EPOCH - NOW_EPOCH))
+          MINUTES_UNTIL_FIRE=$((SECONDS_UNTIL_FIRE / 60))
+          NEXT_FIRE_ISO=$(date -u -d "@$NEXT_FIRE_EPOCH" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Next self-destruct fire for ${{ steps.deployment-config.outputs.deployment-name }}-app-SelfDestructStack: $NEXT_FIRE_ISO ($MINUTES_UNTIL_FIRE minutes away)"
+          if [ "$SECONDS_UNTIL_FIRE" -lt 2700 ]; then
+            echo "::error::Refusing this redeploy: ${{ steps.deployment-config.outputs.deployment-name }}'s self-destruct fires at $NEXT_FIRE_ISO, only $MINUTES_UNTIL_FIRE minutes away, and would tear this redeploy's stacks down mid-flight (B127). Wait for it to pass, or dispatch deploy.yml with an explicit deployment-name to deploy under a fresh name instead."
+            exit 1
+          fi
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
