@@ -88,6 +88,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   script stops with the form filled except `businessId` (only known at run time), and
   `itsa-business-details.json` may no longer pass since the activity's first page is
   `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B140. `deploy.yml` cancels a push deploy that a named dispatch already covers.** Three
+  times on 2026-09-13 the coordinator cancelled a push-triggered deploy by hand in its first minute
+  because a `workflow_dispatch` with `deployment-name` was about to deploy the same head; left
+  alone, the two run together and contend for the ci apex alias and the lane user. Make the
+  workflow do it: in `deploy.yml`, a dispatch that names a deployment cancels any push-triggered
+  run of the same `github.sha` that has not yet started a stack job (`gh run cancel` from the
+  `params` job, or a concurrency group keyed on the sha with the cancel gated on the run's phase).
+  Never cancel a run that has begun a stack deploy. **Source**: operator, 2026-09-13.
+  **Owner**: Claude Code. **Model**: Haiku.
+
 - [ ] **B131. keepalive red on main until its next run.** The fix is on main (#198: age
   allowance, `restore-drill.yml` exempted by name until O41x, youtube-check at 06:46 Monday).
   Closes when the next scheduled keepalive on `main` (weekly, about 2026-09-19) is green, or
@@ -96,6 +106,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   ! gh workflow run keepalive.yml
   ```
   **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B141. A prod rollback and a failed scheduled probe each raise a GitHub issue.** main's
+  deploy 34773988567 rolled the apex back to `prod-4e15028` after `submitVatBehaviour-prod` failed
+  (job 103776012745); the new set stood unpromoted and nobody was told — a recovered prod incident
+  with no record beyond the run. Open an issue (label `incident`, the same issue-bot token path
+  `alarm-to-github-issue` uses) from `deploy.yml`'s `roll back apex to previous deployment` job
+  naming the run, the failed probes, the set rolled back to and the set left standing; and from
+  `probe-test.yml` when a scheduled run (`github.event_name == 'schedule'`) ends with a failed
+  suite, naming the suite and environment. Close the deploy one automatically when a later deploy
+  promotes a set; leave the probe one for `alarm-triage.yml` or the operator. **Source**: operator,
+  2026-09-13. **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
   links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). Left: spreadsheets PR #109
   (the template) merges, and the Lambda posts there only once O45's token is on the
