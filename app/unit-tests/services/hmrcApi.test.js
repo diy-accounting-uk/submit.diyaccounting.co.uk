@@ -322,6 +322,34 @@ describe("services/hmrcApi", () => {
     });
   });
 
+  describe("http404NotFoundFromHmrcResponse", () => {
+    it("returns a real 404, not a 400, when HMRC reports the resource as not found", async () => {
+      const { http404NotFoundFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = {
+        status: 404,
+        data: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "The requested resource could not be found" },
+      };
+
+      const response = http404NotFoundFromHmrcResponse(undefined, hmrcResponse, {});
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it("carries HMRC's own explanation in the response body's responseBody field", async () => {
+      const { http404NotFoundFromHmrcResponse } = await import("@app/services/hmrcApi.js");
+      const hmrcResponse = {
+        status: 404,
+        data: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "The requested resource could not be found" },
+      };
+
+      const response = http404NotFoundFromHmrcResponse(undefined, hmrcResponse, {});
+
+      const body = JSON.parse(response.body);
+      expect(body.responseBody).toEqual(hmrcResponse.data);
+      expect(body.responseBody.message).toBe("The requested resource could not be found");
+    });
+  });
+
   describe("http400BadRequestFromHmrcResponse", () => {
     it("still returns a real 400 when HMRC's response status is 400", async () => {
       const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");

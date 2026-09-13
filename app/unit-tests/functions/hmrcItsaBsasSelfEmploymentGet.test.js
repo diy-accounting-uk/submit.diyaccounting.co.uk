@@ -204,7 +204,7 @@ describe("hmrcItsaBsasSelfEmploymentGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaBsasSelfEmploymentGetHandler(event);
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(404);
   });
 
   test("returns 500 on an unmapped HMRC API error", async () => {

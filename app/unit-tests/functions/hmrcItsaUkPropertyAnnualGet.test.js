@@ -149,6 +149,6 @@ describe("hmrcItsaUkPropertyAnnualGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaUkPropertyAnnualGetHandler(event);
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(404);
   });
 });

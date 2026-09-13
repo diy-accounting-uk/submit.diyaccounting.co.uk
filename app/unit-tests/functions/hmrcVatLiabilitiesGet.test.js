@@ -221,7 +221,7 @@ describe("hmrcVatLiabilitiesGet ingestHandler", () => {
     expect(body.liabilities).toEqual([]);
   });
 
-  test("returns 400 when HMRC 404s with a code other than NOT_FOUND", async () => {
+  test("returns 404 when HMRC 404s with a code other than NOT_FOUND", async () => {
     mockHmrcError(mockFetch, 404, { code: "VRN_NOT_FOUND", message: "The VRN does not exist" });
 
     const event = buildHmrcEvent({
@@ -229,7 +229,7 @@ describe("hmrcVatLiabilitiesGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcVatLiabilitiesGetHandler(event);
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(404);
   });
 
   test("returns 400 for invalid VAT registration number format", async () => {

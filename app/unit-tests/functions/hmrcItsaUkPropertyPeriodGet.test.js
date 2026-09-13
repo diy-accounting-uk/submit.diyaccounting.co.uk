@@ -200,7 +200,7 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
     expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
 
-  test("returns 400 when HMRC's default not-found answer comes back with no Gov-Test-Scenario", async () => {
+  test("returns 404 when HMRC's default not-found answer comes back with no Gov-Test-Scenario", async () => {
     mockHmrcError(mockFetch, 404, { code: "MATCHING_RESOURCE_NOT_FOUND" });
 
     const event = buildHmrcEvent({
@@ -213,9 +213,9 @@ describe("hmrcItsaUkPropertyPeriodGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaUkPropertyPeriodGetHandler(event);
-    // Every HMRC "not found" maps to a client-fixable 400, the way every other read handler
-    // in this repo treats it (see http404NotFoundFromHmrcResponse).
-    expect(response.statusCode).toBe(400);
+    // Every HMRC "not found" maps to a real 404, the way every other read handler in this
+    // repo treats it (see http404NotFoundFromHmrcResponse).
+    expect(response.statusCode).toBe(404);
   });
 });
 

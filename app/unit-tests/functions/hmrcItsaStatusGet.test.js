@@ -263,7 +263,7 @@ describe("hmrcItsaStatusGet ingestHandler", () => {
     expect([400, 500]).toContain(response.statusCode);
   });
 
-  test("returns 400 when HMRC answers NOT_FOUND", async () => {
+  test("returns 404 when HMRC answers NOT_FOUND", async () => {
     mockHmrcError(mockFetch, 404, { code: "MATCHING_RESOURCE_NOT_FOUND" });
 
     const event = buildHmrcEvent({
@@ -271,7 +271,7 @@ describe("hmrcItsaStatusGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaStatusGetHandler(event);
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(404);
   });
 
   test("returns 403 JSON when the authenticated user holds no bundle entitled to ITSA status", async () => {
