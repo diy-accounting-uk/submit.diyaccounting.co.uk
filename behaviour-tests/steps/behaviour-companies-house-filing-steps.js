@@ -31,6 +31,19 @@ export function isCompaniesHouseSimulatorLane(envFilePath) {
 }
 
 /**
+ * The company the read-only lookup journeys look up. The simulator serves an invented company
+ * under 00000001, the number Companies House's own filing API guide uses in its examples (see
+ * app/http-simulator/scenarios/companies.js). Every other lane reads the live public data API,
+ * where the record looked up is DIY Accounting Limited's own.
+ */
+export function companiesHouseLookupFixture(envFilePath) {
+  if (isCompaniesHouseSimulatorLane(envFilePath)) {
+    return { searchTerm: "Simulator Example", companyName: "SIMULATOR EXAMPLE COMPANY LIMITED", companyNumber: "00000001" };
+  }
+  return { searchTerm: "DIY Accounting", companyName: "DIY ACCOUNTING LIMITED", companyNumber: "06846849" };
+}
+
+/**
  * The Companies House sign-in the suite uses. Real credentials in the environment always win.
  * Outside the simulator lane, with no real credentials set, this throws rather than trying the
  * canned simulator user against a real identity service, where it cannot work.

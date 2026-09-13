@@ -11,7 +11,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const BASE = "http://localhost:3000";
-const COMPANY_NUMBER = "00006400";
+const COMPANY_NUMBER = "00000001";
 const LIVE_ACCESS_TOKEN = "live-access-token";
 
 // The documented Companies House token response carries no scope field, so this is what the

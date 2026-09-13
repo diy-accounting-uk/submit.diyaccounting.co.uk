@@ -221,7 +221,7 @@ Companies House token expires, or its scope does not match the company the user 
 starts the authorise redirect again. That is one round trip and it keeps a long-lived credential
 out of the browser and out of our database.
 
-`companiesHouseTokenScope` decides reuse. A token granted for company `06846849` and
+`companiesHouseTokenScope` decides reuse. A token granted for company `00000001` and
 `registered-office-address.update` is not reusable for a different company or for the email filing.
 The check is a plain string comparison against the scope string the page is about to request.
 
@@ -285,7 +285,7 @@ The client secret is cached in module scope across warm starts, the way
 ### 2. `companiesHouseTransactionPost.js`
 
 - Route: `POST /api/v1/companies-house/transaction`
-- Request body: `{ "companyNumber": "06846849", "description": "Change of registered office address", "reference": "..." }`. `reference` is optional.
+- Request body: `{ "companyNumber": "00000001", "description": "Change of registered office address", "reference": "..." }`. `reference` is optional.
 - Validation: `companyNumber` through the existing `isValidCompanyNumber`. `description` must be
   present and at most 200 characters.
 - Calls: `POST {COMPANIES_HOUSE_FILING_BASE_URI}/transactions` with
@@ -673,7 +673,7 @@ Give the simulator two deliberate unhappy paths, because the behaviour tests sho
 
 - Company number `00000422` answers `422` on close, with an `errors` array naming
   `$.postal_code`. That proves the validation-error rendering.
-- Company number `00000001` answers `INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS` on the eligibility
+- Company number `00000003` answers `INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS` on the eligibility
   route. That proves the eligibility stop.
 
 Closing a transaction sets `status: "closed"`, `closed_at`, and a `filings` object with one entry

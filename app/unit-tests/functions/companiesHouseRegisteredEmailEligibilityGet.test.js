@@ -84,10 +84,10 @@ function mockChError(fetchMock, status, body, headers = {}) {
   fetchMock.mockResolvedValueOnce({ ok: false, status, json: () => Promise.resolve(body), headers: fakeHeaders(headers) });
 }
 
-function buildEvent({ pathParameters = { companyNumber: "06846849" }, headers = {}, method = "GET" } = {}) {
+function buildEvent({ pathParameters = { companyNumber: "00000001" }, headers = {}, method = "GET" } = {}) {
   return buildLambdaEvent({
     method,
-    path: "/api/v1/companies-house/company/06846849/registered-email-address/eligibility",
+    path: "/api/v1/companies-house/company/00000001/registered-email-address/eligibility",
     pathParameters,
     headers: { Authorization: "Bearer test-ch-access-token", ...headers },
   });
@@ -123,7 +123,7 @@ describe("companiesHouseRegisteredEmailEligibilityGet ingestHandler", () => {
 
     const [requestedUrl, requestInit] = mockFetch.mock.calls[0];
     expect(requestedUrl).toBe(
-      "https://api-sandbox.company-information.service.gov.uk/registered-email-address/company/06846849/eligibility",
+      "https://api-sandbox.company-information.service.gov.uk/registered-email-address/company/00000001/eligibility",
     );
     expect(requestInit.headers.Authorization).toBe("Bearer test-ch-access-token");
   });

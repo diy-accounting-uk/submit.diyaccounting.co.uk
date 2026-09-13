@@ -13,12 +13,12 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const CURRENT_ADDRESS = {
   etag: "test-etag-1",
-  premises: "The Old Rectory",
-  addressLine1: "The Old Rectory",
+  premises: "1",
+  addressLine1: "1 Example Street",
   addressLine2: "",
-  locality: "Pulham Market",
+  locality: "Cardiff",
   region: "",
-  postalCode: "IP21 4XW",
+  postalCode: "CF14 3UZ",
   country: "United Kingdom",
 };
 
@@ -119,7 +119,7 @@ test.describe("Change Registered Office Address page", () => {
     await delay(200);
   }
 
-  async function lookUpCompany(page, companyNumber = "06846849") {
+  async function lookUpCompany(page, companyNumber = "00000001") {
     await page.fill("#companyNumber", companyNumber);
     await page.click("#companyLookupBtn");
     await delay(200);
@@ -151,8 +151,8 @@ test.describe("Change Registered Office Address page", () => {
     await lookUpCompany(page);
 
     await expect(page.locator("#formView")).toBeVisible();
-    await expect(page.locator("#currentAddressList")).toContainText("The Old Rectory");
-    await expect(page.locator("#currentAddressList")).toContainText("IP21 4XW");
+    await expect(page.locator("#currentAddressList")).toContainText("1 Example Street");
+    await expect(page.locator("#currentAddressList")).toContainText("CF14 3UZ");
   });
 
   test("shows an error and stays on the company view when the lookup fails", async ({ page }) => {
@@ -196,7 +196,7 @@ test.describe("Change Registered Office Address page", () => {
     await delay(200);
 
     await expect(page.locator("#reviewView")).toBeVisible();
-    await expect(page.locator("#reviewCompanyNumber")).toContainText("06846849");
+    await expect(page.locator("#reviewCompanyNumber")).toContainText("00000001");
     await expect(page.locator("#reviewAddress")).toContainText("Bedford Road");
     await expect(page.locator("#reviewAddress")).toContainText("LS12 3AB");
   });
@@ -219,6 +219,6 @@ test.describe("Change Registered Office Address page", () => {
     await expect(page.locator("#filingResult")).toContainText("accepted");
     const openCalls = await page.evaluate(() => window.__openTransactionCalls);
     expect(openCalls).toHaveLength(1);
-    expect(openCalls[0].companyNumber).toBe("06846849");
+    expect(openCalls[0].companyNumber).toBe("00000001");
   });
 });

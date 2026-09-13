@@ -74,11 +74,11 @@ describe("System: Companies House Simulator", () => {
   });
 
   it("search returns the fixture company for a name fragment", async () => {
-    const response = await companiesHouseSearchGetHandler(searchEvent("DIY Accounting"));
+    const response = await companiesHouseSearchGetHandler(searchEvent("Simulator Example"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.items.some((item) => item.companyNumber === "06846849")).toBe(true);
-    expect(body.items.some((item) => item.title === "DIY ACCOUNTING LIMITED")).toBe(true);
+    expect(body.items.some((item) => item.companyNumber === "00000001")).toBe(true);
+    expect(body.items.some((item) => item.title === "SIMULATOR EXAMPLE COMPANY LIMITED")).toBe(true);
   });
 
   it("search paginates with start index and items per page", async () => {
@@ -90,11 +90,11 @@ describe("System: Companies House Simulator", () => {
     expect(body.itemsPerPage).toBe(1);
   });
 
-  it("profile returns DIY Accounting Limited for 06846849", async () => {
-    const response = await companiesHouseCompanyGetHandler(companyEvent("06846849"));
+  it("profile returns the example company for 00000001", async () => {
+    const response = await companiesHouseCompanyGetHandler(companyEvent("00000001"));
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.companyName).toBe("DIY ACCOUNTING LIMITED");
+    expect(body.companyName).toBe("SIMULATOR EXAMPLE COMPANY LIMITED");
     expect(body.companyStatus).toBe("active");
   });
 

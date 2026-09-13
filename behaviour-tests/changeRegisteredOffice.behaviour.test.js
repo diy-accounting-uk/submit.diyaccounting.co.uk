@@ -52,7 +52,7 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 // The simulator's canned company fixture (see app/http-simulator/scenarios/filings.js). Outside
 // the simulator lane, beforeAll below replaces this with a freshly created sandbox company.
-let existingCompanyNumber = "06846849";
+let existingCompanyNumber = "00000001";
 const validationErrorCompanyNumber = "00000422";
 
 const newAddress = {

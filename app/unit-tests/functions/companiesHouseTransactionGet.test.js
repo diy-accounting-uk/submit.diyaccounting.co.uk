@@ -70,8 +70,8 @@ let mockFetch;
 const TRANSACTION_RESPONSE = {
   id: "017100005912",
   status: "closed",
-  company_number: "06846849",
-  company_name: "DIY ACCOUNTING LIMITED",
+  company_number: "00000001",
+  company_name: "SIMULATOR EXAMPLE COMPANY LIMITED",
   created_at: "2026-01-01T09:00:00Z",
   closed_at: "2026-01-01T09:05:00Z",
   filings: {
@@ -138,7 +138,7 @@ describe("companiesHouseTransactionGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.transactionId).toBe("017100005912");
-    expect(body.companyNumber).toBe("06846849");
+    expect(body.companyNumber).toBe("00000001");
     expect(body.createdAt).toBe("2026-01-01T09:00:00Z");
     expect(body.closedAt).toBe("2026-01-01T09:05:00Z");
     expect(body.filings).toEqual([

@@ -514,7 +514,7 @@ All form fields must meet these requirements:
 | EORI | 2L + 12-15N | `GB123456123456` |
 | Employer PAYE reference | 3N + "/" + ref | `123/AB456` |
 | Accounts Office reference | 13 characters | `123PX00123456` |
-| Company Registration Number | 8 characters | `06846849` |
+| Company Registration Number | 8 characters | `00000001` |
 
 ---
 

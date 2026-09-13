@@ -23,6 +23,7 @@ import {
   openCompanyProfile,
   verifyCompanyProfile,
 } from "./steps/behaviour-companies-house-steps.js";
+import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -43,11 +44,7 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
-// The fixture the simulator and the live Companies House API agree on (see the design's
-// companies-house-api-operations.md and app/http-simulator/scenarios/companies.js).
-const searchTerm = "DIY Accounting";
-const expectedCompanyName = "DIY ACCOUNTING LIMITED";
-const expectedCompanyNumber = "06846849";
+const { searchTerm, companyName: expectedCompanyName, companyNumber: expectedCompanyNumber } = companiesHouseLookupFixture(envFilePath);
 const expectedCompanyStatus = "active";
 
 let mockOAuth2Process;

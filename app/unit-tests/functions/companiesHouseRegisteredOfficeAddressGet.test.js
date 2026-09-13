@@ -68,13 +68,13 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 let mockFetch;
 
 const ADDRESS_RESPONSE = {
-  etag: "diy-accounting-etag-1",
-  premises: "The Old Rectory",
-  address_line_1: "The Old Rectory",
+  etag: "example-company-etag-1",
+  premises: "1",
+  address_line_1: "1 Example Street",
   address_line_2: "",
-  locality: "Pulham Market",
+  locality: "Cardiff",
   region: "",
-  postal_code: "IP21 4XW",
+  postal_code: "CF14 3UZ",
   country: "United Kingdom",
 };
 
@@ -95,10 +95,10 @@ function mockChError(fetchMock, status, body, headers = {}) {
   fetchMock.mockResolvedValueOnce({ ok: false, status, json: () => Promise.resolve(body), headers: fakeHeaders(headers) });
 }
 
-function buildEvent({ pathParameters = { companyNumber: "06846849" }, method = "GET" } = {}) {
+function buildEvent({ pathParameters = { companyNumber: "00000001" }, method = "GET" } = {}) {
   return buildLambdaEvent({
     method,
-    path: "/api/v1/companies-house/company/06846849/registered-office-address",
+    path: "/api/v1/companies-house/company/00000001/registered-office-address",
     pathParameters,
   });
 }
@@ -131,15 +131,15 @@ describe("companiesHouseRegisteredOfficeAddressGet ingestHandler", () => {
     const response = await companiesHouseRegisteredOfficeAddressGetHandler(buildEvent());
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
-    expect(body.etag).toBe("diy-accounting-etag-1");
-    expect(body.premises).toBe("The Old Rectory");
-    expect(body.addressLine1).toBe("The Old Rectory");
-    expect(body.locality).toBe("Pulham Market");
-    expect(body.postalCode).toBe("IP21 4XW");
+    expect(body.etag).toBe("example-company-etag-1");
+    expect(body.premises).toBe("1");
+    expect(body.addressLine1).toBe("1 Example Street");
+    expect(body.locality).toBe("Cardiff");
+    expect(body.postalCode).toBe("CF14 3UZ");
     expect(body.country).toBe("United Kingdom");
 
     const requestedUrl = mockFetch.mock.calls[0][0];
-    expect(requestedUrl).toContain("/company/06846849/registered-office-address");
+    expect(requestedUrl).toContain("/company/00000001/registered-office-address");
   });
 
   test("rejects a malformed company number with 400", async () => {

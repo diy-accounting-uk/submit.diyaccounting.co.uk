@@ -16,20 +16,20 @@ export const VALIDATION_ERROR_COMPANY_NUMBER = "00000422";
 // The registered email address filing changes an existing address; it does not set the first
 // one. This company answers INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS on the eligibility check
 // so the page's eligibility stop can be exercised.
-export const NO_REGISTERED_EMAIL_COMPANY_NUMBER = "00000001";
+export const NO_REGISTERED_EMAIL_COMPANY_NUMBER = "00000003";
 
 const registeredOfficeAddresses = new Map([
   [
-    "06846849",
+    "00000001",
     {
-      etag: "diy-accounting-simulator-etag-1",
-      premises: "The Old Rectory",
-      address_line_1: "The Old Rectory",
+      etag: "simulator-etag-00000001",
+      premises: "1",
+      address_line_1: "1 Example Street",
       address_line_2: "",
-      locality: "Pulham Market",
+      locality: "Cardiff",
       region: "",
-      postal_code: "IP21 4XW",
-      country: "United Kingdom",
+      postal_code: "CF14 3UZ",
+      country: "Wales",
     },
   ],
   [
