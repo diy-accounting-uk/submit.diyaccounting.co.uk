@@ -22,8 +22,9 @@ PR; the operator merges.
 ROLLBACK_COMPLETE after its self-destruct fired mid-redeploy, which the 02:34 sweep clears; the ci
 pointer still names it. `ci-vatview` (PR #202, three-hour delay) is deploying.
 
-The board runs in four sections, in this order: **machine-only**, **human and machine**,
-**human-only**, **blocked**. The section is the classification — what it takes to carry the row to
+The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
+in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
+**blocked**. The section is the classification — what it takes to carry the row to
 completion, not who owns it now — so no row carries a separate tag that could drift from where it
 sits. `human-only` is work no session can do: an external registration, a console action with no
 API, a filing against the operator's own company, an email from their address, a decision between
@@ -36,6 +37,29 @@ with the detail behind each task in the four `../BRIEF_OPERATOR_TASKS_*.md` file
 (`2026-09-13` carries the rows the earlier three do not).
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
+
+## In flight
+
+- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
+  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
+  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
+  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
+  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
+  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
+  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
+  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. On `claude/vat-view-entitlement`, PR #202, deploying `ci-vatview`
+  (run 34784881334): the lane-user half. **Source**: runs 34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
+  links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). In flight: spreadsheets PR #109 (`claude/ops-support-issues`, the
+  template) awaits the operator's merge; and the Lambda posts there only once O45's token is on the
+  environments. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied. In flight: homebrew-diya-gl
+  PR #2 (`claude/ops-dispatch-trigger`) merges first; spreadsheets PR #110
+  (`claude/ops-homebrew-dispatch`) merges after O36's `HOMEBREW_DISPATCH_TOKEN` exists
+  (its step fails the publish until then). **Owner**: Operator merges; Claude Code if either goes
+  red. **Model**: Sonnet.
 
 ## Machine-only
 
@@ -67,25 +91,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `http400BadRequestResponse`, the same mislabel; the page shows HMRC's text either way, so only
   the status code is wrong. Fix it the same way, with the unit test. **Source**: B125's proof.
   **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
-  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
-  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
-  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
-  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
-  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
-  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
-  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. **Source**: runs
-  34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
-  `itsa-quarterly-update` is recording against `ci-b29w2` (run 34774550386, dispatched 18:35 UTC).
-  `file-micro-entity-accounts` submits a filing in its last scene, so it waits for PR #200's ci
-  set — on today's code the gateway rejects the envelope and the result view would show the error.
+  The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
+  fixed; both ci captures re-run against a ci set carrying `main` at `a8cb1ea6` or later, once
+  `prod-a8cb1ea`'s deploy has finished with the lane user.
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
   script stops with the form filled except `businessId` (only known at run time), and
   `itsa-business-details.json` may no longer pass since the activity's first page is
   `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet.
+
 - [ ] **B140. `deploy.yml` cancels a push deploy that a named dispatch already covers.** Three
   times on 2026-09-13 the coordinator cancelled a push-triggered deploy by hand in its first minute
   because a `workflow_dispatch` with `deployment-name` was about to deploy the same head; left
@@ -115,14 +131,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   promotes a set; leave the probe one for `alarm-triage.yml` or the operator. **Source**: operator,
   2026-09-13. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
-  links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). Left: spreadsheets PR #109
-  (the template) merges, and the Lambda posts there only once O45's token is on the
-  environments. **Owner**: Claude Code. **Model**: Sonnet.
-- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied. Left: homebrew-diya-gl
-  PR #2 merges first; spreadsheets PR #110 merges after O36's `HOMEBREW_DISPATCH_TOKEN` exists
-  (its step fails the publish until then). **Owner**: Operator merges; Claude Code if either goes
-  red. **Model**: Sonnet.
 - [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
   `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
   was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
@@ -195,7 +203,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   rather than reporting non-blocking.
   **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository.
 
-
 ## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
@@ -216,7 +223,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku.
 
-
 ## Human-only
 
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
@@ -227,8 +233,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   field and the callback compared against it. Fixed in PR #199 and on prod
   since prod-4e15028 (about 17:20 UTC). Try again; a receipt or an error message is enough.
   **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
-
-
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
@@ -425,7 +429,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1.
-
 
 ## Discipline
 
