@@ -98,6 +98,91 @@ describe("functions/auth/customAuthorizer", () => {
   });
 
   // ==========================================================================
+  // O28: Gov-Client-Multi-Factor context, built from the ID token in X-Id-Token
+  // ==========================================================================
+
+  describe("extractMfaContext", () => {
+    it("returns nothing when there is no X-Id-Token header", async () => {
+      const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = await extractMfaContext({}, "user-sub");
+      expect(result).toEqual({});
+      expect(mockVerify).not.toHaveBeenCalled();
+    });
+
+    it("carries mfa_method, federated and auth_time from a verified ID token", async () => {
+      const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockResolvedValueOnce({
+        sub: "user-sub",
+        "custom:mfa_method": "TOTP",
+        auth_time: 1700000000,
+      });
+
+      const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
+
+      expect(result).toEqual({ mfaMethod: "TOTP", federated: false, authTime: "1700000000" });
+    });
+
+    it("reports a federated sign-in from a JSON-string identities claim", async () => {
+      const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockResolvedValueOnce({
+        sub: "user-sub",
+        identities: '[{"providerName":"Google"}]',
+        auth_time: 1700000000,
+      });
+
+      const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
+
+      expect(result.federated).toBe(true);
+      expect(result.mfaMethod).toBeUndefined();
+    });
+
+    it("returns nothing when the ID token fails verification", async () => {
+      const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockRejectedValueOnce(new Error("expired"));
+
+      const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
+
+      expect(result).toEqual({});
+    });
+
+    it("returns nothing when the ID token's sub doesn't match the access token's", async () => {
+      const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockResolvedValueOnce({ sub: "someone-else", "custom:mfa_method": "TOTP" });
+
+      const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
+
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("ingestHandler carries MFA context into the allow policy", () => {
+    it("sets mfa_method and mfa_federated from a verified ID token", async () => {
+      const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify
+        .mockResolvedValueOnce({ sub: "user-sub", auth_time: 1600000000 }) // access token
+        .mockResolvedValueOnce({ sub: "user-sub", "custom:mfa_method": "TOTP", auth_time: 1700000000 }); // ID token
+
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc", "x-id-token": "id-token" }));
+
+      expect(res.context.mfa_method).toBe("TOTP");
+      expect(res.context.mfa_federated).toBe("false");
+      // Prefers the ID token's auth_time over the access token's.
+      expect(res.context.auth_time).toBe("1700000000");
+    });
+
+    it("defaults mfa_method to empty and falls back to the access token's auth_time when there is no ID token", async () => {
+      const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
+      mockVerify.mockResolvedValueOnce({ sub: "user-sub", auth_time: 1600000000 });
+
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc" }));
+
+      expect(res.context.mfa_method).toBe("");
+      expect(res.context.mfa_federated).toBe("false");
+      expect(res.context.auth_time).toBe("1600000000");
+    });
+  });
+
+  // ==========================================================================
   // Mid-session country change (issue #10 acceptance criterion 4)
   // ==========================================================================
 
