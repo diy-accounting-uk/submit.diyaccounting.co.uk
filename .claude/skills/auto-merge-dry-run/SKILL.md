@@ -12,7 +12,7 @@ description: Everything /auto-merge reports, with nothing it changes — the sam
 whole content; the rules live beside the actions they suppress so the two cannot drift apart.
 
 Dry-run mode is defined in that skill's "Dry-run mode" section. In short: gather everything, render
-every table, reach every verdict, and take no action. No merge, no commit, no push, no branch or
+every table, reach every verdict, and take no action. No merge, no commit, no push, no rebase, no branch or
 worktree deletion, no write to a tracked file, no PR comment or label, and no `/watch`.
 
 Three things this skill adds, and nothing else.

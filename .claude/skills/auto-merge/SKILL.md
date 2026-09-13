@@ -25,7 +25,7 @@ than merging it by hand outside the skill.
 
 `/auto-merge-dry-run` runs this skill with every mutating step suppressed. In dry-run:
 
-- no merge, no commit, no push, no branch deletion, no worktree removal
+- no merge, no commit, no push, no rebase, no branch deletion, no worktree removal
 - no write to any file tracked in source control, including `NEXT.md`
 - no PR comment, no review, no label, no issue change
 - `/watch` is not invoked
@@ -158,6 +158,24 @@ After a verified merge: update local `main`, remove the branch's worktree, and d
 branch with `git branch -d` — never `-D`, which hides the case where the branch was not merged after
 all. **Never delete an origin branch**; list it for the operator instead.
 
+**Then rebase every other open PR's branch onto the new `main`**, so the next candidate is tested
+against what is actually on `main` and its own merge takes the head it was checked on. For each
+remaining open PR, in the order they will merge:
+
+1. Skip it, and say so in Part 7, if its branch has uncommitted work in a worktree, is ahead of
+   origin, or has a deploy run in flight (`gh run list --branch <headRef>` shows `in_progress` or
+   `queued` for any deploy workflow) — a force-push under a running deploy is the same hazard as a
+   push under one.
+2. In its worktree (or a fresh `git worktree add` if it has none), `git fetch origin` and
+   `git rebase origin/main`. A conflict aborts the rebase (`git rebase --abort`) and is reported in
+   Part 7 as work for a sub-agent; never resolve it inside this skill.
+3. `git push --force-with-lease origin <headRef>`. The lease refuses the push if the branch moved
+   underneath; that too is reported, never forced.
+
+The rebased branch's checks and deploy start again on the new head, so the next merge waits for
+them: this serialises the queue, which is the point. Record each rebase in Part 6 as its action.
+In dry-run mode print the three commands per branch and mark the row **would rebase**.
+
 ## Part 6 — the result table
 
 One row per PR touched this run, including any just merged.
@@ -166,7 +184,8 @@ One row per PR touched this run, including any just merged.
 |---|---|---|---|---|---|
 
 `Check result` is exactly `ready` or `blocking`, and when blocking it names the gate. The last column
-is the action taken, or recommended when nothing was taken. End the table with a summary row giving
+is the action taken, or recommended when nothing was taken. A branch rebased onto the new `main`
+after another PR merged shows `rebased onto <sha>` here, or `rebase skipped: <reason>`. End the table with a summary row giving
 the overall action for the run.
 
 ## Part 7 — next actions
