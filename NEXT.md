@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7fbea34**, live since the scheduled `deploy.yml` run 34749667957 set the
-pointer at 10:04 UTC on 2026-09-13, every prod probe green. `prod-4918a0d` still stands as a spare
-(its stacks were listed at 10:04) and the scheduled sweep keeps any set whose own alias is
-published, so it goes only on `gh workflow run destroy-prod.yml -f deployment-name=prod-4918a0d`.
+**Prod runs deployment prod-7fbea34**, eleven stacks, live since the scheduled `deploy.yml` run
+34749667957 set the pointer at 10:04 UTC on 2026-09-13, every prod probe green. It is the only prod
+set: that run's `destroy previous` job removed `prod-4918a0d` between 10:05 and 10:25 UTC.
 **No ci deployment exists.** All three sets have gone — `ci-claudc83b`, `ci-claudd44f` and the
 long-overdue `ci-mainb28b` — and `/submit/ci/last-known-good-deployment` reads `None`. Three ready
 rows need a ci set before they can run: B73's email-restricted pass, B71.S3e's remaining sync and
@@ -87,7 +86,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   where `prod-env-raw-export-publish` had `PutObject` and neither `GetObject` nor `ListBucket` until
   2026-09-10 18:14. Confirm which side is missing before changing either, then check whether the
   `s3:prefix` condition matches the prefix the Lambda actually lists. Also find out why no alarm
-  issue exists after two days. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
+  issue exists after two days; `ci-env-github-probe-failed` (in ALARM since 2026-09-13 04:00 UTC,
+  because no ci set exists for the probe to reach) has none either, so the triage path itself may
+  be the gap. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
   2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
