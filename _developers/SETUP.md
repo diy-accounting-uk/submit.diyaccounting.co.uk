@@ -159,9 +159,20 @@ AWS_PROFILE=submit-prod ACTIVITY_BUS_NAME=prod-activity-bus node scripts/fraud-h
 node scripts/fraud-header-email-check.js --dry-run
 ```
 - Each run's result (correct, advisories, errors, zero-traffic, missing, or pending) lands as
-  JSON in `data/compliance/fraud-prevention-headers/<YYYY-MM>.json`, for a compliance panel to
-  read later.
-- A launchd agent runs it unattended on the 5th and the 12th of each month at 09:00 local time:
+  JSON in `data/compliance/fraud-prevention-headers/<YYYY-MM>.json`. That file is tracked in
+  git, not gitignored: `.github/workflows/compliance.yml` reads it from the checked-out commit
+  on its weekly run to feed the analytics lake, so a result that stays local never reaches the
+  dashboard. Commit and push it after each run:
+```bash
+git add data/compliance/fraud-prevention-headers/<YYYY-MM>.json
+git commit -m "Fraud header check: <YYYY-MM> is <status>"
+git push
+```
+- `.github/workflows/fraud-header-check.yml` runs monthly and on demand to check that the
+  expected month's record actually landed on the branch it reads — the mail mirror is a laptop-
+  only directory, so the workflow cannot run the check itself, only confirm its result was
+  committed and pushed. A missing record fails the run.
+- A launchd agent runs the check unattended on the 5th and the 12th of each month at 09:00 local time:
   label `co.uk.diyaccounting.submit.fraud-header-check`, plist template in
   `scripts/co.uk.diyaccounting.submit.fraud-header-check.plist`, logs in `~/Library/Logs`. Fill
   in the plist's repo path and username, then install it:
