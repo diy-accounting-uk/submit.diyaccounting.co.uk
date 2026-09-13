@@ -155,6 +155,33 @@ export async function getClientIP() {
   return "SERVER_DETECT";
 }
 
+// Gov-Client-Device-ID must be "a UUID that does not expire, persistently stored on the
+// device" (HMRC fraud prevention spec). localStorage, not a cookie: this identifier is never
+// sent to HMRC directly by the browser -- it only needs to survive in the one origin that reads
+// it back, and the app already keeps every other device-scoped value (tokens, userInfo) there,
+// so a cookie would add SameSite/expiry handling for no benefit over the storage the rest of the
+// app already uses.
+const DEVICE_ID_STORAGE_KEY = "hmrcDeviceId";
+
+/**
+ * Return this device's persistent Gov-Client-Device-ID, generating and storing one on first use.
+ * Never regenerated while a stored value exists, so it stays stable across requests, tabs and
+ * signed-out/signed-in cycles -- it identifies the device, not the signed-in user.
+ * @returns {string} UUID
+ */
+export function getOrCreateDeviceId() {
+  try {
+    const stored = localStorage.getItem(DEVICE_ID_STORAGE_KEY);
+    if (stored) return stored;
+    const generated = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_STORAGE_KEY, generated);
+    return generated;
+  } catch (err) {
+    console.warn("Failed to persist Gov-Client-Device-ID, falling back to a per-request value:", err);
+    return crypto.randomUUID();
+  }
+}
+
 /**
  * Build Gov-Client headers for HMRC API calls
  * Note: Vendor headers (Gov-Vendor-*) are generated server-side
@@ -171,7 +198,7 @@ export async function getGovClientHeaders() {
 
   const govClientPublicIPHeader = detectedIP;
   const govClientBrowserJSUserAgentHeader = navigator.userAgent;
-  const govClientDeviceIDHeader = crypto.randomUUID();
+  const govClientDeviceIDHeader = getOrCreateDeviceId();
 
   // Gov-Client-Multi-Factor: Extract from sessionStorage if MFA was detected during login
   let govClientMultiFactorHeader;

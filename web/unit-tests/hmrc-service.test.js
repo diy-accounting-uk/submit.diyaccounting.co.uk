@@ -10,7 +10,61 @@ vi.mock("../public/lib/services/api-client.js", () => ({
 }));
 
 import { authorizedFetch } from "../public/lib/services/api-client.js";
-import { submitVat, getBusinessDetails, getObligations, postSelfEmploymentPeriod } from "../public/lib/services/hmrc-service.js";
+import {
+  submitVat,
+  getBusinessDetails,
+  getObligations,
+  postSelfEmploymentPeriod,
+  getOrCreateDeviceId,
+} from "../public/lib/services/hmrc-service.js";
+
+describe("hmrc-service getOrCreateDeviceId", () => {
+  let store;
+
+  beforeEach(() => {
+    store = {};
+    global.localStorage = {
+      getItem: vi.fn((key) => (key in store ? store[key] : null)),
+      setItem: vi.fn((key, value) => {
+        store[key] = value;
+      }),
+    };
+  });
+
+  test("generates and stores a device id on first call", () => {
+    const id = getOrCreateDeviceId();
+
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(store.hmrcDeviceId).toBe(id);
+  });
+
+  test("reuses the stored device id on later calls instead of generating a new one", () => {
+    const first = getOrCreateDeviceId();
+    const second = getOrCreateDeviceId();
+
+    expect(second).toBe(first);
+    expect(global.localStorage.setItem).toHaveBeenCalledTimes(1);
+  });
+
+  test("regenerates only when the stored value is absent", () => {
+    store.hmrcDeviceId = "existing-device-id";
+
+    expect(getOrCreateDeviceId()).toBe("existing-device-id");
+    expect(global.localStorage.setItem).not.toHaveBeenCalled();
+  });
+
+  test("falls back to a per-request id when localStorage throws", () => {
+    global.localStorage = {
+      getItem: vi.fn(() => {
+        throw new Error("storage disabled");
+      }),
+      setItem: vi.fn(),
+    };
+
+    const id = getOrCreateDeviceId();
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
+  });
+});
 
 describe("hmrc-service submitVat error handling", () => {
   const vatData = {
