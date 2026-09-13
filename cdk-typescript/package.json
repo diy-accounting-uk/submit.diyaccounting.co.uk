@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "synth": "cdk synth --app \"npx ts-node --transpile-only bin/cross-account-backup-vault.ts\" --output cdk.out",
-    "diff": "node scripts/diff-templates.js"
+    "diff": "node scripts/diff-templates.mjs"
   },
   "devDependencies": {
     "@types/node": "24.13.1",

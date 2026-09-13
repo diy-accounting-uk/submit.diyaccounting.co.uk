@@ -30,7 +30,9 @@ import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseRegisteredEmailAddressPost.js" });
 
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// The domain segment before the first dot excludes dots itself, so there is exactly one way to
+// split it from the rest: no backtracking over multiple candidate split points.
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */

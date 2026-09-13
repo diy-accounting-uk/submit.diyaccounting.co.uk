@@ -14,9 +14,15 @@ import { escapeXmlText } from "../lib/xmlDom.js";
 
 const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
+// Namespace identifiers, not fetched URLs: they are compared as exact strings against the FRC
+// taxonomy schema (see fixtures/frc-taxonomy/frs-102-2026-concepts.json), which defines them as
+// http, and a validator rejects a document whose namespace doesn't match byte for byte.
 const NAMESPACES = {
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   bus: "http://xbrl.frc.org.uk/cd/2026-01-01/business",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   core: "http://xbrl.frc.org.uk/fr/2026-01-01/core",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   direp: "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
 };
 

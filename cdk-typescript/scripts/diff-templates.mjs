@@ -9,13 +9,15 @@
 // resource, and asset hashes (this stack has none today, but the next stack in a row-33 rewrite
 // might).
 //
-// Usage: node scripts/diff-templates.js [javaTemplatePath] [tsTemplatePath]
+// Usage: node scripts/diff-templates.mjs [javaTemplatePath] [tsTemplatePath]
 
-"use strict";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { spawnSync } from "child_process";
+import { fileURLToPath } from "url";
 
-const fs = require("fs");
-const path = require("path");
-const { spawnSync } = require("child_process");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DEFAULT_JAVA_TEMPLATE = path.resolve(
   __dirname,
@@ -27,6 +29,10 @@ const DEFAULT_JAVA_TEMPLATE = path.resolve(
 const DEFAULT_TS_TEMPLATE = path.resolve(__dirname, "..", "cdk.out", "backup-CrossAccountBackupVaultStack.template.json");
 
 const ASSET_HASH_PATTERN = /[a-f0-9]{64}/g;
+
+// Fixed path rather than resolving "diff" through PATH, which a compromised or misconfigured
+// PATH could shadow with something other than the system diff utility.
+const DIFF_BINARY = "/usr/bin/diff";
 
 function loadTemplate(filePath) {
   if (!fs.existsSync(filePath)) {
@@ -115,14 +121,14 @@ function main() {
     process.exit(0);
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(require("os").tmpdir(), "cdk-template-diff-"));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cdk-template-diff-"));
   const javaTmp = path.join(tmpDir, "java.normalised.json");
   const tsTmp = path.join(tmpDir, "typescript.normalised.json");
   fs.writeFileSync(javaTmp, javaJson);
   fs.writeFileSync(tsTmp, tsJson);
 
   console.log(`Differences found. Normalised templates written to ${tmpDir}\n`);
-  const result = spawnSync("diff", ["-u", javaTmp, tsTmp], { encoding: "utf8" });
+  const result = spawnSync(DIFF_BINARY, ["-u", javaTmp, tsTmp], { encoding: "utf8" });
   console.log(result.stdout || "(diff produced no textual output)");
   if (result.stderr) console.error(result.stderr);
   process.exit(1);
