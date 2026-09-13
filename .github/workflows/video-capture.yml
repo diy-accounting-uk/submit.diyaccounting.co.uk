@@ -165,6 +165,7 @@ jobs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
       public-url: ${{ steps.deployment-config.outputs.public-url }}
+      base-url: ${{ steps.deployment-config.outputs.base-url }}
 
   capture:
     name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
@@ -247,7 +248,14 @@ jobs:
             --script "videos/${{ needs.params.outputs.script }}.json" \
             --out "target/videos/${{ needs.params.outputs.script }}"
         env:
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          # An explicit deployment-name input names one deployment among several that can be
+          # live on an environment at once; it has to record against that deployment's own
+          # base-url, not the environment's apex, or the run silently records whatever
+          # deployment currently holds the apex's live pointer instead. Auto-resolved runs (no
+          # explicit input) keep recording at the apex/public URL, unchanged - that is right for
+          # prod, where public-url is the real submit.diyaccounting.co.uk domain the video is
+          # meant to show, and for ci this stays the apex, as before.
+          DIY_SUBMIT_BASE_URL: ${{ needs.params.outputs.deployment-name != '' && needs.names.outputs.base-url || needs.names.outputs.public-url }}
           HMRC_ACCOUNT: synthetic
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
