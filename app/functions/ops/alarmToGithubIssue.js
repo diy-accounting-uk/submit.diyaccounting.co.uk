@@ -238,8 +238,9 @@ Every link needs a signed-in AWS session. Nothing from the logs is copied here.`
 }
 
 export function buildCommentBody({ alarmName, state, previousState, reason, timestamp, window, evidence, links }) {
+  const reasonSuffix = reason ? ` (${reason})` : "";
   const headerLines = [
-    `Alarm state changed again: ${previousState} → ${state}${reason ? ` (${reason})` : ""} at ${timestamp}.`,
+    `Alarm state changed again: ${previousState} → ${state}${reasonSuffix} at ${timestamp}.`,
     "",
     `**Alarm:** ${alarmName}`,
   ];
