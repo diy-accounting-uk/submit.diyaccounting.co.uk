@@ -18,9 +18,10 @@ PR; the operator merges.
 
 **Prod runs deployment prod-a8cb1ea** (PR #201's merge, promoted about 22:00 UTC on 2026-09-13,
 carrying batch b29, the filing-callback fix, the accounts envelope fix and the ITSA dashboard fix);
-`prod-7b355a0` is being removed by its `destroy previous` job.
-**ci at 22:04 UTC**: `ci-b29w2` stands (self-destructs 23:11); `ci-vatview` (PR #202, three-hour
-delay from 21:52) is deploying; `ci-claud20c8` left one `ApiStack` in ROLLBACK_COMPLETE, which the
+`prod-e371587` (PR #202's merge, run 34786322080) is deploying at 22:41 and replaces it when its
+probes pass.
+**ci at 22:41 UTC**: `ci-vatview` is live (pointer; self-destructs 00:52); `ci-b29w2` stands until
+23:11; `ci-claud20c8` left one `ApiStack` in ROLLBACK_COMPLETE, which the
 02:34 sweep clears, and the ci pointer still names it.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -41,11 +42,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied; the sending step is on
-  spreadsheets `main` (PR #110 merged 2026-09-13 13:33 UTC), so every `diya-gl` npm publish fails
-  at its dispatch step until O36's `HOMEBREW_DISPATCH_TOKEN` exists. In flight: homebrew-diya-gl
-  PR #2 (`claude/ops-dispatch-trigger`, the receiving trigger) awaits the operator's merge.
-  **Owner**: Operator merges; Claude Code if it goes red. **Model**: Sonnet.
+Nothing: no branch, pull request or run carries an open row.
 
 ## Machine-only
 
