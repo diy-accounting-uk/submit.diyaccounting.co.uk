@@ -190,11 +190,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv([
-    "COMPANIES_HOUSE_XMLGW_URI",
-    "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
-    "COMPANIES_HOUSE_PACKAGE_REFERENCE",
-  ]);
+  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME", "COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };

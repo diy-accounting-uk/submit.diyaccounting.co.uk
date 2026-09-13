@@ -89,6 +89,9 @@ export async function resolvePresenterCredentials() {
  * @returns {string}
  */
 export function hashPresenterCredential(value) {
+  // MD5 is the Companies House XML Gateway protocol's own required digest for IDAuthentication,
+  // not a security control this code chooses.
+  // eslint-disable-next-line sonarjs/hashing
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
 }
 

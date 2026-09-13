@@ -47,7 +47,8 @@ const DEFAULT_WAIT_MS = 0;
 const HMRC_API_VERSION = "8.0";
 
 // HMRC's calculationId is either an 8-digit id or a UUID - see the Individual Calculations 8.0 spec.
-const CALCULATION_ID_PATTERN = /^([0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const CALCULATION_ID_DIGITS_PATTERN = /^\d{8}$/;
+const CALCULATION_ID_UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // The two calculationType values this path accepts. confirm-amendment only applies from
 // 2025-26, a business rule HMRC enforces itself rather than a format check made here.
@@ -110,7 +111,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
 
   if (!calculationId) errorMessages.push("Missing calculationId parameter from body");
-  if (calculationId && !CALCULATION_ID_PATTERN.test(calculationId)) errorMessages.push("Invalid calculationId format");
+  if (calculationId && !CALCULATION_ID_DIGITS_PATTERN.test(calculationId) && !CALCULATION_ID_UUID_PATTERN.test(calculationId))
+    errorMessages.push("Invalid calculationId format");
 
   if (!calculationType) errorMessages.push("Missing calculationType parameter from body");
   if (calculationType && !CALCULATION_TYPES.includes(calculationType)) {

@@ -74,7 +74,12 @@ export async function detectVendorPublicIp() {
 function buildServerMultiFactorHeader(authzCtx, userId) {
   if (!authzCtx || !userId) return null;
 
-  const factorType = authzCtx.mfa_method === "TOTP" ? "TOTP" : authzCtx.mfa_federated === "true" ? "OTHER" : null;
+  let factorType = null;
+  if (authzCtx.mfa_method === "TOTP") {
+    factorType = "TOTP";
+  } else if (authzCtx.mfa_federated === "true") {
+    factorType = "OTHER";
+  }
   if (!factorType || !authzCtx.auth_time) return null;
 
   const timestamp = new Date(Number(authzCtx.auth_time) * 1000).toISOString();
@@ -241,7 +246,9 @@ export function buildFraudHeaders(event, options = {}) {
   // other required header this function can't build.
   const serverMultiFactor = buildServerMultiFactorHeader(authzCtx, userId);
   const clientMultiFactor = getHeader("Gov-Client-Multi-Factor");
-  const multiFactor = serverMultiFactor || (clientMultiFactor && clientMultiFactor !== "undefined" && clientMultiFactor !== "null" ? clientMultiFactor : null);
+  const multiFactor =
+    serverMultiFactor ||
+    (clientMultiFactor && clientMultiFactor !== "undefined" && clientMultiFactor !== "null" ? clientMultiFactor : null);
   if (multiFactor) {
     headers["Gov-Client-Multi-Factor"] = multiFactor;
   } else {

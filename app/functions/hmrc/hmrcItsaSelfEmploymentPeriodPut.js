@@ -6,7 +6,6 @@
 import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
-  http200OkResponse,
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
