@@ -828,10 +828,11 @@ public class ObservabilityStack extends Stack {
                         ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*"))
                 .build());
 
-        // Neither logs:DescribeLogGroups nor logs:DescribeQueries supports a resource-level ARN.
+        // Neither logs:DescribeLogGroups, logs:DescribeQueries nor logs:DescribeMetricFilters
+        // supports a resource-level ARN.
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ListLogGroups")
-                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries"))
+                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries", "logs:DescribeMetricFilters"))
                 .resources(List.of("*"))
                 .build());
 
