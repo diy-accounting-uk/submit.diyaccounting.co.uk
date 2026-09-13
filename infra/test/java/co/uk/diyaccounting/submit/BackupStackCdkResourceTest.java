@@ -174,7 +174,17 @@ class BackupStackCdkResourceTest {
     }
 
     private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
-    private static final String RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN = "arn:aws:iam::914216784828:root";
+
+    /**
+     * An {@link software.amazon.awscdk.services.iam.AccountPrincipal}'s ARN always carries the
+     * partition as a token (stack.partition, not a literal), so CDK renders it as an Fn::Join
+     * rather than a plain string even for a literal account id - the same reason selectedTable()
+     * above matches inside an Fn::Join for a table ARN.
+     */
+    private static Matcher accountRootPrincipal(String accountId) {
+        return Match.objectLike(
+                Map.of("Fn::Join", Match.arrayWith(List.of(Match.arrayWith(List.of(":iam::" + accountId + ":root"))))));
+    }
 
     private static Template synthCiBackupStack() {
         App app = new App();
@@ -216,7 +226,7 @@ class BackupStackCdkResourceTest {
                 "Effect",
                 "Allow",
                 "Principal",
-                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN),
+                Map.of("AWS", accountRootPrincipal("914216784828")),
                 "Action",
                 "backup:CopyIntoBackupVault",
                 "Condition",
@@ -236,7 +246,7 @@ class BackupStackCdkResourceTest {
                 "Effect",
                 "Allow",
                 "Principal",
-                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN),
+                Map.of("AWS", accountRootPrincipal("914216784828")),
                 "Action",
                 List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"),
                 "Condition",
