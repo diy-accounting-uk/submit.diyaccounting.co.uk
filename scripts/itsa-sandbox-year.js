@@ -72,6 +72,12 @@ const CALCULATION_RETRIEVE_RETRY_DELAY_MS = 3000;
 // PLAN_ITSA_PHASE_2.md's BSAS section. SELF_EMPLOYMENT_PROFIT is the scenario named there.
 const BSAS_RETRIEVE_SCENARIO = "SELF_EMPLOYMENT_PROFIT";
 
+// Business Details and ITSA status answer a static canned example with no Gov-Test-Scenario
+// header, not the business or status this script just created through the test-support API.
+// STATEFUL is the scenario documented (_developers/hmrc/ITSA_SPIKE.md's Business Details
+// section, PLAN_ITSA_PHASE_2.md's ITSA status section) to read the test-support state back.
+const STATEFUL_SCENARIO = "STATEFUL";
+
 // _developers/hmrc/ITSA_SPIKE.md's own sandbox run recorded exactly one validator warning that
 // a synthetic test user can never clear: gov-client-multi-factor, because the sandbox sign-in
 // page takes a user id and a password with no second factor. That is what "clean" means for
@@ -459,7 +465,7 @@ async function main() {
     step: "business-details-list",
     method: "GET",
     url: `${sandboxBase}/individuals/business/details/${nino}/list`,
-    headers: hmrcHeaders("2.0"),
+    headers: hmrcHeaders("2.0", STATEFUL_SCENARIO),
     okStatuses: [200],
     nino,
   });
@@ -468,13 +474,18 @@ async function main() {
     step: "itsa-status",
     method: "GET",
     url: `${sandboxBase}/individuals/person/itsa-status/${nino}/${taxYear}`,
-    headers: hmrcHeaders("2.0"),
+    headers: hmrcHeaders("2.0", STATEFUL_SCENARIO),
     okStatuses: [200],
     nino,
   });
 
   // Phase 5: read the open obligations HMRC generated for this business and file a quarterly
-  // update against each one - never against a date range this script invented.
+  // update against each one - never against a date range this script invented. No
+  // Gov-Test-Scenario header is sent: HMRC's resolved OpenAPI for this endpoint
+  // (obligations-api/resources/public/api/conf/3.0/retrieve_income_tax_income_expenditure.yaml)
+  // lists no STATEFUL scenario, and DYNAMIC only echoes a canned obligation back for one of
+  // three fixed example businessIds (XBIS12345678901, XPIS12345678901, XFIS12345678901) -
+  // neither reads the business this script created through the test-support API.
   const openObligationsResponse = await callHmrc({
     step: "obligations-open",
     method: "GET",
