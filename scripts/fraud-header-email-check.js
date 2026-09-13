@@ -22,6 +22,15 @@
 // (scripts/co.uk.diyaccounting.submit.fraud-header-check.plist) runs it on the 5th and the
 // 12th, so a first run before the 10th that finds nothing yet is normal and raises no alert;
 // a second run past the 10th that still finds nothing is itself the alert.
+//
+// Publishing the alert needs a live `submit-prod` SSO session (AWS_PROFILE=submit-prod):
+// EventBridge's PutEvents call fails silently under launchd once the SSO token expires,
+// because that profile cannot refresh itself unattended. This script exits non-zero when the
+// publish fails (see the ACTIVITY_BUS_NAME / EventBridge failure paths in main()) and the
+// launchd log (~/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log) then shows
+// launchd's own non-zero exit, but the JSON record for the month is still written either way.
+// Fix: run `aws sso login --sso-session diyaccounting`, then re-run this script by hand:
+//   node scripts/fraud-header-email-check.js
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -459,11 +468,17 @@ export async function main(argv) {
   console.log(`fraud-header-email-check: wrote ${outPath}`);
 
   if (alertPayload) {
-    // publishActivityEvent is fire-and-forget: it swallows its own errors and logs them
-    // through pino rather than rejecting, so this line can only report that the attempt was
-    // made, not that the event reached the bus.
-    await publishActivityEvent(alertPayload);
-    console.log(`fraud-header-email-check: requested activity event for ${expectedMonth.label} (${decision.status})`);
+    // publishActivityEvent swallows its own EventBridge errors and logs them through pino
+    // rather than rejecting, so its return value is the only way this script (run unattended
+    // by launchd, with no dashboard watching its log) can notice a failed publish and exit
+    // non-zero instead of reporting success it never had.
+    const result = await publishActivityEvent(alertPayload);
+    if (!result.published) {
+      throw new Error(
+        `fraud-header-email-check: failed to publish activity event for ${expectedMonth.label} (${decision.status}): ${result.error}`,
+      );
+    }
+    console.log(`fraud-header-email-check: published activity event for ${expectedMonth.label} (${decision.status})`);
   }
 
   return decision;

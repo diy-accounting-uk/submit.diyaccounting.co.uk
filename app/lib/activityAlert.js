@@ -25,7 +25,10 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
 
 /**
  * Publish an activity event to the EventBridge custom bus.
- * Fire-and-forget: never throws, graceful no-op when ACTIVITY_BUS_NAME not set.
+ * Fire-and-forget for every existing caller: never throws, graceful no-op when
+ * ACTIVITY_BUS_NAME not set. The returned result lets a caller that runs unattended (no
+ * dashboard, no watchdog watching its own logs) notice a swallowed failure and act on it -
+ * see scripts/fraud-header-email-check.js, whose launchd job has nothing else to fail loudly to.
  *
  * @param {Object} params
  * @param {string} params.event - Event name (e.g. "login", "vat-return-submitted")
@@ -35,12 +38,14 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * @param {string} [params.flow] - Flow classification
  * @param {string} [params.userSub] - Raw sub of the authenticated user; hashed before it reaches the event, never logged raw
  * @param {Object} [params.detail] - Additional detail fields
+ * @returns {Promise<{published: boolean, error?: string}>} published is false when
+ *   ACTIVITY_BUS_NAME was unset (skipped) or the EventBridge send failed (error holds the message)
  */
 export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, userSub, detail = {} }) {
   const busName = process.env.ACTIVITY_BUS_NAME;
   if (!busName) {
     logger.info({ message: "ACTIVITY_BUS_NAME not set, skipping activity event", event });
-    return;
+    return { published: false, error: "ACTIVITY_BUS_NAME not set" };
   }
 
   const requestId = context.get("requestId") || null;
@@ -73,8 +78,10 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
       }),
     );
     logger.info({ message: "Activity event published", event, summary, requestId });
+    return { published: true };
   } catch (err) {
     logger.warn({ message: "Failed to publish activity event", event, error: err.message });
+    return { published: false, error: err.message };
   }
 }
 
