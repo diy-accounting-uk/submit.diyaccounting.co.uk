@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4e15028**, live since main's deploy of PR #199 set the pointer at about
-17:20 UTC on 2026-09-13; it carries the Companies House filing-callback fix. It is the only prod
-set.
+**Prod runs deployment prod-e823714**, batch b29, live since the redeploy dispatched at 19:22 UTC on
+2026-09-13 promoted it at about 20:15 (the merge deploy's own probe had lost its lane user to the
+scheduled probe-test, PR #202). `prod-4e15028` stands beside it until the next `destroy previous`.
 **Three ci sets stand** (2026-09-13 15:30 UTC): `ci-claudc761` (b29's branch deploy, live pointer,
 self-destructs 16:08 UTC), `ci-clauda813` (PR #199's branch, 17:10 UTC) and `ci-b29w2` (b29
 dispatched with an eight-hour delay for wave 2, 23:11 UTC). Wave 2 — B73, B71.S3e's ci steps,
