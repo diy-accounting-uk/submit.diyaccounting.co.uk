@@ -43,7 +43,7 @@ const DEFAULT_WAIT_MS = 0;
 const HMRC_API_VERSION = "7.0";
 
 // HMRC's calculationId is either an 8-digit id or a UUID - see the BSAS 7.0 spec.
-const CALCULATION_ID_PATTERN = /^([0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const CALCULATION_ID_PATTERN = /^(\d{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
