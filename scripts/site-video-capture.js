@@ -222,9 +222,16 @@ async function main() {
   let localServices = { stop: async () => {} };
   let journey = null;
   let installCredentialFieldMask = null;
+  // The browser's own console and page errors are what the behaviour tests always capture
+  // (addOnPageLogging), sanitised the same way, so a page-side throw (e.g. a script the page
+  // never loaded) shows up in this run's log instead of only as a downstream step timeout. Only
+  // loaded for a signed-in script: journey.js already pulls in the same module tree, so this
+  // costs nothing extra there, and an unauthenticated script keeps paying nothing for it.
+  let addOnPageLogging = null;
   if (needsUser) {
     const journeyModule = await import("./lib/video/journey.js");
     installCredentialFieldMask = journeyModule.installCredentialFieldMask;
+    ({ addOnPageLogging } = await import("./lib/video/behaviourSteps.js"));
     localServices = await journeyModule.startLocalServices(process.env);
     journey = {
       authProvider: journeyModule.authProviderFrom(process.env),
@@ -252,6 +259,7 @@ async function main() {
   });
 
   const page = await context.newPage();
+  if (addOnPageLogging) addOnPageLogging(page);
   await installOverlay(page);
   if (installCredentialFieldMask) await installCredentialFieldMask(page);
 
