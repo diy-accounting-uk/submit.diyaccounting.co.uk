@@ -612,6 +612,52 @@ jobs:
     outputs:
       result: ${{ steps.behaviour-test-retry.outputs.RESULT || steps.behaviour-test.outputs.RESULT }}
 
+  # A scheduled probe that fails runs unattended: nobody is watching the run the way a deploy's
+  # own web-test failure is watched (that path already rolls the apex back and is not this
+  # workflow's concern - see deploy.yml's rollback-origins). Raises one issue per scheduled run
+  # that had a failure, naming every failed suite from this run's own job list rather than
+  # needs.behaviour-test.outputs.result, which is unreliable across a fail-fast:false matrix.
+  #
+  # inputs.behaviour-test-suite == '' is required alongside the event check for the same reason
+  # params' own Normalise Params step checks both (see its comment above): deploy.yml carries a
+  # schedule trigger of its own and calls this workflow once per suite with an explicit suite
+  # input, so github.event_name alone reads 'schedule' there too. Without the second check, one
+  # failing nightly deploy would raise a report-schedule-failures issue per failed suite call
+  # instead of leaving that path to deploy.yml's rollback-origins.
+  report-schedule-failures:
+    if: ${{ !cancelled() && github.event_name == 'schedule' && inputs.behaviour-test-suite == '' && needs.behaviour-test.result == 'failure' }}
+    name: 'report scheduled probe failures'
+    needs:
+      - names
+      - behaviour-test
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      issues: write
+    steps:
+      - name: Open an incident issue naming the failed suites
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FAILED_SUITES=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" --paginate \
+            --jq '.jobs[] | select(.conclusion == "failure") | .name' \
+            | grep '^behaviour test ' | sed 's/^behaviour test //')
+          if [ -z "$FAILED_SUITES" ]; then
+            echo "No failed 'behaviour test' jobs found on this run; nothing to report."
+            exit 0
+          fi
+          TITLE="[INCIDENT] scheduled probe failure (${{ needs.names.outputs.environment-name }})"
+          BODY=$(cat <<BODYEOF
+          ## Scheduled probe failure
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Environment: ${{ needs.names.outputs.environment-name }}
+          Failed suite(s):
+          $FAILED_SUITES
+          BODYEOF
+          )
+          gh issue create --repo "${{ github.repository }}" --title "$TITLE" --label incident --body "$BODY"
+
   publish-cloudwatch-metric:
     if: ${{ !cancelled() }}
     name: 'publish cloudwatch metric ${{ matrix.suite }}'

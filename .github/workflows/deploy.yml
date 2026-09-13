@@ -2830,6 +2830,9 @@ jobs:
       - set-origins
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      issues: write
     steps:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -2875,6 +2878,23 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
+      # A set promoted to last-known-good means whatever rollback issue is open for this
+      # environment (rollback-origins raised it under this same title) is resolved: some set
+      # has now cleared web-test and gone live. Closes every open one rather than just the
+      # newest, in case more than one rollback happened before a set finally cleared.
+      - name: Close open rollback incident issues for this environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: "[INCIDENT] ${{ needs.names.outputs.environment-name }} apex rollback"
+        run: |
+          gh issue list --repo "${{ github.repository }}" --label incident --state open \
+            --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" \
+          | while read -r NUMBER; do
+              gh issue comment "$NUMBER" --repo "${{ github.repository }}" \
+                --body "Deployment ${{ needs.names.outputs.deployment-name }} promoted to last known good for ${{ needs.names.outputs.environment-name }}; closing."
+              gh issue close "$NUMBER" --repo "${{ github.repository }}"
+            done
+
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a
   # rejected deployment until a person notices. Point the apex and its API Gateway custom
@@ -2909,6 +2929,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2965,6 +2986,27 @@ jobs:
       - name: Report the rollback
         run: |
           echo "::error::web-test failed for ${{ needs.names.outputs.deployment-name }}; rolled the apex back to ${{ needs.set-origins.outputs.existing-deployment-name }}."
+
+      # The set left standing (needs.names.outputs.deployment-name) is never promoted to
+      # last-known-good on this path (set-last-known-good-deployment requires web-test to
+      # succeed), so nobody is told unless this issue exists. set-last-known-good-deployment
+      # closes it (by this same title) the next time a set for this environment is promoted.
+      - name: Open an incident issue for the rollback
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: "[INCIDENT] ${{ needs.names.outputs.environment-name }} apex rollback"
+        run: |
+          BODY=$(cat <<BODYEOF
+          ## Apex rollback
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Failed probe suite: submitVatBehaviour (the web-test job gating this rollback)
+          Rolled back to deployment: ${{ needs.set-origins.outputs.existing-deployment-name }}
+          Deployment left standing, unpromoted: ${{ needs.names.outputs.deployment-name }}
+          BODYEOF
+          )
+          gh issue create --repo "${{ github.repository }}" --title "$ISSUE_TITLE" --label incident --body "$BODY"
     outputs:
       rolled-back-to-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
