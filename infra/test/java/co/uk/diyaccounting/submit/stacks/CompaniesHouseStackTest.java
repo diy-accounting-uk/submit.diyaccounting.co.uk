@@ -714,9 +714,47 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void submitAndPollLambdasCarryBothPresenterSecretArnsAndPreviewCarriesNeither() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertEquals(PRESENTER_ID_ARN, env.get("COMPANIES_HOUSE_PRESENTER_ID_ARN"));
+            assertEquals(PRESENTER_CODE_ARN, env.get("COMPANIES_HOUSE_PRESENTER_CODE_ARN"));
+        }
+
+        var previewFunctions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of("FunctionName", stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName())));
+        assertEquals(1, previewFunctions.size());
+        var previewEnv = environmentVariablesOf(previewFunctions);
+        assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PRESENTER_ID_ARN"));
+        assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PRESENTER_CODE_ARN"));
+    }
+
+    @Test
     void blankPresenterSecretArnsGrantNothingAndStillSynth() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName())) {
+            var functions = template.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size());
+            var env = environmentVariablesOf(functions);
+            assertFalse(env.containsKey("COMPANIES_HOUSE_PRESENTER_ID_ARN"));
+            assertFalse(env.containsKey("COMPANIES_HOUSE_PRESENTER_CODE_ARN"));
+        }
 
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",

@@ -664,6 +664,7 @@ public class CompaniesHouseStack extends Stack {
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
             companiesHouseAccountsPostLambdaEnv.with(
                     "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
@@ -708,6 +709,7 @@ public class CompaniesHouseStack extends Stack {
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseAccountsGetLambdaEnv, props);
         var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -922,6 +924,19 @@ public class CompaniesHouseStack extends Stack {
     private static void grantCompaniesHousePresenterSecretsAccess(Function fn, CompaniesHouseStackProps props) {
         grantWildcardSecretAccess(fn, props.companiesHousePresenterIdArn());
         grantWildcardSecretAccess(fn, props.companiesHousePresenterCodeArn());
+    }
+
+    // resolvePresenterCredentials() in companiesHouseXmlGateway.js reads the ARNs from
+    // COMPANIES_HOUSE_PRESENTER_ID_ARN and COMPANIES_HOUSE_PRESENTER_CODE_ARN; without these the
+    // IAM grant above is unreachable. Blank until B34.6b's sandbox proof lands, same as the XML
+    // Gateway URI - PopulatedMap rejects a blank value outright, so each is set only when configured.
+    private static void withPresenterSecretArns(PopulatedMap<String, String> env, CompaniesHouseStackProps props) {
+        if (StringUtils.isNotBlank(props.companiesHousePresenterIdArn())) {
+            env.with("COMPANIES_HOUSE_PRESENTER_ID_ARN", props.companiesHousePresenterIdArn());
+        }
+        if (StringUtils.isNotBlank(props.companiesHousePresenterCodeArn())) {
+            env.with("COMPANIES_HOUSE_PRESENTER_CODE_ARN", props.companiesHousePresenterCodeArn());
+        }
     }
 
     private static void grantWildcardSecretAccess(Function fn, String secretArn) {
