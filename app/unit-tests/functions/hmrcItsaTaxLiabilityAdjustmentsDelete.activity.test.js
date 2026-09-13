@@ -109,17 +109,17 @@ describe("hmrcItsaTaxLiabilityAdjustmentsDelete token charge", () => {
       if (cmd instanceof MockGetCommand) return { Item: null };
       return {};
     });
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 1 });
+    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 0 });
   });
 
-  test("charges one token for the self-employed-year-end activity on the initial request, before HMRC is called", async () => {
+  test("charges the free self-employed-year-end-delete activity on the initial request, before HMRC is called", async () => {
     mockHmrcSuccess(mockFetch, {});
 
     const response = await hmrcItsaTaxLiabilityAdjustmentsDeleteHandler(buildInitialDeleteEvent());
     expect(response.statusCode).toBe(200);
 
     expect(mockConsumeTokenForActivity).toHaveBeenCalledTimes(1);
-    expect(mockConsumeTokenForActivity).toHaveBeenCalledWith("test-sub", "self-employed-year-end", expect.any(Object));
+    expect(mockConsumeTokenForActivity).toHaveBeenCalledWith("test-sub", "self-employed-year-end-delete", expect.any(Object));
     const tokenCallOrder = mockConsumeTokenForActivity.mock.invocationCallOrder[0];
     const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
     expect(tokenCallOrder).toBeLessThan(fetchCallOrder);

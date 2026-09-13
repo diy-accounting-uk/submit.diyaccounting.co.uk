@@ -218,11 +218,11 @@ export async function ingestHandler(event) {
     persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
   }
 
-  // Token enforcement: consume 1 token for the deletion (a write to HMRC, like the submission
-  // that created it) - initial request only. Priced under self-employed-year-end, like the
-  // other year-end writes.
+  // Token enforcement: the deletion sends no new figures to HMRC and undoes a submission the
+  // customer already paid for, so it's priced free under self-employed-year-end-delete -
+  // initial request only.
   if (isInitialRequest) {
-    const activityId = "self-employed-year-end";
+    const activityId = "self-employed-year-end-delete";
     try {
       const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
       const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
