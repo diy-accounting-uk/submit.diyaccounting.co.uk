@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7fbea34**, eleven stacks, live since the scheduled `deploy.yml` run
-34749667957 set the pointer at 10:04 UTC on 2026-09-13, every prod probe green. It is the only prod
-set: that run's `destroy previous` job removed `prod-4918a0d` between 10:05 and 10:25 UTC.
+**Prod runs deployment prod-4e15028**, live since main's deploy of PR #199 set the pointer at about
+17:20 UTC on 2026-09-13; it carries the Companies House filing-callback fix. It is the only prod
+set.
 **Three ci sets stand** (2026-09-13 15:30 UTC): `ci-claudc761` (b29's branch deploy, live pointer,
 self-destructs 16:08 UTC), `ci-clauda813` (PR #199's branch, 17:10 UTC) and `ci-b29w2` (b29
 dispatched with an eight-hour delay for wave 2, 23:11 UTC). Wave 2 — B73, B71.S3e's ci steps,
@@ -259,6 +259,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
+- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
+  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
+  `default` bundle, with the live Companies House filing client. A real filing changes a real
+  company's register, so this is the operator's own company and sign-in. The first attempt on
+  2026-09-13 looped at the authorise callback: Companies House's token response carries no `scope`
+  field and the callback compared against it. Fixed in PR #199 and on prod
+  since prod-4e15028 (about 17:20 UTC). Try again; a receipt or an error message is enough.
+  **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
+
+
+
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -332,17 +343,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   B136. **Owner**: Operator. **Model**: none.
 
 ## Blocked
-
-- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
-  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
-  `default` bundle, with the live Companies House filing client. A real filing changes a real
-  company's register, so this is the operator's own company and sign-in. The first attempt on
-  2026-09-13 looped at the authorise callback: Companies House's token response carries no `scope`
-  field and the callback compared against it. Fixed in PR #199, merged as `4e15028e` at about
-  15:55 UTC; main's deploy carries it to prod in about 40 minutes. Try again after that; a receipt
-  or an error message is enough. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
-  Blocked on main's deploy of `4e15028e` reaching prod.
-
 
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
