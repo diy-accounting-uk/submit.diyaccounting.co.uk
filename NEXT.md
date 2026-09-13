@@ -40,6 +40,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B139. The live registered-email filing loops back to the company-number step.** On prod
+  (prod-7fbea34) at about 14:30 UTC on 2026-09-13 the operator tried O21 for real: company
+  06846849, change of registered email. After the Companies House authorise screen the browser
+  landed back on the page that asks for the company number, and entering it again went round the
+  same loop; nothing was filed. The ci click-through of 2026-09-06 against the sandbox did not do
+  this. Candidates: state lost across the redirect (return path not carried in `state`, token
+  stored under a key the page does not read, the callback sending the user to the activity's first
+  page), the token exchange failing on prod (redirect URI, live client, scope), or a CloudFront
+  behaviour on `/companies-house/*` that ci does not have. Investigating on `claude/ltd-filing-loop`
+  off `main`, kept out of b29 by the operator's instruction; when it is ready the operator says
+  whether it ships alone or folds into the batch. Same branch, separate commit: 06846849 is the
+  operator's real company and must not stand as example data — replace it in the plan, the unit and
+  system tests and the simulator scenarios with an example Companies House itself publishes,
+  leaving only the legal pages and README where it is the company's own identity.
+  **Source**: operator report, 2026-09-13. **Owner**: Claude Code. **Model**: Opus.
+
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
@@ -277,13 +293,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
   REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
 
-- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
-  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
-  `default` bundle, with the live Companies House filing client. A real filing changes a real
-  company's register, so this is the operator's own company and sign-in. Tell Claude Code how
-  it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
-  **Owner**: Operator. **Model**: none.
-
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -349,6 +358,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   B136. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
+  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
+  `default` bundle, with the live Companies House filing client. A real filing changes a real
+  company's register, so this is the operator's own company and sign-in. First attempt on
+  2026-09-13 looped at the authorise callback (B139). Try again once B139 is on prod; a receipt
+  or an error message is enough. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
+  Blocked on B139.
+
 
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
