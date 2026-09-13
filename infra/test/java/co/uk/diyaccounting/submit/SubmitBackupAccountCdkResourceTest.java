@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.assertions.Match;
+import software.amazon.awscdk.assertions.Matcher;
 import software.amazon.awscdk.assertions.Template;
 
 class SubmitBackupAccountCdkResourceTest {
@@ -83,16 +84,14 @@ class SubmitBackupAccountCdkResourceTest {
     void vaultGrantsOnlyCopyInAndTheDenyGuard() {
         Template template = synthVaultStack();
 
+        List<Matcher> expectedStatements = List.of(
+                Match.objectLike(Map.of("Sid", "AllowCrossAccountCopy")),
+                Match.objectLike(Map.of("Sid", "DenyDeleteFromOutsideBackupAccount")));
         template.hasResourceProperties(
                 "AWS::Backup::BackupVault",
                 Match.objectLike(Map.of(
                         "AccessPolicy",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of("Sid", "AllowCrossAccountCopy")),
-                                        Match.objectLike(
-                                                Map.of("Sid", "DenyDeleteFromOutsideBackupAccount"))))))));
+                        Match.objectLike(Map.of("Statement", Match.arrayWith(expectedStatements))))));
 
         var vault = (Map<String, Object>)
                 template.findResources("AWS::Backup::BackupVault").values().stream()

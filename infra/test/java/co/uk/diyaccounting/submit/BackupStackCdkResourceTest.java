@@ -209,43 +209,39 @@ class BackupStackCdkResourceTest {
     void ciGrantsTheBackupAccountCopyRoleIntoItsOwnVaultAndKey() {
         Template template = synthCiBackupStack();
 
+        Matcher copyInStatement = Match.objectLike(Map.of(
+                "Sid",
+                "AllowBackupAccountCopyRoleToCopyIn",
+                "Effect",
+                "Allow",
+                "Principal",
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                "Action",
+                "backup:CopyIntoBackupVault"));
         template.hasResourceProperties(
                 "AWS::Backup::BackupVault",
                 Match.objectLike(Map.of(
                         "BackupVaultName",
                         "ci-env-primary-vault",
                         "AccessPolicy",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid",
-                                        "AllowBackupAccountCopyRoleToCopyIn",
-                                        "Effect",
-                                        "Allow",
-                                        "Principal",
-                                        Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
-                                        "Action",
-                                        "backup:CopyIntoBackupVault"))))))));
+                        Match.objectLike(
+                                Map.of("Statement", Match.arrayWith(List.of(copyInStatement)))))));
 
+        Matcher encryptStatement = Match.objectLike(Map.of(
+                "Sid",
+                "AllowBackupAccountCopyRoleToEncrypt",
+                "Effect",
+                "Allow",
+                "Principal",
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                "Action",
+                List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant")));
         template.hasResourceProperties(
                 "AWS::KMS::Key",
                 Match.objectLike(Map.of(
                         "KeyPolicy",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid",
-                                        "AllowBackupAccountCopyRoleToEncrypt",
-                                        "Effect",
-                                        "Allow",
-                                        "Principal",
-                                        Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
-                                        "Action",
-                                        List.of(
-                                                "kms:Encrypt",
-                                                "kms:GenerateDataKey*",
-                                                "kms:DescribeKey",
-                                                "kms:CreateGrant"))))))));
+                        Match.objectLike(
+                                Map.of("Statement", Match.arrayWith(List.of(encryptStatement)))))));
     }
 
     @Test
