@@ -16,13 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-e823714**, batch b29, live since the redeploy dispatched at 19:22 UTC on
-2026-09-13 promoted it at about 20:15 (the merge deploy's own probe had lost its lane user to the
-scheduled probe-test, PR #202). It is the only prod set.
-**Three ci sets stand** (2026-09-13 15:30 UTC): `ci-claudc761` (b29's branch deploy, live pointer,
-self-destructs 16:08 UTC), `ci-clauda813` (PR #199's branch, 17:10 UTC) and `ci-b29w2` (b29
-dispatched with an eight-hour delay for wave 2, 23:11 UTC). Wave 2 — B73, B71.S3e's ci steps,
-B17v.1's two captures, B34.6b's filing — runs against `ci-b29w2`.
+**Prod runs deployment prod-7b355a0** (PR #200's merge, promoted about 21:1x UTC on 2026-09-13);
+`prod-a8cb1ea` (PR #201's merge) is deploying at 21:49 and replaces it when its probes pass.
+**ci at 21:49 UTC**: `ci-b29w2` stands (self-destructs 23:11); `ci-claud20c8` left one `ApiStack` in
+ROLLBACK_COMPLETE after its self-destruct fired mid-redeploy, which the 02:34 sweep clears; the ci
+pointer still names it. `ci-vatview` (PR #202, three-hour delay) is deploying.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
@@ -69,15 +67,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `http400BadRequestResponse`, the same mislabel; the page shows HMRC's text either way, so only
   the status code is wrong. Fix it the same way, with the unit test. **Source**: B125's proof.
   **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B127. The apex-alias vacate races any expiring ci set.** Both windows are closed on main
-  (ef3aac19 for CloudFront, a97d3e36 in #198 for API Gateway). Left: one real run showing a ci
-  set expiring mid-deploy no longer fails the deploy; it arrives on its own. Also seen today,
-  same family: three ci deploys at once contend for the ci apex alias (`CNAMEAlreadyExists` on
-  PR #199's set-origins at 15:29 UTC while two b29 sets deployed) and rotate one shared Cognito
-  test user underneath each other (passRedemption's TOTP challenge never appeared on run
-  34763080213). Either serialise ci deploys in `deploy.yml`'s concurrency group or give each
-  deployment its own test user. **Source**: runs 34762675812, 34763080213. **Owner**: Claude
-  Code. **Model**: Sonnet.
+- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
+  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
+  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
+  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
+  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
+  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
+  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
+  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. **Source**: runs
+  34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   `itsa-quarterly-update` is recording against `ci-b29w2` (run 34774550386, dispatched 18:35 UTC).
