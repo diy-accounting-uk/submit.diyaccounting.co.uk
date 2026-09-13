@@ -153,6 +153,11 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 
   For a suite that finishes in seconds — a targeted `vitest` run, a YAML parse, actionlint — verify
   first and commit after, as normal. The inversion is for the long ones.
+
+  For a long check that blocks the agent's next action, start it with the background flag and
+  report at once with "build pending, surefire reports at `target/surefire-reports`" or similar.
+  The coordinator reads the reports on the merged tree and feeds the verdict back; the agent does
+  not wait for the logs to return and does not re-wait on the next turn.
 - **Any new file needs the licence header.** Every comment-capable tracked file carries the SPDX
   identifier and the copyright line, and `app/unit-tests/licenceHeaders.test.js` fails the suite
   when one does not. A new `_developers/*.md` written at the end of an investigation is the usual
