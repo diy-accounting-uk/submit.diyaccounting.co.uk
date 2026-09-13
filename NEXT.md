@@ -136,17 +136,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through annual submission, BSAS, calculation, final declaration and the losses and adjustments
   calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** The gateway answered on
-  2026-09-13: submissions 000002 and 000003 (presenter E0000052288, company 06846849, 18:19 UTC)
-  were both rejected with error 9999 "No element 'Authority' in class
-  CompaniesHouse::Filing::Accounts" — `FormSubmission-v2-11.xsd` has no `Authority`; the worked
-  example that had it is against v2-5. PR #200 makes the builder emit a bare `DateSigned`, teaches
-  the simulator the real rejection, and keeps the real `GovTalkErrors` fields as a fixture. Both
-  deployment gaps the earlier passes found are on main (#198). Left: file once from PR #200's ci
-  set (the next number is 000004; every number is used forever, so not before that deploy), read
-  the real acknowledgement and status responses, capture them as fixtures and align
-  `parseGatewayResponse()` and the simulator; then `prod` on the activity and `resident-ltd`'s
-  listing, and O44. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC, from PR #200's ci set) was ACCEPTED by the
+  XML Gateway test service: HTTP 201, `gatewayTimestamp 2026-09-13T20:04:10-00:00`, no errors.
+  000002 and 000003 were rejected earlier for the `Authority` wrapper, which PR #200 removes. Left:
+  every `GetSubmissionStatus` poll for 000004 (nine over 16 minutes) answers error 9999 "No
+  presenter ID supplied", although `buildStatusRequest()` emits `SubmissionNumber` then
+  `PresenterID` as `GetSubmissionStatus-v2-9.xsd` orders them and the same credentials
+  authenticated the submission. The Lambdas log status codes only, so the raw XML was not
+  captured. O44 asks Companies House whether 000004 was accepted downstream and whether status
+  lookups are enabled for this presenter; meanwhile log the raw gateway request and response bodies
+  (presenter code redacted) in `companiesHouseAccountsGet.js` so the next poll shows what the
+  gateway saw. The `prod` listing stays off until a poll returns a status, because a customer must
+  see the outcome of a filing; that commit (946251d4) waits on local branch
+  `claude/ltd-accounts-file`. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
   (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
   `companiesHouseRegisteredEmailAddressPost.js`, `diff` resolved from PATH in
@@ -289,17 +292,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   app password) as a GitHub Actions secret — mailbox access from CI is your call. **Source**:
   B136. **Owner**: Operator. **Model**: none.
 
+- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
+  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
+  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
+  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
+  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied".
+  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
+  **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
+
 ## Blocked
 
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
-
-- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** Neal at
-  `xml@companieshouse.gov.uk` reviews test submissions once told they exist. One email from the
-  operator's address naming the submission numbers and the presenter id, with what the sandbox
-  returned. **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Operator.
-  **Model**: none. Blocked on B34.6b.
 
 - [ ] **O46. Approve the four allow lists.** Each of B80b's PRs prints every author address
   with its commit count and date range; strike or approve each before merge, because an address
