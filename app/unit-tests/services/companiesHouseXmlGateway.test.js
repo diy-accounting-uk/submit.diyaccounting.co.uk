@@ -65,6 +65,10 @@ const GET_SUBMISSION_STATUS_REQUEST_FIXTURE = readFileSync(
   new URL("../../../fixtures/companies-house-xmlgw/GetSubmissionStatus_request.xml", import.meta.url),
   "utf8",
 );
+const GET_SUBMISSION_STATUS_REJECT_RESPONSE_FIXTURE = readFileSync(
+  new URL("../../../fixtures/companies-house-xmlgw/GetSubmissionStatus_reject_response_GovTalkErrors.xml", import.meta.url),
+  "utf8",
+);
 
 let mockFetch;
 
@@ -204,6 +208,22 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(result.qualifier).toBe("error");
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toMatchObject({ raisedBy: "Gateway", number: 502, type: "fatal", text: "Authorisation Failure" });
+    });
+
+    test("parses the GovTalkErrors block the real gateway returned for a GetSubmissionStatus poll", () => {
+      // A request built by buildStatusRequest() - SubmissionNumber then PresenterID, matching
+      // GetSubmissionStatus-v2-9.xsd's content model - still came back "No presenter ID
+      // supplied" against ci-claud0efc; see the fixture's own header for what was and was not
+      // captured.
+      const result = parseGatewayResponse(GET_SUBMISSION_STATUS_REJECT_RESPONSE_FIXTURE);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toMatchObject({
+        raisedBy: "GetSubmissionStatus",
+        number: 9999,
+        type: "fatal",
+        text: "No presenter ID supplied",
+        location: "",
+      });
     });
 
     test("reads GatewayTimestamp and the ResponseEndPoint PollInterval from an acknowledgement", () => {
