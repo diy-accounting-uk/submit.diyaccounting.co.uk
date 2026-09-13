@@ -52,10 +52,7 @@ function accountsEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_V
         <FormIdentifier>Accounts</FormIdentifier>
         <SubmissionNumber>${submissionNumber}</SubmissionNumber>
       </FormHeader>
-      <Authority>
-        <Designation>DIR</Designation>
-        <DateSigned>2026-06-30</DateSigned>
-      </Authority>
+      <DateSigned>2026-06-30</DateSigned>
       <Form>
       </Form>
       <Document>
@@ -178,6 +175,19 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     const document = parseXmlDocument(response.text);
     expect(firstElementText(document, "Number")).toBe("604");
     expect(firstElementText(document, "Location")).toBe("Body/FormSubmission/FormHeader/CompanyName");
+  });
+
+  test("rejects an Accounts submission that wraps DateSigned in an Authority element", async () => {
+    const withAuthority = accountsEnvelope().replace(
+      "<DateSigned>2026-06-30</DateSigned>",
+      "<Authority><Designation>DIR</Designation><DateSigned>2026-06-30</DateSigned></Authority>",
+    );
+    const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(withAuthority);
+
+    const document = parseXmlDocument(response.text);
+    expect(firstElementText(document, "Number")).toBe("9999");
+    expect(firstElementText(document, "RaisedBy")).toBe("Accounts");
+    expect(firstElementText(document, "Text")).toContain("No element 'Authority'");
   });
 
   test("polls PENDING on the first poll and ACCEPT afterwards", async () => {

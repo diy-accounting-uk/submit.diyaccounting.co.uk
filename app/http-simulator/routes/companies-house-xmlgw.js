@@ -90,6 +90,20 @@ function schemaFailureFor(location) {
   };
 }
 
+// The sandbox's test service rejects this element outright, verbatim wording and all: 2026-09-13
+// against ci-b29w2, submission numbers 000002 and 000003 both got this back for an envelope that
+// wrapped DateSigned in Authority/Designation. FormSubmission-v2-11.xsd carries no Authority
+// element - FormHeader is followed directly by a bare DateSigned - so any envelope built from an
+// older worked example (the published Accounts.xml is against v2-5) reaches the real gateway
+// with an element it no longer accepts.
+const AUTHORITY_ELEMENT_ERROR = {
+  raisedBy: "Accounts",
+  number: 9999,
+  type: "fatal",
+  text: "No element 'Authority' in class CompaniesHouse::Filing::Accounts",
+  location: "",
+};
+
 function parseCredentials(document) {
   return {
     senderIdHash: (firstElementText(document, "SenderID") || "").toLowerCase(),
@@ -101,6 +115,9 @@ function handleAccounts(document, { senderIdHash, authValueHash, scenario }) {
   const formHeader = firstElement(document, "FormHeader");
   if (!formHeader) {
     return schemaFailureFor("Body/FormSubmission/FormHeader");
+  }
+  if (firstElement(document, "Authority")) {
+    return { errors: [AUTHORITY_ELEMENT_ERROR] };
   }
 
   const companyNumber = firstElementText(formHeader, "CompanyNumber");

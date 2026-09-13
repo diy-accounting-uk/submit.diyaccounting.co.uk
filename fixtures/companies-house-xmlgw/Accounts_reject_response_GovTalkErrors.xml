@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The GovTalkDetails/GovTalkErrors block the real XML Gateway test service returned for an
+  Accounts submission whose envelope wrapped DateSigned in an Authority/Designation element (the
+  shape the published worked example, Accounts.xml in this directory, uses against the older
+  FormSubmission-v2-5.xsd). Observed twice against ci-b29w2, submission numbers 000002 and 000003,
+  2026-09-13: identical both times, confirming FormSubmission-v2-11.xsd's schema, which carries no
+  Authority element at all.
+
+  This is not a byte-for-byte capture of the full response envelope: the Lambda logs the HTTP
+  status of the gateway call but not the response body, so only the fields below - taken from
+  parseGatewayResponse()'s output, which the Lambda did return to the caller - are real gateway
+  values. The surrounding envelope (Header, GatewayTimestamp if any) was not captured.
+-->
+<GovTalkErrors>
+  <Error>
+    <RaisedBy>Accounts</RaisedBy>
+    <Number>9999</Number>
+    <Type>fatal</Type>
+    <Text>No element 'Authority' in class CompaniesHouse::Filing::Accounts</Text>
+  </Error>
+</GovTalkErrors>

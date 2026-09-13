@@ -117,7 +117,6 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "CompanyName")).toBe("TEST COMPANY LIMITED");
       expect(firstElementText(document, "FormIdentifier")).toBe("Accounts");
       expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
-      expect(firstElementText(document, "Designation")).toBe("DIR");
       expect(firstElementText(document, "DateSigned")).toBe("2026-06-30");
       expect(firstElementText(document, "ContentType")).toBe("application/xml");
       expect(firstElementText(document, "Category")).toBe("ACCOUNTS");
@@ -146,6 +145,16 @@ describe("services/companiesHouseXmlGateway", () => {
     test("the first line is the XML declaration", () => {
       const xml = buildAccountsSubmission(baseInput);
       expect(xml.split("\n")[0]).toBe('<?xml version="1.0" encoding="UTF-8"?>');
+    });
+
+    test("carries DateSigned directly after FormHeader, with no Authority wrapper", () => {
+      // FormSubmission-v2-11.xsd's FormSubmission sequence is FormHeader, DateSigned, Form,
+      // ...; the gateway's test service rejects an Authority element outright ("No element
+      // 'Authority' in class CompaniesHouse::Filing::Accounts").
+      const xml = buildAccountsSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(document.getElementsByTagName("Authority")).toHaveLength(0);
+      expect(document.getElementsByTagName("Designation")).toHaveLength(0);
     });
   });
 
