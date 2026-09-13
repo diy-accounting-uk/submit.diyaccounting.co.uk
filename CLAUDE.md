@@ -89,6 +89,10 @@ nothing that has not passed every gate it defines. A bare `gh pr merge` outside 
 forbidden however green the checks look. `/auto-merge-dry-run` shows what would merge and changes
 nothing.
 
+`git branch -D claude/*` after a proven squash merge (the do-next skill checks that the commit landed
+via diff) is available through the operator's `.claude/settings.json` allowlist; that allowlist is
+an operator decision, not Claude's to make.
+
 Branch naming: `claude/<ns>-<n>-<topic>` for one of a series, `claude/<ns>-<topic>` otherwise.
 `<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`; `b` for a board
 batch), `<n>` the series number, `<topic>` one or two words. A narrow branch dropdown shows only
@@ -424,6 +428,8 @@ See `PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
 ## AWS CLI Access (Local Development)
 
 **Read-only AWS operations are always permitted.** You may always query AWS resources (describe, get, list, logs, etc.) without asking for permission. This includes CloudFormation stack status, Lambda configuration, CloudWatch logs, DynamoDB scans, CloudFront distributions, and any other read-only API calls needed for investigation and debugging.
+
+Before dispatching a wave of sub-agents that read AWS, run `aws --profile submit-ci sts get-caller-identity` and ask the user to log in up front if needed, rather than waiting for the first agent to fail with `UnauthorizedSSOTokenError`.
 
 Use SSO profiles to access any account. Login once, then use `--profile` on each command:
 
