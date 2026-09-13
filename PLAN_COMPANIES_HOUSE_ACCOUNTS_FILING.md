@@ -127,7 +127,8 @@ authorisation failure. `GovTalkDetails/Keys` is empty on the way out.
 `Body/FormSubmission` sits in namespace `http://xmlgw.companieshouse.gov.uk/Header` against
 `FormSubmission-v2-11.xsd`, with `FormHeader` (`CompanyNumber`, `CompanyName`,
 `CompanyAuthenticationCode`, `PackageReference`, `FormIdentifier` = `Accounts`, `SubmissionNumber`),
-`Authority` (`Designation` = `DIR`, `DateSigned`), an empty `Form`, and `Document` holding `Data`
+a bare `DateSigned` directly after `FormHeader` (the current schema carries no `Authority` wrapper;
+the sandbox's test service rejects one outright), an empty `Form`, and `Document` holding `Data`
 (the base64 iXBRL), `Date`, `Filename`, `ContentType` = `application/xml`, `Category` = `ACCOUNTS`.
 
 `SubmissionNumber` is exactly 6 characters, ours to allocate, unique per presenter forever. Reusing

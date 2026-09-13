@@ -171,10 +171,7 @@ export function buildAccountsSubmission({
         <FormIdentifier>Accounts</FormIdentifier>
         <SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>
       </FormHeader>
-      <Authority>
-        <Designation>DIR</Designation>
-        <DateSigned>${dateSigned}</DateSigned>
-      </Authority>
+      <DateSigned>${dateSigned}</DateSigned>
       <Form>
       </Form>
       <Document>

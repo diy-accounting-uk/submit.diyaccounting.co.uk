@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The GovTalkDetails/GovTalkErrors block the real XML Gateway test service returned for a
+  GetSubmissionStatus poll, sent with a SubmissionNumber and a PresenterID in the order
+  GetSubmissionStatus-v2-9.xsd's content model requires: ((CompanyNumber|SubmissionNumber),
+  PresenterID). Observed against ci-claud0efc, polling submission number 000004 (presenter
+  E0000052288, company 06846849), twice within five minutes of the submission's own
+  acknowledgement, 2026-09-13: identical both times.
+
+  Like Accounts_reject_response_GovTalkErrors.xml, this is not a byte-for-byte capture of the
+  full response envelope: the Lambda logs the HTTP status of the gateway call but not the
+  response body, so only the fields below - taken from parseGatewayResponse()'s output, which
+  the Lambda did return to the caller - are real gateway values. The surrounding envelope
+  (Header, Qualifier) was not captured.
+-->
+<GovTalkErrors>
+  <Error>
+    <RaisedBy>GetSubmissionStatus</RaisedBy>
+    <Number>9999</Number>
+    <Type>fatal</Type>
+    <Text>No presenter ID supplied</Text>
+    <Location></Location>
+  </Error>
+</GovTalkErrors>
