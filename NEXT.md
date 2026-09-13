@@ -166,6 +166,15 @@ Nothing: no branch, pull request or run carries an open row.
   the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
   plan row D16. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B52z. No pass type grants the `operator` bundle.** `web/public/operator/dashboard.html` is on
+  prod behind the `operator` bundle (`submit.catalogue.toml`, allocation `on-email-match`), but
+  `submit.passes.toml` has no `operator` pass type and `prod-env-passes` holds no pass for that
+  bundle, so the page denies everyone. Add the pass type (email-restricted, one use, one year, in
+  the shape of `resident-pro-comp`) and the option in `generate-pass.yml`; then the operator
+  dispatches `gh workflow run generate-pass.yml -f pass-type=operator -f email=<sign-in email>
+  -f environment=prod` and redeems the QR. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1. **Owner**:
+  Claude Code, then Operator. **Model**: Haiku. **Size**: ~2 files.
+
 - [ ] **B52y. Five dashboard objectives publish no observations.** `app/functions/analytics/operatorSnapshotPublish.js`
   lines 174-178 declare `low-running-cost`, `security`, `retention`, `operator-effort` and
   `compliance` with `observations: []`, so the operator page shows them empty while the lake views
