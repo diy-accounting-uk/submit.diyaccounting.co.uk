@@ -166,6 +166,15 @@ Nothing: no branch, pull request or run carries an open row.
   the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
   plan row D16. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B52y. Five dashboard objectives publish no observations.** `app/functions/analytics/operatorSnapshotPublish.js`
+  lines 174-178 declare `low-running-cost`, `security`, `retention`, `operator-effort` and
+  `compliance` with `observations: []`, so the operator page shows them empty while the lake views
+  behind them (`v_cost_vs_target_monthly`, the security and retention views, the operator-effort
+  views, `v_compliance_status`) fill nightly. Wire each objective to two to four observations from
+  its views in the shape the three filled objectives use (view, day column, aggregation, unit, deep
+  link), with the unit test beside the existing ones. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7,
+  D13, D14, D15; prod snapshot 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B125. An HMRC 404 reaches the caller as a 400.** The 403 half is done (`e93bb2ea`, browser
   test in #198). `http404NotFoundFromHmrcResponse` at `app/services/hmrcApi.js:726` still ends in
   `http400BadRequestResponse`, the same mislabel; the page shows HMRC's text either way, so only
