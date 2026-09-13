@@ -19,7 +19,7 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
 }));
 
 const { getUserBundles, consumeToken } = await import("@app/data/dynamoDbBundleRepository.js");
-const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+const { consumeTokenForActivity, hasTokensForActivity, chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
 
 const baseCatalog = {
   bundles: [{ id: "day-guest", tokensGranted: 3 }],
@@ -161,6 +161,58 @@ describe("tokenEnforcement", () => {
       expect(result.cost).toBe(0);
       expect(getUserBundles).not.toHaveBeenCalled();
       expect(consumeToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("hasTokensForActivity", () => {
+    it("reports available without consuming a token", async () => {
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 }]);
+
+      const result = await hasTokensForActivity("user-1", "submit-vat", baseCatalog);
+
+      expect(result.available).toBe(true);
+      expect(result.cost).toBe(1);
+      expect(consumeToken).not.toHaveBeenCalled();
+    });
+
+    it("reports tokens_exhausted when no qualifying bundle has tokens", async () => {
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 3 }]);
+
+      const result = await hasTokensForActivity("user-1", "submit-vat", baseCatalog);
+
+      expect(result.available).toBe(false);
+      expect(result.reason).toBe("tokens_exhausted");
+      expect(consumeToken).not.toHaveBeenCalled();
+    });
+
+    it("treats a free activity as available without reading bundles", async () => {
+      const result = await hasTokensForActivity("user-1", "vat-obligations", baseCatalog);
+
+      expect(result.available).toBe(true);
+      expect(result.cost).toBe(0);
+      expect(getUserBundles).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("chargeTokenOnSuccess", () => {
+    it("charges a token against the real catalogue for a successful submission", async () => {
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
+
+      const result = await chargeTokenOnSuccess("user-1", "self-employed");
+
+      expect(result.consumed).toBe(true);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+    });
+
+    it("logs and swallows the failure when consumeToken throws, instead of raising", async () => {
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      consumeToken.mockRejectedValueOnce(new Error("write failed"));
+
+      const result = await chargeTokenOnSuccess("user-1", "self-employed");
+
+      expect(result.consumed).toBe(false);
+      expect(result.reason).toBe("charge_error");
     });
   });
 });

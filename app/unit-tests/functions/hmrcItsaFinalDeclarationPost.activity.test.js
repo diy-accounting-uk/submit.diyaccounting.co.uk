@@ -37,9 +37,11 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-const mockConsumeTokenForActivity = vi.fn();
+const mockHasTokensForActivity = vi.fn();
+const mockChargeTokenOnSuccess = vi.fn();
 vi.mock("@app/services/tokenEnforcement.js", () => ({
-  consumeTokenForActivity: (...args) => mockConsumeTokenForActivity(...args),
+  hasTokensForActivity: (...args) => mockHasTokensForActivity(...args),
+  chargeTokenOnSuccess: (...args) => mockChargeTokenOnSuccess(...args),
 }));
 
 // Capture activity events and metrics rather than reaching EventBridge or the log stream.
@@ -120,18 +122,19 @@ describe("hmrcItsaFinalDeclarationPost token cost, receipt and failure reporting
       if (cmd instanceof MockGetCommand) return { Item: null };
       return {};
     });
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 1 });
+    mockHasTokensForActivity.mockResolvedValue({ available: true, cost: 1 });
+    mockChargeTokenOnSuccess.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 1 });
   });
 
-  test("charges one token for the self-employed activity on the initial request, before HMRC is called", async () => {
+  test("checks token availability for the self-employed activity on the initial request, before HMRC is called", async () => {
     mockHmrcSuccess(mockFetch, {});
 
     const response = await hmrcItsaFinalDeclarationPostHandler(buildInitialDeclarationEvent());
     expect(response.statusCode).toBe(200);
 
-    expect(mockConsumeTokenForActivity).toHaveBeenCalledTimes(1);
-    expect(mockConsumeTokenForActivity).toHaveBeenCalledWith("test-sub", "self-employed", expect.any(Object));
-    const tokenCallOrder = mockConsumeTokenForActivity.mock.invocationCallOrder[0];
+    expect(mockHasTokensForActivity).toHaveBeenCalledTimes(1);
+    expect(mockHasTokensForActivity).toHaveBeenCalledWith("test-sub", "self-employed", expect.any(Object));
+    const tokenCallOrder = mockHasTokensForActivity.mock.invocationCallOrder[0];
     const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
     expect(tokenCallOrder).toBeLessThan(fetchCallOrder);
   });
@@ -145,12 +148,12 @@ describe("hmrcItsaFinalDeclarationPost token cost, receipt and failure reporting
     const response = await hmrcItsaFinalDeclarationPostHandler(event);
     expect(response.statusCode).toBe(400);
 
-    expect(mockConsumeTokenForActivity).not.toHaveBeenCalled();
+    expect(mockHasTokensForActivity).not.toHaveBeenCalled();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("an exhausted allowance answers 403 with tokens_exhausted and never calls HMRC", async () => {
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
+    mockHasTokensForActivity.mockResolvedValue({ available: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 
     const response = await hmrcItsaFinalDeclarationPostHandler(buildInitialDeclarationEvent());
     expect(response.statusCode).toBe(403);
@@ -221,5 +224,26 @@ describe("hmrcItsaFinalDeclarationPost token cost, receipt and failure reporting
     expect(published).not.toContain(VALID_NINO);
     expect(published).not.toContain("FORMAT_NINO");
     expect(published).not.toContain("test-token");
+  });
+
+  test("charges the token only after HMRC accepts the submission", async () => {
+    mockHmrcSuccess(mockFetch, {});
+
+    const response = await hmrcItsaFinalDeclarationPostHandler(buildInitialDeclarationEvent());
+    expect(response.statusCode).toBe(200);
+
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith("test-sub", "self-employed");
+    const chargeCallOrder = mockChargeTokenOnSuccess.mock.invocationCallOrder[0];
+    const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
+    expect(fetchCallOrder).toBeLessThan(chargeCallOrder);
+  });
+
+  test("an HMRC rejection never charges a token", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
+
+    await hmrcItsaFinalDeclarationPostHandler(buildInitialDeclarationEvent());
+
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });
 });

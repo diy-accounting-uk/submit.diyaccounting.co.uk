@@ -339,12 +339,12 @@ export async function ingestHandler(event) {
   if (isInitialRequest) {
     const activityId = "self-employed";
     try {
-      const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+      const { hasTokensForActivity } = await import("../../services/tokenEnforcement.js");
       const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
       const catalog = loadCatalogFromRoot();
-      const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
-      if (!tokenResult.consumed) {
-        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+      const tokenCheck = await hasTokensForActivity(userSub, activityId, catalog);
+      if (!tokenCheck.available) {
+        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenCheck.reason });
         await recordSubmissionFailure({
           failure: "tokens-exhausted",
           summary: "ITSA quarterly update amendment blocked: submission allowance used up",
@@ -357,7 +357,6 @@ export async function ingestHandler(event) {
           error: { reason: "tokens_exhausted", tokensRemaining: 0 },
         });
       }
-      logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
     } catch (error) {
       logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
       await recordSubmissionFailure({
@@ -762,6 +761,8 @@ export async function amendSelfEmploymentPeriod(
     summary: "ITSA self-employment period summary amended",
     userSub: auditForUserSub,
   });
+  const { chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
+  await chargeTokenOnSuccess(auditForUserSub, "self-employed");
   // The dated amend passes HMRC's response body through unchanged, as it always has. The
   // cumulative amend answers 204 with nothing, so its periodSummary carries the model instead
   // of an empty body - the receipt still needs something to store.
