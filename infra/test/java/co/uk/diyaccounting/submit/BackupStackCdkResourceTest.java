@@ -174,6 +174,7 @@ class BackupStackCdkResourceTest {
     }
 
     private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
+    private static final String RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN = "arn:aws:iam::914216784828:root";
 
     private static Template synthCiBackupStack() {
         App app = new App();
@@ -215,9 +216,11 @@ class BackupStackCdkResourceTest {
                 "Effect",
                 "Allow",
                 "Principal",
-                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN),
                 "Action",
-                "backup:CopyIntoBackupVault"));
+                "backup:CopyIntoBackupVault",
+                "Condition",
+                Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN))));
         template.hasResourceProperties(
                 "AWS::Backup::BackupVault",
                 Match.objectLike(Map.of(
@@ -233,9 +236,11 @@ class BackupStackCdkResourceTest {
                 "Effect",
                 "Allow",
                 "Principal",
-                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ARN),
+                Map.of("AWS", RESTORE_DRILL_COPY_ROLE_ACCOUNT_ARN),
                 "Action",
-                List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant")));
+                List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"),
+                "Condition",
+                Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN))));
         template.hasResourceProperties(
                 "AWS::KMS::Key",
                 Match.objectLike(Map.of(
