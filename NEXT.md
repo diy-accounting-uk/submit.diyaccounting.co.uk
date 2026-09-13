@@ -18,7 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-e823714**, batch b29, live since the redeploy dispatched at 19:22 UTC on
 2026-09-13 promoted it at about 20:15 (the merge deploy's own probe had lost its lane user to the
-scheduled probe-test, PR #202). `prod-4e15028` stands beside it until the next `destroy previous`.
+scheduled probe-test, PR #202). It is the only prod set.
 **Three ci sets stand** (2026-09-13 15:30 UTC): `ci-claudc761` (b29's branch deploy, live pointer,
 self-destructs 16:08 UTC), `ci-clauda813` (PR #199's branch, 17:10 UTC) and `ci-b29w2` (b29
 dispatched with an eight-hour delay for wave 2, 23:11 UTC). Wave 2 — B73, B71.S3e's ci steps,
@@ -78,15 +78,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   34763080213). Either serialise ci deploys in `deploy.yml`'s concurrency group or give each
   deployment its own test user. **Source**: runs 34762675812, 34763080213. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **B71.S3e. Migrate the books bucket, step 7.** Steps 1 to 6 ran for ci and prod on
-  2026-09-13: every gate passed (re-sync copied nothing at 6=6 and 16=16, sampled keys
-  byte-identical, on-demand recovery points `…-20260913154546-fe807d32` (ci) and
-  `…-20260913162119-c019ab1e` (prod) COMPLETED), and the old bucket left `DataStack`, the backup
-  selection and `SubmitSharedNames` in #198. ci's environment deploy removed
-  `ci-env-books-367191799875`; main's environment deploy of `e8237145` removes
-  `prod-env-books-972912397388` (in flight at 18:1x UTC). Left: confirm both buckets are gone and
-  the runbook's ci/prod tables read as done, then close. **Source**: `PLAN_DIYA_GL_NAMING.md`
-  NM-S3. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   `itsa-quarterly-update` is recording against `ci-b29w2` (run 34774550386, dispatched 18:35 UTC).
